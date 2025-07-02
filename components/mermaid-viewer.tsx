@@ -22,6 +22,20 @@ export function MermaidViewer({ diagrams, title = "System Architecture Diagrams"
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [zoom, setZoom] = useState(100)
   const diagramRef = useRef<HTMLDivElement>(null)
+  
+  // Simple helper to check if a diagram has content
+  const hasContent = (key: string) => {
+    const content = diagrams[key as keyof typeof diagrams]
+    return content && content.trim().length > 0
+  }
+  
+  // Set active tab to first one with content on mount
+  useEffect(() => {
+    const tabsWithContent = ['architecture', 'database', 'userFlow', 'apiFlow'].filter(hasContent)
+    if (tabsWithContent.length > 0 && !hasContent(activeTab)) {
+      setActiveTab(tabsWithContent[0])
+    }
+  }, [diagrams])
 
   // Sample diagrams if none provided
   const defaultDiagrams = {
@@ -119,27 +133,180 @@ export function MermaidViewer({ diagrams, title = "System Architecture Diagrams"
     // Dynamically import and render Mermaid
     const renderMermaid = async () => {
       try {
+        // Debug: Log what we're working with
+        console.log('Current tab:', activeTab)
+        console.log('Available diagrams:', Object.keys(currentDiagrams))
+        
+        const diagramContent = currentDiagrams[activeTab as keyof typeof currentDiagrams]
+        console.log('Raw diagram content:', diagramContent)
+        console.log('Diagram content type:', typeof diagramContent)
+        console.log('Diagram content length:', diagramContent?.length)
+
+        if (!diagramContent || typeof diagramContent !== 'string' || diagramContent.trim() === '') {
+          throw new Error(`Invalid diagram content for tab '${activeTab}': ${typeof diagramContent} - '${diagramContent}'`)
+        }
+
         const mermaid = (await import("mermaid")).default
+        
+        // Clear any existing content first
+        if (diagramRef.current) {
+          diagramRef.current.innerHTML = ''
+        }
+        
         mermaid.initialize({
-          startOnLoad: true,
+          startOnLoad: false,
           theme: "default",
           securityLevel: "loose",
           fontFamily: "Inter, system-ui, sans-serif",
+          flowchart: {
+            useMaxWidth: true,
+            htmlLabels: true
+          }
         })
 
         if (diagramRef.current) {
-          const diagramContent = currentDiagrams[activeTab as keyof typeof currentDiagrams]
-          diagramRef.current.innerHTML = `<div class="mermaid">${diagramContent}</div>`
-          await mermaid.run()
+          // Clean up the diagram content - remove extra whitespace and ensure proper format
+          const cleanDiagram = diagramContent.trim()
+          console.log('Clean diagram content:', cleanDiagram)
+          
+          // Validate that it starts with a valid mermaid diagram type
+          const validStarters = ['graph', 'flowchart', 'sequenceDiagram', 'classDiagram', 'stateDiagram', 'erDiagram', 'journey', 'pie']
+          const firstLine = cleanDiagram.split('\n')[0].toLowerCase()
+          const isValidMermaid = validStarters.some(starter => firstLine.includes(starter))
+          
+          if (!isValidMermaid) {
+            throw new Error(`Invalid Mermaid syntax. First line: '${firstLine}'. Expected one of: ${validStarters.join(', ')}`)
+          }
+          
+          // Generate unique ID for this diagram
+          const diagramId = `mermaid-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+          
+          // Create the diagram element
+          const currentContent = currentDiagrams[activeTab as keyof typeof currentDiagrams]
+      
+          // Check if content is empty or invalid
+          if (!currentContent || currentContent.trim() === '') {
+            console.log('Mermaid diagram content is empty for tab:', activeTab)
+            if (diagramRef.current) {
+              diagramRef.current.innerHTML = `
+                <div class="flex items-center justify-center h-64 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                  <div class="text-center p-6">
+                    <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <h3 class="text-lg font-medium text-gray-700 mb-2">No Diagram Available</h3>
+                    <p class="text-gray-500">This diagram type hasn't been generated yet or the content is empty.</p>
+                  </div>
+                </div>
+              `
+            }
+            return
+          }
+          
+          if (diagramRef.current) {
+            console.log('Rendering Mermaid diagram for tab:', activeTab, 'Content length:', currentContent.length)
+            
+            // Clear previous content
+            diagramRef.current.innerHTML = ''
+            
+            // Create a new element for the diagram
+            const diagramElement = document.createElement('div')
+            diagramElement.className = 'mermaid'
+            diagramElement.textContent = currentContent
+            diagramRef.current.appendChild(diagramElement)
+            
+            try {
+              // Render the diagram
+              await mermaid.run({
+                nodes: [diagramElement]
+              })
+              
+              console.log('Mermaid diagram rendered successfully')
+            } catch (error) {
+              const diagramContent = currentDiagrams[activeTab as keyof typeof currentDiagrams]
+              
+              // Enhanced error logging
+              const errorInfo = {
+                errorType: typeof error,
+                errorConstructor: error?.constructor?.name || 'Unknown',
+                message: error?.message || 'No error message',
+                stack: error?.stack || 'No stack trace',
+                activeTab,
+                diagramContent: diagramContent || 'No content',
+                diagramLength: diagramContent?.length || 0,
+                isEmpty: !diagramContent || diagramContent.trim() === '',
+                firstChars: diagramContent?.substring(0, 200) || 'No content',
+                containsMermaidKeywords: diagramContent ? 
+                  ['graph', 'flowchart', 'erDiagram', 'sequenceDiagram', 'classDiagram'].some(keyword => 
+                    diagramContent.toLowerCase().includes(keyword.toLowerCase())) : false,
+                hasSpecialChars: diagramContent ? /[{}\[\]()<>"'`]/.test(diagramContent) : false,
+                lineCount: diagramContent ? diagramContent.split('\n').length : 0
+              }
+              
+              console.error("Enhanced Mermaid Error Debug:", errorInfo)
+              
+              // Try to validate Mermaid syntax
+              if (diagramContent) {
+                console.log('Raw Mermaid content for debugging:', JSON.stringify(diagramContent))
+                
+                // Check for common syntax issues
+                const lines = diagramContent.split('\n')
+                lines.forEach((line, index) => {
+                  if (line.trim() && !line.trim().startsWith('%%')) {
+                    console.log(`Line ${index + 1}: "${line}"`)
+                  }
+                })
+              }
+              if (diagramRef.current) {
+                diagramRef.current.innerHTML = `
+                  <div class="flex items-center justify-center h-64 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                    <div class="text-center p-6">
+                      <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                      </svg>
+                      <p class="text-gray-600 font-medium">Error rendering diagram</p>
+                      <p class="text-sm text-gray-500 mt-2">Please check the diagram syntax</p>
+                      <details class="mt-4 text-left">
+                        <summary class="text-sm text-gray-400 cursor-pointer hover:text-gray-600">Show error details</summary>
+                        <pre class="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded overflow-auto max-h-32">${error?.message || error?.toString() || 'Empty error object - check console for details'}</pre>
+                        <pre class="mt-2 text-xs text-gray-600 bg-gray-50 p-2 rounded overflow-auto max-h-32">Content preview: ${currentDiagrams[activeTab as keyof typeof currentDiagrams]?.substring(0, 300) || 'No content'}...</pre>
+                        <button class="mt-2 text-xs text-blue-600 hover:text-blue-800 underline" onclick="console.log('Full Mermaid content:', ${JSON.stringify(currentDiagrams[activeTab as keyof typeof currentDiagrams])})">
+                          Log full content to console
+                        </button>
+                      </details>
+                    </div>
+                  </div>
+                `
+              }
+            }
+          }
         }
       } catch (error) {
-        console.error("Error rendering Mermaid diagram:", error)
+        const diagramContent = currentDiagrams[activeTab as keyof typeof currentDiagrams]
+        console.error("Error rendering Mermaid diagram:", {
+          error,
+          message: error?.message || 'No error message',
+          stack: error?.stack || 'No stack trace',
+          activeTab,
+          diagramContent,
+          diagramLength: diagramContent?.length || 0,
+          isEmpty: !diagramContent || diagramContent.trim() === '',
+          firstChars: diagramContent?.substring(0, 100) || 'No content'
+        })
         if (diagramRef.current) {
           diagramRef.current.innerHTML = `
-            <div class="flex items-center justify-center h-64 bg-gray-50 rounded-lg">
-              <div class="text-center">
-                <p class="text-gray-500">Error rendering diagram</p>
-                <p class="text-sm text-gray-400 mt-1">Please check the diagram syntax</p>
+            <div class="flex items-center justify-center h-64 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+              <div class="text-center p-6">
+                <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                <p class="text-gray-600 font-medium">Error rendering diagram</p>
+                <p class="text-sm text-gray-500 mt-2">Please check the diagram syntax</p>
+                <details class="mt-4 text-left">
+                  <summary class="text-sm text-gray-400 cursor-pointer hover:text-gray-600">Show error details</summary>
+                  <pre class="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded overflow-auto max-h-32">${error.message || 'Unknown error'}</pre>
+                  <pre class="mt-2 text-xs text-gray-600 bg-gray-50 p-2 rounded overflow-auto max-h-32">Content: ${currentDiagrams[activeTab as keyof typeof currentDiagrams]?.substring(0, 200) || 'No content'}...</pre>
+                </details>
               </div>
             </div>
           `
@@ -174,8 +341,8 @@ export function MermaidViewer({ diagrams, title = "System Architecture Diagrams"
   const diagramTitles = {
     architecture: "System Architecture",
     database: "Database Schema",
-    userFlow: "User Flow",
-    apiFlow: "API Sequence",
+    userflow: "User Flow",
+    apiflow: "API Sequence",
   }
 
   return (
@@ -202,10 +369,10 @@ export function MermaidViewer({ diagrams, title = "System Architecture Diagrams"
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <div className="flex items-center justify-between mb-4">
               <TabsList>
-                <TabsTrigger value="architecture">Architecture</TabsTrigger>
-                <TabsTrigger value="database">Database</TabsTrigger>
-                <TabsTrigger value="userFlow">User Flow</TabsTrigger>
-                <TabsTrigger value="apiFlow">API Flow</TabsTrigger>
+                {hasContent('architecture') && <TabsTrigger value="architecture">Architecture</TabsTrigger>}
+                {hasContent('database') && <TabsTrigger value="database">Database</TabsTrigger>}
+                {hasContent('userFlow') && <TabsTrigger value="userFlow">User Flow</TabsTrigger>}
+                {hasContent('apiFlow') && <TabsTrigger value="apiFlow">API Flow</TabsTrigger>}
               </TabsList>
 
               <div className="flex items-center gap-2">

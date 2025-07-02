@@ -1,4 +1,4 @@
-import { openai } from "@ai-sdk/openai"
+import { createOpenAI } from "@ai-sdk/openai"
 import { generateText } from "ai"
 import { type NextRequest, NextResponse } from "next/server"
 
@@ -9,6 +9,13 @@ interface SDLCRequest {
   template: string
   jiraProject: string
   confluenceSpace: string
+  customPrompts?: {
+    business: string
+    functional: string
+    technical: string
+    ux: string
+    mermaid: string
+  }
 }
 
 interface SDLCResponse {
@@ -30,12 +37,31 @@ export async function POST(req: NextRequest) {
       confluenceSpace,
       jiraEnabled = false,
       confluenceEnabled = false,
-    }: SDLCRequest & { jiraEnabled?: boolean; confluenceEnabled?: boolean } = await req.json()
+      openaiKey, // Extract the OpenAI API key from the request
+      customPrompts = {}, // Extract custom prompts if provided, default to empty object
+    }: SDLCRequest & { jiraEnabled?: boolean; confluenceEnabled?: boolean; openaiKey?: string } = await req.json()
 
+    // Debug logging
+    console.log('OpenAI Key received:', openaiKey ? 'Present' : 'Missing')
+    console.log('OpenAI Key length:', openaiKey ? openaiKey.length : 0)
+    
+    // Validate OpenAI API key
+    if (!openaiKey || openaiKey.trim() === '') {
+      return NextResponse.json(
+        { error: 'OpenAI API key is required but was not provided in the request' },
+        { status: 400 }
+      )
+    }
+
+    // Create OpenAI client with the provided API key
+    const openaiClient = createOpenAI({ apiKey: openaiKey })
+    
     // Always generate the core documents
     const businessAnalysis = await generateText({
-      model: openai("gpt-4o"),
-      prompt: `As a senior business analyst, analyze the following business case and provide a comprehensive business analysis:
+      model: openaiClient("gpt-4o"), // Use the client with the provided API key
+      prompt: customPrompts?.business && customPrompts.business.trim() !== "" 
+        ? customPrompts.business.replace(/{{input}}/g, input) // Use custom prompt if provided
+        : `As a senior business analyst, analyze the following business case and provide a comprehensive business analysis:
       
       Business Case: ${input}
       
@@ -52,8 +78,12 @@ export async function POST(req: NextRequest) {
     })
 
     const functionalSpec = await generateText({
-      model: openai("gpt-4o"),
-      prompt: `Based on the following business analysis, create a detailed functional specification:
+      model: openaiClient("gpt-4o"),
+      prompt: customPrompts?.functional && customPrompts.functional.trim() !== "" 
+        ? customPrompts.functional
+            .replace(/{{business_analysis}}/g, businessAnalysis.text)
+            .replace(/{{input}}/g, input)
+        : `Based on the following business analysis, create a detailed functional specification:
       
       Business Analysis: ${businessAnalysis.text}
       
@@ -70,8 +100,13 @@ export async function POST(req: NextRequest) {
     })
 
     const technicalSpec = await generateText({
-      model: openai("gpt-4o"),
-      prompt: `Based on the functional specification, create a comprehensive technical specification:
+      model: openaiClient("gpt-4o"),
+      prompt: customPrompts?.technical && customPrompts.technical.trim() !== "" 
+        ? customPrompts.technical
+            .replace(/{{functional_spec}}/g, functionalSpec.text)
+            .replace(/{{business_analysis}}/g, businessAnalysis.text)
+            .replace(/{{input}}/g, input)
+        : `Based on the functional specification, create a comprehensive technical specification:
       
       Functional Specification: ${functionalSpec.text}
       
@@ -89,8 +124,13 @@ export async function POST(req: NextRequest) {
     })
 
     const uxSpec = await generateText({
-      model: openai("gpt-4o"),
-      prompt: `Create a UX specification based on the business and functional requirements:
+      model: openaiClient("gpt-4o"),
+      prompt: customPrompts?.ux && customPrompts.ux.trim() !== "" 
+        ? customPrompts.ux
+            .replace(/{{functional_spec}}/g, functionalSpec.text)
+            .replace(/{{business_analysis}}/g, businessAnalysis.text)
+            .replace(/{{input}}/g, input)
+        : `Create a UX specification based on the business and functional requirements:
       
       Business Analysis: ${businessAnalysis.text}
       Functional Specification: ${functionalSpec.text}
@@ -108,8 +148,14 @@ export async function POST(req: NextRequest) {
     })
 
     const mermaidDiagrams = await generateText({
-      model: openai("gpt-4o"),
-      prompt: `Create Mermaid diagrams for the system architecture based on the technical specification:
+      model: openaiClient("gpt-4o"),
+      prompt: customPrompts?.mermaid && customPrompts.mermaid.trim() !== "" 
+        ? customPrompts.mermaid
+            .replace(/{{technical_spec}}/g, technicalSpec.text)
+            .replace(/{{functional_spec}}/g, functionalSpec.text)
+            .replace(/{{business_analysis}}/g, businessAnalysis.text)
+            .replace(/{{input}}/g, input)
+        : `Create Mermaid diagrams for the system architecture based on the technical specification:
       
       Technical Specification: ${technicalSpec.text}
       

@@ -26,7 +26,11 @@ interface AISettings {
   presencePenalty: number
 }
 
-export function PromptEngineering() {
+interface PromptEngineeringProps {
+  onPromptUpdate?: (type: string, content: string) => void
+}
+
+export function PromptEngineering({ onPromptUpdate }: PromptEngineeringProps = {}) {
   const [activeTab, setActiveTab] = useState("business")
   const [showPreview, setShowPreview] = useState(false)
 
@@ -272,6 +276,17 @@ Focus on {{design_priority}} and ensure the design supports {{user_goals}}.`,
     return preview
   }
 
+  // Handle save template
+  const handleSaveTemplate = () => {
+    // Save logic would go here
+    console.log("Saving template:", promptTemplates[activeTab])
+    
+    // Notify parent component about the updated prompt
+    if (onPromptUpdate) {
+      onPromptUpdate(activeTab, promptTemplates[activeTab].content)
+    }
+  }
+
   // Reset to defaults
   const resetToDefaults = () => {
     // Reset logic would restore original templates
@@ -498,7 +513,7 @@ Focus on {{design_priority}} and ensure the design supports {{user_goals}}.`,
               <CardTitle>Template Management</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Button variant="outline" className="w-full bg-transparent">
+              <Button variant="outline" className="w-full bg-transparent" onClick={handleSaveTemplate}>
                 <Save className="h-4 w-4 mr-2" />
                 Save Template
               </Button>

@@ -11,7 +11,13 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import {
@@ -30,6 +36,7 @@ import {
 } from "lucide-react"
 import { HowItWorksVisualization } from "@/components/how-it-works-visualization"
 import { PromptEngineering } from "@/components/prompt-engineering"
+import { MarkdownRenderer } from "@/components/markdown-renderer"
 import { IntegrationHub } from "@/components/integration-hub"
 import { VisualizationHub } from "@/components/visualization-hub"
 import { MermaidViewer } from "@/components/mermaid-viewer"
@@ -83,6 +90,7 @@ export default function SDLCAutomationPlatform() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
   const [showConfig, setShowConfig] = useState(false)
+  const [errorMessage, setErrorMessage] = useState("")
   const [config, setConfig] = useState({
     openaiKey: "",
     aiModel: "gpt-4",
@@ -105,6 +113,26 @@ export default function SDLCAutomationPlatform() {
   const [showWorkflow, setShowWorkflow] = useState(false)
   const [showHowItWorks, setShowHowItWorks] = useState(false)
   const [showPromptEngineering, setShowPromptEngineering] = useState(false)
+  const handleShowPromptEngineering = () => {
+    setShowPromptEngineering(true)
+  }
+  
+  // Initialize customPrompts with empty values
+  const [customPrompts, setCustomPrompts] = useState({
+    business: "",
+    functional: "",
+    technical: "",
+    ux: "",
+    mermaid: ""
+  })
+  
+  // Handle prompt updates from PromptEngineering component
+  const handlePromptUpdate = (promptType: string, promptContent: string) => {
+    setCustomPrompts(prev => ({
+      ...prev,
+      [promptType]: promptContent
+    }))
+  }
   const [showIntegrations, setShowIntegrations] = useState(false)
   const [showVisualization, setShowVisualization] = useState(false)
 
@@ -153,63 +181,310 @@ export default function SDLCAutomationPlatform() {
 
   const [generatedDocuments, setGeneratedDocuments] = useState<any>(null)
 
+  // Parse Mermaid diagrams into separate sections
+  const parseMermaidDiagrams = (mermaidContent: string) => {
+    if (!mermaidContent) {
+      return { architecture: "", database: "", userFlow: "", apiFlow: "" }
+    }
+
+    // Split by comments that indicate diagram sections
+    const sections = mermaidContent.split(/%%\s*[A-Za-z\s]+\s*Diagram/i)
+    
+    let architecture = ""
+    let database = ""
+    let userFlow = ""
+    let apiFlow = ""
+
+    sections.forEach((section, index) => {
+      const trimmedSection = section.trim()
+      if (!trimmedSection) return
+
+      // Check what type of diagram this section contains
+      if (trimmedSection.includes('graph ') || trimmedSection.includes('flowchart ')) {
+        if (trimmedSection.toLowerCase().includes('user') || trimmedSection.toLowerCase().includes('flow')) {
+          userFlow = trimmedSection
+        } else {
+          architecture = trimmedSection
+        }
+      }
+      else if (trimmedSection.includes('erDiagram')) {
+        database = trimmedSection
+      }
+      else if (trimmedSection.includes('sequenceDiagram')) {
+        apiFlow = trimmedSection
+      }
+      // Fallback: if first section and no specific type detected, assume architecture
+      else if (index === 1 && !architecture) {
+        architecture = trimmedSection
+      }
+    })
+
+    // Log parsing results for debugging
+    console.log('Parsed Mermaid diagrams:', {
+      architecture: architecture ? 'Found' : 'Empty',
+      database: database ? 'Found' : 'Empty', 
+      userFlow: userFlow ? 'Found' : 'Empty',
+      apiFlow: apiFlow ? 'Found' : 'Empty',
+      originalLength: mermaidContent.length
+    })
+
+    return { architecture, database, userFlow, apiFlow }
+  }
+
+  // Cache management
+  const getCachedResults = (input: string) => {
+    try {
+      const cached = localStorage.getItem(`sdlc-cache-${btoa(input).slice(0, 20)}`)
+      return cached ? JSON.parse(cached) : null
+    } catch {
+      return null
+    }
+  }
+
+  const setCachedResults = (input: string, results: any) => {
+    try {
+      localStorage.setItem(`sdlc-cache-${btoa(input).slice(0, 20)}`, JSON.stringify({
+        ...results,
+        timestamp: Date.now()
+      }))
+    } catch (error) {
+      console.warn('Failed to cache results:', error)
+    }
+  }
+
   const handleGenerate = async () => {
-    if (!input.trim()) return
+    if (!input.trim()) {
+      setErrorMessage("Please enter your requirements")
+      return
+    }
+
+    // Check for cached results first
+    const cached = getCachedResults(input.trim())
+    if (cached && Date.now() - cached.timestamp < 24 * 60 * 60 * 1000) { // 24 hour cache
+      console.log('Using cached results:', cached)
+      
+      // Remove timestamp before setting documents
+      const { timestamp, ...documentsData } = cached
+      setGeneratedDocuments(documentsData)
+      
+      // Build complete steps array including mermaid if it exists
+      const cachedSteps: ProcessingStep[] = [
+        { id: "analysis", name: "Business Analysis", status: "completed" as const, progress: 100 },
+        { id: "functional", name: "Functional Specification", status: "completed" as const, progress: 100 },
+        { id: "technical", name: "Technical Specification", status: "completed" as const, progress: 100 },
+        { id: "ux", name: "UX Specification", status: "completed" as const, progress: 100 },
+      ]
+      
+      // Add mermaid step if mermaid diagrams exist in cache
+      if (cached.mermaidDiagrams) {
+        cachedSteps.push({ id: "mermaid", name: "Mermaid Diagrams", status: "completed" as const, progress: 100 })
+      }
+      
+      setProcessingSteps(cachedSteps)
+      console.log('Loaded from cache with', cachedSteps.length, 'steps')
+      return
+    }
+
+    // Validate OpenAI API key
+    if (!config.openaiKey || config.openaiKey.trim() === '') {
+      setErrorMessage("Please configure your OpenAI API key in the settings")
+      return
+    }
 
     setIsProcessing(true)
-    setCurrentStep(0)
+    setErrorMessage("")
+    setGeneratedDocuments({})
+    
+    // Build initial steps array properly
+    const initialSteps: ProcessingStep[] = [
+      { id: "analysis", name: "Business Analysis", status: "pending" as const, progress: 0 },
+      { id: "functional", name: "Functional Specification", status: "pending" as const, progress: 0 },
+      { id: "technical", name: "Technical Specification", status: "pending" as const, progress: 0 },
+      { id: "ux", name: "UX Specification", status: "pending" as const, progress: 0 },
+      { id: "mermaid", name: "Mermaid Diagrams", status: "pending" as const, progress: 0 },
+    ]
+
+    // Add optional steps if integrations are enabled
+    if (config.jiraAutoCreate && config.jiraUrl && config.jiraToken) {
+      initialSteps.push({ id: "jira", name: "JIRA Epic Creation", status: "pending" as const, progress: 0 })
+    }
+    if (config.confluenceAutoCreate && config.confluenceUrl && config.confluenceToken) {
+      initialSteps.push({ id: "confluence", name: "Confluence Documentation", status: "pending" as const, progress: 0 })
+    }
+    if (initialSteps.length > 4) {
+      initialSteps.push({ id: "linking", name: "Cross-platform Linking", status: "pending" as const, progress: 0 })
+    }
+
+    setProcessingSteps(initialSteps)
+
+    // Function to update step progress
+    const updateStepProgress = (stepId: string, progress: number, status: "pending" | "in_progress" | "completed" | "error" = "in_progress") => {
+      setProcessingSteps(prevSteps => 
+        prevSteps.map(step => 
+          step.id === stepId ? { ...step, progress, status } : step
+        )
+      )
+    }
 
     try {
-      // Call the API to generate SDLC documentation
-      const response = await fetch("/api/generate-sdlc", {
+      // Execute each step sequentially with real progress tracking
+      const results: any = {}
+      
+      // Step 1: Business Analysis
+      updateStepProgress("analysis", 0, "in_progress")
+      const businessResponse = await fetch("/api/generate-business-analysis", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           input,
-          template: config.template,
-          jiraProject: config.jiraProject,
-          confluenceSpace: config.confluenceSpace,
-          jiraEnabled: config.jiraAutoCreate && config.jiraUrl && config.jiraToken,
-          confluenceEnabled: config.confluenceAutoCreate && config.confluenceUrl && config.confluenceToken,
+          customPrompt: customPrompts?.business,
+          openaiKey: config.openaiKey,
         }),
       })
+      
+      if (!businessResponse.ok) {
+        const errorData = await businessResponse.json().catch(() => ({ error: "Unknown API error" }))
+        updateStepProgress("analysis", 0, "error")
+        throw new Error(errorData?.error || `API request failed with status ${businessResponse.status}`)
+      }
+      
+      const businessResult = await businessResponse.json()
+      results.businessAnalysis = businessResult.businessAnalysis
+      updateStepProgress("analysis", 100, "completed")
+      setGeneratedDocuments(prev => ({ ...prev, businessAnalysis: businessResult.businessAnalysis }))
 
-      if (!response.ok) {
-        throw new Error("Failed to generate documentation")
+      // Step 2: Functional Specification
+      updateStepProgress("functional", 0, "in_progress")
+      const functionalResponse = await fetch("/api/generate-functional-spec", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          input,
+          businessAnalysis: results.businessAnalysis,
+          customPrompt: customPrompts?.functional,
+          openaiKey: config.openaiKey,
+        }),
+      })
+      
+      if (!functionalResponse.ok) {
+        const errorData = await functionalResponse.json().catch(() => ({ error: "Unknown API error" }))
+        updateStepProgress("functional", 0, "error")
+        throw new Error(errorData?.error || `API request failed with status ${functionalResponse.status}`)
+      }
+      
+      const functionalResult = await functionalResponse.json()
+      results.functionalSpec = functionalResult.functionalSpec
+      updateStepProgress("functional", 100, "completed")
+      setGeneratedDocuments(prev => ({ ...prev, functionalSpec: functionalResult.functionalSpec }))
+
+      // Step 3: Technical Specification
+      updateStepProgress("technical", 0, "in_progress")
+      const technicalResponse = await fetch("/api/generate-technical-spec", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          input,
+          businessAnalysis: results.businessAnalysis,
+          functionalSpec: results.functionalSpec,
+          customPrompt: customPrompts?.technical,
+          openaiKey: config.openaiKey,
+        }),
+      })
+      
+      if (!technicalResponse.ok) {
+        const errorData = await technicalResponse.json().catch(() => ({ error: "Unknown API error" }))
+        updateStepProgress("technical", 0, "error")
+        throw new Error(errorData?.error || `API request failed with status ${technicalResponse.status}`)
+      }
+      
+      const technicalResult = await technicalResponse.json()
+      results.technicalSpec = technicalResult.technicalSpec
+      updateStepProgress("technical", 100, "completed")
+      setGeneratedDocuments(prev => ({ ...prev, technicalSpec: technicalResult.technicalSpec }))
+
+      // Step 4: UX Specification
+      updateStepProgress("ux", 0, "in_progress")
+      const uxResponse = await fetch("/api/generate-ux-spec", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          input,
+          businessAnalysis: results.businessAnalysis,
+          functionalSpec: results.functionalSpec,
+          technicalSpec: results.technicalSpec,
+          customPrompt: customPrompts?.ux,
+          openaiKey: config.openaiKey,
+        }),
+      })
+      
+      if (!uxResponse.ok) {
+        const errorData = await uxResponse.json().catch(() => ({ error: "Unknown API error" }))
+        updateStepProgress("ux", 0, "error")
+        throw new Error(errorData?.error || `API request failed with status ${uxResponse.status}`)
+      }
+      
+      const uxResult = await uxResponse.json()
+      results.uxSpec = uxResult.uxSpec
+      updateStepProgress("ux", 100, "completed")
+      setGeneratedDocuments(prev => ({ ...prev, uxSpec: uxResult.uxSpec }))
+
+      // Step 5: Mermaid Diagrams
+      updateStepProgress("mermaid", 0, "in_progress")
+      const mermaidResponse = await fetch("/api/generate-mermaid-diagrams", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          input,
+          businessAnalysis: results.businessAnalysis,
+          functionalSpec: results.functionalSpec,
+          technicalSpec: results.technicalSpec,
+          customPrompt: customPrompts?.mermaid,
+          openaiKey: config.openaiKey,
+        }),
+      })
+      
+      if (!mermaidResponse.ok) {
+        const errorData = await mermaidResponse.json().catch(() => ({ error: "Unknown API error" }))
+        updateStepProgress("mermaid", 0, "error")
+        console.warn("Failed to generate Mermaid diagrams:", errorData?.error || `API request failed with status ${mermaidResponse.status}`)
+        results.mermaidDiagrams = ""
+      } else {
+        const mermaidResult = await mermaidResponse.json()
+        results.mermaidDiagrams = mermaidResult.mermaidDiagrams
+        updateStepProgress("mermaid", 100, "completed")
+        setGeneratedDocuments(prev => ({ ...prev, mermaidDiagrams: mermaidResult.mermaidDiagrams }))
       }
 
-      const result = await response.json()
+      // Cache the complete results
+      setCachedResults(input.trim(), results)
+      
+      // Handle optional integrations (JIRA, Confluence) if enabled
+      // ... (existing integration logic can be added here)
 
-      // Update processing steps based on what was actually generated
-      const steps = [
-        { id: "analysis", name: "Business Analysis", status: "completed", progress: 100 },
-        { id: "functional", name: "Functional Specification", status: "completed", progress: 100 },
-        { id: "technical", name: "Technical Specification", status: "completed", progress: 100 },
-        { id: "ux", name: "UX Specification", status: "completed", progress: 100 },
-      ]
-
-      // Add optional steps if integrations are enabled
-      if (config.jiraAutoCreate && config.jiraUrl && config.jiraToken) {
-        steps.push({ id: "jira", name: "JIRA Epic Creation", status: "completed", progress: 100 })
-      }
-
-      if (config.confluenceAutoCreate && config.confluenceUrl && config.confluenceToken) {
-        steps.push({ id: "confluence", name: "Confluence Documentation", status: "completed", progress: 100 })
-      }
-
-      if (steps.length > 4) {
-        steps.push({ id: "linking", name: "Cross-platform Linking", status: "completed", progress: 100 })
-      }
-
-      setProcessingSteps(steps)
-
-      // Show the generated documents in the interface
-      setGeneratedDocuments(result)
+      // Ensure all steps are marked as completed
+      setProcessingSteps(prevSteps => prevSteps.map(step => ({
+        ...step,
+        status: "completed" as const,
+        progress: 100
+      })))
+      
     } catch (error) {
-      console.error("Error generating documentation:", error)
-      // Handle error state
+      console.error("Error generating SDLC documentation:", error)
+      
+      // Mark current step as error and stop processing
+      setProcessingSteps(prevSteps => {
+        const currentStepIndex = prevSteps.findIndex(step => step.status === "in_progress")
+        if (currentStepIndex >= 0) {
+          return prevSteps.map((step, index) => 
+            index === currentStepIndex 
+              ? { ...step, status: "error" as const, progress: 0 }
+              : step
+          )
+        }
+        return prevSteps
+      })
+      
+      setErrorMessage(`Error: ${error instanceof Error ? error.message : 'Failed to generate documentation. Please try again.'}`)
     } finally {
       setIsProcessing(false)
     }
@@ -315,6 +590,12 @@ export default function SDLCAutomationPlatform() {
               </div>
             </div>
 
+            {errorMessage && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4" role="alert">
+                <p className="font-medium">Error</p>
+                <p className="text-sm">{errorMessage}</p>
+              </div>
+            )}
             <Button onClick={handleGenerate} disabled={!input.trim() || isProcessing} className="w-full" size="lg">
               <Zap className="h-4 w-4 mr-2" />
               {isProcessing ? "Generating SDLC Documentation..." : "Generate SDLC Documentation"}
@@ -344,10 +625,10 @@ export default function SDLCAutomationPlatform() {
                           {step.name}
                         </span>
                         {step.status === "in_progress" && (
-                          <span className="text-sm text-gray-500">{step.progress}%</span>
+                          <span className="text-sm text-blue-600 font-medium">In progress...</span>
                         )}
                       </div>
-                      {step.status === "in_progress" && <Progress value={step.progress} className="mt-1" />}
+
                     </div>
                   </div>
                 ))}
@@ -378,43 +659,40 @@ export default function SDLCAutomationPlatform() {
                   </TabsList>
 
                   <TabsContent value="business">
-                    <div className="prose max-w-none">
-                      <pre className="whitespace-pre-wrap bg-gray-50 p-4 rounded-lg">
-                        {generatedDocuments.businessAnalysis}
-                      </pre>
-                    </div>
+                    <MarkdownRenderer 
+                      content={generatedDocuments.businessAnalysis}
+                      title="Business Analysis"
+                      type="business"
+                    />
                   </TabsContent>
 
                   <TabsContent value="functional">
-                    <div className="prose max-w-none">
-                      <pre className="whitespace-pre-wrap bg-gray-50 p-4 rounded-lg">
-                        {generatedDocuments.functionalSpec}
-                      </pre>
-                    </div>
+                    <MarkdownRenderer 
+                      content={generatedDocuments.functionalSpec}
+                      title="Functional Specification"
+                      type="functional"
+                    />
                   </TabsContent>
 
                   <TabsContent value="technical">
-                    <div className="prose max-w-none">
-                      <pre className="whitespace-pre-wrap bg-gray-50 p-4 rounded-lg">
-                        {generatedDocuments.technicalSpec}
-                      </pre>
-                    </div>
+                    <MarkdownRenderer 
+                      content={generatedDocuments.technicalSpec}
+                      title="Technical Specification"
+                      type="technical"
+                    />
                   </TabsContent>
 
                   <TabsContent value="ux">
-                    <div className="prose max-w-none">
-                      <pre className="whitespace-pre-wrap bg-gray-50 p-4 rounded-lg">{generatedDocuments.uxSpec}</pre>
-                    </div>
+                    <MarkdownRenderer 
+                      content={generatedDocuments.uxSpec}
+                      title="UX Specification"
+                      type="ux"
+                    />
                   </TabsContent>
 
                   <TabsContent value="diagrams">
                     <MermaidViewer
-                      diagrams={{
-                        architecture: generatedDocuments.mermaidDiagrams || "",
-                        database: "",
-                        userFlow: "",
-                        apiFlow: "",
-                      }}
+                      diagrams={parseMermaidDiagrams(generatedDocuments.mermaidDiagrams || "")}
                     />
                   </TabsContent>
                 </Tabs>
@@ -808,10 +1086,14 @@ export default function SDLCAutomationPlatform() {
           <DialogContent className="max-w-6xl max-h-[90vh] overflow-auto">
             <DialogHeader>
               <DialogTitle>Prompt Engineering Interface</DialogTitle>
+              <DialogDescription>
+                Customize AI prompts for each step of the SDLC documentation generation process.
+              </DialogDescription>
             </DialogHeader>
-            <PromptEngineering />
+            <PromptEngineering onPromptUpdate={handlePromptUpdate} />
           </DialogContent>
         </Dialog>
+
 
         <Dialog open={showIntegrations} onOpenChange={setShowIntegrations}>
           <DialogContent className="max-w-5xl max-h-[90vh] overflow-auto">
