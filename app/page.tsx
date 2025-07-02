@@ -150,38 +150,43 @@ export default function SDLCAutomationPlatform() {
     { id: "linking", name: "Cross-platform Linking", status: "pending", progress: 0 },
   ])
 
-  const [recentProjects] = useState<ProjectResult[]>([
-    {
-      id: "1",
-      title: "User Authentication System",
-      status: "completed",
-      createdAt: "2024-01-15",
-      jiraEpic: "AUTH-123",
-      confluencePage: "https://company.atlassian.net/wiki/spaces/DEV/pages/123456",
-      documents: {
-        businessAnalysis: "Complete business analysis for user authentication...",
-        functionalSpec: "Functional requirements and user stories...",
-        technicalSpec: "Technical architecture and implementation details...",
-        uxSpec: "User experience design and wireframes...",
-        architecture: "System architecture diagrams and data flow...",
-      },
-    },
-    {
-      id: "2",
-      title: "Payment Gateway Integration",
-      status: "completed",
-      createdAt: "2024-01-14",
-      jiraEpic: "PAY-456",
-      confluencePage: "https://company.atlassian.net/wiki/spaces/DEV/pages/789012",
-      documents: {
-        businessAnalysis: "Payment system business requirements...",
-        functionalSpec: "Payment flow specifications...",
-        technicalSpec: "Integration technical details...",
-        uxSpec: "Payment UX design patterns...",
-        architecture: "Payment system architecture...",
-      },
-    },
-  ])
+  // Get all cached results from localStorage for Recent Projects display
+  const getCachedProjects = (): ProjectResult[] => {
+    const projects: ProjectResult[] = []
+    try {
+      // Iterate through localStorage to find cached SDLC results
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key?.startsWith('sdlc-cache-')) {
+          const cached = localStorage.getItem(key)
+          if (cached) {
+            const parsedCache = JSON.parse(cached)
+            // Only include recent cache (within 24 hours)
+            if (Date.now() - parsedCache.timestamp < 24 * 60 * 60 * 1000) {
+              projects.push({
+                id: key.replace('sdlc-cache-', ''),
+                title: parsedCache.businessAnalysis?.substring(0, 50) + '...' || 'SDLC Project',
+                status: 'completed',
+                createdAt: new Date(parsedCache.timestamp).toLocaleDateString(),
+                documents: {
+                  businessAnalysis: parsedCache.businessAnalysis || '',
+                  functionalSpec: parsedCache.functionalSpec || '',
+                  technicalSpec: parsedCache.technicalSpec || '',
+                  uxSpec: parsedCache.uxSpec || '',
+                  architecture: parsedCache.mermaidDiagrams || '',
+                }
+              })
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Error loading cached projects:', error)
+    }
+    return projects.slice(0, 5) // Limit to 5 most recent
+  }
+
+  const [recentProjects] = useState<ProjectResult[]>(getCachedProjects())
 
   const [generatedDocuments, setGeneratedDocuments] = useState<any>(null)
 
@@ -619,8 +624,8 @@ export default function SDLCAutomationPlatform() {
           </CardContent>
         </Card>
 
-        {/* Processing Status */}
-        {isProcessing && (
+        {/* Processing Status - Only show after generation is triggered */}
+        {(isProcessing || (generatedDocuments && Object.keys(generatedDocuments).length > 0)) && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -653,8 +658,8 @@ export default function SDLCAutomationPlatform() {
           </Card>
         )}
 
-        {/* Generated Documents Display */}
-        {generatedDocuments && (
+        {/* Generated Documents Display - Only show after generation is triggered */}
+        {(isProcessing || (generatedDocuments && Object.keys(generatedDocuments).length > 0)) && (
           <div className="space-y-6">
             {/* Document Tabs */}
             <Card>
@@ -665,13 +670,64 @@ export default function SDLCAutomationPlatform() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <Tabs defaultValue="business" className="space-y-4">
+                <Tabs defaultValue={
+                  generatedDocuments.businessAnalysis ? "business" :
+                  generatedDocuments.functionalSpec ? "functional" :
+                  generatedDocuments.technicalSpec ? "technical" :
+                  generatedDocuments.uxSpec ? "ux" :
+                  generatedDocuments.mermaidDiagrams ? "diagrams" :
+                  "business"
+                } className="space-y-4">
                   <TabsList className="grid w-full grid-cols-5">
-                    <TabsTrigger value="business">Business Analysis</TabsTrigger>
-                    <TabsTrigger value="functional">Functional Spec</TabsTrigger>
-                    <TabsTrigger value="technical">Technical Spec</TabsTrigger>
-                    <TabsTrigger value="ux">UX Specification</TabsTrigger>
-                    <TabsTrigger value="diagrams">Architecture</TabsTrigger>
+                    <TabsTrigger 
+                      value="business" 
+                      disabled={!generatedDocuments.businessAnalysis && !processingSteps.find(s => s.id === 'analysis')?.status.includes('completed')}
+                    >
+                      Business Analysis
+                      {processingSteps.find(s => s.id === 'analysis')?.status === 'completed' && (
+                        <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
+                      )}
+                    </TabsTrigger>
+                    
+                    <TabsTrigger 
+                      value="functional" 
+                      disabled={!generatedDocuments.functionalSpec && !processingSteps.find(s => s.id === 'functional')?.status.includes('completed')}
+                    >
+                      Functional Spec
+                      {processingSteps.find(s => s.id === 'functional')?.status === 'completed' && (
+                        <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
+                      )}
+                    </TabsTrigger>
+                    
+                    <TabsTrigger 
+                      value="technical" 
+                      disabled={!generatedDocuments.technicalSpec && !processingSteps.find(s => s.id === 'technical')?.status.includes('completed')}
+                    >
+                      Technical Spec
+                      {processingSteps.find(s => s.id === 'technical')?.status === 'completed' && (
+                        <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
+                      )}
+                    </TabsTrigger>
+                    
+                    <TabsTrigger 
+                      value="ux" 
+                      disabled={!generatedDocuments.uxSpec && !processingSteps.find(s => s.id === 'ux')?.status.includes('completed')}
+                    >
+                      UX Specification
+                      {processingSteps.find(s => s.id === 'ux')?.status === 'completed' && (
+                        <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
+                      )}
+                    </TabsTrigger>
+                    
+                    <TabsTrigger 
+                      value="diagrams" 
+                      disabled={!generatedDocuments.mermaidDiagrams && !processingSteps.find(s => s.id === 'mermaid')?.status.includes('completed')}
+                    >
+                      Architecture
+                      {processingSteps.find(s => s.id === 'mermaid')?.status === 'completed' && (
+                        <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
+                      )}
+                    </TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="business">
@@ -738,7 +794,8 @@ export default function SDLCAutomationPlatform() {
           </div>
         )}
 
-        {/* Recent Projects */}
+        {/* Recent Projects - Only show if there are cached projects */}
+        {recentProjects.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -814,6 +871,7 @@ export default function SDLCAutomationPlatform() {
             </div>
           </CardContent>
         </Card>
+        )}
 
         {/* Configuration Dialog */}
         <Dialog open={showConfig} onOpenChange={setShowConfig}>
