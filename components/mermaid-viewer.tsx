@@ -283,17 +283,47 @@ export function MermaidViewer({ diagrams, title = "System Architecture Diagrams"
         }
       } catch (error) {
         const diagramContent = currentDiagrams[activeTab as keyof typeof currentDiagrams]
-        console.error("Error rendering Mermaid diagram:", {
-          error,
-          message: error?.message || 'No error message',
-          stack: error?.stack || 'No stack trace',
-          activeTab,
-          diagramContent,
-          diagramLength: diagramContent?.length || 0,
-          isEmpty: !diagramContent || diagramContent.trim() === '',
-          firstChars: diagramContent?.substring(0, 100) || 'No content'
-        })
-        if (diagramRef.current) {
+        
+        // Debug the error object to understand what we're dealing with
+        const errorKeys = error ? Object.keys(error) : []
+        const hasContent = error && (
+          (error.message && error.message.trim() !== '') || 
+          (error.stack && error.stack.trim() !== '') ||
+          (error.name && error.name !== '') ||
+          (typeof error === 'string' && error.trim() !== '') ||
+          errorKeys.some(key => error[key] && error[key].toString().trim() !== '')
+        )
+        
+        // Check if this is a real error or just a false positive
+        const isRealError = hasContent
+        
+        // Only log and handle real errors, ignore empty error objects
+        if (isRealError) {
+          console.error("Mermaid rendering error:", {
+            error,
+            message: error?.message || 'No error message',
+            stack: error?.stack || 'No stack trace',
+            activeTab,
+            diagramLength: diagramContent?.length || 0,
+            isEmpty: !diagramContent || diagramContent.trim() === ''
+          })
+        } else {
+          // This is a false positive - check if diagram actually rendered
+          if (diagramRef.current && diagramRef.current.innerHTML.includes('svg')) {
+            console.log('✅ Mermaid diagram rendered successfully (ignored empty error object)')
+            return // Don't show error UI if diagram is actually rendered
+          } else {
+            // Log debug info for empty errors without content
+            console.log('🔍 Debug: Empty error object detected:', {
+              errorType: typeof error,
+              errorKeys: errorKeys,
+              hasKeys: errorKeys.length > 0,
+              diagramRendered: diagramRef.current?.innerHTML.includes('svg') || false
+            })
+          }
+        }
+        // Only show error UI for real errors
+        if (diagramRef.current && isRealError) {
           diagramRef.current.innerHTML = `
             <div class="flex items-center justify-center h-64 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
               <div class="text-center p-6">
@@ -304,7 +334,7 @@ export function MermaidViewer({ diagrams, title = "System Architecture Diagrams"
                 <p class="text-sm text-gray-500 mt-2">Please check the diagram syntax</p>
                 <details class="mt-4 text-left">
                   <summary class="text-sm text-gray-400 cursor-pointer hover:text-gray-600">Show error details</summary>
-                  <pre class="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded overflow-auto max-h-32">${error.message || 'Unknown error'}</pre>
+                  <pre class="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded overflow-auto max-h-32">${error?.message || 'Unknown error'}</pre>
                   <pre class="mt-2 text-xs text-gray-600 bg-gray-50 p-2 rounded overflow-auto max-h-32">Content: ${currentDiagrams[activeTab as keyof typeof currentDiagrams]?.substring(0, 200) || 'No content'}...</pre>
                 </details>
               </div>

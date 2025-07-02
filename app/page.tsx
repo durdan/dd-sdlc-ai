@@ -33,6 +33,8 @@ import {
   Info,
   Plug,
   Presentation,
+  Database,
+  RefreshCw,
 } from "lucide-react"
 import { HowItWorksVisualization } from "@/components/how-it-works-visualization"
 import { PromptEngineering } from "@/components/prompt-engineering"
@@ -113,6 +115,8 @@ export default function SDLCAutomationPlatform() {
   const [showWorkflow, setShowWorkflow] = useState(false)
   const [showHowItWorks, setShowHowItWorks] = useState(false)
   const [showPromptEngineering, setShowPromptEngineering] = useState(false)
+  const [showCacheDialog, setShowCacheDialog] = useState(false)
+  const [pendingCachedResults, setPendingCachedResults] = useState<any>(null)
   const handleShowPromptEngineering = () => {
     setShowPromptEngineering(true)
   }
@@ -261,29 +265,41 @@ export default function SDLCAutomationPlatform() {
     // Check for cached results first
     const cached = getCachedResults(input.trim())
     if (cached && Date.now() - cached.timestamp < 24 * 60 * 60 * 1000) { // 24 hour cache
-      console.log('Using cached results:', cached)
-      
-      // Remove timestamp before setting documents
-      const { timestamp, ...documentsData } = cached
-      setGeneratedDocuments(documentsData)
-      
-      // Build complete steps array including mermaid if it exists
-      const cachedSteps: ProcessingStep[] = [
-        { id: "analysis", name: "Business Analysis", status: "completed" as const, progress: 100 },
-        { id: "functional", name: "Functional Specification", status: "completed" as const, progress: 100 },
-        { id: "technical", name: "Technical Specification", status: "completed" as const, progress: 100 },
-        { id: "ux", name: "UX Specification", status: "completed" as const, progress: 100 },
-      ]
-      
-      // Add mermaid step if mermaid diagrams exist in cache
-      if (cached.mermaidDiagrams) {
-        cachedSteps.push({ id: "mermaid", name: "Mermaid Diagrams", status: "completed" as const, progress: 100 })
-      }
-      
-      setProcessingSteps(cachedSteps)
-      console.log('Loaded from cache with', cachedSteps.length, 'steps')
+      // Show dialog to let user choose between cached and fresh generation
+      setPendingCachedResults(cached)
+      setShowCacheDialog(true)
       return
     }
+
+    // No cache found, proceed with fresh generation
+    await generateFreshDocuments()
+  }
+
+  const loadCachedResults = (cached: any) => {
+    console.log('Loading cached results:', cached)
+    
+    // Remove timestamp before setting documents
+    const { timestamp, ...documentsData } = cached
+    setGeneratedDocuments(documentsData)
+    
+    // Build complete steps array including mermaid if it exists
+    const cachedSteps: ProcessingStep[] = [
+      { id: "analysis", name: "Business Analysis", status: "completed" as const, progress: 100 },
+      { id: "functional", name: "Functional Specification", status: "completed" as const, progress: 100 },
+      { id: "technical", name: "Technical Specification", status: "completed" as const, progress: 100 },
+      { id: "ux", name: "UX Specification", status: "completed" as const, progress: 100 },
+    ]
+    
+    // Add mermaid step if mermaid diagrams exist in cache
+    if (cached.mermaidDiagrams) {
+      cachedSteps.push({ id: "mermaid", name: "Mermaid Diagrams", status: "completed" as const, progress: 100 })
+    }
+    
+    setProcessingSteps(cachedSteps)
+    console.log('✅ Loaded from cache with', cachedSteps.length, 'steps')
+  }
+
+  const generateFreshDocuments = async () => {
 
     // Validate OpenAI API key
     if (!config.openaiKey || config.openaiKey.trim() === '') {
@@ -846,10 +862,17 @@ export default function SDLCAutomationPlatform() {
               <Separator />
 
               {/* JIRA Configuration */}
-              <div className="space-y-4">
+              <div className="space-y-4 relative">
                 <div className="flex items-center gap-2">
                   <ExternalLink className="h-4 w-4" />
                   <h3 className="font-semibold">JIRA Integration</h3>
+                  <Badge variant="secondary" className="ml-2">Coming Soon</Badge>
+                </div>
+                <div className="absolute inset-0 bg-gray-50/50 backdrop-blur-[0.5px] rounded-lg flex items-center justify-center z-10">
+                  <div className="text-center p-4">
+                    <p className="text-gray-600 font-medium">JIRA Integration</p>
+                    <p className="text-sm text-gray-500">Coming in the next update</p>
+                  </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -859,6 +882,7 @@ export default function SDLCAutomationPlatform() {
                       placeholder="https://company.atlassian.net"
                       value={config.jiraUrl}
                       onChange={(e) => setConfig((prev) => ({ ...prev, jiraUrl: e.target.value }))}
+                      disabled
                     />
                   </div>
                   <div>
@@ -868,6 +892,7 @@ export default function SDLCAutomationPlatform() {
                       placeholder="PROJ"
                       value={config.jiraProject}
                       onChange={(e) => setConfig((prev) => ({ ...prev, jiraProject: e.target.value }))}
+                      disabled
                     />
                   </div>
                   <div>
@@ -878,6 +903,7 @@ export default function SDLCAutomationPlatform() {
                       placeholder="user@company.com"
                       value={config.jiraEmail}
                       onChange={(e) => setConfig((prev) => ({ ...prev, jiraEmail: e.target.value }))}
+                      disabled
                     />
                   </div>
                   <div>
@@ -888,6 +914,7 @@ export default function SDLCAutomationPlatform() {
                       placeholder="Your JIRA API token"
                       value={config.jiraToken}
                       onChange={(e) => setConfig((prev) => ({ ...prev, jiraToken: e.target.value }))}
+                      disabled
                     />
                   </div>
                 </div>
@@ -908,10 +935,17 @@ export default function SDLCAutomationPlatform() {
               <Separator />
 
               {/* Confluence Configuration */}
-              <div className="space-y-4">
+              <div className="space-y-4 relative">
                 <div className="flex items-center gap-2">
                   <FileText className="h-4 w-4" />
                   <h3 className="font-semibold">Confluence Integration</h3>
+                  <Badge variant="secondary" className="ml-2">Coming Soon</Badge>
+                </div>
+                <div className="absolute inset-0 bg-gray-50/50 backdrop-blur-[0.5px] rounded-lg flex items-center justify-center z-10">
+                  <div className="text-center p-4">
+                    <p className="text-gray-600 font-medium">Confluence Integration</p>
+                    <p className="text-sm text-gray-500">Coming in the next update</p>
+                  </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -921,6 +955,7 @@ export default function SDLCAutomationPlatform() {
                       placeholder="https://company.atlassian.net/wiki"
                       value={config.confluenceUrl}
                       onChange={(e) => setConfig((prev) => ({ ...prev, confluenceUrl: e.target.value }))}
+                      disabled
                     />
                   </div>
                   <div>
@@ -930,6 +965,7 @@ export default function SDLCAutomationPlatform() {
                       placeholder="DEV"
                       value={config.confluenceSpace}
                       onChange={(e) => setConfig((prev) => ({ ...prev, confluenceSpace: e.target.value }))}
+                      disabled
                     />
                   </div>
                   <div>
@@ -940,6 +976,7 @@ export default function SDLCAutomationPlatform() {
                       placeholder="user@company.com"
                       value={config.confluenceEmail}
                       onChange={(e) => setConfig((prev) => ({ ...prev, confluenceEmail: e.target.value }))}
+                      disabled
                     />
                   </div>
                   <div>
@@ -950,6 +987,7 @@ export default function SDLCAutomationPlatform() {
                       placeholder="Your Confluence API token"
                       value={config.confluenceToken}
                       onChange={(e) => setConfig((prev) => ({ ...prev, confluenceToken: e.target.value }))}
+                      disabled
                     />
                   </div>
                 </div>
@@ -1110,6 +1148,71 @@ export default function SDLCAutomationPlatform() {
               <DialogTitle>Visualization & Presentation Hub</DialogTitle>
             </DialogHeader>
             <VisualizationHub />
+          </DialogContent>
+        </Dialog>
+
+        {/* Cache Choice Dialog */}
+        <Dialog open={showCacheDialog} onOpenChange={setShowCacheDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Database className="h-5 w-5 text-blue-500" />
+                Cached Results Found
+              </DialogTitle>
+              <DialogDescription>
+                We found previously generated documents for similar requirements. 
+                What would you like to do?
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border">
+                <Clock className="h-4 w-4 text-blue-500" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-blue-900">Cached Results Available</p>
+                  <p className="text-xs text-blue-600">
+                    Generated {pendingCachedResults ? 
+                      new Date(pendingCachedResults.timestamp).toLocaleString() : 'recently'
+                    }
+                  </p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 gap-3">
+                <Button 
+                  onClick={() => {
+                    if (pendingCachedResults) {
+                      loadCachedResults(pendingCachedResults)
+                    }
+                    setShowCacheDialog(false)
+                    setPendingCachedResults(null)
+                  }}
+                  className="flex items-center gap-2 justify-start h-auto p-4"
+                  variant="default"
+                >
+                  <Database className="h-4 w-4" />
+                  <div className="text-left">
+                    <div className="font-medium">Load Cached Results</div>
+                    <div className="text-xs opacity-80">Instant loading • No API costs</div>
+                  </div>
+                </Button>
+                
+                <Button 
+                  onClick={() => {
+                    setShowCacheDialog(false)
+                    setPendingCachedResults(null)
+                    generateFreshDocuments()
+                  }}
+                  className="flex items-center gap-2 justify-start h-auto p-4"
+                  variant="outline"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  <div className="text-left">
+                    <div className="font-medium">Generate New Documents</div>
+                    <div className="text-xs opacity-60">Fresh generation • Uses API credits</div>
+                  </div>
+                </Button>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
