@@ -398,6 +398,7 @@ CREATE TABLE oauth_providers (
 - Include a "Forgot Password" link.
 - Ensure the page is responsive and works well on various devices.
 `
+    }
   });
 
   return (
