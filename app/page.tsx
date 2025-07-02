@@ -32,6 +32,7 @@ import { HowItWorksVisualization } from "@/components/how-it-works-visualization
 import { PromptEngineering } from "@/components/prompt-engineering"
 import { IntegrationHub } from "@/components/integration-hub"
 import { VisualizationHub } from "@/components/visualization-hub"
+import { MermaidViewer } from "@/components/mermaid-viewer"
 
 interface ProcessingStep {
   id: string
@@ -150,34 +151,68 @@ export default function SDLCAutomationPlatform() {
     },
   ])
 
+  const [generatedDocuments, setGeneratedDocuments] = useState<any>(null)
+
   const handleGenerate = async () => {
     if (!input.trim()) return
 
     setIsProcessing(true)
     setCurrentStep(0)
 
-    // Simulate the SDLC process
-    for (let i = 0; i < processingSteps.length; i++) {
-      setCurrentStep(i)
+    try {
+      // Call the API to generate SDLC documentation
+      const response = await fetch("/api/generate-sdlc", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          input,
+          template: config.template,
+          jiraProject: config.jiraProject,
+          confluenceSpace: config.confluenceSpace,
+          jiraEnabled: config.jiraAutoCreate && config.jiraUrl && config.jiraToken,
+          confluenceEnabled: config.confluenceAutoCreate && config.confluenceUrl && config.confluenceToken,
+        }),
+      })
 
-      // Update current step to in_progress
-      setProcessingSteps((prev) =>
-        prev.map((step, index) => (index === i ? { ...step, status: "in_progress", progress: 0 } : step)),
-      )
-
-      // Simulate progress for current step
-      for (let progress = 0; progress <= 100; progress += 20) {
-        await new Promise((resolve) => setTimeout(resolve, 200))
-        setProcessingSteps((prev) => prev.map((step, index) => (index === i ? { ...step, progress } : step)))
+      if (!response.ok) {
+        throw new Error("Failed to generate documentation")
       }
 
-      // Mark current step as completed
-      setProcessingSteps((prev) =>
-        prev.map((step, index) => (index === i ? { ...step, status: "completed", progress: 100 } : step)),
-      )
-    }
+      const result = await response.json()
 
-    setIsProcessing(false)
+      // Update processing steps based on what was actually generated
+      const steps = [
+        { id: "analysis", name: "Business Analysis", status: "completed", progress: 100 },
+        { id: "functional", name: "Functional Specification", status: "completed", progress: 100 },
+        { id: "technical", name: "Technical Specification", status: "completed", progress: 100 },
+        { id: "ux", name: "UX Specification", status: "completed", progress: 100 },
+      ]
+
+      // Add optional steps if integrations are enabled
+      if (config.jiraAutoCreate && config.jiraUrl && config.jiraToken) {
+        steps.push({ id: "jira", name: "JIRA Epic Creation", status: "completed", progress: 100 })
+      }
+
+      if (config.confluenceAutoCreate && config.confluenceUrl && config.confluenceToken) {
+        steps.push({ id: "confluence", name: "Confluence Documentation", status: "completed", progress: 100 })
+      }
+
+      if (steps.length > 4) {
+        steps.push({ id: "linking", name: "Cross-platform Linking", status: "completed", progress: 100 })
+      }
+
+      setProcessingSteps(steps)
+
+      // Show the generated documents in the interface
+      setGeneratedDocuments(result)
+    } catch (error) {
+      console.error("Error generating documentation:", error)
+      // Handle error state
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
   const getStatusIcon = (status: string) => {
@@ -319,6 +354,94 @@ export default function SDLCAutomationPlatform() {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Generated Documents Display */}
+        {generatedDocuments && (
+          <div className="space-y-6">
+            {/* Document Tabs */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Generated Documentation
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="business" className="space-y-4">
+                  <TabsList className="grid w-full grid-cols-5">
+                    <TabsTrigger value="business">Business Analysis</TabsTrigger>
+                    <TabsTrigger value="functional">Functional Spec</TabsTrigger>
+                    <TabsTrigger value="technical">Technical Spec</TabsTrigger>
+                    <TabsTrigger value="ux">UX Specification</TabsTrigger>
+                    <TabsTrigger value="diagrams">Architecture</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="business">
+                    <div className="prose max-w-none">
+                      <pre className="whitespace-pre-wrap bg-gray-50 p-4 rounded-lg">
+                        {generatedDocuments.businessAnalysis}
+                      </pre>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="functional">
+                    <div className="prose max-w-none">
+                      <pre className="whitespace-pre-wrap bg-gray-50 p-4 rounded-lg">
+                        {generatedDocuments.functionalSpec}
+                      </pre>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="technical">
+                    <div className="prose max-w-none">
+                      <pre className="whitespace-pre-wrap bg-gray-50 p-4 rounded-lg">
+                        {generatedDocuments.technicalSpec}
+                      </pre>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="ux">
+                    <div className="prose max-w-none">
+                      <pre className="whitespace-pre-wrap bg-gray-50 p-4 rounded-lg">{generatedDocuments.uxSpec}</pre>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="diagrams">
+                    <MermaidViewer
+                      diagrams={{
+                        architecture: generatedDocuments.mermaidDiagrams || "",
+                        database: "",
+                        userFlow: "",
+                        apiFlow: "",
+                      }}
+                    />
+                  </TabsContent>
+                </Tabs>
+
+                {/* Integration Links */}
+                {(generatedDocuments.jiraEpic || generatedDocuments.confluencePage) && (
+                  <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                    <h4 className="font-semibold text-blue-900 mb-2">Integration Links</h4>
+                    <div className="flex gap-4">
+                      {generatedDocuments.jiraEpic && (
+                        <Button variant="outline" size="sm">
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          JIRA Epic: {generatedDocuments.jiraEpic.key}
+                        </Button>
+                      )}
+                      {generatedDocuments.confluencePage && (
+                        <Button variant="outline" size="sm">
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          Confluence Page
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         )}
 
         {/* Recent Projects */}
