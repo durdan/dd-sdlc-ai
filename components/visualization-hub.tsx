@@ -1,330 +1,365 @@
 "use client"
 
-import { useState, useRef } from "react"
+import type React from "react"
+
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
+import { Switch } from "@/components/ui/switch"
+import { Separator } from "@/components/ui/separator"
 import {
-  Presentation,
-  FileImage,
-  Printer,
-  Download,
-  Edit3,
-  GitBranch,
-  Eye,
-  Maximize,
   Play,
-  Pause,
+  Square,
   SkipBack,
   SkipForward,
-  Layout,
-  Share,
-  Zap,
+  Download,
+  FileText,
+  Presentation,
+  Edit3,
+  ZoomIn,
+  ZoomOut,
+  Grid,
   MousePointer,
-  Square,
   Circle,
+  SquareIcon,
+  Triangle,
   ArrowRight,
   Type,
-  ImageIcon,
-  RotateCcw,
   Save,
-  Grid,
+  Undo,
+  Redo,
+  Share,
+  Printer,
+  ImageIcon,
+  Maximize,
   Layers,
+  Move,
+  RotateCcw,
+  Copy,
+  Trash2,
 } from "lucide-react"
 
-interface DiagramNode {
+interface DiagramElement {
   id: string
-  type: "rectangle" | "circle" | "diamond" | "text"
+  type: "rectangle" | "circle" | "diamond" | "arrow" | "text"
   x: number
   y: number
   width: number
   height: number
-  text: string
-  color: string
-  borderColor: string
-  connections: string[]
+  fill: string
+  stroke: string
+  strokeWidth: number
+  text?: string
+  fontSize?: number
+  rotation?: number
 }
 
-interface PresentationSlide {
+interface SlideData {
   id: string
   title: string
   content: string
-  type: "overview" | "business" | "functional" | "technical" | "ux" | "architecture"
-  diagrams?: DiagramNode[]
-  notes?: string
+  type: "business" | "functional" | "technical" | "ux" | "architecture"
+  diagrams?: DiagramElement[]
 }
 
 export function VisualizationHub() {
   const [activeTab, setActiveTab] = useState("diagrams")
-  const [presentationMode, setPresentationMode] = useState(false)
-  const [currentSlide, setCurrentSlide] = useState(0)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [diagramMode, setDiagramMode] = useState<"view" | "edit">("view")
-  const [selectedTool, setSelectedTool] = useState<"select" | "rectangle" | "circle" | "arrow" | "text">("select")
-  const [zoomLevel, setZoomLevel] = useState([100])
-  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [selectedDiagram, setSelectedDiagram] = useState("architecture")
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [selectedTool, setSelectedTool] = useState("pointer")
+  const [zoom, setZoom] = useState(100)
+  const [showGrid, setShowGrid] = useState(true)
 
-  // Sample presentation slides
-  const [slides, setSlides] = useState<PresentationSlide[]>([
+  // Presentation state
+  const [isPresenting, setIsPresenting] = useState(false)
+  const [currentSlide, setCurrentSlide] = useState(0)
+  const [isAutoPlay, setIsAutoPlay] = useState(false)
+  const [slideInterval, setSlideInterval] = useState(5)
+  const [presentationTheme, setPresentationTheme] = useState("default")
+
+  // Canvas state
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [elements, setElements] = useState<DiagramElement[]>([])
+  const [selectedElement, setSelectedElement] = useState<string | null>(null)
+  const [isDrawing, setIsDrawing] = useState(false)
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+
+  // Sample slides data
+  const slides: SlideData[] = [
     {
       id: "1",
       title: "Project Overview",
       content: "User Authentication System - Complete SDLC Documentation",
-      type: "overview",
-      notes: "Introduction to the authentication system project and its scope",
+      type: "business",
     },
     {
       id: "2",
       title: "Business Analysis",
-      content: "Executive Summary, Objectives, and Success Criteria",
+      content: "Executive Summary, Objectives, and Stakeholder Analysis",
       type: "business",
-      notes: "Key business drivers and expected outcomes",
     },
     {
       id: "3",
-      title: "System Architecture",
-      content: "High-level system design and component interactions",
-      type: "architecture",
-      diagrams: [
-        {
-          id: "arch1",
-          type: "rectangle",
-          x: 100,
-          y: 100,
-          width: 120,
-          height: 60,
-          text: "Frontend",
-          color: "#3B82F6",
-          borderColor: "#1E40AF",
-          connections: ["arch2"],
-        },
-        {
-          id: "arch2",
-          type: "rectangle",
-          x: 300,
-          y: 100,
-          width: 120,
-          height: 60,
-          text: "API Gateway",
-          color: "#10B981",
-          borderColor: "#047857",
-          connections: ["arch3"],
-        },
-        {
-          id: "arch3",
-          type: "rectangle",
-          x: 500,
-          y: 100,
-          width: 120,
-          height: 60,
-          text: "Database",
-          color: "#F59E0B",
-          borderColor: "#D97706",
-          connections: [],
-        },
-      ],
-      notes: "Interactive architecture diagram showing system components",
+      title: "Functional Requirements",
+      content: "User Stories, Use Cases, and Acceptance Criteria",
+      type: "functional",
     },
     {
       id: "4",
-      title: "Technical Specifications",
-      content: "Technology stack, database design, and API specifications",
+      title: "System Architecture",
+      content: "Technical Architecture and Component Design",
       type: "technical",
-      notes: "Detailed technical implementation details",
     },
     {
       id: "5",
-      title: "User Experience Design",
-      content: "User personas, journey maps, and interface specifications",
+      title: "User Experience",
+      content: "UI/UX Design and User Journey Maps",
       type: "ux",
-      notes: "User-centered design approach and wireframes",
     },
-  ])
+  ]
 
-  // Sample diagram nodes for the diagram editor
-  const [diagramNodes, setDiagramNodes] = useState<DiagramNode[]>([
+  // Interactive diagram data
+  const diagramComponents = [
     {
-      id: "node1",
-      type: "rectangle",
-      x: 150,
+      id: "frontend",
+      name: "Frontend Application",
+      type: "component",
+      x: 100,
       y: 100,
-      width: 100,
-      height: 60,
-      text: "User Input",
-      color: "#EBF8FF",
-      borderColor: "#3182CE",
-      connections: ["node2"],
-    },
-    {
-      id: "node2",
-      type: "diamond",
-      x: 300,
-      y: 90,
-      width: 80,
+      width: 150,
       height: 80,
-      text: "Validate?",
-      color: "#F0FFF4",
-      borderColor: "#38A169",
-      connections: ["node3", "node4"],
+      description: "React-based user interface with authentication forms",
+      technologies: ["React", "TypeScript", "Tailwind CSS"],
     },
     {
-      id: "node3",
-      type: "rectangle",
-      x: 450,
-      y: 50,
-      width: 100,
-      height: 60,
-      text: "Process",
-      color: "#FFFBEB",
-      borderColor: "#D69E2E",
-      connections: [],
+      id: "api",
+      name: "Authentication API",
+      type: "service",
+      x: 350,
+      y: 100,
+      width: 150,
+      height: 80,
+      description: "RESTful API handling authentication logic",
+      technologies: ["Node.js", "Express", "JWT"],
     },
     {
-      id: "node4",
-      type: "rectangle",
-      x: 450,
-      y: 150,
-      width: 100,
-      height: 60,
-      text: "Error",
-      color: "#FED7D7",
-      borderColor: "#E53E3E",
-      connections: [],
+      id: "database",
+      name: "User Database",
+      type: "database",
+      x: 600,
+      y: 100,
+      width: 150,
+      height: 80,
+      description: "PostgreSQL database storing user credentials",
+      technologies: ["PostgreSQL", "Prisma ORM"],
     },
-  ])
+    {
+      id: "oauth",
+      name: "OAuth Provider",
+      type: "external",
+      x: 350,
+      y: 250,
+      width: 150,
+      height: 80,
+      description: "Third-party OAuth services (Google, Facebook)",
+      technologies: ["OAuth 2.0", "OpenID Connect"],
+    },
+  ]
 
-  // Presentation controls
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % slides.length)
-  }
-
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length)
-  }
-
-  const togglePlayback = () => {
-    setIsPlaying(!isPlaying)
-    if (!isPlaying) {
-      // Auto-advance slides every 10 seconds
-      const interval = setInterval(() => {
-        setCurrentSlide((prev) => {
-          const next = (prev + 1) % slides.length
-          if (next === 0) {
-            setIsPlaying(false)
-            clearInterval(interval)
-          }
-          return next
-        })
-      }, 10000)
+  // Auto-play effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout
+    if (isAutoPlay && isPresenting) {
+      interval = setInterval(() => {
+        setCurrentSlide((prev) => (prev + 1) % slides.length)
+      }, slideInterval * 1000)
     }
+    return () => clearInterval(interval)
+  }, [isAutoPlay, isPresenting, slideInterval, slides.length])
+
+  // Canvas drawing functions
+  const drawCanvas = () => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+    // Draw grid if enabled
+    if (showGrid) {
+      ctx.strokeStyle = "#e5e7eb"
+      ctx.lineWidth = 1
+      const gridSize = 20
+      for (let x = 0; x <= canvas.width; x += gridSize) {
+        ctx.beginPath()
+        ctx.moveTo(x, 0)
+        ctx.lineTo(x, canvas.height)
+        ctx.stroke()
+      }
+      for (let y = 0; y <= canvas.height; y += gridSize) {
+        ctx.beginPath()
+        ctx.moveTo(0, y)
+        ctx.lineTo(canvas.width, y)
+        ctx.stroke()
+      }
+    }
+
+    // Draw elements
+    elements.forEach((element) => {
+      ctx.save()
+      ctx.translate(element.x + element.width / 2, element.y + element.height / 2)
+      if (element.rotation) {
+        ctx.rotate((element.rotation * Math.PI) / 180)
+      }
+      ctx.translate(-element.width / 2, -element.height / 2)
+
+      ctx.fillStyle = element.fill
+      ctx.strokeStyle = element.stroke
+      ctx.lineWidth = element.strokeWidth
+
+      switch (element.type) {
+        case "rectangle":
+          ctx.fillRect(0, 0, element.width, element.height)
+          ctx.strokeRect(0, 0, element.width, element.height)
+          break
+        case "circle":
+          ctx.beginPath()
+          ctx.ellipse(element.width / 2, element.height / 2, element.width / 2, element.height / 2, 0, 0, 2 * Math.PI)
+          ctx.fill()
+          ctx.stroke()
+          break
+        case "diamond":
+          ctx.beginPath()
+          ctx.moveTo(element.width / 2, 0)
+          ctx.lineTo(element.width, element.height / 2)
+          ctx.lineTo(element.width / 2, element.height)
+          ctx.lineTo(0, element.height / 2)
+          ctx.closePath()
+          ctx.fill()
+          ctx.stroke()
+          break
+      }
+
+      if (element.text) {
+        ctx.fillStyle = "#000"
+        ctx.font = `${element.fontSize || 14}px Arial`
+        ctx.textAlign = "center"
+        ctx.textBaseline = "middle"
+        ctx.fillText(element.text, element.width / 2, element.height / 2)
+      }
+
+      // Highlight selected element
+      if (selectedElement === element.id) {
+        ctx.strokeStyle = "#3b82f6"
+        ctx.lineWidth = 2
+        ctx.setLineDash([5, 5])
+        ctx.strokeRect(-2, -2, element.width + 4, element.height + 4)
+        ctx.setLineDash([])
+      }
+
+      ctx.restore()
+    })
+  }
+
+  useEffect(() => {
+    drawCanvas()
+  }, [elements, selectedElement, showGrid])
+
+  // Handle canvas mouse events
+  const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isEditMode) return
+
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const rect = canvas.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+
+    if (selectedTool === "pointer") {
+      // Select element
+      const clickedElement = elements.find(
+        (el) => x >= el.x && x <= el.x + el.width && y >= el.y && y <= el.y + el.height,
+      )
+      setSelectedElement(clickedElement?.id || null)
+    } else {
+      // Start drawing new element
+      setIsDrawing(true)
+      setDragStart({ x, y })
+    }
+  }
+
+  const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDrawing || !isEditMode) return
+
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const rect = canvas.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+
+    // Update preview of element being drawn
+    // This would be implemented with a preview overlay
+  }
+
+  const handleCanvasMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDrawing || !isEditMode) return
+
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const rect = canvas.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+
+    const width = Math.abs(x - dragStart.x)
+    const height = Math.abs(y - dragStart.y)
+
+    if (width > 10 && height > 10) {
+      const newElement: DiagramElement = {
+        id: `element-${Date.now()}`,
+        type: selectedTool as DiagramElement["type"],
+        x: Math.min(dragStart.x, x),
+        y: Math.min(dragStart.y, y),
+        width,
+        height,
+        fill: "#e5e7eb",
+        stroke: "#374151",
+        strokeWidth: 2,
+        text: selectedTool === "text" ? "Text" : "",
+        fontSize: 14,
+      }
+
+      setElements((prev) => [...prev, newElement])
+      setSelectedElement(newElement.id)
+    }
+
+    setIsDrawing(false)
   }
 
   // Export functions
   const exportToPDF = () => {
     console.log("Exporting to PDF...")
-    // In a real implementation, this would use a library like jsPDF
+    // Implementation would use libraries like jsPDF
   }
 
-  const printDocument = () => {
-    window.print()
+  const exportToPowerPoint = () => {
+    console.log("Exporting to PowerPoint...")
+    // Implementation would generate PPTX file
   }
 
-  const exportDiagram = (format: "png" | "svg" | "pdf") => {
+  const exportDiagram = (format: string) => {
     console.log(`Exporting diagram as ${format}...`)
-    // Implementation would depend on the chosen diagramming library
-  }
-
-  // Diagram editor functions
-  const addNode = (type: DiagramNode["type"]) => {
-    const newNode: DiagramNode = {
-      id: `node_${Date.now()}`,
-      type,
-      x: 200 + Math.random() * 200,
-      y: 100 + Math.random() * 200,
-      width: type === "circle" ? 80 : 100,
-      height: type === "circle" ? 80 : 60,
-      text: "New Node",
-      color: "#F7FAFC",
-      borderColor: "#4A5568",
-      connections: [],
-    }
-    setDiagramNodes([...diagramNodes, newNode])
-  }
-
-  const renderDiagramNode = (node: DiagramNode) => {
-    const style = {
-      position: "absolute" as const,
-      left: node.x,
-      top: node.y,
-      width: node.width,
-      height: node.height,
-      backgroundColor: node.color,
-      border: `2px solid ${node.borderColor}`,
-      borderRadius: node.type === "circle" ? "50%" : node.type === "diamond" ? "0" : "8px",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontSize: "12px",
-      fontWeight: "500",
-      cursor: diagramMode === "edit" ? "move" : "pointer",
-      transform: node.type === "diamond" ? "rotate(45deg)" : "none",
-      zIndex: 10,
-    }
-
-    return (
-      <div key={node.id} style={style} onClick={() => console.log(`Clicked node: ${node.id}`)}>
-        <span style={{ transform: node.type === "diamond" ? "rotate(-45deg)" : "none" }}>{node.text}</span>
-      </div>
-    )
-  }
-
-  const renderConnections = () => {
-    return diagramNodes.map((node) =>
-      node.connections.map((targetId) => {
-        const target = diagramNodes.find((n) => n.id === targetId)
-        if (!target) return null
-
-        const startX = node.x + node.width / 2
-        const startY = node.y + node.height / 2
-        const endX = target.x + target.width / 2
-        const endY = target.y + target.height / 2
-
-        return (
-          <svg
-            key={`${node.id}-${targetId}`}
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: "100%",
-              pointerEvents: "none",
-              zIndex: 1,
-            }}
-          >
-            <defs>
-              <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" fill="#4A5568">
-                <polygon points="0 0, 10 3.5, 0 7" />
-              </marker>
-            </defs>
-            <line
-              x1={startX}
-              y1={startY}
-              x2={endX}
-              y2={endY}
-              stroke="#4A5568"
-              strokeWidth="2"
-              markerEnd="url(#arrowhead)"
-            />
-          </svg>
-        )
-      }),
-    )
+    // Implementation would export canvas as image
   }
 
   return (
@@ -332,511 +367,531 @@ export function VisualizationHub() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Visualization & Presentation</h2>
+          <h2 className="text-2xl font-bold">Visualization & Presentation Hub</h2>
           <p className="text-gray-600">Create interactive diagrams and professional presentations</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setPresentationMode(true)}>
-            <Presentation className="h-4 w-4 mr-2" />
-            Present
-          </Button>
           <Button variant="outline" size="sm" onClick={exportToPDF}>
             <Download className="h-4 w-4 mr-2" />
             Export PDF
           </Button>
-          <Button variant="outline" size="sm" onClick={printDocument}>
-            <Printer className="h-4 w-4 mr-2" />
-            Print
+          <Button variant="outline" size="sm" onClick={exportToPowerPoint}>
+            <Presentation className="h-4 w-4 mr-2" />
+            Export PPT
           </Button>
         </div>
       </div>
 
-      {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="diagrams">Interactive Diagrams</TabsTrigger>
           <TabsTrigger value="presentation">Presentation Mode</TabsTrigger>
           <TabsTrigger value="editor">Diagram Editor</TabsTrigger>
           <TabsTrigger value="mindmap">Mind Maps</TabsTrigger>
-          <TabsTrigger value="export">Export Options</TabsTrigger>
+          <TabsTrigger value="export">Export & Print</TabsTrigger>
         </TabsList>
 
         {/* Interactive Diagrams */}
         <TabsContent value="diagrams" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* System Architecture Diagram */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <GitBranch className="h-5 w-5" />
-                  System Architecture
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="relative h-64 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200 overflow-hidden">
-                  {slides[2].diagrams?.map(renderDiagramNode)}
-                  {renderConnections()}
-                  <div className="absolute bottom-2 right-2 flex gap-1">
-                    <Button size="sm" variant="ghost">
-                      <Eye className="h-4 w-4" />
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div className="lg:col-span-1">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Diagram Types</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {[
+                    { id: "architecture", name: "System Architecture", icon: <Layers className="h-4 w-4" /> },
+                    { id: "dataflow", name: "Data Flow", icon: <ArrowRight className="h-4 w-4" /> },
+                    { id: "userjourney", name: "User Journey", icon: <Move className="h-4 w-4" /> },
+                    { id: "component", name: "Component Diagram", icon: <Grid className="h-4 w-4" /> },
+                  ].map((diagram) => (
+                    <Button
+                      key={diagram.id}
+                      variant={selectedDiagram === diagram.id ? "default" : "ghost"}
+                      className="w-full justify-start"
+                      onClick={() => setSelectedDiagram(diagram.id)}
+                    >
+                      {diagram.icon}
+                      <span className="ml-2">{diagram.name}</span>
                     </Button>
-                    <Button size="sm" variant="ghost">
-                      <Maximize className="h-4 w-4" />
-                    </Button>
-                    <Button size="sm" variant="ghost">
-                      <Edit3 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                <div className="mt-4 flex items-center justify-between">
-                  <div className="flex gap-2">
-                    <Badge variant="outline">Interactive</Badge>
-                    <Badge variant="outline">Clickable</Badge>
-                  </div>
-                  <Button size="sm" variant="outline">
-                    <Share className="h-4 w-4 mr-2" />
-                    Share
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
 
-            {/* Data Flow Diagram */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Zap className="h-5 w-5" />
-                  Data Flow Diagram
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="relative h-64 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200 overflow-hidden">
-                  {diagramNodes.map(renderDiagramNode)}
-                  {renderConnections()}
-                  <div className="absolute bottom-2 right-2 flex gap-1">
-                    <Button size="sm" variant="ghost">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button size="sm" variant="ghost">
-                      <Maximize className="h-4 w-4" />
-                    </Button>
-                    <Button size="sm" variant="ghost">
-                      <Edit3 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                <div className="mt-4 flex items-center justify-between">
-                  <div className="flex gap-2">
-                    <Badge variant="outline">Editable</Badge>
-                    <Badge variant="outline">Auto-generated</Badge>
-                  </div>
-                  <Button size="sm" variant="outline">
-                    <Download className="h-4 w-4 mr-2" />
-                    Export
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="lg:col-span-3">
+              <Card>
+                <CardHeader>
+                  <CardTitle>System Architecture Diagram</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="relative">
+                    <svg width="100%" height="400" className="border rounded-lg bg-white">
+                      {/* Connections */}
+                      <defs>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                          <polygon points="0 0, 10 3.5, 0 7" fill="#6b7280" />
+                        </marker>
+                      </defs>
 
-            {/* User Journey Map */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MousePointer className="h-5 w-5" />
-                  User Journey Map
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-4xl mb-2">🗺️</div>
-                    <p className="text-gray-600">Interactive user journey visualization</p>
-                    <Button className="mt-2" size="sm">
-                      Generate Journey Map
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                      {/* Connection lines */}
+                      <line
+                        x1="250"
+                        y1="140"
+                        x2="350"
+                        y2="140"
+                        stroke="#6b7280"
+                        strokeWidth="2"
+                        markerEnd="url(#arrowhead)"
+                      />
+                      <line
+                        x1="500"
+                        y1="140"
+                        x2="600"
+                        y2="140"
+                        stroke="#6b7280"
+                        strokeWidth="2"
+                        markerEnd="url(#arrowhead)"
+                      />
+                      <line
+                        x1="425"
+                        y1="180"
+                        x2="425"
+                        y2="250"
+                        stroke="#6b7280"
+                        strokeWidth="2"
+                        markerEnd="url(#arrowhead)"
+                      />
 
-            {/* Component Hierarchy */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Layers className="h-5 w-5" />
-                  Component Hierarchy
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64 bg-gradient-to-br from-green-50 to-blue-50 rounded-lg border flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-4xl mb-2">🏗️</div>
-                    <p className="text-gray-600">System component breakdown</p>
-                    <Button className="mt-2" size="sm">
-                      View Hierarchy
-                    </Button>
+                      {/* Interactive components */}
+                      {diagramComponents.map((component) => (
+                        <g key={component.id}>
+                          <rect
+                            x={component.x}
+                            y={component.y}
+                            width={component.width}
+                            height={component.height}
+                            fill={
+                              component.type === "database"
+                                ? "#dbeafe"
+                                : component.type === "external"
+                                  ? "#fef3c7"
+                                  : "#f3f4f6"
+                            }
+                            stroke={
+                              component.type === "database"
+                                ? "#3b82f6"
+                                : component.type === "external"
+                                  ? "#f59e0b"
+                                  : "#6b7280"
+                            }
+                            strokeWidth="2"
+                            rx="8"
+                            className="cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => {
+                              // Show component details
+                              console.log("Component clicked:", component.name)
+                            }}
+                          />
+                          <text
+                            x={component.x + component.width / 2}
+                            y={component.y + component.height / 2}
+                            textAnchor="middle"
+                            dominantBaseline="middle"
+                            className="text-sm font-medium fill-gray-800 pointer-events-none"
+                          >
+                            {component.name}
+                          </text>
+                        </g>
+                      ))}
+                    </svg>
+
+                    {/* Component details panel */}
+                    <div className="absolute top-4 right-4 w-64">
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm">Component Details</CardTitle>
+                        </CardHeader>
+                        <CardContent className="text-xs space-y-2">
+                          <div>
+                            <strong>Frontend Application</strong>
+                            <p className="text-gray-600">React-based user interface with authentication forms</p>
+                          </div>
+                          <div>
+                            <strong>Technologies:</strong>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {["React", "TypeScript", "Tailwind CSS"].map((tech) => (
+                                <Badge key={tech} variant="secondary" className="text-xs">
+                                  {tech}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </TabsContent>
 
         {/* Presentation Mode */}
         <TabsContent value="presentation" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Presentation Builder</span>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={prevSlide}>
-                    <SkipBack className="h-4 w-4" />
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={togglePlayback}>
-                    {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={nextSlide}>
-                    <SkipForward className="h-4 w-4" />
-                  </Button>
-                  <Button size="sm" onClick={() => setPresentationMode(true)}>
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div className="lg:col-span-1">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Presentation Controls</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => setIsPresenting(!isPresenting)}
+                      className={isPresenting ? "bg-red-600 hover:bg-red-700" : ""}
+                    >
+                      {isPresenting ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setCurrentSlide(Math.max(0, currentSlide - 1))}>
+                      <SkipBack className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setCurrentSlide(Math.min(slides.length - 1, currentSlide + 1))}
+                    >
+                      <SkipForward className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm">Auto-play</Label>
+                      <Switch checked={isAutoPlay} onCheckedChange={setIsAutoPlay} />
+                    </div>
+                    {isAutoPlay && (
+                      <div>
+                        <Label className="text-sm">Interval (seconds)</Label>
+                        <Slider
+                          value={[slideInterval]}
+                          onValueChange={(value) => setSlideInterval(value[0])}
+                          min={3}
+                          max={30}
+                          step={1}
+                          className="mt-1"
+                        />
+                        <div className="text-xs text-gray-500 mt-1">{slideInterval}s per slide</div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label className="text-sm">Theme</Label>
+                    <Select value={presentationTheme} onValueChange={setPresentationTheme}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="default">Default</SelectItem>
+                        <SelectItem value="dark">Dark</SelectItem>
+                        <SelectItem value="corporate">Corporate</SelectItem>
+                        <SelectItem value="minimal">Minimal</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <Button className="w-full" onClick={() => setIsPresenting(true)}>
                     <Maximize className="h-4 w-4 mr-2" />
                     Full Screen
                   </Button>
-                </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {/* Slide Preview */}
-                <div className="aspect-video bg-white border-2 border-gray-200 rounded-lg p-8 shadow-sm">
-                  <div className="h-full flex flex-col">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-4">{slides[currentSlide]?.title}</h1>
-                    <div className="flex-1 flex items-center justify-center">
-                      {slides[currentSlide]?.type === "architecture" && slides[currentSlide]?.diagrams ? (
-                        <div className="relative w-full h-full">
-                          {slides[currentSlide].diagrams?.map(renderDiagramNode)}
-                          {renderConnections()}
-                        </div>
-                      ) : (
-                        <div className="text-center">
-                          <p className="text-xl text-gray-700 mb-4">{slides[currentSlide]?.content}</p>
-                          <div className="text-6xl mb-4">
-                            {slides[currentSlide]?.type === "business" && "📊"}
-                            {slides[currentSlide]?.type === "technical" && "⚙️"}
-                            {slides[currentSlide]?.type === "ux" && "🎨"}
-                            {slides[currentSlide]?.type === "overview" && "🚀"}
-                          </div>
-                        </div>
-                      )}
+                </CardContent>
+              </Card>
+
+              {/* Slide Thumbnails */}
+              <Card className="mt-4">
+                <CardHeader>
+                  <CardTitle className="text-sm">Slides</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {slides.map((slide, index) => (
+                    <div
+                      key={slide.id}
+                      className={`p-2 rounded cursor-pointer transition-colors ${
+                        currentSlide === index ? "bg-blue-100 border-blue-300" : "bg-gray-50 hover:bg-gray-100"
+                      }`}
+                      onClick={() => setCurrentSlide(index)}
+                    >
+                      <div className="text-xs font-medium">{slide.title}</div>
+                      <div className="text-xs text-gray-500 truncate">{slide.content}</div>
                     </div>
-                  </div>
-                </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
 
-                {/* Slide Navigation */}
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-600">
-                    Slide {currentSlide + 1} of {slides.length}
-                  </div>
-                  <div className="flex gap-1">
-                    {slides.map((_, index) => (
-                      <button
-                        key={index}
-                        className={`w-3 h-3 rounded-full ${index === currentSlide ? "bg-blue-500" : "bg-gray-300"}`}
-                        onClick={() => setCurrentSlide(index)}
-                      />
-                    ))}
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    {slides[currentSlide]?.notes && `Notes: ${slides[currentSlide].notes}`}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Slide Thumbnails */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Slide Overview</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                {slides.map((slide, index) => (
+            <div className="lg:col-span-3">
+              <Card className="h-[600px]">
+                <CardContent className="p-0 h-full">
                   <div
-                    key={slide.id}
-                    className={`aspect-video bg-white border-2 rounded cursor-pointer transition-all ${
-                      index === currentSlide ? "border-blue-500 shadow-md" : "border-gray-200 hover:border-gray-300"
+                    className={`h-full flex items-center justify-center text-center p-8 ${
+                      presentationTheme === "dark"
+                        ? "bg-gray-900 text-white"
+                        : presentationTheme === "corporate"
+                          ? "bg-blue-900 text-white"
+                          : "bg-white"
                     }`}
-                    onClick={() => setCurrentSlide(index)}
                   >
-                    <div className="p-2 h-full flex flex-col">
-                      <div className="text-xs font-medium truncate">{slide.title}</div>
-                      <div className="flex-1 flex items-center justify-center text-2xl">
-                        {slide.type === "business" && "📊"}
-                        {slide.type === "technical" && "⚙️"}
-                        {slide.type === "ux" && "🎨"}
-                        {slide.type === "overview" && "🚀"}
-                        {slide.type === "architecture" && "🏗️"}
+                    <div>
+                      <h1 className="text-4xl font-bold mb-4">{slides[currentSlide]?.title}</h1>
+                      <p className="text-xl text-gray-600">{slides[currentSlide]?.content}</p>
+                      <div className="mt-8">
+                        <Badge variant="outline" className="text-sm">
+                          Slide {currentSlide + 1} of {slides.length}
+                        </Badge>
                       </div>
-                      <div className="text-xs text-gray-500">{index + 1}</div>
                     </div>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </TabsContent>
 
         {/* Diagram Editor */}
         <TabsContent value="editor" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Diagram Editor</span>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant={diagramMode === "edit" ? "default" : "outline"}
-                    onClick={() => setDiagramMode(diagramMode === "edit" ? "view" : "edit")}
-                  >
-                    <Edit3 className="h-4 w-4 mr-2" />
-                    {diagramMode === "edit" ? "View Mode" : "Edit Mode"}
-                  </Button>
-                  <Button size="sm" variant="outline">
-                    <Save className="h-4 w-4 mr-2" />
-                    Save
-                  </Button>
-                </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-4">
-                {/* Toolbar */}
-                {diagramMode === "edit" && (
-                  <div className="w-48 space-y-4">
-                    <div>
-                      <h4 className="font-medium mb-2">Tools</h4>
-                      <div className="grid grid-cols-2 gap-2">
-                        <Button
-                          size="sm"
-                          variant={selectedTool === "select" ? "default" : "outline"}
-                          onClick={() => setSelectedTool("select")}
-                        >
-                          <MousePointer className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant={selectedTool === "rectangle" ? "default" : "outline"}
-                          onClick={() => setSelectedTool("rectangle")}
-                        >
-                          <Square className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant={selectedTool === "circle" ? "default" : "outline"}
-                          onClick={() => setSelectedTool("circle")}
-                        >
-                          <Circle className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant={selectedTool === "arrow" ? "default" : "outline"}
-                          onClick={() => setSelectedTool("arrow")}
-                        >
-                          <ArrowRight className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant={selectedTool === "text" ? "default" : "outline"}
-                          onClick={() => setSelectedTool("text")}
-                        >
-                          <Type className="h-4 w-4" />
-                        </Button>
-                        <Button size="sm" variant="outline">
-                          <ImageIcon className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            <div className="lg:col-span-1">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">Tools</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex items-center justify-between mb-4">
+                    <Label className="text-sm">Edit Mode</Label>
+                    <Switch checked={isEditMode} onCheckedChange={setIsEditMode} />
+                  </div>
 
-                    <Separator />
+                  {[
+                    { id: "pointer", name: "Select", icon: <MousePointer className="h-4 w-4" /> },
+                    { id: "rectangle", name: "Rectangle", icon: <SquareIcon className="h-4 w-4" /> },
+                    { id: "circle", name: "Circle", icon: <Circle className="h-4 w-4" /> },
+                    { id: "diamond", name: "Diamond", icon: <Triangle className="h-4 w-4" /> },
+                    { id: "arrow", name: "Arrow", icon: <ArrowRight className="h-4 w-4" /> },
+                    { id: "text", name: "Text", icon: <Type className="h-4 w-4" /> },
+                  ].map((tool) => (
+                    <Button
+                      key={tool.id}
+                      variant={selectedTool === tool.id ? "default" : "ghost"}
+                      size="sm"
+                      className="w-full justify-start"
+                      onClick={() => setSelectedTool(tool.id)}
+                      disabled={!isEditMode}
+                    >
+                      {tool.icon}
+                      <span className="ml-2">{tool.name}</span>
+                    </Button>
+                  ))}
 
-                    <div>
-                      <h4 className="font-medium mb-2">Quick Add</h4>
-                      <div className="space-y-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="w-full bg-transparent"
-                          onClick={() => addNode("rectangle")}
-                        >
-                          Add Rectangle
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="w-full bg-transparent"
-                          onClick={() => addNode("circle")}
-                        >
-                          Add Circle
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="w-full bg-transparent"
-                          onClick={() => addNode("diamond")}
-                        >
-                          Add Diamond
-                        </Button>
-                      </div>
-                    </div>
+                  <Separator />
 
-                    <Separator />
-
-                    <div>
-                      <h4 className="font-medium mb-2">Zoom</h4>
-                      <div className="space-y-2">
-                        <Slider
-                          value={zoomLevel}
-                          onValueChange={setZoomLevel}
-                          max={200}
-                          min={25}
-                          step={25}
-                          className="w-full"
-                        />
-                        <div className="text-sm text-gray-600 text-center">{zoomLevel[0]}%</div>
-                      </div>
-                    </div>
-
-                    <Separator />
-
-                    <div>
-                      <h4 className="font-medium mb-2">Actions</h4>
-                      <div className="space-y-2">
-                        <Button size="sm" variant="outline" className="w-full bg-transparent">
-                          <RotateCcw className="h-4 w-4 mr-2" />
-                          Undo
-                        </Button>
-                        <Button size="sm" variant="outline" className="w-full bg-transparent">
-                          <Grid className="h-4 w-4 mr-2" />
-                          Grid
-                        </Button>
-                      </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm">Zoom</Label>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="outline" onClick={() => setZoom(Math.max(25, zoom - 25))}>
+                        <ZoomOut className="h-3 w-3" />
+                      </Button>
+                      <span className="text-sm flex-1 text-center">{zoom}%</span>
+                      <Button size="sm" variant="outline" onClick={() => setZoom(Math.min(200, zoom + 25))}>
+                        <ZoomIn className="h-3 w-3" />
+                      </Button>
                     </div>
                   </div>
-                )}
 
-                {/* Canvas */}
-                <div className="flex-1">
-                  <div
-                    className="relative h-96 bg-white border-2 border-gray-200 rounded-lg overflow-hidden"
-                    style={{ transform: `scale(${zoomLevel[0] / 100})`, transformOrigin: "top left" }}
-                  >
-                    {diagramNodes.map(renderDiagramNode)}
-                    {renderConnections()}
-                    {diagramMode === "edit" && (
-                      <div className="absolute top-2 left-2 text-xs text-gray-500 bg-white px-2 py-1 rounded">
-                        {selectedTool === "select" && "Select and move objects"}
-                        {selectedTool === "rectangle" && "Click to add rectangle"}
-                        {selectedTool === "circle" && "Click to add circle"}
-                        {selectedTool === "arrow" && "Click and drag to connect"}
-                        {selectedTool === "text" && "Click to add text"}
-                      </div>
-                    )}
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm">Grid</Label>
+                    <Switch checked={showGrid} onCheckedChange={setShowGrid} />
                   </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+
+                  <Separator />
+
+                  <div className="space-y-2">
+                    <Button size="sm" variant="outline" className="w-full bg-transparent">
+                      <Undo className="h-3 w-3 mr-2" />
+                      Undo
+                    </Button>
+                    <Button size="sm" variant="outline" className="w-full bg-transparent">
+                      <Redo className="h-3 w-3 mr-2" />
+                      Redo
+                    </Button>
+                    <Button size="sm" variant="outline" className="w-full bg-transparent">
+                      <Save className="h-3 w-3 mr-2" />
+                      Save
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Properties Panel */}
+              {selectedElement && (
+                <Card className="mt-4">
+                  <CardHeader>
+                    <CardTitle className="text-sm">Properties</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div>
+                      <Label className="text-xs">Fill Color</Label>
+                      <div className="flex gap-2 mt-1">
+                        {["#e5e7eb", "#dbeafe", "#fef3c7", "#dcfce7", "#fce7f3"].map((color) => (
+                          <div
+                            key={color}
+                            className="w-6 h-6 rounded cursor-pointer border-2 border-gray-300"
+                            style={{ backgroundColor: color }}
+                            onClick={() => {
+                              setElements((prev) =>
+                                prev.map((el) => (el.id === selectedElement ? { ...el, fill: color } : el)),
+                              )
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Stroke Color</Label>
+                      <div className="flex gap-2 mt-1">
+                        {["#374151", "#3b82f6", "#f59e0b", "#10b981", "#ec4899"].map((color) => (
+                          <div
+                            key={color}
+                            className="w-6 h-6 rounded cursor-pointer border-2 border-gray-300"
+                            style={{ backgroundColor: color }}
+                            onClick={() => {
+                              setElements((prev) =>
+                                prev.map((el) => (el.id === selectedElement ? { ...el, stroke: color } : el)),
+                              )
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Actions</Label>
+                      <div className="flex gap-1 mt-1">
+                        <Button size="sm" variant="outline" className="flex-1 bg-transparent">
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                        <Button size="sm" variant="outline" className="flex-1 bg-transparent">
+                          <RotateCcw className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 bg-transparent"
+                          onClick={() => {
+                            setElements((prev) => prev.filter((el) => el.id !== selectedElement))
+                            setSelectedElement(null)
+                          }}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            <div className="lg:col-span-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>Diagram Canvas</span>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={() => exportDiagram("png")}>
+                        <ImageIcon className="h-4 w-4 mr-2" />
+                        Export PNG
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => exportDiagram("svg")}>
+                        <FileText className="h-4 w-4 mr-2" />
+                        Export SVG
+                      </Button>
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="border rounded-lg overflow-hidden" style={{ transform: `scale(${zoom / 100})` }}>
+                    <canvas
+                      ref={canvasRef}
+                      width={800}
+                      height={600}
+                      className="cursor-crosshair bg-white"
+                      onMouseDown={handleCanvasMouseDown}
+                      onMouseMove={handleCanvasMouseMove}
+                      onMouseUp={handleCanvasMouseUp}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </TabsContent>
 
         {/* Mind Maps */}
         <TabsContent value="mindmap" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <GitBranch className="h-5 w-5" />
-                Requirements Mind Map
-              </CardTitle>
+              <CardTitle>Requirements Mind Map</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-96 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border flex items-center justify-center">
+              <div className="h-[500px] border rounded-lg bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
-                  <div className="text-6xl mb-4">🧠</div>
-                  <h3 className="text-xl font-semibold mb-2">Visual Requirements Mapping</h3>
-                  <p className="text-gray-600 mb-4">Transform your requirements into interactive mind maps</p>
+                  <div className="text-lg font-semibold mb-2">Interactive Mind Map</div>
+                  <p className="text-gray-600 mb-4">Visual representation of project requirements and dependencies</p>
                   <Button>
-                    <Zap className="h-4 w-4 mr-2" />
-                    Generate Mind Map
+                    <Edit3 className="h-4 w-4 mr-2" />
+                    Create Mind Map
                   </Button>
                 </div>
               </div>
             </CardContent>
           </Card>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Business Requirements Map</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-48 bg-blue-50 rounded border flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-3xl mb-2">📋</div>
-                    <p className="text-sm text-gray-600">Business objectives and requirements</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Technical Dependencies Map</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-48 bg-green-50 rounded border flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-3xl mb-2">🔧</div>
-                    <p className="text-sm text-gray-600">Technical components and dependencies</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
         </TabsContent>
 
-        {/* Export Options */}
+        {/* Export & Print */}
         <TabsContent value="export" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* PDF Export */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <FileImage className="h-5 w-5" />
+                  <FileText className="h-5 w-5" />
                   PDF Export
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-sm text-gray-600">Export complete documentation as high-quality PDF</p>
-                <div className="space-y-2">
-                  <Select defaultValue="complete">
-                    <SelectTrigger>
+                <div>
+                  <Label>Page Size</Label>
+                  <Select defaultValue="a4">
+                    <SelectTrigger className="mt-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="complete">Complete Documentation</SelectItem>
-                      <SelectItem value="business">Business Analysis Only</SelectItem>
-                      <SelectItem value="technical">Technical Specs Only</SelectItem>
-                      <SelectItem value="diagrams">Diagrams Only</SelectItem>
+                      <SelectItem value="a4">A4</SelectItem>
+                      <SelectItem value="letter">Letter</SelectItem>
+                      <SelectItem value="legal">Legal</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Select defaultValue="a4">
-                    <SelectTrigger>
+                </div>
+                <div>
+                  <Label>Quality</Label>
+                  <Select defaultValue="high">
+                    <SelectTrigger className="mt-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="a4">A4 Format</SelectItem>
-                      <SelectItem value="letter">Letter Format</SelectItem>
-                      <SelectItem value="legal">Legal Format</SelectItem>
+                      <SelectItem value="low">Low (Fast)</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High (Best)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -847,191 +902,108 @@ export function VisualizationHub() {
               </CardContent>
             </Card>
 
-            {/* Print Optimization */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Printer className="h-5 w-5" />
-                  Print Optimization
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-gray-600">Professional document printing with optimized layouts</p>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Include diagrams</span>
-                    <input type="checkbox" defaultChecked />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Page numbers</span>
-                    <input type="checkbox" defaultChecked />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Table of contents</span>
-                    <input type="checkbox" defaultChecked />
-                  </div>
-                </div>
-                <Button className="w-full" onClick={printDocument}>
-                  <Printer className="h-4 w-4 mr-2" />
-                  Print Document
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Diagram Export */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ImageIcon className="h-5 w-5" />
-                  Diagram Export
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-gray-600">Export diagrams in various formats</p>
-                <div className="space-y-2">
-                  <Button variant="outline" className="w-full bg-transparent" onClick={() => exportDiagram("png")}>
-                    Export as PNG
-                  </Button>
-                  <Button variant="outline" className="w-full bg-transparent" onClick={() => exportDiagram("svg")}>
-                    Export as SVG
-                  </Button>
-                  <Button variant="outline" className="w-full bg-transparent" onClick={() => exportDiagram("pdf")}>
-                    Export as PDF
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Presentation Export */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Presentation className="h-5 w-5" />
-                  Presentation Export
+                  PowerPoint Export
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-sm text-gray-600">Export as PowerPoint or Google Slides</p>
-                <div className="space-y-2">
-                  <Button variant="outline" className="w-full bg-transparent">
-                    Export to PowerPoint
-                  </Button>
-                  <Button variant="outline" className="w-full bg-transparent">
-                    Export to Google Slides
-                  </Button>
-                  <Button variant="outline" className="w-full bg-transparent">
-                    Generate Slide Deck
-                  </Button>
+                <div>
+                  <Label>Template</Label>
+                  <Select defaultValue="corporate">
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="corporate">Corporate</SelectItem>
+                      <SelectItem value="minimal">Minimal</SelectItem>
+                      <SelectItem value="creative">Creative</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" id="include-notes" className="rounded" />
+                  <Label htmlFor="include-notes" className="text-sm">
+                    Include speaker notes
+                  </Label>
+                </div>
+                <Button className="w-full" onClick={exportToPowerPoint}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export PPTX
+                </Button>
               </CardContent>
             </Card>
 
-            {/* Sharing Options */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Share className="h-5 w-5" />
-                  Sharing & Collaboration
+                  <Printer className="h-5 w-5" />
+                  Print Options
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-sm text-gray-600">Share visualizations with your team</p>
-                <div className="space-y-2">
-                  <Button variant="outline" className="w-full bg-transparent">
-                    Generate Share Link
-                  </Button>
-                  <Button variant="outline" className="w-full bg-transparent">
-                    Embed Code
-                  </Button>
-                  <Button variant="outline" className="w-full bg-transparent">
-                    Team Collaboration
-                  </Button>
+                <div>
+                  <Label>Layout</Label>
+                  <Select defaultValue="portrait">
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="portrait">Portrait</SelectItem>
+                      <SelectItem value="landscape">Landscape</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Custom Templates */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Layout className="h-5 w-5" />
-                  Custom Templates
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-gray-600">Create and manage presentation templates</p>
-                <div className="space-y-2">
-                  <Button variant="outline" className="w-full bg-transparent">
-                    Create Template
-                  </Button>
-                  <Button variant="outline" className="w-full bg-transparent">
-                    Manage Templates
-                  </Button>
-                  <Button variant="outline" className="w-full bg-transparent">
-                    Import Template
-                  </Button>
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" id="print-diagrams" className="rounded" defaultChecked />
+                  <Label htmlFor="print-diagrams" className="text-sm">
+                    Include diagrams
+                  </Label>
                 </div>
+                <Button className="w-full" onClick={() => window.print()}>
+                  <Printer className="h-4 w-4 mr-2" />
+                  Print
+                </Button>
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
-      </Tabs>
 
-      {/* Full Screen Presentation Modal */}
-      <Dialog open={presentationMode} onOpenChange={setPresentationMode}>
-        <DialogContent className="max-w-full max-h-full w-screen h-screen p-0 bg-black">
-          <div className="relative w-full h-full flex items-center justify-center">
-            {/* Slide Content */}
-            <div className="w-full max-w-6xl aspect-video bg-white rounded-lg p-12 mx-8">
-              <div className="h-full flex flex-col">
-                <h1 className="text-5xl font-bold text-gray-900 mb-8">{slides[currentSlide]?.title}</h1>
-                <div className="flex-1 flex items-center justify-center">
-                  {slides[currentSlide]?.type === "architecture" && slides[currentSlide]?.diagrams ? (
-                    <div className="relative w-full h-full">
-                      {slides[currentSlide].diagrams?.map(renderDiagramNode)}
-                      {renderConnections()}
-                    </div>
-                  ) : (
-                    <div className="text-center">
-                      <p className="text-3xl text-gray-700 mb-8">{slides[currentSlide]?.content}</p>
-                      <div className="text-8xl">
-                        {slides[currentSlide]?.type === "business" && "📊"}
-                        {slides[currentSlide]?.type === "technical" && "⚙️"}
-                        {slides[currentSlide]?.type === "ux" && "🎨"}
-                        {slides[currentSlide]?.type === "overview" && "🚀"}
+          {/* Export History */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Export History</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {[
+                  { name: "User Authentication System.pdf", date: "2024-01-15 14:30", size: "2.4 MB" },
+                  { name: "System Architecture.pptx", date: "2024-01-15 14:25", size: "5.1 MB" },
+                  { name: "Requirements Diagram.png", date: "2024-01-15 14:20", size: "856 KB" },
+                ].map((file, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <div className="font-medium text-sm">{file.name}</div>
+                      <div className="text-xs text-gray-500">
+                        {file.date} • {file.size}
                       </div>
                     </div>
-                  )}
-                </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="ghost">
+                        <Download className="h-3 w-3" />
+                      </Button>
+                      <Button size="sm" variant="ghost">
+                        <Share className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
-
-            {/* Navigation Controls */}
-            <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-full px-6 py-3">
-              <Button size="sm" variant="ghost" className="text-white hover:bg-white/20" onClick={prevSlide}>
-                <SkipBack className="h-4 w-4" />
-              </Button>
-              <Button size="sm" variant="ghost" className="text-white hover:bg-white/20" onClick={togglePlayback}>
-                {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-              </Button>
-              <Button size="sm" variant="ghost" className="text-white hover:bg-white/20" onClick={nextSlide}>
-                <SkipForward className="h-4 w-4" />
-              </Button>
-              <div className="text-white text-sm mx-4">
-                {currentSlide + 1} / {slides.length}
-              </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="text-white hover:bg-white/20"
-                onClick={() => setPresentationMode(false)}
-              >
-                Exit
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

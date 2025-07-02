@@ -11,8 +11,9 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Separator } from "@/components/ui/separator"
 import {
   Settings,
   FileText,
@@ -64,7 +65,6 @@ interface WorkflowVisualizationProps {
 const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({ currentStep, processingSteps }) => {
   return (
     <div>
-      {/* Placeholder for Workflow Visualization - Replace with actual implementation */}
       <p>Current Step: {currentStep}</p>
       <ul>
         {processingSteps.map((step) => (
@@ -84,9 +84,21 @@ export default function SDLCAutomationPlatform() {
   const [showConfig, setShowConfig] = useState(false)
   const [config, setConfig] = useState({
     openaiKey: "",
+    aiModel: "gpt-4",
+    jiraUrl: "",
     jiraProject: "",
+    jiraEmail: "",
+    jiraToken: "",
+    jiraAutoCreate: true,
+    confluenceUrl: "",
     confluenceSpace: "",
+    confluenceEmail: "",
+    confluenceToken: "",
+    confluenceAutoCreate: true,
     template: "default",
+    outputFormat: "markdown",
+    emailNotifications: true,
+    slackNotifications: false,
   })
 
   const [showWorkflow, setShowWorkflow] = useState(false)
@@ -181,6 +193,19 @@ export default function SDLCAutomationPlatform() {
     }
   }
 
+  const handleSaveConfig = () => {
+    console.log("Saving configuration:", config)
+    // Here you would save to localStorage or send to API
+    localStorage.setItem("sdlc-config", JSON.stringify(config))
+    setShowConfig(false)
+  }
+
+  const handleTestConnections = () => {
+    console.log("Testing connections...")
+    // Here you would test JIRA and Confluence connections
+    alert("Testing connections... (This would test your API credentials)")
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -191,69 +216,10 @@ export default function SDLCAutomationPlatform() {
             <p className="text-gray-600">Transform ideas into complete project documentation with AI</p>
           </div>
           <div className="flex gap-2">
-            <Dialog open={showConfig} onOpenChange={setShowConfig}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Configuration
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Platform Configuration</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="openai-key">OpenAI API Key</Label>
-                    <Input
-                      id="openai-key"
-                      type="password"
-                      placeholder="sk-..."
-                      value={config.openaiKey}
-                      onChange={(e) => setConfig((prev) => ({ ...prev, openaiKey: e.target.value }))}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="jira-project">JIRA Project Key</Label>
-                    <Input
-                      id="jira-project"
-                      placeholder="PROJ"
-                      value={config.jiraProject}
-                      onChange={(e) => setConfig((prev) => ({ ...prev, jiraProject: e.target.value }))}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="confluence-space">Confluence Space</Label>
-                    <Input
-                      id="confluence-space"
-                      placeholder="DEV"
-                      value={config.confluenceSpace}
-                      onChange={(e) => setConfig((prev) => ({ ...prev, confluenceSpace: e.target.value }))}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="template">Template</Label>
-                    <Select
-                      value={config.template}
-                      onValueChange={(value) => setConfig((prev) => ({ ...prev, template: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="default">Default SDLC</SelectItem>
-                        <SelectItem value="agile">Agile Development</SelectItem>
-                        <SelectItem value="bug-fix">Bug Fix Template</SelectItem>
-                        <SelectItem value="feature">Feature Development</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button onClick={() => setShowConfig(false)} className="w-full">
-                    Save Configuration
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <Button variant="outline" size="sm" onClick={() => setShowConfig(true)}>
+              <Settings className="h-4 w-4 mr-2" />
+              Configuration
+            </Button>
 
             <Button variant="outline" size="sm" onClick={() => setShowIntegrations(true)}>
               <Plug className="h-4 w-4 mr-2" />
@@ -432,7 +398,271 @@ export default function SDLCAutomationPlatform() {
           </CardContent>
         </Card>
 
-        {/* Dialogs */}
+        {/* Configuration Dialog */}
+        <Dialog open={showConfig} onOpenChange={setShowConfig}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+            <DialogHeader>
+              <DialogTitle>Platform Configuration</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-6">
+              {/* AI Configuration */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Zap className="h-4 w-4" />
+                  <h3 className="font-semibold">AI Configuration</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="openai-key">OpenAI API Key</Label>
+                    <Input
+                      id="openai-key"
+                      type="password"
+                      placeholder="sk-..."
+                      value={config.openaiKey}
+                      onChange={(e) => setConfig((prev) => ({ ...prev, openaiKey: e.target.value }))}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Required for AI-powered document generation</p>
+                  </div>
+                  <div>
+                    <Label htmlFor="ai-model">AI Model</Label>
+                    <Select
+                      value={config.aiModel}
+                      onValueChange={(value) => setConfig((prev) => ({ ...prev, aiModel: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="gpt-4">GPT-4 (Recommended)</SelectItem>
+                        <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
+                        <SelectItem value="claude-3">Claude 3</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* JIRA Configuration */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <ExternalLink className="h-4 w-4" />
+                  <h3 className="font-semibold">JIRA Integration</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="jira-url">JIRA URL</Label>
+                    <Input
+                      id="jira-url"
+                      placeholder="https://company.atlassian.net"
+                      value={config.jiraUrl}
+                      onChange={(e) => setConfig((prev) => ({ ...prev, jiraUrl: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="jira-project">Project Key</Label>
+                    <Input
+                      id="jira-project"
+                      placeholder="PROJ"
+                      value={config.jiraProject}
+                      onChange={(e) => setConfig((prev) => ({ ...prev, jiraProject: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="jira-email">Email</Label>
+                    <Input
+                      id="jira-email"
+                      type="email"
+                      placeholder="user@company.com"
+                      value={config.jiraEmail}
+                      onChange={(e) => setConfig((prev) => ({ ...prev, jiraEmail: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="jira-token">API Token</Label>
+                    <Input
+                      id="jira-token"
+                      type="password"
+                      placeholder="Your JIRA API token"
+                      value={config.jiraToken}
+                      onChange={(e) => setConfig((prev) => ({ ...prev, jiraToken: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="jira-auto-create"
+                    checked={config.jiraAutoCreate}
+                    onChange={(e) => setConfig((prev) => ({ ...prev, jiraAutoCreate: e.target.checked }))}
+                    className="rounded"
+                  />
+                  <Label htmlFor="jira-auto-create" className="text-sm">
+                    Automatically create JIRA epics for new projects
+                  </Label>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Confluence Configuration */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  <h3 className="font-semibold">Confluence Integration</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="confluence-url">Confluence URL</Label>
+                    <Input
+                      id="confluence-url"
+                      placeholder="https://company.atlassian.net/wiki"
+                      value={config.confluenceUrl}
+                      onChange={(e) => setConfig((prev) => ({ ...prev, confluenceUrl: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="confluence-space">Space Key</Label>
+                    <Input
+                      id="confluence-space"
+                      placeholder="DEV"
+                      value={config.confluenceSpace}
+                      onChange={(e) => setConfig((prev) => ({ ...prev, confluenceSpace: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="confluence-email">Email</Label>
+                    <Input
+                      id="confluence-email"
+                      type="email"
+                      placeholder="user@company.com"
+                      value={config.confluenceEmail}
+                      onChange={(e) => setConfig((prev) => ({ ...prev, confluenceEmail: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="confluence-token">API Token</Label>
+                    <Input
+                      id="confluence-token"
+                      type="password"
+                      placeholder="Your Confluence API token"
+                      value={config.confluenceToken}
+                      onChange={(e) => setConfig((prev) => ({ ...prev, confluenceToken: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="confluence-auto-create"
+                    checked={config.confluenceAutoCreate}
+                    onChange={(e) => setConfig((prev) => ({ ...prev, confluenceAutoCreate: e.target.checked }))}
+                    className="rounded"
+                  />
+                  <Label htmlFor="confluence-auto-create" className="text-sm">
+                    Automatically create Confluence pages for documentation
+                  </Label>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Template Configuration */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  <h3 className="font-semibold">Template Settings</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="template">Default Template</Label>
+                    <Select
+                      value={config.template}
+                      onValueChange={(value) => setConfig((prev) => ({ ...prev, template: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="default">Default SDLC</SelectItem>
+                        <SelectItem value="agile">Agile Development</SelectItem>
+                        <SelectItem value="bug-fix">Bug Fix Template</SelectItem>
+                        <SelectItem value="feature">Feature Development</SelectItem>
+                        <SelectItem value="enterprise">Enterprise Template</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="output-format">Output Format</Label>
+                    <Select
+                      value={config.outputFormat}
+                      onValueChange={(value) => setConfig((prev) => ({ ...prev, outputFormat: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="markdown">Markdown</SelectItem>
+                        <SelectItem value="html">HTML</SelectItem>
+                        <SelectItem value="pdf">PDF</SelectItem>
+                        <SelectItem value="confluence">Confluence Format</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Notification Settings */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4" />
+                  <h3 className="font-semibold">Notification Settings</h3>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="email-notifications"
+                      checked={config.emailNotifications}
+                      onChange={(e) => setConfig((prev) => ({ ...prev, emailNotifications: e.target.checked }))}
+                      className="rounded"
+                    />
+                    <Label htmlFor="email-notifications" className="text-sm">
+                      Send email notifications when documents are ready
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="slack-notifications"
+                      checked={config.slackNotifications}
+                      onChange={(e) => setConfig((prev) => ({ ...prev, slackNotifications: e.target.checked }))}
+                      className="rounded"
+                    />
+                    <Label htmlFor="slack-notifications" className="text-sm">
+                      Send Slack notifications (requires Slack integration)
+                    </Label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4">
+                <Button onClick={handleSaveConfig} className="flex-1">
+                  Save Configuration
+                </Button>
+                <Button variant="outline" onClick={handleTestConnections}>
+                  Test Connections
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Other Dialogs */}
         <Dialog open={showWorkflow} onOpenChange={setShowWorkflow}>
           <DialogContent className="max-w-7xl max-h-[90vh] overflow-auto">
             <DialogHeader>
