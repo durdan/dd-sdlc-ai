@@ -35,6 +35,7 @@ import {
   Presentation,
   Database,
   RefreshCw,
+  ChevronDown,
 } from "lucide-react"
 import { HowItWorksVisualization } from "@/components/how-it-works-visualization"
 import { PromptEngineering } from "@/components/prompt-engineering"
@@ -187,6 +188,7 @@ export default function SDLCAutomationPlatform() {
   }
 
   const [recentProjects] = useState<ProjectResult[]>(getCachedProjects())
+  const [recentProjectsExpanded, setRecentProjectsExpanded] = useState(false) // Default: folded
 
   const [generatedDocuments, setGeneratedDocuments] = useState<any>(null)
 
@@ -797,12 +799,24 @@ export default function SDLCAutomationPlatform() {
         {/* Recent Projects - Only show if there are cached projects */}
         {recentProjects.length > 0 && (
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <GitBranch className="h-5 w-5" />
-              Recent Projects
+          <CardHeader 
+            className="cursor-pointer hover:bg-gray-50 transition-colors" 
+            onClick={() => setRecentProjectsExpanded(!recentProjectsExpanded)}
+          >
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <GitBranch className="h-5 w-5" />
+                Recent Projects
+                <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                  {recentProjects.length}
+                </Badge>
+              </div>
+              <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${
+                recentProjectsExpanded ? 'rotate-180' : ''
+              }`} />
             </CardTitle>
           </CardHeader>
+          {recentProjectsExpanded && (
           <CardContent>
             <div className="space-y-4">
               {recentProjects.map((project) => (
@@ -843,33 +857,46 @@ export default function SDLCAutomationPlatform() {
                       <TabsTrigger value="architecture">Architecture</TabsTrigger>
                     </TabsList>
                     <TabsContent value="business" className="mt-2">
-                      <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
-                        {project.documents.businessAnalysis}
-                      </div>
+                      <MarkdownRenderer 
+                        content={project.documents.businessAnalysis}
+                        title="Business Analysis"
+                        type="business"
+                      />
                     </TabsContent>
                     <TabsContent value="functional" className="mt-2">
-                      <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
-                        {project.documents.functionalSpec}
-                      </div>
+                      <MarkdownRenderer 
+                        content={project.documents.functionalSpec}
+                        title="Functional Specification"
+                        type="functional"
+                      />
                     </TabsContent>
                     <TabsContent value="technical" className="mt-2">
-                      <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
-                        {project.documents.technicalSpec}
-                      </div>
+                      <MarkdownRenderer 
+                        content={project.documents.technicalSpec}
+                        title="Technical Specification"
+                        type="technical"
+                      />
                     </TabsContent>
                     <TabsContent value="ux" className="mt-2">
-                      <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">{project.documents.uxSpec}</div>
+                      <MarkdownRenderer 
+                        content={project.documents.uxSpec}
+                        title="UX Specification"
+                        type="ux"
+                      />
                     </TabsContent>
                     <TabsContent value="architecture" className="mt-2">
-                      <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
-                        {project.documents.architecture}
-                      </div>
+                      <MarkdownRenderer 
+                        content={project.documents.architecture}
+                        title="Architecture"
+                        type="architecture"
+                      />
                     </TabsContent>
                   </Tabs>
                 </div>
               ))}
             </div>
           </CardContent>
+          )}
         </Card>
         )}
 
