@@ -364,6 +364,26 @@ export function VisualizationHub() {
 
   return (
     <div className="space-y-6">
+      {/* Coming Soon Banner */}
+      <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4">
+        <div className="flex items-center gap-3">
+          <div className="flex-shrink-0">
+            <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-300">
+              Coming Soon
+            </Badge>
+          </div>
+          <div className="flex-1">
+            <h3 className="text-sm font-semibold text-amber-900 mb-1">
+              🚧 Visualization & Presentation Hub - Demo Preview
+            </h3>
+            <p className="text-xs text-amber-700">
+              This feature is currently in development. The interface below shows demo/mock data 
+              to preview the upcoming functionality. Full integration with generated SDLC documents coming soon!
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

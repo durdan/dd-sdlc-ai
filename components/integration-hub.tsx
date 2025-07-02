@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -27,6 +27,7 @@ import {
   Zap,
   Users,
   Cloud,
+  Clock,
 } from "lucide-react"
 
 interface Integration {
@@ -35,7 +36,7 @@ interface Integration {
   description: string
   icon: React.ReactNode
   category: "development" | "communication" | "documentation" | "project-management"
-  status: "connected" | "disconnected" | "error"
+  status: "connected" | "disconnected" | "error" | "coming-soon"
   features: string[]
   setupRequired: boolean
   vercelIntegration?: boolean
@@ -51,6 +52,11 @@ interface IntegrationConfig {
 export function IntegrationHub() {
   const [activeTab, setActiveTab] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   // Integration configurations
   const [integrationConfigs, setIntegrationConfigs] = useState<IntegrationConfig>({
@@ -101,7 +107,7 @@ export function IntegrationHub() {
       description: "Auto-create repositories, README files, and project structure",
       icon: <Github className="h-6 w-6" />,
       category: "development",
-      status: integrationConfigs.github.enabled ? "connected" : "disconnected",
+      status: "coming-soon",
       features: ["Repository Creation", "README Generation", "Issue Templates", "Project Boards"],
       setupRequired: true,
       vercelIntegration: true,
@@ -112,7 +118,7 @@ export function IntegrationHub() {
       description: "Real-time notifications and team collaboration",
       icon: <Slack className="h-6 w-6" />,
       category: "communication",
-      status: integrationConfigs.slack.enabled ? "connected" : "disconnected",
+      status: "coming-soon",
       features: ["Project Notifications", "Team Mentions", "Document Sharing", "Status Updates"],
       setupRequired: true,
       vercelIntegration: true,
@@ -123,7 +129,7 @@ export function IntegrationHub() {
       description: "Enterprise communication and collaboration",
       icon: <Users className="h-6 w-6" />,
       category: "communication",
-      status: "disconnected",
+      status: "coming-soon",
       features: ["Channel Notifications", "File Sharing", "Meeting Integration", "Bot Commands"],
       setupRequired: true,
     },
@@ -133,7 +139,7 @@ export function IntegrationHub() {
       description: "Comprehensive documentation and knowledge management",
       icon: <FileText className="h-6 w-6" />,
       category: "documentation",
-      status: integrationConfigs.notion.enabled ? "connected" : "disconnected",
+      status: "coming-soon",
       features: ["Page Creation", "Database Sync", "Template Import", "Real-time Collaboration"],
       setupRequired: true,
     },
@@ -143,7 +149,7 @@ export function IntegrationHub() {
       description: "Modern issue tracking and project management",
       icon: <Zap className="h-6 w-6" />,
       category: "project-management",
-      status: integrationConfigs.linear.enabled ? "connected" : "disconnected",
+      status: "coming-soon",
       features: ["Issue Creation", "Project Sync", "Milestone Tracking", "Team Assignment"],
       setupRequired: true,
     },
@@ -153,7 +159,7 @@ export function IntegrationHub() {
       description: "Visual project management with boards and cards",
       icon: <Trello className="h-6 w-6" />,
       category: "project-management",
-      status: "disconnected",
+      status: "coming-soon",
       features: ["Board Creation", "Card Management", "Checklist Sync", "Due Date Tracking"],
       setupRequired: true,
     },
@@ -163,7 +169,7 @@ export function IntegrationHub() {
       description: "Team project and task management platform",
       icon: <Calendar className="h-6 w-6" />,
       category: "project-management",
-      status: "disconnected",
+      status: "coming-soon",
       features: ["Task Creation", "Project Templates", "Timeline View", "Team Collaboration"],
       setupRequired: true,
     },
@@ -173,7 +179,7 @@ export function IntegrationHub() {
       description: "Microsoft's complete DevOps solution",
       icon: <Cloud className="h-6 w-6" />,
       category: "development",
-      status: "disconnected",
+      status: "coming-soon",
       features: ["Work Items", "Repository Integration", "Pipeline Triggers", "Board Sync"],
       setupRequired: true,
     },
@@ -183,7 +189,7 @@ export function IntegrationHub() {
       description: "Google Docs, Sheets, and Drive integration",
       icon: <Globe className="h-6 w-6" />,
       category: "documentation",
-      status: "disconnected",
+      status: "coming-soon",
       features: ["Document Creation", "Sheet Export", "Drive Storage", "Real-time Editing"],
       setupRequired: true,
     },
@@ -228,6 +234,8 @@ export function IntegrationHub() {
         return <CheckCircle className="h-4 w-4 text-green-500" />
       case "error":
         return <AlertCircle className="h-4 w-4 text-red-500" />
+      case "coming-soon":
+        return <Clock className="h-4 w-4 text-orange-500" />
       default:
         return <div className="h-4 w-4 rounded-full border-2 border-gray-300" />
     }
@@ -296,8 +304,15 @@ export function IntegrationHub() {
                     <CardTitle className="text-lg">{integration.name}</CardTitle>
                     <div className="flex items-center gap-2 mt-1">
                       {getStatusIcon(integration.status)}
-                      <span className="text-sm text-gray-500 capitalize">{integration.status}</span>
-                      {integration.vercelIntegration && (
+                      <span className="text-sm text-gray-500 capitalize">
+                        {integration.status === "coming-soon" ? "Coming Soon" : integration.status}
+                      </span>
+                      {isMounted && integration.status === "coming-soon" && (
+                        <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-700">
+                          Coming Soon
+                        </Badge>
+                      )}
+                      {isMounted && integration.vercelIntegration && integration.status !== "coming-soon" && (
                         <Badge variant="outline" className="text-xs">
                           Vercel
                         </Badge>
@@ -308,6 +323,7 @@ export function IntegrationHub() {
                 <Switch
                   checked={integrationConfigs[integration.id]?.enabled || false}
                   onCheckedChange={() => toggleIntegration(integration.id)}
+                  disabled={integration.status === "coming-soon"}
                 />
               </div>
             </CardHeader>
@@ -435,7 +451,16 @@ export function IntegrationHub() {
 
               {/* Action Buttons */}
               <div className="flex gap-2">
-                {integration.vercelIntegration ? (
+                {isMounted && integration.status === "coming-soon" ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 bg-transparent"
+                    disabled={true}
+                  >
+                    Coming Soon
+                  </Button>
+                ) : isMounted && integration.vercelIntegration ? (
                   <Button
                     variant="outline"
                     size="sm"
@@ -445,12 +470,20 @@ export function IntegrationHub() {
                   >
                     {integrationConfigs[integration.id]?.enabled ? "Connected" : "Connect via Vercel"}
                   </Button>
-                ) : (
+                ) : isMounted ? (
                   <Button variant="outline" size="sm" className="flex-1 bg-transparent">
                     Configure
                   </Button>
+                ) : (
+                  <Button variant="outline" size="sm" className="flex-1 bg-transparent" disabled>
+                    Loading...
+                  </Button>
                 )}
-                <Button variant="ghost" size="sm">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  disabled={!isMounted || integration.status === "coming-soon"}
+                >
                   <ExternalLink className="h-4 w-4" />
                 </Button>
               </div>

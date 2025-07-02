@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
@@ -40,8 +40,10 @@ import {
 import { HowItWorksVisualization } from "@/components/how-it-works-visualization"
 import { PromptEngineering } from "@/components/prompt-engineering"
 import { MarkdownRenderer } from "@/components/markdown-renderer"
+import { MermaidRenderer } from "@/components/mermaid-renderer"
 import { IntegrationHub } from "@/components/integration-hub"
 import { VisualizationHub } from "@/components/visualization-hub"
+import { SimpleWorkflowDiagram } from "@/components/simple-workflow-diagram"
 import { MermaidViewer } from "@/components/mermaid-viewer"
 
 interface ProcessingStep {
@@ -118,6 +120,8 @@ export default function SDLCAutomationPlatform() {
   const [showPromptEngineering, setShowPromptEngineering] = useState(false)
   const [showCacheDialog, setShowCacheDialog] = useState(false)
   const [pendingCachedResults, setPendingCachedResults] = useState<any>(null)
+  const [showApiKeyDialog, setShowApiKeyDialog] = useState(false)
+  const [tempApiKey, setTempApiKey] = useState('')
   const handleShowPromptEngineering = () => {
     setShowPromptEngineering(true)
   }
@@ -154,6 +158,11 @@ export default function SDLCAutomationPlatform() {
   // Get all cached results from localStorage for Recent Projects display
   const getCachedProjects = (): ProjectResult[] => {
     const projects: ProjectResult[] = []
+    // Only access localStorage on client-side
+    if (typeof window === 'undefined') {
+      return projects
+    }
+    
     try {
       // Iterate through localStorage to find cached SDLC results
       for (let i = 0; i < localStorage.length; i++) {
@@ -187,8 +196,30 @@ export default function SDLCAutomationPlatform() {
     return projects.slice(0, 5) // Limit to 5 most recent
   }
 
-  const [recentProjects] = useState<ProjectResult[]>(getCachedProjects())
+  const [recentProjects, setRecentProjects] = useState<ProjectResult[]>([])
+
+  // Load cached projects on client-side only
+  useEffect(() => {
+    setRecentProjects(getCachedProjects())
+  }, [])
   const [recentProjectsExpanded, setRecentProjectsExpanded] = useState(false) // Default: folded
+
+  // Handle API key dialog confirmation
+  const handleApiKeyConfirm = async () => {
+    if (!tempApiKey.trim()) {
+      setErrorMessage("Please enter your OpenAI API key")
+      return
+    }
+    
+    // Update config with the provided API key
+    setConfig(prev => ({ ...prev, openaiKey: tempApiKey.trim() }))
+    setShowApiKeyDialog(false)
+    setTempApiKey('')
+    setErrorMessage('')
+    
+    // Continue with generation now that we have the API key
+    await generateFreshDocuments()
+  }
 
   const [generatedDocuments, setGeneratedDocuments] = useState<any>(null)
 
@@ -308,9 +339,10 @@ export default function SDLCAutomationPlatform() {
 
   const generateFreshDocuments = async () => {
 
-    // Validate OpenAI API key
+    // Check if OpenAI API key is missing - prompt just-in-time
     if (!config.openaiKey || config.openaiKey.trim() === '') {
-      setErrorMessage("Please configure your OpenAI API key in the settings")
+      setTempApiKey('')
+      setShowApiKeyDialog(true)
       return
     }
 
@@ -1188,11 +1220,11 @@ export default function SDLCAutomationPlatform() {
 
         {/* Other Dialogs */}
         <Dialog open={showWorkflow} onOpenChange={setShowWorkflow}>
-          <DialogContent className="max-w-7xl max-h-[90vh] overflow-auto">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
             <DialogHeader>
-              <DialogTitle>SDLC Automation Workflow</DialogTitle>
+              <DialogTitle>SDLC Documentation Workflow</DialogTitle>
             </DialogHeader>
-            <WorkflowVisualization currentStep={currentStep} processingSteps={processingSteps} />
+            <SimpleWorkflowDiagram processingSteps={processingSteps} />
           </DialogContent>
         </Dialog>
 
@@ -1295,6 +1327,72 @@ export default function SDLCAutomationPlatform() {
                     <div className="font-medium">Generate New Documents</div>
                     <div className="text-xs opacity-60">Fresh generation • Uses API credits</div>
                   </div>
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* API Key Dialog for Just-in-Time Prompting */}
+        <Dialog open={showApiKeyDialog} onOpenChange={setShowApiKeyDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5 text-blue-500" />
+                OpenAI API Key Required
+              </DialogTitle>
+              <DialogDescription>
+                Please provide your OpenAI API key to generate SDLC documentation.
+                Your key will be used securely and is not stored permanently.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="api-key-input">OpenAI API Key</Label>
+                <Input
+                  id="api-key-input"
+                  type="password"
+                  placeholder="sk-..."
+                  value={tempApiKey}
+                  onChange={(e) => setTempApiKey(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      handleApiKeyConfirm()
+                    }
+                  }}
+                />
+                <p className="text-xs text-gray-500">
+                  Get your API key from{' '}
+                  <a 
+                    href="https://platform.openai.com/api-keys" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-500 hover:underline"
+                  >
+                    OpenAI Platform
+                  </a>
+                </p>
+              </div>
+              
+              <div className="flex gap-3">
+                <Button 
+                  onClick={() => {
+                    setShowApiKeyDialog(false)
+                    setTempApiKey('')
+                    setErrorMessage('')
+                  }}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleApiKeyConfirm}
+                  disabled={!tempApiKey.trim()}
+                  className="flex-1"
+                >
+                  Continue Generation
                 </Button>
               </div>
             </div>
