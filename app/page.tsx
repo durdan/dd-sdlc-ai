@@ -37,7 +37,7 @@ import {
   RefreshCw,
   ChevronDown,
   Plus,
-
+  Loader2,
 } from "lucide-react"
 import { HowItWorksVisualization } from "@/components/how-it-works-visualization"
 import { PromptEngineering } from "@/components/prompt-engineering"
@@ -942,6 +942,7 @@ export default function SDLCAutomationPlatform() {
       return
     }
 
+    console.log('🔄 Setting Jira export loading state to true')
     setIsExportingToJira(true)
     setErrorMessage('')
 
@@ -952,18 +953,22 @@ export default function SDLCAutomationPlatform() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          businessAnalysis: project.documents.businessAnalysis,
-          functionalSpec: project.documents.functionalSpec,
-          technicalSpec: project.documents.technicalSpec,
-          uxSpec: project.documents.uxSpec,
-          mermaidDiagrams: project.documents.architecture,
-          jiraConfig: {
-            url: config.jiraUrl,
-            email: config.jiraEmail,
-            apiToken: config.jiraToken,
-            projectKey: config.jiraProject,
-            autoCreate: config.jiraAutoCreate
-          }
+          config: {
+            jiraUrl: config.jiraUrl,
+            jiraEmail: config.jiraEmail,
+            jiraToken: config.jiraToken,
+            jiraProject: config.jiraProject,
+            jiraAutoCreate: config.jiraAutoCreate
+          },
+          documents: {
+            businessAnalysis: project.documents.businessAnalysis,
+            functionalSpec: project.documents.functionalSpec,
+            technicalSpec: project.documents.technicalSpec,
+            uxSpec: project.documents.uxSpec,
+            mermaidDiagrams: project.documents.architecture
+          },
+          projectName: project.title || 'SDLC Project',
+          description: project.documents.businessAnalysis?.substring(0, 200) + '...' || 'Generated SDLC documentation'
         }),
       })
 
@@ -985,6 +990,7 @@ export default function SDLCAutomationPlatform() {
       console.error('❌ Jira export error:', error)
       setErrorMessage(`Jira export failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
+      console.log('🔄 Setting Jira export loading state to false')
       setIsExportingToJira(false)
     }
   }
@@ -1016,17 +1022,21 @@ export default function SDLCAutomationPlatform() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          businessAnalysis: project.documents.businessAnalysis,
-          functionalSpec: project.documents.functionalSpec,
-          technicalSpec: project.documents.technicalSpec,
-          uxSpec: project.documents.uxSpec,
-          mermaidDiagrams: project.documents.architecture,
-          confluenceConfig: {
-            url: config.confluenceUrl,
-            email: config.confluenceEmail,
-            apiToken: config.confluenceToken,
-            spaceKey: config.confluenceSpace
-          }
+          config: {
+            confluenceUrl: config.confluenceUrl,
+            confluenceEmail: config.confluenceEmail,
+            confluenceToken: config.confluenceToken,
+            confluenceSpace: config.confluenceSpace
+          },
+          documents: {
+            businessAnalysis: project.documents.businessAnalysis,
+            functionalSpec: project.documents.functionalSpec,
+            technicalSpec: project.documents.technicalSpec,
+            uxSpec: project.documents.uxSpec,
+            mermaidDiagrams: project.documents.architecture
+          },
+          projectName: project.title || 'SDLC Project',
+          description: project.documents.businessAnalysis?.substring(0, 200) + '...' || 'Generated SDLC documentation'
         }),
       })
 
@@ -1402,7 +1412,10 @@ export default function SDLCAutomationPlatform() {
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        onClick={() => handleJiraExport(project)}
+                        onClick={() => {
+                          console.log('🔵 Jira export button clicked, current loading state:', isExportingToJira)
+                          handleJiraExport(project)
+                        }}
                         disabled={isExportingToJira}
                         className="text-blue-600 border-blue-200 hover:bg-blue-50"
                         title="Export SDLC content to Jira as Epics, Stories, and Tasks"
