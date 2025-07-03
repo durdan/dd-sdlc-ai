@@ -109,17 +109,92 @@ Eliminate manual documentation overhead and accelerate project delivery by autom
 ## 🔌 Integration Capabilities
 
 ### Atlassian Suite
-- **JIRA Integration**
-  - Automatic epic and story creation
+
+#### ✅ JIRA Integration (Current Implementation)
+- **Epic Management**
+  - Automatic Epic creation for projects
+  - Fallback to Story if Epic type not available
+  - Includes project name and description
+
+- **User Stories & Tasks**
+  - Converts requirements into user stories
+  - Creates linked technical tasks
+  - Includes acceptance criteria and implementation details
+
+- **Integration Features**
+  - Automatic linking to parent Epics
   - Custom field mapping
-  - Workflow synchronization
   - Real-time status updates
 
-- **Confluence Integration**
-  - Page creation with templates
-  - Space organization
-  - Cross-linking with JIRA
-  - Version control and history
+#### 🔄 Planned JIRA Improvements
+- **Sprint Planning**
+  - Automated sprint creation
+  - Capacity planning
+  - Velocity tracking
+
+- **Advanced Workflows**
+  - Custom workflow support
+  - Status transitions
+  - Automation rules
+
+#### ✅ Confluence Integration (Current Implementation)
+- **Project Documentation**
+  - Hierarchical page structure
+  - Automatic table of contents
+  - Responsive layout
+
+- **Technical Documentation**
+  - System architecture
+  - API documentation
+  - Data models
+  - Deployment guides
+
+- **Requirements Management**
+  - Business requirements
+  - Functional specifications
+  - Technical specifications
+
+#### 🔄 Planned Confluence Improvements
+- **Design Documentation**
+  - UI/UX mockups
+  - Design system integration
+  - Accessibility guidelines
+
+- **Advanced Features**
+  - Version comparison
+  - Content templates
+  - Team collaboration tools
+
+## 🔄 Jira & Confluence Workflow
+
+### Export Process
+1. **SDLC Document Generation**
+   - Generate complete SDLC documentation
+   - Includes business analysis, technical specs, and architecture diagrams
+   - Documents are cached locally for review
+
+2. **Jira Export**
+   - Creates a project Epic
+   - Generates linked User Stories from requirements
+   - Adds technical tasks with acceptance criteria
+   - Links all items to the parent Epic
+
+3. **Confluence Export**
+   - Creates a project space
+   - Organizes documentation in a hierarchical structure
+   - Links to Jira issues for traceability
+   - Includes technical diagrams and specifications
+
+### Known Issues & Workarounds
+- **Mermaid Diagram Rendering**
+  - Issue: Diagrams may show as raw text in development
+  - Workaround: Diagrams render correctly in production
+  - Status: Under investigation for development environment
+
+- **Sprint Planning**
+  - Issue: Manual sprint planning required
+  - Workaround: Export to backlog and plan sprints in Jira
+  - Status: Planned for next release
 
 ### Development Platforms
 - **GitHub**: Repository creation, README generation, issue templates

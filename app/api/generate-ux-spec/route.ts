@@ -40,24 +40,69 @@ export async function POST(req: NextRequest) {
             .replace(/{{business_analysis}}/g, businessAnalysis)
             .replace(/{{functional_spec}}/g, functionalSpec)
             .replace(/{{technical_spec}}/g, technicalSpec)
-        : `Create a comprehensive UX specification based on the business analysis, functional specification, and technical specification:
-      
-      Original Input: ${input}
-      Business Analysis: ${businessAnalysis}
-      Functional Specification: ${functionalSpec}
-      Technical Specification: ${technicalSpec}
-      
-      Please structure the UX specification as follows:
-      1. UX Overview and Objectives
-      2. User Personas and Journey Maps
-      3. Information Architecture
-      4. Wireframes and Layout Guidelines
-      5. UI Components and Design System
-      6. Interaction Design Patterns
-      7. Accessibility Requirements
-      8. Usability Testing Plan
-      
-      Focus on user experience and interface design principles in markdown format.`,
+        : `As a Senior UX Designer with expertise in user-centered design, create specific design tasks based on the following requirements:
+
+User Stories: ${businessAnalysis}
+Business Analysis: ${businessAnalysis}
+
+Generate the following structured output:
+
+## UX Epic
+- **Epic Title**: [User experience focus]
+- **Design Approach**: [Design methodology]
+- **Success Metrics**: [User experience KPIs]
+
+## Design Tasks
+For each task, provide:
+1. **Task Title**: Clear design deliverable (e.g., "Create user onboarding wireframes")
+2. **Task Description**: Design scope and requirements
+3. **Deliverables**: Specific design artifacts
+4. **Story Points**: Design effort estimate (1, 2, 3, 5, 8)
+5. **User Impact**: How this improves user experience
+6. **Dependencies**: Design prerequisites
+7. **Definition of Done**: Design completion criteria
+
+## Design Task Categories:
+### Research & Discovery
+- User research and interviews
+- Competitive analysis
+- User journey mapping
+- Persona development
+- Usability testing
+
+### Information Architecture
+- Site map creation
+- User flow diagrams
+- Content strategy
+- Navigation design
+- Information hierarchy
+
+### Visual Design
+- Wireframe creation
+- Mockup development
+- Visual style guide
+- Component library
+- Icon and illustration design
+
+### Prototyping & Testing
+- Interactive prototype development
+- Usability testing sessions
+- A/B test setup
+- Accessibility review
+- Design system documentation
+
+Create 6-10 specific design tasks that are:
+- User-focused and experience-driven
+- Deliverable-based with clear outcomes
+- Properly scoped for design sprints
+- Include user validation methods
+
+Target Devices: Desktop, Mobile, Tablet
+Design System: Material Design
+User Experience Level: Intermediate
+Accessibility Standard: WCAG 2.1 AA
+
+Focus on usability and accessibility and ensure the design supports efficient task completion.`,
     })
 
     console.log('UX Specification generated successfully')

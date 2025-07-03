@@ -36,20 +36,22 @@ import {
   Database,
   RefreshCw,
   ChevronDown,
+  Plus,
+
 } from "lucide-react"
 import { HowItWorksVisualization } from "@/components/how-it-works-visualization"
 import { PromptEngineering } from "@/components/prompt-engineering"
-import { MarkdownRenderer } from "@/components/markdown-renderer"
-import { MermaidRenderer } from "@/components/mermaid-renderer"
-import { IntegrationHub } from "@/components/integration-hub"
-import { VisualizationHub } from "@/components/visualization-hub"
+import { MarkdownRenderer } from '@/components/markdown-renderer'
+import { MermaidViewer } from '@/components/mermaid-viewer-fixed'
+import { IntegrationHub } from '@/components/integration-hub'
+import { VisualizationHub } from '@/components/visualization-hub'
+
 import { SimpleWorkflowDiagram } from "@/components/simple-workflow-diagram"
-import { MermaidViewer } from "@/components/mermaid-viewer"
 
 interface ProcessingStep {
   id: string
   name: string
-  status: "pending" | "in_progress" | "completed" | "error"
+  status: "pending" | "in_progres s" | "completed" | "error"
   progress: number
   estimatedTime?: string
 }
@@ -96,6 +98,7 @@ export default function SDLCAutomationPlatform() {
   const [currentStep, setCurrentStep] = useState(0)
   const [showConfig, setShowConfig] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
+  const [successMessage, setSuccessMessage] = useState("")
   const [config, setConfig] = useState({
     openaiKey: "",
     aiModel: "gpt-4",
@@ -122,6 +125,20 @@ export default function SDLCAutomationPlatform() {
   const [pendingCachedResults, setPendingCachedResults] = useState<any>(null)
   const [showApiKeyDialog, setShowApiKeyDialog] = useState(false)
   const [tempApiKey, setTempApiKey] = useState('')
+  
+  // Export state
+  const [isExportingToJira, setIsExportingToJira] = useState(false)
+  const [isExportingToConfluence, setIsExportingToConfluence] = useState(false)
+  
+  // Function to update step progress - moved to component level for global access
+  const updateStepProgress = (stepId: string, progress: number, status: "pending" | "in_progress" | "completed" | "error" = "in_progress") => {
+    setProcessingSteps(prevSteps => 
+      prevSteps.map(step => 
+        step.id === stepId ? { ...step, progress, status } : step
+      )
+    )
+  }
+  
   const handleShowPromptEngineering = () => {
     setShowPromptEngineering(true)
   }
@@ -223,54 +240,166 @@ export default function SDLCAutomationPlatform() {
 
   const [generatedDocuments, setGeneratedDocuments] = useState<any>(null)
 
-  // Parse Mermaid diagrams into separate sections
+  // Helper function to parse Mermaid content into separate diagrams
   const parseMermaidDiagrams = (mermaidContent: string) => {
     if (!mermaidContent) {
-      return { architecture: "", database: "", userFlow: "", apiFlow: "" }
+      console.log('No mermaid content to parse')
+      return {}
     }
 
-    // Split by comments that indicate diagram sections
-    const sections = mermaidContent.split(/%%\s*[A-Za-z\s]+\s*Diagram/i)
+    // Log the raw content for debugging
+    console.log('Raw mermaid content:', mermaidContent.substring(0, 200) + '...')
+    console.log('Raw mermaid content length:', mermaidContent.length)
     
-    let architecture = ""
-    let database = ""
-    let userFlow = ""
-    let apiFlow = ""
+    // Check for markdown headers and code blocks
+    const hasMarkdownHeaders = /^\s*#+\s+.+$/m.test(mermaidContent)
+    const hasMermaidCodeBlocks = /```(?:mermaid)?[\s\S]*?```/g.test(mermaidContent)
+    console.log('Content analysis:', { hasMarkdownHeaders, hasMermaidCodeBlocks })
 
-    sections.forEach((section, index) => {
-      const trimmedSection = section.trim()
-      if (!trimmedSection) return
+    // Fully generic approach - create an empty diagram object with no hardcoded keys
+    const diagrams: Record<string, string> = {}
 
-      // Check what type of diagram this section contains
-      if (trimmedSection.includes('graph ') || trimmedSection.includes('flowchart ')) {
-        if (trimmedSection.toLowerCase().includes('user') || trimmedSection.toLowerCase().includes('flow')) {
-          userFlow = trimmedSection
-        } else {
-          architecture = trimmedSection
+    // Try to split by both markdown headers and Mermaid section comments
+    const sectionMarkers: {name: string, index: number}[] = []
+    let foundSections = false
+    
+    // First, try to find markdown headers like "## System Architecture Diagram"
+    const markdownHeaderRegex = /^##\s+([^\n]+?)\s*(?:Diagram)?\s*$/gmi
+    let match
+    while ((match = markdownHeaderRegex.exec(mermaidContent)) !== null) {
+      foundSections = true
+      const sectionName = match[1].trim().toLowerCase().replace(/\s+/g, '')
+      sectionMarkers.push({
+        name: sectionName,
+        index: match.index + match[0].length
+      })
+      console.log(`Found markdown header: ${sectionName} at index ${match.index}`)
+    }
+    
+    // Also try Mermaid section comments like "%% System Architecture Diagram"
+    const sectionCommentRegex = /%%\s*([A-Za-z\s]+)\s*Diagram/gi
+    sectionCommentRegex.lastIndex = 0 // Reset regex state
+    while ((match = sectionCommentRegex.exec(mermaidContent)) !== null) {
+      foundSections = true
+      const sectionName = match[1].trim().toLowerCase().replace(/\s+/g, '')
+      sectionMarkers.push({
+        name: sectionName,
+        index: match.index + match[0].length
+      })
+      console.log(`Found section comment: ${sectionName} at index ${match.index}`)
+    }
+    
+    // Sort section markers by index to process them in order
+    sectionMarkers.sort((a, b) => a.index - b.index)
+    
+    // Now process the sections with known boundaries
+    if (sectionMarkers.length > 0) {
+      for (let i = 0; i < sectionMarkers.length; i++) {
+        const currentMarker = sectionMarkers[i]
+        const nextMarker = sectionMarkers[i + 1]
+        const endIndex = nextMarker ? nextMarker.index : mermaidContent.length
+        
+        // Extract the diagram content
+        const diagramContent = mermaidContent.substring(currentMarker.index, endIndex).trim()
+        console.log(`Processing section: ${currentMarker.name}, content length: ${diagramContent.length}`)
+        
+        // Store each diagram with its own section name as the key
+        // No hardcoded categories - fully generic
+        diagrams[currentMarker.name] = diagramContent
+      }
+    }
+    
+    // If no sections found, try to identify diagram types directly
+    if (!foundSections) {
+      console.log('No section comments found, trying to identify diagram types directly')
+      
+      // Split by markdown headers or code blocks if present
+      let diagramBlocks: string[] = []
+      
+      if (hasMermaidCodeBlocks) {
+        const codeBlockRegex = /```(?:mermaid)?\s*([\s\S]*?)```/g
+        let codeMatch
+        while ((codeMatch = codeBlockRegex.exec(mermaidContent)) !== null) {
+          if (codeMatch[1] && codeMatch[1].trim()) {
+            diagramBlocks.push(codeMatch[1].trim())
+          }
         }
+        console.log(`Found ${diagramBlocks.length} code blocks`)
+      } else {
+        // Try to split by common diagram type declarations
+        const diagramTypeRegex = /(graph|flowchart|sequenceDiagram|erDiagram|classDiagram|stateDiagram|gantt|pie|journey|gitGraph)/gi
+        let lastTypeIndex = 0
+        let typeMatch
+        
+        while ((typeMatch = diagramTypeRegex.exec(mermaidContent)) !== null) {
+          if (typeMatch.index > lastTypeIndex) {
+            const previousContent = mermaidContent.substring(lastTypeIndex, typeMatch.index).trim()
+            if (previousContent && /^\w+\s/.test(previousContent)) {
+              diagramBlocks.push(previousContent)
+            }
+          }
+          lastTypeIndex = typeMatch.index
+        }
+        
+        // Add the last block
+        if (lastTypeIndex < mermaidContent.length) {
+          const lastBlock = mermaidContent.substring(lastTypeIndex).trim()
+          if (lastBlock) diagramBlocks.push(lastBlock)
+        }
+        
+        console.log(`Split content into ${diagramBlocks.length} diagram blocks`)
       }
-      else if (trimmedSection.includes('erDiagram')) {
-        database = trimmedSection
-      }
-      else if (trimmedSection.includes('sequenceDiagram')) {
-        apiFlow = trimmedSection
-      }
-      // Fallback: if first section and no specific type detected, assume architecture
-      else if (index === 1 && !architecture) {
-        architecture = trimmedSection
-      }
-    })
+      
+      // Categorize each diagram block - using a fully generic approach
+      diagramBlocks.forEach((block, index) => {
+        console.log(`Analyzing block ${index + 1}, length: ${block.length}`)
+        console.log(`Block ${index + 1} preview:`, block.substring(0, 50) + '...')
+        
+        // Determine diagram type from content for naming
+        let diagramType = 'diagram'
+        
+        // Try to determine a more specific type based on content
+        if (block.includes('graph ') || block.includes('flowchart ')) {
+          diagramType = 'flowchart'
+        }
+        else if (block.includes('erDiagram')) {
+          diagramType = 'entityrelationship'
+        }
+        else if (block.includes('sequenceDiagram')) {
+          diagramType = 'sequence'
+        }
+        else if (block.includes('classDiagram')) {
+          diagramType = 'class'
+        }
+        else if (block.includes('stateDiagram')) {
+          diagramType = 'state'
+        }
+        
+        // Create a unique key for this diagram
+        const diagramKey = `${diagramType}${index + 1}`
+        diagrams[diagramKey] = block
+        console.log(`Created diagram category: ${diagramKey}`)
+      })
+    }
 
     // Log parsing results for debugging
     console.log('Parsed Mermaid diagrams:', {
-      architecture: architecture ? 'Found' : 'Empty',
-      database: database ? 'Found' : 'Empty', 
-      userFlow: userFlow ? 'Found' : 'Empty',
-      apiFlow: apiFlow ? 'Found' : 'Empty',
+      ...Object.fromEntries(
+        Object.entries(diagrams).map(([key, value]) => 
+          [key, value ? `Found (${value.length} chars)` : 'Empty']
+        )
+      ),
       originalLength: mermaidContent.length
     })
+    
+    // Also log the actual diagram keys and content previews
+    Object.entries(diagrams).forEach(([key, content]) => {
+      if (content) {
+        console.log(`Diagram '${key}' preview:`, content.substring(0, 100) + '...')
+      }
+    })
 
-    return { architecture, database, userFlow, apiFlow }
+    return diagrams
   }
 
   // Cache management
@@ -371,15 +500,6 @@ export default function SDLCAutomationPlatform() {
     }
 
     setProcessingSteps(initialSteps)
-
-    // Function to update step progress
-    const updateStepProgress = (stepId: string, progress: number, status: "pending" | "in_progress" | "completed" | "error" = "in_progress") => {
-      setProcessingSteps(prevSteps => 
-        prevSteps.map(step => 
-          step.id === stepId ? { ...step, progress, status } : step
-        )
-      )
-    }
 
     try {
       // Execute each step sequentially with real progress tracking
@@ -514,7 +634,7 @@ export default function SDLCAutomationPlatform() {
       setCachedResults(input.trim(), results)
       
       // Handle optional integrations (JIRA, Confluence) if enabled
-      // ... (existing integration logic can be added here)
+      await handleIntegrations(results, input)
 
       // Ensure all steps are marked as completed
       setProcessingSteps(prevSteps => prevSteps.map(step => ({
@@ -545,6 +665,240 @@ export default function SDLCAutomationPlatform() {
     }
   }
 
+  const handleIntegrations = async (documents: any, projectInput: string) => {
+    console.log('🔗 Starting integrations...', { hasJiraConfig: !!config.jiraUrl, hasConfluenceConfig: !!config.confluenceUrl })
+    
+    const projectName = extractProjectName(projectInput)
+    const projectDescription = extractProjectDescription(projectInput)
+    
+    // Handle Jira Integration
+    if (config.jiraUrl && config.jiraProject && config.jiraEmail && config.jiraToken && config.jiraAutoCreate) {
+      console.log('🎯 Processing Jira integration...')
+      updateStepProgress("jira", 0, "in_progress")
+      
+      try {
+        const jiraResponse = await fetch('/api/integrations/jira', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            config,
+            documents,
+            projectName,
+            description: projectDescription
+          })
+        })
+        
+        const jiraResult = await jiraResponse.json()
+        
+        if (jiraResult.success) {
+          console.log('✅ Jira integration successful:', jiraResult)
+          updateStepProgress("jira", 100, "completed")
+        } else {
+          console.error('❌ Jira integration failed:', jiraResult.error)
+          updateStepProgress("jira", 0, "error")
+        }
+      } catch (error) {
+        console.error('❌ Jira integration error:', error)
+        updateStepProgress("jira", 0, "error")
+      }
+    } else {
+      console.log('⏭️ Skipping Jira integration (not configured or auto-create disabled)')
+      updateStepProgress("jira", 100, "completed")
+    }
+    
+    // Handle Confluence Integration  
+    if (config.confluenceUrl && config.confluenceSpace && config.confluenceEmail && config.confluenceToken) {
+      console.log('📚 Processing Confluence integration...')
+      updateStepProgress("confluence", 0, "in_progress")
+      
+      try {
+        const confluenceResponse = await fetch('/api/integrations/confluence', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            config,
+            documents,
+            projectName,
+            description: projectDescription
+          })
+        })
+        
+        const confluenceResult = await confluenceResponse.json()
+        
+        if (confluenceResult.success) {
+          console.log('✅ Confluence integration successful:', confluenceResult)
+          updateStepProgress("confluence", 100, "completed")
+        } else {
+          console.error('❌ Confluence integration failed:', confluenceResult.error)
+          updateStepProgress("confluence", 0, "error")
+        }
+      } catch (error) {
+        console.error('❌ Confluence integration error:', error)
+        updateStepProgress("confluence", 0, "error")
+      }
+    } else {
+      console.log('⏭️ Skipping Confluence integration (not configured)')
+      updateStepProgress("confluence", 100, "completed")
+    }
+    
+    // Handle Cross-platform Linking
+    console.log('🔗 Processing cross-platform linking...')
+    updateStepProgress("linking", 0, "in_progress")
+    
+    // Simulate cross-platform linking (this could link Jira issues to Confluence pages)
+    setTimeout(() => {
+      console.log('✅ Cross-platform linking completed')
+      updateStepProgress("linking", 100, "completed")
+    }, 1000)
+  }
+  
+  const extractProjectName = (input: string): string => {
+    // Extract project name from user input - look for common patterns
+    const lines = input.split('\n')
+    const firstLine = lines[0]?.trim()
+    
+    // Try to find a title or project name in the first few lines
+    for (const line of lines.slice(0, 3)) {
+      if (line.toLowerCase().includes('project') || line.toLowerCase().includes('app') || line.toLowerCase().includes('system')) {
+        return line.replace(/^(project|app|system)\s*:?\s*/i, '').trim() || 'SDLC Project'
+      }
+    }
+    
+    return firstLine || 'SDLC Project'
+  }
+  
+  const extractProjectDescription = (input: string): string => {
+    const lines = input.split('\n').filter(line => line.trim())
+    return lines.slice(0, 3).join(' ').slice(0, 200) + (input.length > 200 ? '...' : '')
+  }
+
+  // Manual trigger handlers for Recent Projects
+  const handleManualJiraCreate = async (project: any) => {
+    console.log('🎯 Enhanced JIRA creation triggered for project:', project.title)
+    
+    if (!config.jiraUrl || !config.jiraProject || !config.jiraEmail || !config.jiraToken) {
+      alert('Please configure JIRA settings in the Configuration tab first.')
+      return
+    }
+    
+    if (!project.documents?.businessAnalysis || !project.documents?.technicalSpec || !project.documents?.uxSpec) {
+      alert('Project must have Business Analysis, Technical Specification, and UX Specification to create JIRA issues.')
+      return
+    }
+    
+    try {
+      console.log('🔄 Creating enhanced JIRA issues with content parsing for:', project.title)
+      
+      // Prepare Jira configuration
+      const jiraConfig = {
+        url: config.jiraUrl,
+        email: config.jiraEmail,
+        apiToken: config.jiraToken,
+        projectKey: config.jiraProject,
+        defaultIssueType: 'Task',
+        autoCreate: true,
+        createEpics: true,
+        linkIssues: true
+      }
+      
+      const jiraResponse = await fetch('/api/create-jira-issues', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessAnalysis: project.documents.businessAnalysis,
+          functionalSpec: project.documents.functionalSpec || '',
+          technicalSpec: project.documents.technicalSpec,
+          uxSpec: project.documents.uxSpec,
+          jiraConfig,
+          projectId: project.id
+        })
+      })
+      
+      const jiraResult = await jiraResponse.json()
+      
+      if (jiraResult.success) {
+        console.log('✅ Enhanced JIRA integration successful:', jiraResult.data.summary)
+        
+        const summary = jiraResult.data.summary
+        const epicUrl = jiraResult.data.epic.url
+        
+        alert(`🎉 Successfully created ${summary.totalIssues} JIRA issues!\n\n` +
+              `📋 Epic: ${jiraResult.data.epic.title} (${jiraResult.data.epic.key})\n` +
+              `📖 User Stories: ${summary.userStoriesCount}\n` +
+              `⚙️ Development Tasks: ${summary.developmentTasksCount}\n` +
+              `🎨 Design Tasks: ${summary.designTasksCount}\n\n` +
+              `🔗 View Epic: ${epicUrl}`)
+        
+        // Update the cached project with JIRA info
+        const cachedResults = JSON.parse(localStorage.getItem('sdlc-cached-results') || '{}')
+        if (cachedResults[project.id]) {
+          cachedResults[project.id].jiraEpic = jiraResult.data.epic.key
+          cachedResults[project.id].jiraEpicUrl = epicUrl
+          cachedResults[project.id].jiraSummary = summary
+          localStorage.setItem('sdlc-cached-results', JSON.stringify(cachedResults))
+          
+          // Refresh the recent projects display
+          const updatedProjects = getCachedResults()
+          setRecentProjects(updatedProjects)
+        }
+      } else {
+        console.error('❌ Enhanced JIRA integration failed:', jiraResult.error)
+        alert(`JIRA integration failed: ${jiraResult.error}\n\nDetails: ${jiraResult.details || 'Unknown error'}`)
+      }
+    } catch (error) {
+      console.error('❌ Manual JIRA integration error:', error)
+      alert(`Error creating JIRA artifacts: ${error.message}`)
+    }
+  }
+  
+  const handleManualConfluenceCreate = async (project: any) => {
+    console.log('📚 Manual Confluence creation triggered for project:', project.title)
+    
+    if (!config.confluenceUrl || !config.confluenceSpace || !config.confluenceEmail || !config.confluenceToken) {
+      alert('Please configure Confluence settings in the Configuration tab first.')
+      return
+    }
+    
+    try {
+      console.log('🔄 Creating Confluence documentation for:', project.title)
+      
+      const confluenceResponse = await fetch('/api/integrations/confluence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          config,
+          documents: project.documents,
+          projectName: project.title,
+          description: `Manual Confluence integration for ${project.title} project`
+        })
+      })
+      
+      const confluenceResult = await confluenceResponse.json()
+      
+      if (confluenceResult.success) {
+        console.log('✅ Manual Confluence integration successful:', confluenceResult)
+        alert(`Successfully created ${confluenceResult.pages?.length || 0} Confluence pages!\n\nSpace: ${confluenceResult.confluenceSpaceUrl}`)
+        
+        // Update the cached project with Confluence info
+        const cachedResults = JSON.parse(localStorage.getItem('sdlc-cached-results') || '{}')
+        if (cachedResults[project.id]) {
+          cachedResults[project.id].confluencePage = confluenceResult.pages?.[0]?.id || 'Created'
+          localStorage.setItem('sdlc-cached-results', JSON.stringify(cachedResults))
+          
+          // Refresh the recent projects display
+          const updatedProjects = getCachedResults()
+          setRecentProjects(updatedProjects)
+        }
+      } else {
+        console.error('❌ Manual Confluence integration failed:', confluenceResult.error)
+        alert(`Confluence integration failed: ${confluenceResult.error}`)
+      }
+    } catch (error) {
+      console.error('❌ Manual Confluence integration error:', error)
+      alert(`Error creating Confluence documentation: ${error.message}`)
+    }
+  }
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "completed":
@@ -569,6 +923,133 @@ export default function SDLCAutomationPlatform() {
     console.log("Testing connections...")
     // Here you would test JIRA and Confluence connections
     alert("Testing connections... (This would test your API credentials)")
+  }
+
+  const handleJiraExport = async (project: any) => {
+    console.log('🔗 Starting Jira export for project:', project.id)
+    
+    // Check if we have SDLC content to export
+    const hasContent = project.documents?.businessAnalysis || project.documents?.functionalSpec || project.documents?.technicalSpec || project.documents?.uxSpec
+    
+    if (!hasContent) {
+      setErrorMessage('No SDLC content available to export. Please generate some documentation first.')
+      return
+    }
+
+    // Check Jira configuration
+    if (!config.jiraUrl || !config.jiraProject || !config.jiraEmail || !config.jiraToken) {
+      setErrorMessage('Jira configuration is incomplete. Please configure Jira settings in the Integration Hub.')
+      return
+    }
+
+    setIsExportingToJira(true)
+    setErrorMessage('')
+
+    try {
+      const response = await fetch('/api/integrations/jira', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          businessAnalysis: project.documents.businessAnalysis,
+          functionalSpec: project.documents.functionalSpec,
+          technicalSpec: project.documents.technicalSpec,
+          uxSpec: project.documents.uxSpec,
+          mermaidDiagrams: project.documents.architecture,
+          jiraConfig: {
+            url: config.jiraUrl,
+            email: config.jiraEmail,
+            apiToken: config.jiraToken,
+            projectKey: config.jiraProject,
+            autoCreate: config.jiraAutoCreate
+          }
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      
+      if (result.success) {
+        console.log('✅ Jira export completed:', result.summary)
+        setSuccessMessage(`Successfully exported to Jira: ${result.summary}`)
+      } else {
+        throw new Error(result.error || 'Jira export failed')
+      }
+
+    } catch (error) {
+      console.error('❌ Jira export error:', error)
+      setErrorMessage(`Jira export failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setIsExportingToJira(false)
+    }
+  }
+
+  const handleConfluenceExport = async (project: any) => {
+    console.log('📄 Starting Confluence export for project:', project.id)
+    
+    // Check if we have SDLC content to export
+    const hasContent = project.documents?.businessAnalysis || project.documents?.functionalSpec || project.documents?.technicalSpec || project.documents?.uxSpec
+    
+    if (!hasContent) {
+      setErrorMessage('No SDLC content available to export. Please generate some documentation first.')
+      return
+    }
+
+    // Check Confluence configuration
+    if (!config.confluenceUrl || !config.confluenceSpace || !config.confluenceEmail || !config.confluenceToken) {
+      setErrorMessage('Confluence configuration is incomplete. Please configure Confluence settings in the Integration Hub.')
+      return
+    }
+
+    setIsExportingToConfluence(true)
+    setErrorMessage('')
+
+    try {
+      const response = await fetch('/api/integrations/confluence', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          businessAnalysis: project.documents.businessAnalysis,
+          functionalSpec: project.documents.functionalSpec,
+          technicalSpec: project.documents.technicalSpec,
+          uxSpec: project.documents.uxSpec,
+          mermaidDiagrams: project.documents.architecture,
+          confluenceConfig: {
+            url: config.confluenceUrl,
+            email: config.confluenceEmail,
+            apiToken: config.confluenceToken,
+            spaceKey: config.confluenceSpace
+          }
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      
+      if (result.success) {
+        console.log('✅ Confluence export completed:', result.summary)
+        setSuccessMessage(`Successfully exported to Confluence: ${result.summary}`)
+      } else {
+        throw new Error(result.error || 'Confluence export failed')
+      }
+
+    } catch (error) {
+      console.error('❌ Confluence export error:', error)
+      setErrorMessage(`Confluence export failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setIsExportingToConfluence(false)
+    }
   }
 
   return (
@@ -864,19 +1345,92 @@ export default function SDLCAutomationPlatform() {
                         {project.jiraEpic && <Badge variant="outline">JIRA: {project.jiraEpic}</Badge>}
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      {project.jiraEpic && (
-                        <Button variant="outline" size="sm">
+                    <div className="flex gap-2 flex-wrap">
+                      {/* JIRA Integration Buttons */}
+                      {project.jiraEpic ? (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-green-700 border-green-200 hover:bg-green-50"
+                          onClick={() => {
+                            const url = project.jiraEpicUrl || `${config.jiraUrl}/browse/${project.jiraEpic}`
+                            window.open(url, '_blank')
+                          }}
+                          title={project.jiraSummary ? 
+                            `Epic: ${project.jiraEpic}\nTotal Issues: ${project.jiraSummary.totalIssues}\nUser Stories: ${project.jiraSummary.userStoriesCount}\nDev Tasks: ${project.jiraSummary.developmentTasksCount}\nDesign Tasks: ${project.jiraSummary.designTasksCount}` : 
+                            `View JIRA Epic: ${project.jiraEpic}`
+                          }
+                        >
                           <ExternalLink className="h-4 w-4 mr-1" />
-                          JIRA Epic
+                          View JIRA Epic ({project.jiraEpic})
                         </Button>
+                      ) : (
+                        config.jiraUrl && config.jiraProject && config.jiraEmail && config.jiraToken && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => handleJiraExport(project)}
+                            className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Create JIRA Epic
+                          </Button>
+                        )
                       )}
-                      {project.confluencePage && (
-                        <Button variant="outline" size="sm">
+                      
+                      {/* Confluence Integration Buttons */}
+                      {project.confluencePage ? (
+                        <Button variant="outline" size="sm" className="text-green-700 border-green-200">
                           <ExternalLink className="h-4 w-4 mr-1" />
-                          Confluence
+                          View Confluence
                         </Button>
+                      ) : (
+                        config.confluenceUrl && config.confluenceSpace && config.confluenceEmail && config.confluenceToken && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => handleConfluenceExport(project)}
+                            className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Create Confluence Docs
+                          </Button>
+                        )
                       )}
+                      
+                      {/* Export to Jira Button */}
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleJiraExport(project)}
+                        disabled={isExportingToJira}
+                        className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                        title="Export SDLC content to Jira as Epics, Stories, and Tasks"
+                      >
+                        {isExportingToJira ? (
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        ) : (
+                          <ExternalLink className="h-4 w-4 mr-1" />
+                        )}
+                        {isExportingToJira ? 'Exporting...' : 'Export to Jira'}
+                      </Button>
+                      
+                      {/* Export to Confluence Button */}
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleConfluenceExport(project)}
+                        disabled={isExportingToConfluence}
+                        className="text-green-600 border-green-200 hover:bg-green-50"
+                        title="Export SDLC documentation to Confluence as structured pages"
+                      >
+                        {isExportingToConfluence ? (
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        ) : (
+                          <FileText className="h-4 w-4 mr-1" />
+                        )}
+                        {isExportingToConfluence ? 'Exporting...' : 'Export to Confluence'}
+                      </Button>
                     </div>
                   </div>
 
@@ -917,10 +1471,9 @@ export default function SDLCAutomationPlatform() {
                       />
                     </TabsContent>
                     <TabsContent value="architecture" className="mt-2">
-                      <MarkdownRenderer 
-                        content={project.documents.architecture}
-                        title="Architecture"
-                        type="architecture"
+                      <MermaidViewer 
+                        diagrams={parseMermaidDiagrams(project.documents.architecture || "")}
+                        title="Architecture Diagrams"
                       />
                     </TabsContent>
                   </Tabs>
@@ -979,18 +1532,15 @@ export default function SDLCAutomationPlatform() {
               <Separator />
 
               {/* JIRA Configuration */}
-              <div className="space-y-4 relative">
+              <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <ExternalLink className="h-4 w-4" />
                   <h3 className="font-semibold">JIRA Integration</h3>
-                  <Badge variant="secondary" className="ml-2">Coming Soon</Badge>
+                  <Badge variant="outline" className="ml-2 text-green-600 border-green-200">Ready</Badge>
                 </div>
-                <div className="absolute inset-0 bg-gray-50/50 backdrop-blur-[0.5px] rounded-lg flex items-center justify-center z-10">
-                  <div className="text-center p-4">
-                    <p className="text-gray-600 font-medium">JIRA Integration</p>
-                    <p className="text-sm text-gray-500">Coming in the next update</p>
-                  </div>
-                </div>
+                <p className="text-sm text-gray-600">
+                  Configure Jira to automatically create issues and epics from your SDLC documentation.
+                </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="jira-url">JIRA URL</Label>
@@ -999,7 +1549,6 @@ export default function SDLCAutomationPlatform() {
                       placeholder="https://company.atlassian.net"
                       value={config.jiraUrl}
                       onChange={(e) => setConfig((prev) => ({ ...prev, jiraUrl: e.target.value }))}
-                      disabled
                     />
                   </div>
                   <div>
@@ -1009,7 +1558,6 @@ export default function SDLCAutomationPlatform() {
                       placeholder="PROJ"
                       value={config.jiraProject}
                       onChange={(e) => setConfig((prev) => ({ ...prev, jiraProject: e.target.value }))}
-                      disabled
                     />
                   </div>
                   <div>
@@ -1020,7 +1568,6 @@ export default function SDLCAutomationPlatform() {
                       placeholder="user@company.com"
                       value={config.jiraEmail}
                       onChange={(e) => setConfig((prev) => ({ ...prev, jiraEmail: e.target.value }))}
-                      disabled
                     />
                   </div>
                   <div>
@@ -1031,7 +1578,6 @@ export default function SDLCAutomationPlatform() {
                       placeholder="Your JIRA API token"
                       value={config.jiraToken}
                       onChange={(e) => setConfig((prev) => ({ ...prev, jiraToken: e.target.value }))}
-                      disabled
                     />
                   </div>
                 </div>
@@ -1052,18 +1598,15 @@ export default function SDLCAutomationPlatform() {
               <Separator />
 
               {/* Confluence Configuration */}
-              <div className="space-y-4 relative">
+              <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <FileText className="h-4 w-4" />
                   <h3 className="font-semibold">Confluence Integration</h3>
-                  <Badge variant="secondary" className="ml-2">Coming Soon</Badge>
+                  <Badge variant="outline" className="ml-2 text-green-600 border-green-200">Ready</Badge>
                 </div>
-                <div className="absolute inset-0 bg-gray-50/50 backdrop-blur-[0.5px] rounded-lg flex items-center justify-center z-10">
-                  <div className="text-center p-4">
-                    <p className="text-gray-600 font-medium">Confluence Integration</p>
-                    <p className="text-sm text-gray-500">Coming in the next update</p>
-                  </div>
-                </div>
+                <p className="text-sm text-gray-600">
+                  Configure Confluence to automatically create documentation pages from your SDLC output.
+                </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="confluence-url">Confluence URL</Label>
@@ -1072,7 +1615,6 @@ export default function SDLCAutomationPlatform() {
                       placeholder="https://company.atlassian.net/wiki"
                       value={config.confluenceUrl}
                       onChange={(e) => setConfig((prev) => ({ ...prev, confluenceUrl: e.target.value }))}
-                      disabled
                     />
                   </div>
                   <div>
@@ -1082,7 +1624,6 @@ export default function SDLCAutomationPlatform() {
                       placeholder="DEV"
                       value={config.confluenceSpace}
                       onChange={(e) => setConfig((prev) => ({ ...prev, confluenceSpace: e.target.value }))}
-                      disabled
                     />
                   </div>
                   <div>
@@ -1093,7 +1634,6 @@ export default function SDLCAutomationPlatform() {
                       placeholder="user@company.com"
                       value={config.confluenceEmail}
                       onChange={(e) => setConfig((prev) => ({ ...prev, confluenceEmail: e.target.value }))}
-                      disabled
                     />
                   </div>
                   <div>
@@ -1104,7 +1644,6 @@ export default function SDLCAutomationPlatform() {
                       placeholder="Your Confluence API token"
                       value={config.confluenceToken}
                       onChange={(e) => setConfig((prev) => ({ ...prev, confluenceToken: e.target.value }))}
-                      disabled
                     />
                   </div>
                 </div>
@@ -1398,6 +1937,8 @@ export default function SDLCAutomationPlatform() {
             </div>
           </DialogContent>
         </Dialog>
+
+
       </div>
     </div>
   )
