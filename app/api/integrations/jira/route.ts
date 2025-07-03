@@ -191,31 +191,130 @@ export async function POST(req: NextRequest) {
           summary: epicPayload.fields.summary
         })
 
-        // Helper function to convert markdown to Jira markup
-        const convertToJiraMarkup = (content: string): string => {
-          if (!content) return ''
-          
-          return content
-            // Convert markdown headers to Jira headers
-            .replace(/^### (.*$)/gm, 'h3. $1')
-            .replace(/^## (.*$)/gm, 'h2. $1')
-            .replace(/^# (.*$)/gm, 'h1. $1')
-            // Convert markdown bold to Jira bold
-            .replace(/\*\*(.*?)\*\*/g, '*$1*')
-            // Convert markdown italic to Jira italic
-            .replace(/\*(.*?)\*/g, '_$1_')
-            // Convert markdown code blocks to Jira code blocks
-            .replace(/```([\s\S]*?)```/g, '{code}$1{code}')
-            // Convert markdown inline code to Jira monospace
-            .replace(/`([^`]+)`/g, '{{$1}}')
-            // Convert markdown lists to Jira lists
-            .replace(/^\* (.*$)/gm, '* $1')
-            .replace(/^- (.*$)/gm, '* $1')
-            // Convert numbered lists
-            .replace(/^\d+\. (.*$)/gm, '# $1')
-            // Clean up extra whitespace
-            .replace(/\n\s*\n/g, '\n\n')
-            .trim()
+        // Helper function to convert content to Atlassian Document Format (ADF)
+        const convertToADF = (content: string): object => {
+          if (!content) {
+            return {
+              type: "doc",
+              version: 1,
+              content: [
+                {
+                  type: "paragraph",
+                  content: [
+                    {
+                      type: "text",
+                      text: "No content available."
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+
+          // Split content into paragraphs and process
+          const paragraphs = content.split(/\n\s*\n/).filter(p => p.trim())
+          const adfContent = []
+
+          for (const paragraph of paragraphs) {
+            const trimmedParagraph = paragraph.trim()
+            if (!trimmedParagraph) continue
+
+            // Check if it's a header
+            if (trimmedParagraph.startsWith('###')) {
+              adfContent.push({
+                type: "heading",
+                attrs: { level: 3 },
+                content: [
+                  {
+                    type: "text",
+                    text: trimmedParagraph.replace(/^###\s*/, '')
+                  }
+                ]
+              })
+            } else if (trimmedParagraph.startsWith('##')) {
+              adfContent.push({
+                type: "heading",
+                attrs: { level: 2 },
+                content: [
+                  {
+                    type: "text",
+                    text: trimmedParagraph.replace(/^##\s*/, '')
+                  }
+                ]
+              })
+            } else if (trimmedParagraph.startsWith('#')) {
+              adfContent.push({
+                type: "heading",
+                attrs: { level: 1 },
+                content: [
+                  {
+                    type: "text",
+                    text: trimmedParagraph.replace(/^#\s*/, '')
+                  }
+                ]
+              })
+            } else if (trimmedParagraph.startsWith('- ') || trimmedParagraph.startsWith('* ')) {
+              // Handle bullet lists
+              const listItems = trimmedParagraph.split(/\n(?=[*-]\s)/).map(item => ({
+                type: "listItem",
+                content: [
+                  {
+                    type: "paragraph",
+                    content: [
+                      {
+                        type: "text",
+                        text: item.replace(/^[*-]\s*/, '')
+                      }
+                    ]
+                  }
+                ]
+              }))
+              
+              adfContent.push({
+                type: "bulletList",
+                content: listItems
+              })
+            } else {
+              // Regular paragraph - handle inline formatting
+              let textContent = trimmedParagraph
+              const inlineContent = []
+              
+              // Simple text processing (can be enhanced for bold, italic, etc.)
+              if (textContent.includes('**') || textContent.includes('*') || textContent.includes('`')) {
+                // For now, keep it simple and just use plain text
+                inlineContent.push({
+                  type: "text",
+                  text: textContent.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').replace(/`(.*?)`/g, '$1')
+                })
+              } else {
+                inlineContent.push({
+                  type: "text",
+                  text: textContent
+                })
+              }
+              
+              adfContent.push({
+                type: "paragraph",
+                content: inlineContent
+              })
+            }
+          }
+
+          return {
+            type: "doc",
+            version: 1,
+            content: adfContent.length > 0 ? adfContent : [
+              {
+                type: "paragraph",
+                content: [
+                  {
+                    type: "text",
+                    text: content.substring(0, 1000) // Fallback to plain text if parsing fails
+                  }
+                ]
+              }
+            ]
+          }
         }
 
         // Create Stories for main SDLC areas (if Story type is available)
@@ -262,8 +361,8 @@ export async function POST(req: NextRequest) {
           if (documents && documents[storyType.doc]) {
             console.log(`📖 Creating ${storyType.type} for ${storyType.title}...`)
             
-            // Create Story with rich Jira markup content
-            const storyContent = convertToJiraMarkup(documents[storyType.doc])
+            // Create Story with ADF content
+            const storyContent = convertToADF(documents[storyType.doc])
             const storySummary = `${storyType.title} - ${sanitizedProjectName}`
               .replace(/[\r\n]+/g, ' ')
               .trim()
@@ -273,7 +372,7 @@ export async function POST(req: NextRequest) {
               fields: {
                 project: { key: config.jiraProject },
                 summary: storySummary,
-                description: storyContent.substring(0, 32000), // Jira limit
+                description: storyContent, // Now using ADF format
                 issuetype: { name: storyType.type },
                 // Link to Epic if possible
                 ...(issueTypeName === 'Epic' && availableIssueTypes.includes('Story') ? {
@@ -311,16 +410,17 @@ export async function POST(req: NextRequest) {
                   .substring(0, 200)
                 
                 // Extract relevant portion of content for this task
-                const taskContent = convertToJiraMarkup(
-                  documents[task.content]?.substring(0, 1000) || 
+                const taskContentText = documents[task.content]?.substring(0, 1000) || 
                   `${task.title} implementation details for ${sanitizedProjectName}`
-                )
+                
+                const taskContentWithHeader = `Related to ${storyType.type}: ${story.key}\n\n${taskContentText}`
+                const taskContent = convertToADF(taskContentWithHeader)
                 
                 const taskPayload = {
                   fields: {
                     project: { key: config.jiraProject },
                     summary: taskSummary,
-                    description: `h3. Related to ${storyType.type}: ${story.key}\n\n${taskContent}`,
+                    description: taskContent, // Now using ADF format
                     issuetype: { name: 'Task' },
                     // Link to parent Story if possible
                     ...(availableIssueTypes.includes('Sub-task') ? {

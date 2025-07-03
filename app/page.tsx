@@ -1361,12 +1361,13 @@ export default function SDLCAutomationPlatform() {
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          className="text-green-700 border-green-200 hover:bg-green-50"
+                          className="text-blue-700 border-blue-200 hover:bg-blue-50"
                           onClick={() => {
                             const url = project.jiraEpicUrl || `${config.jiraUrl}/browse/${project.jiraEpic}`
                             window.open(url, '_blank')
                           }}
-                          title={project.jiraSummary ? 
+                          title={
+                            project.jiraSummary ? 
                             `Epic: ${project.jiraEpic}\nTotal Issues: ${project.jiraSummary.totalIssues}\nUser Stories: ${project.jiraSummary.userStoriesCount}\nDev Tasks: ${project.jiraSummary.developmentTasksCount}\nDesign Tasks: ${project.jiraSummary.designTasksCount}` : 
                             `View JIRA Epic: ${project.jiraEpic}`
                           }
@@ -1375,75 +1376,58 @@ export default function SDLCAutomationPlatform() {
                           View JIRA Epic ({project.jiraEpic})
                         </Button>
                       ) : (
-                        config.jiraUrl && config.jiraProject && config.jiraEmail && config.jiraToken && (
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => handleJiraExport(project)}
-                            className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                          >
-                            <Plus className="h-4 w-4 mr-1" />
-                            Create JIRA Epic
-                          </Button>
-                        )
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => {
+                            console.log('🔵 Jira export button clicked, current loading state:', isExportingToJira)
+                            handleJiraExport(project)
+                          }}
+                          disabled={isExportingToJira}
+                          className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                          title="Export SDLC content to Jira as Epics, Stories, and Tasks"
+                        >
+                          {isExportingToJira ? (
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          ) : (
+                            <ExternalLink className="h-4 w-4 mr-1" />
+                          )}
+                          {isExportingToJira ? 'Exporting...' : 'Export to Jira'}
+                        </Button>
                       )}
                       
                       {/* Confluence Integration Buttons */}
                       {project.confluencePage ? (
-                        <Button variant="outline" size="sm" className="text-green-700 border-green-200">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-green-700 border-green-200 hover:bg-green-50"
+                          onClick={() => {
+                            if (project.confluencePageUrl) {
+                              window.open(project.confluencePageUrl, '_blank')
+                            }
+                          }}
+                        >
                           <ExternalLink className="h-4 w-4 mr-1" />
                           View Confluence
                         </Button>
                       ) : (
-                        config.confluenceUrl && config.confluenceSpace && config.confluenceEmail && config.confluenceToken && (
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => handleConfluenceExport(project)}
-                            className="text-purple-600 border-purple-200 hover:bg-purple-50"
-                          >
-                            <Plus className="h-4 w-4 mr-1" />
-                            Create Confluence Docs
-                          </Button>
-                        )
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleConfluenceExport(project)}
+                          disabled={isExportingToConfluence}
+                          className="text-green-600 border-green-200 hover:bg-green-50"
+                          title="Export SDLC documentation to Confluence as structured pages"
+                        >
+                          {isExportingToConfluence ? (
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          ) : (
+                            <FileText className="h-4 w-4 mr-1" />
+                          )}
+                          {isExportingToConfluence ? 'Exporting...' : 'Export to Confluence'}
+                        </Button>
                       )}
-                      
-                      {/* Export to Jira Button */}
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => {
-                          console.log('🔵 Jira export button clicked, current loading state:', isExportingToJira)
-                          handleJiraExport(project)
-                        }}
-                        disabled={isExportingToJira}
-                        className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                        title="Export SDLC content to Jira as Epics, Stories, and Tasks"
-                      >
-                        {isExportingToJira ? (
-                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                        ) : (
-                          <ExternalLink className="h-4 w-4 mr-1" />
-                        )}
-                        {isExportingToJira ? 'Exporting...' : 'Export to Jira'}
-                      </Button>
-                      
-                      {/* Export to Confluence Button */}
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => handleConfluenceExport(project)}
-                        disabled={isExportingToConfluence}
-                        className="text-green-600 border-green-200 hover:bg-green-50"
-                        title="Export SDLC documentation to Confluence as structured pages"
-                      >
-                        {isExportingToConfluence ? (
-                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                        ) : (
-                          <FileText className="h-4 w-4 mr-1" />
-                        )}
-                        {isExportingToConfluence ? 'Exporting...' : 'Export to Confluence'}
-                      </Button>
                     </div>
                   </div>
 
