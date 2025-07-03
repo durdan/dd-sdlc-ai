@@ -4,29 +4,13 @@ import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-interface MermaidViewerProps {
-  diagrams: {
-    architecture: string
-    database: string
-    userFlow: string
-    apiFlow: string
-  }
-  title?: string
-}
-
-export function MermaidViewer({ diagrams, title = "System Architecture Diagrams" }: MermaidViewerProps) {
-  console.log('🚀 MermaidViewer component rendered!', { diagrams, title })
-  
+export function MermaidViewer({ diagrams, title = "System Architecture Diagrams" }) {
   const [activeTab, setActiveTab] = useState("architecture")
-  const diagramRef = useRef<HTMLDivElement>(null)
-  
-  // Helper to check if a diagram has content
-  const hasContent = (key: string) => {
-    const content = diagrams[key as keyof typeof diagrams]
-    return content && content.trim().length > 0
-  }
-  
-  // Set active tab to first one with content on mount
+  const diagramRef = useRef(null)
+
+  const hasContent = key => diagrams[key] && diagrams[key].trim().length > 0
+
+  // Set active tab to first one with content on mount or when diagrams change
   useEffect(() => {
     const tabsWithContent = ['architecture', 'database', 'userFlow', 'apiFlow'].filter(hasContent)
     if (tabsWithContent.length > 0 && !hasContent(activeTab)) {
@@ -34,59 +18,28 @@ export function MermaidViewer({ diagrams, title = "System Architecture Diagrams"
     }
   }, [diagrams])
 
-  // Render Mermaid diagram
+  // Render the Mermaid diagram only for the active tab
   useEffect(() => {
-    console.log('🔥 MermaidViewer useEffect triggered', { activeTab, diagrams })
-    
     const renderDiagram = async () => {
-      console.log('🔥 renderDiagram called', { diagramRef: !!diagramRef.current })
-      
-      if (!diagramRef.current) {
-        console.log('❌ No diagramRef.current')
-        return
-      }
-      
-      const diagramContent = diagrams[activeTab as keyof typeof diagrams]
-      console.log('🔥 Diagram content:', { activeTab, content: diagramContent?.substring(0, 100) })
-      
+      if (!diagramRef.current) return
+      const diagramContent = diagrams[activeTab]
       if (!diagramContent || diagramContent.trim() === '') {
-        console.log('❌ No diagram content')
         diagramRef.current.innerHTML = '<div class="p-8 text-center text-gray-500">No diagram available</div>'
         return
       }
-
       try {
-        console.log('🔥 Importing Mermaid...')
-        // Import Mermaid dynamically
         const mermaid = (await import("mermaid")).default
-        console.log('✅ Mermaid imported successfully')
-        
-        // Initialize
-        mermaid.initialize({
-          startOnLoad: false,
-          theme: "default",
-          securityLevel: "loose"
-        })
-        console.log('✅ Mermaid initialized')
-
-        // Clear and render
+        mermaid.initialize({ startOnLoad: false, theme: "default", securityLevel: "loose" })
         diagramRef.current.innerHTML = ''
-        console.log('🔥 Rendering diagram...')
         const { svg } = await mermaid.render(`diagram-${Date.now()}`, diagramContent.trim())
-        console.log('✅ Mermaid render successful, SVG length:', svg.length)
         diagramRef.current.innerHTML = svg
-        console.log('✅ SVG inserted into DOM')
-        
       } catch (error) {
-        console.error('❌ Mermaid error:', error)
         diagramRef.current.innerHTML = `<div class="p-8 text-center text-red-500">Rendering error: ${error}</div>`
       }
     }
-
     renderDiagram()
   }, [activeTab, diagrams])
 
-  // Get tabs that have content
   const tabsWithContent = [
     { key: 'architecture', label: 'Architecture', icon: '🏗️' },
     { key: 'database', label: 'Database', icon: '🗄️' },
@@ -99,7 +52,6 @@ export function MermaidViewer({ diagrams, title = "System Architecture Diagrams"
       <CardHeader>
         <CardTitle>{title}</CardTitle>
       </CardHeader>
-      
       <CardContent>
         {tabsWithContent.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
@@ -119,17 +71,14 @@ export function MermaidViewer({ diagrams, title = "System Architecture Diagrams"
                 </TabsTrigger>
               ))}
             </TabsList>
-
-            {tabsWithContent.map(tab => (
-              <TabsContent key={tab.key} value={tab.key}>
-                <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
-                  <div 
-                    ref={diagramRef}
-                    className="p-6 min-h-[400px] overflow-auto"
-                  />
-                </div>
-              </TabsContent>
-            ))}
+            <TabsContent key={activeTab} value={activeTab}>
+              <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
+                <div 
+                  ref={diagramRef}
+                  className="p-6 min-h-[400px] overflow-auto"
+                />
+              </div>
+            </TabsContent>
           </Tabs>
         )}
       </CardContent>

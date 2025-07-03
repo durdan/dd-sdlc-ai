@@ -37,8 +37,7 @@ import {
   RefreshCw,
   ChevronDown,
   Plus,
-  Brain,
-  Target,
+
 } from "lucide-react"
 import { HowItWorksVisualization } from "@/components/how-it-works-visualization"
 import { PromptEngineering } from "@/components/prompt-engineering"
@@ -46,14 +45,13 @@ import { MarkdownRenderer } from '@/components/markdown-renderer'
 import { MermaidViewer } from '@/components/mermaid-viewer-fixed'
 import { IntegrationHub } from '@/components/integration-hub'
 import { VisualizationHub } from '@/components/visualization-hub'
-import { ContentIntelligenceViewer } from '@/components/content-intelligence-viewer'
-import { BacklogStructureViewer } from '@/components/backlog-structure-viewer'
+
 import { SimpleWorkflowDiagram } from "@/components/simple-workflow-diagram"
 
 interface ProcessingStep {
   id: string
   name: string
-  status: "pending" | "in_progress" | "completed" | "error"
+  status: "pending" | "in_progres s" | "completed" | "error"
   progress: number
   estimatedTime?: string
 }
@@ -100,6 +98,7 @@ export default function SDLCAutomationPlatform() {
   const [currentStep, setCurrentStep] = useState(0)
   const [showConfig, setShowConfig] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
+  const [successMessage, setSuccessMessage] = useState("")
   const [config, setConfig] = useState({
     openaiKey: "",
     aiModel: "gpt-4",
@@ -126,14 +125,10 @@ export default function SDLCAutomationPlatform() {
   const [pendingCachedResults, setPendingCachedResults] = useState<any>(null)
   const [showApiKeyDialog, setShowApiKeyDialog] = useState(false)
   const [tempApiKey, setTempApiKey] = useState('')
-  const [showContentIntelligence, setShowContentIntelligence] = useState(false)
-  const [contentIntelligenceData, setContentIntelligenceData] = useState<any>(null)
-  const [isAnalyzingIntelligence, setIsAnalyzingIntelligence] = useState(false)
   
-  // Backlog Structure state
-  const [showBacklogStructure, setShowBacklogStructure] = useState(false)
-  const [backlogStructureData, setBacklogStructureData] = useState<any>(null)
-  const [isGeneratingBacklog, setIsGeneratingBacklog] = useState(false)
+  // Export state
+  const [isExportingToJira, setIsExportingToJira] = useState(false)
+  const [isExportingToConfluence, setIsExportingToConfluence] = useState(false)
   
   // Function to update step progress - moved to component level for global access
   const updateStepProgress = (stepId: string, progress: number, status: "pending" | "in_progress" | "completed" | "error" = "in_progress") => {
@@ -245,54 +240,166 @@ export default function SDLCAutomationPlatform() {
 
   const [generatedDocuments, setGeneratedDocuments] = useState<any>(null)
 
-  // Parse Mermaid diagrams into separate sections
+  // Helper function to parse Mermaid content into separate diagrams
   const parseMermaidDiagrams = (mermaidContent: string) => {
     if (!mermaidContent) {
-      return { architecture: "", database: "", userFlow: "", apiFlow: "" }
+      console.log('No mermaid content to parse')
+      return {}
     }
 
-    // Split by comments that indicate diagram sections
-    const sections = mermaidContent.split(/%%\s*[A-Za-z\s]+\s*Diagram/i)
+    // Log the raw content for debugging
+    console.log('Raw mermaid content:', mermaidContent.substring(0, 200) + '...')
+    console.log('Raw mermaid content length:', mermaidContent.length)
     
-    let architecture = ""
-    let database = ""
-    let userFlow = ""
-    let apiFlow = ""
+    // Check for markdown headers and code blocks
+    const hasMarkdownHeaders = /^\s*#+\s+.+$/m.test(mermaidContent)
+    const hasMermaidCodeBlocks = /```(?:mermaid)?[\s\S]*?```/g.test(mermaidContent)
+    console.log('Content analysis:', { hasMarkdownHeaders, hasMermaidCodeBlocks })
 
-    sections.forEach((section, index) => {
-      const trimmedSection = section.trim()
-      if (!trimmedSection) return
+    // Fully generic approach - create an empty diagram object with no hardcoded keys
+    const diagrams: Record<string, string> = {}
 
-      // Check what type of diagram this section contains
-      if (trimmedSection.includes('graph ') || trimmedSection.includes('flowchart ')) {
-        if (trimmedSection.toLowerCase().includes('user') || trimmedSection.toLowerCase().includes('flow')) {
-          userFlow = trimmedSection
-        } else {
-          architecture = trimmedSection
+    // Try to split by both markdown headers and Mermaid section comments
+    const sectionMarkers: {name: string, index: number}[] = []
+    let foundSections = false
+    
+    // First, try to find markdown headers like "## System Architecture Diagram"
+    const markdownHeaderRegex = /^##\s+([^\n]+?)\s*(?:Diagram)?\s*$/gmi
+    let match
+    while ((match = markdownHeaderRegex.exec(mermaidContent)) !== null) {
+      foundSections = true
+      const sectionName = match[1].trim().toLowerCase().replace(/\s+/g, '')
+      sectionMarkers.push({
+        name: sectionName,
+        index: match.index + match[0].length
+      })
+      console.log(`Found markdown header: ${sectionName} at index ${match.index}`)
+    }
+    
+    // Also try Mermaid section comments like "%% System Architecture Diagram"
+    const sectionCommentRegex = /%%\s*([A-Za-z\s]+)\s*Diagram/gi
+    sectionCommentRegex.lastIndex = 0 // Reset regex state
+    while ((match = sectionCommentRegex.exec(mermaidContent)) !== null) {
+      foundSections = true
+      const sectionName = match[1].trim().toLowerCase().replace(/\s+/g, '')
+      sectionMarkers.push({
+        name: sectionName,
+        index: match.index + match[0].length
+      })
+      console.log(`Found section comment: ${sectionName} at index ${match.index}`)
+    }
+    
+    // Sort section markers by index to process them in order
+    sectionMarkers.sort((a, b) => a.index - b.index)
+    
+    // Now process the sections with known boundaries
+    if (sectionMarkers.length > 0) {
+      for (let i = 0; i < sectionMarkers.length; i++) {
+        const currentMarker = sectionMarkers[i]
+        const nextMarker = sectionMarkers[i + 1]
+        const endIndex = nextMarker ? nextMarker.index : mermaidContent.length
+        
+        // Extract the diagram content
+        const diagramContent = mermaidContent.substring(currentMarker.index, endIndex).trim()
+        console.log(`Processing section: ${currentMarker.name}, content length: ${diagramContent.length}`)
+        
+        // Store each diagram with its own section name as the key
+        // No hardcoded categories - fully generic
+        diagrams[currentMarker.name] = diagramContent
+      }
+    }
+    
+    // If no sections found, try to identify diagram types directly
+    if (!foundSections) {
+      console.log('No section comments found, trying to identify diagram types directly')
+      
+      // Split by markdown headers or code blocks if present
+      let diagramBlocks: string[] = []
+      
+      if (hasMermaidCodeBlocks) {
+        const codeBlockRegex = /```(?:mermaid)?\s*([\s\S]*?)```/g
+        let codeMatch
+        while ((codeMatch = codeBlockRegex.exec(mermaidContent)) !== null) {
+          if (codeMatch[1] && codeMatch[1].trim()) {
+            diagramBlocks.push(codeMatch[1].trim())
+          }
         }
+        console.log(`Found ${diagramBlocks.length} code blocks`)
+      } else {
+        // Try to split by common diagram type declarations
+        const diagramTypeRegex = /(graph|flowchart|sequenceDiagram|erDiagram|classDiagram|stateDiagram|gantt|pie|journey|gitGraph)/gi
+        let lastTypeIndex = 0
+        let typeMatch
+        
+        while ((typeMatch = diagramTypeRegex.exec(mermaidContent)) !== null) {
+          if (typeMatch.index > lastTypeIndex) {
+            const previousContent = mermaidContent.substring(lastTypeIndex, typeMatch.index).trim()
+            if (previousContent && /^\w+\s/.test(previousContent)) {
+              diagramBlocks.push(previousContent)
+            }
+          }
+          lastTypeIndex = typeMatch.index
+        }
+        
+        // Add the last block
+        if (lastTypeIndex < mermaidContent.length) {
+          const lastBlock = mermaidContent.substring(lastTypeIndex).trim()
+          if (lastBlock) diagramBlocks.push(lastBlock)
+        }
+        
+        console.log(`Split content into ${diagramBlocks.length} diagram blocks`)
       }
-      else if (trimmedSection.includes('erDiagram')) {
-        database = trimmedSection
-      }
-      else if (trimmedSection.includes('sequenceDiagram')) {
-        apiFlow = trimmedSection
-      }
-      // Fallback: if first section and no specific type detected, assume architecture
-      else if (index === 1 && !architecture) {
-        architecture = trimmedSection
-      }
-    })
+      
+      // Categorize each diagram block - using a fully generic approach
+      diagramBlocks.forEach((block, index) => {
+        console.log(`Analyzing block ${index + 1}, length: ${block.length}`)
+        console.log(`Block ${index + 1} preview:`, block.substring(0, 50) + '...')
+        
+        // Determine diagram type from content for naming
+        let diagramType = 'diagram'
+        
+        // Try to determine a more specific type based on content
+        if (block.includes('graph ') || block.includes('flowchart ')) {
+          diagramType = 'flowchart'
+        }
+        else if (block.includes('erDiagram')) {
+          diagramType = 'entityrelationship'
+        }
+        else if (block.includes('sequenceDiagram')) {
+          diagramType = 'sequence'
+        }
+        else if (block.includes('classDiagram')) {
+          diagramType = 'class'
+        }
+        else if (block.includes('stateDiagram')) {
+          diagramType = 'state'
+        }
+        
+        // Create a unique key for this diagram
+        const diagramKey = `${diagramType}${index + 1}`
+        diagrams[diagramKey] = block
+        console.log(`Created diagram category: ${diagramKey}`)
+      })
+    }
 
     // Log parsing results for debugging
     console.log('Parsed Mermaid diagrams:', {
-      architecture: architecture ? 'Found' : 'Empty',
-      database: database ? 'Found' : 'Empty', 
-      userFlow: userFlow ? 'Found' : 'Empty',
-      apiFlow: apiFlow ? 'Found' : 'Empty',
+      ...Object.fromEntries(
+        Object.entries(diagrams).map(([key, value]) => 
+          [key, value ? `Found (${value.length} chars)` : 'Empty']
+        )
+      ),
       originalLength: mermaidContent.length
     })
+    
+    // Also log the actual diagram keys and content previews
+    Object.entries(diagrams).forEach(([key, content]) => {
+      if (content) {
+        console.log(`Diagram '${key}' preview:`, content.substring(0, 100) + '...')
+      }
+    })
 
-    return { architecture, database, userFlow, apiFlow }
+    return diagrams
   }
 
   // Cache management
@@ -818,38 +925,45 @@ export default function SDLCAutomationPlatform() {
     alert("Testing connections... (This would test your API credentials)")
   }
 
-  const handleContentIntelligenceAnalysis = async (project: any) => {
-    if (!project.businessAnalysis || !project.technicalSpec || !project.uxSpec) {
-      alert('Project must have business analysis, technical spec, and UX spec to perform content intelligence analysis')
+  const handleJiraExport = async (project: any) => {
+    console.log('🔗 Starting Jira export for project:', project.id)
+    
+    // Check if we have SDLC content to export
+    const hasContent = project.documents?.businessAnalysis || project.documents?.functionalSpec || project.documents?.technicalSpec || project.documents?.uxSpec
+    
+    if (!hasContent) {
+      setErrorMessage('No SDLC content available to export. Please generate some documentation first.')
       return
     }
 
-    // Check for OpenAI API key
-    let apiKey = config.openaiKey
-    if (!apiKey) {
-      setTempApiKey('')
-      setShowApiKeyDialog(true)
+    // Check Jira configuration
+    if (!config.jiraUrl || !config.jiraProject || !config.jiraEmail || !config.jiraToken) {
+      setErrorMessage('Jira configuration is incomplete. Please configure Jira settings in the Integration Hub.')
       return
     }
 
-    setIsAnalyzingIntelligence(true)
+    setIsExportingToJira(true)
     setErrorMessage('')
 
     try {
-      console.log('🧠 Starting content intelligence analysis for project:', project.id)
-      
-      const response = await fetch('/api/analyze-content-intelligence', {
+      const response = await fetch('/api/integrations/jira', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          businessAnalysis: project.businessAnalysis,
-          functionalSpec: project.functionalSpec || '',
-          technicalSpec: project.technicalSpec,
-          uxSpec: project.uxSpec,
-          openaiKey: apiKey,
-          projectId: project.id
+          businessAnalysis: project.documents.businessAnalysis,
+          functionalSpec: project.documents.functionalSpec,
+          technicalSpec: project.documents.technicalSpec,
+          uxSpec: project.documents.uxSpec,
+          mermaidDiagrams: project.documents.architecture,
+          jiraConfig: {
+            url: config.jiraUrl,
+            email: config.jiraEmail,
+            apiToken: config.jiraToken,
+            projectKey: config.jiraProject,
+            autoCreate: config.jiraAutoCreate
+          }
         }),
       })
 
@@ -861,53 +975,58 @@ export default function SDLCAutomationPlatform() {
       const result = await response.json()
       
       if (result.success) {
-        console.log('✅ Content intelligence analysis completed:', result.data.summary)
-        setContentIntelligenceData(result.data)
-        setShowContentIntelligence(true)
+        console.log('✅ Jira export completed:', result.summary)
+        setSuccessMessage(`Successfully exported to Jira: ${result.summary}`)
       } else {
-        throw new Error(result.error || 'Content intelligence analysis failed')
+        throw new Error(result.error || 'Jira export failed')
       }
 
     } catch (error) {
-      console.error('❌ Content intelligence analysis error:', error)
-      setErrorMessage(`Content intelligence analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      console.error('❌ Jira export error:', error)
+      setErrorMessage(`Jira export failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
-      setIsAnalyzingIntelligence(false)
+      setIsExportingToJira(false)
     }
   }
 
-  const handleBacklogStructureGeneration = async (project: any) => {
-    if (!project.businessAnalysis || !project.functionalSpec || !project.technicalSpec || !project.uxSpec) {
-      alert('Project must have all SDLC documents (business analysis, functional spec, technical spec, and UX spec) to generate backlog structure')
+  const handleConfluenceExport = async (project: any) => {
+    console.log('📄 Starting Confluence export for project:', project.id)
+    
+    // Check if we have SDLC content to export
+    const hasContent = project.documents?.businessAnalysis || project.documents?.functionalSpec || project.documents?.technicalSpec || project.documents?.uxSpec
+    
+    if (!hasContent) {
+      setErrorMessage('No SDLC content available to export. Please generate some documentation first.')
       return
     }
 
-    // Check for OpenAI API key
-    let apiKey = config.openaiKey
-    if (!apiKey) {
-      setTempApiKey('')
-      setShowApiKeyDialog(true)
+    // Check Confluence configuration
+    if (!config.confluenceUrl || !config.confluenceSpace || !config.confluenceEmail || !config.confluenceToken) {
+      setErrorMessage('Confluence configuration is incomplete. Please configure Confluence settings in the Integration Hub.')
       return
     }
 
-    setIsGeneratingBacklog(true)
+    setIsExportingToConfluence(true)
     setErrorMessage('')
 
     try {
-      console.log('🎯 Starting backlog structure generation for project:', project.id)
-      
-      const response = await fetch('/api/generate-backlog-structure', {
+      const response = await fetch('/api/integrations/confluence', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          businessAnalysis: project.businessAnalysis,
-          functionalSpec: project.functionalSpec,
-          technicalSpec: project.technicalSpec,
-          uxSpec: project.uxSpec,
-          openaiKey: apiKey,
-          customPrompts: customPrompts
+          businessAnalysis: project.documents.businessAnalysis,
+          functionalSpec: project.documents.functionalSpec,
+          technicalSpec: project.documents.technicalSpec,
+          uxSpec: project.documents.uxSpec,
+          mermaidDiagrams: project.documents.architecture,
+          confluenceConfig: {
+            url: config.confluenceUrl,
+            email: config.confluenceEmail,
+            apiToken: config.confluenceToken,
+            spaceKey: config.confluenceSpace
+          }
         }),
       })
 
@@ -919,18 +1038,17 @@ export default function SDLCAutomationPlatform() {
       const result = await response.json()
       
       if (result.success) {
-        console.log('✅ Backlog structure generation completed')
-        setBacklogStructureData(result.data)
-        setShowBacklogStructure(true)
+        console.log('✅ Confluence export completed:', result.summary)
+        setSuccessMessage(`Successfully exported to Confluence: ${result.summary}`)
       } else {
-        throw new Error(result.error || 'Backlog structure generation failed')
+        throw new Error(result.error || 'Confluence export failed')
       }
 
     } catch (error) {
-      console.error('❌ Backlog structure generation error:', error)
-      setErrorMessage(`Backlog structure generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      console.error('❌ Confluence export error:', error)
+      setErrorMessage(`Confluence export failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
-      setIsGeneratingBacklog(false)
+      setIsExportingToConfluence(false)
     }
   }
 
@@ -1251,7 +1369,7 @@ export default function SDLCAutomationPlatform() {
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            onClick={() => handleManualJiraCreate(project)}
+                            onClick={() => handleJiraExport(project)}
                             className="text-blue-600 border-blue-200 hover:bg-blue-50"
                           >
                             <Plus className="h-4 w-4 mr-1" />
@@ -1271,7 +1389,7 @@ export default function SDLCAutomationPlatform() {
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            onClick={() => handleManualConfluenceCreate(project)}
+                            onClick={() => handleConfluenceExport(project)}
                             className="text-purple-600 border-purple-200 hover:bg-purple-50"
                           >
                             <Plus className="h-4 w-4 mr-1" />
@@ -1280,50 +1398,38 @@ export default function SDLCAutomationPlatform() {
                         )
                       )}
                       
-                      {/* Content Intelligence Button */}
+                      {/* Export to Jira Button */}
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        onClick={() => handleContentIntelligenceAnalysis({
-                          id: project.id,
-                          businessAnalysis: project.businessAnalysis,
-                          functionalSpec: project.functionalSpec,
-                          technicalSpec: project.technicalSpec,
-                          uxSpec: project.uxSpec
-                        })}
-                        disabled={isAnalyzingIntelligence}
-                        className="text-purple-600 border-purple-200 hover:bg-purple-50"
-                        title="Analyze content for dependencies, business value, and sprint recommendations"
+                        onClick={() => handleJiraExport(project)}
+                        disabled={isExportingToJira}
+                        className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                        title="Export SDLC content to Jira as Epics, Stories, and Tasks"
                       >
-                        {isAnalyzingIntelligence ? (
+                        {isExportingToJira ? (
                           <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                         ) : (
-                          <Brain className="h-4 w-4 mr-1" />
+                          <ExternalLink className="h-4 w-4 mr-1" />
                         )}
-                        {isAnalyzingIntelligence ? 'Analyzing...' : 'Content Intelligence'}
+                        {isExportingToJira ? 'Exporting...' : 'Export to Jira'}
                       </Button>
                       
-                      {/* Backlog Structure Button */}
+                      {/* Export to Confluence Button */}
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        onClick={() => handleBacklogStructureGeneration({
-                          id: project.id,
-                          businessAnalysis: project.businessAnalysis,
-                          functionalSpec: project.functionalSpec,
-                          technicalSpec: project.technicalSpec,
-                          uxSpec: project.uxSpec
-                        })}
-                        disabled={isGeneratingBacklog}
-                        className="text-indigo-600 border-indigo-200 hover:bg-indigo-50"
-                        title="Generate comprehensive backlog structure with Epic/Story/Task hierarchy and sprint planning"
+                        onClick={() => handleConfluenceExport(project)}
+                        disabled={isExportingToConfluence}
+                        className="text-green-600 border-green-200 hover:bg-green-50"
+                        title="Export SDLC documentation to Confluence as structured pages"
                       >
-                        {isGeneratingBacklog ? (
+                        {isExportingToConfluence ? (
                           <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                         ) : (
-                          <Target className="h-4 w-4 mr-1" />
+                          <FileText className="h-4 w-4 mr-1" />
                         )}
-                        {isGeneratingBacklog ? 'Generating...' : 'Backlog Structure'}
+                        {isExportingToConfluence ? 'Exporting...' : 'Export to Confluence'}
                       </Button>
                     </div>
                   </div>
@@ -1365,10 +1471,9 @@ export default function SDLCAutomationPlatform() {
                       />
                     </TabsContent>
                     <TabsContent value="architecture" className="mt-2">
-                      <MarkdownRenderer 
-                        content={project.documents.architecture}
-                        title="Architecture"
-                        type="architecture"
+                      <MermaidViewer 
+                        diagrams={parseMermaidDiagrams(project.documents.architecture || "")}
+                        title="Architecture Diagrams"
                       />
                     </TabsContent>
                   </Tabs>
@@ -1833,41 +1938,7 @@ export default function SDLCAutomationPlatform() {
           </DialogContent>
         </Dialog>
 
-        {/* Content Intelligence Viewer Dialog */}
-        <Dialog open={showContentIntelligence} onOpenChange={setShowContentIntelligence}>
-          <DialogContent className="max-w-7xl max-h-[90vh] overflow-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Brain className="h-5 w-5 text-purple-600" />
-                Content Intelligence Analysis
-              </DialogTitle>
-            </DialogHeader>
-            {contentIntelligenceData && (
-              <ContentIntelligenceViewer 
-                data={contentIntelligenceData} 
-                onClose={() => setShowContentIntelligence(false)}
-              />
-            )}
-          </DialogContent>
-        </Dialog>
 
-        {/* Backlog Structure Viewer Dialog */}
-        <Dialog open={showBacklogStructure} onOpenChange={setShowBacklogStructure}>
-          <DialogContent className="max-w-7xl max-h-[90vh] overflow-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5 text-indigo-600" />
-                Backlog Structure & Sprint Planning
-              </DialogTitle>
-            </DialogHeader>
-            {backlogStructureData && (
-              <BacklogStructureViewer 
-                data={backlogStructureData} 
-                onClose={() => setShowBacklogStructure(false)}
-              />
-            )}
-          </DialogContent>
-        </Dialog>
       </div>
     </div>
   )

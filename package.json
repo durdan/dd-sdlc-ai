@@ -6,7 +6,8 @@
     "build": "next build",
     "dev": "next dev",
     "lint": "next lint",
-    "start": "next start"
+    "start": "next start",
+    "clean-install": "rm -rf node_modules package-lock.json && npm install"
   },
   "dependencies": {
     "@ai-sdk/openai": "latest",
