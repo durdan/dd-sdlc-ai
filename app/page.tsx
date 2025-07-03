@@ -36,15 +36,19 @@ import {
   Database,
   RefreshCw,
   ChevronDown,
+  Plus,
+  Brain,
+  Target,
 } from "lucide-react"
 import { HowItWorksVisualization } from "@/components/how-it-works-visualization"
 import { PromptEngineering } from "@/components/prompt-engineering"
-import { MarkdownRenderer } from "@/components/markdown-renderer"
-import { MermaidRenderer } from "@/components/mermaid-renderer"
-import { IntegrationHub } from "@/components/integration-hub"
-import { VisualizationHub } from "@/components/visualization-hub"
+import { MarkdownRenderer } from '@/components/markdown-renderer'
+import { MermaidViewer } from '@/components/mermaid-viewer-fixed'
+import { IntegrationHub } from '@/components/integration-hub'
+import { VisualizationHub } from '@/components/visualization-hub'
+import { ContentIntelligenceViewer } from '@/components/content-intelligence-viewer'
+import { BacklogStructureViewer } from '@/components/backlog-structure-viewer'
 import { SimpleWorkflowDiagram } from "@/components/simple-workflow-diagram"
-import { MermaidViewer } from "@/components/mermaid-viewer"
 
 interface ProcessingStep {
   id: string
@@ -122,6 +126,24 @@ export default function SDLCAutomationPlatform() {
   const [pendingCachedResults, setPendingCachedResults] = useState<any>(null)
   const [showApiKeyDialog, setShowApiKeyDialog] = useState(false)
   const [tempApiKey, setTempApiKey] = useState('')
+  const [showContentIntelligence, setShowContentIntelligence] = useState(false)
+  const [contentIntelligenceData, setContentIntelligenceData] = useState<any>(null)
+  const [isAnalyzingIntelligence, setIsAnalyzingIntelligence] = useState(false)
+  
+  // Backlog Structure state
+  const [showBacklogStructure, setShowBacklogStructure] = useState(false)
+  const [backlogStructureData, setBacklogStructureData] = useState<any>(null)
+  const [isGeneratingBacklog, setIsGeneratingBacklog] = useState(false)
+  
+  // Function to update step progress - moved to component level for global access
+  const updateStepProgress = (stepId: string, progress: number, status: "pending" | "in_progress" | "completed" | "error" = "in_progress") => {
+    setProcessingSteps(prevSteps => 
+      prevSteps.map(step => 
+        step.id === stepId ? { ...step, progress, status } : step
+      )
+    )
+  }
+  
   const handleShowPromptEngineering = () => {
     setShowPromptEngineering(true)
   }
@@ -372,15 +394,6 @@ export default function SDLCAutomationPlatform() {
 
     setProcessingSteps(initialSteps)
 
-    // Function to update step progress
-    const updateStepProgress = (stepId: string, progress: number, status: "pending" | "in_progress" | "completed" | "error" = "in_progress") => {
-      setProcessingSteps(prevSteps => 
-        prevSteps.map(step => 
-          step.id === stepId ? { ...step, progress, status } : step
-        )
-      )
-    }
-
     try {
       // Execute each step sequentially with real progress tracking
       const results: any = {}
@@ -514,7 +527,7 @@ export default function SDLCAutomationPlatform() {
       setCachedResults(input.trim(), results)
       
       // Handle optional integrations (JIRA, Confluence) if enabled
-      // ... (existing integration logic can be added here)
+      await handleIntegrations(results, input)
 
       // Ensure all steps are marked as completed
       setProcessingSteps(prevSteps => prevSteps.map(step => ({
@@ -545,6 +558,240 @@ export default function SDLCAutomationPlatform() {
     }
   }
 
+  const handleIntegrations = async (documents: any, projectInput: string) => {
+    console.log('🔗 Starting integrations...', { hasJiraConfig: !!config.jiraUrl, hasConfluenceConfig: !!config.confluenceUrl })
+    
+    const projectName = extractProjectName(projectInput)
+    const projectDescription = extractProjectDescription(projectInput)
+    
+    // Handle Jira Integration
+    if (config.jiraUrl && config.jiraProject && config.jiraEmail && config.jiraToken && config.jiraAutoCreate) {
+      console.log('🎯 Processing Jira integration...')
+      updateStepProgress("jira", 0, "in_progress")
+      
+      try {
+        const jiraResponse = await fetch('/api/integrations/jira', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            config,
+            documents,
+            projectName,
+            description: projectDescription
+          })
+        })
+        
+        const jiraResult = await jiraResponse.json()
+        
+        if (jiraResult.success) {
+          console.log('✅ Jira integration successful:', jiraResult)
+          updateStepProgress("jira", 100, "completed")
+        } else {
+          console.error('❌ Jira integration failed:', jiraResult.error)
+          updateStepProgress("jira", 0, "error")
+        }
+      } catch (error) {
+        console.error('❌ Jira integration error:', error)
+        updateStepProgress("jira", 0, "error")
+      }
+    } else {
+      console.log('⏭️ Skipping Jira integration (not configured or auto-create disabled)')
+      updateStepProgress("jira", 100, "completed")
+    }
+    
+    // Handle Confluence Integration  
+    if (config.confluenceUrl && config.confluenceSpace && config.confluenceEmail && config.confluenceToken) {
+      console.log('📚 Processing Confluence integration...')
+      updateStepProgress("confluence", 0, "in_progress")
+      
+      try {
+        const confluenceResponse = await fetch('/api/integrations/confluence', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            config,
+            documents,
+            projectName,
+            description: projectDescription
+          })
+        })
+        
+        const confluenceResult = await confluenceResponse.json()
+        
+        if (confluenceResult.success) {
+          console.log('✅ Confluence integration successful:', confluenceResult)
+          updateStepProgress("confluence", 100, "completed")
+        } else {
+          console.error('❌ Confluence integration failed:', confluenceResult.error)
+          updateStepProgress("confluence", 0, "error")
+        }
+      } catch (error) {
+        console.error('❌ Confluence integration error:', error)
+        updateStepProgress("confluence", 0, "error")
+      }
+    } else {
+      console.log('⏭️ Skipping Confluence integration (not configured)')
+      updateStepProgress("confluence", 100, "completed")
+    }
+    
+    // Handle Cross-platform Linking
+    console.log('🔗 Processing cross-platform linking...')
+    updateStepProgress("linking", 0, "in_progress")
+    
+    // Simulate cross-platform linking (this could link Jira issues to Confluence pages)
+    setTimeout(() => {
+      console.log('✅ Cross-platform linking completed')
+      updateStepProgress("linking", 100, "completed")
+    }, 1000)
+  }
+  
+  const extractProjectName = (input: string): string => {
+    // Extract project name from user input - look for common patterns
+    const lines = input.split('\n')
+    const firstLine = lines[0]?.trim()
+    
+    // Try to find a title or project name in the first few lines
+    for (const line of lines.slice(0, 3)) {
+      if (line.toLowerCase().includes('project') || line.toLowerCase().includes('app') || line.toLowerCase().includes('system')) {
+        return line.replace(/^(project|app|system)\s*:?\s*/i, '').trim() || 'SDLC Project'
+      }
+    }
+    
+    return firstLine || 'SDLC Project'
+  }
+  
+  const extractProjectDescription = (input: string): string => {
+    const lines = input.split('\n').filter(line => line.trim())
+    return lines.slice(0, 3).join(' ').slice(0, 200) + (input.length > 200 ? '...' : '')
+  }
+
+  // Manual trigger handlers for Recent Projects
+  const handleManualJiraCreate = async (project: any) => {
+    console.log('🎯 Enhanced JIRA creation triggered for project:', project.title)
+    
+    if (!config.jiraUrl || !config.jiraProject || !config.jiraEmail || !config.jiraToken) {
+      alert('Please configure JIRA settings in the Configuration tab first.')
+      return
+    }
+    
+    if (!project.documents?.businessAnalysis || !project.documents?.technicalSpec || !project.documents?.uxSpec) {
+      alert('Project must have Business Analysis, Technical Specification, and UX Specification to create JIRA issues.')
+      return
+    }
+    
+    try {
+      console.log('🔄 Creating enhanced JIRA issues with content parsing for:', project.title)
+      
+      // Prepare Jira configuration
+      const jiraConfig = {
+        url: config.jiraUrl,
+        email: config.jiraEmail,
+        apiToken: config.jiraToken,
+        projectKey: config.jiraProject,
+        defaultIssueType: 'Task',
+        autoCreate: true,
+        createEpics: true,
+        linkIssues: true
+      }
+      
+      const jiraResponse = await fetch('/api/create-jira-issues', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessAnalysis: project.documents.businessAnalysis,
+          functionalSpec: project.documents.functionalSpec || '',
+          technicalSpec: project.documents.technicalSpec,
+          uxSpec: project.documents.uxSpec,
+          jiraConfig,
+          projectId: project.id
+        })
+      })
+      
+      const jiraResult = await jiraResponse.json()
+      
+      if (jiraResult.success) {
+        console.log('✅ Enhanced JIRA integration successful:', jiraResult.data.summary)
+        
+        const summary = jiraResult.data.summary
+        const epicUrl = jiraResult.data.epic.url
+        
+        alert(`🎉 Successfully created ${summary.totalIssues} JIRA issues!\n\n` +
+              `📋 Epic: ${jiraResult.data.epic.title} (${jiraResult.data.epic.key})\n` +
+              `📖 User Stories: ${summary.userStoriesCount}\n` +
+              `⚙️ Development Tasks: ${summary.developmentTasksCount}\n` +
+              `🎨 Design Tasks: ${summary.designTasksCount}\n\n` +
+              `🔗 View Epic: ${epicUrl}`)
+        
+        // Update the cached project with JIRA info
+        const cachedResults = JSON.parse(localStorage.getItem('sdlc-cached-results') || '{}')
+        if (cachedResults[project.id]) {
+          cachedResults[project.id].jiraEpic = jiraResult.data.epic.key
+          cachedResults[project.id].jiraEpicUrl = epicUrl
+          cachedResults[project.id].jiraSummary = summary
+          localStorage.setItem('sdlc-cached-results', JSON.stringify(cachedResults))
+          
+          // Refresh the recent projects display
+          const updatedProjects = getCachedResults()
+          setRecentProjects(updatedProjects)
+        }
+      } else {
+        console.error('❌ Enhanced JIRA integration failed:', jiraResult.error)
+        alert(`JIRA integration failed: ${jiraResult.error}\n\nDetails: ${jiraResult.details || 'Unknown error'}`)
+      }
+    } catch (error) {
+      console.error('❌ Manual JIRA integration error:', error)
+      alert(`Error creating JIRA artifacts: ${error.message}`)
+    }
+  }
+  
+  const handleManualConfluenceCreate = async (project: any) => {
+    console.log('📚 Manual Confluence creation triggered for project:', project.title)
+    
+    if (!config.confluenceUrl || !config.confluenceSpace || !config.confluenceEmail || !config.confluenceToken) {
+      alert('Please configure Confluence settings in the Configuration tab first.')
+      return
+    }
+    
+    try {
+      console.log('🔄 Creating Confluence documentation for:', project.title)
+      
+      const confluenceResponse = await fetch('/api/integrations/confluence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          config,
+          documents: project.documents,
+          projectName: project.title,
+          description: `Manual Confluence integration for ${project.title} project`
+        })
+      })
+      
+      const confluenceResult = await confluenceResponse.json()
+      
+      if (confluenceResult.success) {
+        console.log('✅ Manual Confluence integration successful:', confluenceResult)
+        alert(`Successfully created ${confluenceResult.pages?.length || 0} Confluence pages!\n\nSpace: ${confluenceResult.confluenceSpaceUrl}`)
+        
+        // Update the cached project with Confluence info
+        const cachedResults = JSON.parse(localStorage.getItem('sdlc-cached-results') || '{}')
+        if (cachedResults[project.id]) {
+          cachedResults[project.id].confluencePage = confluenceResult.pages?.[0]?.id || 'Created'
+          localStorage.setItem('sdlc-cached-results', JSON.stringify(cachedResults))
+          
+          // Refresh the recent projects display
+          const updatedProjects = getCachedResults()
+          setRecentProjects(updatedProjects)
+        }
+      } else {
+        console.error('❌ Manual Confluence integration failed:', confluenceResult.error)
+        alert(`Confluence integration failed: ${confluenceResult.error}`)
+      }
+    } catch (error) {
+      console.error('❌ Manual Confluence integration error:', error)
+      alert(`Error creating Confluence documentation: ${error.message}`)
+    }
+  }
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "completed":
@@ -569,6 +816,122 @@ export default function SDLCAutomationPlatform() {
     console.log("Testing connections...")
     // Here you would test JIRA and Confluence connections
     alert("Testing connections... (This would test your API credentials)")
+  }
+
+  const handleContentIntelligenceAnalysis = async (project: any) => {
+    if (!project.businessAnalysis || !project.technicalSpec || !project.uxSpec) {
+      alert('Project must have business analysis, technical spec, and UX spec to perform content intelligence analysis')
+      return
+    }
+
+    // Check for OpenAI API key
+    let apiKey = config.openaiKey
+    if (!apiKey) {
+      setTempApiKey('')
+      setShowApiKeyDialog(true)
+      return
+    }
+
+    setIsAnalyzingIntelligence(true)
+    setErrorMessage('')
+
+    try {
+      console.log('🧠 Starting content intelligence analysis for project:', project.id)
+      
+      const response = await fetch('/api/analyze-content-intelligence', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          businessAnalysis: project.businessAnalysis,
+          functionalSpec: project.functionalSpec || '',
+          technicalSpec: project.technicalSpec,
+          uxSpec: project.uxSpec,
+          openaiKey: apiKey,
+          projectId: project.id
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      
+      if (result.success) {
+        console.log('✅ Content intelligence analysis completed:', result.data.summary)
+        setContentIntelligenceData(result.data)
+        setShowContentIntelligence(true)
+      } else {
+        throw new Error(result.error || 'Content intelligence analysis failed')
+      }
+
+    } catch (error) {
+      console.error('❌ Content intelligence analysis error:', error)
+      setErrorMessage(`Content intelligence analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setIsAnalyzingIntelligence(false)
+    }
+  }
+
+  const handleBacklogStructureGeneration = async (project: any) => {
+    if (!project.businessAnalysis || !project.functionalSpec || !project.technicalSpec || !project.uxSpec) {
+      alert('Project must have all SDLC documents (business analysis, functional spec, technical spec, and UX spec) to generate backlog structure')
+      return
+    }
+
+    // Check for OpenAI API key
+    let apiKey = config.openaiKey
+    if (!apiKey) {
+      setTempApiKey('')
+      setShowApiKeyDialog(true)
+      return
+    }
+
+    setIsGeneratingBacklog(true)
+    setErrorMessage('')
+
+    try {
+      console.log('🎯 Starting backlog structure generation for project:', project.id)
+      
+      const response = await fetch('/api/generate-backlog-structure', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          businessAnalysis: project.businessAnalysis,
+          functionalSpec: project.functionalSpec,
+          technicalSpec: project.technicalSpec,
+          uxSpec: project.uxSpec,
+          openaiKey: apiKey,
+          customPrompts: customPrompts
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      
+      if (result.success) {
+        console.log('✅ Backlog structure generation completed')
+        setBacklogStructureData(result.data)
+        setShowBacklogStructure(true)
+      } else {
+        throw new Error(result.error || 'Backlog structure generation failed')
+      }
+
+    } catch (error) {
+      console.error('❌ Backlog structure generation error:', error)
+      setErrorMessage(`Backlog structure generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setIsGeneratingBacklog(false)
+    }
   }
 
   return (
@@ -864,19 +1227,104 @@ export default function SDLCAutomationPlatform() {
                         {project.jiraEpic && <Badge variant="outline">JIRA: {project.jiraEpic}</Badge>}
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      {project.jiraEpic && (
-                        <Button variant="outline" size="sm">
+                    <div className="flex gap-2 flex-wrap">
+                      {/* JIRA Integration Buttons */}
+                      {project.jiraEpic ? (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-green-700 border-green-200 hover:bg-green-50"
+                          onClick={() => {
+                            const url = project.jiraEpicUrl || `${config.jiraUrl}/browse/${project.jiraEpic}`
+                            window.open(url, '_blank')
+                          }}
+                          title={project.jiraSummary ? 
+                            `Epic: ${project.jiraEpic}\nTotal Issues: ${project.jiraSummary.totalIssues}\nUser Stories: ${project.jiraSummary.userStoriesCount}\nDev Tasks: ${project.jiraSummary.developmentTasksCount}\nDesign Tasks: ${project.jiraSummary.designTasksCount}` : 
+                            `View JIRA Epic: ${project.jiraEpic}`
+                          }
+                        >
                           <ExternalLink className="h-4 w-4 mr-1" />
-                          JIRA Epic
+                          View JIRA Epic ({project.jiraEpic})
                         </Button>
+                      ) : (
+                        config.jiraUrl && config.jiraProject && config.jiraEmail && config.jiraToken && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => handleManualJiraCreate(project)}
+                            className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Create JIRA Epic
+                          </Button>
+                        )
                       )}
-                      {project.confluencePage && (
-                        <Button variant="outline" size="sm">
+                      
+                      {/* Confluence Integration Buttons */}
+                      {project.confluencePage ? (
+                        <Button variant="outline" size="sm" className="text-green-700 border-green-200">
                           <ExternalLink className="h-4 w-4 mr-1" />
-                          Confluence
+                          View Confluence
                         </Button>
+                      ) : (
+                        config.confluenceUrl && config.confluenceSpace && config.confluenceEmail && config.confluenceToken && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => handleManualConfluenceCreate(project)}
+                            className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Create Confluence Docs
+                          </Button>
+                        )
                       )}
+                      
+                      {/* Content Intelligence Button */}
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleContentIntelligenceAnalysis({
+                          id: project.id,
+                          businessAnalysis: project.businessAnalysis,
+                          functionalSpec: project.functionalSpec,
+                          technicalSpec: project.technicalSpec,
+                          uxSpec: project.uxSpec
+                        })}
+                        disabled={isAnalyzingIntelligence}
+                        className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                        title="Analyze content for dependencies, business value, and sprint recommendations"
+                      >
+                        {isAnalyzingIntelligence ? (
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        ) : (
+                          <Brain className="h-4 w-4 mr-1" />
+                        )}
+                        {isAnalyzingIntelligence ? 'Analyzing...' : 'Content Intelligence'}
+                      </Button>
+                      
+                      {/* Backlog Structure Button */}
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleBacklogStructureGeneration({
+                          id: project.id,
+                          businessAnalysis: project.businessAnalysis,
+                          functionalSpec: project.functionalSpec,
+                          technicalSpec: project.technicalSpec,
+                          uxSpec: project.uxSpec
+                        })}
+                        disabled={isGeneratingBacklog}
+                        className="text-indigo-600 border-indigo-200 hover:bg-indigo-50"
+                        title="Generate comprehensive backlog structure with Epic/Story/Task hierarchy and sprint planning"
+                      >
+                        {isGeneratingBacklog ? (
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        ) : (
+                          <Target className="h-4 w-4 mr-1" />
+                        )}
+                        {isGeneratingBacklog ? 'Generating...' : 'Backlog Structure'}
+                      </Button>
                     </div>
                   </div>
 
@@ -979,18 +1427,15 @@ export default function SDLCAutomationPlatform() {
               <Separator />
 
               {/* JIRA Configuration */}
-              <div className="space-y-4 relative">
+              <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <ExternalLink className="h-4 w-4" />
                   <h3 className="font-semibold">JIRA Integration</h3>
-                  <Badge variant="secondary" className="ml-2">Coming Soon</Badge>
+                  <Badge variant="outline" className="ml-2 text-green-600 border-green-200">Ready</Badge>
                 </div>
-                <div className="absolute inset-0 bg-gray-50/50 backdrop-blur-[0.5px] rounded-lg flex items-center justify-center z-10">
-                  <div className="text-center p-4">
-                    <p className="text-gray-600 font-medium">JIRA Integration</p>
-                    <p className="text-sm text-gray-500">Coming in the next update</p>
-                  </div>
-                </div>
+                <p className="text-sm text-gray-600">
+                  Configure Jira to automatically create issues and epics from your SDLC documentation.
+                </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="jira-url">JIRA URL</Label>
@@ -999,7 +1444,6 @@ export default function SDLCAutomationPlatform() {
                       placeholder="https://company.atlassian.net"
                       value={config.jiraUrl}
                       onChange={(e) => setConfig((prev) => ({ ...prev, jiraUrl: e.target.value }))}
-                      disabled
                     />
                   </div>
                   <div>
@@ -1009,7 +1453,6 @@ export default function SDLCAutomationPlatform() {
                       placeholder="PROJ"
                       value={config.jiraProject}
                       onChange={(e) => setConfig((prev) => ({ ...prev, jiraProject: e.target.value }))}
-                      disabled
                     />
                   </div>
                   <div>
@@ -1020,7 +1463,6 @@ export default function SDLCAutomationPlatform() {
                       placeholder="user@company.com"
                       value={config.jiraEmail}
                       onChange={(e) => setConfig((prev) => ({ ...prev, jiraEmail: e.target.value }))}
-                      disabled
                     />
                   </div>
                   <div>
@@ -1031,7 +1473,6 @@ export default function SDLCAutomationPlatform() {
                       placeholder="Your JIRA API token"
                       value={config.jiraToken}
                       onChange={(e) => setConfig((prev) => ({ ...prev, jiraToken: e.target.value }))}
-                      disabled
                     />
                   </div>
                 </div>
@@ -1052,18 +1493,15 @@ export default function SDLCAutomationPlatform() {
               <Separator />
 
               {/* Confluence Configuration */}
-              <div className="space-y-4 relative">
+              <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <FileText className="h-4 w-4" />
                   <h3 className="font-semibold">Confluence Integration</h3>
-                  <Badge variant="secondary" className="ml-2">Coming Soon</Badge>
+                  <Badge variant="outline" className="ml-2 text-green-600 border-green-200">Ready</Badge>
                 </div>
-                <div className="absolute inset-0 bg-gray-50/50 backdrop-blur-[0.5px] rounded-lg flex items-center justify-center z-10">
-                  <div className="text-center p-4">
-                    <p className="text-gray-600 font-medium">Confluence Integration</p>
-                    <p className="text-sm text-gray-500">Coming in the next update</p>
-                  </div>
-                </div>
+                <p className="text-sm text-gray-600">
+                  Configure Confluence to automatically create documentation pages from your SDLC output.
+                </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="confluence-url">Confluence URL</Label>
@@ -1072,7 +1510,6 @@ export default function SDLCAutomationPlatform() {
                       placeholder="https://company.atlassian.net/wiki"
                       value={config.confluenceUrl}
                       onChange={(e) => setConfig((prev) => ({ ...prev, confluenceUrl: e.target.value }))}
-                      disabled
                     />
                   </div>
                   <div>
@@ -1082,7 +1519,6 @@ export default function SDLCAutomationPlatform() {
                       placeholder="DEV"
                       value={config.confluenceSpace}
                       onChange={(e) => setConfig((prev) => ({ ...prev, confluenceSpace: e.target.value }))}
-                      disabled
                     />
                   </div>
                   <div>
@@ -1093,7 +1529,6 @@ export default function SDLCAutomationPlatform() {
                       placeholder="user@company.com"
                       value={config.confluenceEmail}
                       onChange={(e) => setConfig((prev) => ({ ...prev, confluenceEmail: e.target.value }))}
-                      disabled
                     />
                   </div>
                   <div>
@@ -1104,7 +1539,6 @@ export default function SDLCAutomationPlatform() {
                       placeholder="Your Confluence API token"
                       value={config.confluenceToken}
                       onChange={(e) => setConfig((prev) => ({ ...prev, confluenceToken: e.target.value }))}
-                      disabled
                     />
                   </div>
                 </div>
@@ -1396,6 +1830,42 @@ export default function SDLCAutomationPlatform() {
                 </Button>
               </div>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Content Intelligence Viewer Dialog */}
+        <Dialog open={showContentIntelligence} onOpenChange={setShowContentIntelligence}>
+          <DialogContent className="max-w-7xl max-h-[90vh] overflow-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Brain className="h-5 w-5 text-purple-600" />
+                Content Intelligence Analysis
+              </DialogTitle>
+            </DialogHeader>
+            {contentIntelligenceData && (
+              <ContentIntelligenceViewer 
+                data={contentIntelligenceData} 
+                onClose={() => setShowContentIntelligence(false)}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Backlog Structure Viewer Dialog */}
+        <Dialog open={showBacklogStructure} onOpenChange={setShowBacklogStructure}>
+          <DialogContent className="max-w-7xl max-h-[90vh] overflow-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5 text-indigo-600" />
+                Backlog Structure & Sprint Planning
+              </DialogTitle>
+            </DialogHeader>
+            {backlogStructureData && (
+              <BacklogStructureViewer 
+                data={backlogStructureData} 
+                onClose={() => setShowBacklogStructure(false)}
+              />
+            )}
           </DialogContent>
         </Dialog>
       </div>

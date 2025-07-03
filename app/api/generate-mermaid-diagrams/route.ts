@@ -40,28 +40,97 @@ export async function POST(req: NextRequest) {
             .replace(/{{business_analysis}}/g, businessAnalysis)
             .replace(/{{functional_spec}}/g, functionalSpec)
             .replace(/{{technical_spec}}/g, technicalSpec)
-        : `Create comprehensive Mermaid diagrams for the system architecture based on the specifications:
-      
-      Original Input: ${input}
-      Business Analysis: ${businessAnalysis}
-      Functional Specification: ${functionalSpec}
-      Technical Specification: ${technicalSpec}
-      
-      Please create the following Mermaid diagrams in valid Mermaid syntax:
-      
-      1. **System Architecture Diagram** - Show the overall system components and their relationships
-      2. **Database Schema Diagram** - Show entities, relationships, and key attributes  
-      3. **User Flow Diagram** - Show the main user journeys and decision points
-      4. **API Flow Diagram** - Show the API endpoints and data flow between components
-      
-      Important guidelines:
-      - Return only valid Mermaid syntax without any additional text, formatting, or markdown code blocks
-      - Use proper Mermaid diagram types (graph, flowchart, erDiagram, sequenceDiagram, etc.)
-      - Ensure all node IDs are unique and follow Mermaid naming conventions
-      - Separate each diagram with a clear comment indicating its purpose
-      - Make sure the syntax is completely valid and renderable by Mermaid.js
-      
-      Start with the System Architecture diagram:`,
+        : `As a Senior System Architect with expertise in technical documentation, create comprehensive Mermaid diagrams based on the following specifications:
+
+Technical Specification: ${technicalSpec}
+Functional Specification: ${functionalSpec}
+Business Analysis: ${businessAnalysis}
+
+Generate the following structured Mermaid diagrams:
+
+## System Architecture Diagram
+\`\`\`mermaid
+graph TD
+    %% Create a high-level system architecture diagram
+    %% Include: Frontend, Backend, Database, External Services
+    %% Show data flow and component relationships
+    Frontend["Frontend Application"]
+    Backend["Backend API"]
+    Database["Database"]
+    Auth["Authentication Service"]
+    Cache["Cache Layer"]
+    
+    Frontend --> Backend
+    Backend --> Database
+    Backend --> Auth
+    Backend --> Cache
+\`\`\`
+
+## Database Schema Diagram
+\`\`\`mermaid
+erDiagram
+    %% Create entity relationship diagram
+    %% Include: Tables, relationships, key fields
+    %% Show primary keys, foreign keys, and constraints
+    USER {
+        int id PK
+        string email
+        string name
+        datetime created_at
+    }
+    
+    PROJECT {
+        int id PK
+        string name
+        string description
+        int user_id FK
+        datetime created_at
+    }
+    
+    USER ||--o{ PROJECT : creates
+\`\`\`
+
+## User Flow Diagram
+\`\`\`mermaid
+flowchart TD
+    %% Create user journey flowchart
+    %% Include: User actions, decision points, system responses
+    %% Show happy path and error handling
+    Start(["User Starts"]) --> Login{"Login Required?"}
+    Login -->|Yes| Auth["Authenticate"]
+    Login -->|No| Dashboard["Dashboard"]
+    Auth --> Dashboard
+    Dashboard --> Action["User Action"]
+    Action --> Success["Success"]
+    Action --> Error["Error Handling"]
+\`\`\`
+
+## API Flow Diagram
+\`\`\`mermaid
+sequenceDiagram
+    %% Create API interaction sequence
+    %% Include: Client, Server, Database interactions
+    %% Show request/response flow and error handling
+    participant Client
+    participant API
+    participant Database
+    
+    Client->>API: Request
+    API->>Database: Query
+    Database-->>API: Response
+    API-->>Client: JSON Response
+\`\`\`
+
+Ensure diagrams are:
+- Technically accurate and detailed
+- Easy to understand and well-labeled
+- Include proper Mermaid syntax
+- Show realistic system interactions
+- Include error handling and edge cases
+
+Diagram Style: Professional
+Complexity Level: Detailed
+Focus Area: System Architecture`,
     })
 
     console.log('Mermaid Diagrams generated successfully')

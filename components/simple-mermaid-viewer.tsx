@@ -15,8 +15,6 @@ interface MermaidViewerProps {
 }
 
 export function MermaidViewer({ diagrams, title = "System Architecture Diagrams" }: MermaidViewerProps) {
-  console.log('🚀 MermaidViewer component rendered!', { diagrams, title })
-  
   const [activeTab, setActiveTab] = useState("architecture")
   const diagramRef = useRef<HTMLDivElement>(null)
   
@@ -32,54 +30,64 @@ export function MermaidViewer({ diagrams, title = "System Architecture Diagrams"
     if (tabsWithContent.length > 0 && !hasContent(activeTab)) {
       setActiveTab(tabsWithContent[0])
     }
-  }, [diagrams])
+  }, [diagrams, activeTab])
 
   // Render Mermaid diagram
   useEffect(() => {
-    console.log('🔥 MermaidViewer useEffect triggered', { activeTab, diagrams })
-    
     const renderDiagram = async () => {
-      console.log('🔥 renderDiagram called', { diagramRef: !!diagramRef.current })
-      
-      if (!diagramRef.current) {
-        console.log('❌ No diagramRef.current')
-        return
-      }
+      if (!diagramRef.current) return
       
       const diagramContent = diagrams[activeTab as keyof typeof diagrams]
-      console.log('🔥 Diagram content:', { activeTab, content: diagramContent?.substring(0, 100) })
       
       if (!diagramContent || diagramContent.trim() === '') {
-        console.log('❌ No diagram content')
-        diagramRef.current.innerHTML = '<div class="p-8 text-center text-gray-500">No diagram available</div>'
+        diagramRef.current.innerHTML = `
+          <div class="flex items-center justify-center h-64 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+            <div class="text-center p-6">
+              <h3 class="text-lg font-medium text-gray-700 mb-2">No Diagram Available</h3>
+              <p class="text-gray-500">This diagram type hasn't been generated yet.</p>
+            </div>
+          </div>
+        `
         return
       }
 
       try {
-        console.log('🔥 Importing Mermaid...')
-        // Import Mermaid dynamically
+        // Dynamic import of Mermaid
         const mermaid = (await import("mermaid")).default
-        console.log('✅ Mermaid imported successfully')
         
-        // Initialize
+        // Initialize Mermaid with basic config
         mermaid.initialize({
           startOnLoad: false,
           theme: "default",
           securityLevel: "loose"
         })
-        console.log('✅ Mermaid initialized')
 
-        // Clear and render
+        // Clear previous content
         diagramRef.current.innerHTML = ''
-        console.log('🔥 Rendering diagram...')
-        const { svg } = await mermaid.render(`diagram-${Date.now()}`, diagramContent.trim())
-        console.log('✅ Mermaid render successful, SVG length:', svg.length)
+        
+        // Create unique ID
+        const diagramId = `diagram-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        
+        // Render the diagram
+        const { svg } = await mermaid.render(diagramId, diagramContent.trim())
         diagramRef.current.innerHTML = svg
-        console.log('✅ SVG inserted into DOM')
+        
+        console.log('✅ Mermaid diagram rendered successfully for tab:', activeTab)
         
       } catch (error) {
-        console.error('❌ Mermaid error:', error)
-        diagramRef.current.innerHTML = `<div class="p-8 text-center text-red-500">Rendering error: ${error}</div>`
+        console.error('❌ Mermaid rendering error:', error)
+        diagramRef.current.innerHTML = `
+          <div class="flex items-center justify-center h-64 bg-red-50 rounded-lg border-2 border-dashed border-red-300">
+            <div class="text-center p-6">
+              <h3 class="text-lg font-medium text-red-700 mb-2">Diagram Rendering Error</h3>
+              <p class="text-red-600 text-sm">Unable to render this diagram. Check console for details.</p>
+              <details class="mt-4 text-left">
+                <summary class="cursor-pointer text-sm font-medium text-red-700">Show Raw Content</summary>
+                <pre class="mt-2 p-3 bg-red-100 rounded text-xs overflow-auto max-h-32">${diagramContent}</pre>
+              </details>
+            </div>
+          </div>
+        `
       }
     }
 
@@ -102,8 +110,11 @@ export function MermaidViewer({ diagrams, title = "System Architecture Diagrams"
       
       <CardContent>
         {tabsWithContent.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            No diagrams available. Generate SDLC documents first.
+          <div className="flex items-center justify-center h-96 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+            <div className="text-center p-8">
+              <h3 class="text-lg font-medium text-gray-700 mb-2">No Diagrams Available</h3>
+              <p class="text-gray-500">Generate SDLC documents first to see architecture diagrams here.</p>
+            </div>
           </div>
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

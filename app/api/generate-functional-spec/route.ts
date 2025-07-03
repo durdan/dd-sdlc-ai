@@ -36,22 +36,71 @@ export async function POST(req: NextRequest) {
         ? customPrompt
             .replace(/{{input}}/g, input)
             .replace(/{{business_analysis}}/g, businessAnalysis)
-        : `Create a detailed functional specification based on the business analysis:
-      
-      Original Input: ${input}
-      Business Analysis: ${businessAnalysis}
-      
-      Please structure the functional specification as follows:
-      1. Functional Overview
-      2. System Requirements
-      3. User Stories and Use Cases
-      4. Data Requirements
-      5. Integration Requirements
-      6. Performance Requirements
-      7. Security Requirements
-      8. Acceptance Criteria
-      
-      Focus on detailed functional requirements and user interactions in markdown format.`,
+        : `As a Senior Business Analyst with expertise in requirements engineering, create a detailed functional specification based on the business analysis:
+
+Original Input: ${input}
+Business Analysis: ${businessAnalysis}
+
+Generate the following structured output:
+
+## Functional Overview
+- **System Purpose**: [Clear description of what the system does]
+- **Key Capabilities**: [Main functional areas]
+- **Success Criteria**: [Measurable outcomes]
+
+## Detailed Functional Requirements
+For each functional area, provide:
+1. **Requirement ID**: [Unique identifier]
+2. **Requirement Title**: [Clear, descriptive title]
+3. **Description**: [Detailed functional behavior]
+4. **Acceptance Criteria**: [Specific, testable criteria]
+5. **Priority**: [Must Have/Should Have/Could Have]
+6. **Dependencies**: [Related requirements]
+
+## System Capabilities
+### Core Functions
+- User management and authentication
+- Data processing and storage
+- Business logic implementation
+- Reporting and analytics
+
+### Integration Requirements
+- External API integrations
+- Third-party service connections
+- Data import/export capabilities
+- System interoperability
+
+### Performance Requirements
+- Response time specifications
+- Throughput requirements
+- Scalability targets
+- Availability requirements
+
+### Security Requirements
+- Authentication mechanisms
+- Authorization controls
+- Data protection measures
+- Compliance requirements
+
+## Data Requirements
+- **Data Entities**: [Key data objects]
+- **Data Relationships**: [How data connects]
+- **Data Validation**: [Quality requirements]
+- **Data Lifecycle**: [Creation, update, deletion rules]
+
+## User Interface Requirements
+- **User Experience**: [UX principles]
+- **Accessibility**: [WCAG compliance]
+- **Responsive Design**: [Device compatibility]
+- **Navigation**: [User flow requirements]
+
+Ensure all requirements are:
+- Specific and measurable
+- Testable and verifiable
+- Aligned with business objectives
+- Technically feasible
+
+Format the response in markdown with clear headings and structured sections.`,
     })
 
     console.log('Functional Specification generated successfully')

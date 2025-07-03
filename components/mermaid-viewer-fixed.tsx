@@ -15,10 +15,10 @@ interface MermaidViewerProps {
 }
 
 export function MermaidViewer({ diagrams, title = "System Architecture Diagrams" }: MermaidViewerProps) {
-  console.log('🚀 MermaidViewer component rendered!', { diagrams, title })
+  console.log('🚀 FIXED MermaidViewer component rendered!', { diagrams, title })
   
   const [activeTab, setActiveTab] = useState("architecture")
-  const diagramRef = useRef<HTMLDivElement>(null)
+  const diagramRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
   
   // Helper to check if a diagram has content
   const hasContent = (key: string) => {
@@ -28,62 +28,80 @@ export function MermaidViewer({ diagrams, title = "System Architecture Diagrams"
   
   // Set active tab to first one with content on mount
   useEffect(() => {
+    console.log('🔥 FIXED MermaidViewer useEffect triggered', { diagrams, activeTab })
     const tabsWithContent = ['architecture', 'database', 'userFlow', 'apiFlow'].filter(hasContent)
+    console.log('🔥 FIXED tabsWithContent:', tabsWithContent)
     if (tabsWithContent.length > 0 && !hasContent(activeTab)) {
+      console.log('🔥 FIXED setActiveTab to first tab with content:', tabsWithContent[0])
       setActiveTab(tabsWithContent[0])
     }
   }, [diagrams])
 
-  // Render Mermaid diagram
+  // Render Mermaid diagram for active tab
   useEffect(() => {
-    console.log('🔥 MermaidViewer useEffect triggered', { activeTab, diagrams })
+    console.log('🔥 FIXED MermaidViewer useEffect triggered', { activeTab })
     
     const renderDiagram = async () => {
-      console.log('🔥 renderDiagram called', { diagramRef: !!diagramRef.current })
+      const diagramRef = diagramRefs.current[activeTab]
+      console.log('🔥 renderDiagram called', { activeTab, hasRef: !!diagramRef })
       
-      if (!diagramRef.current) {
-        console.log('❌ No diagramRef.current')
+      if (!diagramRef) {
+        console.log('❌ No diagramRef for tab:', activeTab)
         return
       }
       
       const diagramContent = diagrams[activeTab as keyof typeof diagrams]
-      console.log('🔥 Diagram content:', { activeTab, content: diagramContent?.substring(0, 100) })
+      console.log('🔥 Diagram content:', { activeTab, hasContent: !!diagramContent, length: diagramContent?.length })
       
       if (!diagramContent || diagramContent.trim() === '') {
-        console.log('❌ No diagram content')
-        diagramRef.current.innerHTML = '<div class="p-8 text-center text-gray-500">No diagram available</div>'
+        console.log('❌ No diagram content for tab:', activeTab)
+        diagramRef.innerHTML = '<div class="p-8 text-center text-gray-500">No diagram available</div>'
         return
       }
 
       try {
         console.log('🔥 Importing Mermaid...')
-        // Import Mermaid dynamically
         const mermaid = (await import("mermaid")).default
         console.log('✅ Mermaid imported successfully')
         
-        // Initialize
+        // Initialize with basic config
         mermaid.initialize({
           startOnLoad: false,
           theme: "default",
-          securityLevel: "loose"
+          securityLevel: "loose",
+          fontFamily: "Arial, sans-serif"
         })
         console.log('✅ Mermaid initialized')
 
         // Clear and render
-        diagramRef.current.innerHTML = ''
-        console.log('🔥 Rendering diagram...')
-        const { svg } = await mermaid.render(`diagram-${Date.now()}`, diagramContent.trim())
+        diagramRef.innerHTML = '<div class="p-4 text-center text-blue-500">Rendering diagram...</div>'
+        console.log('🔥 Rendering diagram for tab:', activeTab)
+        
+        const diagramId = `mermaid-${activeTab}-${Date.now()}`
+        const { svg } = await mermaid.render(diagramId, diagramContent.trim())
+        
         console.log('✅ Mermaid render successful, SVG length:', svg.length)
-        diagramRef.current.innerHTML = svg
-        console.log('✅ SVG inserted into DOM')
+        diagramRef.innerHTML = svg
+        console.log('✅ SVG inserted into DOM for tab:', activeTab)
         
       } catch (error) {
-        console.error('❌ Mermaid error:', error)
-        diagramRef.current.innerHTML = `<div class="p-8 text-center text-red-500">Rendering error: ${error}</div>`
+        console.error('❌ Mermaid error for tab:', activeTab, error)
+        diagramRef.innerHTML = `
+          <div class="p-8 text-center">
+            <div class="text-red-500 font-medium mb-2">Diagram Rendering Error</div>
+            <div class="text-sm text-gray-600 mb-4">Failed to render Mermaid diagram</div>
+            <details class="text-left bg-gray-100 p-4 rounded">
+              <summary class="cursor-pointer font-medium">Show Raw Content</summary>
+              <pre class="mt-2 text-xs overflow-auto max-h-32">${diagramContent}</pre>
+            </details>
+          </div>
+        `
       }
     }
 
-    renderDiagram()
+    // Small delay to ensure DOM is ready
+    const timeoutId = setTimeout(renderDiagram, 100)
+    return () => clearTimeout(timeoutId)
   }, [activeTab, diagrams])
 
   // Get tabs that have content
@@ -93,6 +111,8 @@ export function MermaidViewer({ diagrams, title = "System Architecture Diagrams"
     { key: 'userFlow', label: 'User Flow', icon: '👤' },
     { key: 'apiFlow', label: 'API Flow', icon: '🔄' }
   ].filter(tab => hasContent(tab.key))
+
+  console.log('🔥 Tabs with content:', tabsWithContent.map(t => t.key))
 
   return (
     <Card className="w-full">
@@ -124,7 +144,7 @@ export function MermaidViewer({ diagrams, title = "System Architecture Diagrams"
               <TabsContent key={tab.key} value={tab.key}>
                 <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
                   <div 
-                    ref={diagramRef}
+                    ref={(el) => { diagramRefs.current[tab.key] = el }}
                     className="p-6 min-h-[400px] overflow-auto"
                   />
                 </div>

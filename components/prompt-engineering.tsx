@@ -38,36 +38,55 @@ export function PromptEngineering({ onPromptUpdate }: PromptEngineeringProps = {
   const [promptTemplates, setPromptTemplates] = useState<Record<string, PromptTemplate>>({
     business: {
       id: "business",
-      name: "Business Analysis",
-      content: `As a {{role}} with {{experience}} years of experience, analyze the following business case and provide a comprehensive business analysis:
+      name: "Business Analysis → User Stories",
+      content: `As a Senior Product Owner with 8+ years of Agile experience, analyze the following business case and extract actionable user stories:
 
 Business Case: {{input}}
 
-Please provide:
-1. Executive Summary
-2. Business Objectives
-3. Stakeholder Analysis
-4. Success Criteria
-5. Risk Assessment
-6. Timeline Estimates
-7. Resource Requirements
+Generate the following structured output:
 
-{{#include_compliance}}
-8. Compliance and Regulatory Considerations
-{{/include_compliance}}
+## Epic Overview
+- **Epic Title**: [Clear, business-focused title]
+- **Epic Description**: [2-3 sentences describing the overall business goal]
+- **Business Value**: [Quantifiable value/impact]
+- **Priority**: [High/Medium/Low with justification]
+
+## User Stories (Format: As a [user type], I want [functionality], so that [benefit])
+For each user story, provide:
+1. **Story Title**: Clear, action-oriented title
+2. **Story Description**: Full user story format
+3. **Acceptance Criteria**: 3-5 specific, testable criteria
+4. **Story Points**: Estimate (1, 2, 3, 5, 8, 13)
+5. **Priority**: High/Medium/Low
+6. **Dependencies**: Any blocking or related stories
+7. **Definition of Done**: Clear completion criteria
+
+## Personas & User Types
+- **Primary Users**: [List main user types]
+- **Secondary Users**: [Supporting user types]
+- **Admin Users**: [Administrative roles]
+
+## Success Metrics
+- **User Adoption**: [Specific metrics]
+- **Business Impact**: [ROI/KPI targets]
+- **Technical Performance**: [Performance benchmarks]
+
+Focus on creating 5-8 user stories that are:
+- Independent and deliverable
+- Testable with clear acceptance criteria
+- Properly sized for sprint planning
+- Aligned with business objectives
 
 Writing Style: {{writing_style}}
 Industry Focus: {{industry}}
-Methodology: {{methodology}}
-
-Format the response in a {{format}} manner with clear headings and bullet points.`,
+Methodology: {{methodology}}`,
       variables: {
-        role: "Senior Business Analyst",
-        experience: "10",
-        writing_style: "Professional",
+        role: "Senior Product Owner",
+        experience: "8",
+        writing_style: "Agile-focused",
         industry: "Technology",
-        methodology: "Agile",
-        format: "structured",
+        methodology: "Scrum",
+        format: "user-story-driven",
         include_compliance: true,
       },
     },
@@ -108,38 +127,77 @@ Ensure all requirements are {{requirement_style}} and include priority levels (H
     },
     technical: {
       id: "technical",
-      name: "Technical Specification",
-      content: `As a {{role}} with {{experience}} years of experience in {{tech_stack}}, create a comprehensive technical specification:
+      name: "Technical Specification → Development Tasks",
+      content: `As a Senior Software Architect with 10+ years of full-stack development experience, break down the following functional requirements into specific development tasks:
 
 Functional Requirements: {{functional_spec}}
+Business Analysis: {{business_analysis}}
 
-Please provide:
-1. System Architecture Overview
-2. Technology Stack Recommendations
-3. Database Design and Schema
-4. API Specifications and Endpoints
-5. Security Implementation Details
-6. Deployment Strategy
-7. Testing Strategy
-8. Monitoring and Logging
+Generate the following structured output:
 
-{{#include_scalability}}
-9. Scalability and Performance Considerations
-{{/include_scalability}}
+## Technical Epic
+- **Epic Title**: [Technical implementation focus]
+- **Technical Approach**: [Architecture pattern/approach]
+- **Technology Stack**: [Specific technologies]
 
-{{#include_devops}}
-10. DevOps and CI/CD Pipeline
-{{/include_devops}}
+## Development Tasks
+For each task, provide:
+1. **Task Title**: Clear, action-oriented (e.g., "Implement user authentication API")
+2. **Task Description**: Technical implementation details
+3. **Acceptance Criteria**: Technical completion criteria
+4. **Story Points**: Effort estimate (1, 2, 3, 5, 8)
+5. **Components**: Frontend/Backend/Database/DevOps
+6. **Dependencies**: Technical prerequisites
+7. **Definition of Done**: Code quality, testing, documentation requirements
+
+## Task Categories:
+### Backend Development
+- API endpoint implementation
+- Database schema design
+- Business logic implementation
+- Authentication/authorization
+- Data validation and processing
+
+### Frontend Development
+- UI component development
+- State management
+- API integration
+- Form handling and validation
+- Responsive design implementation
+
+### Infrastructure & DevOps
+- Database setup and configuration
+- CI/CD pipeline setup
+- Environment configuration
+- Monitoring and logging
+- Security implementation
+
+### Testing & Quality Assurance
+- Unit test implementation
+- Integration test setup
+- End-to-end test scenarios
+- Performance testing
+- Security testing
+
+## Technical Debt & Improvements
+- Code refactoring opportunities
+- Performance optimizations
+- Security enhancements
+- Documentation updates
+
+Create 8-12 specific, actionable development tasks that are:
+- Technically detailed and implementable
+- Properly estimated for sprint planning
+- Categorized by development area
+- Include clear technical acceptance criteria
 
 Architecture Pattern: {{architecture_pattern}}
 Cloud Platform: {{cloud_platform}}
 Database Type: {{database_type}}
-Security Level: {{security_level}}
-
-Include specific technical details, code examples where appropriate, and implementation approaches.`,
+Security Level: {{security_level}}`,
       variables: {
         role: "Senior Software Architect",
-        experience: "12",
+        experience: "10",
         tech_stack: "Node.js, React, PostgreSQL",
         architecture_pattern: "Microservices",
         cloud_platform: "AWS",
@@ -151,29 +209,63 @@ Include specific technical details, code examples where appropriate, and impleme
     },
     ux: {
       id: "ux",
-      name: "UX Specification",
-      content: `As a {{role}} specializing in {{design_approach}} design, create a comprehensive UX specification:
+      name: "UX/UI Specification → Design Tasks",
+      content: `As a Senior UX Designer with expertise in user-centered design, create specific design tasks based on the following requirements:
 
-Business Requirements: {{business_analysis}}
-Functional Requirements: {{functional_spec}}
+User Stories: {{user_stories}}
+Business Analysis: {{business_analysis}}
 
-Please provide:
-1. User Personas and Demographics
-2. User Journey Maps
-3. Information Architecture
-4. Wireframe Descriptions
-5. UI Component Specifications
-6. Accessibility Requirements ({{accessibility_level}})
-7. Mobile Responsiveness Guidelines
-8. Usability Testing Plan
+Generate the following structured output:
 
-{{#include_branding}}
-9. Brand Guidelines and Visual Identity
-{{/include_branding}}
+## UX Epic
+- **Epic Title**: [User experience focus]
+- **Design Approach**: [Design methodology]
+- **Success Metrics**: [User experience KPIs]
 
-{{#include_prototyping}}
-10. Interactive Prototype Specifications
-{{/include_prototyping}}
+## Design Tasks
+For each task, provide:
+1. **Task Title**: Clear design deliverable (e.g., "Create user onboarding wireframes")
+2. **Task Description**: Design scope and requirements
+3. **Deliverables**: Specific design artifacts
+4. **Story Points**: Design effort estimate (1, 2, 3, 5, 8)
+5. **User Impact**: How this improves user experience
+6. **Dependencies**: Design prerequisites
+7. **Definition of Done**: Design completion criteria
+
+## Design Task Categories:
+### Research & Discovery
+- User research and interviews
+- Competitive analysis
+- User journey mapping
+- Persona development
+- Usability testing
+
+### Information Architecture
+- Site map creation
+- User flow diagrams
+- Content strategy
+- Navigation design
+- Information hierarchy
+
+### Visual Design
+- Wireframe creation
+- Mockup development
+- Visual style guide
+- Component library
+- Icon and illustration design
+
+### Prototyping & Testing
+- Interactive prototype development
+- Usability testing sessions
+- A/B test setup
+- Accessibility review
+- Design system documentation
+
+Create 6-10 specific design tasks that are:
+- User-focused and experience-driven
+- Deliverable-based with clear outcomes
+- Properly scoped for design sprints
+- Include user validation methods
 
 Target Devices: {{target_devices}}
 Design System: {{design_system}}
@@ -183,7 +275,7 @@ Accessibility Standard: {{accessibility_standard}}
 Focus on {{design_priority}} and ensure the design supports {{user_goals}}.`,
       variables: {
         role: "Senior UX Designer",
-        design_approach: "Human-Centered",
+        design_approach: "User-Centered",
         accessibility_level: "WCAG 2.1 AA",
         target_devices: "Desktop, Mobile, Tablet",
         design_system: "Material Design",
@@ -193,6 +285,68 @@ Focus on {{design_priority}} and ensure the design supports {{user_goals}}.`,
         user_goals: "efficient task completion",
         include_branding: true,
         include_prototyping: true,
+      },
+    },
+    mermaid: {
+      id: "mermaid",
+      name: "Mermaid Diagrams → System Visualization",
+      content: `As a Senior System Architect with expertise in technical documentation, create comprehensive Mermaid diagrams based on the following specifications:
+
+Technical Specification: {{technical_spec}}
+Functional Specification: {{functional_spec}}
+Business Analysis: {{business_analysis}}
+
+Generate the following structured Mermaid diagrams:
+
+## System Architecture Diagram
+\`\`\`mermaid
+graph TD
+    %% Create a high-level system architecture diagram
+    %% Include: Frontend, Backend, Database, External Services
+    %% Show data flow and component relationships
+\`\`\`
+
+## Database Schema Diagram
+\`\`\`mermaid
+erDiagram
+    %% Create entity relationship diagram
+    %% Include: Tables, relationships, key fields
+    %% Show primary keys, foreign keys, and constraints
+\`\`\`
+
+## User Flow Diagram
+\`\`\`mermaid
+flowchart TD
+    %% Create user journey flowchart
+    %% Include: User actions, decision points, system responses
+    %% Show happy path and error handling
+\`\`\`
+
+## API Flow Diagram
+\`\`\`mermaid
+sequenceDiagram
+    %% Create API interaction sequence
+    %% Include: Client, Server, Database interactions
+    %% Show request/response flow and error handling
+\`\`\`
+
+Ensure diagrams are:
+- Technically accurate and detailed
+- Easy to understand and well-labeled
+- Include proper Mermaid syntax
+- Show realistic system interactions
+- Include error handling and edge cases
+
+Diagram Style: {{diagram_style}}
+Complexity Level: {{complexity_level}}
+Focus Area: {{focus_area}}`,
+      variables: {
+        diagram_style: "Professional",
+        complexity_level: "Detailed",
+        focus_area: "System Architecture",
+        include_database: true,
+        include_api_flow: true,
+        include_user_flow: true,
       },
     },
   })
@@ -336,6 +490,7 @@ Focus on {{design_priority}} and ensure the design supports {{user_goals}}.`,
               <TabsTrigger value="functional">Functional Spec</TabsTrigger>
               <TabsTrigger value="technical">Technical Spec</TabsTrigger>
               <TabsTrigger value="ux">UX Specification</TabsTrigger>
+              <TabsTrigger value="mermaid">Mermaid Diagrams</TabsTrigger>
             </TabsList>
 
             <TabsContent value={activeTab} className="space-y-4">
