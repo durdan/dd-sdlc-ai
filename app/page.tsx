@@ -38,6 +38,7 @@ import {
   ChevronDown,
   Plus,
   Loader2,
+  X,
 } from "lucide-react"
 import { HowItWorksVisualization } from "@/components/how-it-works-visualization"
 import { PromptEngineering } from "@/components/prompt-engineering"
@@ -162,15 +163,31 @@ export default function SDLCAutomationPlatform() {
   const [showIntegrations, setShowIntegrations] = useState(false)
   const [showVisualization, setShowVisualization] = useState(false)
 
-  const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>([
-    { id: "analysis", name: "Business Analysis", status: "pending", progress: 0 },
-    { id: "functional", name: "Functional Specification", status: "pending", progress: 0 },
-    { id: "technical", name: "Technical Specification", status: "pending", progress: 0 },
-    { id: "ux", name: "UX Specification", status: "pending", progress: 0 },
-    { id: "jira", name: "JIRA Epic Creation", status: "pending", progress: 0 },
-    { id: "confluence", name: "Confluence Documentation", status: "pending", progress: 0 },
-    { id: "linking", name: "Cross-platform Linking", status: "pending", progress: 0 },
-  ])
+  // Initialize processing steps - conditionally include Jira/Confluence based on automation settings
+  const getInitialProcessingSteps = (): ProcessingStep[] => {
+    const coreSteps: ProcessingStep[] = [
+      { id: "analysis", name: "Business Analysis", status: "pending", progress: 0 },
+      { id: "functional", name: "Functional Specification", status: "pending", progress: 0 },
+      { id: "technical", name: "Technical Specification", status: "pending", progress: 0 },
+      { id: "ux", name: "UX Specification", status: "pending", progress: 0 },
+      { id: "mermaid", name: "Mermaid Diagrams", status: "pending", progress: 0 },
+    ]
+    
+    // Add integration steps only if automation is enabled
+    if (config.jiraAutoCreate && config.jiraUrl && config.jiraToken) {
+      coreSteps.push({ id: "jira", name: "JIRA Epic Creation", status: "pending", progress: 0 })
+    }
+    if (config.confluenceAutoCreate && config.confluenceUrl && config.confluenceToken) {
+      coreSteps.push({ id: "confluence", name: "Confluence Documentation", status: "pending", progress: 0 })
+    }
+    if (coreSteps.length > 5) { // More than core 5 steps means integrations are enabled
+      coreSteps.push({ id: "linking", name: "Cross-platform Linking", status: "pending", progress: 0 })
+    }
+    
+    return coreSteps
+  }
+  
+  const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>(getInitialProcessingSteps())
 
   // Get all cached results from localStorage for Recent Projects display
   const getCachedProjects = (): ProjectResult[] => {
@@ -1153,9 +1170,63 @@ export default function SDLCAutomationPlatform() {
         {(isProcessing || (generatedDocuments && Object.keys(generatedDocuments).length > 0)) && (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5 animate-spin" />
-                Processing Your Request...
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {(() => {
+                    const allCompleted = processingSteps.every(step => step.status === 'completed')
+                    const hasInProgress = processingSteps.some(step => step.status === 'in_progress')
+                    
+                    if (allCompleted && !isProcessing) {
+                      return (
+                        <>
+                          <CheckCircle className="h-5 w-5 text-green-500" />
+                          <span className="text-green-700">All Done! 🎉</span>
+                        </>
+                      )
+                    } else if (hasInProgress || isProcessing) {
+                      return (
+                        <>
+                          <Clock className="h-5 w-5 animate-spin text-blue-500" />
+                          <span>Processing Your Request...</span>
+                        </>
+                      )
+                    } else {
+                      return (
+                        <>
+                          <Clock className="h-5 w-5 text-gray-500" />
+                          <span>Ready to Process</span>
+                        </>
+                      )
+                    }
+                  })()
+                  }
+                </div>
+                
+                {/* Close button when all steps are complete */}
+                {(() => {
+                  const allCompleted = processingSteps.every(step => step.status === 'completed')
+                  return allCompleted && !isProcessing && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => {
+                        // Clear the processing state and move to Recent Projects
+                        setIsProcessing(false)
+                        setProcessingSteps([])
+                        // Scroll to Recent Projects section
+                        const recentProjectsElement = document.getElementById('recent-projects')
+                        if (recentProjectsElement) {
+                          recentProjectsElement.scrollIntoView({ behavior: 'smooth' })
+                        }
+                      }}
+                      className="text-gray-600 hover:text-gray-800"
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Close
+                    </Button>
+                  )
+                })()
+                }
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -1178,6 +1249,23 @@ export default function SDLCAutomationPlatform() {
                     </div>
                   </div>
                 ))}
+                
+                {/* Completion message */}
+                {(() => {
+                  const allCompleted = processingSteps.every(step => step.status === 'completed')
+                  return allCompleted && !isProcessing && (
+                    <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center gap-2 text-green-700">
+                        <CheckCircle className="h-5 w-5" />
+                        <span className="font-medium">Generation Complete!</span>
+                      </div>
+                      <p className="text-sm text-green-600 mt-1">
+                        Your SDLC documentation has been successfully generated. You can now export to Jira/Confluence or view the documents below.
+                      </p>
+                    </div>
+                  )
+                })()
+                }
               </div>
             </CardContent>
           </Card>
