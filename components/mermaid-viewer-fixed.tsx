@@ -213,12 +213,12 @@ export function MermaidViewer({
           })
           tabRef.innerHTML = ""
           const diagramsContainer = document.createElement("div")
-          diagramsContainer.className = "space-y-8 py-4"
+          diagramsContainer.className = "space-y-6 sm:space-y-8 py-4"
 
           for (let i = 0; i < diagramsToRender.length; i++) {
             const content = diagramsToRender[i].trim()
             const wrapper = document.createElement("div")
-            wrapper.className = "border rounded-lg p-4 bg-white shadow-sm"
+            wrapper.className = "border rounded-lg p-3 sm:p-4 bg-white shadow-sm overflow-x-auto"
             try {
               // More flexible validation - just check if it looks like a valid diagram
               // (has a word at the start followed by space, and reasonable length)
@@ -227,14 +227,29 @@ export function MermaidViewer({
               }
               const id = `mermaid-${tabKey}-${i}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
               const { svg } = await mermaid.render(id, content)
-              wrapper.innerHTML = svg
+              
+              // Create responsive wrapper for the SVG
+              const svgWrapper = document.createElement("div")
+              svgWrapper.className = "mermaid-container"
+              svgWrapper.innerHTML = svg
+              
+              // Add mobile-friendly styling to the SVG
+              const svgElement = svgWrapper.querySelector('svg')
+              if (svgElement) {
+                svgElement.style.maxWidth = '100%'
+                svgElement.style.height = 'auto'
+                // Add responsive font size
+                svgElement.style.fontSize = 'clamp(10px, 2vw, 14px)'
+              }
+              
+              wrapper.appendChild(svgWrapper)
             } catch (err: any) {
               wrapper.innerHTML = `
-                <div class="p-4 text-center border border-red-200 rounded-lg bg-red-50">
-                  <div class="text-red-500 font-medium mb-2">Diagram ${i + 1} Rendering Error</div>
-                  <div class="text-sm text-gray-600 mb-2">${err?.message || "Unknown error"}</div>
+                <div class="p-3 sm:p-4 text-center border border-red-200 rounded-lg bg-red-50">
+                  <div class="text-red-500 font-medium mb-2 text-sm sm:text-base">Diagram ${i + 1} Rendering Error</div>
+                  <div class="text-xs sm:text-sm text-gray-600 mb-2">${err?.message || "Unknown error"}</div>
                   <details class="text-left bg-white p-2 rounded border">
-                    <summary class="cursor-pointer font-medium text-blue-600">Show Raw Content</summary>
+                    <summary class="cursor-pointer font-medium text-blue-600 text-xs sm:text-sm">Show Raw Content</summary>
                     <pre class="mt-2 text-xs overflow-auto max-h-32 p-2 bg-gray-50 rounded">${content}</pre>
                   </details>
                 </div>
@@ -302,31 +317,34 @@ export function MermaidViewer({
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>{title}</CardTitle>
+        <CardTitle className="text-lg sm:text-xl">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         {tabsWithContent.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
+          <div className="p-6 sm:p-8 text-center text-gray-500 text-sm sm:text-base">
             No diagrams available. Generate SDLC documents first.
           </div>
         ) : (
           <div className="w-full">
-            {/* Custom tab buttons */}
-            <div className={`grid w-full max-w-md mb-4 grid-cols-${tabsWithContent.length} bg-muted p-1 rounded-md`}>
-              {tabsWithContent.map(tab => (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
-                  className={`text-xs flex items-center gap-1 px-3 py-2 rounded-sm transition-colors ${
-                    activeTab === tab.key 
-                      ? 'bg-background text-foreground shadow-sm' 
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  <span>{tab.icon}</span>
-                  <span className="hidden sm:inline">{tab.label}</span>
-                </button>
-              ))}
+            {/* Mobile-responsive tab buttons with horizontal scroll */}
+            <div className="mb-4 overflow-x-auto">
+              <div className="flex min-w-max bg-muted p-1 rounded-md gap-1">
+                {tabsWithContent.map(tab => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`text-xs sm:text-sm flex items-center gap-1 px-2 sm:px-3 py-2 rounded-sm transition-colors whitespace-nowrap flex-shrink-0 ${
+                      activeTab === tab.key 
+                        ? 'bg-background text-foreground shadow-sm' 
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <span className="text-sm">{tab.icon}</span>
+                    <span className="hidden sm:inline">{tab.label}</span>
+                    <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
+                  </button>
+                ))}
+              </div>
             </div>
             
             {/* All tab content rendered simultaneously, shown/hidden with CSS */}
@@ -342,7 +360,7 @@ export function MermaidViewer({
                     console.log(`[MermaidViewer] Setting ref for tab ${tab.key}:`, el)
                     diagramRefs.current[tab.key] = el
                   }}
-                  className="p-6 min-h-[400px] overflow-auto"
+                  className="p-3 sm:p-6 min-h-[300px] sm:min-h-[400px] overflow-auto"
                 />
               </div>
             ))}
