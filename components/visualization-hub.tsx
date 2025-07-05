@@ -403,13 +403,30 @@ export function VisualizationHub() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="diagrams">Interactive Diagrams</TabsTrigger>
-          <TabsTrigger value="presentation">Presentation Mode</TabsTrigger>
-          <TabsTrigger value="editor">Diagram Editor</TabsTrigger>
-          <TabsTrigger value="mindmap">Mind Maps</TabsTrigger>
-          <TabsTrigger value="export">Export & Print</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto mb-4 scrollbar-hide">
+          <TabsList className="flex w-full min-w-max gap-1 p-1">
+            <TabsTrigger value="diagrams" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[80px] px-2 sm:px-3">
+              <span className="hidden sm:inline">Interactive Diagrams</span>
+              <span className="sm:hidden">Diagrams</span>
+            </TabsTrigger>
+            <TabsTrigger value="presentation" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[80px] px-2 sm:px-3">
+              <span className="hidden sm:inline">Presentation Mode</span>
+              <span className="sm:hidden">Present</span>
+            </TabsTrigger>
+            <TabsTrigger value="editor" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[80px] px-2 sm:px-3">
+              <span className="hidden sm:inline">Diagram Editor</span>
+              <span className="sm:hidden">Editor</span>
+            </TabsTrigger>
+            <TabsTrigger value="mindmap" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[80px] px-2 sm:px-3">
+              <span className="hidden sm:inline">Mind Maps</span>
+              <span className="sm:hidden">Mind Map</span>
+            </TabsTrigger>
+            <TabsTrigger value="export" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[80px] px-2 sm:px-3">
+              <span className="hidden sm:inline">Export & Print</span>
+              <span className="sm:hidden">Export</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Interactive Diagrams */}
         <TabsContent value="diagrams" className="space-y-6">

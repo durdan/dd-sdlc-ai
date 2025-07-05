@@ -1089,40 +1089,40 @@ export default function SDLCAutomationPlatform() {
             <p className="text-sm sm:text-base text-gray-600 mt-1">Transform ideas into complete project documentation with AI</p>
           </div>
           <div className="flex flex-wrap gap-2 sm:gap-2">
-            <Button variant="outline" size="sm" onClick={() => setShowConfig(true)} className="flex-1 sm:flex-none min-w-0">
+            <Button variant="outline" size="sm" onClick={() => setShowConfig(true)} className="flex-1 sm:flex-none min-w-[70px] max-w-[120px] sm:max-w-none">
               <Settings className="h-4 w-4 sm:mr-2 flex-shrink-0" />
               <span className="hidden sm:inline truncate">Configuration</span>
-              <span className="sm:hidden">Config</span>
+              <span className="sm:hidden text-xs">Config</span>
             </Button>
 
-            <Button variant="outline" size="sm" onClick={() => setShowIntegrations(true)} className="flex-1 sm:flex-none min-w-0">
+            <Button variant="outline" size="sm" onClick={() => setShowIntegrations(true)} className="flex-1 sm:flex-none min-w-[70px] max-w-[120px] sm:max-w-none">
               <Plug className="h-4 w-4 sm:mr-2 flex-shrink-0" />
               <span className="hidden sm:inline truncate">Integrations</span>
-              <span className="sm:hidden">Integrate</span>
+              <span className="sm:hidden text-xs">Integrate</span>
             </Button>
 
-            <Button variant="outline" size="sm" onClick={() => setShowVisualization(true)} className="flex-1 sm:flex-none min-w-0">
+            <Button variant="outline" size="sm" onClick={() => setShowVisualization(true)} className="flex-1 sm:flex-none min-w-[70px] max-w-[120px] sm:max-w-none">
               <Presentation className="h-4 w-4 sm:mr-2 flex-shrink-0" />
               <span className="hidden sm:inline truncate">Visualize</span>
-              <span className="sm:hidden">Visual</span>
+              <span className="sm:hidden text-xs">Visual</span>
             </Button>
 
-            <Button variant="outline" size="sm" onClick={() => setShowWorkflow(true)} className="flex-1 sm:flex-none min-w-0">
+            <Button variant="outline" size="sm" onClick={() => setShowWorkflow(true)} className="flex-1 sm:flex-none min-w-[70px] max-w-[120px] sm:max-w-none">
               <Workflow className="h-4 w-4 sm:mr-2 flex-shrink-0" />
               <span className="hidden sm:inline truncate">View Workflow</span>
-              <span className="sm:hidden">Workflow</span>
+              <span className="sm:hidden text-xs">Workflow</span>
             </Button>
 
-            <Button variant="outline" size="sm" onClick={() => setShowHowItWorks(true)} className="flex-1 sm:flex-none min-w-0">
+            <Button variant="outline" size="sm" onClick={() => setShowHowItWorks(true)} className="flex-1 sm:flex-none min-w-[70px] max-w-[120px] sm:max-w-none">
               <Info className="h-4 w-4 sm:mr-2 flex-shrink-0" />
               <span className="hidden sm:inline truncate">How It Works</span>
-              <span className="sm:hidden">Help</span>
+              <span className="sm:hidden text-xs">Help</span>
             </Button>
 
-            <Button variant="outline" size="sm" onClick={() => setShowPromptEngineering(true)} className="flex-1 sm:flex-none min-w-0">
+            <Button variant="outline" size="sm" onClick={() => setShowPromptEngineering(true)} className="flex-1 sm:flex-none min-w-[70px] max-w-[120px] sm:max-w-none">
               <Settings className="h-4 w-4 sm:mr-2 flex-shrink-0" />
               <span className="hidden sm:inline truncate">Prompt Engineering</span>
-              <span className="sm:hidden">Prompts</span>
+              <span className="sm:hidden text-xs">Prompts</span>
             </Button>
           </div>
         </div>
@@ -1297,12 +1297,12 @@ export default function SDLCAutomationPlatform() {
                   generatedDocuments.mermaidDiagrams ? "diagrams" :
                   "business"
                 } className="space-y-4">
-                  <div className="overflow-x-auto mb-4">
+                  <div className="overflow-x-auto mb-4 scrollbar-hide">
                     <TabsList className="flex w-full min-w-max gap-1 p-1">
                       <TabsTrigger 
                         value="business" 
                         disabled={!generatedDocuments.businessAnalysis && !processingSteps.find(s => s.id === 'analysis')?.status.includes('completed')}
-                        className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap"
+                        className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[80px] px-2 sm:px-3"
                       >
                         <span className="hidden sm:inline">Business Analysis</span>
                         <span className="sm:hidden">Business</span>
@@ -1314,7 +1314,7 @@ export default function SDLCAutomationPlatform() {
                       <TabsTrigger 
                         value="functional" 
                         disabled={!generatedDocuments.functionalSpec && !processingSteps.find(s => s.id === 'functional')?.status.includes('completed')}
-                        className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap"
+                        className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[80px] px-2 sm:px-3"
                       >
                         <span className="hidden sm:inline">Functional Spec</span>
                         <span className="sm:hidden">Functional</span>
@@ -1326,7 +1326,7 @@ export default function SDLCAutomationPlatform() {
                       <TabsTrigger 
                         value="technical" 
                         disabled={!generatedDocuments.technicalSpec && !processingSteps.find(s => s.id === 'technical')?.status.includes('completed')}
-                        className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap"
+                        className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[80px] px-2 sm:px-3"
                       >
                         <span className="hidden sm:inline">Technical Spec</span>
                         <span className="sm:hidden">Technical</span>
@@ -1338,7 +1338,7 @@ export default function SDLCAutomationPlatform() {
                       <TabsTrigger 
                         value="ux" 
                         disabled={!generatedDocuments.uxSpec && !processingSteps.find(s => s.id === 'ux')?.status.includes('completed')}
-                        className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap"
+                        className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[60px] px-2 sm:px-3"
                       >
                         <span className="hidden sm:inline">UX Specification</span>
                         <span className="sm:hidden">UX</span>
@@ -1350,7 +1350,7 @@ export default function SDLCAutomationPlatform() {
                       <TabsTrigger 
                         value="diagrams" 
                         disabled={!generatedDocuments.mermaidDiagrams && !processingSteps.find(s => s.id === 'mermaid')?.status.includes('completed')}
-                        className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap"
+                        className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[60px] px-2 sm:px-3"
                       >
                         <span className="hidden sm:inline">Architecture</span>
                         <span className="sm:hidden">Arch</span>
@@ -1461,13 +1461,13 @@ export default function SDLCAutomationPlatform() {
                         {project.jiraEpic && <Badge variant="outline">JIRA: {project.jiraEpic}</Badge>}
                       </div>
                     </div>
-                    <div className="flex gap-2 flex-wrap sm:flex-nowrap">
+                    <div className="flex gap-2 flex-wrap">
                       {/* JIRA Integration Buttons */}
                       {project.jiraEpic ? (
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          className="text-blue-700 border-blue-200 hover:bg-blue-50"
+                          className="text-blue-700 border-blue-200 hover:bg-blue-50 flex-1 sm:flex-none min-w-0"
                           onClick={() => {
                             const url = project.jiraEpicUrl || `${config.jiraUrl}/browse/${project.jiraEpic}`
                             window.open(url, '_blank')
@@ -1478,8 +1478,9 @@ export default function SDLCAutomationPlatform() {
                             `View JIRA Epic: ${project.jiraEpic}`
                           }
                         >
-                          <ExternalLink className="h-4 w-4 mr-1" />
-                          View JIRA Epic ({project.jiraEpic})
+                          <ExternalLink className="h-4 w-4 mr-1 flex-shrink-0" />
+                          <span className="hidden sm:inline truncate">View JIRA Epic ({project.jiraEpic})</span>
+                          <span className="sm:hidden text-xs truncate">JIRA ({project.jiraEpic})</span>
                         </Button>
                       ) : (
                         <Button 
@@ -1490,15 +1491,16 @@ export default function SDLCAutomationPlatform() {
                             handleJiraExport(project)
                           }}
                           disabled={isExportingToJira}
-                          className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                          className="text-blue-600 border-blue-200 hover:bg-blue-50 flex-1 sm:flex-none min-w-0"
                           title="Export SDLC content to Jira as Epics, Stories, and Tasks"
                         >
                           {isExportingToJira ? (
-                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin flex-shrink-0" />
                           ) : (
-                            <ExternalLink className="h-4 w-4 mr-1" />
+                            <ExternalLink className="h-4 w-4 mr-1 flex-shrink-0" />
                           )}
-                          {isExportingToJira ? 'Exporting...' : 'Export to Jira'}
+                          <span className="hidden sm:inline truncate">{isExportingToJira ? 'Exporting...' : 'Export to Jira'}</span>
+                          <span className="sm:hidden text-xs truncate">{isExportingToJira ? 'Exporting...' : 'Export Jira'}</span>
                         </Button>
                       )}
                       
@@ -1507,15 +1509,16 @@ export default function SDLCAutomationPlatform() {
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          className="text-green-700 border-green-200 hover:bg-green-50"
+                          className="text-green-700 border-green-200 hover:bg-green-50 flex-1 sm:flex-none min-w-0"
                           onClick={() => {
                             if (project.confluencePageUrl) {
                               window.open(project.confluencePageUrl, '_blank')
                             }
                           }}
                         >
-                          <ExternalLink className="h-4 w-4 mr-1" />
-                          View Confluence
+                          <ExternalLink className="h-4 w-4 mr-1 flex-shrink-0" />
+                          <span className="hidden sm:inline truncate">View Confluence</span>
+                          <span className="sm:hidden text-xs truncate">Confluence</span>
                         </Button>
                       ) : (
                         <Button 
@@ -1523,37 +1526,38 @@ export default function SDLCAutomationPlatform() {
                           size="sm" 
                           onClick={() => handleConfluenceExport(project)}
                           disabled={isExportingToConfluence}
-                          className="text-green-600 border-green-200 hover:bg-green-50"
+                          className="text-green-600 border-green-200 hover:bg-green-50 flex-1 sm:flex-none min-w-0"
                           title="Export SDLC documentation to Confluence as structured pages"
                         >
                           {isExportingToConfluence ? (
-                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin flex-shrink-0" />
                           ) : (
-                            <FileText className="h-4 w-4 mr-1" />
+                            <FileText className="h-4 w-4 mr-1 flex-shrink-0" />
                           )}
-                          {isExportingToConfluence ? 'Exporting...' : 'Export to Confluence'}
+                          <span className="hidden sm:inline truncate">{isExportingToConfluence ? 'Exporting...' : 'Export to Confluence'}</span>
+                          <span className="sm:hidden text-xs truncate">{isExportingToConfluence ? 'Exporting...' : 'Export Conf'}</span>
                         </Button>
                       )}
                     </div>
                   </div>
 
                   <Tabs defaultValue="business" className="mt-4">
-                    <div className="overflow-x-auto mb-4">
+                    <div className="overflow-x-auto mb-4 scrollbar-hide">
                       <TabsList className="flex w-full min-w-max gap-1 p-1">
-                        <TabsTrigger value="business" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap">
+                        <TabsTrigger value="business" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[60px] px-2 sm:px-3">
                           <span className="hidden sm:inline">Business</span>
                           <span className="sm:hidden">Biz</span>
                         </TabsTrigger>
-                        <TabsTrigger value="functional" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap">
+                        <TabsTrigger value="functional" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[60px] px-2 sm:px-3">
                           <span className="hidden sm:inline">Functional</span>
                           <span className="sm:hidden">Func</span>
                         </TabsTrigger>
-                        <TabsTrigger value="technical" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap">
+                        <TabsTrigger value="technical" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[60px] px-2 sm:px-3">
                           <span className="hidden sm:inline">Technical</span>
                           <span className="sm:hidden">Tech</span>
                         </TabsTrigger>
-                        <TabsTrigger value="ux" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap">UX</TabsTrigger>
-                        <TabsTrigger value="architecture" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap">
+                        <TabsTrigger value="ux" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[50px] px-2 sm:px-3">UX</TabsTrigger>
+                        <TabsTrigger value="architecture" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[60px] px-2 sm:px-3">
                           <span className="hidden sm:inline">Architecture</span>
                           <span className="sm:hidden">Arch</span>
                         </TabsTrigger>
