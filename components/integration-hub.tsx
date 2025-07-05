@@ -478,27 +478,25 @@ export function IntegrationHub() {
           />
         </div>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <div className="overflow-x-auto">
-            <TabsList className="flex w-full min-w-max gap-1 p-1">
-              <TabsTrigger value="all" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap">All</TabsTrigger>
-              <TabsTrigger value="development" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap">
-                <span className="hidden sm:inline">Development</span>
-                <span className="sm:hidden">Dev</span>
-              </TabsTrigger>
-              <TabsTrigger value="communication" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap">
-                <span className="hidden sm:inline">Communication</span>
-                <span className="sm:hidden">Comm</span>
-              </TabsTrigger>
-              <TabsTrigger value="documentation" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap">
-                <span className="hidden sm:inline">Documentation</span>
-                <span className="sm:hidden">Docs</span>
-              </TabsTrigger>
-              <TabsTrigger value="project-management" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap">
-                <span className="hidden sm:inline">Project Management</span>
-                <span className="sm:hidden">PM</span>
-              </TabsTrigger>
-            </TabsList>
-          </div>
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1">
+            <TabsTrigger value="all" className="text-xs sm:text-sm">All</TabsTrigger>
+            <TabsTrigger value="development" className="text-xs sm:text-sm">
+              <span className="hidden sm:inline">Development</span>
+              <span className="sm:hidden">Dev</span>
+            </TabsTrigger>
+            <TabsTrigger value="communication" className="text-xs sm:text-sm">
+              <span className="hidden sm:inline">Communication</span>
+              <span className="sm:hidden">Comm</span>
+            </TabsTrigger>
+            <TabsTrigger value="documentation" className="text-xs sm:text-sm">
+              <span className="hidden sm:inline">Documentation</span>
+              <span className="sm:hidden">Docs</span>
+            </TabsTrigger>
+            <TabsTrigger value="project-management" className="text-xs sm:text-sm">
+              <span className="hidden sm:inline">Project Management</span>
+              <span className="sm:hidden">PM</span>
+            </TabsTrigger>
+          </TabsList>
         </Tabs>
       </div>
 

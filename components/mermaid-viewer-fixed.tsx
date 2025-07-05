@@ -326,25 +326,22 @@ export function MermaidViewer({
           </div>
         ) : (
           <div className="w-full">
-            {/* Mobile-responsive tab buttons with horizontal scroll */}
-            <div className="mb-4 overflow-x-auto">
-              <div className="flex min-w-max bg-muted p-1 rounded-md gap-1">
-                {tabsWithContent.map(tab => (
-                  <button
-                    key={tab.key}
-                    onClick={() => setActiveTab(tab.key)}
-                    className={`text-xs sm:text-sm flex items-center gap-1 px-2 sm:px-3 py-2 rounded-sm transition-colors whitespace-nowrap flex-shrink-0 ${
-                      activeTab === tab.key 
-                        ? 'bg-background text-foreground shadow-sm' 
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    <span className="text-sm">{tab.icon}</span>
-                    <span className="hidden sm:inline">{tab.label}</span>
-                    <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
-                  </button>
-                ))}
-              </div>
+            {/* Custom tab buttons */}
+            <div className={`grid w-full max-w-md mb-4 grid-cols-${Math.min(tabsWithContent.length, 4)} bg-muted p-1 rounded-md`}>
+              {tabsWithContent.map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`text-xs flex items-center gap-1 px-3 py-2 rounded-sm transition-colors ${
+                    activeTab === tab.key 
+                      ? 'bg-background text-foreground shadow-sm' 
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <span>{tab.icon}</span>
+                  <span className="hidden sm:inline">{tab.label}</span>
+                </button>
+              ))}
             </div>
             
             {/* All tab content rendered simultaneously, shown/hidden with CSS */}

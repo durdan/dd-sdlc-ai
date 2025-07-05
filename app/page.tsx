@@ -1297,69 +1297,67 @@ export default function SDLCAutomationPlatform() {
                   generatedDocuments.mermaidDiagrams ? "diagrams" :
                   "business"
                 } className="space-y-4">
-                  <div className="overflow-x-auto mb-4">
-                    <TabsList className="flex w-full min-w-max gap-1 p-1">
-                      <TabsTrigger 
-                        value="business" 
-                        disabled={!generatedDocuments.businessAnalysis && !processingSteps.find(s => s.id === 'analysis')?.status.includes('completed')}
-                        className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap"
-                      >
-                        <span className="hidden sm:inline">Business Analysis</span>
-                        <span className="sm:hidden">Business</span>
-                        {processingSteps.find(s => s.id === 'analysis')?.status === 'completed' && (
-                          <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
-                        )}
-                      </TabsTrigger>
-                      
-                      <TabsTrigger 
-                        value="functional" 
-                        disabled={!generatedDocuments.functionalSpec && !processingSteps.find(s => s.id === 'functional')?.status.includes('completed')}
-                        className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap"
-                      >
-                        <span className="hidden sm:inline">Functional Spec</span>
-                        <span className="sm:hidden">Functional</span>
-                        {processingSteps.find(s => s.id === 'functional')?.status === 'completed' && (
-                          <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
-                        )}
-                      </TabsTrigger>
-                      
-                      <TabsTrigger 
-                        value="technical" 
-                        disabled={!generatedDocuments.technicalSpec && !processingSteps.find(s => s.id === 'technical')?.status.includes('completed')}
-                        className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap"
-                      >
-                        <span className="hidden sm:inline">Technical Spec</span>
-                        <span className="sm:hidden">Technical</span>
-                        {processingSteps.find(s => s.id === 'technical')?.status === 'completed' && (
-                          <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
-                        )}
-                      </TabsTrigger>
-                      
-                      <TabsTrigger 
-                        value="ux" 
-                        disabled={!generatedDocuments.uxSpec && !processingSteps.find(s => s.id === 'ux')?.status.includes('completed')}
-                        className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap"
-                      >
-                        <span className="hidden sm:inline">UX Specification</span>
-                        <span className="sm:hidden">UX</span>
-                        {processingSteps.find(s => s.id === 'ux')?.status === 'completed' && (
-                          <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
-                        )}
-                      </TabsTrigger>
-                      
-                      <TabsTrigger 
-                        value="diagrams" 
-                        disabled={!generatedDocuments.mermaidDiagrams && !processingSteps.find(s => s.id === 'mermaid')?.status.includes('completed')}
-                        className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap"
-                      >
-                        <span className="hidden sm:inline">Architecture</span>
-                        <span className="sm:hidden">Arch</span>
-                        {processingSteps.find(s => s.id === 'mermaid')?.status === 'completed' && (
-                          <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
-                        )}
-                      </TabsTrigger>
-                    </TabsList>
-                  </div>
+                  <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1">
+                    <TabsTrigger 
+                      value="business" 
+                      disabled={!generatedDocuments.businessAnalysis && !processingSteps.find(s => s.id === 'analysis')?.status.includes('completed')}
+                      className="text-xs sm:text-sm"
+                    >
+                      <span className="hidden sm:inline">Business Analysis</span>
+                      <span className="sm:hidden">Business</span>
+                      {processingSteps.find(s => s.id === 'analysis')?.status === 'completed' && (
+                        <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
+                      )}
+                    </TabsTrigger>
+                    
+                    <TabsTrigger 
+                      value="functional" 
+                      disabled={!generatedDocuments.functionalSpec && !processingSteps.find(s => s.id === 'functional')?.status.includes('completed')}
+                      className="text-xs sm:text-sm"
+                    >
+                      <span className="hidden sm:inline">Functional Spec</span>
+                      <span className="sm:hidden">Functional</span>
+                      {processingSteps.find(s => s.id === 'functional')?.status === 'completed' && (
+                        <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
+                      )}
+                    </TabsTrigger>
+                    
+                    <TabsTrigger 
+                      value="technical" 
+                      disabled={!generatedDocuments.technicalSpec && !processingSteps.find(s => s.id === 'technical')?.status.includes('completed')}
+                      className="text-xs sm:text-sm"
+                    >
+                      <span className="hidden sm:inline">Technical Spec</span>
+                      <span className="sm:hidden">Technical</span>
+                      {processingSteps.find(s => s.id === 'technical')?.status === 'completed' && (
+                        <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
+                      )}
+                    </TabsTrigger>
+                    
+                    <TabsTrigger 
+                      value="ux" 
+                      disabled={!generatedDocuments.uxSpec && !processingSteps.find(s => s.id === 'ux')?.status.includes('completed')}
+                      className="text-xs sm:text-sm"
+                    >
+                      <span className="hidden sm:inline">UX Specification</span>
+                      <span className="sm:hidden">UX</span>
+                      {processingSteps.find(s => s.id === 'ux')?.status === 'completed' && (
+                        <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
+                      )}
+                    </TabsTrigger>
+                    
+                    <TabsTrigger 
+                      value="diagrams" 
+                      disabled={!generatedDocuments.mermaidDiagrams && !processingSteps.find(s => s.id === 'mermaid')?.status.includes('completed')}
+                      className="text-xs sm:text-sm"
+                    >
+                      <span className="hidden sm:inline">Architecture</span>
+                      <span className="sm:hidden">Arch</span>
+                      {processingSteps.find(s => s.id === 'mermaid')?.status === 'completed' && (
+                        <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
+                      )}
+                    </TabsTrigger>
+                  </TabsList>
 
                   <TabsContent value="business">
                     <MarkdownRenderer 
@@ -1538,27 +1536,25 @@ export default function SDLCAutomationPlatform() {
                   </div>
 
                   <Tabs defaultValue="business" className="mt-4">
-                    <div className="overflow-x-auto mb-4">
-                      <TabsList className="flex w-full min-w-max gap-1 p-1">
-                        <TabsTrigger value="business" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap">
-                          <span className="hidden sm:inline">Business</span>
-                          <span className="sm:hidden">Biz</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="functional" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap">
-                          <span className="hidden sm:inline">Functional</span>
-                          <span className="sm:hidden">Func</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="technical" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap">
-                          <span className="hidden sm:inline">Technical</span>
-                          <span className="sm:hidden">Tech</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="ux" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap">UX</TabsTrigger>
-                        <TabsTrigger value="architecture" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap">
-                          <span className="hidden sm:inline">Architecture</span>
-                          <span className="sm:hidden">Arch</span>
-                        </TabsTrigger>
-                      </TabsList>
-                    </div>
+                    <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1">
+                      <TabsTrigger value="business" className="text-xs sm:text-sm">
+                        <span className="hidden sm:inline">Business</span>
+                        <span className="sm:hidden">Biz</span>
+                      </TabsTrigger>
+                      <TabsTrigger value="functional" className="text-xs sm:text-sm">
+                        <span className="hidden sm:inline">Functional</span>
+                        <span className="sm:hidden">Func</span>
+                      </TabsTrigger>
+                      <TabsTrigger value="technical" className="text-xs sm:text-sm">
+                        <span className="hidden sm:inline">Technical</span>
+                        <span className="sm:hidden">Tech</span>
+                      </TabsTrigger>
+                      <TabsTrigger value="ux" className="text-xs sm:text-sm">UX</TabsTrigger>
+                      <TabsTrigger value="architecture" className="text-xs sm:text-sm">
+                        <span className="hidden sm:inline">Architecture</span>
+                        <span className="sm:hidden">Arch</span>
+                      </TabsTrigger>
+                    </TabsList>
                     <TabsContent value="business" className="mt-2">
                       <MarkdownRenderer 
                         content={project.documents.businessAnalysis}
