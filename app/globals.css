@@ -175,9 +175,100 @@ body {
     display: none;
   }
   
-  /* Improved tab button touch targets */
+  /* Improved tab button touch targets and mobile responsiveness */
   .tab-button-mobile {
     @apply min-h-[44px] min-w-[44px] touch-manipulation;
+  }
+  
+  /* Enhanced tab container for mobile */
+  .tabs-mobile-container {
+    @apply relative overflow-x-auto scrollbar-hide;
+    /* Add padding to ensure content doesn't get cut off */
+    padding-left: 2px;
+    padding-right: 2px;
+    /* Smooth scrolling on mobile */
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Improved tab list layout */
+  .tabs-mobile-list {
+    @apply flex w-full min-w-max gap-1 p-1;
+    /* Ensure tabs don't get squished */
+    flex-shrink: 0;
+  }
+  
+  /* Better responsive tab trigger */
+  .tab-trigger-mobile {
+    @apply text-xs sm:text-sm flex-shrink-0 whitespace-nowrap;
+    @apply min-w-[70px] px-2 sm:px-3 py-2;
+    @apply touch-manipulation;
+    /* Ensure proper touch targets */
+    min-height: 44px;
+    /* Better text handling */
+    line-height: 1.2;
+    /* Prevent text overflow */
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
+  
+  /* Scroll indicator shadows */
+  .tabs-scroll-container {
+    position: relative;
+  }
+  
+  .tabs-scroll-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 20px;
+    height: 100%;
+    background: linear-gradient(to right, rgba(255,255,255,0.8), transparent);
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  
+  .tabs-scroll-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 20px;
+    height: 100%;
+    background: linear-gradient(to left, rgba(255,255,255,0.8), transparent);
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  
+  .tabs-scroll-container.has-scroll::before,
+  .tabs-scroll-container.has-scroll::after {
+    opacity: 1;
+  }
+  
+  /* Extra small screens (< 375px) */
+  @media (max-width: 374px) {
+    .tab-trigger-mobile {
+      @apply min-w-[60px] px-1 text-xs;
+      font-size: 11px;
+    }
+    
+    .tabs-mobile-container {
+      /* Tighter padding on very small screens */
+      padding-left: 1px;
+      padding-right: 1px;
+    }
+  }
+  
+  /* iPhone SE and similar small screens */
+  @media (max-width: 375px) {
+    .tab-trigger-mobile {
+      @apply min-w-[65px] px-1.5;
+    }
   }
   
   /* Mermaid diagram responsive container */

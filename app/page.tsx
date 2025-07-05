@@ -1297,65 +1297,68 @@ export default function SDLCAutomationPlatform() {
                   generatedDocuments.mermaidDiagrams ? "diagrams" :
                   "business"
                 } className="space-y-4">
-                  <div className="overflow-x-auto mb-4 scrollbar-hide">
-                    <TabsList className="flex w-full min-w-max gap-1 p-1">
+                  <div className="tabs-mobile-container tabs-scroll-container mb-4">
+                    <TabsList className="tabs-mobile-list">
                       <TabsTrigger 
                         value="business" 
                         disabled={!generatedDocuments.businessAnalysis && !processingSteps.find(s => s.id === 'analysis')?.status.includes('completed')}
-                        className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[80px] px-2 sm:px-3"
+                        className="tab-trigger-mobile"
                       >
                         <span className="hidden sm:inline">Business Analysis</span>
                         <span className="sm:hidden">Business</span>
+                        <span className="hidden">Biz</span>
                         {processingSteps.find(s => s.id === 'analysis')?.status === 'completed' && (
-                          <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
+                          <CheckCircle className="h-3 w-3 ml-1 text-green-500 flex-shrink-0" />
                         )}
                       </TabsTrigger>
                       
                       <TabsTrigger 
                         value="functional" 
                         disabled={!generatedDocuments.functionalSpec && !processingSteps.find(s => s.id === 'functional')?.status.includes('completed')}
-                        className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[80px] px-2 sm:px-3"
+                        className="tab-trigger-mobile"
                       >
                         <span className="hidden sm:inline">Functional Spec</span>
                         <span className="sm:hidden">Functional</span>
+                        <span className="hidden">Func</span>
                         {processingSteps.find(s => s.id === 'functional')?.status === 'completed' && (
-                          <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
+                          <CheckCircle className="h-3 w-3 ml-1 text-green-500 flex-shrink-0" />
                         )}
                       </TabsTrigger>
                       
                       <TabsTrigger 
                         value="technical" 
                         disabled={!generatedDocuments.technicalSpec && !processingSteps.find(s => s.id === 'technical')?.status.includes('completed')}
-                        className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[80px] px-2 sm:px-3"
+                        className="tab-trigger-mobile"
                       >
                         <span className="hidden sm:inline">Technical Spec</span>
                         <span className="sm:hidden">Technical</span>
+                        <span className="hidden">Tech</span>
                         {processingSteps.find(s => s.id === 'technical')?.status === 'completed' && (
-                          <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
+                          <CheckCircle className="h-3 w-3 ml-1 text-green-500 flex-shrink-0" />
                         )}
                       </TabsTrigger>
                       
                       <TabsTrigger 
                         value="ux" 
                         disabled={!generatedDocuments.uxSpec && !processingSteps.find(s => s.id === 'ux')?.status.includes('completed')}
-                        className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[60px] px-2 sm:px-3"
+                        className="tab-trigger-mobile"
                       >
                         <span className="hidden sm:inline">UX Specification</span>
                         <span className="sm:hidden">UX</span>
                         {processingSteps.find(s => s.id === 'ux')?.status === 'completed' && (
-                          <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
+                          <CheckCircle className="h-3 w-3 ml-1 text-green-500 flex-shrink-0" />
                         )}
                       </TabsTrigger>
                       
                       <TabsTrigger 
                         value="diagrams" 
                         disabled={!generatedDocuments.mermaidDiagrams && !processingSteps.find(s => s.id === 'mermaid')?.status.includes('completed')}
-                        className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[60px] px-2 sm:px-3"
+                        className="tab-trigger-mobile"
                       >
                         <span className="hidden sm:inline">Architecture</span>
                         <span className="sm:hidden">Arch</span>
                         {processingSteps.find(s => s.id === 'mermaid')?.status === 'completed' && (
-                          <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
+                          <CheckCircle className="h-3 w-3 ml-1 text-green-500 flex-shrink-0" />
                         )}
                       </TabsTrigger>
                     </TabsList>
@@ -1542,22 +1545,22 @@ export default function SDLCAutomationPlatform() {
                   </div>
 
                   <Tabs defaultValue="business" className="mt-4">
-                    <div className="overflow-x-auto mb-4 scrollbar-hide">
-                      <TabsList className="flex w-full min-w-max gap-1 p-1">
-                        <TabsTrigger value="business" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[60px] px-2 sm:px-3">
+                    <div className="tabs-mobile-container tabs-scroll-container mb-4">
+                      <TabsList className="tabs-mobile-list">
+                        <TabsTrigger value="business" className="tab-trigger-mobile">
                           <span className="hidden sm:inline">Business</span>
                           <span className="sm:hidden">Biz</span>
                         </TabsTrigger>
-                        <TabsTrigger value="functional" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[60px] px-2 sm:px-3">
+                        <TabsTrigger value="functional" className="tab-trigger-mobile">
                           <span className="hidden sm:inline">Functional</span>
                           <span className="sm:hidden">Func</span>
                         </TabsTrigger>
-                        <TabsTrigger value="technical" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[60px] px-2 sm:px-3">
+                        <TabsTrigger value="technical" className="tab-trigger-mobile">
                           <span className="hidden sm:inline">Technical</span>
                           <span className="sm:hidden">Tech</span>
                         </TabsTrigger>
-                        <TabsTrigger value="ux" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[50px] px-2 sm:px-3">UX</TabsTrigger>
-                        <TabsTrigger value="architecture" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[60px] px-2 sm:px-3">
+                        <TabsTrigger value="ux" className="tab-trigger-mobile">UX</TabsTrigger>
+                        <TabsTrigger value="architecture" className="tab-trigger-mobile">
                           <span className="hidden sm:inline">Architecture</span>
                           <span className="sm:hidden">Arch</span>
                         </TabsTrigger>

@@ -403,25 +403,25 @@ export function VisualizationHub() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <div className="overflow-x-auto mb-4 scrollbar-hide">
-          <TabsList className="flex w-full min-w-max gap-1 p-1">
-            <TabsTrigger value="diagrams" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[80px] px-2 sm:px-3">
+        <div className="tabs-mobile-container tabs-scroll-container mb-4">
+          <TabsList className="tabs-mobile-list">
+            <TabsTrigger value="diagrams" className="tab-trigger-mobile">
               <span className="hidden sm:inline">Interactive Diagrams</span>
               <span className="sm:hidden">Diagrams</span>
             </TabsTrigger>
-            <TabsTrigger value="presentation" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[80px] px-2 sm:px-3">
+            <TabsTrigger value="presentation" className="tab-trigger-mobile">
               <span className="hidden sm:inline">Presentation Mode</span>
               <span className="sm:hidden">Present</span>
             </TabsTrigger>
-            <TabsTrigger value="editor" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[80px] px-2 sm:px-3">
+            <TabsTrigger value="editor" className="tab-trigger-mobile">
               <span className="hidden sm:inline">Diagram Editor</span>
               <span className="sm:hidden">Editor</span>
             </TabsTrigger>
-            <TabsTrigger value="mindmap" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[80px] px-2 sm:px-3">
+            <TabsTrigger value="mindmap" className="tab-trigger-mobile">
               <span className="hidden sm:inline">Mind Maps</span>
               <span className="sm:hidden">Mind Map</span>
             </TabsTrigger>
-            <TabsTrigger value="export" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[80px] px-2 sm:px-3">
+            <TabsTrigger value="export" className="tab-trigger-mobile">
               <span className="hidden sm:inline">Export & Print</span>
               <span className="sm:hidden">Export</span>
             </TabsTrigger>
