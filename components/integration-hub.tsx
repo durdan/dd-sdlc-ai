@@ -448,46 +448,62 @@ export function IntegrationHub() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Integration Hub</h2>
-          <p className="text-gray-600">Connect your favorite tools and automate your workflow</p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h2 className="text-xl sm:text-2xl font-bold truncate">Integration Hub</h2>
+          <p className="text-sm sm:text-base text-gray-600">Connect your favorite tools and automate your workflow</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Request Integration
+        <div className="flex gap-2 flex-wrap sm:flex-nowrap">
+          <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
+            <Plus className="h-4 w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Request Integration</span>
+            <span className="sm:hidden">Request</span>
           </Button>
-          <Button variant="outline" size="sm">
-            <Settings className="h-4 w-4 mr-2" />
-            Manage All
+          <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
+            <Settings className="h-4 w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Manage All</span>
+            <span className="sm:hidden">Manage</span>
           </Button>
         </div>
       </div>
 
       {/* Search and Filters */}
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="flex-1">
           <Input
             placeholder="Search integrations..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-sm"
+            className="w-full sm:max-w-sm"
           />
         </div>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="development">Development</TabsTrigger>
-            <TabsTrigger value="communication">Communication</TabsTrigger>
-            <TabsTrigger value="documentation">Documentation</TabsTrigger>
-            <TabsTrigger value="project-management">Project Management</TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto">
+            <TabsList className="flex w-full min-w-max gap-1 p-1">
+              <TabsTrigger value="all" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap">All</TabsTrigger>
+              <TabsTrigger value="development" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap">
+                <span className="hidden sm:inline">Development</span>
+                <span className="sm:hidden">Dev</span>
+              </TabsTrigger>
+              <TabsTrigger value="communication" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap">
+                <span className="hidden sm:inline">Communication</span>
+                <span className="sm:hidden">Comm</span>
+              </TabsTrigger>
+              <TabsTrigger value="documentation" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap">
+                <span className="hidden sm:inline">Documentation</span>
+                <span className="sm:hidden">Docs</span>
+              </TabsTrigger>
+              <TabsTrigger value="project-management" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap">
+                <span className="hidden sm:inline">Project Management</span>
+                <span className="sm:hidden">PM</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
         </Tabs>
       </div>
 
       {/* Integration Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {filteredIntegrations.map((integration) => (
           <Card key={integration.id} className="relative">
             <CardHeader>
