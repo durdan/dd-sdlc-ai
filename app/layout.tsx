@@ -8,7 +8,8 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "SDLC Automation Platform",
   description: "Transform ideas into complete project documentation with AI",
-    generator: 'v0.dev'
+  generator: 'v0.dev',
+  viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no'
 }
 
 export default function RootLayout({

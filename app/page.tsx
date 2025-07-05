@@ -1080,43 +1080,49 @@ export default function SDLCAutomationPlatform() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-2 sm:p-4">
+      <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">SDLC Automation Platform</h1>
-            <p className="text-gray-600">Transform ideas into complete project documentation with AI</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">SDLC Automation Platform</h1>
+            <p className="text-sm sm:text-base text-gray-600">Transform ideas into complete project documentation with AI</p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setShowConfig(true)}>
-              <Settings className="h-4 w-4 mr-2" />
-              Configuration
+          <div className="flex flex-wrap gap-2 sm:gap-2">
+            <Button variant="outline" size="sm" onClick={() => setShowConfig(true)} className="flex-1 sm:flex-none">
+              <Settings className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Configuration</span>
+              <span className="sm:hidden">Config</span>
             </Button>
 
-            <Button variant="outline" size="sm" onClick={() => setShowIntegrations(true)}>
-              <Plug className="h-4 w-4 mr-2" />
-              Integrations
+            <Button variant="outline" size="sm" onClick={() => setShowIntegrations(true)} className="flex-1 sm:flex-none">
+              <Plug className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Integrations</span>
+              <span className="sm:hidden">Integrate</span>
             </Button>
 
-            <Button variant="outline" size="sm" onClick={() => setShowVisualization(true)}>
-              <Presentation className="h-4 w-4 mr-2" />
-              Visualize
+            <Button variant="outline" size="sm" onClick={() => setShowVisualization(true)} className="flex-1 sm:flex-none">
+              <Presentation className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Visualize</span>
+              <span className="sm:hidden">Visual</span>
             </Button>
 
-            <Button variant="outline" size="sm" onClick={() => setShowWorkflow(true)}>
-              <Workflow className="h-4 w-4 mr-2" />
-              View Workflow
+            <Button variant="outline" size="sm" onClick={() => setShowWorkflow(true)} className="flex-1 sm:flex-none">
+              <Workflow className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">View Workflow</span>
+              <span className="sm:hidden">Workflow</span>
             </Button>
 
-            <Button variant="outline" size="sm" onClick={() => setShowHowItWorks(true)}>
-              <Info className="h-4 w-4 mr-2" />
-              How It Works
+            <Button variant="outline" size="sm" onClick={() => setShowHowItWorks(true)} className="flex-1 sm:flex-none">
+              <Info className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">How It Works</span>
+              <span className="sm:hidden">Help</span>
             </Button>
 
-            <Button variant="outline" size="sm" onClick={() => setShowPromptEngineering(true)}>
-              <Settings className="h-4 w-4 mr-2" />
-              Prompt Engineering
+            <Button variant="outline" size="sm" onClick={() => setShowPromptEngineering(true)} className="flex-1 sm:flex-none">
+              <Settings className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Prompt Engineering</span>
+              <span className="sm:hidden">Prompts</span>
             </Button>
           </div>
         </div>
@@ -1142,7 +1148,7 @@ export default function SDLCAutomationPlatform() {
               />
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <span>JIRA Project:</span>
                 <Badge variant="outline">{config.jiraProject || "Not configured"}</Badge>
@@ -1291,12 +1297,14 @@ export default function SDLCAutomationPlatform() {
                   generatedDocuments.mermaidDiagrams ? "diagrams" :
                   "business"
                 } className="space-y-4">
-                  <TabsList className="grid w-full grid-cols-5">
+                  <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1">
                     <TabsTrigger 
                       value="business" 
                       disabled={!generatedDocuments.businessAnalysis && !processingSteps.find(s => s.id === 'analysis')?.status.includes('completed')}
+                      className="text-xs sm:text-sm"
                     >
-                      Business Analysis
+                      <span className="hidden sm:inline">Business Analysis</span>
+                      <span className="sm:hidden">Business</span>
                       {processingSteps.find(s => s.id === 'analysis')?.status === 'completed' && (
                         <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
                       )}
@@ -1305,8 +1313,10 @@ export default function SDLCAutomationPlatform() {
                     <TabsTrigger 
                       value="functional" 
                       disabled={!generatedDocuments.functionalSpec && !processingSteps.find(s => s.id === 'functional')?.status.includes('completed')}
+                      className="text-xs sm:text-sm"
                     >
-                      Functional Spec
+                      <span className="hidden sm:inline">Functional Spec</span>
+                      <span className="sm:hidden">Functional</span>
                       {processingSteps.find(s => s.id === 'functional')?.status === 'completed' && (
                         <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
                       )}
@@ -1315,8 +1325,10 @@ export default function SDLCAutomationPlatform() {
                     <TabsTrigger 
                       value="technical" 
                       disabled={!generatedDocuments.technicalSpec && !processingSteps.find(s => s.id === 'technical')?.status.includes('completed')}
+                      className="text-xs sm:text-sm"
                     >
-                      Technical Spec
+                      <span className="hidden sm:inline">Technical Spec</span>
+                      <span className="sm:hidden">Technical</span>
                       {processingSteps.find(s => s.id === 'technical')?.status === 'completed' && (
                         <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
                       )}
@@ -1325,8 +1337,10 @@ export default function SDLCAutomationPlatform() {
                     <TabsTrigger 
                       value="ux" 
                       disabled={!generatedDocuments.uxSpec && !processingSteps.find(s => s.id === 'ux')?.status.includes('completed')}
+                      className="text-xs sm:text-sm"
                     >
-                      UX Specification
+                      <span className="hidden sm:inline">UX Specification</span>
+                      <span className="sm:hidden">UX</span>
                       {processingSteps.find(s => s.id === 'ux')?.status === 'completed' && (
                         <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
                       )}
@@ -1335,8 +1349,10 @@ export default function SDLCAutomationPlatform() {
                     <TabsTrigger 
                       value="diagrams" 
                       disabled={!generatedDocuments.mermaidDiagrams && !processingSteps.find(s => s.id === 'mermaid')?.status.includes('completed')}
+                      className="text-xs sm:text-sm"
                     >
-                      Architecture
+                      <span className="hidden sm:inline">Architecture</span>
+                      <span className="sm:hidden">Arch</span>
                       {processingSteps.find(s => s.id === 'mermaid')?.status === 'completed' && (
                         <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
                       )}
@@ -1432,7 +1448,7 @@ export default function SDLCAutomationPlatform() {
             <div className="space-y-4">
               {recentProjects.map((project) => (
                 <div key={project.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                  <div className="flex items-start justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                     <div className="flex-1">
                       <h3 className="font-semibold text-gray-900">{project.title}</h3>
                       <p className="text-sm text-gray-500">Created on {project.createdAt}</p>
@@ -1443,7 +1459,7 @@ export default function SDLCAutomationPlatform() {
                         {project.jiraEpic && <Badge variant="outline">JIRA: {project.jiraEpic}</Badge>}
                       </div>
                     </div>
-                    <div className="flex gap-2 flex-wrap">
+                    <div className="flex gap-2 flex-wrap sm:flex-nowrap">
                       {/* JIRA Integration Buttons */}
                       {project.jiraEpic ? (
                         <Button 
@@ -1520,12 +1536,24 @@ export default function SDLCAutomationPlatform() {
                   </div>
 
                   <Tabs defaultValue="business" className="mt-4">
-                    <TabsList className="grid w-full grid-cols-5">
-                      <TabsTrigger value="business">Business</TabsTrigger>
-                      <TabsTrigger value="functional">Functional</TabsTrigger>
-                      <TabsTrigger value="technical">Technical</TabsTrigger>
-                      <TabsTrigger value="ux">UX</TabsTrigger>
-                      <TabsTrigger value="architecture">Architecture</TabsTrigger>
+                    <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1">
+                      <TabsTrigger value="business" className="text-xs sm:text-sm">
+                        <span className="hidden sm:inline">Business</span>
+                        <span className="sm:hidden">Biz</span>
+                      </TabsTrigger>
+                      <TabsTrigger value="functional" className="text-xs sm:text-sm">
+                        <span className="hidden sm:inline">Functional</span>
+                        <span className="sm:hidden">Func</span>
+                      </TabsTrigger>
+                      <TabsTrigger value="technical" className="text-xs sm:text-sm">
+                        <span className="hidden sm:inline">Technical</span>
+                        <span className="sm:hidden">Tech</span>
+                      </TabsTrigger>
+                      <TabsTrigger value="ux" className="text-xs sm:text-sm">UX</TabsTrigger>
+                      <TabsTrigger value="architecture" className="text-xs sm:text-sm">
+                        <span className="hidden sm:inline">Architecture</span>
+                        <span className="sm:hidden">Arch</span>
+                      </TabsTrigger>
                     </TabsList>
                     <TabsContent value="business" className="mt-2">
                       <MarkdownRenderer 
@@ -1572,18 +1600,18 @@ export default function SDLCAutomationPlatform() {
 
         {/* Configuration Dialog */}
         <Dialog open={showConfig} onOpenChange={setShowConfig}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto w-[95vw] sm:w-full">
             <DialogHeader>
               <DialogTitle>Platform Configuration</DialogTitle>
             </DialogHeader>
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {/* AI Configuration */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <Zap className="h-4 w-4" />
                   <h3 className="font-semibold">AI Configuration</h3>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                   <div>
                     <Label htmlFor="openai-key">OpenAI API Key</Label>
                     <Input
@@ -1626,7 +1654,7 @@ export default function SDLCAutomationPlatform() {
                 <p className="text-sm text-gray-600">
                   Configure Jira to automatically create issues and epics from your SDLC documentation.
                 </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                   <div>
                     <Label htmlFor="jira-url">JIRA URL</Label>
                     <Input
@@ -1692,7 +1720,7 @@ export default function SDLCAutomationPlatform() {
                 <p className="text-sm text-gray-600">
                   Configure Confluence to automatically create documentation pages from your SDLC output.
                 </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                   <div>
                     <Label htmlFor="confluence-url">Confluence URL</Label>
                     <Input
@@ -1754,7 +1782,7 @@ export default function SDLCAutomationPlatform() {
                   <Settings className="h-4 w-4" />
                   <h3 className="font-semibold">Template Settings</h3>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                   <div>
                     <Label htmlFor="template">Default Template</Label>
                     <Select
@@ -1830,11 +1858,11 @@ export default function SDLCAutomationPlatform() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-3 pt-4">
+              <div className="flex flex-col sm:flex-row gap-3 pt-4">
                 <Button onClick={handleSaveConfig} className="flex-1">
                   Save Configuration
                 </Button>
-                <Button variant="outline" onClick={handleTestConnections}>
+                <Button variant="outline" onClick={handleTestConnections} className="flex-1 sm:flex-none">
                   Test Connections
                 </Button>
               </div>
@@ -1844,7 +1872,7 @@ export default function SDLCAutomationPlatform() {
 
         {/* Other Dialogs */}
         <Dialog open={showWorkflow} onOpenChange={setShowWorkflow}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto w-[95vw] sm:w-full">
             <DialogHeader>
               <DialogTitle>SDLC Documentation Workflow</DialogTitle>
             </DialogHeader>
@@ -1853,7 +1881,7 @@ export default function SDLCAutomationPlatform() {
         </Dialog>
 
         <Dialog open={showHowItWorks} onOpenChange={setShowHowItWorks}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto w-[95vw] sm:w-full">
             <DialogHeader>
               <DialogTitle>How SDLC Automation Works</DialogTitle>
             </DialogHeader>
@@ -1862,7 +1890,7 @@ export default function SDLCAutomationPlatform() {
         </Dialog>
 
         <Dialog open={showPromptEngineering} onOpenChange={setShowPromptEngineering}>
-          <DialogContent className="max-w-6xl max-h-[90vh] overflow-auto">
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-auto w-[95vw] sm:w-full">
             <DialogHeader>
               <DialogTitle>Prompt Engineering Interface</DialogTitle>
               <DialogDescription>
@@ -1875,7 +1903,7 @@ export default function SDLCAutomationPlatform() {
 
 
         <Dialog open={showIntegrations} onOpenChange={setShowIntegrations}>
-          <DialogContent className="max-w-5xl max-h-[90vh] overflow-auto">
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-auto w-[95vw] sm:w-full">
             <DialogHeader>
               <DialogTitle>Integration Hub</DialogTitle>
             </DialogHeader>
@@ -1884,7 +1912,7 @@ export default function SDLCAutomationPlatform() {
         </Dialog>
 
         <Dialog open={showVisualization} onOpenChange={setShowVisualization}>
-          <DialogContent className="max-w-7xl max-h-[90vh] overflow-auto">
+          <DialogContent className="max-w-7xl max-h-[90vh] overflow-auto w-[95vw] sm:w-full">
             <DialogHeader>
               <DialogTitle>Visualization & Presentation Hub</DialogTitle>
             </DialogHeader>
@@ -1894,7 +1922,7 @@ export default function SDLCAutomationPlatform() {
 
         {/* Cache Choice Dialog */}
         <Dialog open={showCacheDialog} onOpenChange={setShowCacheDialog}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md w-[95vw] sm:w-full">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Database className="h-5 w-5 text-blue-500" />
@@ -1959,7 +1987,7 @@ export default function SDLCAutomationPlatform() {
 
         {/* API Key Dialog for Just-in-Time Prompting */}
         <Dialog open={showApiKeyDialog} onOpenChange={setShowApiKeyDialog}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md w-[95vw] sm:w-full">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Settings className="h-5 w-5 text-blue-500" />
@@ -1999,7 +2027,7 @@ export default function SDLCAutomationPlatform() {
                 </p>
               </div>
               
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <Button 
                   onClick={() => {
                     setShowApiKeyDialog(false)
