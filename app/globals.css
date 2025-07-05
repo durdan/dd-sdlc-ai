@@ -21,6 +21,24 @@ body {
   .card-content {
     padding: 1rem;
   }
+  
+  /* Prevent text overflow in buttons */
+  button {
+    min-width: 0;
+    overflow: hidden;
+  }
+  
+  /* Ensure proper text wrapping */
+  .truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  /* Improve flex item behavior */
+  .flex-1 {
+    min-width: 0;
+  }
 }
 
 @layer utilities {
@@ -145,6 +163,21 @@ body {
   
   .mobile-tab-scroll::-webkit-scrollbar {
     @apply hidden;
+  }
+  
+  /* Enhanced scrollbar hiding for tab containers */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Improved tab button touch targets */
+  .tab-button-mobile {
+    @apply min-h-[44px] min-w-[44px] touch-manipulation;
   }
   
   /* Mermaid diagram responsive container */

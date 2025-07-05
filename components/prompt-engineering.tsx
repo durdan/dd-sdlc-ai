@@ -485,13 +485,30 @@ Focus Area: {{focus_area}}`,
         <div className="lg:col-span-2 space-y-6">
           {/* Document Type Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="business">Business Analysis</TabsTrigger>
-              <TabsTrigger value="functional">Functional Spec</TabsTrigger>
-              <TabsTrigger value="technical">Technical Spec</TabsTrigger>
-              <TabsTrigger value="ux">UX Specification</TabsTrigger>
-              <TabsTrigger value="mermaid">Mermaid Diagrams</TabsTrigger>
-            </TabsList>
+            <div className="overflow-x-auto mb-4 scrollbar-hide">
+              <TabsList className="flex w-full min-w-max gap-1 p-1">
+                <TabsTrigger value="business" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[80px] px-2 sm:px-3">
+                  <span className="hidden sm:inline">Business Analysis</span>
+                  <span className="sm:hidden">Business</span>
+                </TabsTrigger>
+                <TabsTrigger value="functional" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[80px] px-2 sm:px-3">
+                  <span className="hidden sm:inline">Functional Spec</span>
+                  <span className="sm:hidden">Functional</span>
+                </TabsTrigger>
+                <TabsTrigger value="technical" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[80px] px-2 sm:px-3">
+                  <span className="hidden sm:inline">Technical Spec</span>
+                  <span className="sm:hidden">Technical</span>
+                </TabsTrigger>
+                <TabsTrigger value="ux" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[60px] px-2 sm:px-3">
+                  <span className="hidden sm:inline">UX Specification</span>
+                  <span className="sm:hidden">UX</span>
+                </TabsTrigger>
+                <TabsTrigger value="mermaid" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[80px] px-2 sm:px-3">
+                  <span className="hidden sm:inline">Mermaid Diagrams</span>
+                  <span className="sm:hidden">Mermaid</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
             <TabsContent value={activeTab} className="space-y-4">
               {/* Template Editor */}
