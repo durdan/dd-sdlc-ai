@@ -478,22 +478,22 @@ export function IntegrationHub() {
           />
         </div>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <div className="overflow-x-auto">
-            <TabsList className="flex w-full min-w-max gap-1 p-1">
-              <TabsTrigger value="all" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap">All</TabsTrigger>
-              <TabsTrigger value="development" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap">
+          <div className="tabs-mobile-container tabs-scroll-container">
+            <TabsList className="tabs-mobile-list">
+              <TabsTrigger value="all" className="tab-trigger-mobile">All</TabsTrigger>
+              <TabsTrigger value="development" className="tab-trigger-mobile">
                 <span className="hidden sm:inline">Development</span>
                 <span className="sm:hidden">Dev</span>
               </TabsTrigger>
-              <TabsTrigger value="communication" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap">
+              <TabsTrigger value="communication" className="tab-trigger-mobile">
                 <span className="hidden sm:inline">Communication</span>
                 <span className="sm:hidden">Comm</span>
               </TabsTrigger>
-              <TabsTrigger value="documentation" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap">
+              <TabsTrigger value="documentation" className="tab-trigger-mobile">
                 <span className="hidden sm:inline">Documentation</span>
                 <span className="sm:hidden">Docs</span>
               </TabsTrigger>
-              <TabsTrigger value="project-management" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap">
+              <TabsTrigger value="project-management" className="tab-trigger-mobile">
                 <span className="hidden sm:inline">Project Management</span>
                 <span className="sm:hidden">PM</span>
               </TabsTrigger>

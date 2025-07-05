@@ -485,25 +485,25 @@ Focus Area: {{focus_area}}`,
         <div className="lg:col-span-2 space-y-6">
           {/* Document Type Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <div className="overflow-x-auto mb-4 scrollbar-hide">
-              <TabsList className="flex w-full min-w-max gap-1 p-1">
-                <TabsTrigger value="business" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[80px] px-2 sm:px-3">
+            <div className="tabs-mobile-container tabs-scroll-container mb-4">
+              <TabsList className="tabs-mobile-list">
+                <TabsTrigger value="business" className="tab-trigger-mobile">
                   <span className="hidden sm:inline">Business Analysis</span>
                   <span className="sm:hidden">Business</span>
                 </TabsTrigger>
-                <TabsTrigger value="functional" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[80px] px-2 sm:px-3">
+                <TabsTrigger value="functional" className="tab-trigger-mobile">
                   <span className="hidden sm:inline">Functional Spec</span>
                   <span className="sm:hidden">Functional</span>
                 </TabsTrigger>
-                <TabsTrigger value="technical" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[80px] px-2 sm:px-3">
+                <TabsTrigger value="technical" className="tab-trigger-mobile">
                   <span className="hidden sm:inline">Technical Spec</span>
                   <span className="sm:hidden">Technical</span>
                 </TabsTrigger>
-                <TabsTrigger value="ux" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[60px] px-2 sm:px-3">
+                <TabsTrigger value="ux" className="tab-trigger-mobile">
                   <span className="hidden sm:inline">UX Specification</span>
                   <span className="sm:hidden">UX</span>
                 </TabsTrigger>
-                <TabsTrigger value="mermaid" className="text-xs sm:text-sm flex-shrink-0 whitespace-nowrap min-w-[80px] px-2 sm:px-3">
+                <TabsTrigger value="mermaid" className="tab-trigger-mobile">
                   <span className="hidden sm:inline">Mermaid Diagrams</span>
                   <span className="sm:hidden">Mermaid</span>
                 </TabsTrigger>
