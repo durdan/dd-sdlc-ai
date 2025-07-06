@@ -1,15 +1,14 @@
-import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
+import { AuthProvider } from "@/contexts/AuthContext"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "SDLC Automation Platform",
   description: "Transform ideas into complete project documentation with AI",
-  generator: 'v0.dev',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no'
+  generator: 'v0.dev'
 }
 
 export default function RootLayout({
@@ -19,7 +18,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className} suppressHydrationWarning={true}>{children}</body>
+      <body className={inter.className} suppressHydrationWarning={true}>
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+      </body>
     </html>
   )
 }
