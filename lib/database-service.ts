@@ -126,6 +126,10 @@ export class DatabaseService {
       .single()
 
     if (error) {
+      // If no configuration exists, return null without logging error
+      if (error.code === 'PGRST116') {
+        return null
+      }
       console.error('Error fetching user configuration:', error)
       return null
     }
