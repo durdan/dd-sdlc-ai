@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { dbService } from '@/lib/database-service';
 import type React from "react"
 
 import { useState, useEffect } from "react"
@@ -184,13 +185,14 @@ const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({ currentSt
   )
 }
 
-function SDLCAutomationPlatform() {
+function SDLCAutomationPlatform({ user }: { user: any }) {
   const [input, setInput] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
   const [showConfig, setShowConfig] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
   const [successMessage, setSuccessMessage] = useState("")
+  const [isSavingConfig, setIsSavingConfig] = useState(false)
   const [config, setConfig] = useState({
     openaiKey: "",
     aiModel: "gpt-4",
@@ -280,54 +282,85 @@ function SDLCAutomationPlatform() {
   
   const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>(getInitialProcessingSteps())
 
-  // Get all cached results from localStorage for Recent Projects display
-  const getCachedProjects = (): ProjectResult[] => {
-    const projects: ProjectResult[] = []
-    // Only access localStorage on client-side
-    if (typeof window === 'undefined') {
-      return projects
-    }
+  // Get all cached results from database for Recent Projects display
+  const getCachedProjects = async (): Promise<ProjectResult[]> => {
+    if (!user?.id) return []
     
     try {
-      // Iterate through localStorage to find cached SDLC results
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i)
-        if (key?.startsWith('sdlc-cache-')) {
-          const cached = localStorage.getItem(key)
-          if (cached) {
-            const parsedCache = JSON.parse(cached)
-            // Only include recent cache (within 24 hours)
-            if (Date.now() - parsedCache.timestamp < 24 * 60 * 60 * 1000) {
-              projects.push({
-                id: key.replace('sdlc-cache-', ''),
-                title: parsedCache.businessAnalysis?.substring(0, 50) + '...' || 'SDLC Project',
-                status: 'completed',
-                createdAt: new Date(parsedCache.timestamp).toLocaleDateString(),
-                documents: {
-                  businessAnalysis: parsedCache.businessAnalysis || '',
-                  functionalSpec: parsedCache.functionalSpec || '',
-                  technicalSpec: parsedCache.technicalSpec || '',
-                  uxSpec: parsedCache.uxSpec || '',
-                  architecture: parsedCache.mermaidDiagrams || '',
-                }
-              })
-            }
+      const projects = await dbService.getProjectsByUser(user.id)
+      
+      // Convert database projects to ProjectResult format
+      const projectResults: ProjectResult[] = await Promise.all(
+        projects.map(async (project) => {
+          const documents = await dbService.getDocumentsByProject(project.id)
+          const integrations = await dbService.getIntegrationsByProject(project.id)
+          
+          // Convert documents array to documents object
+          const documentsObj = {
+            businessAnalysis: documents.find(d => d.document_type === 'businessAnalysis')?.content || '',
+            functionalSpec: documents.find(d => d.document_type === 'functionalSpec')?.content || '',
+            technicalSpec: documents.find(d => d.document_type === 'technicalSpec')?.content || '',
+            uxSpec: documents.find(d => d.document_type === 'uxSpec')?.content || '',
+            architecture: documents.find(d => d.document_type === 'architecture')?.content || '',
           }
-        }
-      }
+          
+          // Find Jira and Confluence integrations
+          const jiraIntegration = integrations.find(i => i.integration_type === 'jira')
+          const confluenceIntegration = integrations.find(i => i.integration_type === 'confluence')
+          
+          return {
+            id: project.id,
+            title: project.title,
+            status: project.status,
+            createdAt: project.created_at,
+            jiraEpic: jiraIntegration?.external_url || '',
+            confluencePage: confluenceIntegration?.external_url || '',
+            documents: documentsObj
+          }
+        })
+      )
+      
+      return projectResults
     } catch (error) {
-      console.warn('Error loading cached projects:', error)
+      console.error('Error fetching cached projects:', error)
+      return []
     }
-    return projects.slice(0, 5) // Limit to 5 most recent
   }
 
   const [recentProjects, setRecentProjects] = useState<ProjectResult[]>([])
-
-  // Load cached projects on client-side only
-  useEffect(() => {
-    setRecentProjects(getCachedProjects())
-  }, [])
   const [recentProjectsExpanded, setRecentProjectsExpanded] = useState(false) // Default: folded
+
+  // Load user configuration and recent projects on component mount
+  useEffect(() => {
+    const loadUserData = async () => {
+      if (!user?.id) return
+      
+      try {
+        // Load user configuration
+        const userConfig = await dbService.getUserConfiguration(user.id)
+        if (userConfig) {
+          setConfig(prev => ({
+            ...prev,
+            openaiKey: userConfig.openai_api_key || '',
+            jiraUrl: userConfig.jira_base_url || '',
+            jiraEmail: userConfig.jira_email || '',
+            jiraToken: userConfig.jira_api_token || '',
+            confluenceUrl: userConfig.confluence_base_url || '',
+            confluenceEmail: userConfig.confluence_email || '',
+            confluenceToken: userConfig.confluence_api_token || '',
+          }))
+        }
+        
+        // Load recent projects
+        const projects = await getCachedProjects()
+        setRecentProjects(projects)
+      } catch (error) {
+        console.error('Error loading user data:', error)
+      }
+    }
+    
+    loadUserData()
+  }, [user?.id])
 
   // Handle API key dialog confirmation
   const handleApiKeyConfirm = async () => {
@@ -520,14 +553,52 @@ function SDLCAutomationPlatform() {
     }
   }
 
-  const setCachedResults = (input: string, results: any) => {
+  const setCachedResults = async (input: string, results: any) => {
+    if (!user?.id) return
+    
     try {
-      localStorage.setItem(`sdlc-cache-${btoa(input).slice(0, 20)}`, JSON.stringify({
-        ...results,
-        timestamp: Date.now()
-      }))
+      // Save to database using the database service
+      const projectTitle = extractProjectName(input)
+      const projectDescription = extractProjectDescription(input)
+      
+      const { project, success } = await dbService.saveCompleteSDLCResult(
+        user.id,
+        input,
+        projectTitle,
+        {
+          businessAnalysis: results.businessAnalysis || '',
+          functionalSpec: results.functionalSpec || '',
+          technicalSpec: results.technicalSpec || '',
+          uxSpec: results.uxSpec || '',
+          architecture: results.mermaidDiagrams || ''
+        }
+      )
+      
+      if (success && project) {
+        console.log('✅ Successfully saved SDLC project to database:', project.id)
+        
+        // Refresh the recent projects list
+        const updatedProjects = await getCachedProjects()
+        setRecentProjects(updatedProjects)
+      } else {
+        console.error('❌ Failed to save SDLC project to database')
+        // Fallback to localStorage for backward compatibility
+        localStorage.setItem(`sdlc-cache-${btoa(input).slice(0, 20)}`, JSON.stringify({
+          ...results,
+          timestamp: Date.now()
+        }))
+      }
     } catch (error) {
-      console.warn('Failed to cache results:', error)
+      console.error('Error saving SDLC results:', error)
+      // Fallback to localStorage
+      try {
+        localStorage.setItem(`sdlc-cache-${btoa(input).slice(0, 20)}`, JSON.stringify({
+          ...results,
+          timestamp: Date.now()
+        }))
+      } catch (localStorageError) {
+        console.warn('Failed to cache results:', localStorageError)
+      }
     }
   }
 
@@ -739,7 +810,7 @@ function SDLCAutomationPlatform() {
       }
 
       // Cache the complete results
-      setCachedResults(input.trim(), results)
+      await setCachedResults(input.trim(), results)
       
       // Handle optional integrations (JIRA, Confluence) if enabled
       await handleIntegrations(results, input)
@@ -1020,11 +1091,37 @@ function SDLCAutomationPlatform() {
     }
   }
 
-  const handleSaveConfig = () => {
-    console.log("Saving configuration:", config)
-    // Here you would save to localStorage or send to API
-    localStorage.setItem("sdlc-config", JSON.stringify(config))
-    setShowConfig(false)
+  const handleSaveConfig = async () => {
+    if (!user?.id) {
+      setErrorMessage('User not authenticated')
+      return
+    }
+    
+    setIsSavingConfig(true)
+    setErrorMessage('')
+    setSuccessMessage('')
+    
+    try {
+      // Save configuration to database
+      await dbService.upsertUserConfiguration(user.id, {
+        openai_api_key: config.openaiKey,
+        jira_base_url: config.jiraUrl,
+        jira_email: config.jiraEmail,
+        jira_api_token: config.jiraToken,
+        confluence_base_url: config.confluenceUrl,
+        confluence_email: config.confluenceEmail,
+        confluence_api_token: config.confluenceToken,
+      })
+      
+      setSuccessMessage('Configuration saved successfully!')
+      setTimeout(() => setSuccessMessage(''), 3000)
+    } catch (error) {
+      console.error('Error saving configuration:', error)
+      setErrorMessage('Failed to save configuration')
+      setTimeout(() => setErrorMessage(''), 3000)
+    } finally {
+      setIsSavingConfig(false)
+    }
   }
 
   const handleTestConnections = () => {
@@ -1711,14 +1808,27 @@ function SDLCAutomationPlatform() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                   <div>
                     <Label htmlFor="openai-key">OpenAI API Key</Label>
-                    <Input
-                      id="openai-key"
-                      type="password"
-                      placeholder="sk-..."
-                      value={config.openaiKey}
-                      onChange={(e) => setConfig((prev) => ({ ...prev, openaiKey: e.target.value }))}
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Required for AI-powered document generation</p>
+                    <div className="relative">
+                      <Input
+                        id="openai-key"
+                        type="password"
+                        placeholder={config.openaiKey ? "••••••••••••••••••••••••" : "sk-..."}
+                        value={config.openaiKey}
+                        onChange={(e) => setConfig((prev) => ({ ...prev, openaiKey: e.target.value }))}
+                      />
+                      {config.openaiKey && (
+                        <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {config.openaiKey ? (
+                        <span className="text-green-600">✓ API key configured</span>
+                      ) : (
+                        "Required for AI-powered document generation"
+                      )}
+                    </p>
                   </div>
                   <div>
                     <Label htmlFor="ai-model">AI Model</Label>
@@ -1782,13 +1892,20 @@ function SDLCAutomationPlatform() {
                   </div>
                   <div>
                     <Label htmlFor="jira-token">API Token</Label>
-                    <Input
-                      id="jira-token"
-                      type="password"
-                      placeholder="Your JIRA API token"
-                      value={config.jiraToken}
-                      onChange={(e) => setConfig((prev) => ({ ...prev, jiraToken: e.target.value }))}
-                    />
+                    <div className="relative">
+                      <Input
+                        id="jira-token"
+                        type="password"
+                        placeholder={config.jiraToken ? "••••••••••••••••••••••••" : "Your JIRA API token"}
+                        value={config.jiraToken}
+                        onChange={(e) => setConfig((prev) => ({ ...prev, jiraToken: e.target.value }))}
+                      />
+                      {config.jiraToken && (
+                        <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -1848,13 +1965,20 @@ function SDLCAutomationPlatform() {
                   </div>
                   <div>
                     <Label htmlFor="confluence-token">API Token</Label>
-                    <Input
-                      id="confluence-token"
-                      type="password"
-                      placeholder="Your Confluence API token"
-                      value={config.confluenceToken}
-                      onChange={(e) => setConfig((prev) => ({ ...prev, confluenceToken: e.target.value }))}
-                    />
+                    <div className="relative">
+                      <Input
+                        id="confluence-token"
+                        type="password"
+                        placeholder={config.confluenceToken ? "••••••••••••••••••••••••" : "Your Confluence API token"}
+                        value={config.confluenceToken}
+                        onChange={(e) => setConfig((prev) => ({ ...prev, confluenceToken: e.target.value }))}
+                      />
+                      {config.confluenceToken && (
+                        <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -1954,10 +2078,38 @@ function SDLCAutomationPlatform() {
                 </div>
               </div>
 
+              {/* Success and Error Messages */}
+              {successMessage && (
+                <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded" role="alert">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4" />
+                    <p className="font-medium">Success</p>
+                  </div>
+                  <p className="text-sm">{successMessage}</p>
+                </div>
+              )}
+              
+              {errorMessage && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded" role="alert">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4" />
+                    <p className="font-medium">Error</p>
+                  </div>
+                  <p className="text-sm">{errorMessage}</p>
+                </div>
+              )}
+
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                <Button onClick={handleSaveConfig} className="flex-1">
-                  Save Configuration
+                <Button onClick={handleSaveConfig} className="flex-1" disabled={isSavingConfig}>
+                  {isSavingConfig ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Configuration'
+                  )}
                 </Button>
                 <Button variant="outline" onClick={handleTestConnections} className="flex-1 sm:flex-none">
                   Test Connections
@@ -2185,10 +2337,10 @@ function AuthenticatedSDLCPlatform() {
     try {
       const supabase = createClient();
       await supabase.auth.signOut();
-      window.location.href = '/signin';
+      window.location.href = '/';
     } catch (error) {
       console.error('Error signing out:', error);
-      window.location.href = '/signin';
+      window.location.href = '/';
     }
   };
 
@@ -2207,7 +2359,7 @@ function AuthenticatedSDLCPlatform() {
   return (
     <div className="min-h-screen bg-gray-50">
       <UserHeader user={user} onSignOut={handleSignOut} />
-      <SDLCAutomationPlatform />
+      <SDLCAutomationPlatform user={user} />
     </div>
   );
 }
