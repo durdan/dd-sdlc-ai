@@ -258,8 +258,68 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Demo Video Section */}
+      <section id="demo" className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              See SDLC Automation in Action
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Watch how our platform transforms a simple idea into complete project documentation, 
+              JIRA epics, and Confluence pages in minutes
+            </p>
+          </div>
+
+          <div className="max-w-4xl mx-auto">
+            <div className="relative bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-8 shadow-2xl">
+              <div className="aspect-video rounded-xl overflow-hidden shadow-lg">
+                <iframe
+                  src="https://www.youtube.com/embed/UaGRWffznQk"
+                  title="SDLC Automation Platform Demo"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  className="w-full h-full"
+                ></iframe>
+              </div>
+              
+              <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                <div className="flex items-center justify-center space-x-2">
+                  <div className="bg-green-100 p-2 rounded-full">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                  </div>
+                  <span className="text-sm font-medium text-gray-700">Complete Workflow Demo</span>
+                </div>
+                <div className="flex items-center justify-center space-x-2">
+                  <div className="bg-blue-100 p-2 rounded-full">
+                    <Play className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <span className="text-sm font-medium text-gray-700">Real-time Generation</span>
+                </div>
+                <div className="flex items-center justify-center space-x-2">
+                  <div className="bg-purple-100 p-2 rounded-full">
+                    <Sparkles className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <span className="text-sm font-medium text-gray-700">AI-Powered Results</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-12 text-center">
+            <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700" asChild>
+              <Link href="/signin">
+                Try It Yourself
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
       {/* SDLC Phases Section */}
-      <section id="sdlc-phases" className="py-24 bg-white">
+      <section id="sdlc-phases" className="py-24 bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
