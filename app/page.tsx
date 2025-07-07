@@ -344,38 +344,71 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="max-w-4xl mx-auto">
+          {/* Two Video Layout */}
+          <div className="max-w-6xl mx-auto space-y-8">
+            {/* First Video */}
             <div className="relative bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-4 sm:p-8 shadow-2xl">
+              <div className="text-center mb-6">
+                <h3 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-2">
+                  Complete Platform Demo
+                </h3>
+                <p className="text-gray-600">
+                  See the full SDLC automation workflow in action
+                </p>
+              </div>
               <div className="aspect-video rounded-xl overflow-hidden shadow-lg">
                 <iframe
-                  src="https://www.youtube.com/embed/UaGRWffznQk"
-                  title="SDLC Automation Platform Demo"
+                  src="https://www.youtube.com/embed/bHcceP_9oLk"
+                  title="SDLC Automation Platform - Complete Demo"
                   frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
                   className="w-full h-full"
                 ></iframe>
               </div>
-              
-              <div className="mt-6 sm:mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 text-center">
-                <div className="flex items-center justify-center space-x-2">
-                  <div className="bg-green-100 p-2 rounded-full">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                  </div>
-                  <span className="text-xs sm:text-sm font-medium text-gray-700">Complete Workflow Demo</span>
+            </div>
+
+            {/* Second Video */}
+            <div className="relative bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-4 sm:p-8 shadow-2xl">
+              <div className="text-center mb-6">
+                <h3 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-2">
+                  Advanced Features Showcase
+                </h3>
+                <p className="text-gray-600">
+                  Explore advanced automation capabilities and integrations
+                </p>
+              </div>
+              <div className="aspect-video rounded-xl overflow-hidden shadow-lg">
+                <iframe
+                  src="https://www.youtube.com/embed/NSloNS3sZRg"
+                  title="SDLC Automation Platform - Advanced Features"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  className="w-full h-full"
+                ></iframe>
+              </div>
+            </div>
+
+            {/* Feature Highlights */}
+            <div className="mt-6 sm:mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 text-center">
+              <div className="flex items-center justify-center space-x-2">
+                <div className="bg-green-100 p-2 rounded-full">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
                 </div>
-                <div className="flex items-center justify-center space-x-2">
-                  <div className="bg-blue-100 p-2 rounded-full">
-                    <Play className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <span className="text-xs sm:text-sm font-medium text-gray-700">Real-time Generation</span>
+                <span className="text-xs sm:text-sm font-medium text-gray-700">Complete Workflow Demo</span>
+              </div>
+              <div className="flex items-center justify-center space-x-2">
+                <div className="bg-blue-100 p-2 rounded-full">
+                  <Play className="h-5 w-5 text-blue-600" />
                 </div>
-                <div className="flex items-center justify-center space-x-2">
-                  <div className="bg-purple-100 p-2 rounded-full">
-                    <Sparkles className="h-5 w-5 text-purple-600" />
-                  </div>
-                  <span className="text-xs sm:text-sm font-medium text-gray-700">AI-Powered Results</span>
+                <span className="text-xs sm:text-sm font-medium text-gray-700">Real-time Generation</span>
+              </div>
+              <div className="flex items-center justify-center space-x-2">
+                <div className="bg-purple-100 p-2 rounded-full">
+                  <Sparkles className="h-5 w-5 text-purple-600" />
                 </div>
+                <span className="text-xs sm:text-sm font-medium text-gray-700">AI-Powered Results</span>
               </div>
             </div>
           </div>
