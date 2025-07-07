@@ -23,6 +23,7 @@ import { PromptService, PromptTemplate, DocumentType } from '@/lib/prompt-servic
 import { PromptEditor } from './prompt-editor';
 import { PromptTester } from './prompt-tester';
 import { PromptAnalytics } from './prompt-analytics';
+import { PromptGuide } from './prompt-guide';
 
 interface PromptManagementProps {
   userId: string;
@@ -42,7 +43,8 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
   const [showEditor, setShowEditor] = useState(false);
   const [showTester, setShowTester] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
-  const [activeTab, setActiveTab] = useState<DocumentType>('business');
+  const [showGuide, setShowGuide] = useState(false);
+  const [activeTab, setActiveTab] = useState<DocumentType | 'guide'>('business');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -229,12 +231,21 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
             Manage AI prompts for different document types
           </p>
         </div>
-        {userRole === 'admin' && (
-          <Button onClick={handleCreatePrompt} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            New Prompt
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => setActiveTab('guide')} 
+            className="flex items-center gap-2"
+          >
+            📖 How-to Guide
           </Button>
-        )}
+          {userRole === 'admin' && (
+            <Button onClick={handleCreatePrompt} className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              New Prompt
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Alerts */}
@@ -253,14 +264,18 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
       )}
 
       {/* Tabs for different document types */}
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as DocumentType)}>
-        <TabsList className="grid w-full grid-cols-5">
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as DocumentType | 'guide')}>
+        <TabsList className="grid w-full grid-cols-6">
           {Object.keys(prompts).map((type) => (
             <TabsTrigger key={type} value={type} className="flex items-center gap-2">
               <span>{getDocumentTypeIcon(type as DocumentType)}</span>
               <span className="hidden sm:inline">{getDocumentTypeLabel(type as DocumentType)}</span>
             </TabsTrigger>
           ))}
+          <TabsTrigger value="guide" className="flex items-center gap-2">
+            <span>📖</span>
+            <span className="hidden sm:inline">Guide</span>
+          </TabsTrigger>
         </TabsList>
 
         {Object.entries(prompts).map(([type, typePrompts]) => (
@@ -400,13 +415,17 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
             )}
           </TabsContent>
         ))}
+
+        <TabsContent value="guide">
+          <PromptGuide userRole={userRole} />
+        </TabsContent>
       </Tabs>
 
       {/* Modals */}
       {showEditor && (
         <PromptEditor
           prompt={selectedPrompt}
-          documentType={activeTab}
+          documentType={activeTab === 'guide' ? 'business' : activeTab}
           onSave={async () => {
             setShowEditor(false);
             await loadPrompts();

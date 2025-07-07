@@ -180,6 +180,15 @@ export function PromptAnalytics({ prompt, onClose }: PromptAnalyticsProps) {
     return (
       <Dialog open={true} onOpenChange={onClose}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              Loading Analytics
+            </DialogTitle>
+            <DialogDescription>
+              Fetching performance data for {prompt.name}
+            </DialogDescription>
+          </DialogHeader>
           <div className="flex items-center justify-center h-64">
             <div className="text-center space-y-4">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
