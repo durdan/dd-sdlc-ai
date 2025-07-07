@@ -2,6 +2,7 @@ import { createOpenAI } from "@ai-sdk/openai"
 import { generateText } from "ai"
 import { type NextRequest, NextResponse } from "next/server"
 import { createPromptService } from '@/lib/prompt-service'
+import { createClient } from "@/lib/supabase/server"
 
 export const maxDuration = 60
 
@@ -15,27 +16,38 @@ interface BusinessAnalysisRequest {
 }
 
 // Hardcoded fallback prompt for reliability
-const FALLBACK_PROMPT = `As a Senior Product Owner with 8+ years of Agile experience, analyze the following business case and extract actionable user stories:
+const FALLBACK_PROMPT = `You are an expert business analyst. Analyze the following project requirements and create a comprehensive business analysis document.
 
-Business Case: {input}
+Project Requirements:
+{input}
 
-Generate the following structured output:
+Create a business analysis that includes:
 
-## Epic Overview
-- **Epic Title**: [Clear, business-focused title]
-- **Epic Description**: [2-3 sentences describing the overall business goal]
-- **Business Value**: [Quantifiable value/impact]
-- **Priority**: [High/Medium/Low with justification]
+## Executive Summary
+- **Project Overview**: [Brief description]
+- **Business Justification**: [Why this project matters]
+- **Expected Outcomes**: [What success looks like]
 
-## User Stories (Format: As a [user type], I want [functionality], so that [benefit])
-For each user story, provide:
-1. **Story Title**: Clear, action-oriented title
-2. **Story Description**: Full user story format
-3. **Acceptance Criteria**: 3-5 specific, testable criteria
-4. **Story Points**: Estimate (1, 2, 3, 5, 8, 13)
-5. **Priority**: High/Medium/Low
-6. **Dependencies**: Any blocking or related stories
-7. **Definition of Done**: Clear completion criteria
+## Stakeholder Analysis
+- **Primary Stakeholders**: [Key decision makers]
+- **Secondary Stakeholders**: [Affected parties]
+- **Stakeholder Interests**: [What each group cares about]
+
+## Requirements Analysis
+- **Functional Requirements**: [What the system must do]
+- **Non-Functional Requirements**: [Performance, security, usability]
+- **Business Rules**: [Constraints and policies]
+- **Assumptions**: [What we're assuming to be true]
+
+## Risk Assessment
+- **Technical Risks**: [Technology-related concerns]
+- **Business Risks**: [Market, financial, operational risks]
+- **Mitigation Strategies**: [How to address each risk]
+
+## User Stories & Acceptance Criteria
+- **Epic**: [High-level feature description]
+- **User Stories**: [Specific user needs in "As a... I want... So that..." format]
+- **Acceptance Criteria**: [Testable conditions for completion]
 
 ## Personas & User Types
 - **Primary Users**: [List main user types]
@@ -56,9 +68,20 @@ Focus on creating 5-8 user stories that are:
 Format the response in markdown with clear headings and structured sections.`
 
 async function getAuthenticatedUser() {
-  // For API routes, we'll rely on the userId being passed in the request
-  // Server-side auth will be handled differently in production
-  return null
+  try {
+    const supabase = await createClient()
+    const { data: { user }, error } = await supabase.auth.getUser()
+    
+    if (error) {
+      console.warn('Error getting authenticated user:', error.message)
+      return null
+    }
+    
+    return user
+  } catch (error) {
+    console.warn('Failed to get authenticated user:', error)
+    return null
+  }
 }
 
 async function generateWithDatabasePrompt(

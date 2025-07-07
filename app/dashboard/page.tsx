@@ -127,9 +127,9 @@ const UserHeader: React.FC<UserHeaderProps> = ({ user, onSignOut }) => {
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Settings</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => window.open('/admin/prompts', '_blank')}>
+                <DropdownMenuItem onClick={() => window.open('/prompts', '_blank')}>
                   <Database className="mr-2 h-4 w-4" />
-                  <span>Prompt Management</span>
+                  <span>My Prompts</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={onSignOut}>

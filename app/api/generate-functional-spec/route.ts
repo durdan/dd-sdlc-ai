@@ -2,6 +2,7 @@ import { createOpenAI } from "@ai-sdk/openai"
 import { generateText } from "ai"
 import { type NextRequest, NextResponse } from "next/server"
 import { createPromptService } from '@/lib/prompt-service'
+import { createClient } from "@/lib/supabase/server"
 
 export const maxDuration = 60
 
@@ -82,9 +83,20 @@ Ensure all requirements are:
 Format the response in markdown with clear headings and structured sections.`
 
 async function getAuthenticatedUser() {
-  // For API routes, we'll rely on the userId being passed in the request
-  // Server-side auth will be handled differently in production
-  return null
+  try {
+    const supabase = await createClient()
+    const { data: { user }, error } = await supabase.auth.getUser()
+    
+    if (error) {
+      console.warn('Error getting authenticated user:', error.message)
+      return null
+    }
+    
+    return user
+  } catch (error) {
+    console.warn('Failed to get authenticated user:', error)
+    return null
+  }
 }
 
 async function generateWithDatabasePrompt(

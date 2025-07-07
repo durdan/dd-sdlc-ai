@@ -22,6 +22,11 @@ export function MainNav() {
       href: '/dashboard',
       protected: true,
     },
+    {
+      title: 'My Prompts',
+      href: '/prompts',
+      protected: true,
+    },
   ]
 
   // Don't show navigation while loading auth state
@@ -39,7 +44,7 @@ export function MainNav() {
             // Skip protected routes if user is not authenticated
             if (item.protected && !user) return null
             
-            const isActive = pathname === item.href
+            const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
             
             return (
               <Link

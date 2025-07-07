@@ -2,6 +2,7 @@ import { createOpenAI } from "@ai-sdk/openai"
 import { generateText } from "ai"
 import { type NextRequest, NextResponse } from "next/server"
 import { createPromptService } from '@/lib/prompt-service'
+import { createClient } from "@/lib/supabase/server"
 
 export const maxDuration = 60
 
@@ -44,11 +45,17 @@ interface SDLCResponse {
 
 async function getAuthenticatedUser() {
   try {
-    // Auth handled via userId parameter
-    // For API routes, we rely on userId being passed in request
-    return null
+    const supabase = await createClient()
+    const { data: { user }, error } = await supabase.auth.getUser()
+    
+    if (error) {
+      console.warn('Error getting authenticated user:', error.message)
+      return null
+    }
+    
+    return user
   } catch (error) {
-    console.warn('Could not get authenticated user:', error)
+    console.warn('Failed to get authenticated user:', error)
     return null
   }
 }
