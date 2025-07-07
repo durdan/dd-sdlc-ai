@@ -230,3 +230,47 @@ If you find this project useful, please consider giving it a star! ⭐
 ---
 
 **Made with ❤️ by the SDLC AI community**
+
+## Admin Setup
+
+The prompt management system requires admin access. You have two options:
+
+### Option 1: Environment Variable (Recommended)
+Set the admin email in your `.env.local` file:
+```env
+NEXT_PUBLIC_ADMIN_EMAIL=your-email@domain.com
+```
+
+Anyone signing in with this email will automatically have admin access.
+
+### Option 2: First User Auto-Admin
+If no `NEXT_PUBLIC_ADMIN_EMAIL` is set, the first user to sign up will automatically become an admin.
+
+### Managing Additional Users
+Once you have admin access, you can:
+- Visit `/admin/prompts` to access the admin panel
+- Manage user roles through the database
+- Create additional admin or manager users
+
+## Database Setup
+
+Run these scripts in your Supabase SQL editor in order:
+
+1. `scripts/setup-database.sql` - Core tables and RLS policies
+2. `scripts/prompt-management-migration.sql` - Prompt management system
+
+## Project Structure
+
+```
+├── app/                    # Next.js app directory
+│   ├── api/               # API routes
+│   ├── admin/             # Admin interface
+│   └── dashboard/         # Main dashboard
+├── components/            # React components
+│   ├── admin/            # Admin-specific components
+│   └── ui/               # UI components
+├── lib/                  # Utility libraries
+│   ├── supabase/         # Supabase clients
+│   └── prompt-service.ts # Prompt management service
+└── scripts/              # Database setup scripts
+```
