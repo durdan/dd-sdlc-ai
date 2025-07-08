@@ -203,19 +203,32 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
   const [isSavingConfig, setIsSavingConfig] = useState(false)
   const [config, setConfig] = useState({
     openaiApiKey: "",
+    aiModel: "gpt-4",
     jiraUrl: "",
     jiraToken: "",
     jiraProject: "",
+    jiraEmail: "",
     confluenceUrl: "",
     confluenceToken: "",
     confluenceSpace: "",
+    confluenceEmail: "",
     jiraAutoCreate: false,
     confluenceAutoCreate: false,
+    template: "default",
+    outputFormat: "markdown",
+    emailNotifications: true,
+    slackNotifications: false,
   })
   const [generatedDocuments, setGeneratedDocuments] = useState<any>({})
-  const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>([])
+  const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>(() => [])
   const [showPromptEngineering, setShowPromptEngineering] = useState(false)
-  const [customPrompts, setCustomPrompts] = useState<any>({})
+  const [customPrompts, setCustomPrompts] = useState<any>({
+    analysis: "",
+    functional: "",
+    technical: "",
+    ux: "",
+    mermaid: ""
+  })
   const [showCacheDialog, setShowCacheDialog] = useState(false)
   const [pendingCachedResults, setPendingCachedResults] = useState<any>(null)
   const [showApiKeyDialog, setShowApiKeyDialog] = useState(false)
@@ -226,6 +239,108 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
   const [recentProjectsExpanded, setRecentProjectsExpanded] = useState(false)
   const [isExportingToJira, setIsExportingToJira] = useState(false)
   const [isExportingToConfluence, setIsExportingToConfluence] = useState(false)
+  const [showWorkflow, setShowWorkflow] = useState(false)
+  const [showHowItWorks, setShowHowItWorks] = useState(false)
+  const [showIntegrations, setShowIntegrations] = useState(false)
+  const [showVisualization, setShowVisualization] = useState(false)
+
+  // Handle prompt updates from PromptEngineering component
+  const handlePromptUpdate = (promptType: string, promptContent: string) => {
+    setCustomPrompts(prev => ({
+      ...prev,
+      [promptType]: promptContent
+    }))
+  }
+
+  // Utility function to update step progress
+  const updateStepProgress = (stepId: string, progress: number, status: "pending" | "in_progress" | "completed" | "error") => {
+    setProcessingSteps(prev => 
+      prev.map(step => 
+        step.id === stepId 
+          ? { ...step, progress, status }
+          : step
+      )
+    )
+  }
+
+  // Utility function to get cached results
+  const getCachedResults = (inputKey?: string) => {
+    try {
+      if (inputKey) {
+        // Get specific cached result by input key
+        const cached = localStorage.getItem(`sdlc-cache-${inputKey}`)
+        return cached ? JSON.parse(cached) : null
+      } else {
+        // Get all cached results for recent projects
+        const projects: ProjectResult[] = []
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i)
+          if (key && key.startsWith('sdlc-cache-')) {
+            try {
+              const data = JSON.parse(localStorage.getItem(key) || '{}')
+              if (data.businessAnalysis) {
+                projects.push({
+                  id: key.replace('sdlc-cache-', ''),
+                  title: extractProjectName(key.replace('sdlc-cache-', '')),
+                  status: 'completed',
+                  createdAt: new Date(data.timestamp || Date.now()).toLocaleDateString(),
+                  documents: {
+                    businessAnalysis: data.businessAnalysis || '',
+                    functionalSpec: data.functionalSpec || '',
+                    technicalSpec: data.technicalSpec || '',
+                    uxSpec: data.uxSpec || '',
+                    architecture: data.mermaidDiagrams || ''
+                  }
+                })
+              }
+            } catch (e) {
+              console.warn('Error parsing cached data for key:', key)
+            }
+          }
+        }
+        return projects.slice(0, 5) // Return last 5 projects
+      }
+    } catch (error) {
+      console.warn('Error accessing localStorage:', error)
+      return inputKey ? null : []
+    }
+  }
+
+  // Utility function to cache results
+  const cacheResults = (inputKey: string, data: any) => {
+    try {
+      const cacheData = {
+        ...data,
+        timestamp: Date.now()
+      }
+      localStorage.setItem(`sdlc-cache-${inputKey}`, JSON.stringify(cacheData))
+    } catch (error) {
+      console.warn('Error caching results:', error)
+    }
+  }
+
+  // Utility function to parse mermaid diagrams
+  const parseMermaidDiagrams = (content: string) => {
+    const diagrams = []
+    const mermaidRegex = /```mermaid\n([\s\S]*?)\n```/g
+    let match
+    
+    while ((match = mermaidRegex.exec(content)) !== null) {
+      diagrams.push({
+        id: `diagram-${diagrams.length + 1}`,
+        code: match[1].trim(),
+        title: `Diagram ${diagrams.length + 1}`
+      })
+    }
+    
+    return diagrams
+  }
+
+  // Load recent projects on component mount
+  useEffect(() => {
+    const projects = getCachedResults()
+    setRecentProjects(projects || [])
+  }, [])
 
   const generateDetailedDocumentation = async () => {
     if (!input.trim()) {
@@ -323,10 +438,93 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
     console.log('✅ Loaded from cache with', cachedSteps.length, 'steps')
   }
 
+  // Handle API key dialog confirmation
+  const handleApiKeyConfirm = async () => {
+    if (!tempApiKey.trim()) {
+      setErrorMessage("Please enter your OpenAI API key")
+      return
+    }
+    
+    // Update config with the provided API key
+    setConfig(prev => ({ ...prev, openaiApiKey: tempApiKey.trim() }))
+    setShowApiKeyDialog(false)
+    setTempApiKey('')
+    setErrorMessage('')
+    
+    // Continue with generation after setting the API key
+    await generateFreshDocuments()
+  }
+
+  // Get initial processing steps based on configuration
+  const getInitialProcessingSteps = (): ProcessingStep[] => {
+    const coreSteps: ProcessingStep[] = [
+      { id: "analysis", name: "Business Analysis", status: "pending", progress: 0 },
+      { id: "functional", name: "Functional Specification", status: "pending", progress: 0 },
+      { id: "technical", name: "Technical Specification", status: "pending", progress: 0 },
+      { id: "ux", name: "UX Specification", status: "pending", progress: 0 },
+      { id: "mermaid", name: "Mermaid Diagrams", status: "pending", progress: 0 },
+    ]
+    
+    // Add integration steps only if automation is enabled
+    if (config.jiraAutoCreate && config.jiraUrl && config.jiraToken) {
+      coreSteps.push({ id: "jira", name: "JIRA Epic Creation", status: "pending", progress: 0 })
+    }
+    if (config.confluenceAutoCreate && config.confluenceUrl && config.confluenceToken) {
+      coreSteps.push({ id: "confluence", name: "Confluence Documentation", status: "pending", progress: 0 })
+    }
+    if (coreSteps.length > 5) {
+      coreSteps.push({ id: "linking", name: "Cross-platform Linking", status: "pending", progress: 0 })
+    }
+    
+    return coreSteps
+  }
+
+  // Get all cached results from database for Recent Projects display
+  const getCachedProjects = async (): Promise<ProjectResult[]> => {
+    // Use existing getCachedResults function instead of database calls
+    const projects = getCachedResults()
+    return Array.isArray(projects) ? projects : []
+  }
+
+  // Load user data on component mount
+  const loadUserData = async () => {
+    if (!user?.id) return
+    
+    try {
+      // Load user configuration
+      const userConfig = await dbService.getUserConfiguration(user.id)
+      if (userConfig) {
+        setConfig(prev => ({
+          ...prev,
+          openaiApiKey: userConfig.openai_api_key || '',
+          jiraUrl: userConfig.jira_base_url || '',
+          jiraEmail: userConfig.jira_email || '',
+          jiraToken: userConfig.jira_api_token || '',
+          confluenceUrl: userConfig.confluence_base_url || '',
+          confluenceEmail: userConfig.confluence_email || '',
+          confluenceToken: userConfig.confluence_api_token || '',
+        }))
+      }
+      
+      // Load recent projects
+      const projects = await getCachedProjects()
+      setRecentProjects(projects)
+    } catch (error) {
+      console.warn('Error loading user data:', error)
+    }
+  }
+
+  // Load user data on component mount
+  useEffect(() => {
+    loadUserData()
+    // Initialize processing steps after config is loaded
+    setProcessingSteps(getInitialProcessingSteps())
+  }, [user?.id])
+
   const generateFreshDocuments = async () => {
 
     // Check if OpenAI API key is missing - prompt just-in-time
-    if (!config.openaiKey || config.openaiKey.trim() === '') {
+    if (!config.openaiApiKey || config.openaiApiKey.trim() === '') {
       setTempApiKey('')
       setShowApiKeyDialog(true)
       return
@@ -337,24 +535,7 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
     setGeneratedDocuments({})
     
     // Build initial steps array properly
-    const initialSteps: ProcessingStep[] = [
-      { id: "analysis", name: "Business Analysis", status: "pending" as const, progress: 0 },
-      { id: "functional", name: "Functional Specification", status: "pending" as const, progress: 0 },
-      { id: "technical", name: "Technical Specification", status: "pending" as const, progress: 0 },
-      { id: "ux", name: "UX Specification", status: "pending" as const, progress: 0 },
-      { id: "mermaid", name: "Mermaid Diagrams", status: "pending" as const, progress: 0 },
-    ]
-
-    // Add optional steps if integrations are enabled
-    if (config.jiraAutoCreate && config.jiraUrl && config.jiraToken) {
-      initialSteps.push({ id: "jira", name: "JIRA Epic Creation", status: "pending" as const, progress: 0 })
-    }
-    if (config.confluenceAutoCreate && config.confluenceUrl && config.confluenceToken) {
-      initialSteps.push({ id: "confluence", name: "Confluence Documentation", status: "pending" as const, progress: 0 })
-    }
-    if (initialSteps.length > 4) {
-      initialSteps.push({ id: "linking", name: "Cross-platform Linking", status: "pending" as const, progress: 0 })
-    }
+    const initialSteps: ProcessingStep[] = getInitialProcessingSteps()
 
     setProcessingSteps(initialSteps)
 
@@ -370,7 +551,7 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
         body: JSON.stringify({
           input,
           customPrompt: customPrompts?.business,
-          openaiKey: config.openaiKey,
+          openaiKey: config.openaiApiKey,
         }),
       })
       
@@ -394,7 +575,7 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
           input,
           businessAnalysis: results.businessAnalysis,
           customPrompt: customPrompts?.functional,
-          openaiKey: config.openaiKey,
+          openaiKey: config.openaiApiKey,
         }),
       })
       
@@ -419,7 +600,7 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
           businessAnalysis: results.businessAnalysis,
           functionalSpec: results.functionalSpec,
           customPrompt: customPrompts?.technical,
-          openaiKey: config.openaiKey,
+          openaiKey: config.openaiApiKey,
         }),
       })
       
@@ -445,7 +626,7 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
           functionalSpec: results.functionalSpec,
           technicalSpec: results.technicalSpec,
           customPrompt: customPrompts?.ux,
-          openaiKey: config.openaiKey,
+          openaiKey: config.openaiApiKey,
         }),
       })
       
@@ -471,7 +652,7 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
           functionalSpec: results.functionalSpec,
           technicalSpec: results.technicalSpec,
           customPrompt: customPrompts?.mermaid,
-          openaiKey: config.openaiKey,
+          openaiKey: config.openaiApiKey,
         }),
       })
       
@@ -488,7 +669,7 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
       }
 
       // Cache the complete results
-      await setCachedResults(input.trim(), results)
+      cacheResults(input.trim(), results)
       
       // Handle optional integrations (JIRA, Confluence) if enabled
       await handleIntegrations(results, input)
@@ -782,7 +963,7 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
     try {
       // Save configuration to database
       await dbService.upsertUserConfiguration(user.id, {
-        openai_api_key: config.openaiKey,
+        openai_api_key: config.openaiApiKey,
         jira_base_url: config.jiraUrl,
         jira_email: config.jiraEmail,
         jira_api_token: config.jiraToken,
