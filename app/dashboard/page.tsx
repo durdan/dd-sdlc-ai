@@ -62,6 +62,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 
 import { SimpleWorkflowDiagram } from "@/components/simple-workflow-diagram"
+import { DetailedSDLCViewer } from '@/components/detailed-sdlc-viewer'
 
 // User Header Component
 interface UserHeaderProps {
@@ -192,417 +193,90 @@ const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({ currentSt
 function SDLCAutomationPlatform({ user }: { user: any }) {
   const [input, setInput] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
+  const [isGeneratingDetailed, setIsGeneratingDetailed] = useState(false)
+  const [detailedDocumentation, setDetailedDocumentation] = useState<any>(null)
+  const [showDetailedDocs, setShowDetailedDocs] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
   const [showConfig, setShowConfig] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
   const [successMessage, setSuccessMessage] = useState("")
   const [isSavingConfig, setIsSavingConfig] = useState(false)
   const [config, setConfig] = useState({
-    openaiKey: "",
-    aiModel: "gpt-4",
+    openaiApiKey: "",
     jiraUrl: "",
-    jiraProject: "",
-    jiraEmail: "",
     jiraToken: "",
-    jiraAutoCreate: true,
+    jiraProject: "",
     confluenceUrl: "",
-    confluenceSpace: "",
-    confluenceEmail: "",
     confluenceToken: "",
-    confluenceAutoCreate: true,
-    template: "default",
-    outputFormat: "markdown",
-    emailNotifications: true,
-    slackNotifications: false,
+    confluenceSpace: "",
+    jiraAutoCreate: false,
+    confluenceAutoCreate: false,
   })
-
-  const [showWorkflow, setShowWorkflow] = useState(false)
-  const [showHowItWorks, setShowHowItWorks] = useState(false)
+  const [generatedDocuments, setGeneratedDocuments] = useState<any>({})
+  const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>([])
   const [showPromptEngineering, setShowPromptEngineering] = useState(false)
+  const [customPrompts, setCustomPrompts] = useState<any>({})
   const [showCacheDialog, setShowCacheDialog] = useState(false)
   const [pendingCachedResults, setPendingCachedResults] = useState<any>(null)
   const [showApiKeyDialog, setShowApiKeyDialog] = useState(false)
-  const [tempApiKey, setTempApiKey] = useState('')
-  
-  // Export state
+  const [tempApiKey, setTempApiKey] = useState("")
+  const [projects, setProjects] = useState<ProjectResult[]>([])
+  const [isLoadingProjects, setIsLoadingProjects] = useState(false)
+  const [recentProjects, setRecentProjects] = useState<ProjectResult[]>([])
+  const [recentProjectsExpanded, setRecentProjectsExpanded] = useState(false)
   const [isExportingToJira, setIsExportingToJira] = useState(false)
   const [isExportingToConfluence, setIsExportingToConfluence] = useState(false)
-  
-  // Function to update step progress - moved to component level for global access
-  const updateStepProgress = (stepId: string, progress: number, status: "pending" | "in_progress" | "completed" | "error" = "in_progress") => {
-    setProcessingSteps(prevSteps => 
-      prevSteps.map(step => 
-        step.id === stepId ? { ...step, progress, status } : step
-      )
-    )
-  }
-  
-  const handleShowPromptEngineering = () => {
-    setShowPromptEngineering(true)
-  }
-  
-  // Initialize customPrompts with empty values
-  const [customPrompts, setCustomPrompts] = useState({
-    business: "",
-    functional: "",
-    technical: "",
-    ux: "",
-    mermaid: ""
-  })
-  
-  // Handle prompt updates from PromptEngineering component
-  const handlePromptUpdate = (promptType: string, promptContent: string) => {
-    setCustomPrompts(prev => ({
-      ...prev,
-      [promptType]: promptContent
-    }))
-  }
-  const [showIntegrations, setShowIntegrations] = useState(false)
-  const [showVisualization, setShowVisualization] = useState(false)
 
-  // Initialize processing steps - conditionally include Jira/Confluence based on automation settings
-  const getInitialProcessingSteps = (): ProcessingStep[] => {
-    const coreSteps: ProcessingStep[] = [
-      { id: "analysis", name: "Business Analysis", status: "pending", progress: 0 },
-      { id: "functional", name: "Functional Specification", status: "pending", progress: 0 },
-      { id: "technical", name: "Technical Specification", status: "pending", progress: 0 },
-      { id: "ux", name: "UX Specification", status: "pending", progress: 0 },
-      { id: "mermaid", name: "Mermaid Diagrams", status: "pending", progress: 0 },
-    ]
-    
-    // Add integration steps only if automation is enabled
-    if (config.jiraAutoCreate && config.jiraUrl && config.jiraToken) {
-      coreSteps.push({ id: "jira", name: "JIRA Epic Creation", status: "pending", progress: 0 })
-    }
-    if (config.confluenceAutoCreate && config.confluenceUrl && config.confluenceToken) {
-      coreSteps.push({ id: "confluence", name: "Confluence Documentation", status: "pending", progress: 0 })
-    }
-    if (coreSteps.length > 5) { // More than core 5 steps means integrations are enabled
-      coreSteps.push({ id: "linking", name: "Cross-platform Linking", status: "pending", progress: 0 })
-    }
-    
-    return coreSteps
-  }
-  
-  const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>(getInitialProcessingSteps())
-
-  // Get all cached results from database for Recent Projects display
-  const getCachedProjects = async (): Promise<ProjectResult[]> => {
-    if (!user?.id) return []
-    
-    try {
-      const projects = await dbService.getProjectsByUser(user.id)
-      
-      // Convert database projects to ProjectResult format
-      const projectResults: ProjectResult[] = await Promise.all(
-        projects.map(async (project) => {
-          const documents = await dbService.getDocumentsByProject(project.id)
-          const integrations = await dbService.getIntegrationsByProject(project.id)
-          
-          // Convert documents array to documents object
-          const documentsObj = {
-            businessAnalysis: documents.find(d => d.document_type === 'businessAnalysis')?.content || '',
-            functionalSpec: documents.find(d => d.document_type === 'functionalSpec')?.content || '',
-            technicalSpec: documents.find(d => d.document_type === 'technicalSpec')?.content || '',
-            uxSpec: documents.find(d => d.document_type === 'uxSpec')?.content || '',
-            architecture: documents.find(d => d.document_type === 'architecture')?.content || '',
-          }
-          
-          // Find Jira and Confluence integrations
-          const jiraIntegration = integrations.find(i => i.integration_type === 'jira')
-          const confluenceIntegration = integrations.find(i => i.integration_type === 'confluence')
-          
-          return {
-            id: project.id,
-            title: project.title,
-            status: project.status,
-            createdAt: project.created_at,
-            jiraEpic: jiraIntegration?.external_url || '',
-            confluencePage: confluenceIntegration?.external_url || '',
-            documents: documentsObj
-          }
-        })
-      )
-      
-      return projectResults
-    } catch (error) {
-      console.error('Error fetching cached projects:', error)
-      return []
-    }
-  }
-
-  const [recentProjects, setRecentProjects] = useState<ProjectResult[]>([])
-  const [recentProjectsExpanded, setRecentProjectsExpanded] = useState(false) // Default: folded
-
-  // Load user configuration and recent projects on component mount
-  useEffect(() => {
-    const loadUserData = async () => {
-      if (!user?.id) return
-      
-      try {
-        // Load user configuration
-        const userConfig = await dbService.getUserConfiguration(user.id)
-        if (userConfig) {
-          setConfig(prev => ({
-            ...prev,
-            openaiKey: userConfig.openai_api_key || '',
-            jiraUrl: userConfig.jira_base_url || '',
-            jiraEmail: userConfig.jira_email || '',
-            jiraToken: userConfig.jira_api_token || '',
-            confluenceUrl: userConfig.confluence_base_url || '',
-            confluenceEmail: userConfig.confluence_email || '',
-            confluenceToken: userConfig.confluence_api_token || '',
-          }))
-        }
-        
-        // Load recent projects
-        const projects = await getCachedProjects()
-        setRecentProjects(projects)
-      } catch (error) {
-        console.error('Error loading user data:', error)
-      }
-    }
-    
-    loadUserData()
-  }, [user?.id])
-
-  // Handle API key dialog confirmation
-  const handleApiKeyConfirm = async () => {
-    if (!tempApiKey.trim()) {
-      setErrorMessage("Please enter your OpenAI API key")
+  const generateDetailedDocumentation = async () => {
+    if (!input.trim()) {
+      setErrorMessage("Please enter project requirements before generating detailed documentation.")
       return
     }
-    
-    // Update config with the provided API key
-    setConfig(prev => ({ ...prev, openaiKey: tempApiKey.trim() }))
-    setShowApiKeyDialog(false)
-    setTempApiKey('')
-    setErrorMessage('')
-    
-    // Continue with generation now that we have the API key
-    await generateFreshDocuments()
-  }
 
-  const [generatedDocuments, setGeneratedDocuments] = useState<any>(null)
-
-  // Helper function to parse Mermaid content into separate diagrams
-  const parseMermaidDiagrams = (mermaidContent: string) => {
-    if (!mermaidContent) {
-      console.log('No mermaid content to parse')
-      return {}
+    if (!config.openaiApiKey) {
+      setErrorMessage("Please configure your OpenAI API key first.")
+      setShowConfig(true)
+      return
     }
 
-    // Log the raw content for debugging
-    console.log('Raw mermaid content:', mermaidContent.substring(0, 200) + '...')
-    console.log('Raw mermaid content length:', mermaidContent.length)
-    
-    // Check for markdown headers and code blocks
-    const hasMarkdownHeaders = /^\s*#+\s+.+$/m.test(mermaidContent)
-    const hasMermaidCodeBlocks = /```(?:mermaid)?[\s\S]*?```/g.test(mermaidContent)
-    console.log('Content analysis:', { hasMarkdownHeaders, hasMermaidCodeBlocks })
+    setIsGeneratingDetailed(true)
+    setErrorMessage("")
+    setSuccessMessage("")
 
-    // Fully generic approach - create an empty diagram object with no hardcoded keys
-    const diagrams: Record<string, string> = {}
-
-    // Try to split by both markdown headers and Mermaid section comments
-    const sectionMarkers: {name: string, index: number}[] = []
-    let foundSections = false
-    
-    // First, try to find markdown headers like "## System Architecture Diagram"
-    const markdownHeaderRegex = /^##\s+([^\n]+?)\s*(?:Diagram)?\s*$/gmi
-    let match
-    while ((match = markdownHeaderRegex.exec(mermaidContent)) !== null) {
-      foundSections = true
-      const sectionName = match[1].trim().toLowerCase().replace(/\s+/g, '')
-      sectionMarkers.push({
-        name: sectionName,
-        index: match.index + match[0].length
-      })
-      console.log(`Found markdown header: ${sectionName} at index ${match.index}`)
-    }
-    
-    // Also try Mermaid section comments like "%% System Architecture Diagram"
-    const sectionCommentRegex = /%%\s*([A-Za-z\s]+)\s*Diagram/gi
-    sectionCommentRegex.lastIndex = 0 // Reset regex state
-    while ((match = sectionCommentRegex.exec(mermaidContent)) !== null) {
-      foundSections = true
-      const sectionName = match[1].trim().toLowerCase().replace(/\s+/g, '')
-      sectionMarkers.push({
-        name: sectionName,
-        index: match.index + match[0].length
-      })
-      console.log(`Found section comment: ${sectionName} at index ${match.index}`)
-    }
-    
-    // Sort section markers by index to process them in order
-    sectionMarkers.sort((a, b) => a.index - b.index)
-    
-    // Now process the sections with known boundaries
-    if (sectionMarkers.length > 0) {
-      for (let i = 0; i < sectionMarkers.length; i++) {
-        const currentMarker = sectionMarkers[i]
-        const nextMarker = sectionMarkers[i + 1]
-        const endIndex = nextMarker ? nextMarker.index : mermaidContent.length
-        
-        // Extract the diagram content
-        const diagramContent = mermaidContent.substring(currentMarker.index, endIndex).trim()
-        console.log(`Processing section: ${currentMarker.name}, content length: ${diagramContent.length}`)
-        
-        // Store each diagram with its own section name as the key
-        // No hardcoded categories - fully generic
-        diagrams[currentMarker.name] = diagramContent
-      }
-    }
-    
-    // If no sections found, try to identify diagram types directly
-    if (!foundSections) {
-      console.log('No section comments found, trying to identify diagram types directly')
-      
-      // Split by markdown headers or code blocks if present
-      let diagramBlocks: string[] = []
-      
-      if (hasMermaidCodeBlocks) {
-        const codeBlockRegex = /```(?:mermaid)?\s*([\s\S]*?)```/g
-        let codeMatch
-        while ((codeMatch = codeBlockRegex.exec(mermaidContent)) !== null) {
-          if (codeMatch[1] && codeMatch[1].trim()) {
-            diagramBlocks.push(codeMatch[1].trim())
-          }
-        }
-        console.log(`Found ${diagramBlocks.length} code blocks`)
-      } else {
-        // Try to split by common diagram type declarations
-        const diagramTypeRegex = /(graph|flowchart|sequenceDiagram|erDiagram|classDiagram|stateDiagram|gantt|pie|journey|gitGraph)/gi
-        let lastTypeIndex = 0
-        let typeMatch
-        
-        while ((typeMatch = diagramTypeRegex.exec(mermaidContent)) !== null) {
-          if (typeMatch.index > lastTypeIndex) {
-            const previousContent = mermaidContent.substring(lastTypeIndex, typeMatch.index).trim()
-            if (previousContent && /^\w+\s/.test(previousContent)) {
-              diagramBlocks.push(previousContent)
-            }
-          }
-          lastTypeIndex = typeMatch.index
-        }
-        
-        // Add the last block
-        if (lastTypeIndex < mermaidContent.length) {
-          const lastBlock = mermaidContent.substring(lastTypeIndex).trim()
-          if (lastBlock) diagramBlocks.push(lastBlock)
-        }
-        
-        console.log(`Split content into ${diagramBlocks.length} diagram blocks`)
-      }
-      
-      // Categorize each diagram block - using a fully generic approach
-      diagramBlocks.forEach((block, index) => {
-        console.log(`Analyzing block ${index + 1}, length: ${block.length}`)
-        console.log(`Block ${index + 1} preview:`, block.substring(0, 50) + '...')
-        
-        // Determine diagram type from content for naming
-        let diagramType = 'diagram'
-        
-        // Try to determine a more specific type based on content
-        if (block.includes('graph ') || block.includes('flowchart ')) {
-          diagramType = 'flowchart'
-        }
-        else if (block.includes('erDiagram')) {
-          diagramType = 'entityrelationship'
-        }
-        else if (block.includes('sequenceDiagram')) {
-          diagramType = 'sequence'
-        }
-        else if (block.includes('classDiagram')) {
-          diagramType = 'class'
-        }
-        else if (block.includes('stateDiagram')) {
-          diagramType = 'state'
-        }
-        
-        // Create a unique key for this diagram
-        const diagramKey = `${diagramType}${index + 1}`
-        diagrams[diagramKey] = block
-        console.log(`Created diagram category: ${diagramKey}`)
-      })
-    }
-
-    // Log parsing results for debugging
-    console.log('Parsed Mermaid diagrams:', {
-      ...Object.fromEntries(
-        Object.entries(diagrams).map(([key, value]) => 
-          [key, value ? `Found (${value.length} chars)` : 'Empty']
-        )
-      ),
-      originalLength: mermaidContent.length
-    })
-    
-    // Also log the actual diagram keys and content previews
-    Object.entries(diagrams).forEach(([key, content]) => {
-      if (content) {
-        console.log(`Diagram '${key}' preview:`, content.substring(0, 100) + '...')
-      }
-    })
-
-    return diagrams
-  }
-
-  // Cache management
-  const getCachedResults = (input: string) => {
     try {
-      const cached = localStorage.getItem(`sdlc-cache-${btoa(input).slice(0, 20)}`)
-      return cached ? JSON.parse(cached) : null
-    } catch {
-      return null
-    }
-  }
+      console.log('Generating detailed SDLC documentation...')
+      
+      const response = await fetch('/api/generate-detailed-sdlc', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          input: input,
+          openaiKey: config.openaiApiKey,
+          userId: user?.id,
+          projectId: `project-${Date.now()}`,
+          detailLevel: 'enterprise'
+        }),
+      })
 
-  const setCachedResults = async (input: string, results: any) => {
-    if (!user?.id) return
-    
-    try {
-      // Save to database using the database service
-      const projectTitle = extractProjectName(input)
-      const projectDescription = extractProjectDescription(input)
-      
-      const { project, success } = await dbService.saveCompleteSDLCResult(
-        user.id,
-        input,
-        projectTitle,
-        {
-          businessAnalysis: results.businessAnalysis || '',
-          functionalSpec: results.functionalSpec || '',
-          technicalSpec: results.technicalSpec || '',
-          uxSpec: results.uxSpec || '',
-          architecture: results.mermaidDiagrams || ''
-        }
-      )
-      
-      if (success && project) {
-        console.log('✅ Successfully saved SDLC project to database:', project.id)
-        
-        // Refresh the recent projects list
-        const updatedProjects = await getCachedProjects()
-        setRecentProjects(updatedProjects)
-      } else {
-        console.error('❌ Failed to save SDLC project to database')
-        // Fallback to localStorage for backward compatibility
-        localStorage.setItem(`sdlc-cache-${btoa(input).slice(0, 20)}`, JSON.stringify({
-          ...results,
-          timestamp: Date.now()
-        }))
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to generate detailed documentation')
       }
+
+      const result = await response.json()
+      console.log('Detailed documentation generated successfully')
+      
+      setDetailedDocumentation(result)
+      setShowDetailedDocs(true)
+      setSuccessMessage("Detailed enterprise documentation generated successfully!")
+      
     } catch (error) {
-      console.error('Error saving SDLC results:', error)
-      // Fallback to localStorage
-      try {
-        localStorage.setItem(`sdlc-cache-${btoa(input).slice(0, 20)}`, JSON.stringify({
-          ...results,
-          timestamp: Date.now()
-        }))
-      } catch (localStorageError) {
-        console.warn('Failed to cache results:', localStorageError)
-      }
+      console.error('Error generating detailed documentation:', error)
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to generate detailed documentation')
+    } finally {
+      setIsGeneratingDetailed(false)
     }
   }
 
@@ -1359,10 +1033,28 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
                 <p className="text-sm">{errorMessage}</p>
               </div>
             )}
-            <Button onClick={handleGenerate} disabled={!input.trim() || isProcessing} className="w-full" size="lg">
-              <Zap className="h-4 w-4 mr-2" />
-              {isProcessing ? "Generating SDLC Documentation..." : "Generate SDLC Documentation"}
-            </Button>
+            <div className="space-y-3">
+              <Button onClick={handleGenerate} disabled={!input.trim() || isProcessing} className="w-full" size="lg">
+                <Zap className="h-4 w-4 mr-2" />
+                {isProcessing ? "Generating SDLC Documentation..." : "Generate SDLC Documentation"}
+              </Button>
+              
+              <Button 
+                onClick={generateDetailedDocumentation} 
+                disabled={!input.trim() || isGeneratingDetailed} 
+                className="w-full" 
+                size="lg"
+                variant="outline"
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                {isGeneratingDetailed ? "Generating Detailed Documentation..." : "Generate Detailed Enterprise Documentation"}
+              </Button>
+              
+              <p className="text-xs text-gray-500 text-center">
+                Detailed documentation includes comprehensive business analysis, technical specifications, 
+                data models, deployment guides, and implementation plans suitable for enterprise projects.
+              </p>
+            </div>
           </CardContent>
         </Card>
 
@@ -1620,7 +1312,7 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
         )}
 
         {/* Recent Projects - Only show if there are cached projects */}
-        {recentProjects.length > 0 && (
+        {recentProjects && recentProjects.length > 0 && (
         <Card>
           <CardHeader 
             className="cursor-pointer hover:bg-gray-50 transition-colors" 
@@ -2304,6 +1996,15 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
           </DialogContent>
         </Dialog>
 
+        {/* Detailed SDLC Viewer */}
+        <Dialog open={showDetailedDocs} onOpenChange={setShowDetailedDocs}>
+          <DialogContent className="max-w-7xl max-h-[90vh] overflow-auto w-[95vw] sm:w-full">
+            <DialogHeader>
+              <DialogTitle>Detailed SDLC Documentation</DialogTitle>
+            </DialogHeader>
+            <DetailedSDLCViewer documentation={detailedDocumentation} />
+          </DialogContent>
+        </Dialog>
 
       </div>
     </div>
