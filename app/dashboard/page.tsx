@@ -1035,49 +1035,81 @@ Focus on the SPECIFIC project requirements and user needs. Avoid generic enterpr
           businessAnalysis: results.businessAnalysis,
           functionalSpec: results.functionalSpec,
           technicalSpec: results.technicalSpec,
-          customPrompt: `You are an expert system architect and diagram designer. Create detailed Mermaid diagrams based on the SPECIFIC project requirements and previous analysis provided.
+          customPrompt: `You are an expert system architect. Generate VALID MERMAID SYNTAX for the specific project requirements provided.
 
-IMPORTANT: Create diagrams ONLY for the specific project described below. Do NOT use generic enterprise diagram patterns unless specifically mentioned in the requirements.
+CRITICAL: Output ONLY valid Mermaid diagram syntax. Do NOT include explanations or descriptions.
 
-Original Project Requirements:
-"${input}"
+Original Project Requirements: "${input}"
 
-Business Analysis Context:
-Use the provided business analysis to understand the business logic and processes.
-
-Functional Specification Context:
-Use the provided functional specification to understand the system features and workflows.
-
-Technical Specification Context:
-Use the provided technical specification to understand the architecture and technical implementation.
-
-Create Mermaid diagrams that include:
+Based on the business analysis, functional spec, and technical spec provided, generate these Mermaid diagrams:
 
 ## System Architecture Diagram
-- **System Components**: Show the specific components needed for this project
-- **Data Flow**: How data moves through this specific system
-- **Integration Points**: External connections for this specific use case
-- **Technology Stack**: Visual representation of the chosen technologies
+\`\`\`mermaid
+graph TD
+    %% System components for this specific project
+    %% Replace with actual component names from the specifications
+    User[User Interface] --> API[Backend API]
+    API --> DB[(Database)]
+    API --> Auth[Authentication]
+    API --> Cache[Cache Layer]
+    API --> External[External Services]
+\`\`\`
 
-## User Journey Maps
-- **User Flows**: Step-by-step user interactions for this specific system
-- **Decision Points**: Where users make choices in this specific workflow
-- **System Responses**: How the system reacts to user actions
-- **Error Paths**: Alternative flows for this specific use case
+## User Journey Flow
+\`\`\`mermaid
+flowchart TD
+    %% User workflow for this specific system
+    Start([User Starts]) --> Login{Login Required?}
+    Login -->|Yes| Auth[Authenticate User]
+    Login -->|No| Dashboard[Main Dashboard]
+    Auth --> Dashboard
+    Dashboard --> Action[User Action]
+    Action --> Process[System Processing]
+    Process --> Result[Display Result]
+    Result --> End([Complete])
+\`\`\`
 
-## Data Model Diagram
-- **Entities**: Data objects specific to this domain
-- **Relationships**: How data connects in this specific system
-- **Attributes**: Key properties for this specific use case
-- **Business Rules**: Data constraints specific to this domain
+## Data Model (ERD)
+\`\`\`mermaid
+erDiagram
+    %% Database entities for this specific domain
+    USER {
+        int id PK
+        string email
+        string name
+        datetime created_at
+    }
+    PROJECT {
+        int id PK
+        string name
+        string description
+        int user_id FK
+        datetime created_at
+    }
+    USER ||--o{ PROJECT : creates
+\`\`\`
 
-## Security Architecture
-- **Authentication Flow**: Login process for this specific system
-- **Authorization Levels**: Access controls for this specific domain
-- **Data Protection**: Security measures for this specific type of data
-- **Compliance Controls**: Any regulatory requirements mentioned in the original requirements
+## API Sequence Diagram
+\`\`\`mermaid
+sequenceDiagram
+    participant Client
+    participant API
+    participant Database
+    participant External
+    
+    Client->>+API: Request
+    API->>+Database: Query Data
+    Database-->>-API: Return Data
+    API->>+External: External Call
+    External-->>-API: Response
+    API-->>-Client: JSON Response
+\`\`\`
 
-Generate valid Mermaid syntax that accurately represents this SPECIFIC project. Avoid generic enterprise patterns unless explicitly requested.`,
+IMPORTANT: 
+- Replace placeholder names with actual components from the specifications
+- Use domain-specific terminology from the project requirements
+- Ensure all syntax is valid Mermaid code
+- Do NOT include any explanatory text outside the code blocks`,
           openaiKey: config.openaiKey,
         }),
       })
@@ -2056,49 +2088,81 @@ Focus on the SPECIFIC project requirements and user needs. Avoid generic enterpr
           businessAnalysis: results.businessAnalysis,
           functionalSpec: results.functionalSpec,
           technicalSpec: results.technicalSpec,
-          customPrompt: `You are an expert system architect and diagram designer. Create detailed Mermaid diagrams based on the SPECIFIC project requirements and previous analysis provided.
+          customPrompt: `You are an expert system architect. Generate VALID MERMAID SYNTAX for the specific project requirements provided.
 
-IMPORTANT: Create diagrams ONLY for the specific project described below. Do NOT use generic enterprise diagram patterns unless specifically mentioned in the requirements.
+CRITICAL: Output ONLY valid Mermaid diagram syntax. Do NOT include explanations or descriptions.
 
-Original Project Requirements:
-"${input}"
+Original Project Requirements: "${input}"
 
-Business Analysis Context:
-Use the provided business analysis to understand the business logic and processes.
-
-Functional Specification Context:
-Use the provided functional specification to understand the system features and workflows.
-
-Technical Specification Context:
-Use the provided technical specification to understand the architecture and technical implementation.
-
-Create Mermaid diagrams that include:
+Based on the business analysis, functional spec, and technical spec provided, generate these Mermaid diagrams:
 
 ## System Architecture Diagram
-- **System Components**: Show the specific components needed for this project
-- **Data Flow**: How data moves through this specific system
-- **Integration Points**: External connections for this specific use case
-- **Technology Stack**: Visual representation of the chosen technologies
+\`\`\`mermaid
+graph TD
+    %% System components for this specific project
+    %% Replace with actual component names from the specifications
+    User[User Interface] --> API[Backend API]
+    API --> DB[(Database)]
+    API --> Auth[Authentication]
+    API --> Cache[Cache Layer]
+    API --> External[External Services]
+\`\`\`
 
-## User Journey Maps
-- **User Flows**: Step-by-step user interactions for this specific system
-- **Decision Points**: Where users make choices in this specific workflow
-- **System Responses**: How the system reacts to user actions
-- **Error Paths**: Alternative flows for this specific use case
+## User Journey Flow
+\`\`\`mermaid
+flowchart TD
+    %% User workflow for this specific system
+    Start([User Starts]) --> Login{Login Required?}
+    Login -->|Yes| Auth[Authenticate User]
+    Login -->|No| Dashboard[Main Dashboard]
+    Auth --> Dashboard
+    Dashboard --> Action[User Action]
+    Action --> Process[System Processing]
+    Process --> Result[Display Result]
+    Result --> End([Complete])
+\`\`\`
 
-## Data Model Diagram
-- **Entities**: Data objects specific to this domain
-- **Relationships**: How data connects in this specific system
-- **Attributes**: Key properties for this specific use case
-- **Business Rules**: Data constraints specific to this domain
+## Data Model (ERD)
+\`\`\`mermaid
+erDiagram
+    %% Database entities for this specific domain
+    USER {
+        int id PK
+        string email
+        string name
+        datetime created_at
+    }
+    PROJECT {
+        int id PK
+        string name
+        string description
+        int user_id FK
+        datetime created_at
+    }
+    USER ||--o{ PROJECT : creates
+\`\`\`
 
-## Security Architecture
-- **Authentication Flow**: Login process for this specific system
-- **Authorization Levels**: Access controls for this specific domain
-- **Data Protection**: Security measures for this specific type of data
-- **Compliance Controls**: Any regulatory requirements mentioned in the original requirements
+## API Sequence Diagram
+\`\`\`mermaid
+sequenceDiagram
+    participant Client
+    participant API
+    participant Database
+    participant External
+    
+    Client->>+API: Request
+    API->>+Database: Query Data
+    Database-->>-API: Return Data
+    API->>+External: External Call
+    External-->>-API: Response
+    API-->>-Client: JSON Response
+\`\`\`
 
-Generate valid Mermaid syntax that accurately represents this SPECIFIC project. Avoid generic enterprise patterns unless explicitly requested.`,
+IMPORTANT: 
+- Replace placeholder names with actual components from the specifications
+- Use domain-specific terminology from the project requirements
+- Ensure all syntax is valid Mermaid code
+- Do NOT include any explanatory text outside the code blocks`,
           openaiKey: config.openaiKey,
         }),
       })
