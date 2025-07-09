@@ -324,12 +324,20 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
     
     try {
       const projects = await dbService.getProjectsByUser(user.id)
+      console.log('🔍 Raw projects from database:', projects.length, projects)
       
       // Convert database projects to ProjectResult format
-      const projectResults: ProjectResult[] = await Promise.all(
-        projects.map(async (project) => {
+      const projectResults: ProjectResult[] = []
+      
+      for (const project of projects) {
+        try {
+          console.log('🔄 Processing project:', project.id, project.title)
+          
           const documents = await dbService.getDocumentsByProject(project.id)
           const integrations = await dbService.getIntegrationsByProject(project.id)
+          
+          console.log('📄 Documents for project', project.id, ':', documents.length)
+          console.log('🔗 Integrations for project', project.id, ':', integrations.length)
           
           // Convert documents array to documents object
           const documentsObj = {
@@ -344,7 +352,7 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
           const jiraIntegration = integrations.find(i => i.integration_type === 'jira')
           const confluenceIntegration = integrations.find(i => i.integration_type === 'confluence')
           
-          return {
+          const projectResult = {
             id: project.id,
             title: project.title,
             status: project.status,
@@ -353,10 +361,19 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
             confluencePage: confluenceIntegration?.external_url || '',
             documents: documentsObj
           }
-        })
-      )
+          
+          projectResults.push(projectResult)
+          console.log('✅ Successfully processed project:', project.id)
+          
+        } catch (projectError) {
+          console.error('❌ Error processing individual project:', project.id, projectError)
+          // Continue processing other projects even if one fails
+        }
+      }
       
+      console.log('🎯 Final project results:', projectResults.length, 'out of', projects.length, 'original projects')
       return projectResults
+      
     } catch (error) {
       console.error('Error fetching cached projects:', error)
       return []
@@ -728,7 +745,48 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           input,
-          customPrompt: customPrompts?.business,
+          customPrompt: `You are an expert business analyst. Analyze the following SPECIFIC project requirements and create a comprehensive business analysis document.
+
+IMPORTANT: Base your analysis ONLY on the specific project described below. Do NOT use generic enterprise examples.
+
+Project Requirements:
+"${input}"
+
+Create a detailed business analysis that includes:
+
+## Executive Summary
+- **Project Overview**: Detailed description of the specific project requested
+- **Business Justification**: Why this specific project/system is needed
+- **Expected Outcomes**: Specific benefits and goals for this project
+
+## Stakeholder Analysis
+- **Primary Stakeholders**: Who would be involved in this specific project
+- **Secondary Stakeholders**: Who would be affected by this system
+- **Stakeholder Requirements**: What each group needs from this specific system
+
+## Requirements Analysis
+- **Functional Requirements**: What this specific system must do
+- **Non-Functional Requirements**: Performance, security, compliance needs for this domain
+- **Business Rules**: Specific rules and constraints for this type of system
+- **Regulatory Requirements**: Any compliance needs (especially if mentioned in requirements)
+
+## Risk Assessment
+- **Domain-Specific Risks**: Risks specific to this industry/use case
+- **Technical Risks**: Technology challenges for this specific system
+- **Compliance Risks**: Regulatory or legal risks for this domain
+- **Mitigation Strategies**: How to address each risk
+
+## User Stories & Personas
+- **Target Users**: Who would actually use this specific system
+- **User Personas**: Detailed profiles based on the project requirements
+- **User Stories**: Specific scenarios for this system (not generic enterprise stories)
+
+## Success Metrics
+- **Business KPIs**: How success would be measured for this specific project
+- **User Adoption**: Expected usage patterns for this system
+- **Technical Performance**: Performance requirements for this use case
+
+Focus on the SPECIFIC project requirements provided. Avoid generic enterprise examples.`,
           openaiKey: config.openaiKey,
         }),
       })
@@ -752,7 +810,56 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
         body: JSON.stringify({
           input,
           businessAnalysis: results.businessAnalysis,
-          customPrompt: customPrompts?.functional,
+          customPrompt: `You are an expert systems analyst. Create a detailed functional specification based on the SPECIFIC project requirements and business analysis provided.
+
+IMPORTANT: Base your specification ONLY on the specific project described below. Do NOT use generic enterprise examples like CRM, SCM, HRM, or Financial Management unless they are specifically mentioned in the requirements.
+
+Original Project Requirements:
+"${input}"
+
+Business Analysis Context:
+Use the provided business analysis to inform your functional specification.
+
+Create a functional specification that includes:
+
+## System Overview
+- **Purpose**: What this specific system does (based on the actual requirements)
+- **Scope**: What's included/excluded for this specific project
+- **Target Users**: Who will use this specific system (from business analysis)
+- **Environment**: Where this specific system will operate
+
+## Functional Requirements
+- **Core Features**: Essential functionality for this specific system
+- **User Actions**: What users can do in this specific system
+- **System Responses**: How this system responds to user actions
+- **Business Rules**: Specific rules and logic for this domain/use case
+- **Workflow**: Step-by-step processes for this specific system
+
+## Data Requirements
+- **Data Entities**: What data this specific system manages
+- **Data Relationships**: How data connects in this specific context
+- **Data Validation**: Rules specific to this domain
+- **Data Flow**: How data moves through this specific system
+
+## Integration Requirements  
+- **External Systems**: What systems this specific project needs to connect with
+- **APIs**: Required interfaces for this specific use case
+- **Data Exchange**: What data needs to be shared for this project
+- **Third-party Services**: External services needed for this specific system
+
+## Security & Compliance Requirements
+- **Authentication**: How users log into this specific system
+- **Authorization**: Access controls specific to this domain
+- **Data Protection**: Security measures for this specific type of data
+- **Compliance**: Any regulatory requirements mentioned in the project requirements
+
+## Performance Requirements
+- **Response Time**: Performance needs for this specific use case
+- **Throughput**: Volume requirements for this specific system
+- **Availability**: Uptime needs for this specific application
+- **Scalability**: Growth expectations for this specific project
+
+Focus on the SPECIFIC project requirements. Avoid generic enterprise features unless explicitly requested.`,
           openaiKey: config.openaiKey,
         }),
       })
@@ -777,7 +884,58 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
           input,
           businessAnalysis: results.businessAnalysis,
           functionalSpec: results.functionalSpec,
-          customPrompt: customPrompts?.technical,
+          customPrompt: `You are an expert technical architect. Create a detailed technical specification based on the SPECIFIC project requirements and previous analysis provided.
+
+IMPORTANT: Base your specification ONLY on the specific project described below. Do NOT use generic enterprise architecture unless specifically mentioned in the requirements.
+
+Original Project Requirements:
+"${input}"
+
+Business Analysis Context:
+Use the provided business analysis to understand the domain and requirements.
+
+Functional Specification Context:
+Use the provided functional specification to understand the system features and requirements.
+
+Create a technical specification that includes:
+
+## System Architecture
+- **Architecture Pattern**: Design pattern suitable for this specific system
+- **Components**: System components needed for this specific project
+- **Data Flow**: How data moves through this specific system
+- **Technology Stack**: Languages, frameworks, databases appropriate for this use case
+
+## Database Design
+- **Data Model**: Entity relationships for this specific domain
+- **Schema Design**: Table structures needed for this specific system
+- **Indexing Strategy**: Performance optimization for this specific use case
+- **Data Migration**: Upgrade procedures for this specific project
+
+## API Design
+- **REST Endpoints**: API specifications for this specific system
+- **Request/Response**: Data formats for this specific use case
+- **Authentication**: Security mechanisms appropriate for this domain
+- **Rate Limiting**: Usage controls for this specific system
+
+## Security Implementation
+- **Authentication System**: Login mechanisms for this specific system
+- **Authorization Controls**: Access permissions for this specific domain
+- **Data Encryption**: Protection methods for this specific type of data
+- **Compliance**: Any regulatory requirements mentioned in the original requirements
+
+## Performance Specifications
+- **Response Times**: Latency requirements for this specific use case
+- **Throughput**: Transaction volumes for this specific system
+- **Scalability Plan**: Growth handling for this specific project
+- **Caching Strategy**: Performance optimization for this specific domain
+
+## Deployment Strategy
+- **Infrastructure**: Server requirements for this specific system
+- **Environment Setup**: Dev/Test/Prod for this specific project
+- **CI/CD Pipeline**: Automated deployment for this specific codebase
+- **Monitoring**: Health checks and alerts for this specific system
+
+Focus on the SPECIFIC project requirements and domain. Avoid generic enterprise architecture unless explicitly requested.`,
           openaiKey: config.openaiKey,
         }),
       })
@@ -803,7 +961,55 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
           businessAnalysis: results.businessAnalysis,
           functionalSpec: results.functionalSpec,
           technicalSpec: results.technicalSpec,
-          customPrompt: customPrompts?.ux,
+          customPrompt: `You are an expert UX designer and user experience architect. Create a detailed UX specification based on the SPECIFIC project requirements and previous analysis provided.
+
+IMPORTANT: Base your UX design ONLY on the specific project described below. Do NOT use generic enterprise UX patterns unless specifically mentioned in the requirements.
+
+Original Project Requirements:
+"${input}"
+
+Business Analysis Context:
+Use the provided business analysis to understand the users and business needs.
+
+Functional Specification Context:
+Use the provided functional specification to understand the system features.
+
+Technical Specification Context:
+Use the provided technical specification to understand technical constraints.
+
+Create a UX specification that includes:
+
+## User Research & Analysis
+- **Target Users**: Who will use this specific system (from business analysis)
+- **User Goals**: What users want to accomplish with this specific system
+- **Pain Points**: Current problems this specific system solves
+- **User Journey**: How users will interact with this specific system
+
+## Information Architecture
+- **Content Structure**: How information is organized for this specific domain
+- **Navigation System**: How users move through this specific system
+- **User Flow**: Step-by-step paths for this specific use case
+- **Content Strategy**: Information presentation for this specific domain
+
+## Interface Design
+- **UI Components**: Interface elements needed for this specific system
+- **Layout Patterns**: Screen organization for this specific use case
+- **Interaction Patterns**: User interactions specific to this domain
+- **Visual Hierarchy**: Information prioritization for this specific system
+
+## Accessibility & Usability
+- **Accessibility Standards**: Requirements for this specific user base
+- **Responsive Design**: Device support for this specific system
+- **Performance Requirements**: UX performance needs for this specific domain
+- **Error Handling**: User-friendly error management for this specific use case
+
+## Design System
+- **Style Guide**: Visual standards for this specific brand/domain
+- **Component Library**: Reusable UI components for this specific system
+- **Design Tokens**: Consistent styling for this specific project
+- **Documentation**: Design guidelines for this specific system
+
+Focus on the SPECIFIC project requirements and user needs. Avoid generic enterprise UX unless explicitly requested.`,
           openaiKey: config.openaiKey,
         }),
       })
@@ -829,7 +1035,49 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
           businessAnalysis: results.businessAnalysis,
           functionalSpec: results.functionalSpec,
           technicalSpec: results.technicalSpec,
-          customPrompt: customPrompts?.mermaid,
+          customPrompt: `You are an expert system architect and diagram designer. Create detailed Mermaid diagrams based on the SPECIFIC project requirements and previous analysis provided.
+
+IMPORTANT: Create diagrams ONLY for the specific project described below. Do NOT use generic enterprise diagram patterns unless specifically mentioned in the requirements.
+
+Original Project Requirements:
+"${input}"
+
+Business Analysis Context:
+Use the provided business analysis to understand the business logic and processes.
+
+Functional Specification Context:
+Use the provided functional specification to understand the system features and workflows.
+
+Technical Specification Context:
+Use the provided technical specification to understand the architecture and technical implementation.
+
+Create Mermaid diagrams that include:
+
+## System Architecture Diagram
+- **System Components**: Show the specific components needed for this project
+- **Data Flow**: How data moves through this specific system
+- **Integration Points**: External connections for this specific use case
+- **Technology Stack**: Visual representation of the chosen technologies
+
+## User Journey Maps
+- **User Flows**: Step-by-step user interactions for this specific system
+- **Decision Points**: Where users make choices in this specific workflow
+- **System Responses**: How the system reacts to user actions
+- **Error Paths**: Alternative flows for this specific use case
+
+## Data Model Diagram
+- **Entities**: Data objects specific to this domain
+- **Relationships**: How data connects in this specific system
+- **Attributes**: Key properties for this specific use case
+- **Business Rules**: Data constraints specific to this domain
+
+## Security Architecture
+- **Authentication Flow**: Login process for this specific system
+- **Authorization Levels**: Access controls for this specific domain
+- **Data Protection**: Security measures for this specific type of data
+- **Compliance Controls**: Any regulatory requirements mentioned in the original requirements
+
+Generate valid Mermaid syntax that accurately represents this SPECIFIC project. Avoid generic enterprise patterns unless explicitly requested.`,
           openaiKey: config.openaiKey,
         }),
       })
@@ -1304,7 +1552,7 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
     }
   }
 
-  // Enterprise Mode generation - simple approach like main branch
+  // Enterprise Mode generation - using real progressive API calls like Standard Mode
   const handleEnterpriseGenerate = async () => {
     if (!input.trim()) {
       setErrorMessage("Please enter your requirements")
@@ -1319,67 +1567,559 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
     }
 
     setIsProcessingEnterprise(true)
+    setIsProcessing(true) // Also set main processing flag for UI consistency
     setErrorMessage("")
     setSuccessMessage("")
+    setGeneratedDocuments({}) // Clear previous content
     
-    // Simple progress steps for Enterprise Mode
+    // Detailed progress steps like main branch - using matching IDs for tab progression
     const enterpriseSteps: ProcessingStep[] = [
-      { id: "enterprise-generation", name: "Enterprise Analysis", status: "in_progress", progress: 0 },
-      { id: "content-mapping", name: "Content Processing", status: "pending", progress: 0 },
-      { id: "diagram-generation", name: "Diagram Generation", status: "pending", progress: 0 }
+      { id: "analysis", name: "Enterprise Business Analysis", status: "in_progress", progress: 0 },
+      { id: "functional", name: "Enterprise Functional Spec", status: "pending", progress: 0 },
+      { id: "technical", name: "Enterprise Technical Spec", status: "pending", progress: 0 },
+      { id: "ux", name: "Enterprise UX Specification", status: "pending", progress: 0 },
+      { id: "mermaid", name: "Architecture Diagrams", status: "pending", progress: 0 }
     ]
     setProcessingSteps(enterpriseSteps)
 
     try {
-      // Update first step
-      updateStepProgress("enterprise-generation", 50, "in_progress")
+      const results: any = {}
       
-      const response = await fetch('/api/generate-detailed-sdlc', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      // Step 1: Real Enterprise Business Analysis API call with streaming
+      updateStepProgress("analysis", 0, "in_progress")
+      console.log("🚀 Starting Enterprise Business Analysis...")
+      
+      // Streaming implementation for business analysis
+      const businessResponse = await fetch("/api/generate-business-analysis", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          input: input,
+          input,
+          customPrompt: `You are an expert business analyst. Analyze the following SPECIFIC project requirements and create a comprehensive business analysis document.
+
+IMPORTANT: Base your analysis ONLY on the specific project described below. Do NOT use generic enterprise examples.
+
+Project Requirements:
+"${input}"
+
+Create a detailed business analysis that includes:
+
+## Executive Summary
+- **Project Overview**: Detailed description of the specific project requested
+- **Business Justification**: Why this specific project/system is needed
+- **Expected Outcomes**: Specific benefits and goals for this project
+
+## Stakeholder Analysis
+- **Primary Stakeholders**: Who would be involved in this specific project
+- **Secondary Stakeholders**: Who would be affected by this system
+- **Stakeholder Requirements**: What each group needs from this specific system
+
+## Requirements Analysis
+- **Functional Requirements**: What this specific system must do
+- **Non-Functional Requirements**: Performance, security, compliance needs for this domain
+- **Business Rules**: Specific rules and constraints for this type of system
+- **Regulatory Requirements**: Any compliance needs (especially if mentioned in requirements)
+
+## Risk Assessment
+- **Domain-Specific Risks**: Risks specific to this industry/use case
+- **Technical Risks**: Technology challenges for this specific system
+- **Compliance Risks**: Regulatory or legal risks for this domain
+- **Mitigation Strategies**: How to address each risk
+
+## User Stories & Personas
+- **Target Users**: Who would actually use this specific system
+- **User Personas**: Detailed profiles based on the project requirements
+- **User Stories**: Specific scenarios for this system (not generic enterprise stories)
+
+## Success Metrics
+- **Business KPIs**: How success would be measured for this specific project
+- **User Adoption**: Expected usage patterns for this system
+- **Technical Performance**: Performance requirements for this use case
+
+Focus on the SPECIFIC project requirements provided. Avoid generic enterprise examples.`,
           openaiKey: config.openaiKey,
-          userId: user?.id,
-          projectId: `enterprise-${Date.now()}`,
-          detailLevel: 'enterprise'
         }),
       })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to generate enterprise documentation')
-      }
-
-      const result = await response.json()
       
-      // Update to content mapping step
-      updateStepProgress("enterprise-generation", 100, "completed")
-      updateStepProgress("content-mapping", 50, "in_progress")
-      
-      // Map enterprise content to standard format for tabs
-      const mappedContent = {
-        businessAnalysis: formatEnterpriseBusinessAnalysis(result.businessAnalysis),
-        functionalSpec: formatEnterpriseFunctionalSpec(result.functionalSpec),
-        technicalSpec: formatEnterpriseTechnicalSpec(result.technicalSpec),
-        uxSpec: formatEnterpriseUxSpec(result.uxSpec)
+      if (!businessResponse.ok) {
+        const errorData = await businessResponse.json().catch(() => ({ error: "Unknown API error" }))
+        updateStepProgress("analysis", 0, "error")
+        throw new Error(errorData?.error || `Business Analysis API failed with status ${businessResponse.status}`)
       }
       
-      setGeneratedDocuments(mappedContent)
+      // Handle streaming response
+      const reader = businessResponse.body?.getReader()
+      if (!reader) {
+        throw new Error("Failed to get response reader for streaming")
+      }
       
-      // Update to diagram generation step
-      updateStepProgress("content-mapping", 100, "completed")
-      updateStepProgress("diagram-generation", 50, "in_progress")
+      let businessAnalysisContent = ""
+      const decoder = new TextDecoder()
       
-      // Generate Mermaid diagrams
-      await generateMermaidDiagrams(mappedContent)
+      try {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          
+          const chunk = decoder.decode(value, { stream: true })
+          const lines = chunk.split('\n')
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6))
+                
+                if (data.type === 'chunk') {
+                  businessAnalysisContent = data.fullContent
+                  
+                  // Update UI with partial content
+                  setGeneratedDocuments(prev => ({ 
+                    ...prev, 
+                    businessAnalysis: businessAnalysisContent 
+                  }))
+                  
+                  // Calculate progress based on content length (estimate 8000 chars for full document)
+                  const progress = Math.min((businessAnalysisContent.length / 8000) * 100, 95)
+                  updateStepProgress("analysis", progress, "in_progress")
+                  
+                } else if (data.type === 'complete') {
+                  businessAnalysisContent = data.fullContent
+                  results.businessAnalysis = businessAnalysisContent
+                  updateStepProgress("analysis", 100, "completed")
+                  setGeneratedDocuments(prev => ({ 
+                    ...prev, 
+                    businessAnalysis: businessAnalysisContent 
+                  }))
+                  console.log("✅ Enterprise Business Analysis streaming completed")
+                  break
+                  
+                } else if (data.type === 'error') {
+                  throw new Error(data.error)
+                }
+              } catch (parseError) {
+                console.warn('Failed to parse streaming data:', parseError)
+              }
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock()
+      }
+
+      // Step 2: Real Enterprise Functional Spec API call with streaming
+      updateStepProgress("functional", 0, "in_progress")
+      console.log("🚀 Starting Enterprise Functional Specification...")
       
-      // Complete all steps
-      updateStepProgress("diagram-generation", 100, "completed")
+      // Streaming implementation for functional specification
+      const functionalResponse = await fetch("/api/generate-functional-spec", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          input,
+          businessAnalysis: results.businessAnalysis,
+          customPrompt: `You are an expert systems analyst. Create a detailed functional specification based on the SPECIFIC project requirements and business analysis provided.
+
+IMPORTANT: Base your specification ONLY on the specific project described below. Do NOT use generic enterprise examples like CRM, SCM, HRM, or Financial Management unless they are specifically mentioned in the requirements.
+
+Original Project Requirements:
+"${input}"
+
+Business Analysis Context:
+Use the provided business analysis to inform your functional specification.
+
+Create a functional specification that includes:
+
+## System Overview
+- **Purpose**: What this specific system does (based on the actual requirements)
+- **Scope**: What's included/excluded for this specific project
+- **Target Users**: Who will use this specific system (from business analysis)
+- **Environment**: Where this specific system will operate
+
+## Functional Requirements
+- **Core Features**: Essential functionality for this specific system
+- **User Actions**: What users can do in this specific system
+- **System Responses**: How this system responds to user actions
+- **Business Rules**: Specific rules and logic for this domain/use case
+- **Workflow**: Step-by-step processes for this specific system
+
+## Data Requirements
+- **Data Entities**: What data this specific system manages
+- **Data Relationships**: How data connects in this specific context
+- **Data Validation**: Rules specific to this domain
+- **Data Flow**: How data moves through this specific system
+
+## Integration Requirements  
+- **External Systems**: What systems this specific project needs to connect with
+- **APIs**: Required interfaces for this specific use case
+- **Data Exchange**: What data needs to be shared for this project
+- **Third-party Services**: External services needed for this specific system
+
+## Security & Compliance Requirements
+- **Authentication**: How users log into this specific system
+- **Authorization**: Access controls specific to this domain
+- **Data Protection**: Security measures for this specific type of data
+- **Compliance**: Any regulatory requirements mentioned in the project requirements
+
+## Performance Requirements
+- **Response Time**: Performance needs for this specific use case
+- **Throughput**: Volume requirements for this specific system
+- **Availability**: Uptime needs for this specific application
+- **Scalability**: Growth expectations for this specific project
+
+Focus on the SPECIFIC project requirements. Avoid generic enterprise features unless explicitly requested.`,
+          openaiKey: config.openaiKey,
+        }),
+      })
+      
+      if (!functionalResponse.ok) {
+        const errorData = await functionalResponse.json().catch(() => ({ error: "Unknown API error" }))
+        updateStepProgress("functional", 0, "error")
+        throw new Error(errorData?.error || `Functional Spec API failed with status ${functionalResponse.status}`)
+      }
+      
+      // Handle streaming response
+      const functionalReader = functionalResponse.body?.getReader()
+      if (!functionalReader) {
+        throw new Error("Failed to get response reader for functional spec streaming")
+      }
+      
+      let functionalSpecContent = ""
+      
+      try {
+        while (true) {
+          const { done, value } = await functionalReader.read()
+          if (done) break
+          
+          const chunk = decoder.decode(value, { stream: true })
+          const lines = chunk.split('\n')
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6))
+                
+                if (data.type === 'chunk') {
+                  functionalSpecContent = data.fullContent
+                  
+                  // Update UI with partial content
+                  setGeneratedDocuments(prev => ({ 
+                    ...prev, 
+                    functionalSpec: functionalSpecContent 
+                  }))
+                  
+                  // Calculate progress based on content length (estimate 6000 chars for full document)
+                  const progress = Math.min((functionalSpecContent.length / 6000) * 100, 95)
+                  updateStepProgress("functional", progress, "in_progress")
+                  
+                } else if (data.type === 'complete') {
+                  functionalSpecContent = data.fullContent
+                  results.functionalSpec = functionalSpecContent
+                  updateStepProgress("functional", 100, "completed")
+                  setGeneratedDocuments(prev => ({ 
+                    ...prev, 
+                    functionalSpec: functionalSpecContent 
+                  }))
+                  console.log("✅ Enterprise Functional Specification streaming completed")
+                  break
+                  
+                } else if (data.type === 'error') {
+                  throw new Error(data.error)
+                }
+              } catch (parseError) {
+                console.warn('Failed to parse functional spec streaming data:', parseError)
+              }
+            }
+          }
+        }
+      } finally {
+        functionalReader.releaseLock()
+      }
+
+      // Step 3: Real Enterprise Technical Spec API call with streaming
+      updateStepProgress("technical", 0, "in_progress")
+      console.log("🚀 Starting Enterprise Technical Specification...")
+      
+      // Streaming implementation for technical specification
+      const technicalResponse = await fetch("/api/generate-technical-spec", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          input,
+          businessAnalysis: results.businessAnalysis,
+          functionalSpec: results.functionalSpec,
+          customPrompt: `You are an expert technical architect. Create a detailed technical specification based on the SPECIFIC project requirements and previous analysis provided.
+
+IMPORTANT: Base your specification ONLY on the specific project described below. Do NOT use generic enterprise architecture unless specifically mentioned in the requirements.
+
+Original Project Requirements:
+"${input}"
+
+Business Analysis Context:
+Use the provided business analysis to understand the domain and requirements.
+
+Functional Specification Context:
+Use the provided functional specification to understand the system features and requirements.
+
+Create a technical specification that includes:
+
+## System Architecture
+- **Architecture Pattern**: Design pattern suitable for this specific system
+- **Components**: System components needed for this specific project
+- **Data Flow**: How data moves through this specific system
+- **Technology Stack**: Languages, frameworks, databases appropriate for this use case
+
+## Database Design
+- **Data Model**: Entity relationships for this specific domain
+- **Schema Design**: Table structures needed for this specific system
+- **Indexing Strategy**: Performance optimization for this specific use case
+- **Data Migration**: Upgrade procedures for this specific project
+
+## API Design
+- **REST Endpoints**: API specifications for this specific system
+- **Request/Response**: Data formats for this specific use case
+- **Authentication**: Security mechanisms appropriate for this domain
+- **Rate Limiting**: Usage controls for this specific system
+
+## Security Implementation
+- **Authentication System**: Login mechanisms for this specific system
+- **Authorization Controls**: Access permissions for this specific domain
+- **Data Encryption**: Protection methods for this specific type of data
+- **Compliance**: Any regulatory requirements mentioned in the original requirements
+
+## Performance Specifications
+- **Response Times**: Latency requirements for this specific use case
+- **Throughput**: Transaction volumes for this specific system
+- **Scalability Plan**: Growth handling for this specific project
+- **Caching Strategy**: Performance optimization for this specific domain
+
+## Deployment Strategy
+- **Infrastructure**: Server requirements for this specific system
+- **Environment Setup**: Dev/Test/Prod for this specific project
+- **CI/CD Pipeline**: Automated deployment for this specific codebase
+- **Monitoring**: Health checks and alerts for this specific system
+
+Focus on the SPECIFIC project requirements and domain. Avoid generic enterprise architecture unless explicitly requested.`,
+          openaiKey: config.openaiKey,
+        }),
+      })
+      
+      if (!technicalResponse.ok) {
+        const errorData = await technicalResponse.json().catch(() => ({ error: "Unknown API error" }))
+        updateStepProgress("technical", 0, "error")
+        throw new Error(errorData?.error || `Technical Spec API failed with status ${technicalResponse.status}`)
+      }
+      
+      // Handle streaming response
+      const technicalReader = technicalResponse.body?.getReader()
+      if (!technicalReader) {
+        throw new Error("Failed to get response reader for technical spec streaming")
+      }
+      
+      let technicalSpecContent = ""
+      
+      try {
+        while (true) {
+          const { done, value } = await technicalReader.read()
+          if (done) break
+          
+          const chunk = decoder.decode(value, { stream: true })
+          const lines = chunk.split('\n')
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6))
+                
+                if (data.type === 'chunk') {
+                  technicalSpecContent = data.fullContent
+                  
+                  // Update UI with partial content
+                  setGeneratedDocuments(prev => ({ 
+                    ...prev, 
+                    technicalSpec: technicalSpecContent 
+                  }))
+                  
+                  // Calculate progress based on content length (estimate 7000 chars for full document)
+                  const progress = Math.min((technicalSpecContent.length / 7000) * 100, 95)
+                  updateStepProgress("technical", progress, "in_progress")
+                  
+                } else if (data.type === 'complete') {
+                  technicalSpecContent = data.fullContent
+                  results.technicalSpec = technicalSpecContent
+                  updateStepProgress("technical", 100, "completed")
+                  setGeneratedDocuments(prev => ({ 
+                    ...prev, 
+                    technicalSpec: technicalSpecContent 
+                  }))
+                  console.log("✅ Enterprise Technical Specification streaming completed")
+                  break
+                  
+                } else if (data.type === 'error') {
+                  throw new Error(data.error)
+                }
+              } catch (parseError) {
+                console.warn('Failed to parse technical spec streaming data:', parseError)
+              }
+            }
+          }
+        }
+      } finally {
+        technicalReader.releaseLock()
+      }
+
+      // Step 4: Real Enterprise UX Spec API call
+      updateStepProgress("ux", 0, "in_progress")
+      console.log("🚀 Starting Enterprise UX Specification...")
+      
+      const uxResponse = await fetch("/api/generate-ux-spec", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          input,
+          businessAnalysis: results.businessAnalysis,
+          functionalSpec: results.functionalSpec,
+          technicalSpec: results.technicalSpec,
+          customPrompt: `You are an expert UX designer and user experience architect. Create a detailed UX specification based on the SPECIFIC project requirements and previous analysis provided.
+
+IMPORTANT: Base your UX design ONLY on the specific project described below. Do NOT use generic enterprise UX patterns unless specifically mentioned in the requirements.
+
+Original Project Requirements:
+"${input}"
+
+Business Analysis Context:
+Use the provided business analysis to understand the users and business needs.
+
+Functional Specification Context:
+Use the provided functional specification to understand the system features.
+
+Technical Specification Context:
+Use the provided technical specification to understand technical constraints.
+
+Create a UX specification that includes:
+
+## User Research & Analysis
+- **Target Users**: Who will use this specific system (from business analysis)
+- **User Goals**: What users want to accomplish with this specific system
+- **Pain Points**: Current problems this specific system solves
+- **User Journey**: How users will interact with this specific system
+
+## Information Architecture
+- **Content Structure**: How information is organized for this specific domain
+- **Navigation System**: How users move through this specific system
+- **User Flow**: Step-by-step paths for this specific use case
+- **Content Strategy**: Information presentation for this specific domain
+
+## Interface Design
+- **UI Components**: Interface elements needed for this specific system
+- **Layout Patterns**: Screen organization for this specific use case
+- **Interaction Patterns**: User interactions specific to this domain
+- **Visual Hierarchy**: Information prioritization for this specific system
+
+## Accessibility & Usability
+- **Accessibility Standards**: Requirements for this specific user base
+- **Responsive Design**: Device support for this specific system
+- **Performance Requirements**: UX performance needs for this specific domain
+- **Error Handling**: User-friendly error management for this specific use case
+
+## Design System
+- **Style Guide**: Visual standards for this specific brand/domain
+- **Component Library**: Reusable UI components for this specific system
+- **Design Tokens**: Consistent styling for this specific project
+- **Documentation**: Design guidelines for this specific system
+
+Focus on the SPECIFIC project requirements and user needs. Avoid generic enterprise UX unless explicitly requested.`,
+          openaiKey: config.openaiKey,
+        }),
+      })
+      
+      if (!uxResponse.ok) {
+        const errorData = await uxResponse.json().catch(() => ({ error: "Unknown API error" }))
+        updateStepProgress("ux", 0, "error")
+        throw new Error(errorData?.error || `UX Spec API failed with status ${uxResponse.status}`)
+      }
+      
+      const uxResult = await uxResponse.json()
+      results.uxSpec = uxResult.uxSpec
+      updateStepProgress("ux", 100, "completed")
+      setGeneratedDocuments(prev => ({ ...prev, uxSpec: results.uxSpec }))
+      console.log("✅ Enterprise UX Specification completed")
+
+      // Step 5: Generate Mermaid diagrams
+      updateStepProgress("mermaid", 0, "in_progress")
+      console.log("🚀 Starting Architecture Diagrams...")
+      
+      const mermaidResponse = await fetch("/api/generate-mermaid-diagrams", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          input,
+          businessAnalysis: results.businessAnalysis,
+          functionalSpec: results.functionalSpec,
+          technicalSpec: results.technicalSpec,
+          customPrompt: `You are an expert system architect and diagram designer. Create detailed Mermaid diagrams based on the SPECIFIC project requirements and previous analysis provided.
+
+IMPORTANT: Create diagrams ONLY for the specific project described below. Do NOT use generic enterprise diagram patterns unless specifically mentioned in the requirements.
+
+Original Project Requirements:
+"${input}"
+
+Business Analysis Context:
+Use the provided business analysis to understand the business logic and processes.
+
+Functional Specification Context:
+Use the provided functional specification to understand the system features and workflows.
+
+Technical Specification Context:
+Use the provided technical specification to understand the architecture and technical implementation.
+
+Create Mermaid diagrams that include:
+
+## System Architecture Diagram
+- **System Components**: Show the specific components needed for this project
+- **Data Flow**: How data moves through this specific system
+- **Integration Points**: External connections for this specific use case
+- **Technology Stack**: Visual representation of the chosen technologies
+
+## User Journey Maps
+- **User Flows**: Step-by-step user interactions for this specific system
+- **Decision Points**: Where users make choices in this specific workflow
+- **System Responses**: How the system reacts to user actions
+- **Error Paths**: Alternative flows for this specific use case
+
+## Data Model Diagram
+- **Entities**: Data objects specific to this domain
+- **Relationships**: How data connects in this specific system
+- **Attributes**: Key properties for this specific use case
+- **Business Rules**: Data constraints specific to this domain
+
+## Security Architecture
+- **Authentication Flow**: Login process for this specific system
+- **Authorization Levels**: Access controls for this specific domain
+- **Data Protection**: Security measures for this specific type of data
+- **Compliance Controls**: Any regulatory requirements mentioned in the original requirements
+
+Generate valid Mermaid syntax that accurately represents this SPECIFIC project. Avoid generic enterprise patterns unless explicitly requested.`,
+          openaiKey: config.openaiKey,
+        }),
+      })
+      
+      if (!mermaidResponse.ok) {
+        const errorData = await mermaidResponse.json().catch(() => ({ error: "Unknown API error" }))
+        updateStepProgress("mermaid", 0, "error")
+        console.warn("Failed to generate Mermaid diagrams:", errorData?.error || `API request failed with status ${mermaidResponse.status}`)
+        results.mermaidDiagrams = ""
+      } else {
+        const mermaidResult = await mermaidResponse.json()
+        results.mermaidDiagrams = mermaidResult.mermaidDiagrams
+        updateStepProgress("mermaid", 100, "completed")
+        setGeneratedDocuments(prev => ({ ...prev, mermaidDiagrams: mermaidResult.mermaidDiagrams }))
+        console.log("✅ Architecture Diagrams completed")
+      }
+      
       setSuccessMessage("🎉 Enterprise documentation generated successfully!")
       
       // Cache the results
-      cacheResults(input.trim(), { ...mappedContent, timestamp: Date.now() })
+      await setCachedResults(input.trim(), { ...results, timestamp: Date.now() })
       
     } catch (error) {
       console.error('Error generating enterprise documentation:', error)
@@ -1395,6 +2135,7 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
       )
     } finally {
       setIsProcessingEnterprise(false)
+      setIsProcessing(false)
     }
   }
 
