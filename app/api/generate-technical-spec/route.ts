@@ -1,6 +1,6 @@
 import { createOpenAI } from "@ai-sdk/openai"
-import { generateText } from "ai"
-import { type NextRequest, NextResponse } from "next/server"
+import { streamText } from "ai"
+import { type NextRequest } from "next/server"
 import { createPromptService } from '@/lib/prompt-service'
 import { createClient } from "@/lib/supabase/server"
 
@@ -10,80 +10,69 @@ interface TechnicalSpecRequest {
   input: string
   businessAnalysis: string
   functionalSpec: string
+  template?: string
   customPrompt?: string
   openaiKey: string
   userId?: string
   projectId?: string
 }
 
-// Hardcoded fallback prompt for reliability
-const FALLBACK_PROMPT = `As a Senior Software Architect with 10+ years of full-stack development experience, break down the following functional requirements into specific development tasks:
+const FALLBACK_PROMPT = `You are an expert technical architect. Based on the business analysis and functional specification, create a comprehensive technical specification document.
 
-Functional Requirements: {functional_spec}
-Business Analysis: {business_analysis}
+Project Requirements:
+{input}
 
-Generate the following structured output:
+Business Analysis:
+{businessAnalysis}
 
-## Technical Epic
-- **Epic Title**: [Technical implementation focus]
-- **Technical Approach**: [Architecture pattern/approach]
-- **Technology Stack**: [Specific technologies]
+Functional Specification:
+{functionalSpec}
 
-## Development Tasks
-For each task, provide:
-1. **Task Title**: Clear, action-oriented (e.g., "Implement user authentication API")
-2. **Task Description**: Technical implementation details
-3. **Acceptance Criteria**: Technical completion criteria
-4. **Story Points**: Effort estimate (1, 2, 3, 5, 8)
-5. **Components**: Frontend/Backend/Database/DevOps
-6. **Dependencies**: Technical prerequisites
-7. **Definition of Done**: Code quality, testing, documentation requirements
+Create a technical specification that includes:
 
-## Task Categories:
-### Backend Development
-- API endpoint implementation
-- Database schema design
-- Business logic implementation
-- Authentication/authorization
-- Data validation and processing
+## System Architecture
+- **Architecture Pattern**: [Design pattern used]
+- **Components**: [System components and modules]
+- **Data Flow**: [How data moves through system]
+- **Technology Stack**: [Languages, frameworks, databases]
 
-### Frontend Development
-- UI component development
-- State management
-- API integration
-- Form handling and validation
-- Responsive design implementation
+## Database Design
+- **Data Model**: [Entity relationships]
+- **Schema Design**: [Table structures]
+- **Indexing Strategy**: [Performance optimization]
+- **Data Migration**: [Upgrade procedures]
 
-### Infrastructure & DevOps
-- Database setup and configuration
-- CI/CD pipeline setup
-- Environment configuration
-- Monitoring and logging
-- Security implementation
+## API Design
+- **REST Endpoints**: [API specifications]
+- **Request/Response**: [Data formats]
+- **Authentication**: [Security mechanisms]
+- **Rate Limiting**: [Usage controls]
 
-### Testing & Quality Assurance
-- Unit test implementation
-- Integration test setup
-- End-to-end test scenarios
-- Performance testing
-- Security testing
+## Security Implementation
+- **Authentication System**: [Login mechanisms]
+- **Authorization Controls**: [Access permissions]
+- **Data Encryption**: [Protection methods]
+- **Security Monitoring**: [Threat detection]
 
-## Technical Debt & Improvements
-- Code refactoring opportunities
-- Performance optimizations
-- Security enhancements
-- Documentation updates
+## Performance Specifications
+- **Response Times**: [Latency requirements]
+- **Throughput**: [Transaction volumes]
+- **Scalability Plan**: [Growth handling]
+- **Caching Strategy**: [Performance optimization]
 
-Create 8-12 specific, actionable development tasks that are:
-- Technically detailed and implementable
-- Properly estimated for sprint planning
-- Categorized by development area
-- Include clear technical acceptance criteria
+## Deployment Strategy
+- **Infrastructure**: [Server requirements]
+- **Environment Setup**: [Dev/Test/Prod]
+- **CI/CD Pipeline**: [Automated deployment]
+- **Monitoring**: [Health checks and alerts]
 
-Architecture Pattern: Microservices
-Cloud Platform: AWS
-Database Type: Relational
-Security Level: Enterprise`
+## Development Guidelines
+- **Coding Standards**: [Code quality rules]
+- **Testing Strategy**: [Unit/Integration/E2E tests]
+- **Documentation**: [Technical documentation]
+- **Version Control**: [Git workflow]
+
+Format the response in markdown with clear headings and structured sections.`
 
 async function getAuthenticatedUser() {
   try {
@@ -102,7 +91,7 @@ async function getAuthenticatedUser() {
   }
 }
 
-async function generateWithDatabasePrompt(
+async function generateWithDatabasePromptStreaming(
   input: string,
   businessAnalysis: string,
   functionalSpec: string,
@@ -112,134 +101,75 @@ async function generateWithDatabasePrompt(
   projectId: string | undefined
 ) {
   const promptService = createPromptService()
-  const startTime = Date.now()
   const openaiClient = createOpenAI({ apiKey: openaiKey })
   
   try {
-    // Priority 1: Use custom prompt if provided (legacy support)
+    // Priority 1: Use custom prompt if provided
     if (customPrompt && customPrompt.trim() !== "") {
-      console.log('Using custom prompt from request')
+      console.log('Using custom prompt from request (streaming)')
       const processedPrompt = customPrompt
         .replace(/{{input}}/g, input)
-        .replace(/{{business_analysis}}/g, businessAnalysis)
-        .replace(/{{functional_spec}}/g, functionalSpec)
+        .replace(/{{businessAnalysis}}/g, businessAnalysis)
+        .replace(/{{functionalSpec}}/g, functionalSpec)
       
-      const result = await generateText({
+      return await streamText({
         model: openaiClient("gpt-4o"),
         prompt: processedPrompt,
       })
-      
-      return {
-        content: result.text,
-        promptSource: 'custom',
-        responseTime: Date.now() - startTime
-      }
     }
 
     // Priority 2: Load prompt from database
     const promptTemplate = await promptService.getPromptForExecution('technical', userId || 'anonymous')
     
     if (promptTemplate) {
-      console.log(`Using database prompt: ${promptTemplate.name} (v${promptTemplate.version})`)
+      console.log(`Using database prompt for streaming: ${promptTemplate.name} (v${promptTemplate.version})`)
       
-      try {
-        // Prepare the prompt
-        const { processedContent } = await promptService.preparePrompt(
-          promptTemplate.id,
-          { 
-            input: input,
-            business_analysis: businessAnalysis,
-            functional_spec: functionalSpec,
-          }
-        )
-        
-        // Execute AI call
-        const aiResult = await generateText({
-          model: openaiClient("gpt-4o"),
-          prompt: processedContent,
-        })
-        
-        const responseTime = Date.now() - startTime
-        
-        // Log successful usage
-        const usageLogId = await promptService.logUsage(
-          promptTemplate.id,
-          userId || 'anonymous',
-          { input, business_analysis: businessAnalysis, functional_spec: functionalSpec },
-          {
-            content: aiResult.text,
-            input_tokens: Math.floor(processedContent.length / 4),
-            output_tokens: Math.floor(aiResult.text.length / 4),
-          },
-          responseTime,
-          true,
-          undefined,
-          projectId,
-          'gpt-4o'
-        )
-        
-        return {
-          content: aiResult.text,
-          promptSource: 'database',
-          promptId: promptTemplate.id,
-          promptName: promptTemplate.name,
-          responseTime,
-          usageLogId
+      // Prepare the prompt with combined context
+      const context = `Business Analysis:\n${businessAnalysis}\n\nFunctional Specification:\n${functionalSpec}`
+      const { processedContent } = await promptService.preparePrompt(
+        promptTemplate.id,
+        { 
+          input: input,
+          context: context,
         }
-      } catch (aiError) {
-        // Log failed usage
-        const responseTime = Date.now() - startTime
-        await promptService.logUsage(
-          promptTemplate.id,
-          userId || 'anonymous',
-          { input, business_analysis: businessAnalysis, functional_spec: functionalSpec },
-          { content: '', input_tokens: 0, output_tokens: 0 },
-          responseTime,
-          false,
-          aiError instanceof Error ? aiError.message : 'AI execution failed',
-          projectId,
-          'gpt-4o'
-        )
-        throw aiError
-      }
+      )
+      
+      return await streamText({
+        model: openaiClient("gpt-4o"),
+        prompt: processedContent,
+      })
     }
 
     // Priority 3: Fallback to hardcoded prompt
-    console.warn('No database prompt found, using hardcoded fallback')
-    throw new Error('No database prompt available')
-    
-  } catch (error) {
-    console.warn('Database prompt failed, using hardcoded fallback:', error)
-    
-    // Fallback execution with hardcoded prompt
+    console.warn('No database prompt found, using hardcoded fallback for streaming')
     const processedPrompt = FALLBACK_PROMPT
       .replace(/\{input\}/g, input)
-      .replace(/\{business_analysis\}/g, businessAnalysis)
-      .replace(/\{functional_spec\}/g, functionalSpec)
+      .replace(/\{businessAnalysis\}/g, businessAnalysis)
+      .replace(/\{functionalSpec\}/g, functionalSpec)
     
-    const result = await generateText({
+    return await streamText({
       model: openaiClient("gpt-4o"),
       prompt: processedPrompt,
     })
     
-    return {
-      content: result.text,
-      promptSource: 'fallback',
-      responseTime: Date.now() - startTime,
-      fallbackReason: error instanceof Error ? error.message : 'Unknown error'
-    }
+  } catch (error) {
+    console.error('Error in streaming generation:', error)
+    throw error
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { input, businessAnalysis, functionalSpec, customPrompt, openaiKey, userId, projectId }: TechnicalSpecRequest = await req.json()
+    const { input, businessAnalysis, functionalSpec, template, customPrompt, openaiKey, userId, projectId }: TechnicalSpecRequest = await req.json()
     
     // Validate OpenAI API key
     if (!openaiKey || openaiKey.trim() === '') {
-      return NextResponse.json(
-        { error: "OpenAI API key is required" },
-        { status: 400 }
+      return new Response(
+        JSON.stringify({ error: "OpenAI API key is required" }),
+        { 
+          status: 400, 
+          headers: { 'Content-Type': 'application/json' }
+        }
       )
     }
 
@@ -247,11 +177,11 @@ export async function POST(req: NextRequest) {
     const user = await getAuthenticatedUser()
     const effectiveUserId = userId || user?.id
 
-    console.log('Generating Technical Specification with database prompts...')
+    console.log('🚀 Starting streaming Technical Specification generation...')
     console.log('User ID:', effectiveUserId)
     console.log('Project ID:', projectId)
 
-    const result = await generateWithDatabasePrompt(
+    const streamResult = await generateWithDatabasePromptStreaming(
       input,
       businessAnalysis,
       functionalSpec,
@@ -261,30 +191,75 @@ export async function POST(req: NextRequest) {
       projectId
     )
 
-    console.log(`Technical Specification generated successfully using ${result.promptSource} prompt`)
-    console.log(`Response time: ${result.responseTime}ms`)
-
-    return NextResponse.json({
-      technicalSpec: result.content,
-      success: true,
-      metadata: {
-        promptSource: result.promptSource,
-        promptId: result.promptId,
-        promptName: result.promptName,
-        responseTime: result.responseTime,
-        fallbackReason: result.fallbackReason,
-        usageLogId: result.usageLogId
+    // Convert the AI stream to a web-compatible ReadableStream
+    const encoder = new TextEncoder()
+    let fullContent = ''
+    
+    const readableStream = new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const chunk of streamResult.textStream) {
+            fullContent += chunk
+            
+            // Send each chunk as JSON with metadata
+            const chunkData = JSON.stringify({
+              type: 'chunk',
+              content: chunk,
+              fullContent: fullContent,
+              timestamp: Date.now()
+            })
+            
+            controller.enqueue(encoder.encode(`data: ${chunkData}\n\n`))
+          }
+          
+          // Send completion signal
+          const completionData = JSON.stringify({
+            type: 'complete',
+            fullContent: fullContent,
+            success: true,
+            metadata: {
+              contentLength: fullContent.length
+            }
+          })
+          
+          controller.enqueue(encoder.encode(`data: ${completionData}\n\n`))
+          controller.close()
+          
+          console.log(`✅ Technical Specification streaming completed - ${fullContent.length} characters`)
+          
+        } catch (error) {
+          console.error('Error in streaming:', error)
+          const errorData = JSON.stringify({
+            type: 'error',
+            error: error instanceof Error ? error.message : 'Streaming failed'
+          })
+          controller.enqueue(encoder.encode(`data: ${errorData}\n\n`))
+          controller.close()
+        }
       }
     })
 
+    return new Response(readableStream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+    })
+
   } catch (error) {
-    console.error("Error generating technical specification:", error)
-    return NextResponse.json(
-      { 
+    console.error("Error generating streaming technical specification:", error)
+    return new Response(
+      JSON.stringify({ 
         error: error instanceof Error ? error.message : "Failed to generate technical specification",
         success: false 
-      },
-      { status: 500 }
+      }),
+      { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
     )
   }
 }

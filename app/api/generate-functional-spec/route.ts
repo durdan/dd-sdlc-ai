@@ -1,6 +1,6 @@
 import { createOpenAI } from "@ai-sdk/openai"
-import { generateText } from "ai"
-import { type NextRequest, NextResponse } from "next/server"
+import { streamText } from "ai"
+import { type NextRequest } from "next/server"
 import { createPromptService } from '@/lib/prompt-service'
 import { createClient } from "@/lib/supabase/server"
 
@@ -9,6 +9,7 @@ export const maxDuration = 60
 interface FunctionalSpecRequest {
   input: string
   businessAnalysis: string
+  template?: string
   customPrompt?: string
   openaiKey: string
   userId?: string
@@ -16,69 +17,57 @@ interface FunctionalSpecRequest {
 }
 
 // Hardcoded fallback prompt for reliability
-const FALLBACK_PROMPT = `As a Senior Business Analyst with expertise in requirements engineering, create a detailed functional specification based on the business analysis:
+const FALLBACK_PROMPT = `You are an expert systems analyst. Based on the business analysis and project requirements, create a comprehensive functional specification document.
 
-Original Input: {input}
-Business Analysis: {business_analysis}
+Project Requirements:
+{input}
 
-Generate the following structured output:
+Business Analysis:
+{businessAnalysis}
 
-## Functional Overview
-- **System Purpose**: [Clear description of what the system does]
-- **Key Capabilities**: [Main functional areas]
-- **Success Criteria**: [Measurable outcomes]
+Create a functional specification that includes:
 
-## Detailed Functional Requirements
-For each functional area, provide:
-1. **Requirement ID**: [Unique identifier]
-2. **Requirement Title**: [Clear, descriptive title]
-3. **Description**: [Detailed functional behavior]
-4. **Acceptance Criteria**: [Specific, testable criteria]
-5. **Priority**: [Must Have/Should Have/Could Have]
-6. **Dependencies**: [Related requirements]
+## System Overview
+- **Purpose**: [What the system does]
+- **Scope**: [What's included/excluded]
+- **Users**: [Who will use the system]
+- **Environment**: [Where it will operate]
 
-## System Capabilities
-### Core Functions
-- User management and authentication
-- Data processing and storage
-- Business logic implementation
-- Reporting and analytics
-
-### Integration Requirements
-- External API integrations
-- Third-party service connections
-- Data import/export capabilities
-- System interoperability
-
-### Performance Requirements
-- Response time specifications
-- Throughput requirements
-- Scalability targets
-- Availability requirements
-
-### Security Requirements
-- Authentication mechanisms
-- Authorization controls
-- Data protection measures
-- Compliance requirements
+## Functional Requirements
+- **Core Features**: [Essential functionality]
+- **User Actions**: [What users can do]
+- **System Responses**: [How system responds]
+- **Business Rules**: [Constraints and logic]
 
 ## Data Requirements
-- **Data Entities**: [Key data objects]
+- **Data Entities**: [What data the system manages]
 - **Data Relationships**: [How data connects]
-- **Data Validation**: [Quality requirements]
-- **Data Lifecycle**: [Creation, update, deletion rules]
+- **Data Validation**: [Rules for data integrity]
+- **Data Flow**: [How data moves through system]
+
+## Integration Requirements
+- **External Systems**: [What systems to connect with]
+- **APIs**: [Required interfaces]
+- **Data Exchange**: [What data to share]
+- **Authentication**: [How to secure connections]
 
 ## User Interface Requirements
-- **User Experience**: [UX principles]
-- **Accessibility**: [WCAG compliance]
-- **Responsive Design**: [Device compatibility]
-- **Navigation**: [User flow requirements]
+- **Screen Layouts**: [Key interface elements]
+- **Navigation**: [How users move around]
+- **Input/Output**: [Forms, reports, displays]
+- **Accessibility**: [Support for all users]
 
-Ensure all requirements are:
-- Specific and measurable
-- Testable and verifiable
-- Aligned with business objectives
-- Technically feasible
+## Performance Requirements
+- **Response Time**: [How fast system responds]
+- **Throughput**: [How much data it handles]
+- **Availability**: [Uptime requirements]
+- **Scalability**: [Growth expectations]
+
+## Security Requirements
+- **Authentication**: [How users log in]
+- **Authorization**: [What users can access]
+- **Data Protection**: [How to secure data]
+- **Audit Trail**: [What to log]
 
 Format the response in markdown with clear headings and structured sections.`
 
@@ -99,7 +88,7 @@ async function getAuthenticatedUser() {
   }
 }
 
-async function generateWithDatabasePrompt(
+async function generateWithDatabasePromptStreaming(
   input: string,
   businessAnalysis: string,
   customPrompt: string | undefined,
@@ -108,131 +97,69 @@ async function generateWithDatabasePrompt(
   projectId: string | undefined
 ) {
   const promptService = createPromptService()
-  const startTime = Date.now()
   const openaiClient = createOpenAI({ apiKey: openaiKey })
   
   try {
     // Priority 1: Use custom prompt if provided (legacy support)
     if (customPrompt && customPrompt.trim() !== "") {
-      console.log('Using custom prompt from request')
-      const processedPrompt = customPrompt
-        .replace(/{{input}}/g, input)
-        .replace(/{{business_analysis}}/g, businessAnalysis)
+      console.log('Using custom prompt from request (streaming)')
+      const processedPrompt = customPrompt.replace(/{{input}}/g, input).replace(/{{businessAnalysis}}/g, businessAnalysis)
       
-      const result = await generateText({
+      return await streamText({
         model: openaiClient("gpt-4o"),
         prompt: processedPrompt,
       })
-      
-      return {
-        content: result.text,
-        promptSource: 'custom',
-        responseTime: Date.now() - startTime
-      }
     }
 
     // Priority 2: Load prompt from database
     const promptTemplate = await promptService.getPromptForExecution('functional', userId || 'anonymous')
     
     if (promptTemplate) {
-      console.log(`Using database prompt: ${promptTemplate.name} (v${promptTemplate.version})`)
+      console.log(`Using database prompt for streaming: ${promptTemplate.name} (v${promptTemplate.version})`)
       
-      try {
-        // Prepare the prompt
-        const { processedContent } = await promptService.preparePrompt(
-          promptTemplate.id,
-          { 
-            input: input,
-            business_analysis: businessAnalysis,
-          }
-        )
-        
-        // Execute AI call
-        const aiResult = await generateText({
-          model: openaiClient("gpt-4o"),
-          prompt: processedContent,
-        })
-        
-        const responseTime = Date.now() - startTime
-        
-        // Log successful usage
-        const usageLogId = await promptService.logUsage(
-          promptTemplate.id,
-          userId || 'anonymous',
-          { input, business_analysis: businessAnalysis },
-          {
-            content: aiResult.text,
-            input_tokens: Math.floor(processedContent.length / 4),
-            output_tokens: Math.floor(aiResult.text.length / 4),
-          },
-          responseTime,
-          true,
-          undefined,
-          projectId,
-          'gpt-4o'
-        )
-        
-        return {
-          content: aiResult.text,
-          promptSource: 'database',
-          promptId: promptTemplate.id,
-          promptName: promptTemplate.name,
-          responseTime,
-          usageLogId
+      // Prepare the prompt
+      const { processedContent } = await promptService.preparePrompt(
+        promptTemplate.id,
+        { 
+          input: input,
+          context: businessAnalysis, // Use business analysis as context
         }
-      } catch (aiError) {
-        // Log failed usage
-        const responseTime = Date.now() - startTime
-        await promptService.logUsage(
-          promptTemplate.id,
-          userId || 'anonymous',
-          { input, business_analysis: businessAnalysis },
-          { content: '', input_tokens: 0, output_tokens: 0 },
-          responseTime,
-          false,
-          aiError instanceof Error ? aiError.message : 'AI execution failed',
-          projectId,
-          'gpt-4o'
-        )
-        throw aiError
-      }
+      )
+      
+      // Execute AI streaming call
+      return await streamText({
+        model: openaiClient("gpt-4o"),
+        prompt: processedContent,
+      })
     }
 
     // Priority 3: Fallback to hardcoded prompt
-    console.warn('No database prompt found, using hardcoded fallback')
-    throw new Error('No database prompt available')
+    console.warn('No database prompt found, using hardcoded fallback for streaming')
+    const processedPrompt = FALLBACK_PROMPT.replace(/\{input\}/g, input).replace(/\{businessAnalysis\}/g, businessAnalysis)
     
-  } catch (error) {
-    console.warn('Database prompt failed, using hardcoded fallback:', error)
-    
-    // Fallback execution with hardcoded prompt
-    const processedPrompt = FALLBACK_PROMPT
-      .replace(/\{input\}/g, input)
-      .replace(/\{business_analysis\}/g, businessAnalysis)
-    
-    const result = await generateText({
+    return await streamText({
       model: openaiClient("gpt-4o"),
       prompt: processedPrompt,
     })
     
-    return {
-      content: result.text,
-      promptSource: 'fallback',
-      responseTime: Date.now() - startTime,
-      fallbackReason: error instanceof Error ? error.message : 'Unknown error'
-    }
+  } catch (error) {
+    console.error('Error in streaming generation:', error)
+    throw error
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { input, businessAnalysis, customPrompt, openaiKey, userId, projectId }: FunctionalSpecRequest = await req.json()
+    const { input, businessAnalysis, template, customPrompt, openaiKey, userId, projectId }: FunctionalSpecRequest = await req.json()
     
     // Validate OpenAI API key
     if (!openaiKey || openaiKey.trim() === '') {
-      return NextResponse.json(
-        { error: "OpenAI API key is required" },
-        { status: 400 }
+      return new Response(
+        JSON.stringify({ error: "OpenAI API key is required" }),
+        { 
+          status: 400, 
+          headers: { 'Content-Type': 'application/json' }
+        }
       )
     }
 
@@ -240,11 +167,11 @@ export async function POST(req: NextRequest) {
     const user = await getAuthenticatedUser()
     const effectiveUserId = userId || user?.id
 
-    console.log('Generating Functional Specification with database prompts...')
+    console.log('🚀 Starting streaming Functional Specification generation...')
     console.log('User ID:', effectiveUserId)
     console.log('Project ID:', projectId)
 
-    const result = await generateWithDatabasePrompt(
+    const streamResult = await generateWithDatabasePromptStreaming(
       input,
       businessAnalysis,
       customPrompt,
@@ -253,30 +180,75 @@ export async function POST(req: NextRequest) {
       projectId
     )
 
-    console.log(`Functional Specification generated successfully using ${result.promptSource} prompt`)
-    console.log(`Response time: ${result.responseTime}ms`)
-
-    return NextResponse.json({
-      functionalSpec: result.content,
-      success: true,
-      metadata: {
-        promptSource: result.promptSource,
-        promptId: result.promptId,
-        promptName: result.promptName,
-        responseTime: result.responseTime,
-        fallbackReason: result.fallbackReason,
-        usageLogId: result.usageLogId
+    // Convert the AI stream to a web-compatible ReadableStream
+    const encoder = new TextEncoder()
+    let fullContent = ''
+    
+    const readableStream = new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const chunk of streamResult.textStream) {
+            fullContent += chunk
+            
+            // Send each chunk as JSON with metadata
+            const chunkData = JSON.stringify({
+              type: 'chunk',
+              content: chunk,
+              fullContent: fullContent,
+              timestamp: Date.now()
+            })
+            
+            controller.enqueue(encoder.encode(`data: ${chunkData}\n\n`))
+          }
+          
+          // Send completion signal
+          const completionData = JSON.stringify({
+            type: 'complete',
+            fullContent: fullContent,
+            success: true,
+            metadata: {
+              contentLength: fullContent.length
+            }
+          })
+          
+          controller.enqueue(encoder.encode(`data: ${completionData}\n\n`))
+          controller.close()
+          
+          console.log(`✅ Functional Specification streaming completed - ${fullContent.length} characters`)
+          
+        } catch (error) {
+          console.error('Error in streaming:', error)
+          const errorData = JSON.stringify({
+            type: 'error',
+            error: error instanceof Error ? error.message : 'Streaming failed'
+          })
+          controller.enqueue(encoder.encode(`data: ${errorData}\n\n`))
+          controller.close()
+        }
       }
     })
 
+    return new Response(readableStream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+    })
+
   } catch (error) {
-    console.error("Error generating functional specification:", error)
-    return NextResponse.json(
-      { 
+    console.error("Error generating streaming functional specification:", error)
+    return new Response(
+      JSON.stringify({ 
         error: error instanceof Error ? error.message : "Failed to generate functional specification",
         success: false 
-      },
-      { status: 500 }
+      }),
+      { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
     )
   }
 }
