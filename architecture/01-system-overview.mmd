@@ -1,0 +1,112 @@
+%% Overall System Architecture
+%% AI Code Assistant Integration for SDLC Platform
+
+graph TB
+    subgraph "User Layer"
+        PM[Product Manager]
+        DEV[Developer]
+        ADMIN[Admin]
+    end
+    
+    subgraph "Enhanced SDLC Platform (Tier 1)"
+        WEBAPP[Web Application<br/>Next.js + React]
+        DASHBOARD[AI Automation Dashboard]
+        BYOK_UI[BYOK Management UI]
+        MONITOR[Task Monitoring UI]
+        APPROVAL[Approval Workflows]
+        CONFIG[Configuration Panel]
+    end
+    
+    subgraph "AI Orchestration Layer (Tier 2)"
+        ORCHESTRATOR[AI Orchestration Service<br/>Node.js/TypeScript]
+        PROVIDER_MGR[Provider Manager]
+        CONTEXT_CONV[Context Converter]
+        TASK_QUEUE[Task Queue]
+        SECURITY_MGR[Security Manager]
+        METRICS[Metrics Collector]
+    end
+    
+    subgraph "AI Providers"
+        OPENAI[OpenAI GPT-4<br/>BYOK]
+        CLAUDE[Anthropic Claude<br/>BYOK]
+        COPILOT[GitHub Copilot<br/>BYOK]
+        CUSTOM[Custom Models<br/>Future]
+    end
+    
+    subgraph "GitHub Integration Hub (Tier 3)"
+        GITHUB_APP[GitHub App]
+        WORKFLOWS[Actions Workflows]
+        WEBHOOK_MGR[Webhook Manager]
+        PR_MANAGER[PR Manager]
+        SECURITY_SCAN[Security Scanner]
+    end
+    
+    subgraph "External Services"
+        GITHUB_REPOS[GitHub Repositories]
+        DATABASES[(PostgreSQL<br/>Supabase)]
+        KMS[Key Management<br/>AWS KMS/Vault]
+        MONITORING[Prometheus/Grafana]
+        JIRA[Jira Integration]
+        SLACK[Slack Notifications]
+    end
+    
+    %% User interactions
+    PM --> WEBAPP
+    DEV --> WEBAPP
+    ADMIN --> WEBAPP
+    
+    %% SDLC Platform connections
+    WEBAPP --> DASHBOARD
+    WEBAPP --> BYOK_UI
+    WEBAPP --> MONITOR
+    WEBAPP --> APPROVAL
+    WEBAPP --> CONFIG
+    
+    %% Platform to Orchestration
+    DASHBOARD --> ORCHESTRATOR
+    BYOK_UI --> SECURITY_MGR
+    MONITOR --> TASK_QUEUE
+    CONFIG --> PROVIDER_MGR
+    
+    %% Orchestration internal flow
+    ORCHESTRATOR --> PROVIDER_MGR
+    ORCHESTRATOR --> CONTEXT_CONV
+    ORCHESTRATOR --> TASK_QUEUE
+    ORCHESTRATOR --> SECURITY_MGR
+    ORCHESTRATOR --> METRICS
+    
+    %% Provider connections
+    PROVIDER_MGR --> OPENAI
+    PROVIDER_MGR --> CLAUDE
+    PROVIDER_MGR --> COPILOT
+    PROVIDER_MGR --> CUSTOM
+    
+    %% GitHub Integration
+    ORCHESTRATOR --> GITHUB_APP
+    GITHUB_APP --> WORKFLOWS
+    GITHUB_APP --> WEBHOOK_MGR
+    GITHUB_APP --> PR_MANAGER
+    WORKFLOWS --> SECURITY_SCAN
+    
+    %% External service connections
+    WEBAPP --> DATABASES
+    SECURITY_MGR --> KMS
+    METRICS --> MONITORING
+    WORKFLOWS --> GITHUB_REPOS
+    PR_MANAGER --> JIRA
+    WEBHOOK_MGR --> SLACK
+    
+    %% Styling
+    classDef userLayer fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
+    classDef tier1 fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
+    classDef tier2 fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px;
+    classDef tier3 fill:#fff3e0,stroke:#e65100,stroke-width:2px;
+    classDef external fill:#fce4ec,stroke:#880e4f,stroke-width:2px;
+    classDef ai fill:#f1f8e9,stroke:#33691e,stroke-width:2px;
+    
+    class PM,DEV,ADMIN userLayer;
+    class WEBAPP,DASHBOARD,BYOK_UI,MONITOR,APPROVAL,CONFIG tier1;
+    class ORCHESTRATOR,PROVIDER_MGR,CONTEXT_CONV,TASK_QUEUE,SECURITY_MGR,METRICS tier2;
+    class GITHUB_APP,WORKFLOWS,WEBHOOK_MGR,PR_MANAGER,SECURITY_SCAN tier3;
+    class GITHUB_REPOS,DATABASES,KMS,MONITORING,JIRA,SLACK external;
+    class OPENAI,CLAUDE,COPILOT,CUSTOM ai; 

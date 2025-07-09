@@ -4,7 +4,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { 
   ArrowRight, 
   Code, 
@@ -40,6 +40,82 @@ import {
 
 export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  // Handle GitHub OAuth callback
+  useEffect(() => {
+    const handleGitHubCallback = async () => {
+      const urlParams = new URLSearchParams(window.location.search)
+      const code = urlParams.get('code')
+      const state = urlParams.get('state')
+      const storedState = sessionStorage.getItem('github_oauth_state')
+      
+      if (code && state && state === storedState) {
+        try {
+          console.log('Processing GitHub OAuth callback...')
+          
+          // Exchange authorization code for access token
+          const response = await fetch('/api/auth/github/exchange', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ code }),
+          })
+          
+          if (!response.ok) {
+            throw new Error('Failed to exchange code for token')
+          }
+          
+          const data = await response.json()
+          
+          if (data.access_token) {
+            // Get user info from GitHub API
+            const userResponse = await fetch('https://api.github.com/user', {
+              headers: {
+                Authorization: `Bearer ${data.access_token}`,
+              },
+            })
+            
+            if (userResponse.ok) {
+              const userData = await userResponse.json()
+              
+              // Store token securely (in httpOnly cookie via backend)
+              await fetch('/api/auth/github/store-token', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ access_token: data.access_token }),
+              })
+              
+              // Clean up URL and session storage
+              window.history.replaceState({}, document.title, window.location.pathname)
+              sessionStorage.removeItem('github_oauth_state')
+              
+              // Show success message and redirect to dashboard
+              alert(`✅ Successfully connected to GitHub as ${userData.login}! Redirecting to dashboard...`)
+              // Add a small delay to ensure alert is shown, then redirect with refresh
+              setTimeout(() => {
+                window.location.href = '/dashboard?refresh=github'
+              }, 1000)
+            } else {
+              throw new Error('Failed to get user info from GitHub')
+            }
+          } else {
+            throw new Error('No access token received')
+          }
+        } catch (error) {
+          console.error('GitHub OAuth error:', error)
+          alert('❌ Failed to connect to GitHub. Please try again.')
+          // Clean up URL
+          window.history.replaceState({}, document.title, window.location.pathname)
+          sessionStorage.removeItem('github_oauth_state')
+        }
+      }
+    }
+
+    handleGitHubCallback()
+  }, [])
 
   const features = [
     {

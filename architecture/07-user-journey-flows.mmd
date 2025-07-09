@@ -1,0 +1,152 @@
+%% User Journey Flows
+%% Different User Personas and Their Interaction Patterns
+
+graph TD
+    subgraph "Developer Journey - Bug Fix"
+        DEV_START[Developer Discovers Bug]
+        DEV_REPORT[Create GitHub Issue<br/>Describe Bug Details]
+        DEV_LABEL[Add 'ai-bug-fix' Label<br/>Or Comment '/ai-fix']
+        DEV_WAIT[Wait for AI Processing<br/>Monitor Dashboard]
+        DEV_REVIEW[Review Generated PR<br/>Code Quality Check]
+        DEV_FEEDBACK[Provide Feedback<br/>Request Changes/Approve]
+        DEV_MERGE[Merge to Main<br/>Deploy to Production]
+        DEV_VERIFY[Verify Fix Works<br/>Close Issue]
+    end
+    
+    subgraph "Product Manager Journey - Feature Request"
+        PM_IDEA[PM Has Feature Idea<br/>Business Requirements]
+        PM_SDLC[Use SDLC Platform<br/>Generate Specifications]
+        PM_CONFIG[Configure AI Automation<br/>Set Preferences]
+        PM_TRIGGER[Trigger Feature Implementation<br/>Repository Dispatch]
+        PM_MONITOR[Monitor Progress<br/>Real-time Dashboard]
+        PM_REVIEW[Review Implementation<br/>Business Logic Check]
+        PM_APPROVE[Approve for Testing<br/>Staging Deployment]
+        PM_VALIDATE[Validate Feature<br/>Acceptance Testing]
+        PM_RELEASE[Release to Production<br/>Feature Launch]
+    end
+    
+    subgraph "Admin Journey - System Configuration"
+        ADMIN_LOGIN[Admin Login<br/>MFA Authentication]
+        ADMIN_DASHBOARD[Access Admin Dashboard<br/>System Overview]
+        ADMIN_PROVIDERS[Configure AI Providers<br/>System Defaults]
+        ADMIN_SECURITY[Security Configuration<br/>Access Controls]
+        ADMIN_MONITOR[Monitor System Health<br/>Performance Metrics]
+        ADMIN_ALERTS[Handle Alerts<br/>Incident Response]
+        ADMIN_AUDIT[Review Audit Logs<br/>Compliance Check]
+        ADMIN_OPTIMIZE[System Optimization<br/>Performance Tuning]
+    end
+    
+    subgraph "First-Time User Onboarding"
+        NEW_SIGNUP[New User Signup<br/>Account Creation]
+        NEW_VERIFY[Email Verification<br/>Account Activation]
+        NEW_SETUP[Setup BYOK<br/>AI Provider Keys]
+        NEW_CONNECT[Connect GitHub<br/>Repository Access]
+        NEW_TUTORIAL[Interactive Tutorial<br/>Feature Walkthrough]
+        NEW_FIRST_USE[First AI Automation<br/>Simple Bug Fix]
+        NEW_SUCCESS[Success Celebration<br/>Onboarding Complete]
+    end
+    
+    subgraph "Security Officer Journey - Compliance"
+        SEC_AUDIT[Security Audit Request<br/>Compliance Review]
+        SEC_ACCESS[Access Security Dashboard<br/>Risk Assessment]
+        SEC_KEYS[Review Key Management<br/>Encryption Status]
+        SEC_LOGS[Analyze Security Logs<br/>Threat Detection]
+        SEC_POLICY[Update Security Policies<br/>Access Controls]
+        SEC_INCIDENT[Incident Investigation<br/>Forensic Analysis]
+        SEC_REPORT[Generate Compliance Report<br/>Documentation]
+    end
+    
+    subgraph "DevOps Engineer Journey - System Management"
+        DEVOPS_DEPLOY[Deploy New Version<br/>System Update]
+        DEVOPS_MONITOR[Monitor Deployment<br/>Health Checks]
+        DEVOPS_SCALE[Auto-scaling Configuration<br/>Resource Management]
+        DEVOPS_BACKUP[Backup Verification<br/>Disaster Recovery]
+        DEVOPS_PERF[Performance Optimization<br/>Resource Tuning]
+        DEVOPS_ALERT[Alert Configuration<br/>Notification Setup]
+        DEVOPS_MAINTAIN[Maintenance Tasks<br/>System Updates]
+    end
+    
+    %% Developer Flow
+    DEV_START --> DEV_REPORT
+    DEV_REPORT --> DEV_LABEL
+    DEV_LABEL --> DEV_WAIT
+    DEV_WAIT --> DEV_REVIEW
+    DEV_REVIEW --> DEV_FEEDBACK
+    DEV_FEEDBACK --> DEV_MERGE
+    DEV_MERGE --> DEV_VERIFY
+    
+    %% Product Manager Flow
+    PM_IDEA --> PM_SDLC
+    PM_SDLC --> PM_CONFIG
+    PM_CONFIG --> PM_TRIGGER
+    PM_TRIGGER --> PM_MONITOR
+    PM_MONITOR --> PM_REVIEW
+    PM_REVIEW --> PM_APPROVE
+    PM_APPROVE --> PM_VALIDATE
+    PM_VALIDATE --> PM_RELEASE
+    
+    %% Admin Flow
+    ADMIN_LOGIN --> ADMIN_DASHBOARD
+    ADMIN_DASHBOARD --> ADMIN_PROVIDERS
+    ADMIN_PROVIDERS --> ADMIN_SECURITY
+    ADMIN_SECURITY --> ADMIN_MONITOR
+    ADMIN_MONITOR --> ADMIN_ALERTS
+    ADMIN_ALERTS --> ADMIN_AUDIT
+    ADMIN_AUDIT --> ADMIN_OPTIMIZE
+    
+    %% Onboarding Flow
+    NEW_SIGNUP --> NEW_VERIFY
+    NEW_VERIFY --> NEW_SETUP
+    NEW_SETUP --> NEW_CONNECT
+    NEW_CONNECT --> NEW_TUTORIAL
+    NEW_TUTORIAL --> NEW_FIRST_USE
+    NEW_FIRST_USE --> NEW_SUCCESS
+    
+    %% Security Flow
+    SEC_AUDIT --> SEC_ACCESS
+    SEC_ACCESS --> SEC_KEYS
+    SEC_KEYS --> SEC_LOGS
+    SEC_LOGS --> SEC_POLICY
+    SEC_POLICY --> SEC_INCIDENT
+    SEC_INCIDENT --> SEC_REPORT
+    
+    %% DevOps Flow
+    DEVOPS_DEPLOY --> DEVOPS_MONITOR
+    DEVOPS_MONITOR --> DEVOPS_SCALE
+    DEVOPS_SCALE --> DEVOPS_BACKUP
+    DEVOPS_BACKUP --> DEVOPS_PERF
+    DEVOPS_PERF --> DEVOPS_ALERT
+    DEVOPS_ALERT --> DEVOPS_MAINTAIN
+    
+    %% Cross-Journey Interactions
+    DEV_REVIEW -.->|"Complex Issues"| PM_REVIEW
+    PM_CONFIG -.->|"System Settings"| ADMIN_PROVIDERS
+    DEV_FEEDBACK -.->|"Security Concerns"| SEC_LOGS
+    ADMIN_ALERTS -.->|"System Issues"| DEVOPS_MONITOR
+    NEW_SETUP -.->|"Help Needed"| ADMIN_DASHBOARD
+    SEC_INCIDENT -.->|"System Response"| DEVOPS_MAINTAIN
+    
+    %% Decision Points
+    DEV_REVIEW -->|"Needs Changes"| DEV_FEEDBACK
+    DEV_REVIEW -->|"Looks Good"| DEV_MERGE
+    PM_REVIEW -->|"Business Logic Issues"| PM_CONFIG
+    PM_REVIEW -->|"Ready for Testing"| PM_APPROVE
+    ADMIN_MONITOR -->|"Issues Detected"| ADMIN_ALERTS
+    ADMIN_MONITOR -->|"All Good"| ADMIN_AUDIT
+    SEC_LOGS -->|"Threats Found"| SEC_INCIDENT
+    SEC_LOGS -->|"Normal Activity"| SEC_POLICY
+    
+    %% Styling
+    classDef developer fill:#e3f2fd,stroke:#0d47a1,stroke-width:2px;
+    classDef pm fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
+    classDef admin fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px;
+    classDef onboarding fill:#f1f8e9,stroke:#33691e,stroke-width:2px;
+    classDef security fill:#fce4ec,stroke:#880e4f,stroke-width:2px;
+    classDef devops fill:#fff3e0,stroke:#e65100,stroke-width:2px;
+    
+    class DEV_START,DEV_REPORT,DEV_LABEL,DEV_WAIT,DEV_REVIEW,DEV_FEEDBACK,DEV_MERGE,DEV_VERIFY developer;
+    class PM_IDEA,PM_SDLC,PM_CONFIG,PM_TRIGGER,PM_MONITOR,PM_REVIEW,PM_APPROVE,PM_VALIDATE,PM_RELEASE pm;
+    class ADMIN_LOGIN,ADMIN_DASHBOARD,ADMIN_PROVIDERS,ADMIN_SECURITY,ADMIN_MONITOR,ADMIN_ALERTS,ADMIN_AUDIT,ADMIN_OPTIMIZE admin;
+    class NEW_SIGNUP,NEW_VERIFY,NEW_SETUP,NEW_CONNECT,NEW_TUTORIAL,NEW_FIRST_USE,NEW_SUCCESS onboarding;
+    class SEC_AUDIT,SEC_ACCESS,SEC_KEYS,SEC_LOGS,SEC_POLICY,SEC_INCIDENT,SEC_REPORT security;
+    class DEVOPS_DEPLOY,DEVOPS_MONITOR,DEVOPS_SCALE,DEVOPS_BACKUP,DEVOPS_PERF,DEVOPS_ALERT,DEVOPS_MAINTAIN devops; 

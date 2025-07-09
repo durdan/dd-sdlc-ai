@@ -1,0 +1,193 @@
+%% Deployment Architecture
+%% Kubernetes-based Microservices Deployment
+
+graph TB
+    subgraph "External Users"
+        DEVELOPERS[Developers]
+        PMS[Product Managers]
+        ADMINS[System Admins]
+    end
+    
+    subgraph "CDN & Load Balancing"
+        CDN[CloudFlare CDN<br/>Global Edge Locations]
+        ALB[Application Load Balancer<br/>AWS ALB/Azure Front Door]
+        WAF[Web Application Firewall<br/>DDoS Protection]
+    end
+    
+    subgraph "Kubernetes Cluster - Production"
+        subgraph "Ingress Layer"
+            NGINX[NGINX Ingress Controller<br/>SSL Termination]
+            CERT_MANAGER[Cert Manager<br/>Let's Encrypt]
+        end
+        
+        subgraph "Frontend Services"
+            SDLC_PLATFORM[SDLC Platform<br/>Next.js Application]
+            PLATFORM_REPLICA[Platform Replica 2<br/>High Availability]
+        end
+        
+        subgraph "AI Orchestration Services"
+            AI_ORCH_1[AI Orchestration<br/>Node.js Service]
+            AI_ORCH_2[AI Orchestration Replica<br/>Load Balanced]
+            AI_ORCH_3[AI Orchestration Replica<br/>Auto Scaling]
+        end
+        
+        subgraph "GitHub Integration Services"
+            GITHUB_WEBHOOK[GitHub Webhook Handler<br/>Event Processing]
+            GITHUB_ACTIONS[Actions Controller<br/>Workflow Management]
+            PR_MANAGER[PR Manager Service<br/>GitHub API]
+        end
+        
+        subgraph "Background Processing"
+            TASK_QUEUE[Task Queue Workers<br/>Bull/Celery]
+            CRON_JOBS[Scheduled Jobs<br/>CronJobs]
+            METRICS_COLLECTOR[Metrics Collection<br/>Background Service]
+        end
+    end
+    
+    subgraph "Data Layer"
+        POSTGRES_PRIMARY[(PostgreSQL Primary<br/>Read/Write)]
+        POSTGRES_REPLICA[(PostgreSQL Replica<br/>Read Only)]
+        REDIS_CLUSTER[(Redis Cluster<br/>Cache & Sessions)]
+        REDIS_QUEUE[(Redis Queue<br/>Task Processing)]
+    end
+    
+    subgraph "Security & Secrets"
+        VAULT[HashiCorp Vault<br/>Secret Management]
+        KMS[AWS KMS<br/>Key Encryption]
+        RBAC[Kubernetes RBAC<br/>Access Control]
+        NETWORK_POLICIES[Network Policies<br/>Pod Communication]
+    end
+    
+    subgraph "Monitoring & Observability"
+        PROMETHEUS[Prometheus<br/>Metrics Collection]
+        GRAFANA[Grafana<br/>Visualization]
+        JAEGER[Jaeger<br/>Distributed Tracing]
+        ELK_STACK[ELK Stack<br/>Log Aggregation]
+        ALERT_MANAGER[AlertManager<br/>Notifications]
+    end
+    
+    subgraph "External AI Services"
+        OPENAI[OpenAI API<br/>GPT-4 Turbo]
+        ANTHROPIC[Anthropic API<br/>Claude-3 Opus]
+        GITHUB_COPILOT[GitHub Copilot<br/>Actions Integration]
+    end
+    
+    subgraph "External Services"
+        GITHUB_API[GitHub API<br/>Repository Management]
+        SUPABASE[Supabase<br/>Auth & Database]
+        JIRA_API[Jira API<br/>Issue Management]
+        SLACK_API[Slack API<br/>Notifications]
+    end
+    
+    subgraph "CI/CD Pipeline"
+        GITHUB_ACTIONS_CI[GitHub Actions<br/>CI/CD Pipeline]
+        DOCKER_REGISTRY[Docker Registry<br/>Container Images]
+        HELM[Helm Charts<br/>Deployment Management]
+        ARGOCD[ArgoCD<br/>GitOps Deployment]
+    end
+    
+    subgraph "Backup & Disaster Recovery"
+        DB_BACKUP[Database Backups<br/>Point-in-time Recovery]
+        CONFIG_BACKUP[Configuration Backup<br/>Kubernetes Resources]
+        CROSS_REGION[Cross-Region Replication<br/>Disaster Recovery]
+    end
+    
+    %% User Traffic Flow
+    DEVELOPERS --> CDN
+    PMS --> CDN
+    ADMINS --> CDN
+    CDN --> ALB
+    ALB --> WAF
+    WAF --> NGINX
+    
+    %% Ingress to Services
+    NGINX --> SDLC_PLATFORM
+    NGINX --> PLATFORM_REPLICA
+    CERT_MANAGER --> NGINX
+    
+    %% Internal Service Communication
+    SDLC_PLATFORM --> AI_ORCH_1
+    PLATFORM_REPLICA --> AI_ORCH_2
+    SDLC_PLATFORM --> GITHUB_WEBHOOK
+    
+    AI_ORCH_1 --> AI_ORCH_2
+    AI_ORCH_2 --> AI_ORCH_3
+    
+    GITHUB_WEBHOOK --> GITHUB_ACTIONS
+    GITHUB_ACTIONS --> PR_MANAGER
+    
+    AI_ORCH_1 --> TASK_QUEUE
+    TASK_QUEUE --> CRON_JOBS
+    CRON_JOBS --> METRICS_COLLECTOR
+    
+    %% Data Connections
+    SDLC_PLATFORM --> POSTGRES_PRIMARY
+    AI_ORCH_1 --> POSTGRES_REPLICA
+    AI_ORCH_2 --> REDIS_CLUSTER
+    TASK_QUEUE --> REDIS_QUEUE
+    
+    %% Security Connections
+    AI_ORCH_1 --> VAULT
+    VAULT --> KMS
+    SDLC_PLATFORM --> RBAC
+    AI_ORCH_1 --> NETWORK_POLICIES
+    
+    %% Monitoring Connections
+    AI_ORCH_1 --> PROMETHEUS
+    SDLC_PLATFORM --> PROMETHEUS
+    PROMETHEUS --> GRAFANA
+    AI_ORCH_1 --> JAEGER
+    TASK_QUEUE --> ELK_STACK
+    PROMETHEUS --> ALERT_MANAGER
+    
+    %% External AI Connections
+    AI_ORCH_1 --> OPENAI
+    AI_ORCH_2 --> ANTHROPIC
+    AI_ORCH_3 --> GITHUB_COPILOT
+    
+    %% External Service Connections
+    GITHUB_WEBHOOK --> GITHUB_API
+    SDLC_PLATFORM --> SUPABASE
+    PR_MANAGER --> JIRA_API
+    ALERT_MANAGER --> SLACK_API
+    
+    %% CI/CD Flow
+    GITHUB_ACTIONS_CI --> DOCKER_REGISTRY
+    DOCKER_REGISTRY --> HELM
+    HELM --> ARGOCD
+    ARGOCD --> AI_ORCH_1
+    ARGOCD --> SDLC_PLATFORM
+    
+    %% Backup Connections
+    POSTGRES_PRIMARY --> DB_BACKUP
+    RBAC --> CONFIG_BACKUP
+    DB_BACKUP --> CROSS_REGION
+    
+    %% Styling
+    classDef users fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
+    classDef cdn fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
+    classDef ingress fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px;
+    classDef frontend fill:#f1f8e9,stroke:#33691e,stroke-width:2px;
+    classDef orchestration fill:#fff3e0,stroke:#e65100,stroke-width:2px;
+    classDef github fill:#fce4ec,stroke:#880e4f,stroke-width:2px;
+    classDef background fill:#e0f2f1,stroke:#00695c,stroke-width:2px;
+    classDef data fill:#fff8e1,stroke:#ff6f00,stroke-width:2px;
+    classDef security fill:#f9fbe7,stroke:#827717,stroke-width:2px;
+    classDef monitoring fill:#faf2ff,stroke:#6a1b9a,stroke-width:2px;
+    classDef external fill:#ffebee,stroke:#c62828,stroke-width:2px;
+    classDef cicd fill:#e8eaf6,stroke:#283593,stroke-width:2px;
+    classDef backup fill:#f1f8e9,stroke:#388e3c,stroke-width:2px;
+    
+    class DEVELOPERS,PMS,ADMINS users;
+    class CDN,ALB,WAF cdn;
+    class NGINX,CERT_MANAGER ingress;
+    class SDLC_PLATFORM,PLATFORM_REPLICA frontend;
+    class AI_ORCH_1,AI_ORCH_2,AI_ORCH_3 orchestration;
+    class GITHUB_WEBHOOK,GITHUB_ACTIONS,PR_MANAGER github;
+    class TASK_QUEUE,CRON_JOBS,METRICS_COLLECTOR background;
+    class POSTGRES_PRIMARY,POSTGRES_REPLICA,REDIS_CLUSTER,REDIS_QUEUE data;
+    class VAULT,KMS,RBAC,NETWORK_POLICIES security;
+    class PROMETHEUS,GRAFANA,JAEGER,ELK_STACK,ALERT_MANAGER monitoring;
+    class OPENAI,ANTHROPIC,GITHUB_COPILOT,GITHUB_API,SUPABASE,JIRA_API,SLACK_API external;
+    class GITHUB_ACTIONS_CI,DOCKER_REGISTRY,HELM,ARGOCD cicd;
+    class DB_BACKUP,CONFIG_BACKUP,CROSS_REGION backup; 

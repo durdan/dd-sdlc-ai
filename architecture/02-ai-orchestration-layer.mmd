@@ -1,0 +1,131 @@
+%% AI Orchestration Layer - Detailed Architecture
+%% Microservice for Multi-Provider AI Management
+
+graph TB
+    subgraph "API Gateway Layer"
+        LB[Load Balancer<br/>NGINX/HAProxy]
+        RATE[Rate Limiter<br/>Redis]
+        AUTH[Authentication<br/>JWT Validation]
+        VALIDATE[Input Validation<br/>Schema Checks]
+    end
+    
+    subgraph "API Endpoints"
+        PROVIDER_API[Provider Management<br/>GET/POST /providers]
+        TASK_API[Task Management<br/>POST /tasks/*]
+        KEY_API[Key Management<br/>CRUD /keys]
+        USAGE_API[Usage Analytics<br/>GET /usage]
+        HEALTH_API[Health Checks<br/>GET /health]
+    end
+    
+    subgraph "Business Logic Layer"
+        ORCHESTRATOR[Task Orchestrator]
+        PROVIDER_MGR[Provider Manager]
+        CONTEXT_ENGINE[Context Conversion Engine]
+        TASK_PROCESSOR[Task Processor]
+        RESULT_HANDLER[Result Handler]
+    end
+    
+    subgraph "Provider Abstraction"
+        PROVIDER_INTERFACE[Provider Interface<br/>Abstract Base Class]
+        OPENAI_IMPL[OpenAI Provider<br/>Implementation]
+        CLAUDE_IMPL[Anthropic Provider<br/>Implementation]
+        COPILOT_IMPL[GitHub Copilot Provider<br/>Implementation]
+        SELECTOR[Provider Selector<br/>Intelligence Logic]
+    end
+    
+    subgraph "Security Layer"
+        KEY_MGR[API Key Manager<br/>Encryption/Decryption]
+        VAULT[HashiCorp Vault<br/>Secure Storage]
+        KMS_CLIENT[KMS Client<br/>AWS/Azure KMS]
+        AUDIT[Audit Logger<br/>Security Events]
+        THREAT[Threat Detection<br/>Anomaly Detection]
+    end
+    
+    subgraph "Data Layer"
+        TASK_DB[(Task Database<br/>PostgreSQL)]
+        CONFIG_DB[(Configuration DB<br/>PostgreSQL)]
+        CACHE[(Redis Cache<br/>Session/Results)]
+        QUEUE[(Task Queue<br/>Bull/Celery)]
+    end
+    
+    subgraph "Monitoring & Observability"
+        METRICS[Prometheus Metrics<br/>Custom Metrics]
+        LOGGING[Structured Logging<br/>Winston/Pino]
+        TRACING[Distributed Tracing<br/>Jaeger/Zipkin]
+        ALERTING[Alert Manager<br/>PagerDuty/Slack]
+    end
+    
+    subgraph "External AI Services"
+        OPENAI_API[OpenAI API<br/>gpt-4-turbo]
+        CLAUDE_API[Anthropic API<br/>claude-3-opus]
+        COPILOT_API[GitHub Copilot API<br/>Actions Integration]
+    end
+    
+    %% API Flow
+    LB --> RATE
+    RATE --> AUTH
+    AUTH --> VALIDATE
+    VALIDATE --> PROVIDER_API
+    VALIDATE --> TASK_API
+    VALIDATE --> KEY_API
+    VALIDATE --> USAGE_API
+    VALIDATE --> HEALTH_API
+    
+    %% Business Logic Flow
+    PROVIDER_API --> PROVIDER_MGR
+    TASK_API --> ORCHESTRATOR
+    KEY_API --> KEY_MGR
+    
+    ORCHESTRATOR --> CONTEXT_ENGINE
+    ORCHESTRATOR --> TASK_PROCESSOR
+    ORCHESTRATOR --> PROVIDER_MGR
+    
+    PROVIDER_MGR --> SELECTOR
+    SELECTOR --> PROVIDER_INTERFACE
+    
+    PROVIDER_INTERFACE --> OPENAI_IMPL
+    PROVIDER_INTERFACE --> CLAUDE_IMPL
+    PROVIDER_INTERFACE --> COPILOT_IMPL
+    
+    TASK_PROCESSOR --> RESULT_HANDLER
+    
+    %% Security Connections
+    KEY_MGR --> VAULT
+    KEY_MGR --> KMS_CLIENT
+    AUTH --> AUDIT
+    VALIDATE --> THREAT
+    
+    %% Data Connections
+    ORCHESTRATOR --> TASK_DB
+    PROVIDER_MGR --> CONFIG_DB
+    CONTEXT_ENGINE --> CACHE
+    TASK_PROCESSOR --> QUEUE
+    
+    %% External Provider Connections
+    OPENAI_IMPL --> OPENAI_API
+    CLAUDE_IMPL --> CLAUDE_API
+    COPILOT_IMPL --> COPILOT_API
+    
+    %% Monitoring Connections
+    ORCHESTRATOR --> METRICS
+    PROVIDER_MGR --> LOGGING
+    TASK_PROCESSOR --> TRACING
+    AUDIT --> ALERTING
+    
+    %% Styling
+    classDef api fill:#e3f2fd,stroke:#0d47a1,stroke-width:2px;
+    classDef business fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px;
+    classDef provider fill:#f1f8e9,stroke:#33691e,stroke-width:2px;
+    classDef security fill:#fce4ec,stroke:#880e4f,stroke-width:2px;
+    classDef data fill:#fff3e0,stroke:#e65100,stroke-width:2px;
+    classDef monitoring fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
+    classDef external fill:#e0f2f1,stroke:#00695c,stroke-width:2px;
+    
+    class LB,RATE,AUTH,VALIDATE api;
+    class PROVIDER_API,TASK_API,KEY_API,USAGE_API,HEALTH_API api;
+    class ORCHESTRATOR,PROVIDER_MGR,CONTEXT_ENGINE,TASK_PROCESSOR,RESULT_HANDLER business;
+    class PROVIDER_INTERFACE,OPENAI_IMPL,CLAUDE_IMPL,COPILOT_IMPL,SELECTOR provider;
+    class KEY_MGR,VAULT,KMS_CLIENT,AUDIT,THREAT security;
+    class TASK_DB,CONFIG_DB,CACHE,QUEUE data;
+    class METRICS,LOGGING,TRACING,ALERTING monitoring;
+    class OPENAI_API,CLAUDE_API,COPILOT_API external; 

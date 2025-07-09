@@ -8,11 +8,18 @@ import { UserProfile } from '@/components/UserProfile'
 import { useAuth } from '@/contexts/AuthContext'
 import { Icons } from '@/components/icons'
 
+interface NavItem {
+  title: string;
+  href: string;
+  protected?: boolean;
+  badge?: string;
+}
+
 export function MainNav() {
   const { user, loading } = useAuth()
   const pathname = usePathname()
 
-  const mainNavItems = [
+  const mainNavItems: NavItem[] = [
     {
       title: 'Home',
       href: '/',
@@ -51,11 +58,16 @@ export function MainNav() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'transition-colors hover:text-foreground/80',
+                  'transition-colors hover:text-foreground/80 flex items-center space-x-1',
                   isActive ? 'text-foreground' : 'text-foreground/60'
                 )}
               >
-                {item.title}
+                <span>{item.title}</span>
+                {item.badge && (
+                  <span className="bg-blue-100 text-blue-700 text-xs px-1.5 py-0.5 rounded font-medium">
+                    {item.badge}
+                  </span>
+                )}
               </Link>
             )
           })}

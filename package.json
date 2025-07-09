@@ -10,7 +10,9 @@
     "clean-install": "rm -rf node_modules package-lock.json && npm install"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^1.2.12",
     "@ai-sdk/openai": "latest",
+    "@anthropic-ai/sdk": "^0.56.0",
     "@hookform/resolvers": "^3.9.1",
     "@radix-ui/react-accordion": "latest",
     "@radix-ui/react-alert-dialog": "latest",

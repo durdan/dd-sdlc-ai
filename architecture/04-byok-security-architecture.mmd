@@ -1,0 +1,159 @@
+%% BYOK Security Architecture
+%% Multi-Layer Security for API Key Management
+
+graph TB
+    subgraph "User Interface Layer"
+        USER[User]
+        BROWSER[Web Browser<br/>HTTPS/TLS 1.3]
+        MOBILE[Mobile App<br/>Certificate Pinning]
+    end
+    
+    subgraph "Application Security Layer"
+        WAF[Web Application Firewall<br/>CloudFlare/AWS WAF]
+        LB[Load Balancer<br/>SSL Termination]
+        RATE_LIMIT[Rate Limiting<br/>Redis-based]
+        INPUT_VAL[Input Validation<br/>Schema Validation]
+        CSRF[CSRF Protection<br/>Double Submit Cookie]
+        XSS[XSS Protection<br/>Content Security Policy]
+    end
+    
+    subgraph "Authentication & Authorization"
+        OAUTH[OAuth 2.0 / OIDC<br/>Supabase Auth]
+        JWT[JWT Validation<br/>RS256 Signatures]
+        MFA[Multi-Factor Auth<br/>TOTP/SMS]
+        RBAC[Role-Based Access<br/>Fine-grained Permissions]
+        SESSION[Session Management<br/>Secure Cookies]
+    end
+    
+    subgraph "API Key Management Core"
+        KEY_CONTROLLER[Key Management Controller<br/>Business Logic]
+        ENCRYPTION_SERVICE[Encryption Service<br/>AES-256-GCM]
+        KEY_DERIVATION[Key Derivation<br/>PBKDF2/Argon2]
+        KEY_ROTATION[Automatic Rotation<br/>Scheduled & On-demand]
+        SECURE_DELETE[Secure Deletion<br/>Crypto Shredding]
+    end
+    
+    subgraph "Encryption & Key Management"
+        VAULT[HashiCorp Vault<br/>Secret Management]
+        KMS[Key Management Service<br/>AWS KMS/Azure KV]
+        HSM[Hardware Security Module<br/>FIPS 140-2 Level 3]
+        DEK[Data Encryption Keys<br/>Per-tenant Keys]
+        KEK[Key Encryption Keys<br/>Master Keys]
+    end
+    
+    subgraph "Secure Storage"
+        ENCRYPTED_DB[(Encrypted Database<br/>PostgreSQL TDE)]
+        BACKUP_STORAGE[(Encrypted Backups<br/>S3/Azure Blob)]
+        AUDIT_LOG[(Audit Logs<br/>Immutable Storage)]
+        METADATA_STORE[(Key Metadata<br/>Separate Storage)]
+    end
+    
+    subgraph "Network Security"
+        VPC[Virtual Private Cloud<br/>Isolated Network]
+        PRIVATE_SUBNET[Private Subnets<br/>No Internet Access]
+        NAT[NAT Gateway<br/>Outbound Only]
+        VPN[VPN Gateway<br/>Secure Admin Access]
+        FIREWALL[Network Firewall<br/>Stateful Inspection]
+    end
+    
+    subgraph "Monitoring & Compliance"
+        SIEM[Security Information<br/>Event Management]
+        ANOMALY[Anomaly Detection<br/>ML-based Analysis]
+        COMPLIANCE[Compliance Checks<br/>SOC2/ISO27001]
+        VULNERABILITY[Vulnerability Scanning<br/>Automated Scans]
+        PENETRATION[Penetration Testing<br/>Regular Assessments]
+    end
+    
+    subgraph "Incident Response"
+        ALERT_MGR[Alert Manager<br/>Real-time Notifications]
+        INCIDENT_RESPONSE[Incident Response<br/>Automated Playbooks]
+        FORENSICS[Digital Forensics<br/>Evidence Collection]
+        RECOVERY[Disaster Recovery<br/>RTO/RPO Targets]
+    end
+    
+    %% User Flow
+    USER --> BROWSER
+    USER --> MOBILE
+    BROWSER --> WAF
+    MOBILE --> WAF
+    
+    %% Application Security Flow
+    WAF --> LB
+    LB --> RATE_LIMIT
+    RATE_LIMIT --> INPUT_VAL
+    INPUT_VAL --> CSRF
+    CSRF --> XSS
+    
+    %% Authentication Flow
+    XSS --> OAUTH
+    OAUTH --> JWT
+    JWT --> MFA
+    MFA --> RBAC
+    RBAC --> SESSION
+    
+    %% Key Management Flow
+    SESSION --> KEY_CONTROLLER
+    KEY_CONTROLLER --> ENCRYPTION_SERVICE
+    ENCRYPTION_SERVICE --> KEY_DERIVATION
+    KEY_CONTROLLER --> KEY_ROTATION
+    KEY_CONTROLLER --> SECURE_DELETE
+    
+    %% Encryption Infrastructure
+    ENCRYPTION_SERVICE --> VAULT
+    VAULT --> KMS
+    KMS --> HSM
+    ENCRYPTION_SERVICE --> DEK
+    DEK --> KEK
+    
+    %% Storage Flow
+    KEY_CONTROLLER --> ENCRYPTED_DB
+    KEY_ROTATION --> BACKUP_STORAGE
+    KEY_CONTROLLER --> AUDIT_LOG
+    ENCRYPTION_SERVICE --> METADATA_STORE
+    
+    %% Network Security
+    LB --> VPC
+    VPC --> PRIVATE_SUBNET
+    PRIVATE_SUBNET --> NAT
+    VPC --> VPN
+    VPC --> FIREWALL
+    
+    %% Monitoring Flow
+    KEY_CONTROLLER --> SIEM
+    AUDIT_LOG --> ANOMALY
+    VAULT --> COMPLIANCE
+    HSM --> VULNERABILITY
+    ENCRYPTION_SERVICE --> PENETRATION
+    
+    %% Incident Response Flow
+    SIEM --> ALERT_MGR
+    ANOMALY --> INCIDENT_RESPONSE
+    INCIDENT_RESPONSE --> FORENSICS
+    ALERT_MGR --> RECOVERY
+    
+    %% Security Connections
+    ENCRYPTED_DB --> VAULT
+    BACKUP_STORAGE --> KMS
+    AUDIT_LOG --> SIEM
+    METADATA_STORE --> ENCRYPTION_SERVICE
+    
+    %% Styling
+    classDef user fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
+    classDef app fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
+    classDef auth fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px;
+    classDef keymanage fill:#fff3e0,stroke:#e65100,stroke-width:2px;
+    classDef encryption fill:#fce4ec,stroke:#880e4f,stroke-width:2px;
+    classDef storage fill:#e0f2f1,stroke:#00695c,stroke-width:2px;
+    classDef network fill:#f1f8e9,stroke:#33691e,stroke-width:2px;
+    classDef monitoring fill:#fff8e1,stroke:#ff6f00,stroke-width:2px;
+    classDef incident fill:#f9fbe7,stroke:#827717,stroke-width:2px;
+    
+    class USER,BROWSER,MOBILE user;
+    class WAF,LB,RATE_LIMIT,INPUT_VAL,CSRF,XSS app;
+    class OAUTH,JWT,MFA,RBAC,SESSION auth;
+    class KEY_CONTROLLER,ENCRYPTION_SERVICE,KEY_DERIVATION,KEY_ROTATION,SECURE_DELETE keymanage;
+    class VAULT,KMS,HSM,DEK,KEK encryption;
+    class ENCRYPTED_DB,BACKUP_STORAGE,AUDIT_LOG,METADATA_STORE storage;
+    class VPC,PRIVATE_SUBNET,NAT,VPN,FIREWALL network;
+    class SIEM,ANOMALY,COMPLIANCE,VULNERABILITY,PENETRATION monitoring;
+    class ALERT_MGR,INCIDENT_RESPONSE,FORENSICS,RECOVERY incident; 

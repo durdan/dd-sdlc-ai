@@ -1,0 +1,173 @@
+%% API Sequence Diagrams
+%% Key Workflow Interactions Between Components
+
+sequenceDiagram
+    participant U as User
+    participant SP as SDLC Platform
+    participant AO as AI Orchestration
+    participant AI as AI Provider
+    participant GH as GitHub
+    participant DB as Database
+    
+    Note over U,DB: Bug Fix Automation Sequence
+    
+    U->>+GH: Create issue with 'ai-bug-fix' label
+    GH->>+SP: Webhook: Issue labeled
+    SP->>+AO: POST /tasks/fix-bug
+    Note right of AO: Extract bug context
+    AO->>+DB: Store task record
+    DB-->>-AO: Task ID created
+    AO-->>-SP: Task queued (202)
+    SP-->>-GH: Update issue status
+    GH-->>-U: Issue comment added
+    
+    Note over AO,AI: AI Processing Phase
+    AO->>+AO: Analyze bug context
+    AO->>+DB: Get user AI config
+    DB-->>-AO: Provider preferences
+    AO->>+AO: Select optimal provider
+    AO->>+AI: Generate bug fix
+    Note right of AI: Process specifications<br/>Generate code changes
+    AI-->>-AO: Code changes + metadata
+    AO->>+DB: Update task result
+    DB-->>-AO: Result stored
+    
+    Note over AO,GH: Code Application Phase
+    AO->>+GH: Create feature branch
+    GH-->>-AO: Branch created
+    AO->>+GH: Apply code changes
+    GH-->>-AO: Files modified
+    AO->>+GH: Run automated tests
+    GH-->>-AO: Test results
+    AO->>+GH: Create pull request
+    GH-->>-AO: PR created
+    
+    Note over GH,U: Human Review Phase
+    GH->>+U: PR review request
+    U->>+GH: Review code changes
+    GH->>+U: Request approval/changes
+    U->>+GH: Approve PR
+    GH->>+GH: Merge to main
+    GH-->>-U: Issue auto-closed
+    
+---
+
+sequenceDiagram
+    participant PM as Product Manager
+    participant SP as SDLC Platform
+    participant AO as AI Orchestration
+    participant KMS as Key Management
+    participant VAULT as Vault
+    participant AI as AI Provider
+    
+    Note over PM,AI: BYOK Configuration Sequence
+    
+    PM->>+SP: Access BYOK settings
+    SP->>+SP: Authenticate user (MFA)
+    SP-->>-PM: Show provider config page
+    PM->>+SP: Add OpenAI API key
+    Note right of SP: Validate key format<br/>Client-side checks
+    SP->>+AO: POST /keys (encrypted payload)
+    AO->>+AO: Validate request
+    AO->>+KMS: Generate data encryption key
+    KMS-->>-AO: DEK generated
+    AO->>+AO: Encrypt API key (AES-256)
+    AO->>+VAULT: Store encrypted key
+    VAULT-->>-AO: Key stored with ID
+    AO->>+AI: Test connection
+    AI-->>-AO: Connection successful
+    AO-->>-SP: Key configured (200)
+    SP-->>-PM: Success notification
+    
+    Note over PM,AI: Using Configured Key
+    PM->>+SP: Request AI task
+    SP->>+AO: POST /tasks/generate-code
+    AO->>+VAULT: Retrieve encrypted key
+    VAULT-->>-AO: Encrypted key data
+    AO->>+KMS: Decrypt key
+    KMS-->>-AO: Decrypted API key
+    AO->>+AI: API call with user key
+    AI-->>-AO: AI response
+    AO->>+AO: Clear key from memory
+    AO-->>-SP: Task result
+    SP-->>-PM: Generated code
+    
+---
+
+sequenceDiagram
+    participant GH as GitHub Actions
+    participant AO as AI Orchestration
+    participant AI1 as OpenAI
+    participant AI2 as Claude
+    participant AI3 as Copilot
+    participant DB as Database
+    
+    Note over GH,DB: Provider Selection Logic
+    
+    GH->>+AO: POST /tasks/implement-feature
+    Note right of AO: Parse feature context<br/>Analyze complexity
+    AO->>+DB: Get user preferences
+    DB-->>-AO: Provider config + budget
+    AO->>+AO: Calculate task requirements
+    
+    Note over AO,AI3: Provider Scoring
+    par Provider Capability Check
+        AO->>AI1: Check availability
+        AI1-->>AO: Available + pricing
+    and
+        AO->>AI2: Check availability  
+        AI2-->>AO: Available + pricing
+    and
+        AO->>AI3: Check availability
+        AI3-->>AO: Available + pricing
+    end
+    
+    AO->>+AO: Score providers
+    Note right of AO: Factor in:<br/>- Capability match<br/>- Cost efficiency<br/>- Past performance<br/>- User preference
+    AO->>+AO: Select Claude (highest score)
+    
+    AO->>+AI2: Generate feature code
+    AI2-->>-AO: Implementation result
+    AO->>+DB: Log provider usage
+    DB-->>-AO: Usage recorded
+    AO-->>-GH: Feature implementation
+    
+---
+
+sequenceDiagram
+    participant DEV as Developer
+    participant GH as GitHub
+    participant AO as AI Orchestration
+    participant MON as Monitoring
+    participant ALERT as Alert Manager
+    participant SLACK as Slack
+    
+    Note over DEV,SLACK: Error Handling & Recovery
+    
+    DEV->>+GH: Trigger AI automation
+    GH->>+AO: Webhook request
+    AO->>+AO: Process request
+    Note right of AO: Simulate provider failure
+    AO->>X AO: AI provider timeout
+    AO->>+MON: Log error metric
+    MON-->>-ALERT: Trigger alert
+    ALERT->>+SLACK: Send notification
+    SLACK-->>-DEV: Error notification
+    
+    Note over AO,DEV: Automatic Retry Logic
+    AO->>+AO: Retry with backoff
+    AO->>+AO: Try alternate provider
+    AO->>+AO: Success on retry
+    AO->>+MON: Log recovery metric
+    MON-->>-AO: Metric recorded
+    AO-->>-GH: Successful result
+    GH->>+SLACK: Success notification
+    SLACK-->>-DEV: Task completed
+    
+    Note over DEV,SLACK: Incident Response
+    DEV->>+AO: Check task status
+    AO-->>-DEV: Status: Completed with retry
+    DEV->>+MON: View error dashboard
+    MON-->>-DEV: Error timeline + metrics
+    DEV->>+ALERT: Acknowledge incident
+    ALERT-->>-DEV: Incident closed 

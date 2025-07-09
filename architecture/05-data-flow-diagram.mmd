@@ -1,0 +1,164 @@
+%% Data Flow Diagram
+%% From User Input to AI-Generated Code
+
+graph LR
+    subgraph "User Input Layer"
+        USER_INPUT[User Input<br/>Bug Report/Feature Request]
+        SDLC_SPECS[SDLC Specifications<br/>Business/Functional/Technical]
+        REPO_CONFIG[Repository Configuration<br/>GitHub Settings]
+    end
+    
+    subgraph "Context Preparation"
+        CONTEXT_BUILDER[Context Builder<br/>Aggregate Information]
+        SPEC_PARSER[Specification Parser<br/>Extract Requirements]
+        CODE_ANALYZER[Codebase Analyzer<br/>Existing Code Structure]
+        DEPENDENCY_MAP[Dependency Mapper<br/>File Relationships]
+    end
+    
+    subgraph "AI Provider Selection"
+        TASK_CLASSIFIER[Task Classifier<br/>Complexity Analysis]
+        PROVIDER_SELECTOR[Provider Selector<br/>Optimization Logic]
+        COST_ESTIMATOR[Cost Estimator<br/>Budget Analysis]
+        CAPABILITY_MATCHER[Capability Matcher<br/>Feature Requirements]
+    end
+    
+    subgraph "AI Processing"
+        PROMPT_GENERATOR[Prompt Generator<br/>Context to Prompt]
+        AI_PROVIDER[AI Provider<br/>OpenAI/Claude/Copilot]
+        RESPONSE_PARSER[Response Parser<br/>Extract Code/Instructions]
+        QUALITY_VALIDATOR[Quality Validator<br/>Code Quality Checks]
+    end
+    
+    subgraph "Code Generation"
+        FILE_GENERATOR[File Generator<br/>Create/Modify Files]
+        TEST_GENERATOR[Test Generator<br/>Unit/Integration Tests]
+        DOC_GENERATOR[Documentation Generator<br/>Comments/README]
+        MIGRATION_GENERATOR[Migration Generator<br/>DB Schema Changes]
+    end
+    
+    subgraph "Code Application"
+        BRANCH_CREATOR[Branch Creator<br/>Git Operations]
+        FILE_WRITER[File Writer<br/>Apply Changes]
+        CONFLICT_RESOLVER[Conflict Resolver<br/>Merge Conflicts]
+        VALIDATION_RUNNER[Validation Runner<br/>Syntax/Type Checks]
+    end
+    
+    subgraph "Quality Assurance"
+        TEST_RUNNER[Test Runner<br/>Automated Testing]
+        LINT_CHECKER[Lint Checker<br/>Code Standards]
+        SECURITY_SCANNER[Security Scanner<br/>Vulnerability Detection]
+        PERFORMANCE_ANALYZER[Performance Analyzer<br/>Benchmark Tests]
+    end
+    
+    subgraph "Review Process"
+        PR_CREATOR[PR Creator<br/>GitHub Pull Request]
+        REVIEW_REQUESTER[Review Requester<br/>Human Reviewers]
+        FEEDBACK_COLLECTOR[Feedback Collector<br/>Review Comments]
+        ITERATION_MANAGER[Iteration Manager<br/>Improvement Loop]
+    end
+    
+    subgraph "Output Layer"
+        IMPLEMENTED_CODE[Implemented Code<br/>Production Ready]
+        TEST_COVERAGE[Test Coverage<br/>Comprehensive Tests]
+        DOCUMENTATION[Documentation<br/>Updated Docs]
+        DEPLOYMENT_READY[Deployment Ready<br/>CI/CD Pipeline]
+    end
+    
+    subgraph "Feedback Loop"
+        USAGE_ANALYTICS[Usage Analytics<br/>Performance Metrics]
+        SUCCESS_TRACKER[Success Tracker<br/>Task Completion]
+        COST_TRACKER[Cost Tracker<br/>AI Usage Costs]
+        IMPROVEMENT_ENGINE[Improvement Engine<br/>ML Optimization]
+    end
+    
+    %% Primary Data Flow
+    USER_INPUT --> CONTEXT_BUILDER
+    SDLC_SPECS --> SPEC_PARSER
+    REPO_CONFIG --> CODE_ANALYZER
+    
+    CONTEXT_BUILDER --> TASK_CLASSIFIER
+    SPEC_PARSER --> TASK_CLASSIFIER
+    CODE_ANALYZER --> DEPENDENCY_MAP
+    DEPENDENCY_MAP --> TASK_CLASSIFIER
+    
+    TASK_CLASSIFIER --> PROVIDER_SELECTOR
+    PROVIDER_SELECTOR --> COST_ESTIMATOR
+    COST_ESTIMATOR --> CAPABILITY_MATCHER
+    CAPABILITY_MATCHER --> PROMPT_GENERATOR
+    
+    PROMPT_GENERATOR --> AI_PROVIDER
+    AI_PROVIDER --> RESPONSE_PARSER
+    RESPONSE_PARSER --> QUALITY_VALIDATOR
+    QUALITY_VALIDATOR --> FILE_GENERATOR
+    
+    FILE_GENERATOR --> TEST_GENERATOR
+    TEST_GENERATOR --> DOC_GENERATOR
+    DOC_GENERATOR --> MIGRATION_GENERATOR
+    MIGRATION_GENERATOR --> BRANCH_CREATOR
+    
+    BRANCH_CREATOR --> FILE_WRITER
+    FILE_WRITER --> CONFLICT_RESOLVER
+    CONFLICT_RESOLVER --> VALIDATION_RUNNER
+    VALIDATION_RUNNER --> TEST_RUNNER
+    
+    TEST_RUNNER --> LINT_CHECKER
+    LINT_CHECKER --> SECURITY_SCANNER
+    SECURITY_SCANNER --> PERFORMANCE_ANALYZER
+    PERFORMANCE_ANALYZER --> PR_CREATOR
+    
+    PR_CREATOR --> REVIEW_REQUESTER
+    REVIEW_REQUESTER --> FEEDBACK_COLLECTOR
+    FEEDBACK_COLLECTOR --> ITERATION_MANAGER
+    
+    ITERATION_MANAGER --> IMPLEMENTED_CODE
+    ITERATION_MANAGER --> TEST_COVERAGE
+    ITERATION_MANAGER --> DOCUMENTATION
+    ITERATION_MANAGER --> DEPLOYMENT_READY
+    
+    %% Feedback Loops
+    IMPLEMENTED_CODE --> USAGE_ANALYTICS
+    TEST_COVERAGE --> SUCCESS_TRACKER
+    DEPLOYMENT_READY --> COST_TRACKER
+    USAGE_ANALYTICS --> IMPROVEMENT_ENGINE
+    SUCCESS_TRACKER --> IMPROVEMENT_ENGINE
+    COST_TRACKER --> IMPROVEMENT_ENGINE
+    
+    %% Improvement Back to System
+    IMPROVEMENT_ENGINE --> PROVIDER_SELECTOR
+    IMPROVEMENT_ENGINE --> PROMPT_GENERATOR
+    IMPROVEMENT_ENGINE --> QUALITY_VALIDATOR
+    
+    %% Iteration Loop
+    FEEDBACK_COLLECTOR --> PROMPT_GENERATOR
+    
+    %% Data Annotations
+    USER_INPUT -.->|"JSON/Text"| CONTEXT_BUILDER
+    SDLC_SPECS -.->|"Markdown/JSON"| SPEC_PARSER
+    CODE_ANALYZER -.->|"AST/Metadata"| DEPENDENCY_MAP
+    AI_PROVIDER -.->|"Generated Code"| RESPONSE_PARSER
+    FILE_GENERATOR -.->|"File Changes"| BRANCH_CREATOR
+    TEST_RUNNER -.->|"Test Results"| LINT_CHECKER
+    PR_CREATOR -.->|"GitHub API"| REVIEW_REQUESTER
+    
+    %% Styling
+    classDef input fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
+    classDef context fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
+    classDef selection fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px;
+    classDef ai fill:#f1f8e9,stroke:#33691e,stroke-width:2px;
+    classDef generation fill:#fff3e0,stroke:#e65100,stroke-width:2px;
+    classDef application fill:#fce4ec,stroke:#880e4f,stroke-width:2px;
+    classDef quality fill:#e0f2f1,stroke:#00695c,stroke-width:2px;
+    classDef review fill:#fff8e1,stroke:#ff6f00,stroke-width:2px;
+    classDef output fill:#f9fbe7,stroke:#827717,stroke-width:2px;
+    classDef feedback fill:#faf2ff,stroke:#6a1b9a,stroke-width:2px;
+    
+    class USER_INPUT,SDLC_SPECS,REPO_CONFIG input;
+    class CONTEXT_BUILDER,SPEC_PARSER,CODE_ANALYZER,DEPENDENCY_MAP context;
+    class TASK_CLASSIFIER,PROVIDER_SELECTOR,COST_ESTIMATOR,CAPABILITY_MATCHER selection;
+    class PROMPT_GENERATOR,AI_PROVIDER,RESPONSE_PARSER,QUALITY_VALIDATOR ai;
+    class FILE_GENERATOR,TEST_GENERATOR,DOC_GENERATOR,MIGRATION_GENERATOR generation;
+    class BRANCH_CREATOR,FILE_WRITER,CONFLICT_RESOLVER,VALIDATION_RUNNER application;
+    class TEST_RUNNER,LINT_CHECKER,SECURITY_SCANNER,PERFORMANCE_ANALYZER quality;
+    class PR_CREATOR,REVIEW_REQUESTER,FEEDBACK_COLLECTOR,ITERATION_MANAGER review;
+    class IMPLEMENTED_CODE,TEST_COVERAGE,DOCUMENTATION,DEPLOYMENT_READY output;
+    class USAGE_ANALYTICS,SUCCESS_TRACKER,COST_TRACKER,IMPROVEMENT_ENGINE feedback; 

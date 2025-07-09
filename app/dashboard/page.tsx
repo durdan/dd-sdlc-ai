@@ -53,6 +53,7 @@ import {
   BarChart3,
   FileBarChart,
   Play,
+  Code2,
 } from "lucide-react"
 import { HowItWorksVisualization } from "@/components/how-it-works-visualization"
 import { PromptEngineering } from "@/components/prompt-engineering"
@@ -72,6 +73,8 @@ import {
 
 import { SimpleWorkflowDiagram } from "@/components/simple-workflow-diagram"
 import { DetailedSDLCViewer } from '@/components/detailed-sdlc-viewer'
+import { DatabaseTestInterface } from '@/components/database-test-interface'
+import { AICodeAssistant } from '@/components/ai-code-assistant'
 
 // User Header Component with admin panel support
 interface UserHeaderProps {
@@ -220,6 +223,7 @@ const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({ currentSt
   )
 }
 
+
 function SDLCAutomationPlatform({ user }: { user: any }) {
   const [input, setInput] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
@@ -263,6 +267,8 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
   const [projects, setProjects] = useState<ProjectResult[]>([])
   const [recentProjects, setRecentProjects] = useState<ProjectResult[]>([])
   const [isLoadingProjects, setIsLoadingProjects] = useState(false)
+  const [showDatabaseTest, setShowDatabaseTest] = useState(false)
+  const [showAICodeAssistant, setShowAICodeAssistant] = useState(false)
 
   // Function to update step progress - moved to component level for global access
   const updateStepProgress = (stepId: string, progress: number, status: "pending" | "in_progress" | "completed" | "error" = "in_progress") => {
@@ -1525,6 +1531,20 @@ Focus on the SPECIFIC project requirements and domain. Avoid generic enterprise 
                 <span className="hidden sm:inline">Prompt Engineering</span>
                 <span className="sm:hidden">Prompts</span>
               </Button>
+
+              <Button variant="outline" size="sm" onClick={() => setShowDatabaseTest(true)} className="flex-shrink-0 min-w-[80px]">
+                <Database className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Test Database</span>
+                <span className="sm:hidden">DB Test</span>
+                <Badge variant="secondary" className="ml-1 text-xs">T1.2</Badge>
+              </Button>
+
+              <Button variant="outline" size="sm" onClick={() => setShowAICodeAssistant(true)} className="flex-shrink-0 min-w-[80px]">
+                <Code2 className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">AI Code Assistant</span>
+                <span className="sm:hidden">AI Code</span>
+                <Badge variant="secondary" className="ml-1 text-xs">T1.4</Badge>
+              </Button>
             </div>
           </div>
         </div>
@@ -2567,6 +2587,35 @@ Focus on the SPECIFIC project requirements and domain. Avoid generic enterprise 
           </DialogContent>
         </Dialog>
 
+        {/* Database Test Dialog */}
+        <Dialog open={showDatabaseTest} onOpenChange={setShowDatabaseTest}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-auto w-[95vw] sm:w-full">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2">
+                <Database className="h-5 w-5" />
+                <span>AI Integration Database Tests</span>
+                <Badge variant="outline">Task T1.2</Badge>
+              </DialogTitle>
+              <DialogDescription>
+                Verify that your AI integration database schema is properly set up and functioning
+              </DialogDescription>
+            </DialogHeader>
+            <DatabaseTestInterface user={user} />
+          </DialogContent>
+        </Dialog>
+
+        {/* AICodeAssistant Dialog */}
+        <Dialog open={showAICodeAssistant} onOpenChange={setShowAICodeAssistant}>
+          <DialogContent className="max-w-6xl max-h-[95vh] overflow-auto w-[95vw] sm:w-full">
+            <DialogHeader>
+              <DialogTitle>AI Code Assistant</DialogTitle>
+              <DialogDescription>
+                Use this tool to generate code snippets based on your SDLC documentation.
+              </DialogDescription>
+            </DialogHeader>
+            <AICodeAssistant user={user} />
+          </DialogContent>
+        </Dialog>
 
       </div>
     </div>

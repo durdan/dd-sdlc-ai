@@ -1,0 +1,143 @@
+%% GitHub Integration Hub - Workflow Architecture
+%% Automated Bug Fixing and Feature Implementation
+
+graph TB
+    subgraph "Trigger Events"
+        ISSUE_LABELED[Issue Labeled<br/>'ai-bug-fix']
+        COMMENT_TRIGGER[Comment Trigger<br/>'/ai-fix']
+        FEATURE_REQUEST[Feature Request<br/>Repository Dispatch]
+        MANUAL_TRIGGER[Manual Trigger<br/>Workflow Dispatch]
+    end
+    
+    subgraph "GitHub Actions Workflows"
+        BUG_WORKFLOW[ai-bug-fix.yml<br/>Bug Fix Automation]
+        FEATURE_WORKFLOW[ai-feature-implementation.yml<br/>Feature Development]
+        REVIEW_WORKFLOW[ai-code-review.yml<br/>Code Review Assistant]
+        DEPLOY_WORKFLOW[ai-deploy.yml<br/>Deployment Automation]
+    end
+    
+    subgraph "Validation & Analysis"
+        VALIDATE_ISSUE[Validate Bug Issue<br/>Format & Requirements]
+        EXTRACT_CONTEXT[Extract Bug Context<br/>Issue Parser]
+        ANALYZE_CODEBASE[Analyze Codebase<br/>Static Analysis]
+        PLAN_IMPLEMENTATION[Create Implementation Plan<br/>Task Breakdown]
+    end
+    
+    subgraph "AI Processing"
+        REQUEST_AI[Request AI Fix/Feature<br/>Orchestration Layer Call]
+        PROVIDER_SELECT[Provider Selection<br/>Optimal AI Choice]
+        CODE_GENERATION[Code Generation<br/>Multi-file Changes]
+        TEST_GENERATION[Test Generation<br/>Unit & Integration]
+    end
+    
+    subgraph "Code Application"
+        CREATE_BRANCH[Create Feature Branch<br/>ai-fix-xxx or ai-feature-xxx]
+        APPLY_CHANGES[Apply Code Changes<br/>File Modifications]
+        RUN_TESTS[Run Test Suite<br/>Unit/Integration/E2E]
+        SECURITY_SCAN[Security Scan<br/>Static Analysis]
+    end
+    
+    subgraph "Quality Assurance"
+        LINT_CHECK[Linting & Formatting<br/>ESLint/Prettier]
+        TYPE_CHECK[Type Checking<br/>TypeScript]
+        BUILD_VERIFY[Build Verification<br/>Production Build]
+        PERFORMANCE_TEST[Performance Testing<br/>Lighthouse/K6]
+    end
+    
+    subgraph "Pull Request Management"
+        CREATE_PR[Create Pull Request<br/>AI-generated Description]
+        ADD_LABELS[Add PR Labels<br/>ai-generated, needs-review]
+        REQUEST_REVIEW[Request Human Review<br/>Code Owners]
+        UPDATE_ISSUE[Update Original Issue<br/>Link PR & Status]
+    end
+    
+    subgraph "Human Review Process"
+        HUMAN_REVIEW[Human Code Review<br/>Required Approval]
+        FEEDBACK_LOOP[Feedback Integration<br/>AI Improvements]
+        APPROVE_MERGE[Approve & Merge<br/>Human Decision]
+        REJECT_CHANGES[Reject Changes<br/>Back to AI]
+    end
+    
+    subgraph "Post-Merge Actions"
+        DEPLOY_STAGING[Deploy to Staging<br/>Automated]
+        INTEGRATION_TESTS[Integration Testing<br/>Full Suite]
+        DEPLOY_PROD[Deploy to Production<br/>Conditional]
+        NOTIFICATION[Send Notifications<br/>Slack/Email]
+        CLOSE_ISSUE[Close Original Issue<br/>Auto-close]
+    end
+    
+    %% Bug Fix Flow
+    ISSUE_LABELED --> BUG_WORKFLOW
+    COMMENT_TRIGGER --> BUG_WORKFLOW
+    BUG_WORKFLOW --> VALIDATE_ISSUE
+    VALIDATE_ISSUE --> EXTRACT_CONTEXT
+    EXTRACT_CONTEXT --> ANALYZE_CODEBASE
+    ANALYZE_CODEBASE --> REQUEST_AI
+    
+    %% Feature Flow
+    FEATURE_REQUEST --> FEATURE_WORKFLOW
+    MANUAL_TRIGGER --> FEATURE_WORKFLOW
+    FEATURE_WORKFLOW --> PLAN_IMPLEMENTATION
+    PLAN_IMPLEMENTATION --> REQUEST_AI
+    
+    %% AI Processing Flow
+    REQUEST_AI --> PROVIDER_SELECT
+    PROVIDER_SELECT --> CODE_GENERATION
+    CODE_GENERATION --> TEST_GENERATION
+    
+    %% Code Application Flow
+    TEST_GENERATION --> CREATE_BRANCH
+    CREATE_BRANCH --> APPLY_CHANGES
+    APPLY_CHANGES --> RUN_TESTS
+    RUN_TESTS --> SECURITY_SCAN
+    
+    %% Quality Assurance Flow
+    SECURITY_SCAN --> LINT_CHECK
+    LINT_CHECK --> TYPE_CHECK
+    TYPE_CHECK --> BUILD_VERIFY
+    BUILD_VERIFY --> PERFORMANCE_TEST
+    
+    %% PR Management Flow
+    PERFORMANCE_TEST --> CREATE_PR
+    CREATE_PR --> ADD_LABELS
+    ADD_LABELS --> REQUEST_REVIEW
+    REQUEST_REVIEW --> UPDATE_ISSUE
+    
+    %% Human Review Flow
+    UPDATE_ISSUE --> HUMAN_REVIEW
+    HUMAN_REVIEW --> FEEDBACK_LOOP
+    FEEDBACK_LOOP --> APPROVE_MERGE
+    FEEDBACK_LOOP --> REJECT_CHANGES
+    REJECT_CHANGES --> REQUEST_AI
+    
+    %% Post-Merge Flow
+    APPROVE_MERGE --> DEPLOY_STAGING
+    DEPLOY_STAGING --> INTEGRATION_TESTS
+    INTEGRATION_TESTS --> DEPLOY_PROD
+    DEPLOY_PROD --> NOTIFICATION
+    NOTIFICATION --> CLOSE_ISSUE
+    
+    %% Code Review Workflow
+    CREATE_PR --> REVIEW_WORKFLOW
+    REVIEW_WORKFLOW --> HUMAN_REVIEW
+    
+    %% Styling
+    classDef trigger fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
+    classDef workflow fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
+    classDef analysis fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px;
+    classDef ai fill:#f1f8e9,stroke:#33691e,stroke-width:2px;
+    classDef code fill:#fff3e0,stroke:#e65100,stroke-width:2px;
+    classDef quality fill:#fce4ec,stroke:#880e4f,stroke-width:2px;
+    classDef pr fill:#e0f2f1,stroke:#00695c,stroke-width:2px;
+    classDef human fill:#fff8e1,stroke:#ff6f00,stroke-width:2px;
+    classDef deploy fill:#f9fbe7,stroke:#827717,stroke-width:2px;
+    
+    class ISSUE_LABELED,COMMENT_TRIGGER,FEATURE_REQUEST,MANUAL_TRIGGER trigger;
+    class BUG_WORKFLOW,FEATURE_WORKFLOW,REVIEW_WORKFLOW,DEPLOY_WORKFLOW workflow;
+    class VALIDATE_ISSUE,EXTRACT_CONTEXT,ANALYZE_CODEBASE,PLAN_IMPLEMENTATION analysis;
+    class REQUEST_AI,PROVIDER_SELECT,CODE_GENERATION,TEST_GENERATION ai;
+    class CREATE_BRANCH,APPLY_CHANGES,RUN_TESTS,SECURITY_SCAN code;
+    class LINT_CHECK,TYPE_CHECK,BUILD_VERIFY,PERFORMANCE_TEST quality;
+    class CREATE_PR,ADD_LABELS,REQUEST_REVIEW,UPDATE_ISSUE pr;
+    class HUMAN_REVIEW,FEEDBACK_LOOP,APPROVE_MERGE,REJECT_CHANGES human;
+    class DEPLOY_STAGING,INTEGRATION_TESTS,DEPLOY_PROD,NOTIFICATION,CLOSE_ISSUE deploy; 

@@ -1,0 +1,253 @@
+%% Database Schema Design
+%% AI Code Assistant Integration Tables
+
+erDiagram
+    %% Existing SDLC Platform Tables
+    users {
+        uuid id PK
+        string email
+        string full_name
+        timestamp created_at
+        timestamp updated_at
+        json metadata
+    }
+    
+    prompt_templates {
+        uuid id PK
+        string name
+        string document_type
+        text prompt_content
+        json variables
+        uuid created_by FK
+        boolean is_system_default
+        integer version
+        timestamp created_at
+    }
+    
+    projects {
+        uuid id PK
+        string name
+        text description
+        uuid owner_id FK
+        json settings
+        timestamp created_at
+    }
+    
+    %% New AI Integration Tables
+    ai_providers {
+        uuid id PK
+        string name
+        string type
+        json capabilities
+        json cost_model
+        json rate_limits
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    user_ai_configurations {
+        uuid id PK
+        uuid user_id FK
+        uuid provider_id FK
+        string encrypted_api_key
+        string key_id
+        boolean is_active
+        json preferences
+        json usage_limits
+        decimal monthly_budget
+        timestamp created_at
+        timestamp last_used
+        timestamp expires_at
+    }
+    
+    ai_tasks {
+        uuid id PK
+        uuid user_id FK
+        uuid project_id FK
+        string type
+        string status
+        json context
+        json specifications
+        string provider_used
+        json result
+        json metadata
+        decimal cost_estimate
+        decimal actual_cost
+        integer retry_count
+        timestamp created_at
+        timestamp started_at
+        timestamp completed_at
+    }
+    
+    github_integrations {
+        uuid id PK
+        uuid user_id FK
+        uuid project_id FK
+        string repository
+        bigint installation_id
+        string encrypted_access_token
+        string webhook_secret
+        json automation_settings
+        json branch_protection
+        boolean is_active
+        timestamp created_at
+        timestamp last_sync
+    }
+    
+    code_generations {
+        uuid id PK
+        uuid task_id FK
+        string file_path
+        string action
+        text content_before
+        text content_after
+        text patch_diff
+        json metadata
+        string status
+        timestamp created_at
+    }
+    
+    task_executions {
+        uuid id PK
+        uuid task_id FK
+        string step_name
+        string status
+        json input_data
+        json output_data
+        text error_message
+        integer duration_ms
+        timestamp started_at
+        timestamp completed_at
+    }
+    
+    pull_requests {
+        uuid id PK
+        uuid task_id FK
+        uuid github_integration_id FK
+        bigint pr_number
+        string branch_name
+        string title
+        text description
+        string status
+        json review_data
+        json test_results
+        boolean auto_mergeable
+        timestamp created_at
+        timestamp merged_at
+    }
+    
+    api_key_rotations {
+        uuid id PK
+        uuid user_ai_config_id FK
+        string old_key_hash
+        string new_key_id
+        string rotation_reason
+        boolean was_automatic
+        timestamp rotated_at
+        timestamp old_key_deleted_at
+    }
+    
+    provider_usage_logs {
+        uuid id PK
+        uuid user_id FK
+        uuid task_id FK
+        string provider_name
+        integer tokens_input
+        integer tokens_output
+        decimal cost
+        integer duration_ms
+        json request_metadata
+        json response_metadata
+        timestamp logged_at
+    }
+    
+    security_audit_logs {
+        uuid id PK
+        uuid user_id FK
+        string action
+        string resource_type
+        string resource_id
+        json details
+        string ip_address
+        string user_agent
+        string session_id
+        timestamp timestamp
+    }
+    
+    task_dependencies {
+        uuid id PK
+        uuid parent_task_id FK
+        uuid child_task_id FK
+        string dependency_type
+        json metadata
+        timestamp created_at
+    }
+    
+    automation_rules {
+        uuid id PK
+        uuid user_id FK
+        uuid project_id FK
+        string name
+        string trigger_type
+        json trigger_conditions
+        json action_config
+        boolean is_active
+        integer priority
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    code_review_feedback {
+        uuid id PK
+        uuid pull_request_id FK
+        uuid reviewer_id FK
+        string feedback_type
+        text comment
+        string file_path
+        integer line_number
+        string status
+        json ai_analysis
+        timestamp created_at
+        timestamp resolved_at
+    }
+    
+    %% Relationships
+    users ||--o{ user_ai_configurations : "has"
+    users ||--o{ ai_tasks : "creates"
+    users ||--o{ github_integrations : "owns"
+    users ||--o{ projects : "owns"
+    users ||--o{ automation_rules : "defines"
+    users ||--o{ security_audit_logs : "generates"
+    
+    ai_providers ||--o{ user_ai_configurations : "configured_for"
+    
+    user_ai_configurations ||--o{ api_key_rotations : "has_rotations"
+    user_ai_configurations ||--o{ provider_usage_logs : "tracks_usage"
+    
+    projects ||--o{ ai_tasks : "contains"
+    projects ||--o{ github_integrations : "connected_to"
+    projects ||--o{ automation_rules : "has_rules"
+    
+    ai_tasks ||--o{ code_generations : "produces"
+    ai_tasks ||--o{ task_executions : "executes"
+    ai_tasks ||--o{ pull_requests : "creates"
+    ai_tasks ||--o{ provider_usage_logs : "logs_usage"
+    ai_tasks ||--o{ task_dependencies : "parent"
+    ai_tasks ||--o{ task_dependencies : "child"
+    
+    github_integrations ||--o{ pull_requests : "manages"
+    
+    pull_requests ||--o{ code_review_feedback : "receives"
+    
+    prompt_templates ||--o{ ai_tasks : "uses_template"
+    
+    users ||--o{ code_review_feedback : "provides"
+    
+    %% Indexes and Constraints
+    %% user_ai_configurations: UNIQUE(user_id, provider_id)
+    %% ai_tasks: INDEX(user_id, status, created_at)
+    %% provider_usage_logs: INDEX(user_id, logged_at)
+    %% security_audit_logs: INDEX(user_id, timestamp)
+    %% task_executions: INDEX(task_id, started_at)
+    %% pull_requests: UNIQUE(github_integration_id, pr_number) 

@@ -28,6 +28,7 @@ import {
   Users,
   Cloud,
   Clock,
+  Sparkles,
 } from "lucide-react"
 
 interface Integration {
@@ -72,6 +73,21 @@ export function IntegrationHub() {
         createProjectBoard: false,
         enableCodeGeneration: true,
         enableIssueSync: true,
+      },
+    },
+    claude: {
+      enabled: false,
+      status: "disconnected",
+      settings: {
+        connected: false,
+        apiKey: "",
+        model: "claude-3-5-sonnet-20241022",
+        enableCodeAnalysis: true,
+        enableAgenticCode: true,
+        enableGitHubIntegration: true,
+        autoCreatePRs: false,
+        maxTokens: 200000,
+        temperature: 0.1,
       },
     },
     slack: {
@@ -135,19 +151,173 @@ export function IntegrationHub() {
   useEffect(() => {
     setIsMounted(true)
     
-    // Load integration configs from localStorage
+    // Load integration configs from localStorage (for non-GitHub integrations)
     if (typeof window !== 'undefined') {
       const savedConfigs = localStorage.getItem('integrationConfigs')
       if (savedConfigs) {
         try {
           const parsedConfigs = JSON.parse(savedConfigs)
-          setIntegrationConfigs(prev => ({ ...prev, ...parsedConfigs }))
+          // Only load non-GitHub configs from localStorage
+          const { github, ...otherConfigs } = parsedConfigs
+          setIntegrationConfigs(prev => ({ ...prev, ...otherConfigs }))
         } catch (error) {
           console.error('Failed to parse saved integration configs:', error)
         }
       }
     }
+    
+    // Load GitHub configuration from database
+    loadGitHubConfigFromDatabase()
   }, [])
+
+  // Load GitHub configuration from database
+  const loadGitHubConfigFromDatabase = async () => {
+    try {
+      const response = await fetch('/api/auth/github/config', {
+        credentials: 'include',
+      })
+      
+      if (response.ok) {
+        const config = await response.json()
+        
+        // Update GitHub integration state with database config
+        setIntegrationConfigs((prev) => ({
+          ...prev,
+          github: {
+            enabled: config.connected,
+            settings: {
+              connected: config.connected,
+              username: config.username,
+              defaultOwner: config.username,
+              repositories: config.repositories || [],
+              ...config.settings,
+            },
+          },
+        }))
+        
+        console.log('✅ GitHub config loaded from database:', config.connected ? 'Connected' : 'Disconnected')
+        console.log('🔍 Database config details:', config)
+      }
+    } catch (error) {
+      console.error('Error loading GitHub config from database:', error)
+      // Fall back to checking token status
+      checkGitHubConnection()
+    }
+  }
+
+  // Save GitHub configuration to database
+  const saveGitHubConfigToDatabase = async (username: string, repositories: any[], permissions: any) => {
+    try {
+      const response = await fetch('/api/auth/github/config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          username,
+          repositories,
+          permissions,
+          settings: integrationConfigs.github?.settings || {},
+        }),
+      })
+      
+      if (response.ok) {
+        console.log('✅ GitHub config saved to database')
+      } else {
+        console.error('Failed to save GitHub config to database')
+      }
+    } catch (error) {
+      console.error('Error saving GitHub config to database:', error)
+    }
+  }
+
+  // Handle refresh parameter from OAuth redirect
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search)
+      const refresh = urlParams.get('refresh')
+      
+      if (refresh === 'github') {
+        console.log('🔄 GitHub OAuth redirect detected, refreshing connection status...')
+        
+        // Clear the refresh parameter from URL
+        window.history.replaceState({}, document.title, window.location.pathname)
+        
+        // Force re-check GitHub connection with delay to ensure backend is ready
+        setTimeout(() => {
+          console.log('🔍 Checking GitHub connection after OAuth...')
+          checkGitHubConnection()
+        }, 1500) // Increased delay to ensure APIs are ready
+      }
+    }
+  }, [isMounted])
+
+  // Add effect to monitor GitHub config changes
+  useEffect(() => {
+    console.log('🔄 GitHub integration config updated:', {
+      enabled: integrationConfigs.github?.enabled,
+      connected: integrationConfigs.github?.settings?.connected,
+      username: integrationConfigs.github?.settings?.username
+    })
+  }, [integrationConfigs.github])
+  
+  // Function to check if GitHub token exists and update connection status
+  const checkGitHubConnection = async () => {
+    try {
+      // Use our backend API to check GitHub connection status
+      const response = await fetch('/api/auth/github/status', {
+        credentials: 'include',
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        
+        if (data.connected && data.user) {
+          // Update integration state to reflect successful connection
+          updateIntegrationSetting('github', 'connected', true)
+          updateIntegrationSetting('github', 'username', data.user.login)
+          updateIntegrationSetting('github', 'defaultOwner', data.user.login)
+          updateIntegrationSetting('github', 'repositories', data.repositories || [])
+          
+          // Enable the integration
+          setIntegrationConfigs((prev) => ({
+            ...prev,
+            github: {
+              ...prev.github,
+              enabled: true,
+            },
+          }))
+          
+          // Save configuration to database
+          await fetch('/api/auth/github/config', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              username: data.user.login,
+              repositories: data.repositories || [],
+              permissions: {
+                "issues": "write",
+                "pull_requests": "write",
+                "contents": "write"
+              },
+              settings: integrationConfigs.github?.settings || {},
+            }),
+          })
+          
+          console.log(`✅ GitHub already connected as ${data.user.login}`)
+        } else {
+          console.log('GitHub not connected:', data.message)
+        }
+      }
+    } catch (error) {
+      // Token doesn't exist or is invalid - keep as disconnected
+      console.log('No existing GitHub connection found:', error)
+    }
+  }
   
   // Save integration configs to localStorage whenever they change
   useEffect(() => {
@@ -164,10 +334,21 @@ export function IntegrationHub() {
       description: "Auto-create repositories, README files, and project structure",
       icon: <Github className="h-6 w-6" />,
       category: "development",
-      status: "disconnected",
+      status: integrationConfigs.github?.settings?.connected ? "connected" : "disconnected",
       features: ["Repository Creation", "README Generation", "Issue Templates", "Project Boards"],
       setupRequired: true,
       vercelIntegration: true,
+    },
+    {
+      id: "claude",
+      name: "Claude AI",
+      description: "Advanced AI coding assistance with agentic workflows",
+      icon: <Sparkles className="h-6 w-6" />,
+      category: "development",
+      status: integrationConfigs.claude?.settings?.connected ? "connected" : "disconnected",
+      features: ["Code Analysis", "Bug Detection", "Feature Implementation", "Test Generation", "Agentic Workflows"],
+      setupRequired: true,
+      vercelIntegration: false,
     },
     {
       id: "slack",
@@ -298,6 +479,65 @@ export function IntegrationHub() {
     }
   }
 
+  // Claude configuration handlers
+  const handleClaudeConnect = async () => {
+    const apiKey = prompt('Enter your Claude API key:')
+    if (!apiKey || !apiKey.trim()) return
+    
+    try {
+      // Test the API key
+      const response = await fetch('/api/claude-code-analysis', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          apiKey: apiKey.trim(),
+          testConnection: true
+        })
+      })
+      
+      if (response.ok) {
+        // Update integration state
+        updateIntegrationSetting('claude', 'connected', true)
+        updateIntegrationSetting('claude', 'apiKey', apiKey.trim())
+        
+        // Enable the integration
+        setIntegrationConfigs((prev) => ({
+          ...prev,
+          claude: {
+            ...prev.claude,
+            enabled: true,
+            status: "connected",
+          },
+        }))
+        
+        alert('✅ Successfully connected to Claude AI!')
+      } else {
+        throw new Error('Invalid API key')
+      }
+    } catch (error) {
+      console.error('Claude connection error:', error)
+      alert('❌ Failed to connect to Claude. Please check your API key.')
+    }
+  }
+  
+  const handleClaudeDisconnect = () => {
+    updateIntegrationSetting('claude', 'connected', false)
+    updateIntegrationSetting('claude', 'apiKey', '')
+    
+    setIntegrationConfigs((prev) => ({
+      ...prev,
+      claude: {
+        ...prev.claude,
+        enabled: false,
+        status: "disconnected",
+      },
+    }))
+    
+    alert('Claude AI has been disconnected.')
+  }
+
   // GitHub connection handlers
   const handleGitHubConnect = () => {
     // Check if GitHub client ID is configured
@@ -405,6 +645,25 @@ export function IntegrationHub() {
             },
             body: JSON.stringify({ access_token: data.access_token }),
           })
+
+          // Save configuration to database
+          await fetch('/api/auth/github/config', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              username: userData.login,
+              repositories: repositories,
+              permissions: {
+                "issues": "write",
+                "pull_requests": "write",
+                "contents": "write"
+              },
+              settings: integrationConfigs.github?.settings || {},
+            }),
+          })
           
           // Enable the integration
           toggleIntegration('github')
@@ -422,7 +681,7 @@ export function IntegrationHub() {
     }
   }
   
-  const handleGitHubDisconnect = () => {
+  const handleGitHubDisconnect = async () => {
     updateIntegrationSetting('github', 'connected', false)
     updateIntegrationSetting('github', 'username', '')
     updateIntegrationSetting('github', 'defaultOwner', '')
@@ -430,6 +689,25 @@ export function IntegrationHub() {
     // Also disable the integration
     if (integrationConfigs.github?.enabled) {
       toggleIntegration('github')
+    }
+
+    // Remove configuration from database
+    try {
+      await fetch('/api/auth/github/config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          username: '',
+          repositories: [],
+          permissions: {},
+          settings: {},
+        }),
+      })
+    } catch (error) {
+      console.error('Error removing GitHub config from database:', error)
     }
     
     alert('GitHub disconnected successfully')
@@ -811,6 +1089,208 @@ export function IntegrationHub() {
                       )}
                     </div>
                   )}
+
+                  {/* Claude AI Settings */}
+                  {integration.id === "claude" && (
+                    <div className="space-y-4">
+                      {/* Claude Connection */}
+                      <div className="p-3 bg-purple-50 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <Label className="text-sm font-medium">Claude AI Connection</Label>
+                          {integrationConfigs.claude?.settings?.connected ? (
+                            <Badge variant="default" className="text-xs bg-purple-100 text-purple-700">
+                              Connected
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs">
+                              Not Connected
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        {!integrationConfigs.claude?.settings?.connected ? (
+                          <div className="space-y-2">
+                            <p className="text-xs text-gray-600">
+                              Enter your Claude API key to enable advanced AI coding assistance.
+                            </p>
+                            <div className="space-y-2">
+                              <Label className="text-sm">Claude API Key</Label>
+                              <Input
+                                type="password"
+                                value={integrationConfigs.claude?.settings?.apiKey || ''}
+                                onChange={(e) => updateIntegrationSetting("claude", "apiKey", e.target.value)}
+                                placeholder="sk-ant-api03-..."
+                                className="font-mono text-xs"
+                              />
+                              <p className="text-xs text-gray-500">
+                                Get your API key from{' '}
+                                <a 
+                                  href="https://console.anthropic.com/" 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-purple-600 hover:underline"
+                                >
+                                  Anthropic Console
+                                </a>
+                              </p>
+                            </div>
+                            <Button
+                              onClick={handleClaudeConnect}
+                              size="sm"
+                              className="w-full bg-purple-600 hover:bg-purple-700"
+                              disabled={!integrationConfigs.claude?.settings?.apiKey?.trim()}
+                            >
+                              <Sparkles className="h-4 w-4 mr-2" />
+                              Connect Claude AI
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <p className="text-xs text-gray-600">
+                              Connected to Claude AI with API key: <span className="font-mono">***...{integrationConfigs.claude?.settings?.apiKey?.slice(-4)}</span>
+                            </p>
+                            <Button
+                              onClick={handleClaudeDisconnect}
+                              variant="outline"
+                              size="sm"
+                              className="w-full"
+                            >
+                              Disconnect Claude AI
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Model Selection */}
+                      {integrationConfigs.claude?.settings?.connected && (
+                        <div className="space-y-3">
+                          <Label className="text-sm font-medium">Model Configuration</Label>
+                          
+                          <div>
+                            <Label className="text-sm">Claude Model</Label>
+                            <select
+                              value={integrationConfigs.claude?.settings?.model || 'claude-3-5-sonnet-20241022'}
+                              onChange={(e) => updateIntegrationSetting("claude", "model", e.target.value)}
+                              className="w-full border rounded px-3 py-2 text-sm mt-1"
+                            >
+                              <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet (Recommended)</option>
+                              <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku (Fast)</option>
+                              <option value="claude-3-opus-20240229">Claude 3 Opus (Most Capable)</option>
+                              <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
+                              <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
+                            </select>
+                            <p className="text-xs text-gray-500 mt-1">
+                              Claude 3.5 Sonnet offers the best balance of capability and speed for coding tasks.
+                            </p>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <Label className="text-sm">Max Tokens</Label>
+                              <Input
+                                type="number"
+                                value={integrationConfigs.claude?.settings?.maxTokens || 200000}
+                                onChange={(e) => updateIntegrationSetting("claude", "maxTokens", parseInt(e.target.value))}
+                                min="1000"
+                                max="200000"
+                                className="mt-1"
+                                size="sm"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-sm">Temperature</Label>
+                              <Input
+                                type="number"
+                                step="0.1"
+                                value={integrationConfigs.claude?.settings?.temperature || 0.1}
+                                onChange={(e) => updateIntegrationSetting("claude", "temperature", parseFloat(e.target.value))}
+                                min="0"
+                                max="1"
+                                className="mt-1"
+                                size="sm"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Feature Settings */}
+                      {integrationConfigs.claude?.settings?.connected && (
+                        <div className="space-y-3">
+                          <Label className="text-sm font-medium">Features</Label>
+                          
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm">Code Analysis</Label>
+                              <p className="text-xs text-gray-500">Enable deep code analysis and bug detection</p>
+                            </div>
+                            <Switch
+                              checked={integrationConfigs.claude?.settings?.enableCodeAnalysis ?? true}
+                              onCheckedChange={(checked) => updateIntegrationSetting("claude", "enableCodeAnalysis", checked)}
+                            />
+                          </div>
+                          
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm">Agentic Code Generation</Label>
+                              <p className="text-xs text-gray-500">Enable automated code implementation</p>
+                            </div>
+                            <Switch
+                              checked={integrationConfigs.claude?.settings?.enableAgenticCode ?? true}
+                              onCheckedChange={(checked) => updateIntegrationSetting("claude", "enableAgenticCode", checked)}
+                            />
+                          </div>
+                          
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm">GitHub Integration</Label>
+                              <p className="text-xs text-gray-500">Enable GitHub repository integration</p>
+                            </div>
+                            <Switch
+                              checked={integrationConfigs.claude?.settings?.enableGitHubIntegration ?? true}
+                              onCheckedChange={(checked) => updateIntegrationSetting("claude", "enableGitHubIntegration", checked)}
+                            />
+                          </div>
+                          
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm">Auto-create Pull Requests</Label>
+                              <p className="text-xs text-gray-500">Automatically create PRs for generated code</p>
+                            </div>
+                            <Switch
+                              checked={integrationConfigs.claude?.settings?.autoCreatePRs ?? false}
+                              onCheckedChange={(checked) => updateIntegrationSetting("claude", "autoCreatePRs", checked)}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* GitHub Connection Requirement */}
+                      {integrationConfigs.claude?.settings?.connected && integrationConfigs.claude?.settings?.enableGitHubIntegration && !integrationConfigs.github?.settings?.connected && (
+                        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                          <div className="flex items-start gap-2">
+                            <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                            <div>
+                              <p className="text-sm font-medium text-yellow-800">GitHub Integration Required</p>
+                              <p className="text-xs text-yellow-700 mt-1">
+                                Connect your GitHub account to enable Claude's repository integration features.
+                              </p>
+                              <Button
+                                onClick={() => setActiveTab("development")}
+                                size="sm"
+                                variant="outline"
+                                className="mt-2 border-yellow-300 text-yellow-700 hover:bg-yellow-100"
+                              >
+                                <Github className="h-3 w-3 mr-1" />
+                                Connect GitHub
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {/* End Claude AI Settings */}
 
                   {/* Jira Settings */}
                   {integration.id === "jira" && (
