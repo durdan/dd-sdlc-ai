@@ -20,11 +20,13 @@ const commonDiagramTypes = [
 ]
 
 // Helper to split and validate Mermaid diagrams from a block of text
-function splitDiagrams(content: string): string[] {
-  if (!content || content.trim() === "") return []
+function splitDiagrams(content: string | undefined | null): string[] {
+  // Convert to string and handle null/undefined cases
+  const stringContent = content ? String(content) : ""
+  if (!stringContent || stringContent.trim() === "") return []
 
   // First, filter out markdown headers (lines starting with #)
-  const contentWithoutHeaders = content
+  const contentWithoutHeaders = stringContent
     .split('\n')
     .filter(line => !line.trim().startsWith('#'))
     .join('\n')
@@ -33,7 +35,7 @@ function splitDiagrams(content: string): string[] {
   const mermaidCodeBlockRegex = /```(?:mermaid)?\s*([\s\S]*?)```/g
   const codeBlocks: string[] = []
   let match
-  while ((match = mermaidCodeBlockRegex.exec(content)) !== null) {
+  while ((match = mermaidCodeBlockRegex.exec(stringContent)) !== null) {
     if (match[1] && match[1].trim()) {
       codeBlocks.push(match[1].trim())
     }
@@ -188,6 +190,21 @@ export function MermaidViewer({
     const renderAllTabs = async () => {
       console.log(`[MermaidViewer] Rendering all tabs with diagrams:`, Object.keys(diagrams))
       
+      // Clean up any existing Mermaid elements first
+      try {
+        const existingMermaidElements = document.querySelectorAll('[id^="mermaid-"], [id^="diagram-"]')
+        existingMermaidElements.forEach(el => {
+          if (el.parentNode) {
+            el.parentNode.removeChild(el)
+          }
+        })
+      } catch (cleanupError) {
+        console.warn('[MermaidViewer] Cleanup warning:', cleanupError)
+      }
+      
+      // Small delay to ensure DOM refs are ready
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
       // Render each tab's diagrams
       for (const tabKey of Object.keys(diagrams)) {
         const tabRef = diagramRefs.current[tabKey]
@@ -200,18 +217,19 @@ export function MermaidViewer({
           continue
         }
         
+        // Clear any existing content first
+        tabRef.innerHTML = ''
+        
         if (!diagramsToRender.length) {
           tabRef.innerHTML = '<div class="p-8 text-center text-gray-500">No diagrams available</div>'
           continue
         }
+        
         try {
+          // Import and initialize Mermaid once per tab
           const mermaid = (await import("mermaid")).default
-          mermaid.initialize({
-            startOnLoad: false,
-            theme: "default",
-            securityLevel: "loose"
-          })
-          tabRef.innerHTML = ""
+          
+          // Create container for all diagrams in this tab
           const diagramsContainer = document.createElement("div")
           diagramsContainer.className = "space-y-6 sm:space-y-8 py-4"
 
@@ -219,31 +237,55 @@ export function MermaidViewer({
             const content = diagramsToRender[i].trim()
             const wrapper = document.createElement("div")
             wrapper.className = "border rounded-lg p-3 sm:p-4 bg-white shadow-sm overflow-x-auto"
+            
             try {
               // More flexible validation - just check if it looks like a valid diagram
-              // (has a word at the start followed by space, and reasonable length)
               if (content.length < 10 || !/^\s*\w+\s/.test(content)) {
                 throw new Error("Invalid diagram format: Must start with a diagram type keyword")
               }
-              const id = `mermaid-${tabKey}-${i}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
-              const { svg } = await mermaid.render(id, content)
               
-              // Create responsive wrapper for the SVG
-              const svgWrapper = document.createElement("div")
-              svgWrapper.className = "mermaid-container"
-              svgWrapper.innerHTML = svg
+              // Use a completely isolated approach - render to string without DOM manipulation
+              const uniqueId = `diagram-${tabKey.replace(/\s+/g, '-')}-${i}-${Date.now()}`
               
-              // Add mobile-friendly styling to the SVG
-              const svgElement = svgWrapper.querySelector('svg')
-              if (svgElement) {
-                svgElement.style.maxWidth = '100%'
-                svgElement.style.height = 'auto'
-                // Add responsive font size
-                svgElement.style.fontSize = 'clamp(10px, 2vw, 14px)'
+              try {
+                // Reset mermaid to clean state
+                const mermaid = (await import("mermaid")).default
+                await mermaid.initialize({
+                  startOnLoad: false,
+                  theme: "default",
+                  securityLevel: "loose",
+                  suppressErrorRendering: true,
+                  deterministicIds: false,
+                  maxTextSize: 50000
+                })
+                
+                // Use render method that doesn't require DOM elements
+                const renderResult = await mermaid.render(uniqueId, content)
+                
+                // Create responsive wrapper for the SVG
+                const svgWrapper = document.createElement("div")
+                svgWrapper.className = "mermaid-container w-full overflow-auto"
+                svgWrapper.innerHTML = renderResult.svg
+                
+                // Add mobile-friendly styling to the SVG
+                const svgElement = svgWrapper.querySelector('svg')
+                if (svgElement) {
+                  svgElement.style.maxWidth = '100%'
+                  svgElement.style.height = 'auto'
+                  svgElement.style.fontSize = 'clamp(10px, 2vw, 14px)'
+                  // Ensure proper scaling
+                  svgElement.setAttribute('preserveAspectRatio', 'xMidYMid meet')
+                }
+                
+                wrapper.appendChild(svgWrapper)
+                
+              } catch (mermaidError: any) {
+                console.error(`[MermaidViewer] Mermaid render error for diagram ${i + 1}:`, mermaidError)
+                throw mermaidError
               }
               
-              wrapper.appendChild(svgWrapper)
             } catch (err: any) {
+              console.error(`[MermaidViewer] Error rendering diagram ${i + 1} in tab ${tabKey}:`, err)
               wrapper.innerHTML = `
                 <div class="p-3 sm:p-4 text-center border border-red-200 rounded-lg bg-red-50">
                   <div class="text-red-500 font-medium mb-2 text-sm sm:text-base">Diagram ${i + 1} Rendering Error</div>
@@ -257,15 +299,20 @@ export function MermaidViewer({
             }
             diagramsContainer.appendChild(wrapper)
           }
-          tabRef.innerHTML = ""
+          
+          // Append the complete container to the tab
           tabRef.appendChild(diagramsContainer)
+          
         } catch (error) {
+          console.error(`[MermaidViewer] Error rendering tab ${tabKey}:`, error)
           tabRef.innerHTML = `<div class="p-8 text-center text-red-500">Rendering error: ${error}</div>`
         }
       }
     }
-    renderAllTabs()
-    // Re-render when diagrams change (removed activeTab since we render all tabs)
+    
+    if (Object.keys(diagrams).length > 0) {
+      renderAllTabs()
+    }
   }, [diagrams])
 
   // Get tabs that have at least one diagram

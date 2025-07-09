@@ -70,7 +70,7 @@ interface DetailedSDLCResponse {
 
 // Get authenticated user
 async function getAuthenticatedUser() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   return user
 }
@@ -407,10 +407,25 @@ This should provide complete guidance for database implementation.`
 }
 
 export async function POST(req: NextRequest) {
+  const requestId = `req-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+  const startTime = Date.now()
+  
   try {
+    console.log(`🚀 [${requestId}] Starting detailed SDLC generation request`)
+    
     const { input, openaiKey, userId, projectId, detailLevel = 'enterprise' }: DetailedSDLCRequest = await req.json()
 
+    console.log(`📝 [${requestId}] Request details:`, {
+      inputLength: input?.length || 0,
+      hasApiKey: !!openaiKey,
+      userId: userId || 'not provided',
+      projectId: projectId || 'not provided',
+      detailLevel,
+      timestamp: new Date().toISOString()
+    })
+
     if (!openaiKey || openaiKey.trim() === '') {
+      console.error(`❌ [${requestId}] Missing OpenAI API key`)
       return NextResponse.json(
         { error: 'OpenAI API key is required' },
         { status: 400 }
@@ -419,32 +434,54 @@ export async function POST(req: NextRequest) {
 
     const user = await getAuthenticatedUser()
     const effectiveUserId = userId || user?.id
-    const startTime = Date.now()
-
-    console.log('Generating detailed SDLC documentation...')
-    console.log('Detail Level:', detailLevel)
-    console.log('User ID:', effectiveUserId)
+    
+    console.log(`👤 [${requestId}] Authentication:`, {
+      authenticatedUser: !!user,
+      effectiveUserId,
+      userEmail: user?.email || 'unknown'
+    })
 
     const openaiClient = createOpenAI({ apiKey: openaiKey })
 
     // Generate each section with detailed prompts
-    const generateSection = async (prompt: string, context: any = {}) => {
+    const generateSection = async (prompt: string, context: any = {}, sectionName: string = 'Unknown') => {
+      const sectionStartTime = Date.now()
+      console.log(`🎯 [${requestId}] Starting section: ${sectionName}`)
+      
       const processedPrompt = prompt.replace(/\{input\}/g, input)
       
-      const result = await generateText({
-        model: openaiClient("gpt-4o"),
-        prompt: processedPrompt,
-        maxTokens: 4000, // Increased token limit for detailed content
-      })
-      
-      return result.text
+      try {
+        const result = await generateText({
+          model: openaiClient("gpt-4o"),
+          prompt: processedPrompt,
+          maxTokens: 4000, // Increased token limit for detailed content
+        })
+        
+        const sectionDuration = Date.now() - sectionStartTime
+        console.log(`✅ [${requestId}] Completed section: ${sectionName}`, {
+          duration: `${sectionDuration}ms`,
+          outputLength: result.text?.length || 0,
+          tokensUsed: result.usage?.totalTokens || 'unknown'
+        })
+        
+        return result.text
+      } catch (error) {
+        const sectionDuration = Date.now() - sectionStartTime
+        console.error(`❌ [${requestId}] Failed section: ${sectionName}`, {
+          duration: `${sectionDuration}ms`,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        })
+        throw error
+      }
     }
 
+    console.log(`📊 [${requestId}] Starting Business Analysis generation...`)
+    
     // Generate Business Analysis sections
     const businessAnalysis = {
-      executiveSummary: await generateSection(DETAILED_PROMPTS.businessAnalysis.executiveSummary),
-      stakeholderAnalysis: await generateSection(DETAILED_PROMPTS.businessAnalysis.stakeholderAnalysis),
-      requirementsAnalysis: await generateSection(DETAILED_PROMPTS.businessAnalysis.requirementsAnalysis),
+      executiveSummary: await generateSection(DETAILED_PROMPTS.businessAnalysis.executiveSummary, {}, 'Executive Summary'),
+      stakeholderAnalysis: await generateSection(DETAILED_PROMPTS.businessAnalysis.stakeholderAnalysis, {}, 'Stakeholder Analysis'),
+      requirementsAnalysis: await generateSection(DETAILED_PROMPTS.businessAnalysis.requirementsAnalysis, {}, 'Requirements Analysis'),
       riskAssessment: await generateSection(`As a Senior Risk Analyst, create a comprehensive risk assessment for: {input}
 
 ## Risk Assessment
@@ -586,21 +623,27 @@ For each persona, provide:
 
 Create 3-5 detailed personas representing different user types.`)
     }
+    
+    console.log(`✅ [${requestId}] Business Analysis completed`)
+    console.log(`📋 [${requestId}] Starting Functional Specification generation...`)
 
     // Continue with other sections...
     const functionalSpec = {
-      systemOverview: await generateSection(DETAILED_PROMPTS.functionalSpec.systemOverview),
-      functionalRequirements: await generateSection(DETAILED_PROMPTS.functionalSpec.dataRequirements),
-      dataRequirements: await generateSection(DETAILED_PROMPTS.functionalSpec.dataRequirements),
-      integrationRequirements: await generateSection(`Create detailed integration requirements for: {input}`),
+      systemOverview: await generateSection(DETAILED_PROMPTS.functionalSpec.systemOverview, {}, 'System Overview'),
+      functionalRequirements: await generateSection(DETAILED_PROMPTS.functionalSpec.dataRequirements, {}, 'Functional Requirements'),
+      dataRequirements: await generateSection(DETAILED_PROMPTS.functionalSpec.dataRequirements, {}, 'Data Requirements'),
+      integrationRequirements: await generateSection(`Create detailed integration requirements for: {input}`, {}, 'Integration Requirements'),
       performanceRequirements: await generateSection(`Create detailed performance requirements for: {input}`),
       securityRequirements: await generateSection(`Create detailed security requirements for: {input}`),
       userInterfaceRequirements: await generateSection(`Create detailed UI requirements for: {input}`)
     }
+    
+    console.log(`✅ [${requestId}] Functional Specification completed`)
+    console.log(`🔧 [${requestId}] Starting Technical Specification generation...`)
 
     const technicalSpec = {
-      systemArchitecture: await generateSection(DETAILED_PROMPTS.technicalSpec.systemArchitecture),
-      technologyStack: await generateSection(`Create detailed technology stack recommendations for: {input}`),
+      systemArchitecture: await generateSection(DETAILED_PROMPTS.technicalSpec.systemArchitecture, {}, 'System Architecture'),
+      technologyStack: await generateSection(`Create detailed technology stack recommendations for: {input}`, {}, 'Technology Stack'),
       dataModels: await generateSection(DETAILED_PROMPTS.technicalSpec.dataModels),
       apiSpecifications: await generateSection(`Create detailed API specifications for: {input}`),
       securityImplementation: await generateSection(`Create detailed security implementation for: {input}`),
@@ -608,6 +651,9 @@ Create 3-5 detailed personas representing different user types.`)
       monitoringStrategy: await generateSection(`Create detailed monitoring strategy for: {input}`),
       testingStrategy: await generateSection(`Create detailed testing strategy for: {input}`)
     }
+    
+    console.log(`✅ [${requestId}] Technical Specification completed`)
+    console.log(`🎨 [${requestId}] Starting UX Specification generation...`)
 
     const uxSpec = {
       userPersonas: businessAnalysis.personas,
@@ -618,6 +664,9 @@ Create 3-5 detailed personas representing different user types.`)
       usabilityTesting: await generateSection(`Create detailed usability testing plan for: {input}`),
       interactionDesign: await generateSection(`Create detailed interaction design specifications for: {input}`)
     }
+    
+    console.log(`✅ [${requestId}] UX Specification completed`)
+    console.log(`📋 [${requestId}] Starting Implementation Guide generation...`)
 
     const implementationGuide = {
       projectPlan: await generateSection(`Create detailed project plan for: {input}`),
@@ -629,6 +678,8 @@ Create 3-5 detailed personas representing different user types.`)
       operationalRunbook: await generateSection(`Create detailed operational runbook for: {input}`)
     }
 
+    console.log(`✅ [${requestId}] Implementation Guide completed`)
+    
     const generationTime = Date.now() - startTime
 
     const response: DetailedSDLCResponse = {
@@ -644,13 +695,40 @@ Create 3-5 detailed personas representing different user types.`)
       }
     }
 
-    console.log(`Detailed SDLC documentation generated in ${generationTime}ms`)
+    console.log(`🎉 [${requestId}] COMPLETE - Detailed SDLC documentation generated successfully!`, {
+      totalTime: `${generationTime}ms`,
+      totalTimeMin: `${(generationTime / 1000 / 60).toFixed(2)}min`,
+      detailLevel,
+      sectionsGenerated: 25,
+      userId: effectiveUserId,
+      contentSizes: {
+        businessAnalysis: Object.values(businessAnalysis).reduce((acc, val) => acc + (val?.length || 0), 0),
+        functionalSpec: Object.values(functionalSpec).reduce((acc, val) => acc + (val?.length || 0), 0),
+        technicalSpec: Object.values(technicalSpec).reduce((acc, val) => acc + (val?.length || 0), 0),
+        uxSpec: Object.values(uxSpec).reduce((acc, val) => acc + (val?.length || 0), 0),
+        implementationGuide: Object.values(implementationGuide).reduce((acc, val) => acc + (val?.length || 0), 0)
+      }
+    })
+    
     return NextResponse.json(response)
 
   } catch (error) {
-    console.error("Error generating detailed SDLC documentation:", error)
+    const errorTime = Date.now() - startTime
+    console.error(`💥 [${requestId}] FAILED - Error generating detailed SDLC documentation:`, {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      timeBeforeFailure: `${errorTime}ms`,
+      requestDetails: {
+        hasInput: !!input,
+        hasApiKey: !!openaiKey,
+        userId: userId || 'not provided'
+      }
+    })
+    
     return NextResponse.json({ 
-      error: error instanceof Error ? error.message : "Failed to generate detailed SDLC documentation" 
+      error: error instanceof Error ? error.message : "Failed to generate detailed SDLC documentation",
+      requestId: requestId,
+      timeBeforeFailure: errorTime
     }, { status: 500 })
   }
 } 

@@ -44,6 +44,15 @@ import {
   X,
   User,
   LogOut,
+  Shield,
+  ChevronRight,
+  ArrowRight,
+  Download,
+  Copy,
+  Check,
+  BarChart3,
+  FileBarChart,
+  Play,
 } from "lucide-react"
 import { HowItWorksVisualization } from "@/components/how-it-works-visualization"
 import { PromptEngineering } from "@/components/prompt-engineering"
@@ -64,13 +73,14 @@ import {
 import { SimpleWorkflowDiagram } from "@/components/simple-workflow-diagram"
 import { DetailedSDLCViewer } from '@/components/detailed-sdlc-viewer'
 
-// User Header Component
+// User Header Component with admin panel support
 interface UserHeaderProps {
   user: any;
+  userRole: string;
   onSignOut: () => void;
 }
 
-const UserHeader: React.FC<UserHeaderProps> = ({ user, onSignOut }) => {
+const UserHeader: React.FC<UserHeaderProps> = ({ user, userRole, onSignOut }) => {
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -95,6 +105,17 @@ const UserHeader: React.FC<UserHeaderProps> = ({ user, onSignOut }) => {
                 {user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
               </span>
             </div>
+            {(userRole === 'admin' || userRole === 'manager') && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open('/admin/prompts', '_blank')}
+                className="flex items-center gap-2"
+              >
+                <Shield className="h-4 w-4" />
+                Admin Panel
+              </Button>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
@@ -132,6 +153,15 @@ const UserHeader: React.FC<UserHeaderProps> = ({ user, onSignOut }) => {
                   <Database className="mr-2 h-4 w-4" />
                   <span>My Prompts</span>
                 </DropdownMenuItem>
+                {(userRole === 'admin' || userRole === 'manager') && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => window.open('/admin/prompts', '_blank')}>
+                      <Shield className="mr-2 h-4 w-4" />
+                      <span>Admin Panel</span>
+                    </DropdownMenuItem>
+                  </>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={onSignOut}>
                   <LogOut className="mr-2 h-4 w-4" />
@@ -193,16 +223,14 @@ const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({ currentSt
 function SDLCAutomationPlatform({ user }: { user: any }) {
   const [input, setInput] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
-  const [isGeneratingDetailed, setIsGeneratingDetailed] = useState(false)
-  const [detailedDocumentation, setDetailedDocumentation] = useState<any>(null)
-  const [showDetailedDocs, setShowDetailedDocs] = useState(false)
+  const [isProcessingEnterprise, setIsProcessingEnterprise] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
   const [showConfig, setShowConfig] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
   const [successMessage, setSuccessMessage] = useState("")
   const [isSavingConfig, setIsSavingConfig] = useState(false)
   const [config, setConfig] = useState({
-    openaiApiKey: "",
+    openaiKey: "",
     aiModel: "gpt-4",
     jiraUrl: "",
     jiraToken: "",
@@ -234,16 +262,22 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
   const [showApiKeyDialog, setShowApiKeyDialog] = useState(false)
   const [tempApiKey, setTempApiKey] = useState("")
   const [projects, setProjects] = useState<ProjectResult[]>([])
-  const [isLoadingProjects, setIsLoadingProjects] = useState(false)
   const [recentProjects, setRecentProjects] = useState<ProjectResult[]>([])
-  const [recentProjectsExpanded, setRecentProjectsExpanded] = useState(false)
-  const [isExportingToJira, setIsExportingToJira] = useState(false)
-  const [isExportingToConfluence, setIsExportingToConfluence] = useState(false)
-  const [showWorkflow, setShowWorkflow] = useState(false)
-  const [showHowItWorks, setShowHowItWorks] = useState(false)
-  const [showIntegrations, setShowIntegrations] = useState(false)
-  const [showVisualization, setShowVisualization] = useState(false)
+  const [isLoadingProjects, setIsLoadingProjects] = useState(false)
 
+  // Function to update step progress - moved to component level for global access
+  const updateStepProgress = (stepId: string, progress: number, status: "pending" | "in_progress" | "completed" | "error" = "in_progress") => {
+    setProcessingSteps(prevSteps => 
+      prevSteps.map(step => 
+        step.id === stepId ? { ...step, progress, status } : step
+      )
+    )
+  }
+  
+  const handleShowPromptEngineering = () => {
+    setShowPromptEngineering(true)
+  }
+  
   // Handle prompt updates from PromptEngineering component
   const handlePromptUpdate = (promptType: string, promptContent: string) => {
     setCustomPrompts(prev => ({
@@ -251,147 +285,357 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
       [promptType]: promptContent
     }))
   }
+  const [showIntegrations, setShowIntegrations] = useState(false)
+  const [showVisualization, setShowVisualization] = useState(false)
+  const [showWorkflow, setShowWorkflow] = useState(false)
+  const [showHowItWorks, setShowHowItWorks] = useState(false)
+  
+  // Export state
+  const [isExportingToJira, setIsExportingToJira] = useState(false)
+  const [isExportingToConfluence, setIsExportingToConfluence] = useState(false)
 
-  // Utility function to update step progress
-  const updateStepProgress = (stepId: string, progress: number, status: "pending" | "in_progress" | "completed" | "error") => {
-    setProcessingSteps(prev => 
-      prev.map(step => 
-        step.id === stepId 
-          ? { ...step, progress, status }
-          : step
-      )
-    )
+  // Initialize processing steps - conditionally include Jira/Confluence based on automation settings
+  const getInitialProcessingSteps = (): ProcessingStep[] => {
+    const coreSteps: ProcessingStep[] = [
+      { id: "analysis", name: "Business Analysis", status: "pending", progress: 0 },
+      { id: "functional", name: "Functional Specification", status: "pending", progress: 0 },
+      { id: "technical", name: "Technical Specification", status: "pending", progress: 0 },
+      { id: "ux", name: "UX Specification", status: "pending", progress: 0 },
+      { id: "mermaid", name: "Mermaid Diagrams", status: "pending", progress: 0 },
+    ]
+    
+    // Add integration steps only if automation is enabled
+    if (config.jiraAutoCreate && config.jiraUrl && config.jiraToken) {
+      coreSteps.push({ id: "jira", name: "JIRA Epic Creation", status: "pending", progress: 0 })
+    }
+    if (config.confluenceAutoCreate && config.confluenceUrl && config.confluenceToken) {
+      coreSteps.push({ id: "confluence", name: "Confluence Documentation", status: "pending", progress: 0 })
+    }
+    if (coreSteps.length > 5) { // More than core 5 steps means integrations are enabled
+      coreSteps.push({ id: "linking", name: "Cross-platform Linking", status: "pending", progress: 0 })
+    }
+    
+    return coreSteps
   }
 
-  // Utility function to get cached results
-  const getCachedResults = (inputKey?: string) => {
+  // Get all cached results from database for Recent Projects display
+  const getCachedProjects = async (): Promise<ProjectResult[]> => {
+    if (!user?.id) return []
+    
     try {
-      if (inputKey) {
-        // Get specific cached result by input key
-        const cached = localStorage.getItem(`sdlc-cache-${inputKey}`)
-        return cached ? JSON.parse(cached) : null
-      } else {
-        // Get all cached results for recent projects
-        const projects: ProjectResult[] = []
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i)
-          if (key && key.startsWith('sdlc-cache-')) {
-            try {
-              const data = JSON.parse(localStorage.getItem(key) || '{}')
-              if (data.businessAnalysis) {
-                projects.push({
-                  id: key.replace('sdlc-cache-', ''),
-                  title: extractProjectName(key.replace('sdlc-cache-', '')),
-                  status: 'completed',
-                  createdAt: new Date(data.timestamp || Date.now()).toLocaleDateString(),
-                  documents: {
-                    businessAnalysis: data.businessAnalysis || '',
-                    functionalSpec: data.functionalSpec || '',
-                    technicalSpec: data.technicalSpec || '',
-                    uxSpec: data.uxSpec || '',
-                    architecture: data.mermaidDiagrams || ''
-                  }
-                })
-              }
-            } catch (e) {
-              console.warn('Error parsing cached data for key:', key)
-            }
+      const projects = await dbService.getProjectsByUser(user.id)
+      
+      // Convert database projects to ProjectResult format
+      const projectResults: ProjectResult[] = await Promise.all(
+        projects.map(async (project) => {
+          const documents = await dbService.getDocumentsByProject(project.id)
+          const integrations = await dbService.getIntegrationsByProject(project.id)
+          
+          // Convert documents array to documents object
+          const documentsObj = {
+            businessAnalysis: documents.find(d => d.document_type === 'businessAnalysis')?.content || '',
+            functionalSpec: documents.find(d => d.document_type === 'functionalSpec')?.content || '',
+            technicalSpec: documents.find(d => d.document_type === 'technicalSpec')?.content || '',
+            uxSpec: documents.find(d => d.document_type === 'uxSpec')?.content || '',
+            architecture: documents.find(d => d.document_type === 'architecture')?.content || '',
+          }
+          
+          // Find Jira and Confluence integrations
+          const jiraIntegration = integrations.find(i => i.integration_type === 'jira')
+          const confluenceIntegration = integrations.find(i => i.integration_type === 'confluence')
+          
+          return {
+            id: project.id,
+            title: project.title,
+            status: project.status,
+            createdAt: project.created_at,
+            jiraEpic: jiraIntegration?.external_url || '',
+            confluencePage: confluenceIntegration?.external_url || '',
+            documents: documentsObj
+          }
+        })
+      )
+      
+      return projectResults
+    } catch (error) {
+      console.error('Error fetching cached projects:', error)
+      return []
+    }
+  }
+
+  const [recentProjectsExpanded, setRecentProjectsExpanded] = useState(false) // Default: folded
+
+  // Load user configuration and recent projects on component mount
+  useEffect(() => {
+    const loadUserData = async () => {
+      if (!user?.id) return
+      
+      try {
+        const supabase = createClient()
+        
+        // Load user configuration
+        const userConfig = await dbService.getUserConfiguration(user.id)
+        if (userConfig) {
+          setConfig(prev => ({
+            ...prev,
+            openaiKey: userConfig.openai_api_key || '',
+            jiraUrl: userConfig.jira_base_url || '',
+            jiraEmail: userConfig.jira_email || '',
+            jiraToken: userConfig.jira_api_token || '',
+            confluenceUrl: userConfig.confluence_base_url || '',
+            confluenceEmail: userConfig.confluence_email || '',
+            confluenceToken: userConfig.confluence_api_token || '',
+          }))
+        }
+        
+        // Load recent projects
+        const projects = await getCachedProjects()
+        setRecentProjects(projects)
+      } catch (error) {
+        console.error('Error loading user data:', error)
+      }
+    }
+    
+    loadUserData()
+  }, [user?.id])
+
+  // Handle API key dialog confirmation
+  const handleApiKeyConfirm = async () => {
+    if (!tempApiKey.trim()) {
+      setErrorMessage("Please enter your OpenAI API key")
+      return
+    }
+    
+    // Update config with the provided API key
+    setConfig(prev => ({ ...prev, openaiKey: tempApiKey.trim() }))
+    setShowApiKeyDialog(false)
+    setTempApiKey('')
+    setErrorMessage('')
+    
+    // Continue with generation now that we have the API key
+    await generateFreshDocuments()
+  }
+
+
+
+  // Helper function to parse Mermaid content into separate diagrams
+  const parseMermaidDiagrams = (mermaidContent: string) => {
+    if (!mermaidContent) {
+      console.log('No mermaid content to parse')
+      return {}
+    }
+
+    // Log the raw content for debugging
+    console.log('Raw mermaid content:', mermaidContent.substring(0, 200) + '...')
+    console.log('Raw mermaid content length:', mermaidContent.length)
+    
+    // Check for markdown headers and code blocks
+    const hasMarkdownHeaders = /^\s*#+\s+.+$/m.test(mermaidContent)
+    const hasMermaidCodeBlocks = /```(?:mermaid)?[\s\S]*?```/g.test(mermaidContent)
+    console.log('Content analysis:', { hasMarkdownHeaders, hasMermaidCodeBlocks })
+
+    // Fully generic approach - create an empty diagram object with no hardcoded keys
+    const diagrams: Record<string, string> = {}
+
+    // Try to split by both markdown headers and Mermaid section comments
+    const sectionMarkers: {name: string, index: number}[] = []
+    let foundSections = false
+    
+    // First, try to find markdown headers like "## System Architecture Diagram"
+    const markdownHeaderRegex = /^##\s+([^\n]+?)\s*(?:Diagram)?\s*$/gmi
+    let match
+    while ((match = markdownHeaderRegex.exec(mermaidContent)) !== null) {
+      foundSections = true
+      const sectionName = match[1].trim().toLowerCase().replace(/\s+/g, '')
+      sectionMarkers.push({
+        name: sectionName,
+        index: match.index + match[0].length
+      })
+      console.log(`Found markdown header: ${sectionName} at index ${match.index}`)
+    }
+    
+    // Also try Mermaid section comments like "%% System Architecture Diagram"
+    const sectionCommentRegex = /%%\s*([A-Za-z\s]+)\s*Diagram/gi
+    sectionCommentRegex.lastIndex = 0 // Reset regex state
+    while ((match = sectionCommentRegex.exec(mermaidContent)) !== null) {
+      foundSections = true
+      const sectionName = match[1].trim().toLowerCase().replace(/\s+/g, '')
+      sectionMarkers.push({
+        name: sectionName,
+        index: match.index + match[0].length
+      })
+      console.log(`Found section comment: ${sectionName} at index ${match.index}`)
+    }
+    
+    // Sort section markers by index to process them in order
+    sectionMarkers.sort((a, b) => a.index - b.index)
+    
+    // Now process the sections with known boundaries
+    if (sectionMarkers.length > 0) {
+      for (let i = 0; i < sectionMarkers.length; i++) {
+        const currentMarker = sectionMarkers[i]
+        const nextMarker = sectionMarkers[i + 1]
+        const endIndex = nextMarker ? nextMarker.index : mermaidContent.length
+        
+        // Extract the diagram content
+        const diagramContent = mermaidContent.substring(currentMarker.index, endIndex).trim()
+        console.log(`Processing section: ${currentMarker.name}, content length: ${diagramContent.length}`)
+        
+        // Store each diagram with its own section name as the key
+        // No hardcoded categories - fully generic
+        diagrams[currentMarker.name] = diagramContent
+      }
+    }
+    
+    // If no sections found, try to identify diagram types directly
+    if (!foundSections) {
+      console.log('No section comments found, trying to identify diagram types directly')
+      
+      // Split by markdown headers or code blocks if present
+      let diagramBlocks: string[] = []
+      
+      if (hasMermaidCodeBlocks) {
+        const codeBlockRegex = /```(?:mermaid)?\s*([\s\S]*?)```/g
+        let codeMatch
+        while ((codeMatch = codeBlockRegex.exec(mermaidContent)) !== null) {
+          if (codeMatch[1] && codeMatch[1].trim()) {
+            diagramBlocks.push(codeMatch[1].trim())
           }
         }
-        return projects.slice(0, 5) // Return last 5 projects
+        console.log(`Found ${diagramBlocks.length} code blocks`)
+      } else {
+        // Try to split by common diagram type declarations
+        const diagramTypeRegex = /(graph|flowchart|sequenceDiagram|erDiagram|classDiagram|stateDiagram|gantt|pie|journey|gitGraph)/gi
+        let lastTypeIndex = 0
+        let typeMatch
+        
+        while ((typeMatch = diagramTypeRegex.exec(mermaidContent)) !== null) {
+          if (typeMatch.index > lastTypeIndex) {
+            const previousContent = mermaidContent.substring(lastTypeIndex, typeMatch.index).trim()
+            if (previousContent && /^\w+\s/.test(previousContent)) {
+              diagramBlocks.push(previousContent)
+            }
+          }
+          lastTypeIndex = typeMatch.index
+        }
+        
+        // Add the last block
+        if (lastTypeIndex < mermaidContent.length) {
+          const lastBlock = mermaidContent.substring(lastTypeIndex).trim()
+          if (lastBlock) diagramBlocks.push(lastBlock)
+        }
+        
+        console.log(`Split content into ${diagramBlocks.length} diagram blocks`)
       }
-    } catch (error) {
-      console.warn('Error accessing localStorage:', error)
-      return inputKey ? null : []
-    }
-  }
-
-  // Utility function to cache results
-  const cacheResults = (inputKey: string, data: any) => {
-    try {
-      const cacheData = {
-        ...data,
-        timestamp: Date.now()
-      }
-      localStorage.setItem(`sdlc-cache-${inputKey}`, JSON.stringify(cacheData))
-    } catch (error) {
-      console.warn('Error caching results:', error)
-    }
-  }
-
-  // Utility function to parse mermaid diagrams
-  const parseMermaidDiagrams = (content: string) => {
-    const diagrams = []
-    const mermaidRegex = /```mermaid\n([\s\S]*?)\n```/g
-    let match
-    
-    while ((match = mermaidRegex.exec(content)) !== null) {
-      diagrams.push({
-        id: `diagram-${diagrams.length + 1}`,
-        code: match[1].trim(),
-        title: `Diagram ${diagrams.length + 1}`
+      
+      // Categorize each diagram block - using a fully generic approach
+      diagramBlocks.forEach((block, index) => {
+        console.log(`Analyzing block ${index + 1}, length: ${block.length}`)
+        console.log(`Block ${index + 1} preview:`, block.substring(0, 50) + '...')
+        
+        // Determine diagram type from content for naming
+        let diagramType = 'diagram'
+        
+        // Try to determine a more specific type based on content
+        if (block.includes('graph ') || block.includes('flowchart ')) {
+          diagramType = 'flowchart'
+        }
+        else if (block.includes('erDiagram')) {
+          diagramType = 'entityrelationship'
+        }
+        else if (block.includes('sequenceDiagram')) {
+          diagramType = 'sequence'
+        }
+        else if (block.includes('classDiagram')) {
+          diagramType = 'class'
+        }
+        else if (block.includes('stateDiagram')) {
+          diagramType = 'state'
+        }
+        
+        // Create a unique key for this diagram
+        const diagramKey = `${diagramType}${index + 1}`
+        diagrams[diagramKey] = block
+        console.log(`Created diagram category: ${diagramKey}`)
       })
     }
+
+    // Log parsing results for debugging
+    console.log('Parsed Mermaid diagrams:', {
+      ...Object.fromEntries(
+        Object.entries(diagrams).map(([key, value]) => 
+          [key, value ? `Found (${value.length} chars)` : 'Empty']
+        )
+      ),
+      originalLength: mermaidContent.length
+    })
     
+    // Also log the actual diagram keys and content previews
+    Object.entries(diagrams).forEach(([key, content]) => {
+      if (content) {
+        console.log(`Diagram '${key}' preview:`, content.substring(0, 100) + '...')
+      }
+    })
+
     return diagrams
   }
 
-  // Load recent projects on component mount
-  useEffect(() => {
-    const projects = getCachedResults()
-    setRecentProjects(projects || [])
-  }, [])
-
-  const generateDetailedDocumentation = async () => {
-    if (!input.trim()) {
-      setErrorMessage("Please enter project requirements before generating detailed documentation.")
-      return
-    }
-
-    if (!config.openaiApiKey) {
-      setErrorMessage("Please configure your OpenAI API key first.")
-      setShowConfig(true)
-      return
-    }
-
-    setIsGeneratingDetailed(true)
-    setErrorMessage("")
-    setSuccessMessage("")
-
+  // Cache management
+  const getCachedResults = (input: string) => {
     try {
-      console.log('Generating detailed SDLC documentation...')
-      
-      const response = await fetch('/api/generate-detailed-sdlc', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          input: input,
-          openaiKey: config.openaiApiKey,
-          userId: user?.id,
-          projectId: `project-${Date.now()}`,
-          detailLevel: 'enterprise'
-        }),
-      })
+      const cached = localStorage.getItem(`sdlc-cache-${btoa(input).slice(0, 20)}`)
+      return cached ? JSON.parse(cached) : null
+    } catch {
+      return null
+    }
+  }
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to generate detailed documentation')
+  const setCachedResults = async (input: string, results: any) => {
+    if (!user?.id) return
+    
+    try {
+      // Save to database using the database service
+      const projectTitle = extractProjectName(input)
+      const projectDescription = extractProjectDescription(input)
+      
+      const { project, success } = await dbService.saveCompleteSDLCResult(
+        user.id,
+        input,
+        projectTitle,
+        {
+          businessAnalysis: results.businessAnalysis || '',
+          functionalSpec: results.functionalSpec || '',
+          technicalSpec: results.technicalSpec || '',
+          uxSpec: results.uxSpec || '',
+          architecture: results.mermaidDiagrams || ''
+        }
+      )
+      
+      if (success && project) {
+        console.log('✅ Successfully saved SDLC project to database:', project.id)
+        
+        // Refresh the recent projects list
+        const updatedProjects = await getCachedProjects()
+        setRecentProjects(updatedProjects)
+      } else {
+        console.error('❌ Failed to save SDLC project to database')
+        // Fallback to localStorage for backward compatibility
+        localStorage.setItem(`sdlc-cache-${btoa(input).slice(0, 20)}`, JSON.stringify({
+          ...results,
+          timestamp: Date.now()
+        }))
       }
-
-      const result = await response.json()
-      console.log('Detailed documentation generated successfully')
-      
-      setDetailedDocumentation(result)
-      setShowDetailedDocs(true)
-      setSuccessMessage("Detailed enterprise documentation generated successfully!")
-      
     } catch (error) {
-      console.error('Error generating detailed documentation:', error)
-      setErrorMessage(error instanceof Error ? error.message : 'Failed to generate detailed documentation')
-    } finally {
-      setIsGeneratingDetailed(false)
+      console.error('Error saving SDLC results:', error)
+      // Fallback to localStorage
+      try {
+        localStorage.setItem(`sdlc-cache-${btoa(input).slice(0, 20)}`, JSON.stringify({
+          ...results,
+          timestamp: Date.now()
+        }))
+      } catch (localStorageError) {
+        console.warn('Failed to cache results:', localStorageError)
+      }
     }
   }
 
@@ -438,93 +682,10 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
     console.log('✅ Loaded from cache with', cachedSteps.length, 'steps')
   }
 
-  // Handle API key dialog confirmation
-  const handleApiKeyConfirm = async () => {
-    if (!tempApiKey.trim()) {
-      setErrorMessage("Please enter your OpenAI API key")
-      return
-    }
-    
-    // Update config with the provided API key
-    setConfig(prev => ({ ...prev, openaiApiKey: tempApiKey.trim() }))
-    setShowApiKeyDialog(false)
-    setTempApiKey('')
-    setErrorMessage('')
-    
-    // Continue with generation after setting the API key
-    await generateFreshDocuments()
-  }
-
-  // Get initial processing steps based on configuration
-  const getInitialProcessingSteps = (): ProcessingStep[] => {
-    const coreSteps: ProcessingStep[] = [
-      { id: "analysis", name: "Business Analysis", status: "pending", progress: 0 },
-      { id: "functional", name: "Functional Specification", status: "pending", progress: 0 },
-      { id: "technical", name: "Technical Specification", status: "pending", progress: 0 },
-      { id: "ux", name: "UX Specification", status: "pending", progress: 0 },
-      { id: "mermaid", name: "Mermaid Diagrams", status: "pending", progress: 0 },
-    ]
-    
-    // Add integration steps only if automation is enabled
-    if (config.jiraAutoCreate && config.jiraUrl && config.jiraToken) {
-      coreSteps.push({ id: "jira", name: "JIRA Epic Creation", status: "pending", progress: 0 })
-    }
-    if (config.confluenceAutoCreate && config.confluenceUrl && config.confluenceToken) {
-      coreSteps.push({ id: "confluence", name: "Confluence Documentation", status: "pending", progress: 0 })
-    }
-    if (coreSteps.length > 5) {
-      coreSteps.push({ id: "linking", name: "Cross-platform Linking", status: "pending", progress: 0 })
-    }
-    
-    return coreSteps
-  }
-
-  // Get all cached results from database for Recent Projects display
-  const getCachedProjects = async (): Promise<ProjectResult[]> => {
-    // Use existing getCachedResults function instead of database calls
-    const projects = getCachedResults()
-    return Array.isArray(projects) ? projects : []
-  }
-
-  // Load user data on component mount
-  const loadUserData = async () => {
-    if (!user?.id) return
-    
-    try {
-      // Load user configuration
-      const userConfig = await dbService.getUserConfiguration(user.id)
-      if (userConfig) {
-        setConfig(prev => ({
-          ...prev,
-          openaiApiKey: userConfig.openai_api_key || '',
-          jiraUrl: userConfig.jira_base_url || '',
-          jiraEmail: userConfig.jira_email || '',
-          jiraToken: userConfig.jira_api_token || '',
-          confluenceUrl: userConfig.confluence_base_url || '',
-          confluenceEmail: userConfig.confluence_email || '',
-          confluenceToken: userConfig.confluence_api_token || '',
-        }))
-      }
-      
-      // Load recent projects
-      const projects = await getCachedProjects()
-      setRecentProjects(projects)
-    } catch (error) {
-      console.warn('Error loading user data:', error)
-    }
-  }
-
-  // Load user data on component mount
-  useEffect(() => {
-    loadUserData()
-    // Initialize processing steps after config is loaded
-    setProcessingSteps(getInitialProcessingSteps())
-  }, [user?.id])
-
   const generateFreshDocuments = async () => {
 
     // Check if OpenAI API key is missing - prompt just-in-time
-    if (!config.openaiApiKey || config.openaiApiKey.trim() === '') {
+    if (!config.openaiKey || config.openaiKey.trim() === '') {
       setTempApiKey('')
       setShowApiKeyDialog(true)
       return
@@ -535,7 +696,24 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
     setGeneratedDocuments({})
     
     // Build initial steps array properly
-    const initialSteps: ProcessingStep[] = getInitialProcessingSteps()
+    const initialSteps: ProcessingStep[] = [
+      { id: "analysis", name: "Business Analysis", status: "pending" as const, progress: 0 },
+      { id: "functional", name: "Functional Specification", status: "pending" as const, progress: 0 },
+      { id: "technical", name: "Technical Specification", status: "pending" as const, progress: 0 },
+      { id: "ux", name: "UX Specification", status: "pending" as const, progress: 0 },
+      { id: "mermaid", name: "Mermaid Diagrams", status: "pending" as const, progress: 0 },
+    ]
+
+    // Add optional steps if integrations are enabled
+    if (config.jiraAutoCreate && config.jiraUrl && config.jiraToken) {
+      initialSteps.push({ id: "jira", name: "JIRA Epic Creation", status: "pending" as const, progress: 0 })
+    }
+    if (config.confluenceAutoCreate && config.confluenceUrl && config.confluenceToken) {
+      initialSteps.push({ id: "confluence", name: "Confluence Documentation", status: "pending" as const, progress: 0 })
+    }
+    if (initialSteps.length > 4) {
+      initialSteps.push({ id: "linking", name: "Cross-platform Linking", status: "pending" as const, progress: 0 })
+    }
 
     setProcessingSteps(initialSteps)
 
@@ -551,7 +729,7 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
         body: JSON.stringify({
           input,
           customPrompt: customPrompts?.business,
-          openaiKey: config.openaiApiKey,
+          openaiKey: config.openaiKey,
         }),
       })
       
@@ -575,7 +753,7 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
           input,
           businessAnalysis: results.businessAnalysis,
           customPrompt: customPrompts?.functional,
-          openaiKey: config.openaiApiKey,
+          openaiKey: config.openaiKey,
         }),
       })
       
@@ -600,7 +778,7 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
           businessAnalysis: results.businessAnalysis,
           functionalSpec: results.functionalSpec,
           customPrompt: customPrompts?.technical,
-          openaiKey: config.openaiApiKey,
+          openaiKey: config.openaiKey,
         }),
       })
       
@@ -626,7 +804,7 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
           functionalSpec: results.functionalSpec,
           technicalSpec: results.technicalSpec,
           customPrompt: customPrompts?.ux,
-          openaiKey: config.openaiApiKey,
+          openaiKey: config.openaiKey,
         }),
       })
       
@@ -652,7 +830,7 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
           functionalSpec: results.functionalSpec,
           technicalSpec: results.technicalSpec,
           customPrompt: customPrompts?.mermaid,
-          openaiKey: config.openaiApiKey,
+          openaiKey: config.openaiKey,
         }),
       })
       
@@ -669,7 +847,7 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
       }
 
       // Cache the complete results
-      cacheResults(input.trim(), results)
+      await setCachedResults(input.trim(), results)
       
       // Handle optional integrations (JIRA, Confluence) if enabled
       await handleIntegrations(results, input)
@@ -963,7 +1141,7 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
     try {
       // Save configuration to database
       await dbService.upsertUserConfiguration(user.id, {
-        openai_api_key: config.openaiApiKey,
+        openai_api_key: config.openaiKey,
         jira_base_url: config.jiraUrl,
         jira_email: config.jiraEmail,
         jira_api_token: config.jiraToken,
@@ -1126,6 +1304,254 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
     }
   }
 
+  // Enterprise Mode generation - simple approach like main branch
+  const handleEnterpriseGenerate = async () => {
+    if (!input.trim()) {
+      setErrorMessage("Please enter your requirements")
+      return
+    }
+
+    // Check for API key
+    if (!config.openaiKey) {
+      setErrorMessage("Please configure your OpenAI API key first.")
+      setShowConfig(true)
+      return
+    }
+
+    setIsProcessingEnterprise(true)
+    setErrorMessage("")
+    setSuccessMessage("")
+    
+    // Simple progress steps for Enterprise Mode
+    const enterpriseSteps: ProcessingStep[] = [
+      { id: "enterprise-generation", name: "Enterprise Analysis", status: "in_progress", progress: 0 },
+      { id: "content-mapping", name: "Content Processing", status: "pending", progress: 0 },
+      { id: "diagram-generation", name: "Diagram Generation", status: "pending", progress: 0 }
+    ]
+    setProcessingSteps(enterpriseSteps)
+
+    try {
+      // Update first step
+      updateStepProgress("enterprise-generation", 50, "in_progress")
+      
+      const response = await fetch('/api/generate-detailed-sdlc', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          input: input,
+          openaiKey: config.openaiKey,
+          userId: user?.id,
+          projectId: `enterprise-${Date.now()}`,
+          detailLevel: 'enterprise'
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to generate enterprise documentation')
+      }
+
+      const result = await response.json()
+      
+      // Update to content mapping step
+      updateStepProgress("enterprise-generation", 100, "completed")
+      updateStepProgress("content-mapping", 50, "in_progress")
+      
+      // Map enterprise content to standard format for tabs
+      const mappedContent = {
+        businessAnalysis: formatEnterpriseBusinessAnalysis(result.businessAnalysis),
+        functionalSpec: formatEnterpriseFunctionalSpec(result.functionalSpec),
+        technicalSpec: formatEnterpriseTechnicalSpec(result.technicalSpec),
+        uxSpec: formatEnterpriseUxSpec(result.uxSpec)
+      }
+      
+      setGeneratedDocuments(mappedContent)
+      
+      // Update to diagram generation step
+      updateStepProgress("content-mapping", 100, "completed")
+      updateStepProgress("diagram-generation", 50, "in_progress")
+      
+      // Generate Mermaid diagrams
+      await generateMermaidDiagrams(mappedContent)
+      
+      // Complete all steps
+      updateStepProgress("diagram-generation", 100, "completed")
+      setSuccessMessage("🎉 Enterprise documentation generated successfully!")
+      
+      // Cache the results
+      cacheResults(input.trim(), { ...mappedContent, timestamp: Date.now() })
+      
+    } catch (error) {
+      console.error('Error generating enterprise documentation:', error)
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to generate enterprise documentation')
+      
+      // Mark current step as error
+      setProcessingSteps(prev => 
+        prev.map(step => 
+          step.status === "in_progress" 
+            ? { ...step, status: "error", progress: 0 }
+            : step
+        )
+      )
+    } finally {
+      setIsProcessingEnterprise(false)
+    }
+  }
+
+  // Format enterprise content for standard tabs
+  const formatEnterpriseBusinessAnalysis = (businessAnalysis: any) => {
+    return `# Business Analysis - Enterprise Edition
+
+## Executive Summary
+${businessAnalysis?.executiveSummary || ''}
+
+## Stakeholder Analysis  
+${businessAnalysis?.stakeholderAnalysis || ''}
+
+## Requirements Analysis
+${businessAnalysis?.requirementsAnalysis || ''}
+
+## Risk Assessment
+${businessAnalysis?.riskAssessment || ''}
+
+## Success Metrics
+${businessAnalysis?.successMetrics || ''}
+
+## User Stories
+${businessAnalysis?.userStories || ''}
+
+## User Personas
+${businessAnalysis?.personas || ''}`
+  }
+
+  const formatEnterpriseFunctionalSpec = (functionalSpec: any) => {
+    return `# Functional Specification - Enterprise Edition
+
+## System Overview
+${functionalSpec?.systemOverview || ''}
+
+## Functional Requirements
+${functionalSpec?.functionalRequirements || ''}
+
+## Data Requirements
+${functionalSpec?.dataRequirements || ''}
+
+## Integration Requirements
+${functionalSpec?.integrationRequirements || ''}
+
+## Performance Requirements
+${functionalSpec?.performanceRequirements || ''}
+
+## Security Requirements
+${functionalSpec?.securityRequirements || ''}`
+  }
+
+  const formatEnterpriseTechnicalSpec = (technicalSpec: any) => {
+    return `# Technical Specification - Enterprise Edition
+
+## System Architecture
+${technicalSpec?.systemArchitecture || ''}
+
+## Technology Stack
+${technicalSpec?.technologyStack || ''}
+
+## Data Models
+${technicalSpec?.dataModels || ''}
+
+## API Specifications
+${technicalSpec?.apiSpecifications || ''}
+
+## Security Implementation
+${technicalSpec?.securityImplementation || ''}
+
+## Deployment Strategy
+${technicalSpec?.deploymentStrategy || ''}
+
+## Monitoring Strategy
+${technicalSpec?.monitoringStrategy || ''}
+
+## Testing Strategy
+${technicalSpec?.testingStrategy || ''}`
+  }
+
+  const formatEnterpriseUxSpec = (uxSpec: any) => {
+    return `# UX Specification - Enterprise Edition
+
+## User Personas
+${uxSpec?.userPersonas || ''}
+
+## User Journeys
+${uxSpec?.userJourneys || ''}
+
+## Wireframes
+${uxSpec?.wireframes || ''}
+
+## Design System
+${uxSpec?.designSystem || ''}
+
+## Accessibility Requirements
+${uxSpec?.accessibilityRequirements || ''}
+
+## Usability Testing
+${uxSpec?.usabilityTesting || ''}`
+  }
+
+  // Generate Mermaid diagrams
+  const generateMermaidDiagrams = async (documents: any) => {
+    try {
+      const response = await fetch("/api/generate-mermaid-diagrams", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          functionalSpec: documents.functionalSpec || {},
+          technicalSpec: documents.technicalSpec || {},
+          businessAnalysis: documents.businessAnalysis || {},
+          openaiKey: config.openaiKey,
+        }),
+      })
+      
+      if (response.ok) {
+        const result = await response.json()
+        setGeneratedDocuments(prev => ({
+          ...prev,
+          mermaidDiagrams: result.mermaidDiagrams
+        }))
+        
+        // Add mermaid step to processing steps
+        setProcessingSteps(prev => [
+          ...prev,
+          { id: "mermaid", name: "Mermaid Diagrams", status: "completed", progress: 100 }
+        ])
+      }
+    } catch (error) {
+      console.warn('Error generating Mermaid diagrams:', error)
+    }
+  }
+
+  // Cache results in localStorage
+  const cacheResults = (inputKey: string, data: any) => {
+    try {
+      const cacheKey = `sdlc_cache_${btoa(inputKey)}`
+      localStorage.setItem(cacheKey, JSON.stringify(data))
+    } catch (error) {
+      console.warn('Failed to cache results:', error)
+    }
+  }
+
+
+
+  // Update processing status and enable tabs progressively
+  const updateProcessingStatus = () => {
+    const processingAny = isProcessing || isProcessingEnterprise
+    
+    if (!processingAny && processingSteps.length > 0) {
+      const allCompleted = processingSteps.every(step => step.status === 'completed')
+      if (allCompleted) {
+        setSuccessMessage("🎉 Documentation generated successfully!")
+      }
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-2 sm:p-4">
       <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
@@ -1214,27 +1640,45 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
                 <p className="text-sm">{errorMessage}</p>
               </div>
             )}
-            <div className="space-y-3">
-              <Button onClick={handleGenerate} disabled={!input.trim() || isProcessing} className="w-full" size="lg">
-                <Zap className="h-4 w-4 mr-2" />
-                {isProcessing ? "Generating SDLC Documentation..." : "Generate SDLC Documentation"}
-              </Button>
-              
-              <Button 
-                onClick={generateDetailedDocumentation} 
-                disabled={!input.trim() || isGeneratingDetailed} 
-                className="w-full" 
-                size="lg"
-                variant="outline"
-              >
+            <Button onClick={handleGenerate} disabled={!input.trim() || isProcessing} className="w-full" size="lg">
+              <Zap className="h-4 w-4 mr-2" />
+              {isProcessing ? "Generating SDLC Documentation..." : "Generate SDLC Documentation"}
+            </Button>
+
+            {/* Enterprise Mode Button */}
+            <Button 
+              onClick={handleEnterpriseGenerate} 
+              disabled={!input.trim() || isProcessingEnterprise || isProcessing} 
+              className="w-full mt-3" 
+              size="lg"
+              variant="outline"
+            >
+              {isProcessingEnterprise ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
                 <FileText className="h-4 w-4 mr-2" />
-                {isGeneratingDetailed ? "Generating Detailed Documentation..." : "Generate Detailed Enterprise Documentation"}
-              </Button>
-              
-              <p className="text-xs text-gray-500 text-center">
-                Detailed documentation includes comprehensive business analysis, technical specifications, 
-                data models, deployment guides, and implementation plans suitable for enterprise projects.
-              </p>
+              )}
+              {isProcessingEnterprise ? "Generating Enterprise Documentation..." : "Enterprise Mode"}
+            </Button>
+
+            {/* Help Section */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+              <div className="flex items-start gap-3">
+                <Info className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                <div className="space-y-2">
+                  <h4 className="font-medium text-blue-900">Choose Your Documentation Level</h4>
+                  <div className="space-y-3 text-sm text-blue-800">
+                    <div>
+                      <span className="font-medium">Standard Mode:</span> Perfect for MVPs, prototypes, and small-to-medium projects. 
+                      Includes business analysis, functional specs, technical requirements, and UX guidelines.
+                    </div>
+                    <div>
+                      <span className="font-medium">Enterprise Mode:</span> Comprehensive documentation for large-scale projects. 
+                      Includes 90+ sections with detailed risk assessments, security implementations, deployment strategies, and more.
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -1493,7 +1937,7 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
         )}
 
         {/* Recent Projects - Only show if there are cached projects */}
-        {recentProjects && recentProjects.length > 0 && (
+        {recentProjects.length > 0 && (
         <Card>
           <CardHeader 
             className="cursor-pointer hover:bg-gray-50 transition-colors" 
@@ -2046,6 +2490,45 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
           </DialogContent>
         </Dialog>
 
+        <Dialog open={showIntegrations} onOpenChange={setShowIntegrations}>
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-auto w-[95vw] sm:w-full">
+            <DialogHeader>
+              <DialogTitle>Integration Hub</DialogTitle>
+            </DialogHeader>
+            <IntegrationHub />
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showWorkflow} onOpenChange={setShowWorkflow}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto w-[95vw] sm:w-full">
+            <DialogHeader>
+              <DialogTitle>SDLC Documentation Workflow</DialogTitle>
+            </DialogHeader>
+            <SimpleWorkflowDiagram processingSteps={processingSteps} />
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showHowItWorks} onOpenChange={setShowHowItWorks}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto w-[95vw] sm:w-full">
+            <DialogHeader>
+              <DialogTitle>How SDLC Automation Works</DialogTitle>
+            </DialogHeader>
+            <HowItWorksVisualization />
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showPromptEngineering} onOpenChange={setShowPromptEngineering}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-auto w-[95vw] sm:w-full">
+            <DialogHeader>
+              <DialogTitle>Prompt Engineering Interface</DialogTitle>
+              <DialogDescription>
+                Customize AI prompts for each step of the SDLC documentation generation process.
+              </DialogDescription>
+            </DialogHeader>
+            <PromptEngineering onPromptUpdate={handlePromptUpdate} />
+          </DialogContent>
+        </Dialog>
+
         {/* Cache Choice Dialog */}
         <Dialog open={showCacheDialog} onOpenChange={setShowCacheDialog}>
           <DialogContent className="max-w-md w-[95vw] sm:w-full">
@@ -2177,15 +2660,6 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
           </DialogContent>
         </Dialog>
 
-        {/* Detailed SDLC Viewer */}
-        <Dialog open={showDetailedDocs} onOpenChange={setShowDetailedDocs}>
-          <DialogContent className="max-w-7xl max-h-[90vh] overflow-auto w-[95vw] sm:w-full">
-            <DialogHeader>
-              <DialogTitle>Detailed SDLC Documentation</DialogTitle>
-            </DialogHeader>
-            <DetailedSDLCViewer documentation={detailedDocumentation} />
-          </DialogContent>
-        </Dialog>
 
       </div>
     </div>
@@ -2195,6 +2669,7 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
 // Auth wrapper component
 function AuthenticatedSDLCPlatform() {
   const [user, setUser] = useState<any>(null);
+  const [userRole, setUserRole] = useState<string>('user');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -2209,6 +2684,23 @@ function AuthenticatedSDLCPlatform() {
         }
         
         setUser(user);
+        
+        // Check user role from database
+        try {
+          const { data: roleData } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', user.id)
+            .single()
+          
+          if (roleData?.role) {
+            setUserRole(roleData.role)
+          }
+        } catch (error) {
+          console.log('No specific role found, using default user role')
+          setUserRole('user')
+        }
+        
       } catch (error) {
         window.location.href = '/signin';
       } finally {
@@ -2244,7 +2736,7 @@ function AuthenticatedSDLCPlatform() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <UserHeader user={user} onSignOut={handleSignOut} />
+      <UserHeader user={user} userRole={userRole} onSignOut={handleSignOut} />
       <SDLCAutomationPlatform user={user} />
     </div>
   );

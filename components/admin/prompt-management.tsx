@@ -144,22 +144,30 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
   };
 
   const loadUserPrompts = async () => {
-    if (userRole !== 'admin') return;
+    if (userRole !== 'admin' && userRole !== 'manager') return;
     
     try {
       setUserPromptsLoading(true);
       const supabase = createClient();
       
-      // Load all user prompts with user details and usage stats
+      // Load user prompts directly from prompt_templates where prompt_scope = 'user'
       const { data, error } = await supabase
-        .from('user_prompts_with_stats')
+        .from('prompt_templates')
         .select(`
-          *,
-          profiles:user_id (
-            email,
-            full_name
-          )
+          id,
+          name,
+          description,
+          document_type,
+          prompt_content,
+          ai_model,
+          is_active,
+          version,
+          user_id,
+          created_at,
+          updated_at,
+          prompt_scope
         `)
+        .eq('prompt_scope', 'user')
         .order('updated_at', { ascending: false });
 
       if (error) {
@@ -167,11 +175,16 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
         return;
       }
 
-      // Transform the data to include user details
+      // Transform the data to match UserPrompt interface
       const transformedData = data?.map(prompt => ({
         ...prompt,
-        user_email: prompt.profiles?.email || 'Unknown',
-        user_name: prompt.profiles?.full_name || 'Unknown User'
+        is_personal_default: false, // Default value since we don't have this info yet
+        usage_count: 0,
+        avg_response_time: 0,
+        success_rate: 0,
+        last_used: undefined,
+        user_email: 'Unknown', // Will be enhanced later if needed
+        user_name: 'Unknown User'
       })) || [];
 
       setUserPrompts(transformedData);
@@ -188,13 +201,22 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
     try {
       const supabase = createClient();
       
-      // Get system-wide statistics
-      const { data: stats, error } = await supabase.rpc('get_system_prompt_stats');
-      
-      if (error) {
-        console.error('Error loading system stats:', error);
-        return;
-      }
+      // Get basic statistics directly from tables
+      const [userPromptsResponse, systemPromptsResponse, activeUserPromptsResponse] = await Promise.all([
+        supabase.from('prompt_templates').select('id', { count: 'exact' }).eq('prompt_scope', 'user'),
+        supabase.from('prompt_templates').select('id', { count: 'exact' }).eq('prompt_scope', 'system'),
+        supabase.from('prompt_templates').select('id', { count: 'exact' }).eq('prompt_scope', 'user').eq('is_active', true)
+      ]);
+
+      const stats = {
+        total_users: 0, // Will implement when user table structure is clear
+        total_user_prompts: userPromptsResponse.count || 0,
+        total_system_prompts: systemPromptsResponse.count || 0,
+        active_user_prompts: activeUserPromptsResponse.count || 0,
+        total_usage_last_30_days: 0, // Will implement when usage logs are available
+        avg_success_rate: 0, // Will implement when usage logs are available
+        top_document_types: [] // Will implement when we have more data
+      };
 
       setSystemStats(stats);
     } catch (error) {
