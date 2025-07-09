@@ -42,9 +42,16 @@ export function MainNav() {
   return (
     <div className="flex h-16 items-center border-b px-4">
       <div className="flex items-center space-x-4">
-        <Link href="/" className="flex items-center space-x-2">
-          <Icons.logo className="h-6 w-6" />
-          <span className="font-bold">SDLC AI</span>
+        <Link href="/" className="flex items-center space-x-3">
+          <img 
+            src="/img/SDLC.dev.logo.svg" 
+            alt="SDLC.dev Logo" 
+            className="h-14 w-auto filter contrast-125 brightness-110 drop-shadow-lg" 
+          />
+          <div className="font-bold">
+            <span className="hidden sm:inline text-lg">SDLC AI</span>
+            <span className="sm:hidden text-base">SDLC</span>
+          </div>
         </Link>
         <nav className="hidden items-center space-x-6 text-sm font-medium md:flex">
           {mainNavItems.map((item) => {

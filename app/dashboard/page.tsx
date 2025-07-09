@@ -98,8 +98,16 @@ const UserHeader: React.FC<UserHeaderProps> = ({ user, userRole, onSignOut }) =>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <FileText className="h-8 w-8 text-blue-600" />
-            <span className="ml-2 text-xl font-bold text-gray-900">SDLC AI Dashboard</span>
+            <img 
+              src="/img/SDLC.dev.logo.svg" 
+              alt="SDLC.dev Logo" 
+              className="h-48 w-auto filter contrast-125 brightness-110" 
+            />
+            <div className="ml-3 font-bold text-gray-900">
+              <span className="hidden lg:inline text-xl">SDLC AI Dashboard</span>
+              <span className="hidden sm:inline lg:hidden text-lg">SDLC Dashboard</span>
+              <span className="sm:hidden text-base">SDLC</span>
+            </div>
           </div>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2 text-sm text-gray-600">
@@ -704,6 +712,62 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
     console.log('✅ Loaded from cache with', cachedSteps.length, 'steps')
   }
 
+  // Handle streaming response with real-time display updates
+  const handleStreamingResponse = async (
+    response: Response, 
+    stepId: string, 
+    updateDocuments: (content: string) => void
+  ): Promise<string> => {
+    let fullContent = ''
+    const reader = response.body?.getReader()
+    const decoder = new TextDecoder()
+    
+    if (reader) {
+      try {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          
+          const chunk = decoder.decode(value)
+          const lines = chunk.split('\n')
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const jsonData = JSON.parse(line.substring(6))
+                if (jsonData.type === 'chunk') {
+                  fullContent = jsonData.fullContent
+                  // Update progress based on content length (rough estimate)
+                  const progress = Math.min(90, Math.floor(fullContent.length / 50))
+                  updateStepProgress(stepId, progress, "in_progress")
+                  
+                  // ✨ REAL-TIME DISPLAY: Update documents as content streams in
+                  updateDocuments(fullContent)
+                  
+                } else if (jsonData.type === 'complete') {
+                  fullContent = jsonData.fullContent
+                  break
+                } else if (jsonData.type === 'error') {
+                  throw new Error(jsonData.error || 'Streaming failed')
+                }
+              } catch (parseError) {
+                // Skip invalid JSON lines
+              }
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock()
+      }
+    }
+    
+    if (!fullContent) {
+      throw new Error(`No content received from ${stepId}`)
+    }
+    
+    return fullContent
+  }
+
   const generateFreshDocuments = async () => {
 
     // Check if OpenAI API key is missing - prompt just-in-time
@@ -762,10 +826,15 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
         throw new Error(errorData?.error || `API request failed with status ${businessResponse.status}`)
       }
       
-      const businessResult = await businessResponse.json()
-      results.businessAnalysis = businessResult.businessAnalysis
+      // ✨ Handle streaming response with real-time display
+      const businessAnalysisContent = await handleStreamingResponse(
+        businessResponse,
+        "analysis", 
+        (content) => setGeneratedDocuments((prev: any) => ({ ...prev, businessAnalysis: content }))
+      )
+      
+      results.businessAnalysis = businessAnalysisContent
       updateStepProgress("analysis", 100, "completed")
-      setGeneratedDocuments(prev => ({ ...prev, businessAnalysis: businessResult.businessAnalysis }))
 
       // Step 2: Functional Specification
       updateStepProgress("functional", 0, "in_progress")
@@ -835,10 +904,15 @@ Focus on the SPECIFIC project requirements. Avoid generic enterprise features un
         throw new Error(errorData?.error || `API request failed with status ${functionalResponse.status}`)
       }
       
-      const functionalResult = await functionalResponse.json()
-      results.functionalSpec = functionalResult.functionalSpec
+      // ✨ Handle streaming response with real-time display
+      const functionalSpecContent = await handleStreamingResponse(
+        functionalResponse,
+        "functional",
+        (content) => setGeneratedDocuments((prev: any) => ({ ...prev, functionalSpec: content }))
+      )
+      
+      results.functionalSpec = functionalSpecContent
       updateStepProgress("functional", 100, "completed")
-      setGeneratedDocuments(prev => ({ ...prev, functionalSpec: functionalResult.functionalSpec }))
 
       // Step 3: Technical Specification
       updateStepProgress("technical", 0, "in_progress")
@@ -911,10 +985,15 @@ Focus on the SPECIFIC project requirements and domain. Avoid generic enterprise 
         throw new Error(errorData?.error || `API request failed with status ${technicalResponse.status}`)
       }
       
-      const technicalResult = await technicalResponse.json()
-      results.technicalSpec = technicalResult.technicalSpec
+      // ✨ Handle streaming response with real-time display  
+      const technicalSpecContent = await handleStreamingResponse(
+        technicalResponse,
+        "technical",
+        (content) => setGeneratedDocuments((prev: any) => ({ ...prev, technicalSpec: content }))
+      )
+      
+      results.technicalSpec = technicalSpecContent
       updateStepProgress("technical", 100, "completed")
-      setGeneratedDocuments(prev => ({ ...prev, technicalSpec: technicalResult.technicalSpec }))
 
       // Step 4: UX Specification
       updateStepProgress("ux", 0, "in_progress")
