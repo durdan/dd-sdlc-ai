@@ -146,6 +146,43 @@ export function IntegrationHub() {
         includeMetadata: true,
       },
     },
+    clickup: {
+      enabled: false,
+      status: "disconnected",
+      settings: {
+        connected: false,
+        apiToken: "",
+        teamId: "",
+        spaceId: "",
+        folderId: "",
+        listId: "",
+        autoCreateTasks: true,
+        taskPriority: "normal",
+        assignees: [],
+        createSubtasks: true,
+        syncStatus: true,
+        enableTimeTracking: false,
+        customFields: [],
+      },
+    },
+    trello: {
+      enabled: false,
+      status: "disconnected",
+      settings: {
+        connected: false,
+        apiKey: "",
+        token: "",
+        boardId: "",
+        lists: [],
+        autoCreateCards: true,
+        cardLabels: [],
+        defaultList: "",
+        assignMembers: true,
+        dueDateSync: true,
+        enableChecklists: true,
+        memberMapping: {},
+      },
+    },
   })
 
   useEffect(() => {
@@ -392,14 +429,26 @@ export function IntegrationHub() {
       setupRequired: true,
     },
     {
+      id: "clickup",
+      name: "ClickUp",
+      description: "All-in-one productivity platform for teams",
+      icon: <CheckCircle className="h-6 w-6" />,
+      category: "project-management",
+      status: integrationConfigs.clickup?.settings?.connected ? "connected" : "disconnected",
+      features: ["Task Management", "Project Tracking", "Time Tracking", "Custom Fields", "Automation"],
+      setupRequired: true,
+      vercelIntegration: false,
+    },
+    {
       id: "trello",
       name: "Trello",
       description: "Visual project management with boards and cards",
       icon: <Trello className="h-6 w-6" />,
       category: "project-management",
-      status: "coming-soon",
+      status: integrationConfigs.trello?.settings?.connected ? "connected" : "disconnected",
       features: ["Board Creation", "Card Management", "Checklist Sync", "Due Date Tracking"],
       setupRequired: true,
+      vercelIntegration: false,
     },
     {
       id: "asana",
@@ -711,6 +760,138 @@ export function IntegrationHub() {
     }
     
     alert('GitHub disconnected successfully')
+  }
+
+  // ClickUp configuration handlers
+  const handleClickUpConnect = async () => {
+    const apiToken = prompt('Enter your ClickUp API token:')
+    if (!apiToken || !apiToken.trim()) return
+    
+    try {
+      // Test the API token by getting user info
+      const response = await fetch('/api/integrations/clickup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'connect',
+          apiToken: apiToken.trim(),
+        })
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        
+        // Update integration state
+        updateIntegrationSetting('clickup', 'connected', true)
+        updateIntegrationSetting('clickup', 'apiToken', apiToken.trim())
+        updateIntegrationSetting('clickup', 'teamId', data.teams?.[0]?.id || '')
+        
+        // Enable the integration
+        setIntegrationConfigs((prev) => ({
+          ...prev,
+          clickup: {
+            ...prev.clickup,
+            enabled: true,
+            status: "connected",
+          },
+        }))
+        
+        alert(`✅ Successfully connected to ClickUp! Found ${data.teams?.length || 0} teams.`)
+      } else {
+        const error = await response.json()
+        throw new Error(error.message || 'Invalid API token')
+      }
+    } catch (error) {
+      console.error('ClickUp connection error:', error)
+      alert('❌ Failed to connect to ClickUp. Please check your API token.')
+    }
+  }
+  
+  const handleClickUpDisconnect = () => {
+    updateIntegrationSetting('clickup', 'connected', false)
+    updateIntegrationSetting('clickup', 'apiToken', '')
+    updateIntegrationSetting('clickup', 'teamId', '')
+    
+    setIntegrationConfigs((prev) => ({
+      ...prev,
+      clickup: {
+        ...prev.clickup,
+        enabled: false,
+        status: "disconnected",
+      },
+    }))
+    
+    alert('ClickUp has been disconnected.')
+  }
+
+  // Trello configuration handlers
+  const handleTrelloConnect = async () => {
+    const apiKey = prompt('Enter your Trello API Key:')
+    if (!apiKey || !apiKey.trim()) return
+    
+    const token = prompt('Enter your Trello Token:')
+    if (!token || !token.trim()) return
+    
+    try {
+      // Test the API credentials by getting user info
+      const response = await fetch('/api/integrations/trello', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'connect',
+          apiKey: apiKey.trim(),
+          token: token.trim(),
+        })
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        
+        // Update integration state
+        updateIntegrationSetting('trello', 'connected', true)
+        updateIntegrationSetting('trello', 'apiKey', apiKey.trim())
+        updateIntegrationSetting('trello', 'token', token.trim())
+        
+        // Enable the integration
+        setIntegrationConfigs((prev) => ({
+          ...prev,
+          trello: {
+            ...prev.trello,
+            enabled: true,
+            status: "connected",
+          },
+        }))
+        
+        alert(`✅ Successfully connected to Trello! Found ${data.boards?.length || 0} boards.`)
+      } else {
+        const error = await response.json()
+        throw new Error(error.message || 'Invalid API credentials')
+      }
+    } catch (error) {
+      console.error('Trello connection error:', error)
+      alert('❌ Failed to connect to Trello. Please check your API credentials.')
+    }
+  }
+  
+  const handleTrelloDisconnect = () => {
+    updateIntegrationSetting('trello', 'connected', false)
+    updateIntegrationSetting('trello', 'apiKey', '')
+    updateIntegrationSetting('trello', 'token', '')
+    
+    setIntegrationConfigs((prev) => ({
+      ...prev,
+      trello: {
+        ...prev.trello,
+        enabled: false,
+        status: "disconnected",
+      },
+    }))
+    
+    alert('Trello has been disconnected.')
   }
 
   // Connect to Vercel integration
@@ -1614,6 +1795,397 @@ export function IntegrationHub() {
                           onCheckedChange={(checked) => updateIntegrationSetting("linear", "autoCreateIssues", checked)}
                         />
                       </div>
+                    </div>
+                  )}
+
+                  {/* ClickUp Settings */}
+                  {integration.id === "clickup" && (
+                    <div className="space-y-4">
+                      {/* Connection Status */}
+                      <div className="p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <Label className="text-sm font-medium">ClickUp Connection</Label>
+                          {integrationConfigs.clickup?.settings?.connected ? (
+                            <Badge variant="default" className="text-xs bg-blue-100 text-blue-700">
+                              Connected
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs">
+                              Not Connected
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        {!integrationConfigs.clickup?.settings?.connected ? (
+                          <div className="space-y-2">
+                            <p className="text-xs text-gray-600">
+                              Enter your ClickUp API token to enable task and project management.
+                            </p>
+                            <div className="space-y-2">
+                              <Label className="text-sm">ClickUp API Token</Label>
+                              <Input
+                                type="password"
+                                value={integrationConfigs.clickup?.settings?.apiToken || ''}
+                                onChange={(e) => updateIntegrationSetting("clickup", "apiToken", e.target.value)}
+                                placeholder="your-api-token"
+                                className="font-mono text-xs"
+                              />
+                              <p className="text-xs text-gray-500">
+                                Get your API token from{' '}
+                                <a 
+                                  href="https://app.clickup.com/api/v2" 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:underline"
+                                >
+                                  ClickUp API
+                                </a>
+                              </p>
+                            </div>
+                            <Button
+                              onClick={handleClickUpConnect}
+                              size="sm"
+                              className="w-full bg-blue-600 hover:bg-blue-700"
+                              disabled={!integrationConfigs.clickup?.settings?.apiToken?.trim()}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Connect ClickUp
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <p className="text-xs text-gray-600">
+                              Connected to ClickUp with API token: <span className="font-mono">***...{integrationConfigs.clickup?.settings?.apiToken?.slice(-4)}</span>
+                            </p>
+                            <Button
+                              onClick={handleClickUpDisconnect}
+                              variant="outline"
+                              size="sm"
+                              className="w-full"
+                            >
+                              Disconnect ClickUp
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* ClickUp Configuration */}
+                      {integrationConfigs.clickup?.settings?.connected && (
+                        <div className="space-y-3">
+                          <Label className="text-sm font-medium">ClickUp Configuration</Label>
+                          
+                          <div>
+                            <Label className="text-sm">Team ID</Label>
+                            <Input
+                              value={integrationConfigs.clickup?.settings?.teamId || ''}
+                              onChange={(e) => updateIntegrationSetting("clickup", "teamId", e.target.value)}
+                              placeholder="Your ClickUp Team ID"
+                              className="mt-1"
+                              size="sm"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Find your Team ID in ClickUp → Settings → API
+                            </p>
+                          </div>
+
+                          <div>
+                            <Label className="text-sm">Space ID (Optional)</Label>
+                            <Input
+                              value={integrationConfigs.clickup?.settings?.spaceId || ''}
+                              onChange={(e) => updateIntegrationSetting("clickup", "spaceId", e.target.value)}
+                              placeholder="Your ClickUp Space ID"
+                              className="mt-1"
+                              size="sm"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Leave empty to use the default space
+                            </p>
+                          </div>
+
+                          <div>
+                            <Label className="text-sm">Folder ID (Optional)</Label>
+                            <Input
+                              value={integrationConfigs.clickup?.settings?.folderId || ''}
+                              onChange={(e) => updateIntegrationSetting("clickup", "folderId", e.target.value)}
+                              placeholder="Your ClickUp Folder ID"
+                              className="mt-1"
+                              size="sm"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Leave empty to create tasks directly in the space
+                            </p>
+                          </div>
+
+                          <div>
+                            <Label className="text-sm">List ID (Optional)</Label>
+                            <Input
+                              value={integrationConfigs.clickup?.settings?.listId || ''}
+                              onChange={(e) => updateIntegrationSetting("clickup", "listId", e.target.value)}
+                              placeholder="Your ClickUp List ID"
+                              className="mt-1"
+                              size="sm"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Leave empty to create tasks directly in the list
+                            </p>
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm">Auto-create tasks</Label>
+                              <p className="text-xs text-gray-500">Automatically create ClickUp tasks from SDLC tasks</p>
+                            </div>
+                            <Switch
+                              checked={integrationConfigs.clickup?.settings?.autoCreateTasks}
+                              onCheckedChange={(checked) => updateIntegrationSetting("clickup", "autoCreateTasks", checked)}
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm">Task Priority</Label>
+                              <p className="text-xs text-gray-500">Set default priority for new tasks</p>
+                            </div>
+                            <select
+                              value={integrationConfigs.clickup?.settings?.taskPriority || 'normal'}
+                              onChange={(e) => updateIntegrationSetting("clickup", "taskPriority", e.target.value)}
+                              className="border rounded px-2 py-1 text-sm"
+                            >
+                              <option value="low">Low</option>
+                              <option value="medium">Medium</option>
+                              <option value="high">High</option>
+                              <option value="urgent">Urgent</option>
+                            </select>
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm">Assignees (Optional)</Label>
+                              <p className="text-xs text-gray-500">Comma-separated list of ClickUp user IDs to assign tasks</p>
+                            </div>
+                            <Input
+                              value={integrationConfigs.clickup?.settings?.assignees?.join(', ') || ''}
+                              onChange={(e) => updateIntegrationSetting("clickup", "assignees", e.target.value.split(',').map(s => s.trim()))}
+                              placeholder="user1, user2"
+                              className="mt-1"
+                              size="sm"
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm">Create sub-tasks</Label>
+                              <p className="text-xs text-gray-500">Automatically create sub-tasks for each task</p>
+                            </div>
+                            <Switch
+                              checked={integrationConfigs.clickup?.settings?.createSubtasks}
+                              onCheckedChange={(checked) => updateIntegrationSetting("clickup", "createSubtasks", checked)}
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm">Sync status updates</Label>
+                              <p className="text-xs text-gray-500">Automatically update ClickUp task status based on SDLC status</p>
+                            </div>
+                            <Switch
+                              checked={integrationConfigs.clickup?.settings?.syncStatus}
+                              onCheckedChange={(checked) => updateIntegrationSetting("clickup", "syncStatus", checked)}
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm">Enable time tracking</Label>
+                              <p className="text-xs text-gray-500">Track time spent on ClickUp tasks</p>
+                            </div>
+                            <Switch
+                              checked={integrationConfigs.clickup?.settings?.enableTimeTracking}
+                              onCheckedChange={(checked) => updateIntegrationSetting("clickup", "enableTimeTracking", checked)}
+                            />
+                          </div>
+
+                          <div className="flex flex-wrap gap-2">
+                            <Label className="text-sm">Custom Fields (Optional)</Label>
+                            <Input
+                              value={integrationConfigs.clickup?.settings?.customFields?.join(', ') || ''}
+                              onChange={(e) => updateIntegrationSetting("clickup", "customFields", e.target.value.split(',').map(s => s.trim()))}
+                              placeholder="field1:value1,field2:value2"
+                              className="flex-1"
+                            />
+                            <p className="text-xs text-gray-500">Format: field_name:value</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Trello Settings */}
+                  {integration.id === "trello" && (
+                    <div className="space-y-4">
+                      {/* Connection Status */}
+                      <div className="p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <Label className="text-sm font-medium">Trello Connection</Label>
+                          {integrationConfigs.trello?.settings?.connected ? (
+                            <Badge variant="default" className="text-xs bg-green-100 text-green-700">
+                              Connected
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs">
+                              Not Connected
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        {!integrationConfigs.trello?.settings?.connected ? (
+                          <div className="space-y-2">
+                            <p className="text-xs text-gray-600">
+                              Enter your Trello API credentials to enable board and card management.
+                            </p>
+                            <div className="space-y-2">
+                              <Label className="text-sm">Trello API Key</Label>
+                              <Input
+                                type="password"
+                                value={integrationConfigs.trello?.settings?.apiKey || ''}
+                                onChange={(e) => updateIntegrationSetting("trello", "apiKey", e.target.value)}
+                                placeholder="your-api-key"
+                                className="font-mono text-xs"
+                              />
+                              <Label className="text-sm">Trello Token</Label>
+                              <Input
+                                type="password"
+                                value={integrationConfigs.trello?.settings?.token || ''}
+                                onChange={(e) => updateIntegrationSetting("trello", "token", e.target.value)}
+                                placeholder="your-token"
+                                className="font-mono text-xs"
+                              />
+                              <p className="text-xs text-gray-500">
+                                Get your API key and token from{' '}
+                                <a 
+                                  href="https://trello.com/app-key" 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:underline"
+                                >
+                                  Trello API
+                                </a>
+                              </p>
+                            </div>
+                            <Button
+                              onClick={handleTrelloConnect}
+                              size="sm"
+                              className="w-full bg-blue-600 hover:bg-blue-700"
+                              disabled={!integrationConfigs.trello?.settings?.apiKey?.trim() || !integrationConfigs.trello?.settings?.token?.trim()}
+                            >
+                              <Trello className="h-4 w-4 mr-2" />
+                              Connect Trello
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <p className="text-xs text-gray-600">
+                              Connected to Trello with API key: <span className="font-mono">***...{integrationConfigs.trello?.settings?.apiKey?.slice(-4)}</span>
+                            </p>
+                            <Button
+                              onClick={handleTrelloDisconnect}
+                              variant="outline"
+                              size="sm"
+                              className="w-full"
+                            >
+                              Disconnect Trello
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Trello Configuration */}
+                      {integrationConfigs.trello?.settings?.connected && (
+                        <div className="space-y-3">
+                          <Label className="text-sm font-medium">Trello Configuration</Label>
+                          
+                          <div>
+                            <Label className="text-sm">Board ID</Label>
+                            <Input
+                              value={integrationConfigs.trello?.settings?.boardId || ''}
+                              onChange={(e) => updateIntegrationSetting("trello", "boardId", e.target.value)}
+                              placeholder="Your Trello Board ID"
+                              className="mt-1"
+                              size="sm"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Find your Board ID in Trello → Settings → Board Settings
+                            </p>
+                          </div>
+
+                          <div>
+                            <Label className="text-sm">Default List (Optional)</Label>
+                            <Input
+                              value={integrationConfigs.trello?.settings?.defaultList || ''}
+                              onChange={(e) => updateIntegrationSetting("trello", "defaultList", e.target.value)}
+                              placeholder="Your Trello List Name"
+                              className="mt-1"
+                              size="sm"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Leave empty to create cards in the default list
+                            </p>
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm">Assign members</Label>
+                              <p className="text-xs text-gray-500">Automatically assign members to new cards</p>
+                            </div>
+                            <Switch
+                              checked={integrationConfigs.trello?.settings?.assignMembers}
+                              onCheckedChange={(checked) => updateIntegrationSetting("trello", "assignMembers", checked)}
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm">Sync due dates</Label>
+                              <p className="text-xs text-gray-500">Automatically sync due dates from SDLC tasks</p>
+                            </div>
+                            <Switch
+                              checked={integrationConfigs.trello?.settings?.dueDateSync}
+                              onCheckedChange={(checked) => updateIntegrationSetting("trello", "dueDateSync", checked)}
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm">Enable checklists</Label>
+                              <p className="text-xs text-gray-500">Automatically create checklists for new cards</p>
+                            </div>
+                            <Switch
+                              checked={integrationConfigs.trello?.settings?.enableChecklists}
+                              onCheckedChange={(checked) => updateIntegrationSetting("trello", "enableChecklists", checked)}
+                            />
+                          </div>
+
+                          <div className="flex flex-wrap gap-2">
+                            <Label className="text-sm">Member Mapping (Optional)</Label>
+                            <Input
+                              value={Object.entries(integrationConfigs.trello?.settings?.memberMapping || {}).map(([key, value]) => `${key}: ${value}`).join(', ')}
+                              onChange={(e) => {
+                                const mapping: Record<string, string> = {};
+                                e.target.value.split(',').forEach(item => {
+                                  const [key, value] = item.trim().split(':');
+                                  if (key && value) {
+                                    mapping[key] = value;
+                                  }
+                                });
+                                updateIntegrationSetting("trello", "memberMapping", mapping);
+                              }}
+                              placeholder="github:user1,jira:user2"
+                              className="flex-1"
+                            />
+                            <p className="text-xs text-gray-500">Format: source_service:target_id</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
