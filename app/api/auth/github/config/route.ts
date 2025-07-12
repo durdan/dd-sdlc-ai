@@ -97,9 +97,13 @@ export async function POST(request: NextRequest) {
         repository_url: `https://github.com/${username}`,
         repository_id: username, // Store username as repository_id for account-level config
         permissions: permissions || {
-          "issues": "write",
+          "repo": "full",
+          "contents": "write",
           "pull_requests": "write", 
-          "contents": "write"
+          "issues": "write",
+          "actions": "write",
+          "workflows": "write",
+          "hooks": "admin"
         },
         is_active: true,
         last_sync: new Date().toISOString(),

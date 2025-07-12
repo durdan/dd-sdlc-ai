@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import {
   Github,
   Trello,
@@ -30,6 +31,7 @@ import {
   Clock,
   Sparkles,
 } from "lucide-react"
+import SlackOAuthButton from "./slack-oauth-button"
 
 interface Integration {
   id: string
@@ -93,9 +95,12 @@ export function IntegrationHub() {
     slack: {
       enabled: false,
       settings: {
-        channel: "#development",
-        notifications: ["project-created", "documentation-ready"],
-        mentionTeam: true,
+        connected: false,
+        workspaceId: "",
+        workspaceName: "",
+        defaultChannel: "#general",
+        clientId: "",
+        setupCompleted: false,
       },
     },
     notion: {
@@ -151,23 +156,15 @@ export function IntegrationHub() {
   useEffect(() => {
     setIsMounted(true)
     
-    // Load integration configs from localStorage (for non-GitHub integrations)
+    // SECURITY FIX: Clear any existing localStorage configurations to prevent cross-user sharing
     if (typeof window !== 'undefined') {
-      const savedConfigs = localStorage.getItem('integrationConfigs')
-      if (savedConfigs) {
-        try {
-          const parsedConfigs = JSON.parse(savedConfigs)
-          // Only load non-GitHub configs from localStorage
-          const { github, ...otherConfigs } = parsedConfigs
-          setIntegrationConfigs(prev => ({ ...prev, ...otherConfigs }))
-        } catch (error) {
-          console.error('Failed to parse saved integration configs:', error)
-        }
-      }
+      localStorage.removeItem('integrationConfigs')
     }
     
-    // Load GitHub configuration from database
+    // Load all configurations from secure database APIs
     loadGitHubConfigFromDatabase()
+    loadClaudeConfigFromDatabase()
+    loadSlackConfigFromDatabase()
   }, [])
 
   // Load GitHub configuration from database
@@ -196,12 +193,106 @@ export function IntegrationHub() {
         }))
         
         console.log('✅ GitHub config loaded from database:', config.connected ? 'Connected' : 'Disconnected')
-        console.log('🔍 Database config details:', config)
       }
     } catch (error) {
       console.error('Error loading GitHub config from database:', error)
       // Fall back to checking token status
       checkGitHubConnection()
+    }
+  }
+
+  // Load Claude configuration from database (secure, user-specific)
+  const loadClaudeConfigFromDatabase = async () => {
+    try {
+      const response = await fetch('/api/claude-config', {
+        credentials: 'include',
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        
+        // Update Claude integration state with database config
+        setIntegrationConfigs((prev) => ({
+          ...prev,
+          claude: {
+            enabled: data.connected,
+            status: data.connected ? "connected" : "disconnected",
+            settings: {
+              connected: data.connected,
+              apiKey: data.connected ? '***hidden***' : '', // Never expose actual key
+              model: data.usageLimits?.model || 'claude-3-5-sonnet-20241022',
+              enableCodeAnalysis: true,
+              enableAgenticCode: true,
+              enableGitHubIntegration: true,
+              autoCreatePRs: false,
+              maxTokens: 200000,
+              temperature: 0.1,
+            },
+          },
+        }))
+        
+        console.log('✅ Claude config loaded from database:', data.connected ? 'Connected' : 'Disconnected')
+      }
+    } catch (error) {
+      console.error('Error loading Claude config from database:', error)
+      // Set as disconnected if can't load
+      setIntegrationConfigs((prev) => ({
+        ...prev,
+        claude: {
+          ...prev.claude,
+          enabled: false,
+          status: "disconnected",
+          settings: {
+            ...prev.claude?.settings,
+            connected: false,
+          },
+        },
+      }))
+    }
+  }
+
+  // Load Slack configuration from database (secure, user-specific)
+  const loadSlackConfigFromDatabase = async () => {
+    try {
+      const response = await fetch('/api/user-integrations/slack', {
+        method: 'GET',
+        credentials: 'include',
+      })
+      
+      if (response.ok) {
+        const config = await response.json()
+        
+        // Update Slack integration state with database config
+        setIntegrationConfigs((prev) => ({
+          ...prev,
+          slack: {
+            enabled: config.isConnected,
+            settings: {
+              connected: config.isConnected,
+              workspaceId: config.workspace?.id || '',
+              workspaceName: config.workspace?.name || '',
+              defaultChannel: config.workspace?.defaultChannel || '#general',
+              setupCompleted: config.isConnected,
+            },
+          },
+        }))
+        
+        console.log('✅ Slack config loaded from database:', config.isConnected ? 'Connected' : 'Disconnected')
+      }
+    } catch (error) {
+      console.error('Error loading Slack config from database:', error)
+      // Set as disconnected if can't load
+      setIntegrationConfigs((prev) => ({
+        ...prev,
+        slack: {
+          ...prev.slack,
+          enabled: false,
+          settings: {
+            ...prev.slack?.settings,
+            connected: false,
+          },
+        },
+      }))
     }
   }
 
@@ -319,12 +410,7 @@ export function IntegrationHub() {
     }
   }
   
-  // Save integration configs to localStorage whenever they change
-  useEffect(() => {
-    if (isMounted && typeof window !== 'undefined') {
-      localStorage.setItem('integrationConfigs', JSON.stringify(integrationConfigs))
-    }
-  }, [integrationConfigs, isMounted])
+  // SECURITY FIX: No longer saving configurations to localStorage - all configs are now database-backed
 
   // Available integrations
   const integrations: Integration[] = [
@@ -353,13 +439,13 @@ export function IntegrationHub() {
     {
       id: "slack",
       name: "Slack",
-      description: "Real-time notifications and team collaboration",
+      description: "AI assistant bot with slash commands and notifications",
       icon: <Slack className="h-6 w-6" />,
       category: "communication",
-      status: "coming-soon",
-      features: ["Project Notifications", "Team Mentions", "Document Sharing", "Status Updates"],
+      status: integrationConfigs.slack?.settings?.connected ? "connected" : "disconnected",
+      features: ["Slash Commands", "Task Creation", "Status Updates", "Interactive Messages", "Parallel Processing"],
       setupRequired: true,
-      vercelIntegration: true,
+      vercelIntegration: false,
     },
     {
       id: "teams",
@@ -479,42 +565,48 @@ export function IntegrationHub() {
     }
   }
 
-  // Claude configuration handlers
+  // Claude configuration handlers (now using secure database storage)
   const handleClaudeConnect = async () => {
     const apiKey = prompt('Enter your Claude API key:')
     if (!apiKey || !apiKey.trim()) return
     
     try {
-      // Test the API key
-      const response = await fetch('/api/claude-code-analysis', {
+      // Save to database with test connection
+      const response = await fetch('/api/claude-config', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           apiKey: apiKey.trim(),
+          selectedModel: 'claude-3-5-sonnet-20241022',
+          enableGitHubIntegration: true,
           testConnection: true
         })
       })
       
-      if (response.ok) {
-        // Update integration state
-        updateIntegrationSetting('claude', 'connected', true)
-        updateIntegrationSetting('claude', 'apiKey', apiKey.trim())
+      const result = await response.json()
         
-        // Enable the integration
+      if (result.success) {
+        // Update integration state
         setIntegrationConfigs((prev) => ({
           ...prev,
           claude: {
             ...prev.claude,
             enabled: true,
             status: "connected",
+            settings: {
+              ...prev.claude?.settings,
+              connected: true,
+              apiKey: '***hidden***', // Don't store actual key in UI state
+            }
           },
         }))
         
         alert('✅ Successfully connected to Claude AI!')
       } else {
-        throw new Error('Invalid API key')
+        throw new Error(result.error || 'Invalid API key')
       }
     } catch (error) {
       console.error('Claude connection error:', error)
@@ -522,20 +614,39 @@ export function IntegrationHub() {
     }
   }
   
-  const handleClaudeDisconnect = () => {
-    updateIntegrationSetting('claude', 'connected', false)
-    updateIntegrationSetting('claude', 'apiKey', '')
-    
+  const handleClaudeDisconnect = async () => {
+    try {
+      // Remove from database
+      const response = await fetch('/api/claude-config', {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+      
+      const result = await response.json()
+      
+      if (result.success) {
     setIntegrationConfigs((prev) => ({
       ...prev,
       claude: {
         ...prev.claude,
         enabled: false,
         status: "disconnected",
+            settings: {
+              ...prev.claude?.settings,
+              connected: false,
+              apiKey: '',
+            }
       },
     }))
     
-    alert('Claude AI has been disconnected.')
+        alert('✅ Claude AI has been disconnected.')
+      } else {
+        throw new Error(result.error || 'Failed to disconnect')
+      }
+    } catch (error) {
+      console.error('Claude disconnect error:', error)
+      alert('❌ Failed to disconnect Claude AI.')
+    }
   }
 
   // GitHub connection handlers
@@ -548,9 +659,9 @@ export function IntegrationHub() {
       return
     }
     
-    // Real GitHub OAuth flow
+    // Real GitHub OAuth flow - Enhanced scope for Cline-inspired autonomous coding
     const redirectUri = encodeURIComponent(window.location.origin + '/api/auth/github/callback')
-    const scope = encodeURIComponent('repo user:email read:user')
+    const scope = encodeURIComponent('repo user:email read:user write:repo_hook admin:repo_hook workflow actions:write contents:write pull_requests:write issues:write')
     const state = encodeURIComponent(Math.random().toString(36).substring(7)) // CSRF protection
     
     // Store state in sessionStorage for verification
@@ -723,6 +834,38 @@ export function IntegrationHub() {
     }, 1000)
   }
 
+  // Slack configuration handlers
+  const handleSlackDisconnect = async () => {
+    try {
+      const response = await fetch('/api/user-integrations/slack', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ action: 'disconnect' }),
+      })
+      
+      if (response.ok) {
+        setIntegrationConfigs((prev) => ({
+          ...prev,
+          slack: {
+            ...prev.slack,
+            enabled: false,
+            settings: {
+              ...prev.slack?.settings,
+              connected: false,
+            },
+          },
+        }))
+        
+        console.log('✅ Slack integration disconnected')
+      }
+    } catch (error) {
+      console.error('Error disconnecting Slack:', error)
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -836,6 +979,103 @@ export function IntegrationHub() {
               {integrationConfigs[integration.id]?.enabled && (
                 <div className="space-y-3">
                   <Label className="text-xs font-medium text-gray-500">CONFIGURATION</Label>
+
+                  {/* Slack Settings */}
+                  {integration.id === "slack" && (
+                    <div className="space-y-4">
+                      {/* Connection Status */}
+                      <div className="p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <Label className="text-sm font-medium">Slack Connection</Label>
+                          {integrationConfigs.slack.settings.connected ? (
+                            <Badge variant="default" className="text-xs bg-green-100 text-green-700">
+                              Connected
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs">
+                              Not Connected
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        {!integrationConfigs.slack.settings.connected ? (
+                          <div className="space-y-2">
+                            <p className="text-xs text-gray-600">
+                              Set up your Slack workspace to enable AI assistant bot with slash commands.
+                            </p>
+                            <SlackOAuthButton 
+                              className="w-full"
+                              onSuccess={() => {
+                                console.log('✅ Slack OAuth successful - refreshing configuration...')
+                                // Force reload the Slack configuration
+                                setTimeout(() => {
+                                  loadSlackConfigFromDatabase()
+                                }, 2000) // Give time for database to be updated
+                              }}
+                              onError={(error) => {
+                                console.error('❌ Slack OAuth error:', error)
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <p className="text-xs text-gray-600">
+                              Connected to: <span className="font-medium">{integrationConfigs.slack.settings.workspaceName}</span>
+                            </p>
+                            <p className="text-xs text-gray-600">
+                              Default channel: <span className="font-medium">{integrationConfigs.slack.settings.defaultChannel}</span>
+                            </p>
+                            <div className="flex space-x-2">
+                              <SlackOAuthButton 
+                                variant="outline"
+                                size="sm"
+                                className="flex-1"
+                                onSuccess={() => {
+                                  console.log('✅ Slack OAuth reconfigured - refreshing configuration...')
+                                  // Force reload the Slack configuration
+                                  setTimeout(() => {
+                                    loadSlackConfigFromDatabase()
+                                  }, 2000) // Give time for database to be updated
+                                }}
+                                onError={(error) => {
+                                  console.error('❌ Slack OAuth error:', error)
+                                }}
+                              />
+                              <Button
+                                onClick={handleSlackDisconnect}
+                                variant="outline"
+                                size="sm"
+                                className="flex-1"
+                              >
+                                Disconnect
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Slack Features */}
+                      {integrationConfigs.slack.settings.connected && (
+                        <div className="p-3 bg-blue-50 rounded-lg">
+                          <Label className="text-sm font-medium">Available Commands</Label>
+                          <div className="mt-2 space-y-1">
+                            <div className="text-xs text-gray-600">
+                              <code className="bg-white px-1 rounded">/sdlc create [task]</code> - Create new task
+                            </div>
+                            <div className="text-xs text-gray-600">
+                              <code className="bg-white px-1 rounded">/sdlc status [id]</code> - Check task status
+                            </div>
+                            <div className="text-xs text-gray-600">
+                              <code className="bg-white px-1 rounded">/sdlc list</code> - List your tasks
+                            </div>
+                            <div className="text-xs text-gray-600">
+                              <code className="bg-white px-1 rounded">/sdlc help</code> - Show help
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* GitHub Settings */}
                   {integration.id === "github" && (
@@ -1544,29 +1784,6 @@ export function IntegrationHub() {
                             onCheckedChange={(checked) => updateIntegrationSetting("confluence", "includeMetadata", checked)}
                           />
                         </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Slack Settings */}
-                  {integration.id === "slack" && (
-                    <div className="space-y-2">
-                      <div>
-                        <Label className="text-sm">Default channel</Label>
-                        <Input
-                          value={integrationConfigs.slack.settings.channel}
-                          onChange={(e) => updateIntegrationSetting("slack", "channel", e.target.value)}
-                          placeholder="#development"
-                          className="mt-1"
-                          size="sm"
-                        />
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <Label className="text-sm">Mention team</Label>
-                        <Switch
-                          checked={integrationConfigs.slack.settings.mentionTeam}
-                          onCheckedChange={(checked) => updateIntegrationSetting("slack", "mentionTeam", checked)}
-                        />
                       </div>
                     </div>
                   )}

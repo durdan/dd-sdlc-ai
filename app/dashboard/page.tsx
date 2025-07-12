@@ -74,7 +74,7 @@ import {
 import { SimpleWorkflowDiagram } from "@/components/simple-workflow-diagram"
 import { DetailedSDLCViewer } from '@/components/detailed-sdlc-viewer'
 import { DatabaseTestInterface } from '@/components/database-test-interface'
-import { AICodeAssistant } from '@/components/ai-code-assistant'
+import { SlackUICodeAssistant } from '@/components/slack-ui-code-assistant'
 
 // User Header Component with admin panel support
 interface UserHeaderProps {
@@ -276,7 +276,8 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
   const [recentProjects, setRecentProjects] = useState<ProjectResult[]>([])
   const [isLoadingProjects, setIsLoadingProjects] = useState(false)
   const [showDatabaseTest, setShowDatabaseTest] = useState(false)
-  const [showAICodeAssistant, setShowAICodeAssistant] = useState(false)
+
+  const [showSlackUICodeAssistant, setShowSlackUICodeAssistant] = useState(false)
 
   // Function to update step progress - moved to component level for global access
   const updateStepProgress = (stepId: string, progress: number, status: "pending" | "in_progress" | "completed" | "error" = "in_progress") => {
@@ -394,6 +395,33 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
   }
 
   const [recentProjectsExpanded, setRecentProjectsExpanded] = useState(false) // Default: folded
+
+  // Clear potentially corrupted cache on component mount
+  useEffect(() => {
+    const clearCorruptedCache = () => {
+      try {
+        // Check for and clear any corrupted localStorage entries
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const key = localStorage.key(i)
+          if (key && key.includes('sdlc-cache')) {
+            try {
+              const value = localStorage.getItem(key)
+              if (value) {
+                JSON.parse(value) // Test if parseable
+              }
+            } catch (parseError) {
+              console.warn(`Removing corrupted cache entry: ${key}`)
+              localStorage.removeItem(key)
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('Error during cache cleanup:', error)
+      }
+    }
+    
+    clearCorruptedCache()
+  }, [])
 
   // Load user configuration and recent projects on component mount
   useEffect(() => {
@@ -614,8 +642,18 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
   const getCachedResults = (input: string) => {
     try {
       const cached = localStorage.getItem(`sdlc-cache-${btoa(input).slice(0, 20)}`)
-      return cached ? JSON.parse(cached) : null
-    } catch {
+      if (!cached || cached.trim() === '') {
+        return null
+      }
+      return JSON.parse(cached)
+    } catch (error) {
+      console.warn('Failed to parse cached results:', error)
+      // Clear corrupted cache entry
+      try {
+        localStorage.removeItem(`sdlc-cache-${btoa(input).slice(0, 20)}`)
+      } catch (removeError) {
+        console.warn('Failed to remove corrupted cache:', removeError)
+      }
       return null
     }
   }
@@ -689,7 +727,13 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
   }
 
   const loadCachedResults = (cached: any) => {
+    try {
     console.log('Loading cached results:', cached)
+      
+      if (!cached || typeof cached !== 'object') {
+        console.warn('Invalid cached results format')
+        return
+      }
     
     // Remove timestamp before setting documents
     const { timestamp, ...documentsData } = cached
@@ -710,6 +754,10 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
     
     setProcessingSteps(cachedSteps)
     console.log('✅ Loaded from cache with', cachedSteps.length, 'steps')
+    } catch (error) {
+      console.error('Error loading cached results:', error)
+      setErrorMessage('Failed to load cached results. Please try generating fresh documents.')
+    }
   }
 
   // Handle streaming response with real-time display updates
@@ -734,7 +782,12 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
           for (const line of lines) {
             if (line.startsWith('data: ')) {
               try {
-                const jsonData = JSON.parse(line.substring(6))
+                const jsonString = line.substring(6).trim()
+                if (!jsonString || jsonString === '') {
+                  continue // Skip empty data lines
+                }
+                
+                const jsonData = JSON.parse(jsonString)
                 if (jsonData.type === 'chunk') {
                   fullContent = jsonData.fullContent
                   // Update progress based on content length (rough estimate)
@@ -751,6 +804,7 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
                   throw new Error(jsonData.error || 'Streaming failed')
                 }
               } catch (parseError) {
+                console.warn('Skipping invalid JSON line:', line.substring(0, 100) + '...')
                 // Skip invalid JSON lines
               }
             }
@@ -1618,11 +1672,24 @@ Focus on the SPECIFIC project requirements and domain. Avoid generic enterprise 
                 <Badge variant="secondary" className="ml-1 text-xs">T1.2</Badge>
               </Button>
 
-              <Button variant="outline" size="sm" onClick={() => setShowAICodeAssistant(true)} className="flex-shrink-0 min-w-[80px]">
+              <Button 
+                variant="default" 
+                size="sm" 
+                onClick={() => window.location.href = '/claude-code'} 
+                className="flex-shrink-0 min-w-[100px] bg-indigo-600 hover:bg-indigo-700"
+              >
+                <Zap className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Claude AI</span>
+                <span className="sm:hidden">Claude</span>
+              </Button>
+
+              <Button variant="outline" size="sm" onClick={() => setShowSlackUICodeAssistant(true)} className="flex-shrink-0 min-w-[80px]">
                 <Code2 className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">AI Code Assistant</span>
-                <span className="sm:hidden">AI Code</span>
-                <Badge variant="secondary" className="ml-1 text-xs">T1.4</Badge>
+                <span className="hidden sm:inline">Slack UI Assistant</span>
+                <span className="sm:hidden">Slack UI</span>
+                <Badge variant="secondary" className="ml-1 text-xs bg-blue-100 text-blue-700">
+                  Web UI
+                </Badge>
               </Button>
             </div>
           </div>
@@ -2683,16 +2750,16 @@ Focus on the SPECIFIC project requirements and domain. Avoid generic enterprise 
           </DialogContent>
         </Dialog>
 
-        {/* AICodeAssistant Dialog */}
-        <Dialog open={showAICodeAssistant} onOpenChange={setShowAICodeAssistant}>
+        {/* Slack UI Code Assistant Dialog */}
+        <Dialog open={showSlackUICodeAssistant} onOpenChange={setShowSlackUICodeAssistant}>
           <DialogContent className="max-w-6xl max-h-[95vh] overflow-auto w-[95vw] sm:w-full">
             <DialogHeader>
-              <DialogTitle>AI Code Assistant</DialogTitle>
+              <DialogTitle>Slack UI Code Assistant</DialogTitle>
               <DialogDescription>
-                Use this tool to generate code snippets based on your SDLC documentation.
+                Web-based interface for the same powerful Claude + GitHub integration available through Slack commands.
               </DialogDescription>
             </DialogHeader>
-            <AICodeAssistant user={user} />
+            <SlackUICodeAssistant />
           </DialogContent>
         </Dialog>
 
