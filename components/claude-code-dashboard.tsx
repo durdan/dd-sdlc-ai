@@ -15,7 +15,7 @@ import { Separator } from '@/components/ui/separator'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { CheckCircle, Clock, AlertCircle, Code, Search, Bug, FileText, Github, Sparkles, Play, RotateCcw, Eye, GitBranch, GitPullRequest, GitMerge, ChevronDown, ChevronRight, Copy, Download, ExternalLink, Trash2 } from 'lucide-react'
+import { CheckCircle, Clock, AlertCircle, Code, Search, Bug, FileText, Github, Sparkles, Play, RotateCcw, Eye, GitBranch, GitPullRequest, GitMerge, ChevronDown, ChevronRight, Copy, Download, ExternalLink, Trash2, Loader2 } from 'lucide-react'
 
 interface ClaudeTask {
   id: string
@@ -71,13 +71,121 @@ export default function ClaudeCodeDashboard() {
   const [taskType, setTaskType] = useState('feature')
   const [priority, setPriority] = useState('medium')
   const [codeToAnalyze, setCodeToAnalyze] = useState('')
+  
+  // Bug analysis states
   const [bugDescription, setBugDescription] = useState('')
+  
+  // Real-time polling state
+  const [pollingTaskIds, setPollingTaskIds] = useState<Set<string>>(new Set())
+  
+  // PR creation loading state
+  const [creatingPrForTask, setCreatingPrForTask] = useState<string | null>(null)
+
+  // Add state for button loading
+  const [cancellingTaskId, setCancellingTaskId] = useState<string | null>(null)
+  const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null)
 
   // Load data on mount
   useEffect(() => {
     loadTasks()
     loadRepositories()
   }, [])
+
+  // REAL-TIME PROGRESS POLLING
+  // Poll for task updates when tasks are running
+  useEffect(() => {
+    const runningTasks = tasks.filter(task => 
+      task.status === 'pending' || 
+      task.status === 'analyzing' || 
+      task.status === 'planning' || 
+      task.status === 'executing' || 
+      task.status === 'reviewing'
+    )
+
+    // Start polling for running tasks
+    runningTasks.forEach(task => {
+      if (!pollingTaskIds.has(task.id)) {
+        setPollingTaskIds(prev => new Set(prev).add(task.id))
+        startTaskPolling(task.id)
+      }
+    })
+
+    // Stop polling for completed/failed tasks
+    pollingTaskIds.forEach(taskId => {
+      const task = tasks.find(t => t.id === taskId)
+      if (!task || task.status === 'completed' || task.status === 'failed') {
+        setPollingTaskIds(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(taskId)
+          return newSet
+        })
+      }
+    })
+  }, [tasks, pollingTaskIds])
+
+  const startTaskPolling = (taskId: string) => {
+    console.log(`🔄 Starting real-time polling for task: ${taskId}`)
+    
+    const pollInterval = setInterval(async () => {
+      try {
+        const response = await fetch(`/api/slack/tasks/${taskId}`)
+        if (response.ok) {
+          const data = await response.json()
+          const updatedTask = data.task
+          
+          // Update the task in the tasks list
+          setTasks(prevTasks => 
+            prevTasks.map(task => 
+              task.id === taskId ? { 
+                ...task, 
+                ...updatedTask,
+                // Ensure we preserve the original task structure
+                status: updatedTask.status,
+                progress: updatedTask.progress,
+                steps: updatedTask.steps,
+                result: updatedTask.result
+              } : task
+            )
+          )
+          
+          // Update selected task if it's the one being polled
+          setSelectedTask(prevSelected => 
+            prevSelected?.id === taskId ? { 
+              ...prevSelected, 
+              ...updatedTask,
+              status: updatedTask.status,
+              progress: updatedTask.progress,
+              steps: updatedTask.steps,
+              result: updatedTask.result
+            } : prevSelected
+          )
+          
+          // Stop polling if task is completed or failed
+          if (updatedTask.status === 'completed' || updatedTask.status === 'failed') {
+            console.log(`✅ Task ${taskId} completed, stopping polling`)
+            clearInterval(pollInterval)
+            setPollingTaskIds(prev => {
+              const newSet = new Set(prev)
+              newSet.delete(taskId)
+              return newSet
+            })
+          }
+        }
+      } catch (error) {
+        console.error(`❌ Error polling task ${taskId}:`, error)
+      }
+    }, 2000) // Poll every 2 seconds
+
+    // Cleanup interval after 10 minutes to prevent infinite polling
+    setTimeout(() => {
+      clearInterval(pollInterval)
+      setPollingTaskIds(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(taskId)
+        return newSet
+      })
+    }, 600000) // 10 minutes
+  }
 
   const loadTasks = async () => {
     try {
@@ -148,8 +256,15 @@ export default function ClaudeCodeDashboard() {
       return
     }
 
-    setIsLoading(true)
+    // Check if PR already exists
+    if (hasPullRequest(task)) {
+      setError('Pull request already exists for this task')
+      return
+    }
+
+    setCreatingPrForTask(task.id)
     setError('')
+    setSuccess('')
 
     try {
       const repositoryUrl = `https://github.com/${task.repository.owner}/${task.repository.name}`
@@ -159,6 +274,7 @@ export default function ClaudeCodeDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'create_implementation_pr',
+          taskId: task.id, // CRITICAL FIX: Pass task ID so we can update the task with PR info
           repositoryUrl,
           generatedCode: task.result,
           prTitle: `✨ ${task.description}`,
@@ -175,13 +291,19 @@ export default function ClaudeCodeDashboard() {
           ...prev,
           [task.id]: data.pullRequest
         }))
+        
+        // CRITICAL FIX: Refresh tasks to show updated PR information from task store
+        // This ensures the PR shows up immediately in the UI
+        setTimeout(() => {
+          loadTasks() // Refresh tasks from API to get updated PR info
+        }, 1000) // Give the backend time to update the task
       } else {
         setError(data.error || 'Failed to create pull request')
       }
     } catch (error) {
       setError('Failed to create pull request')
     } finally {
-      setIsLoading(false)
+      setCreatingPrForTask(null)
     }
   }
 
@@ -229,27 +351,43 @@ export default function ClaudeCodeDashboard() {
       return
     }
 
+    if (!selectedRepo) {
+      setError('Repository selection is required')
+      return
+    }
+
     setIsLoading(true)
     setError('')
     setSuccess('')
 
     try {
-      const response = await fetch('/api/claude', {
+      // Use the existing slack tasks endpoint for unified workflow
+      const response = await fetch('/api/slack/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'analyze_bug',
-          repositoryUrl: selectedRepo,
-          bugDescription,
-          context: 'Bug analysis from Claude Code Dashboard'
+          description: bugDescription,
+          type: 'bug_fix',
+          priority: 'high',
+          repository: selectedRepo,
+          context: 'Bug analysis and fix from Claude Code Dashboard'
         })
       })
 
       const data = await response.json()
       
       if (response.ok) {
-        setSuccess('Bug analysis completed!')
-        console.log('Bug analysis result:', data.analysis)
+        setSuccess('Bug analysis and fix completed! Check the Tasks tab for results.')
+        
+        // Clear form
+        setBugDescription('')
+        
+        // Refresh tasks to show the new comprehensive development task
+        loadTasks()
+        
+        // Switch to tasks tab to show progress
+        setActiveTab('tasks')
+        
       } else {
         setError(data.error || 'Failed to analyze bug')
       }
@@ -283,6 +421,74 @@ export default function ClaudeCodeDashboard() {
       setError('Failed to retry task')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  // Cancel task function
+  const handleCancelTask = async (taskId: string) => {
+    setCancellingTaskId(taskId)
+    setError('')
+    setSuccess('')
+
+    try {
+      const response = await fetch(`/api/slack/tasks/${taskId}/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+
+      const data = await response.json()
+      
+      if (response.ok) {
+        setSuccess('Task cancelled successfully!')
+        loadTasks() // Refresh task list
+        
+        // Close dialog if the cancelled task is currently selected
+        if (selectedTask?.id === taskId) {
+          setSelectedTask(null)
+        }
+      } else {
+        setError(data.error || 'Failed to cancel task')
+      }
+    } catch (error) {
+      setError('Failed to cancel task')
+    } finally {
+      setCancellingTaskId(null)
+    }
+  }
+
+  // Delete task function
+  const handleDeleteTask = async (taskId: string) => {
+    if (!confirm('Are you sure you want to delete this task? This action cannot be undone.')) {
+      return
+    }
+
+    setDeletingTaskId(taskId)
+    setError('')
+    setSuccess('')
+
+    try {
+      const response = await fetch(`/api/slack/tasks/${taskId}/delete`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      })
+
+      const data = await response.json()
+      
+      if (response.ok) {
+        setSuccess('Task deleted successfully!')
+        loadTasks() // Refresh task list
+        
+        // Close dialog if the deleted task is currently selected
+        if (selectedTask?.id === taskId) {
+          setSelectedTask(null)
+        }
+      } else {
+        setError(data.error || 'Failed to delete task')
+      }
+    } catch (error) {
+      setError('Failed to delete task')
+    } finally {
+      setDeletingTaskId(null)
     }
   }
 
@@ -338,6 +544,134 @@ export default function ClaudeCodeDashboard() {
     if (prStatus && !prStatus.merged) return { step: 'pr_created', label: 'PR Created', color: 'text-purple-600' }
     if (prStatus && prStatus.merged) return { step: 'merged', label: 'Merged', color: 'text-green-600' }
     return { step: 'unknown', label: 'Unknown', color: 'text-gray-600' }
+  }
+
+  const clearBugAnalysisForm = () => {
+    setBugDescription('')
+    setSelectedRepo('')
+  }
+
+  // DYNAMIC WORKFLOW STEPS HELPER
+  const renderDynamicWorkflowSteps = (task: ClaudeTask) => {
+    // Always prefer backend steps if available and not empty
+    if (task.steps && task.steps.length > 0) {
+      return (
+        <div className="space-y-2">
+          {task.steps.map((step, index) => (
+            <div 
+              key={step.id} 
+              className={`flex items-center gap-3 p-2 rounded transition-all duration-300 ${
+                step.status === 'completed' ? 'bg-green-100' : 
+                step.status === 'running' || step.status === 'in_progress' ? 'bg-blue-100' : 
+                step.status === 'failed' ? 'bg-red-100' : 'bg-gray-100'
+              }`}
+            >
+              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                step.status === 'completed' ? 'bg-green-500 text-white' :
+                step.status === 'running' || step.status === 'in_progress' ? 'bg-blue-500 text-white' :
+                step.status === 'failed' ? 'bg-red-500 text-white' : 'bg-gray-300'
+              }`}>
+                {(step.status === 'running' || step.status === 'in_progress') ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : step.status === 'completed' ? (
+                  <CheckCircle className="h-3 w-3" />
+                ) : step.status === 'failed' ? (
+                  <AlertCircle className="h-3 w-3" />
+                ) : (
+                  index + 1
+                )}
+              </span>
+              <span className="text-sm flex-1">{step.title || step.name}</span>
+              {step.status === 'completed' && <CheckCircle className="h-4 w-4 text-green-500 ml-auto" />}
+              {(step.status === 'running' || step.status === 'in_progress') && (
+                <div className="flex items-center gap-1 ml-auto">
+                  <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />
+                  <span className="text-xs text-blue-600">Processing...</span>
+                </div>
+              )}
+              {step.status === 'failed' && <AlertCircle className="h-4 w-4 text-red-500 ml-auto" />}
+            </div>
+          ))}
+        </div>
+      )
+    }
+
+    // Enhanced fallback workflow with consistent styling to match backend steps
+    const defaultSteps = [
+      { id: 'analyze', name: '📊 Analyze repository structure and patterns', threshold: 0 },
+      { id: 'identify', name: '🔍 Identify implementation requirements', threshold: 20 },
+      { id: 'branch', name: '🌿 Create a feature branch', threshold: 40 },
+      { id: 'generate', name: `⚡ Generate context-aware ${task.type === 'bug_fix' ? 'bug fix' : 'feature'} code`, threshold: 60 },
+      { id: 'test', name: `🧪 Generate tests to validate the ${task.type === 'bug_fix' ? 'fix' : 'implementation'}`, threshold: 80 },
+      { id: 'pr', name: '📋 Create pull request for review', threshold: 100 },
+      { id: 'merge', name: '✅ Review and merge when ready', threshold: 101 }
+    ]
+
+    return (
+      <div className="space-y-2">
+        {defaultSteps.map((step, index) => {
+          const isActive = task.progress >= step.threshold
+          const isProcessing = task.status !== 'completed' && task.status !== 'failed' && 
+                              task.progress >= step.threshold && task.progress < (defaultSteps[index + 1]?.threshold || 101)
+          const isCompleted = step.id === 'pr' ? (task.status === 'completed' && task.result?.pull_request) :
+                             step.id === 'merge' ? prStatuses[task.id]?.merged :
+                             task.progress > step.threshold
+
+          return (
+            <div 
+              key={step.id}
+              className={`flex items-center gap-3 p-2 rounded transition-all duration-300 ${
+                isCompleted ? 'bg-green-100' : 
+                isProcessing ? 'bg-blue-100' : 
+                isActive ? 'bg-yellow-100' : 'bg-gray-100'
+              }`}
+            >
+              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                isCompleted ? 'bg-green-500 text-white' :
+                isProcessing ? 'bg-blue-500 text-white' :
+                isActive ? 'bg-yellow-500 text-white' : 'bg-gray-300'
+              }`}>
+                {isProcessing ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : isCompleted ? (
+                  <CheckCircle className="h-3 w-3" />
+                ) : (
+                  index + 1
+                )}
+              </span>
+              <span className="text-sm flex-1">{step.name}</span>
+              {isCompleted && <CheckCircle className="h-4 w-4 text-green-500 ml-auto" />}
+              {isProcessing && (
+                <div className="flex items-center gap-1 ml-auto">
+                  <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />
+                  <span className="text-xs text-blue-600">Processing...</span>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
+  // Helper function to check if PR exists for a task
+  const hasPullRequest = (task: ClaudeTask): boolean => {
+    // Check task result (from backend update)
+    if (task.result?.pull_request) {
+      return true
+    }
+    
+    // Check prStatuses state (from button click)
+    if (prStatuses[task.id]?.url) {
+      return true
+    }
+    
+    return false
+  }
+
+  // Get PR info from either source
+  const getPullRequestInfo = (task: ClaudeTask) => {
+    return task.result?.pull_request || prStatuses[task.id] || null
   }
 
   return (
@@ -580,49 +914,103 @@ export default function ClaudeCodeDashboard() {
                             </div>
                           </div>
                           
-                          {task.progress !== undefined && (
-                            <div className="space-y-1">
-                              <div className="flex justify-between text-sm">
-                                <span>Progress</span>
-                                <span>{task.progress}%</span>
-                              </div>
-                              <Progress value={task.progress} className="h-2" />
+                          {/* Always show progress bar */}
+                          <div className="space-y-1">
+                            <div className="flex justify-between text-sm">
+                              <span>Progress</span>
+                              <span>{task.progress || 0}%</span>
                             </div>
-                          )}
+                            <Progress value={task.progress || 0} className="h-2" />
+                          </div>
                           
                           <div className="flex items-center justify-between">
                             <span className="text-sm text-gray-500">
-                              Created: {new Date(task.created_at).toLocaleString()}
+                              Created: {task.created_at ? new Date(task.created_at).toLocaleString() : 'Unknown'}
                             </span>
-                            <div className="flex space-x-2">
-                              {task.status === 'completed' && (
-                                <>
-                                  <Button size="sm" variant="outline" onClick={() => setSelectedTask(task)}>
-                                    <Eye className="h-3 w-3 mr-1" />
-                                    Review
-                                  </Button>
-                                  {!prStatus && (
-                                    <Button size="sm" onClick={() => handleCreatePR(task)} disabled={isLoading}>
+                            {/* Task Action Buttons */}
+                            <div className="flex gap-2">
+                              {/* Create PR Button */}
+                              {task.status === 'completed' && !hasPullRequest(task) && (
+                                <Button 
+                                  size="sm" 
+                                  onClick={() => handleCreatePR(task)} 
+                                  disabled={isLoading || creatingPrForTask === task.id}
+                                >
+                                  {creatingPrForTask === task.id ? (
+                                    <>
+                                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                      Creating...
+                                    </>
+                                  ) : (
+                                    <>
                                       <GitPullRequest className="h-3 w-3 mr-1" />
                                       Create PR
-                                    </Button>
+                                    </>
                                   )}
-                                  {prStatus && (
-                                    <Button size="sm" variant="outline" asChild>
-                                      <a href={prStatus.url} target="_blank" rel="noopener noreferrer">
-                                        <ExternalLink className="h-3 w-3 mr-1" />
-                                        View PR
-                                      </a>
-                                    </Button>
-                                  )}
-                                </>
+                                </Button>
                               )}
+
+                              {/* Cancel Button - for running tasks */}
+                              {(task.status === 'pending' || task.status === 'analyzing' || task.status === 'planning' || task.status === 'executing' || task.status === 'reviewing') && (
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  onClick={() => handleCancelTask(task.id)}
+                                  disabled={cancellingTaskId === task.id}
+                                >
+                                  {cancellingTaskId === task.id ? (
+                                    <>
+                                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                      Cancelling...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Trash2 className="h-3 w-3 mr-1" />
+                                      Cancel
+                                    </>
+                                  )}
+                                </Button>
+                              )}
+
+                              {/* Retry Button - for failed tasks */}
                               {task.status === 'failed' && (
-                                <Button size="sm" variant="outline" onClick={() => handleRetryTask(task.id)}>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  onClick={() => handleRetryTask(task.id)}
+                                >
                                   <RotateCcw className="h-3 w-3 mr-1" />
                                   Retry
                                 </Button>
                               )}
+
+                              {/* Delete Button - for completed/failed/cancelled tasks */}
+                              {(task.status === 'completed' || task.status === 'failed' || task.status === 'cancelled') && (
+                                <Button 
+                                  size="sm" 
+                                  variant="destructive" 
+                                  onClick={() => handleDeleteTask(task.id)}
+                                  disabled={deletingTaskId === task.id}
+                                >
+                                  {deletingTaskId === task.id ? (
+                                    <>
+                                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                      Deleting...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Trash2 className="h-3 w-3 mr-1" />
+                                      Delete
+                                    </>
+                                  )}
+                                </Button>
+                              )}
+
+                              {/* View Details Button */}
+                              <Button size="sm" variant="outline" onClick={() => setSelectedTask(task)}>
+                                <Eye className="h-3 w-3 mr-1" />
+                                View
+                              </Button>
                             </div>
                           </div>
                         </div>
@@ -665,12 +1053,17 @@ export default function ClaudeCodeDashboard() {
         <TabsContent value="bugs" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Bug Detection & Analysis</CardTitle>
-              <CardDescription>Describe a bug and get AI-powered analysis and fix suggestions</CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                <Bug className="h-5 w-5" />
+                Bug Analysis & Fix
+              </CardTitle>
+              <CardDescription>
+                Select a repository and describe the bug or paste a stack trace. The AI will analyze the issue, create a fix, and prepare a pull request.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="bugRepository">Repository</Label>
+                <Label htmlFor="bugRepository">Repository *</Label>
                 <Select value={selectedRepo} onValueChange={setSelectedRepo}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select repository..." />
@@ -686,20 +1079,49 @@ export default function ClaudeCodeDashboard() {
               </div>
               
               <div>
-                <Label htmlFor="bugDescription">Bug Description</Label>
+                <Label htmlFor="bugDescription">Bug Description or Stack Trace *</Label>
                 <Textarea
                   id="bugDescription"
-                  placeholder="Describe the bug you're experiencing..."
+                  placeholder="Describe the bug in natural language or paste the stack trace/error message here..."
                   value={bugDescription}
                   onChange={(e) => setBugDescription(e.target.value)}
-                  rows={6}
+                  rows={12}
+                  className="font-mono text-sm"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  💡 You can paste error messages, stack traces, or describe the bug in plain English
+                </p>
               </div>
-              
-              <Button onClick={handleAnalyzeBug} disabled={isLoading} className="w-full">
-                <Bug className="h-4 w-4 mr-2" />
-                {isLoading ? 'Analyzing Bug...' : 'Analyze Bug'}
-              </Button>
+
+              <div className="flex gap-2">
+                <Button onClick={handleAnalyzeBug} disabled={isLoading} className="flex-1">
+                  <Search className="h-4 w-4 mr-2" />
+                  {isLoading ? 'Analyzing & Fixing Bug...' : 'Analyze & Fix Bug'}
+                </Button>
+                <Button onClick={clearBugAnalysisForm} variant="outline" disabled={isLoading}>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Clear
+                </Button>
+              </div>
+
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h3 className="font-semibold mb-2 flex items-center gap-2">
+                  <GitPullRequest className="h-4 w-4" />
+                  Unified Workflow
+                </h3>
+                <p className="text-sm text-gray-700">
+                  This follows the same workflow as feature requests:
+                </p>
+                <ol className="text-sm text-gray-600 mt-2 space-y-1">
+                  <li>1. 📊 Analyze repository structure and patterns</li>
+                  <li>2. 🔍 Identify root cause and affected files</li>
+                  <li>3. 🌿 Create a feature branch for the fix</li>
+                  <li>4. ⚡ Generate context-aware bug fix code</li>
+                  <li>5. 🧪 Generate tests to validate the fix</li>
+                  <li>6. 📋 Create pull request for review</li>
+                  <li>7. ✅ Review and merge when ready</li>
+                </ol>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -759,20 +1181,140 @@ export default function ClaudeCodeDashboard() {
       {/* Task Details Dialog */}
       {selectedTask && (
         <Dialog open={!!selectedTask} onOpenChange={() => setSelectedTask(null)}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Code className="h-5 w-5" />
                 Task Details: {selectedTask.description}
               </DialogTitle>
               <DialogDescription>
-                Review generated code and manage deployment workflow
+                Complete workflow status and generated code review
               </DialogDescription>
             </DialogHeader>
             
-            <ScrollArea className="max-h-[60vh]">
+            <ScrollArea className="max-h-[75vh]">
               <div className="space-y-6">
-                {/* Workflow Status */}
+                {/* Workflow Progress Steps */}
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <GitBranch className="h-4 w-4" />
+                    Unified Workflow Progress
+                  </h3>
+                  {renderDynamicWorkflowSteps(selectedTask)}
+                </div>
+
+                {/* Current Status */}
+                {selectedTask.status === 'pending' && (
+                  <div className="mt-3 p-3 bg-yellow-100 rounded-lg">
+                    <p className="text-sm text-yellow-800">
+                      ⏳ Task is queued and waiting to start processing...
+                    </p>
+                  </div>
+                )}
+                {selectedTask.status === 'in_progress' && (
+                  <div className="mt-3 p-3 bg-blue-100 rounded-lg">
+                    <p className="text-sm text-blue-800">
+                      🔄 Task is currently being processed by the AI...
+                    </p>
+                  </div>
+                )}
+                {selectedTask.status === 'failed' && (
+                  <div className="mt-3 p-3 bg-red-100 rounded-lg">
+                    <p className="text-sm text-red-800">
+                      ❌ Task failed. Check logs or retry the task.
+                    </p>
+                  </div>
+                )}
+
+                {/* Branch and Repository Status */}
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <GitBranch className="h-4 w-4" />
+                    Branch & Repository Status
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <span className="text-sm font-medium text-gray-600">Repository:</span>
+                      <div className="flex items-center gap-2 mt-1">
+                        {selectedTask.repository ? (
+                          <>
+                            <Badge variant="outline">
+                              <Github className="h-3 w-3 mr-1" />
+                              {selectedTask.repository.owner}/{selectedTask.repository.name}
+                            </Badge>
+                            <Button size="sm" variant="outline" asChild>
+                              <a 
+                                href={`https://github.com/${selectedTask.repository.owner}/${selectedTask.repository.name}`} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                              >
+                                <ExternalLink className="h-3 w-3 mr-1" />
+                                View Repo
+                              </a>
+                            </Button>
+                          </>
+                        ) : (
+                          <span className="text-sm text-gray-500">Repository information not available</span>
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-600">Feature Branch:</span>
+                      <div className="flex items-center gap-2 mt-1">
+                        {selectedTask.result?.branch_name ? (
+                          <>
+                            <Badge variant="outline" className="bg-green-50">
+                              <GitBranch className="h-3 w-3 mr-1" />
+                              {selectedTask.result.branch_name}
+                            </Badge>
+                            {selectedTask.repository && (
+                              <Button size="sm" variant="outline" asChild>
+                                <a 
+                                  href={`https://github.com/${selectedTask.repository.owner}/${selectedTask.repository.name}/tree/${selectedTask.result.branch_name}`} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                >
+                                  <ExternalLink className="h-3 w-3 mr-1" />
+                                  View Branch
+                                </a>
+                              </Button>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-sm text-gray-500">
+                            {selectedTask.status === 'pending' ? 'Branch will be created during processing' : 
+                             selectedTask.status === 'in_progress' ? 'Branch being created...' : 
+                             'No branch created yet'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Pull Request Status */}
+                  {hasPullRequest(selectedTask) && (
+                    <div className="mt-4 pt-4 border-t border-blue-200">
+                      <span className="text-sm font-medium text-gray-600">Pull Request:</span>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant="outline" className="bg-purple-50">
+                          <GitPullRequest className="h-3 w-3 mr-1" />
+                          PR #{getPullRequestInfo(selectedTask)?.number}
+                        </Badge>
+                        <Button size="sm" variant="outline" asChild>
+                          <a href={getPullRequestInfo(selectedTask)?.url} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="h-3 w-3 mr-1" />
+                            Review PR
+                          </a>
+                        </Button>
+                        <Badge variant={prStatuses[selectedTask.id]?.merged ? 'default' : 'secondary'}>
+                          {prStatuses[selectedTask.id]?.merged ? 'Merged' : prStatuses[selectedTask.id]?.state || getPullRequestInfo(selectedTask)?.state || 'Open'}
+                        </Badge>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Task Status and Timing */}
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                   <div className="flex items-center space-x-4">
                     <div className="flex items-center space-x-2">
@@ -782,23 +1324,63 @@ export default function ClaudeCodeDashboard() {
                     <Badge variant="outline" className={getStatusColor(selectedTask.status)}>
                       {selectedTask.status}
                     </Badge>
+                    {selectedTask.progress !== undefined && (
+                      <div className="flex items-center gap-2">
+                        <Progress value={selectedTask.progress} className="w-24 h-2" />
+                        <span className="text-sm text-gray-600">{selectedTask.progress}%</span>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center space-x-2">
-                    {selectedTask.repository && (
-                      <Badge variant="outline">
-                        <Github className="h-3 w-3 mr-1" />
-                        {selectedTask.repository.owner}/{selectedTask.repository.name}
-                      </Badge>
+                  <div className="text-right">
+                    <div className="text-sm text-gray-500">Created: {new Date(selectedTask.created_at).toLocaleString()}</div>
+                    {selectedTask.completed_at && (
+                      <div className="text-sm text-gray-500">Completed: {new Date(selectedTask.completed_at).toLocaleString()}</div>
                     )}
                   </div>
                 </div>
 
-                {/* Generated Files */}
+                {/* Committed Files Summary */}
+                {(selectedTask.result?.files_created?.length > 0 || selectedTask.result?.files_modified?.length > 0) && (
+                  <div className="bg-green-50 p-4 rounded-lg">
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <GitMerge className="h-4 w-4" />
+                      Committed Files ({(selectedTask.result?.files_created?.length || 0) + (selectedTask.result?.files_modified?.length || 0)})
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {selectedTask.result?.files_created?.length > 0 && (
+                        <div>
+                          <h4 className="text-sm font-medium text-green-700 mb-2">📄 Files Created ({selectedTask.result.files_created.length})</h4>
+                          <div className="space-y-1">
+                            {selectedTask.result.files_created.map((file: any, index: number) => (
+                              <div key={index} className="bg-white p-2 rounded border border-green-200">
+                                <code className="text-xs text-green-700">{typeof file === 'string' ? file : file.path}</code>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {selectedTask.result?.files_modified?.length > 0 && (
+                        <div>
+                          <h4 className="text-sm font-medium text-blue-700 mb-2">✏️ Files Modified ({selectedTask.result.files_modified.length})</h4>
+                          <div className="space-y-1">
+                            {selectedTask.result.files_modified.map((file: any, index: number) => (
+                              <div key={index} className="bg-white p-2 rounded border border-blue-200">
+                                <code className="text-xs text-blue-700">{typeof file === 'string' ? file : file.path}</code>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Generated Files (Preview) */}
                 {selectedTask.result?.files_to_create && selectedTask.result.files_to_create.length > 0 && (
                   <div className="space-y-4">
                     <h3 className="font-semibold text-lg flex items-center gap-2">
                       <FileText className="h-5 w-5" />
-                      Files to Create ({selectedTask.result.files_to_create.length})
+                      Generated Code Preview ({selectedTask.result.files_to_create.length} files)
                     </h3>
                     {selectedTask.result.files_to_create.map((file: any, index: number) => (
                       <Collapsible key={index}>
@@ -846,101 +1428,67 @@ export default function ClaudeCodeDashboard() {
                   </div>
                 )}
 
-                {/* Files to Modify */}
-                {selectedTask.result?.files_to_modify && selectedTask.result.files_to_modify.length > 0 && (
-                  <div className="space-y-4">
-                    <h3 className="font-semibold text-lg flex items-center gap-2">
-                      <FileText className="h-5 w-5" />
-                      Files to Modify ({selectedTask.result.files_to_modify.length})
-                    </h3>
-                    {selectedTask.result.files_to_modify.map((file: any, index: number) => (
-                      <Collapsible key={index}>
-                        <CollapsibleTrigger
-                          className="flex items-center justify-between w-full p-3 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100"
-                          onClick={() => toggleFileExpansion(`modify-${index}`)}
-                        >
-                          <div className="flex items-center space-x-2">
-                            {expandedFiles.has(`modify-${index}`) ? 
-                              <ChevronDown className="h-4 w-4" /> : 
-                              <ChevronRight className="h-4 w-4" />
-                            }
-                            <code className="text-sm font-mono">{file.path}</code>
-                            <Badge variant="outline" className="text-xs text-blue-700">
-                              MODIFY
-                            </Badge>
-                          </div>
-                          <span
-                            className="inline-flex items-center justify-center h-8 w-8 rounded-md text-sm font-medium transition-colors hover:bg-gray-100 text-gray-600 hover:text-gray-900 cursor-pointer"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              copyToClipboard(file.changes)
-                            }}
-                          >
-                            <Copy className="h-3 w-3" />
-                          </span>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent className="mt-2">
-                          <div className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm text-gray-400">{file.description}</span>
-                            </div>
-                            <pre className="text-sm">
-                              <code>{file.changes}</code>
-                            </pre>
-                          </div>
-                        </CollapsibleContent>
-                      </Collapsible>
-                    ))}
+                {/* Action Buttons */}
+                <div className="flex items-center justify-between pt-4 border-t">
+                  <div className="flex gap-2">
+                    {selectedTask.status === 'completed' && !hasPullRequest(selectedTask) && (
+                      <Button onClick={() => handleCreatePR(selectedTask)} disabled={isLoading || creatingPrForTask === selectedTask.id}>
+                        {creatingPrForTask === selectedTask.id ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Creating Pull Request...
+                          </>
+                        ) : (
+                          <>
+                            <GitPullRequest className="h-4 w-4 mr-2" />
+                            Create Pull Request
+                          </>
+                        )}
+                      </Button>
+                    )}
+                    {selectedTask.status === 'failed' && (
+                      <Button variant="outline" onClick={() => handleRetryTask(selectedTask.id)}>
+                        <RotateCcw className="h-4 w-4 mr-2" />
+                        Retry Task
+                      </Button>
+                    )}
+                    {selectedTask.status === 'in_progress' && (
+                      <Button variant="outline" onClick={() => handleCancelTask(selectedTask.id)} disabled={cancellingTaskId === selectedTask.id}>
+                        {cancellingTaskId === selectedTask.id ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Cancelling...
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="h-4 w-4 mr-2" />
+                            Cancel Task
+                          </>
+                        )}
+                      </Button>
+                    )}
+                    {selectedTask.status === 'pending' && (
+                      <Button variant="outline" onClick={() => handleDeleteTask(selectedTask.id)} disabled={deletingTaskId === selectedTask.id}>
+                        {deletingTaskId === selectedTask.id ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Deleting...
+                          </>
+                        ) : (
+                          <>
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete Task
+                          </>
+                        )}
+                      </Button>
+                    )}
                   </div>
-                )}
-
-                {/* Validation Steps */}
-                {selectedTask.result?.validation_steps && (
-                  <div className="space-y-2">
-                    <h3 className="font-semibold text-lg">Validation Steps</h3>
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                      <ul className="space-y-2 text-sm">
-                        {selectedTask.result.validation_steps.map((step: string, index: number) => (
-                          <li key={index} className="flex items-start space-x-2">
-                            <CheckCircle className="h-4 w-4 text-yellow-600 mt-0.5 flex-shrink-0" />
-                            <span>{step}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                )}
+                  <Button variant="outline" onClick={() => setSelectedTask(null)}>
+                    Close
+                  </Button>
+                </div>
               </div>
             </ScrollArea>
-
-            <DialogFooter className="flex items-center justify-between">
-              <div className="flex items-center space-x-2 text-sm text-gray-500">
-                <Clock className="h-4 w-4" />
-                <span>Created: {new Date(selectedTask.created_at).toLocaleString()}</span>
-                {selectedTask.completed_at && (
-                  <span>• Completed: {new Date(selectedTask.completed_at).toLocaleString()}</span>
-                )}
-              </div>
-              <div className="flex space-x-2">
-                <Button variant="outline" onClick={() => setSelectedTask(null)}>
-                  Close
-                </Button>
-                {selectedTask.status === 'completed' && !prStatuses[selectedTask.id] && (
-                  <Button onClick={() => handleCreatePR(selectedTask)} disabled={isLoading}>
-                    <GitPullRequest className="h-4 w-4 mr-2" />
-                    Create Pull Request
-                  </Button>
-                )}
-                {prStatuses[selectedTask.id] && (
-                  <Button variant="outline" asChild>
-                    <a href={prStatuses[selectedTask.id].url} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      View Pull Request
-                    </a>
-                  </Button>
-                )}
-              </div>
-            </DialogFooter>
           </DialogContent>
         </Dialog>
       )}
