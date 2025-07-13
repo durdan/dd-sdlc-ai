@@ -79,12 +79,27 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 OPENAI_API_KEY=your_openai_api_key
 
-# Optional for full functionality
-NEXTAUTH_SECRET=your_nextauth_secret
+# App Configuration
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your_nextauth_secret
+
+# Optional for full functionality
 ANTHROPIC_API_KEY=your_anthropic_api_key
 JIRA_CLIENT_ID=your_jira_client_id
 JIRA_CLIENT_SECRET=your_jira_client_secret
+
+# Slack OAuth Configuration
+SLACK_CLIENT_ID=your_slack_client_id
+SLACK_CLIENT_SECRET=your_slack_client_secret
+SLACK_REDIRECT_URI=http://localhost:3000/api/slack/oauth/callback
+SLACK_SIGNING_SECRET=your_slack_signing_secret
+NEXT_PUBLIC_SLACK_CLIENT_ID=your_slack_client_id
+NEXT_PUBLIC_SLACK_REDIRECT_URI=http://localhost:3000/api/slack/oauth/callback
+
+# GitHub OAuth Configuration
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
 ```
 
 ### Database Setup

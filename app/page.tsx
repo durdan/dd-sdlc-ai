@@ -119,6 +119,12 @@ export default function Home() {
 
   const features = [
     {
+      icon: <Bot className="h-6 w-6" />,
+      title: "🚀 Claude AI Code Assistant",
+      description: "NEW: Autonomous bug fixing, feature implementation, and code optimization using Claude 3.5 Sonnet with GitHub integration",
+      color: "bg-gradient-to-r from-green-500 to-emerald-500"
+    },
+    {
       icon: <Workflow className="h-6 w-6" />,
       title: "End-to-End SDLC Automation",
       description: "Automate your entire software development lifecycle from requirements gathering to deployment documentation",
@@ -132,8 +138,8 @@ export default function Home() {
     },
     {
       icon: <Merge className="h-6 w-6" />,
-      title: "Intelligent Orchestration",
-      description: "Smart workflow orchestration that coordinates multiple AI models and integrations seamlessly",
+      title: "Dual AI Architecture",
+      description: "OpenAI for document generation, Claude for agentic coding workflows - choose the best model for each task",
       color: "bg-green-500"
     },
     {
@@ -141,12 +147,6 @@ export default function Home() {
       title: "Native Integrations",
       description: "Deep integration with your existing development tools - JIRA, Confluence, GitHub, and more",
       color: "bg-orange-500"
-    },
-    {
-      icon: <Cog className="h-6 w-6" />,
-      title: "Customizable Workflows",
-      description: "Adapt templates and processes to match your team's specific development methodologies",
-      color: "bg-indigo-500"
     },
     {
       icon: <Shield className="h-6 w-6" />,
@@ -238,12 +238,15 @@ export default function Home() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <div className="flex items-center space-x-2">
-                <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-2 rounded-lg">
-                  <Workflow className="h-6 w-6 text-white" />
-                </div>
+                <img 
+                  src="/img/SDLC.dev.logo.png" 
+                  alt="SDLC.dev Logo" 
+                  className="h-40 w-40 sm:h-40 sm:w-40 object-contain"
+                  style={{ minWidth: '80px', minHeight: '80px' }}
+                />
                 <span className="text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  <span className="hidden sm:inline">SDLC Automation Platform</span>
-                  <span className="sm:hidden">SDLC Platform</span>
+                  <span className="hidden sm:inline">SDLC.dev</span>
+                  <span className="sm:hidden">SDLC.dev</span>
                 </span>
               </div>
             </div>
@@ -338,10 +341,16 @@ export default function Home() {
         <div className="absolute inset-0 bg-grid-gray-100 bg-[size:20px_20px] opacity-40"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-24">
           <div className="text-center">
-            <div className="inline-flex items-center space-x-2 bg-white/60 backdrop-blur-sm rounded-full px-4 py-2 mb-8">
-              <Workflow className="h-4 w-4 text-purple-600" />
+                          <div className="inline-flex items-center space-x-2 bg-white/60 backdrop-blur-sm rounded-full px-4 py-2 mb-8">
+                <img 
+                  src="/img/SDLC.dev.logo.png" 
+                  alt="SDLC.dev Logo" 
+                  className="h-16 w-16 sm:h-16 sm:w-16 object-contain"
+                  style={{ minWidth: '64px', minHeight: '64px' }}
+                />
               <span className="text-sm font-medium text-gray-700">Complete SDLC Automation</span>
               <Badge variant="secondary" className="bg-purple-100 text-purple-700">AI-Powered</Badge>
+              <Badge variant="secondary" className="bg-green-100 text-green-700">✨ New: Claude AI Code Assistant</Badge>
             </div>
             
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
@@ -352,7 +361,8 @@ export default function Home() {
             </h1>
             
             <p className="text-lg sm:text-xl text-gray-600 mb-10 max-w-4xl mx-auto leading-relaxed">
-              From requirements gathering to deployment documentation, streamline every phase of your SDLC. 
+              From requirements gathering to autonomous code development, streamline every phase of your SDLC. 
+              <strong>NEW:</strong> Claude AI Code Assistant for automated bug fixes and feature implementation.
               Use your own AI keys, integrate with existing tools, and accelerate project delivery with intelligent automation.
             </p>
             
@@ -403,6 +413,124 @@ export default function Home() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* NEW: Claude AI Code Assistant Section */}
+      <section className="py-12 sm:py-24 bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8 sm:mb-16">
+            <div className="inline-flex items-center space-x-2 bg-white/60 backdrop-blur-sm rounded-full px-4 py-2 mb-6">
+              <Badge variant="secondary" className="bg-green-100 text-green-700">✨ NEW & PRODUCTION READY</Badge>
+              <span className="text-sm font-medium text-gray-700">Claude AI Code Assistant</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Autonomous Code Development with 
+              <span className="bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent block">
+                Claude 3.5 Sonnet
+              </span>
+            </h2>
+            <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto">
+              Go beyond documentation. Our Claude AI Code Assistant automatically fixes bugs, implements features, 
+              and optimizes code with direct GitHub integration and real-time progress tracking.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 items-center">
+            <div className="space-y-6">
+              <div className="space-y-4">
+                <div className="flex items-start space-x-3">
+                  <div className="bg-green-100 p-2 rounded-lg mt-1">
+                    <Bot className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Agentic Code Workflows</h3>
+                    <p className="text-gray-600">Autonomous bug fixing and feature implementation with step-by-step execution</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="bg-blue-100 p-2 rounded-lg mt-1">
+                    <GitBranch className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">GitHub Integration</h3>
+                    <p className="text-gray-600">Direct repository access with OAuth authentication and automated workflow setup</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="bg-purple-100 p-2 rounded-lg mt-1">
+                    <Layers className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Multi-Model Support</h3>
+                    <p className="text-gray-600">Choose from Claude 3.5 Sonnet, Opus, or Haiku based on task complexity</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="bg-orange-100 p-2 rounded-lg mt-1">
+                    <Gauge className="h-5 w-5 text-orange-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Real-time Monitoring</h3>
+                    <p className="text-gray-600">Live progress tracking with streaming updates during task execution</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl p-6 shadow-lg">
+                <div className="flex items-center space-x-2 mb-4">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <span className="font-semibold text-gray-900">✅ PRODUCTION READY</span>
+                </div>
+                <ul className="space-y-2 text-sm text-gray-600">
+                  <li>• Autonomous bug fixing with pull request creation</li>
+                  <li>• Feature implementation with code review</li>
+                  <li>• Repository analysis and optimization</li>
+                  <li>• 200K+ token context for large codebases</li>
+                  <li>• Secure API key management (BYOK)</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-6 shadow-2xl">
+              <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-6 text-white">
+                <div className="flex items-center space-x-2 mb-4">
+                  <div className="bg-green-500 rounded-full p-1">
+                    <CheckCircle className="h-3 w-3" />
+                  </div>
+                  <span className="text-sm font-mono">Claude AI Code Assistant</span>
+                </div>
+                <div className="space-y-3 text-sm font-mono">
+                  <div className="text-green-400">✅ GitHub repository connected</div>
+                  <div className="text-blue-400">🔄 Analyzing codebase...</div>
+                  <div className="text-yellow-400">🛠️ Implementing feature: user authentication</div>
+                  <div className="text-purple-400">📝 Creating pull request...</div>
+                  <div className="text-green-400">✅ Task completed successfully!</div>
+                </div>
+                <div className="mt-4 p-3 bg-gray-800 rounded-lg">
+                  <div className="text-xs text-gray-400 mb-1">Task: Fix authentication bug</div>
+                  <div className="text-sm">
+                    <span className="text-green-400">+</span> Fixed JWT token validation
+                  </div>
+                  <div className="text-sm">
+                    <span className="text-green-400">+</span> Added error handling
+                  </div>
+                  <div className="text-sm">
+                    <span className="text-green-400">+</span> Updated tests
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 sm:mt-12 text-center">
+            <Button size="lg" className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700" asChild>
+              <Link href="/signin">
+                Try Claude AI Code Assistant
+                <Bot className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
           </div>
         </div>
       </section>
@@ -707,14 +835,17 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 sm:gap-8">
             <div className="md:col-span-2">
               <div className="flex items-center space-x-2 mb-4">
-                <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-2 rounded-lg">
-                  <Workflow className="h-6 w-6 text-white" />
-                </div>
-                <span className="text-lg sm:text-xl font-bold">SDLC Automation Platform</span>
+                <img 
+                  src="/img/SDLC.dev.logo.png" 
+                  alt="SDLC.dev Logo" 
+                  className="h-16 w-16 sm:h-20 sm:w-20 bg-white rounded-lg p-2 object-contain"
+                  style={{ minWidth: '64px', minHeight: '64px' }}
+                />
+                <span className="text-lg sm:text-xl font-bold">SDLC.dev</span>
               </div>
               <p className="text-gray-400 mb-6 max-w-md text-sm sm:text-base">
                 Automate your entire software development lifecycle with AI-powered intelligence. 
-                From requirements to deployment, streamline every phase of development.
+                From requirements to autonomous code development with Claude AI, streamline every phase of development.
               </p>
               <div className="flex space-x-4">
                 <div className="bg-gray-800 p-2 rounded-lg">
@@ -752,7 +883,7 @@ export default function Home() {
           
           <div className="border-t border-gray-800 mt-8 sm:mt-12 pt-6 sm:pt-8 flex flex-col md:flex-row justify-between items-center">
             <div className="text-gray-400 text-xs sm:text-sm">
-              © {new Date().getFullYear()} SDLC Automation Platform. All rights reserved.
+              © {new Date().getFullYear()} SDLC.dev. All rights reserved.
             </div>
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-6 mt-4 md:mt-0">
               <Link href="#" className="text-gray-400 hover:text-white text-xs sm:text-sm transition-colors">Privacy Policy</Link>

@@ -60,10 +60,13 @@ export async function GET(request: NextRequest) {
         .map((repo: any) => ({
           id: repo.id,
           name: repo.name,
-          full_name: repo.full_name,
+          fullName: repo.full_name, // Add camelCase version
+          full_name: repo.full_name, // Keep original
           private: repo.private,
           description: repo.description,
           language: repo.language,
+          url: repo.html_url, // Add URL for consistency
+          html_url: repo.html_url, // Keep original
           updated_at: repo.updated_at,
           permissions: repo.permissions,
         }))
