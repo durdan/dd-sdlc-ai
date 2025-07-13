@@ -1,7 +1,7 @@
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { generateText, generateObject, streamText } from 'ai'
 import { z } from 'zod'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/server'
 
 export interface CodeAnalysisRequest {
   repositoryUrl?: string
@@ -107,7 +107,7 @@ export class ClaudeCodeService {
     console.log('🔍 Creating ClaudeCodeService for user:', userId)
     
     try {
-      const supabase = createClient()
+      const supabase = createAdminClient()
       
       // Fetch user's Claude API key from database
       const { data: claudeConfig, error } = await supabase
@@ -394,6 +394,172 @@ export class ClaudeCodeService {
       
       console.error('💥 ===== END ERROR LOGGING =====')
       throw new Error(`Claude analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  /**
+   * Stream agentic code generation for real-time debugging
+   */
+  async *streamAgenticCode(request: AgenticCodeRequest): AsyncGenerator<string, AgenticCodeResult, unknown> {
+    console.log('🌊 ClaudeCodeService.streamAgenticCode called')
+    console.log('📝 Request details:', {
+      task_type: request.task_type,
+      specific_request: request.specific_request,
+      has_file_contents: !!request.file_contents,
+      file_count: request.file_contents ? Object.keys(request.file_contents).length : 0,
+      codebase_context_length: request.codebase_context?.length || 0
+    })
+
+    if (!this.apiKey || !this.anthropicClient) {
+      console.error('❌ Claude API key not configured')
+      throw new Error('Claude API key not configured. Please configure in Integration Hub.')
+    }
+    console.log('✅ Claude API key is configured')
+
+    console.log('🔨 Building prompt for Claude...')
+    let prompt = this.buildAgenticCodePrompt(request)
+    console.log('✅ Prompt built, length:', prompt.length)
+
+    // Check if prompt is too large
+    if (prompt.length > 100000) {
+      console.log('⚠️  Large prompt detected, simplifying request...')
+      const simplifiedRequest = {
+        ...request,
+        codebase_context: request.codebase_context.slice(0, 5000) + '\n... (truncated for performance)',
+        file_contents: Object.keys(request.file_contents || {}).length > 3 
+          ? Object.fromEntries(Object.entries(request.file_contents || {}).slice(0, 3))
+          : request.file_contents
+      }
+      prompt = this.buildAgenticCodePrompt(simplifiedRequest)
+      console.log('✅ Simplified prompt built, length:', prompt.length)
+    }
+
+    yield `🔧 Starting Claude API call...\n`
+    yield `📊 Model: ${this.model}\n`
+    yield `🌡️ Temperature: ${this.temperature}\n`
+    yield `📏 Max tokens: ${this.maxTokens}\n`
+    yield `📝 Prompt length: ${prompt.length} characters\n`
+
+    try {
+      console.log('🚀 Making streaming API call to Claude...')
+      const startTime = Date.now()
+
+      yield `🚀 API call initiated at ${new Date().toISOString()}\n`
+
+      // Use streamText for real-time streaming
+      const stream = streamText({
+        model: this.anthropicClient(this.model),
+        prompt: `${prompt}\n\nPlease respond with a valid JSON object matching the expected schema. Start your response with { and end with }.`,
+        temperature: this.temperature,
+        maxTokens: this.maxTokens,
+      })
+
+      let fullResponse = ''
+      let chunkCount = 0
+
+      for await (const chunk of stream.textStream) {
+        chunkCount++
+        fullResponse += chunk
+        yield `📦 Chunk ${chunkCount}: ${chunk}\n`
+        
+        // Log progress every 10 chunks
+        if (chunkCount % 10 === 0) {
+          const elapsed = Date.now() - startTime
+          console.log(`⏱️ Streaming progress: ${chunkCount} chunks, ${elapsed}ms elapsed`)
+          yield `⏱️ Progress: ${chunkCount} chunks received (${Math.round(elapsed/1000)}s)\n`
+        }
+      }
+
+      const endTime = Date.now()
+      const responseTime = endTime - startTime
+
+      yield `✅ Streaming completed!\n`
+      yield `📊 Total chunks: ${chunkCount}\n`
+      yield `⏱️ Response time: ${responseTime}ms\n`
+      yield `📝 Full response length: ${fullResponse.length} characters\n`
+
+      console.log('🎉 Claude streaming completed!')
+      console.log('📊 Response metadata:', {
+        chunkCount,
+        responseTime,
+        responseLength: fullResponse.length
+      })
+
+      // Try to parse the JSON response
+      yield `🔍 Parsing JSON response...\n`
+      
+      try {
+        // Clean the response - remove any markdown formatting
+        let cleanResponse = fullResponse.trim()
+        if (cleanResponse.startsWith('```json')) {
+          cleanResponse = cleanResponse.replace(/^```json\s*/, '').replace(/\s*```$/, '')
+        }
+        if (cleanResponse.startsWith('```')) {
+          cleanResponse = cleanResponse.replace(/^```\s*/, '').replace(/\s*```$/, '')
+        }
+
+        const parsedResponse = JSON.parse(cleanResponse)
+        yield `✅ JSON parsing successful!\n`
+
+        // Validate the structure
+        const result: AgenticCodeResult = {
+          reasoning: parsedResponse.reasoning || 'No reasoning provided',
+          implementation: {
+            files_to_create: parsedResponse.implementation?.files_to_create || [],
+            files_to_modify: parsedResponse.implementation?.files_to_modify || [],
+            files_to_delete: parsedResponse.implementation?.files_to_delete || []
+          },
+          tests: {
+            unit_tests: parsedResponse.tests?.unit_tests || [],
+            integration_tests: parsedResponse.tests?.integration_tests || []
+          },
+          documentation: {
+            changes_needed: parsedResponse.documentation?.changes_needed || [],
+            new_docs: parsedResponse.documentation?.new_docs || []
+          },
+          validation_steps: parsedResponse.validation_steps || []
+        }
+
+        yield `📊 Parsed structure:\n`
+        yield `- Files to create: ${result.implementation.files_to_create.length}\n`
+        yield `- Files to modify: ${result.implementation.files_to_modify.length}\n`
+        yield `- Unit tests: ${result.tests.unit_tests.length}\n`
+        yield `- Integration tests: ${result.tests.integration_tests.length}\n`
+
+        console.log('✅ Response validation successful')
+        return result
+
+      } catch (parseError) {
+        yield `❌ JSON parsing failed: ${parseError}\n`
+        yield `📝 Raw response: ${fullResponse.slice(0, 500)}...\n`
+        
+        console.error('❌ JSON parsing failed:', parseError)
+        console.error('📝 Raw response:', fullResponse)
+        
+        // Return a fallback result
+        return {
+          reasoning: `Failed to parse Claude response: ${parseError}. Raw response: ${fullResponse.slice(0, 200)}...`,
+          implementation: {
+            files_to_create: [],
+            files_to_modify: [],
+            files_to_delete: []
+          },
+          tests: {
+            unit_tests: [],
+            integration_tests: []
+          },
+          documentation: {
+            changes_needed: ['Failed to generate documentation due to parsing error'],
+            new_docs: []
+          },
+          validation_steps: ['Manual verification required due to parsing error']
+        }
+      }
+
+    } catch (error) {
+      yield `❌ Streaming API call failed: ${error}\n`
+      console.error('❌ Claude streaming API error:', error)
+      throw new Error(`Claude streaming failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 

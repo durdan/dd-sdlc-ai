@@ -487,6 +487,26 @@ async function handleCreateImplementationPR(
       completed_at: new Date().toISOString()
     })
 
+    // CRITICAL FIX: Update the task result in task store with PR information
+    // This makes the PR visible in the UI permanently
+    if (params.taskId) {
+      const { default: taskStore } = await import('@/lib/task-store')
+      const task = taskStore.getTask(params.taskId)
+      
+      if (task && task.result) {
+        console.log(`📝 Updating task ${params.taskId} with PR information`)
+        task.result.pull_request = {
+          url: pullRequest.url,
+          number: pullRequest.number,
+          title: pullRequest.title,
+          state: pullRequest.state,
+          created_at: pullRequest.created_at
+        }
+        taskStore.updateTask(task)
+        console.log(`✅ Task ${params.taskId} updated with PR: ${pullRequest.url}`)
+      }
+    }
+
     return NextResponse.json({
       success: true,
       pullRequest

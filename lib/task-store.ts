@@ -39,6 +39,7 @@ export interface StoredTask extends AgenticTask {
   steps?: ExecutionStep[]
   progress?: number
   result?: any
+  userId?: string // Add explicit user ID for proper task ownership
 }
 
 // Global task store for sharing between API routes
@@ -115,10 +116,14 @@ class TaskStore {
   }
 
   // Move task from active to completed
-  completeTask(taskId: string): void {
+  completeTask(taskId: string, result?: any, error?: string): void {
     console.log(`✅ TaskStore: Completing task ${taskId}`)
     const task = this.activeTasks.get(taskId)
     if (task) {
+      if (result) task.result = result
+      if (error) task.status = 'failed'
+      else if (task.status !== 'cancelled') task.status = 'completed'
+      
       this.completedTasks.set(taskId, task)
       this.activeTasks.delete(taskId)
       console.log(`✅ TaskStore: Task ${taskId} moved to completed`)
@@ -128,9 +133,34 @@ class TaskStore {
     this.logStoreState()
   }
 
+  // Delete task completely from both stores
+  deleteTask(taskId: string): void {
+    console.log(`🗑️ TaskStore: Deleting task ${taskId}`)
+    
+    const wasInActive = this.activeTasks.has(taskId)
+    const wasInCompleted = this.completedTasks.has(taskId)
+    
+    this.activeTasks.delete(taskId)
+    this.completedTasks.delete(taskId)
+    
+    if (wasInActive || wasInCompleted) {
+      console.log(`✅ TaskStore: Task ${taskId} deleted successfully`)
+    } else {
+      console.log(`⚠️  TaskStore: Task ${taskId} not found for deletion`)
+    }
+    
+    this.logStoreState()
+  }
+
   // Check if task belongs to user
   private isUserTask(task: StoredTask, userId: string): boolean {
-    return task.id.includes(userId) || !task.id.includes('user-')
+    // If task has explicit userId, use that
+    if (task.userId) {
+      return task.userId === userId
+    }
+    
+    // Fallback: check if task ID contains user ID (for backward compatibility)
+    return task.id.includes(userId)
   }
 
   // Debug logging

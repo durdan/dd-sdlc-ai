@@ -59,7 +59,7 @@ export class GitHubClaudeService {
    */
   async createImplementationBranch(
     repoUrl: string,
-    generatedCode: GeneratedCode,
+    generatedCode: GeneratedCode | any, // Allow any for now to handle different formats
     options: {
       branchName?: string
       prTitle?: string
@@ -68,8 +68,65 @@ export class GitHubClaudeService {
     } = {}
   ): Promise<PullRequestResult> {
     console.log(`🔀 Creating implementation branch for: ${repoUrl}`)
-    console.log(`📁 Files to create: ${generatedCode.implementation.files_to_create.length}`)
-    console.log(`✏️ Files to modify: ${generatedCode.implementation.files_to_modify.length}`)
+    
+    // Validate and normalize the generatedCode structure
+    console.log(`🔍 Validating generated code structure...`)
+    console.log(`📋 Generated code keys:`, Object.keys(generatedCode || {}))
+    
+    if (!generatedCode) {
+      throw new Error('Generated code is null or undefined')
+    }
+    
+    // Handle different data structures (AgenticCodeResult vs GeneratedCode)
+    let normalizedCode: any
+    
+    if (generatedCode.implementation) {
+      // Already in the expected format
+      normalizedCode = generatedCode
+      console.log(`✅ Found implementation structure`)
+    } else if (generatedCode.reasoning && generatedCode.tests) {
+      // This is AgenticCodeResult - convert to GeneratedCode format
+      console.log(`🔄 Converting AgenticCodeResult to GeneratedCode format`)
+      normalizedCode = {
+        specification: {
+          description: 'Generated implementation',
+          type: 'feature'
+        },
+        repository: { repoUrl },
+        implementation: {
+          files_to_create: generatedCode.files_to_create || [],
+          files_to_modify: generatedCode.files_to_modify || [],
+          files_to_delete: generatedCode.files_to_delete || []
+        },
+        tests: generatedCode.tests || { unit_tests: [], integration_tests: [] },
+        documentation: generatedCode.documentation || { changes_needed: [], new_docs: [] },
+        validation_steps: generatedCode.validation_steps || [],
+        reasoning: generatedCode.reasoning || 'No reasoning provided'
+      }
+    } else {
+      // Log the actual structure to help debug
+      console.error(`❌ Unexpected generated code structure:`, JSON.stringify(generatedCode, null, 2))
+      throw new Error(`Invalid generated code structure. Expected 'implementation' property or AgenticCodeResult format. Received keys: ${Object.keys(generatedCode).join(', ')}`)
+    }
+    
+    // Validate the normalized structure
+    if (!normalizedCode.implementation) {
+      throw new Error('Normalized code missing implementation property')
+    }
+    
+    const { files_to_create = [], files_to_modify = [], files_to_delete = [] } = normalizedCode.implementation
+    
+    console.log(`📁 Files to create: ${files_to_create.length}`)
+    console.log(`✏️ Files to modify: ${files_to_modify.length}`)
+    console.log(`🗑️ Files to delete: ${files_to_delete.length}`)
+    
+    // Log file details for debugging
+    if (files_to_create.length > 0) {
+      console.log(`📄 Files to create:`, files_to_create.map(f => f.path || f.file_path || 'unknown'))
+    }
+    if (files_to_modify.length > 0) {
+      console.log(`📝 Files to modify:`, files_to_modify.map(f => f.path || f.file_path || 'unknown'))
+    }
 
     try {
       const { owner, name } = this.parseRepoUrl(repoUrl)
@@ -77,18 +134,18 @@ export class GitHubClaudeService {
       
       // Generate branch name
       const branchName = options.branchName || 
-        `claude/feature/${this.sanitizeBranchName(generatedCode.specification.description)}-${Date.now()}`
+        `claude/feature/${this.sanitizeBranchName(normalizedCode.specification?.description || 'implementation')}-${Date.now()}`
       
       // Create feature branch from default branch
       await this.createBranch(owner, name, branchName, repo.default_branch)
       
       // Apply all changes to the branch
-      const commits = await this.applyCodeChanges(owner, name, branchName, generatedCode)
+      const commits = await this.applyCodeChanges(owner, name, branchName, normalizedCode)
       
       // Create pull request
       const prData: PullRequestData = {
-        title: options.prTitle || `✨ ${generatedCode.specification.description}`,
-        body: this.generatePRDescription(generatedCode),
+        title: options.prTitle || `✨ ${normalizedCode.specification?.description || 'Implementation update'}`,
+        body: options.prDescription || this.generatePRDescription(normalizedCode),
         head: branchName,
         base: repo.default_branch,
         draft: options.isDraft || false,

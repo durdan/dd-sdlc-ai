@@ -107,12 +107,7 @@ export async function GET(request: NextRequest) {
             "contents": "write"
           },
           is_active: true,
-          last_sync: new Date().toISOString(),
-          metadata: {
-            total_repos: repositories.length,
-            last_fetch: new Date().toISOString(),
-            api_rate_limit: reposResponse.headers.get('X-RateLimit-Remaining')
-          }
+          last_sync: new Date().toISOString()
         }, {
           onConflict: 'user_id,repository_id'
         })

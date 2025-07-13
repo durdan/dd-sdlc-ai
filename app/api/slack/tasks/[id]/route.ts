@@ -25,9 +25,19 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Task not found' }, { status: 404 })
     }
 
-    // Check if user has access to this task
-    if (task.id && !task.id.includes(user.id) && !task.id.includes('user-')) {
+    // More flexible access control - check if task belongs to user
+    const userTasks = taskStore.getUserTasks(user.id)
+    const hasAccess = userTasks.some(userTask => userTask.id === taskId)
+    
+    if (!hasAccess) {
       console.log(`🚫 Access denied for task ${taskId} to user ${user.id}`)
+      console.log(`📋 User has ${userTasks.length} tasks, but ${taskId} is not among them`)
+      console.log(`🔍 Task details:`, { 
+        taskId: task.id, 
+        taskCreatedAt: task.createdAt,
+        taskType: task.type,
+        taskDescription: task.description
+      })
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
