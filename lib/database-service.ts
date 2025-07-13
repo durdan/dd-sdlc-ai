@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/client'
 import { Database } from '@/database.types'
+import { SupabaseClient } from '@supabase/supabase-js'
 
 type Tables = Database['public']['Tables']
 type SDLCProject = Tables['sdlc_projects']['Row']
@@ -11,7 +12,11 @@ type UserConfigurationInsert = Tables['user_configurations']['Insert']
 type UserConfigurationUpdate = Tables['user_configurations']['Update']
 
 export class DatabaseService {
-  private supabase = createClient()
+  private supabase: SupabaseClient
+
+  constructor() {
+    this.supabase = createClient()
+  }
 
   // SDLC Projects
   async createProject(projectData: SDLCProjectInsert): Promise<SDLCProject | null> {
@@ -134,6 +139,78 @@ export class DatabaseService {
       return null
     }
     return data
+  }
+
+  // NEW: Load AI configurations from the new table
+  async getUserAIConfigurations(userId: string): Promise<{ openaiKey?: string; claudeKey?: string } | null> {
+    try {
+      const { data, error } = await this.supabase
+        .from('sdlc_user_ai_configurations')
+        .select('provider_id, encrypted_api_key, is_active')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+
+      if (error) {
+        console.error('Error fetching AI configurations:', error)
+        return null
+      }
+
+      const configs = data || []
+      const result: { openaiKey?: string; claudeKey?: string } = {}
+
+      // Provider IDs (from database)
+      const OPENAI_PROVIDER_ID = '1fdbbf27-6411-476a-bc4d-517c54f68f1d'
+      const CLAUDE_PROVIDER_ID = 'a346dae4-1425-45ad-9eab-9e4a1cb53122'
+
+      for (const config of configs) {
+        if (config.provider_id === OPENAI_PROVIDER_ID) {
+          result.openaiKey = config.encrypted_api_key
+        } else if (config.provider_id === CLAUDE_PROVIDER_ID) {
+          result.claudeKey = config.encrypted_api_key
+        }
+      }
+
+      return result
+    } catch (error) {
+      console.error('Error in getUserAIConfigurations:', error)
+      return null
+    }
+  }
+
+  // Enhanced getUserConfiguration that merges old and new systems
+  async getEnhancedUserConfiguration(userId: string): Promise<UserConfiguration | null> {
+    try {
+      // Load from old system
+      const oldConfig = await this.getUserConfiguration(userId)
+      
+      // Load from new AI system
+      const aiConfigs = await this.getUserAIConfigurations(userId)
+      
+      // Merge configurations
+      const mergedConfig: UserConfiguration = {
+        id: oldConfig?.id || '',
+        user_id: userId,
+        openai_api_key: aiConfigs?.openaiKey || oldConfig?.openai_api_key || null,
+        jira_base_url: oldConfig?.jira_base_url || null,
+        jira_email: oldConfig?.jira_email || null,
+        jira_api_token: oldConfig?.jira_api_token || null,
+        confluence_base_url: oldConfig?.confluence_base_url || null,
+        confluence_email: oldConfig?.confluence_email || null,
+        confluence_api_token: oldConfig?.confluence_api_token || null,
+        created_at: oldConfig?.created_at || new Date().toISOString(),
+        updated_at: oldConfig?.updated_at || new Date().toISOString(),
+        slack_workspace_id: oldConfig?.slack_workspace_id || null,
+        slack_workspace_name: oldConfig?.slack_workspace_name || null,
+        slack_access_token: oldConfig?.slack_access_token || null,
+        slack_bot_user_id: oldConfig?.slack_bot_user_id || null,
+        slack_default_channel: oldConfig?.slack_default_channel || null,
+      }
+
+      return mergedConfig
+    } catch (error) {
+      console.error('Error in getEnhancedUserConfiguration:', error)
+      return null
+    }
   }
 
   async createUserConfiguration(configData: UserConfigurationInsert): Promise<UserConfiguration | null> {

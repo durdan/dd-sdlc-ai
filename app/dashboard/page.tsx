@@ -431,8 +431,8 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
       try {
         const supabase = createClient()
         
-        // Load user configuration
-        const userConfig = await dbService.getUserConfiguration(user.id)
+        // Load user configuration (enhanced - merges old and new systems)
+        const userConfig = await dbService.getEnhancedUserConfiguration(user.id)
         if (userConfig) {
           setConfig(prev => ({
             ...prev,
