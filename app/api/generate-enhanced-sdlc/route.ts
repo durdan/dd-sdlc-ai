@@ -915,8 +915,6 @@ Create production-ready technical specifications with detailed implementation gu
 
 Create a detailed implementation plan that project managers can execute directly.`, { businessAnalysis, functionalSpec, technicalSpec })
 
-    const generationTime = Date.now() - startTime
-
     // Generate UX specification for completeness
     console.log('Generating UX specification...')
     const uxSpec = await generateSection(ENHANCED_PROMPTS.uxSpec || `Create a comprehensive UX specification for: {input}

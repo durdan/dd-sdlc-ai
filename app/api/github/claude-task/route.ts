@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { AgenticExecutionEngine } from '@/lib/agentic-execution-engine'
+import { ClaudeCodeService, AgenticCodeRequest } from '@/lib/claude-service'
 import taskStore, { StoredTask } from '@/lib/task-store'
 
 /**
@@ -231,68 +231,46 @@ async function processGitHubTaskAsync(task: StoredTask, claudeApiKey: string, gi
       throw new Error('No GitHub token available')
     }
 
-    // Create execution engine
-    const executionEngine = new AgenticExecutionEngine({
-      claudeApiKey,
-      claudeModel: 'claude-3-5-sonnet-20241022',
-      githubToken: finalGithubToken,
-      maxExecutionTime: 10, // Shorter for GitHub Actions
-      requireHumanApproval: false,
-      autoCreatePR: true,
-      runTests: false, // Skip tests for faster GitHub Action execution
-      enableSafetyChecks: true
+    // Create unified Claude service
+    const claudeService = new ClaudeCodeService({
+      apiKey: claudeApiKey,
+      model: 'claude-3-5-sonnet-20241022',
+      maxTokens: 8192,
+      temperature: 0.1
     })
 
-    // Execute task with progress tracking
-    const result = await executionEngine.executeTask(task, (step) => {
-      console.log(`📊 GitHub task ${task.id} step:`, step.title, step.status)
-      
-      const currentTask = taskStore.getTask(task.id)
-      if (currentTask) {
-        if (!currentTask.steps) currentTask.steps = []
-        
-        const existingIndex = currentTask.steps.findIndex(s => s.id === step.id)
-        if (existingIndex >= 0) {
-          currentTask.steps[existingIndex] = step
-        } else {
-          currentTask.steps.push(step)
-        }
-        
-        // Update status based on step
-        if (step.status === 'in_progress') {
-          if (step.type === 'analysis') currentTask.status = 'analyzing'
-          else if (step.type === 'planning') currentTask.status = 'planning'  
-          else if (step.type === 'code_generation') currentTask.status = 'executing'
-        }
-        
-        // Calculate progress
-        const completed = currentTask.steps.filter(s => s.status === 'completed').length
-        currentTask.progress = Math.round((completed / currentTask.steps.length) * 100)
-        
-        taskStore.updateTask(currentTask)
-      }
-    })
+    // Create agentic request
+    const agenticRequest: AgenticCodeRequest = {
+      task_type: task.type === 'bug_fix' ? 'bug_fix' : 'feature_implementation',
+      codebase_context: task.context || 'Repository context will be analyzed',
+      specific_request: task.description,
+      requirements: task.requirements
+    }
 
-    console.log(`✅ GitHub task completed: ${task.id}`)
+    // Execute task with unified Claude service
+    const claudeResult = await claudeService.generateAgenticCode(agenticRequest)
+    
+    // Update task with progress tracking
+    task.status = 'completed'
+    task.completedAt = new Date().toISOString()
+    task.result = claudeResult
+    taskStore.updateTask(task)
+
+    console.log(`✅ GitHub task ${task.id} completed successfully`)
     
     // Update final task status
     const completedTask = taskStore.getTask(task.id)
     if (completedTask) {
-      completedTask.status = result.status === 'success' ? 'completed' : 'failed'
+      completedTask.status = 'completed'
       completedTask.completedAt = new Date().toISOString()
       
       // Format result for GitHub Action consumption
-      if (result.status === 'success') {
-        completedTask.result = {
-          summary: result.claudeAnalysis?.reasoning || 'Task completed successfully',
-          pull_request: result.repositoryChanges.pullRequestUrl ? {
-            url: result.repositoryChanges.pullRequestUrl,
-            number: extractPRNumber(result.repositoryChanges.pullRequestUrl)
-          } : null,
-          files_modified: result.repositoryChanges.filesModified,
-          files_created: result.repositoryChanges.filesCreated,
-          findings: result.claudeAnalysis?.implementation?.files_to_modify?.map(f => f.description) || []
-        }
+      completedTask.result = {
+        summary: claudeResult.reasoning || 'Task completed successfully',
+        pull_request: null, // No PR creation in this simplified version
+        files_modified: [],
+        files_created: [],
+        findings: claudeResult.implementation?.files_to_modify?.map(f => f.description) || []
       }
       
       taskStore.completeTask(task.id)

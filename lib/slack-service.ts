@@ -1,7 +1,112 @@
-import { taskQueue, Task, TaskType, TaskStatus, Priority, TaskSource } from './vercel-task-queue';
+import taskStore, { StoredTask } from './task-store';
 import { getUserSlackConfig } from '@/app/api/user-integrations/slack/route';
 import { createClient } from '@/lib/supabase/server';
-import taskStore from './task-store'
+
+// Type compatibility mappings for legacy Slack service
+export enum TaskType {
+  CODE_ANALYSIS = 'code_analysis',
+  IMPLEMENTATION = 'implementation', 
+  TESTING = 'testing',
+  PR_CREATION = 'pr_creation',
+  NOTIFICATION = 'notification',
+  BUG_FIX = 'bug_fix',
+  FEATURE = 'feature',
+  REVIEW = 'review',
+  REFACTORING = 'refactoring'
+}
+
+export enum TaskStatus {
+  PENDING = 'pending',
+  QUEUED = 'pending',
+  IN_PROGRESS = 'analyzing',
+  PROCESSING = 'executing',
+  COMPLETED = 'completed',
+  FAILED = 'failed',
+  CANCELLED = 'cancelled'
+}
+
+export enum Priority {
+  LOW = 'low',
+  MEDIUM = 'medium',
+  HIGH = 'high',
+  URGENT = 'urgent'
+}
+
+export enum TaskSource {
+  SLACK = 'slack',
+  GITHUB = 'github',
+  API = 'api',
+  WEBHOOK = 'webhook',
+  MANUAL = 'manual'
+}
+
+// Legacy Task interface for compatibility
+export interface Task {
+  id: string
+  type: string
+  status: string
+  priority: string
+  source: string
+  description: string
+  payload: any
+  userId?: string
+  repository?: {
+    owner: string
+    name: string
+    branch?: string
+  }
+  createdAt: string
+  startedAt?: string
+  completedAt?: string
+  result?: any
+  error?: string
+  errorMessage?: string
+  progress?: number
+  metadata?: Record<string, any>
+}
+
+// Mock task queue for compatibility
+const taskQueue = {
+  async enqueue(task: Omit<Task, 'id' | 'createdAt' | 'status'>): Promise<string> {
+    const storedTask: StoredTask = {
+      id: task.id || `slack-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      type: task.type as any,
+      status: 'pending',
+      priority: task.priority as any,
+      description: task.description,
+      repository: {
+        owner: task.repository?.owner || '',
+        name: task.repository?.name || '',
+        branch: task.repository?.branch || 'main'
+      },
+      createdAt: new Date().toISOString(),
+      userId: task.userId
+    }
+    taskStore.addActiveTask(storedTask)
+    return storedTask.id
+  },
+
+  async getUserTasks(userId: string, limit?: number): Promise<Task[]> {
+    const tasks = taskStore.getUserTasks(userId)
+    const limitedTasks = limit ? tasks.slice(0, limit) : tasks
+    return limitedTasks.map(t => ({
+      id: t.id,
+      type: t.type,
+      status: t.status,
+      priority: t.priority,
+      source: 'slack',
+      description: t.description,
+      payload: { description: t.description },
+      userId: t.userId,
+      repository: t.repository,
+      createdAt: t.createdAt,
+      startedAt: t.startedAt,
+      completedAt: t.completedAt,
+      result: t.result,
+      progress: t.progress
+    }))
+  }
+}
 
 // Slack API interfaces
 interface SlackCommand {
