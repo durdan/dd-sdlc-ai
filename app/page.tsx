@@ -35,7 +35,8 @@ import {
   Repeat,
   BookOpen,
   Menu,
-  X
+  X,
+  Share2
 } from "lucide-react"
 
 export default function Home() {
@@ -119,40 +120,60 @@ export default function Home() {
 
   const features = [
     {
-      icon: <Bot className="h-6 w-6" />,
-      title: "🚀 Claude AI Code Assistant",
-      description: "NEW: Autonomous bug fixing, feature implementation, and code optimization using Claude 3.5 Sonnet with GitHub integration",
-      color: "bg-gradient-to-r from-green-500 to-emerald-500"
+      icon: <Bot className="h-8 w-8" />,
+      title: "Claude AI Code Assistant",
+      description: "Autonomous bug fixing, feature implementation, and code optimization with Claude 3.5 Sonnet",
+      badge: "✅ PRODUCTION READY",
+      badgeColor: "bg-green-100 text-green-700"
     },
     {
-      icon: <Workflow className="h-6 w-6" />,
-      title: "End-to-End SDLC Automation",
-      description: "Automate your entire software development lifecycle from requirements gathering to deployment documentation",
-      color: "bg-blue-500"
+      icon: <GitBranch className="h-8 w-8" />,
+      title: "GitDigest Repository Analysis", 
+      description: "AI-powered repository insights with automated digest generation and SDLC scoring",
+      badge: "🚀 NEW",
+      badgeColor: "bg-blue-100 text-blue-700"
     },
     {
-      icon: <Key className="h-6 w-6" />,
-      title: "Bring Your Own AI",
-      description: "Use your own OpenAI, Claude, or other AI provider keys - no vendor lock-in, full control over your data",
-      color: "bg-purple-500"
+      icon: <FileText className="h-8 w-8" />,
+      title: "90+ Section SDLC Documentation",
+      description: "Comprehensive business analysis, functional specs, technical architecture, and UX specifications",
+      badge: "📚 ENHANCED",
+      badgeColor: "bg-purple-100 text-purple-700"
     },
     {
-      icon: <Merge className="h-6 w-6" />,
-      title: "Dual AI Architecture",
-      description: "OpenAI for document generation, Claude for agentic coding workflows - choose the best model for each task",
-      color: "bg-green-500"
+      icon: <Settings className="h-8 w-8" />,
+      title: "Enterprise Prompt Management",
+      description: "Advanced prompt engineering with version control, A/B testing, and role-based access",
+      badge: "🎯 ENTERPRISE",
+      badgeColor: "bg-indigo-100 text-indigo-700"
     },
     {
-      icon: <GitBranch className="h-6 w-6" />,
-      title: "Native Integrations",
-      description: "Deep integration with your existing development tools - JIRA, Confluence, GitHub, and more",
-      color: "bg-orange-500"
+      icon: <Plug className="h-8 w-8" />,
+      title: "Native Tool Integrations",
+      description: "JIRA, Confluence, GitHub Projects, Slack, ClickUp, Trello with automated workflows",
+      badge: "🔗 INTEGRATED",
+      badgeColor: "bg-orange-100 text-orange-700"
     },
     {
-      icon: <Shield className="h-6 w-6" />,
-      title: "Enterprise Security",
-      description: "Your data stays with you - secure, compliant, and audit-ready with complete transparency",
-      color: "bg-teal-500"
+      icon: <Shield className="h-8 w-8" />,
+      title: "BYOK Security Model",
+      description: "Bring your own API keys with enterprise-grade security and data privacy",
+      badge: "🔒 SECURE",
+      badgeColor: "bg-red-100 text-red-700"
+    },
+    {
+      icon: <Workflow className="h-8 w-8" />,
+      title: "GitHub Automation Hub",
+      description: "OAuth integration, automated workflows, repository management, and PR automation",
+      badge: "⚡ AUTOMATED",
+      badgeColor: "bg-yellow-100 text-yellow-700"
+    },
+    {
+      icon: <Database className="h-8 w-8" />,
+      title: "Advanced Analytics",
+      description: "Usage tracking, cost monitoring, performance analytics, and prompt optimization insights",
+      badge: "📊 INSIGHTS",
+      badgeColor: "bg-teal-100 text-teal-700"
     }
   ]
 
@@ -184,50 +205,53 @@ export default function Home() {
   ]
 
   const stats = [
-    { value: "90+", label: "Enterprise Doc Sections", icon: <FileText className="h-5 w-5" /> },
+    { value: "90+", label: "SDLC Doc Sections", icon: <FileText className="h-5 w-5" /> },
+    { value: "9+", label: "Native Integrations", icon: <Plug className="h-5 w-5" /> },
     { value: "200K+", label: "AI Context Tokens", icon: <Bot className="h-5 w-5" /> },
-    { value: "100%", label: "Your Own AI Keys", icon: <Key className="h-5 w-5" /> },
-    { value: "Multi-Model", label: "Claude + OpenAI", icon: <Layers className="h-5 w-5" /> }
+    { value: "100%", label: "BYOK Security", icon: <Shield className="h-5 w-5" /> }
   ]
 
   const sdlcPhases = [
     { 
-      phase: "Planning", 
-      description: "Requirements analysis, stakeholder mapping, project scoping",
+      phase: "Requirements", 
+      description: "AI-powered business analysis, stakeholder mapping, and comprehensive requirement gathering",
       icon: <Target className="h-6 w-6" />,
       color: "bg-blue-500",
-      outputs: ["Business Analysis", "Project Charter", "Stakeholder Matrix"]
+      outputs: ["Business Analysis", "Stakeholder Matrix", "Risk Assessment", "Success Metrics"]
     },
     { 
       phase: "Design", 
-      description: "System architecture, UX specifications, technical design",
+      description: "System architecture, UX specifications, technical design, and interactive diagrams",
       icon: <Eye className="h-6 w-6" />,
       color: "bg-purple-500",
-      outputs: ["Architecture Diagrams", "UX Specs", "API Design"]
+      outputs: ["Architecture Diagrams", "UX Specs", "API Design", "Data Models"]
     },
     { 
       phase: "Development", 
-      description: "User stories, acceptance criteria, development tasks",
+      description: "Automated code generation, bug fixing, feature implementation with Claude AI assistant",
       icon: <Code className="h-6 w-6" />,
       color: "bg-green-500",
-      outputs: ["User Stories", "Technical Tasks", "Definition of Done"]
+      outputs: ["User Stories", "Code Implementation", "Automated Testing", "Pull Requests"]
     },
     { 
       phase: "Integration", 
-      description: "Project setup in JIRA, Confluence documentation, team coordination",
+      description: "Automated project setup, documentation export, team coordination, and workflow automation",
       icon: <GitBranch className="h-6 w-6" />,
       color: "bg-orange-500",
-      outputs: ["JIRA Epics", "Confluence Pages", "Team Notifications"]
+      outputs: ["JIRA Epics", "Confluence Pages", "GitHub Projects", "Team Notifications"]
     }
   ]
 
   const integrations = [
-    { name: "JIRA", description: "Project management", icon: "🎯" },
-    { name: "Confluence", description: "Documentation hub", icon: "📚" },
-    { name: "GitHub", description: "Code repository", icon: "🐙" },
-    { name: "Slack", description: "Team communication", icon: "💬" },
-    { name: "Notion", description: "Knowledge management", icon: "📝" },
-    { name: "OpenAI", description: "Your AI provider", icon: "🤖" }
+    { name: "GitHub", description: "Repository automation & OAuth", icon: "🐙", status: "✅ Active" },
+    { name: "JIRA", description: "Epic & issue creation", icon: "🎯", status: "✅ Active" },
+    { name: "Confluence", description: "Documentation export", icon: "📚", status: "✅ Active" },
+    { name: "GitHub Projects", description: "Project board automation", icon: "📋", status: "✅ Active" },
+    { name: "Slack", description: "Team notifications & OAuth", icon: "💬", status: "✅ Active" },
+    { name: "ClickUp", description: "Task management", icon: "📝", status: "✅ Active" },
+    { name: "Trello", description: "Board automation", icon: "📌", status: "✅ Active" },
+    { name: "OpenAI", description: "GPT-4 for documentation", icon: "🤖", status: "✅ BYOK" },
+    { name: "Anthropic", description: "Claude for code automation", icon: "🧠", status: "✅ BYOK" }
   ]
 
   return (
@@ -254,7 +278,7 @@ export default function Home() {
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">
               <Link href="#features" className="text-gray-600 hover:text-gray-900 transition-colors">Features</Link>
-              <Link href="#sdlc-phases" className="text-gray-600 hover:text-gray-900 transition-colors">SDLC Phases</Link>
+              <Link href="#gitdigest" className="text-gray-600 hover:text-gray-900 transition-colors">GitDigest</Link>
               <Link href="#integrations" className="text-gray-600 hover:text-gray-900 transition-colors">Integrations</Link>
               <Link href="#how-it-works" className="text-gray-600 hover:text-gray-900 transition-colors">How It Works</Link>
             </div>
@@ -303,11 +327,11 @@ export default function Home() {
                 Features
               </Link>
               <Link
-                href="#sdlc-phases"
+                href="#gitdigest"
                 className="block px-3 py-2 text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                SDLC Phases
+                GitDigest
               </Link>
               <Link
                 href="#integrations"
@@ -361,9 +385,10 @@ export default function Home() {
             </h1>
             
             <p className="text-lg sm:text-xl text-gray-600 mb-10 max-w-4xl mx-auto leading-relaxed">
-              From requirements to autonomous code development with enterprise prompt management. 
-              <strong>Complete platform</strong> featuring Claude AI Code Assistant, 90+ section documentation generation, 
-              advanced prompt engineering, and seamless tool integrations. BYOK security with production-ready workflows.
+              Complete AI-powered development platform with <strong>Claude AI Code Assistant</strong> for autonomous bug fixing, 
+              <strong>GitDigest repository analysis</strong> with automated insights, <strong>90+ section SDLC documentation</strong>, 
+              enterprise prompt management, and native integrations with GitHub, JIRA, Confluence, Slack, and more. 
+              BYOK security with production-ready workflows.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
@@ -385,16 +410,20 @@ export default function Home() {
             <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 sm:p-6 mb-12 max-w-4xl mx-auto">
               <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-8 text-sm">
                 <div className="flex items-center space-x-2">
-                  <Key className="h-4 w-4 text-blue-600" />
-                  <span className="text-gray-700">Bring Your Own AI Keys</span>
+                  <GitBranch className="h-4 w-4 text-emerald-600" />
+                  <span className="text-gray-700">AI Repository Analysis</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Bot className="h-4 w-4 text-blue-600" />
+                  <span className="text-gray-700">Autonomous Code Development</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Shield className="h-4 w-4 text-green-600" />
-                  <span className="text-gray-700">Your Data Stays Secure</span>
+                  <span className="text-gray-700">Enterprise BYOK Security</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Plug className="h-4 w-4 text-purple-600" />
-                  <span className="text-gray-700">Native Tool Integration</span>
+                  <span className="text-gray-700">9+ Native Integrations</span>
                 </div>
               </div>
             </div>
@@ -529,6 +558,108 @@ export default function Home() {
               <Link href="/signin">
                 Try Claude AI Code Assistant
                 <Bot className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* GitDigest Repository Analysis Section */}
+      <section id="gitdigest" className="py-12 sm:py-24 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8 sm:mb-16">
+            <div className="inline-flex items-center space-x-2 bg-white/60 backdrop-blur-sm rounded-full px-4 py-2 mb-6">
+              <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">🚀 NEW FEATURE</Badge>
+              <span className="text-sm font-medium text-gray-700">GitDigest Repository Analysis</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              AI-Powered Repository Insights
+              <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent block">
+                With Automated SDLC Scoring
+              </span>
+            </h2>
+            <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto">
+              Automatically analyze any GitHub repository and generate comprehensive insights, 
+              SDLC readiness scores, and actionable recommendations with AI-powered analysis.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 items-center">
+            <div className="space-y-6">
+              <div className="flex items-start space-x-4">
+                <div className="bg-emerald-100 p-3 rounded-lg mt-1">
+                  <GitBranch className="h-6 w-6 text-emerald-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Repository Analysis</h3>
+                  <p className="text-gray-600">Deep analysis of code structure, documentation quality, security practices, and development workflows.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start space-x-4">
+                <div className="bg-teal-100 p-3 rounded-lg mt-1">
+                  <Target className="h-6 w-6 text-teal-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">SDLC Scoring</h3>
+                  <p className="text-gray-600">Comprehensive scoring across documentation, testing, security, and best practices with actionable recommendations.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start space-x-4">
+                <div className="bg-cyan-100 p-3 rounded-lg mt-1">
+                  <Clock className="h-6 w-6 text-cyan-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Automated Digests</h3>
+                  <p className="text-gray-600">Regular digest generation with webhook integration, daily reports, and team collaboration features.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start space-x-4">
+                <div className="bg-blue-100 p-3 rounded-lg mt-1">
+                  <Share2 className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Export & Share</h3>
+                  <p className="text-gray-600">Export insights to JIRA epics, Confluence pages, GitHub Projects, or share via secure links.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-6 shadow-2xl">
+              <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-6 text-white">
+                <div className="flex items-center space-x-2 mb-4">
+                  <div className="bg-emerald-500 rounded-full p-1">
+                    <CheckCircle className="h-3 w-3" />
+                  </div>
+                  <span className="text-sm font-mono">GitDigest Analysis</span>
+                </div>
+                <div className="space-y-3 text-sm font-mono">
+                  <div className="text-emerald-400">✅ Repository connected: awesome-project</div>
+                  <div className="text-blue-400">🔍 Analyzing 247 files, 15,432 lines of code...</div>
+                  <div className="text-yellow-400">📊 SDLC Score: 8.5/10 (Excellent)</div>
+                  <div className="text-purple-400">📋 Generated comprehensive digest</div>
+                  <div className="text-green-400">✅ Analysis complete!</div>
+                </div>
+                <div className="mt-4 p-3 bg-gray-800 rounded-lg">
+                  <div className="text-xs text-gray-400 mb-1">Key Insights</div>
+                  <div className="text-sm space-y-1">
+                    <div><span className="text-green-400">+</span> Strong documentation coverage (92%)</div>
+                    <div><span className="text-green-400">+</span> Comprehensive test suite</div>
+                    <div><span className="text-yellow-400">•</span> Consider adding security scanning</div>
+                    <div><span className="text-blue-400">ℹ</span> 23 actionable recommendations</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 sm:mt-12 text-center">
+            <Button size="lg" className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700" asChild>
+              <Link href="/signin">
+                Try GitDigest Analysis
+                <GitBranch className="ml-2 h-5 w-5" />
               </Link>
             </Button>
           </div>
@@ -736,10 +867,10 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8 sm:mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Why Choose Our SDLC Platform?
+              Complete AI Development Platform
             </h2>
             <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto">
-              Built for modern development teams who value security, flexibility, and seamless integration
+              From repository analysis to autonomous code development - everything you need for modern SDLC automation
             </p>
           </div>
 
@@ -747,13 +878,14 @@ export default function Home() {
             {features.map((feature, index) => (
               <Card key={index} className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white">
                 <CardHeader>
-                  <div className={`${feature.color} p-3 rounded-xl w-12 h-12 flex items-center justify-center mb-4 text-white group-hover:scale-110 transition-transform`}>
+                  <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-xl w-12 h-12 flex items-center justify-center mb-4 text-white group-hover:scale-110 transition-transform">
                     {feature.icon}
                   </div>
                   <CardTitle className="text-lg sm:text-xl font-semibold">{feature.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-gray-600 leading-relaxed text-sm sm:text-base">{feature.description}</p>
+                  <Badge variant="secondary" className={`mt-4 ${feature.badgeColor}`}>{feature.badge}</Badge>
                 </CardContent>
               </Card>
             ))}
@@ -848,6 +980,7 @@ export default function Home() {
                 <div className="text-2xl sm:text-3xl mb-2 sm:mb-3">{integration.icon}</div>
                 <h3 className="font-semibold text-gray-900 mb-1 text-sm sm:text-base">{integration.name}</h3>
                 <p className="text-xs text-gray-600">{integration.description}</p>
+                <Badge variant="secondary" className="mt-4">{integration.status}</Badge>
               </div>
             ))}
           </div>
