@@ -1,12 +1,16 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { 
   FileText, 
   Users, 
@@ -21,9 +25,18 @@ import {
   CheckCircle,
   AlertTriangle,
   TrendingUp,
-  Clock
+  Clock,
+  GitBranch,
+  Plus,
+  Link,
+  Loader2,
+  Github,
+  ExternalLink,
+  BookOpen,
+  Archive
 } from 'lucide-react'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
+import { GitHubProjectsCreator } from './github-projects-creator'
 
 interface ComprehensiveSDLCData {
   businessAnalysis?: {
@@ -147,11 +160,215 @@ interface ComprehensiveSDLCViewerProps {
   data: ComprehensiveSDLCData
   onExport?: () => void
   onShare?: () => void
+  documentId?: string
+  onDocumentSave?: (document: SavedDocument) => void
 }
 
-export function ComprehensiveSDLCViewer({ data, onExport, onShare }: ComprehensiveSDLCViewerProps) {
+interface SavedDocument {
+  id: string
+  title: string
+  data: ComprehensiveSDLCData
+  createdAt: string
+  updatedAt: string
+  linkedProjects?: Array<{
+    platform: 'github' | 'clickup' | 'trello'
+    projectId: string
+    projectName: string
+    projectUrl: string
+  }>
+}
+
+interface GitHubRepository {
+  id: number
+  name: string
+  fullName: string
+  private: boolean
+  url: string
+}
+
+export function ComprehensiveSDLCViewer({ data, onExport, onShare, documentId, onDocumentSave }: ComprehensiveSDLCViewerProps) {
   const [activeTab, setActiveTab] = useState('overview')
   const [expandedSections, setExpandedSections] = useState<string[]>(['overview'])
+  
+  // Project creation states
+  const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false)
+  const [projectName, setProjectName] = useState('')
+  
+  // Document management states
+  const [savedDocument, setSavedDocument] = useState<SavedDocument | null>(null)
+  const [isSavingDocument, setIsSavingDocument] = useState(false)
+  const [documentTitle, setDocumentTitle] = useState('')
+  const [isDocumentDialogOpen, setIsDocumentDialogOpen] = useState(false)
+
+  // Load saved document on component mount
+  useEffect(() => {
+    if (documentId) {
+      loadSavedDocument(documentId)
+    }
+  }, [documentId])
+
+  const loadSavedDocument = async (docId: string) => {
+    try {
+      const response = await fetch(`/api/sdlc-documents/${docId}`)
+      if (response.ok) {
+        const document = await response.json()
+        setSavedDocument(document)
+        setDocumentTitle(document.title)
+      }
+    } catch (error) {
+      console.error('Failed to load saved document:', error)
+    }
+  }
+
+  const handleSaveDocument = async () => {
+    if (!documentTitle.trim()) {
+      alert('Please enter a document title')
+      return
+    }
+
+    setIsSavingDocument(true)
+    try {
+      // Convert SDLC data to markdown content for storage
+      const content = generateMarkdownContent(data)
+      
+      const payload = {
+        title: documentTitle.trim(),
+        content,
+        description: `Comprehensive SDLC document with ${data.metadata?.sectionsGenerated || 0} sections`
+      }
+
+      const url = documentId ? `/api/sdlc-documents/${documentId}` : '/api/sdlc-documents'
+      const method = documentId ? 'PUT' : 'POST'
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        const savedDoc = result.document
+        // Transform to match the expected SavedDocument format
+        const transformedDoc: SavedDocument = {
+          id: savedDoc.id,
+          title: savedDoc.title,
+          data,
+          createdAt: savedDoc.created_at,
+          updatedAt: savedDoc.updated_at,
+          linkedProjects: transformLinkedProjectsToOldFormat(savedDoc.linked_projects || {})
+        }
+        
+        setSavedDocument(transformedDoc)
+        setIsDocumentDialogOpen(false)
+        onDocumentSave?.(transformedDoc)
+        alert(`✅ Document ${documentId ? 'updated' : 'saved'} successfully!`)
+      } else {
+        throw new Error(result.error || 'Failed to save document')
+      }
+    } catch (error) {
+      console.error('Error saving document:', error)
+      alert('❌ Failed to save document')
+    } finally {
+      setIsSavingDocument(false)
+    }
+  }
+
+  // Convert SDLC data to markdown content
+  const generateMarkdownContent = (data: ComprehensiveSDLCData): string => {
+    let markdown = `# ${documentTitle}\n\n`
+    
+    if (data.businessAnalysis) {
+      markdown += '## Business Analysis\n\n'
+      Object.entries(data.businessAnalysis).forEach(([key, value]) => {
+        if (value) {
+          markdown += `### ${key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}\n\n${value}\n\n`
+        }
+      })
+    }
+
+    if (data.functionalSpec) {
+      markdown += '## Functional Specification\n\n'
+      Object.entries(data.functionalSpec).forEach(([key, value]) => {
+        if (value) {
+          markdown += `### ${key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}\n\n${value}\n\n`
+        }
+      })
+    }
+
+    if (data.technicalSpec) {
+      markdown += '## Technical Specification\n\n'
+      Object.entries(data.technicalSpec).forEach(([key, value]) => {
+        if (value) {
+          markdown += `### ${key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}\n\n${value}\n\n`
+        }
+      })
+    }
+
+    if (data.uxSpec) {
+      markdown += '## UX Specification\n\n'
+      Object.entries(data.uxSpec).forEach(([key, value]) => {
+        if (value) {
+          markdown += `### ${key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}\n\n${value}\n\n`
+        }
+      })
+    }
+
+    // Add other sections as needed...
+    return markdown
+  }
+
+  // Transform linked projects from new format to old format
+  const transformLinkedProjectsToOldFormat = (linkedProjects: any) => {
+    const result: Array<{
+      platform: 'github' | 'clickup' | 'trello'
+      projectId: string
+      projectName: string
+      projectUrl: string
+    }> = []
+
+    if (linkedProjects.github) {
+      linkedProjects.github.forEach((project: any) => {
+        result.push({
+          platform: 'github',
+          projectId: project.url || project.name,
+          projectName: project.name,
+          projectUrl: project.url
+        })
+      })
+    }
+
+    if (linkedProjects.clickup) {
+      linkedProjects.clickup.forEach((project: any) => {
+        result.push({
+          platform: 'clickup',
+          projectId: project.url || project.name,
+          projectName: project.name,
+          projectUrl: project.url
+        })
+      })
+    }
+
+    if (linkedProjects.trello) {
+      linkedProjects.trello.forEach((project: any) => {
+        result.push({
+          platform: 'trello',
+          projectId: project.url || project.name,
+          projectName: project.name,
+          projectUrl: project.url
+        })
+      })
+    }
+
+    return result
+  }
+
+  // GitHub project creation is now handled by GitHubProjectsCreator component
+
+  const generateDocumentId = () => {
+    return `sdlc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  }
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => 
@@ -261,28 +478,191 @@ export function ComprehensiveSDLCViewer({ data, onExport, onShare }: Comprehensi
 
   return (
     <div className="space-y-6">
-      {/* Header with metadata */}
+      {/* Enhanced Header with Project Creation */}
       <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-2xl">Comprehensive SDLC Documentation</CardTitle>
+            <div className="flex-1">
+              <CardTitle className="text-2xl flex items-center gap-2">
+                <FileText className="h-6 w-6" />
+                {savedDocument ? savedDocument.title : 'Comprehensive SDLC Documentation'}
+                {savedDocument && (
+                  <Badge variant="secondary" className="ml-2">
+                    <Archive className="h-3 w-3 mr-1" />
+                    Saved
+                  </Badge>
+                )}
+              </CardTitle>
               <CardDescription className="text-lg mt-2">
                 Enterprise-level project documentation with {data.metadata?.sectionsGenerated} sections
               </CardDescription>
             </div>
-            <div className="flex gap-2">
-              <Button onClick={onExport} variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
-              <Button onClick={onShare} variant="outline">
-                <Share2 className="h-4 w-4 mr-2" />
-                Share
-              </Button>
+            
+            <div className="flex flex-col gap-3">
+              {/* Project Creation Actions */}
+              <div className="flex gap-2">
+                <Dialog open={isProjectDialogOpen} onOpenChange={setIsProjectDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="bg-green-600 hover:bg-green-700">
+                      <Github className="h-4 w-4 mr-2" />
+                      Create GitHub Project
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-3xl">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2">
+                        <Github className="h-5 w-5" />
+                        Create GitHub Project
+                      </DialogTitle>
+                      <DialogDescription>
+                        Transform this SDLC document into a GitHub Projects board with issues, milestones, and custom fields.
+                      </DialogDescription>
+                    </DialogHeader>
+                    
+                    <GitHubProjectsCreator
+                      documents={data}
+                      projectTitle={projectName}
+                      onSuccess={async (result) => {
+                        // Update saved document with linked project
+                        if (savedDocument && documentId) {
+                          // Create the new linked project in the database format
+                          const newLinkedProject = {
+                            github: [
+                              {
+                                name: result.project?.title || projectName,
+                                url: result.project?.url || '',
+                                created_at: new Date().toISOString()
+                              }
+                            ]
+                          }
+                          
+                          // Update the document with the new linked project
+                          const updatedDocument = {
+                            ...savedDocument,
+                            linkedProjects: newLinkedProject
+                          }
+                          
+                          // Save to database
+                          try {
+                            const response = await fetch(`/api/sdlc-documents/${documentId}`, {
+                              method: 'PUT',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify(updatedDocument)
+                            })
+                            
+                            if (response.ok) {
+                              setSavedDocument(updatedDocument)
+                              if (onDocumentSave) {
+                                onDocumentSave(updatedDocument)
+                              }
+                            }
+                          } catch (error) {
+                            console.error('Failed to update document with linked project:', error)
+                          }
+                        }
+                        
+                        setIsProjectDialogOpen(false)
+                      }}
+                      onError={(error) => {
+                        console.error('GitHub project creation error:', error)
+                      }}
+                    />
+                  </DialogContent>
+                </Dialog>
+
+                {/* Document Management */}
+                <Dialog open={isDocumentDialogOpen} onOpenChange={setIsDocumentDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline">
+                      <BookOpen className="h-4 w-4 mr-2" />
+                      {savedDocument ? 'Update Document' : 'Save Document'}
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>
+                        {savedDocument ? 'Update Document' : 'Save Document'}
+                      </DialogTitle>
+                      <DialogDescription>
+                        Save this SDLC document for future reference and project creation.
+                      </DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="docTitle">Document Title</Label>
+                        <Input
+                          id="docTitle"
+                          value={documentTitle}
+                          onChange={(e) => setDocumentTitle(e.target.value)}
+                          placeholder="Enter document title..."
+                          className="mt-1"
+                        />
+                      </div>
+                      
+                      {savedDocument?.linkedProjects && savedDocument.linkedProjects.length > 0 && (
+                        <div>
+                          <Label className="text-sm font-medium">Linked Projects</Label>
+                          <div className="mt-2 space-y-2">
+                            {savedDocument.linkedProjects.map((project, index) => (
+                              <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                <div className="flex items-center gap-2">
+                                  <Github className="h-4 w-4" />
+                                  <span className="text-sm">{project.projectName}</span>
+                                  <Badge variant="outline" className="text-xs">{project.platform}</Badge>
+                                </div>
+                                <Button variant="ghost" size="sm" asChild>
+                                  <a href={project.projectUrl} target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="h-3 w-3" />
+                                  </a>
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setIsDocumentDialogOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button 
+                        onClick={handleSaveDocument} 
+                        disabled={isSavingDocument || !documentTitle.trim()}
+                      >
+                        {isSavingDocument ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <BookOpen className="h-4 w-4 mr-2" />
+                            {savedDocument ? 'Update' : 'Save'}
+                          </>
+                        )}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+
+              {/* Standard Actions */}
+              <div className="flex gap-2">
+                <Button onClick={onExport} variant="outline" size="sm">
+                  <Download className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
+                <Button onClick={onShare} variant="outline" size="sm">
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Share
+                </Button>
+              </div>
             </div>
           </div>
           
+          {/* Enhanced metadata with linked projects */}
           {data.metadata && (
             <div className="flex flex-wrap gap-4 mt-4">
               <Badge variant="secondary" className="flex items-center gap-1">
@@ -303,6 +683,12 @@ export function ComprehensiveSDLCViewer({ data, onExport, onShare }: Comprehensi
                   Context Continuity
                 </Badge>
               )}
+              {savedDocument?.linkedProjects && savedDocument.linkedProjects.length > 0 && (
+                <Badge variant="default" className="flex items-center gap-1">
+                  <Link className="h-3 w-3" />
+                  {savedDocument.linkedProjects.length} Linked Project{savedDocument.linkedProjects.length > 1 ? 's' : ''}
+                </Badge>
+              )}
             </div>
           )}
         </CardHeader>
@@ -321,18 +707,25 @@ export function ComprehensiveSDLCViewer({ data, onExport, onShare }: Comprehensi
         {data.implementationGuide && renderSection('Implementation Guide', data.implementationGuide, 'implementation')}
       </div>
 
-      {/* Summary footer */}
+      {/* Enhanced summary footer */}
       <Card className="bg-gray-50 border-gray-200">
         <CardContent className="pt-6">
-          <div className="text-center">
+          <div className="text-center space-y-3">
             <p className="text-sm text-gray-600">
               This comprehensive documentation contains detailed specifications across{' '}
               <strong>{data.metadata?.sectionsGenerated}</strong> sections, generated with{' '}
               <strong>{data.metadata?.detailLevel}</strong> detail level.
             </p>
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-xs text-gray-500">
               Ready for enterprise implementation with full technical, business, and operational guidance.
             </p>
+            {savedDocument?.linkedProjects && savedDocument.linkedProjects.length > 0 && (
+              <div className="pt-2 border-t">
+                <p className="text-xs text-blue-600 font-medium">
+                  🔗 Linked to {savedDocument.linkedProjects.length} active project{savedDocument.linkedProjects.length > 1 ? 's' : ''} for seamless development workflow
+                </p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

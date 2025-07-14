@@ -307,6 +307,33 @@ export class DatabaseService {
     return data || []
   }
 
+  // Save integration data (alias for createIntegration with enhanced interface)
+  async saveIntegration(projectId: string, integrationData: {
+    integration_type: string
+    external_id: string
+    external_url?: string
+    metadata?: any
+    status?: string
+  }) {
+    const { data, error } = await this.supabase
+      .from('integrations')
+      .insert({
+        project_id: projectId,
+        integration_type: integrationData.integration_type,
+        external_id: integrationData.external_id,
+        external_url: integrationData.external_url,
+        metadata: integrationData.metadata
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error saving integration:', error)
+      throw new Error(`Failed to save integration: ${error.message}`)
+    }
+    return data
+  }
+
   // Utility methods for complex operations
   async getProjectWithDocuments(projectId: string): Promise<{
     project: SDLCProject | null,
@@ -361,16 +388,55 @@ export class DatabaseService {
         return { project: null, success: false }
       }
 
-      // Create all documents
-      const documentPromises = Object.entries(documents).map(([type, content]) =>
-        this.createDocument({
-          project_id: project.id,
-          document_type: type,
-          content
-        })
-      )
+      // Create all documents with correct snake_case document types
+      const documentTypeMapping: Record<string, string> = {
+        businessAnalysis: 'business_analysis',
+        functionalSpec: 'functional_spec', 
+        technicalSpec: 'technical_spec',
+        uxSpec: 'ux_spec',
+        architecture: 'architecture'
+      }
 
-      await Promise.all(documentPromises)
+      console.log('📋 Saving documents for project:', project.id)
+      console.log('📊 Document content lengths:', {
+        businessAnalysis: documents.businessAnalysis?.length || 0,
+        functionalSpec: documents.functionalSpec?.length || 0,
+        technicalSpec: documents.technicalSpec?.length || 0,
+        uxSpec: documents.uxSpec?.length || 0,
+        architecture: documents.architecture?.length || 0
+      })
+
+      const documentPromises = Object.entries(documents).map(async ([type, content]) => {
+        try {
+          // Only create documents with actual content (skip empty strings)
+          if (!content || content.trim() === '') {
+            console.warn(`⚠️ Skipping empty document: ${type}`)
+            return null
+          }
+          
+          const result = await this.createDocument({
+            project_id: project.id,
+            document_type: documentTypeMapping[type] || type,
+            content: content.trim()
+          })
+          
+          if (result) {
+            console.log(`✅ Successfully created document: ${type} (${documentTypeMapping[type] || type})`)
+          } else {
+            console.error(`❌ Failed to create document: ${type}`)
+          }
+          
+          return result
+        } catch (error) {
+          console.error(`❌ Error creating document ${type}:`, error)
+          return null
+        }
+      })
+
+      const documentResults = await Promise.all(documentPromises)
+      const successfulDocuments = documentResults.filter(doc => doc !== null)
+      
+      console.log(`📄 Created ${successfulDocuments.length} out of ${Object.keys(documents).length} documents for project ${project.id}`)
 
       return { project, success: true }
     } catch (error) {
