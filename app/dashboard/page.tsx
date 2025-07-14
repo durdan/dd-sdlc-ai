@@ -7,7 +7,7 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -48,13 +48,40 @@ import {
   ChevronRight,
   ArrowRight,
   Download,
+  MessageSquare,
+  Share2,
   Copy,
-  Check,
+  Eye,
+  EyeOff,
+  Search,
+  Filter,
+  Calendar,
+  Star,
+  MoreHorizontal,
+  Edit,
+  Trash2,
+  Archive,
+  BookOpen,
+  Bookmark,
+  Tag,
+  Bell,
+  Upload,
+  Save,
+  RotateCcw,
+  Home,
   BarChart3,
-  FileBarChart,
-  Play,
-  Code2,
-  Github,
+  TrendingUp,
+  Activity,
+  Users,
+  Globe,
+  Lock,
+  Unlock,
+  Key,
+  Code,
+  Terminal,
+  Server,
+  Cloud,
+  Github
 } from "lucide-react"
 import { HowItWorksVisualization } from "@/components/how-it-works-visualization"
 import { PromptEngineering } from "@/components/prompt-engineering"
@@ -62,6 +89,7 @@ import { MarkdownRenderer } from '@/components/markdown-renderer'
 import { MermaidViewer } from '@/components/mermaid-viewer-fixed'
 import { IntegrationHub } from '@/components/integration-hub'
 import { VisualizationHub } from '@/components/visualization-hub'
+import { GitDigestDashboard } from '@/components/gitdigest-dashboard'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   DropdownMenu,
@@ -310,6 +338,7 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
   const [isLoadingGitHubRepos, setIsLoadingGitHubRepos] = useState(false)
 
   const [showSlackUICodeAssistant, setShowSlackUICodeAssistant] = useState(false)
+  const [activeTab, setActiveTab] = useState("sdlc")
 
   // Function to update step progress - moved to component level for global access
   const updateStepProgress = (stepId: string, progress: number, status: "pending" | "in_progress" | "completed" | "error" = "in_progress") => {
@@ -2071,7 +2100,7 @@ Focus on the SPECIFIC project requirements and domain. Avoid generic enterprise 
               </Button>
 
               <Button variant="outline" size="sm" onClick={() => setShowSlackUICodeAssistant(true)} className="flex-shrink-0 min-w-[80px]">
-                <Code2 className="h-4 w-4 sm:mr-2" />
+                <Code className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">Slack UI Assistant</span>
                 <span className="sm:hidden">Slack UI</span>
                 <Badge variant="secondary" className="ml-1 text-xs bg-blue-100 text-blue-700">
@@ -2082,66 +2111,7 @@ Focus on the SPECIFIC project requirements and domain. Avoid generic enterprise 
           </div>
         </div>
 
-        {/* Main Input Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              New Business Case
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="business-input">Describe your bug, feature, or business case:</Label>
-              <Textarea
-                id="business-input"
-                placeholder="Example: We need to implement a user authentication system that supports email/password login, social media login (Google, Facebook), password reset functionality, and role-based access control. The system should be secure, scalable, and integrate with our existing user database..."
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                className="min-h-[120px] mt-2"
-                disabled={isProcessing}
-              />
-            </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <span>JIRA Project:</span>
-                <Badge variant="outline">{config.jiraProject || "Not configured"}</Badge>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <span>Confluence Space:</span>
-                <Badge variant="outline">{config.confluenceSpace || "Not configured"}</Badge>
-              </div>
-            </div>
-
-            {errorMessage && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4" role="alert">
-                <p className="font-medium">Error</p>
-                <p className="text-sm">{errorMessage}</p>
-              </div>
-            )}
-            <Button onClick={handleGenerate} disabled={!input.trim() || isProcessing} className="w-full" size="lg">
-              <Zap className="h-4 w-4 mr-2" />
-              {isProcessing ? "Generating SDLC Documentation..." : "Generate SDLC Documentation"}
-            </Button>
-
-            {/* Help Section */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
-              <div className="flex items-start gap-3">
-                <Info className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
-                <div className="space-y-2">
-                  <h4 className="font-medium text-blue-900">Unified SDLC Documentation</h4>
-                  <div className="space-y-3 text-sm text-blue-800">
-                    <div>
-                      Generate comprehensive documentation including business analysis, functional specs, technical requirements, UX guidelines, and architecture diagrams. 
-                      Customize the depth and detail through the prompt management system to suit your project needs.
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Processing Status - Only show after generation is triggered */}
         {(isProcessing || (generatedDocuments && Object.keys(generatedDocuments).length > 0)) && (
@@ -3305,6 +3275,118 @@ Focus on the SPECIFIC project requirements and domain. Avoid generic enterprise 
           </DialogContent>
         </Dialog>
 
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <div className="scrollbar-hide overflow-x-auto">
+            <TabsList className="flex min-w-max">
+              <TabsTrigger value="sdlc" className="flex-shrink-0 min-w-[60px] px-2 sm:px-3">
+                <FileText className="w-4 h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">SDLC</span>
+              </TabsTrigger>
+              <TabsTrigger value="gitdigest" className="flex-shrink-0 min-w-[60px] px-2 sm:px-3">
+                <GitBranch className="w-4 h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">GitDigest</span>
+              </TabsTrigger>
+              <TabsTrigger value="workflow" className="flex-shrink-0 min-w-[60px] px-2 sm:px-3">
+                <Workflow className="w-4 h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Workflow</span>
+              </TabsTrigger>
+              <TabsTrigger value="prompt" className="flex-shrink-0 min-w-[60px] px-2 sm:px-3">
+                <MessageSquare className="w-4 h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Prompt</span>
+              </TabsTrigger>
+              <TabsTrigger value="integrations" className="flex-shrink-0 min-w-[60px] px-2 sm:px-3">
+                <Settings className="w-4 h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Integrations</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
+          <TabsContent value="sdlc" className="space-y-6">
+            {/* Main Input Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  New Business Case
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="business-case">Describe your bug, feature, or business case:</Label>
+                  <Textarea
+                    id="business-case"
+                    placeholder="Example: We need to implement a user authentication system that supports email/password login, social media login (Google, Facebook), password reset functionality, and role-based access control. The system should be secure, scalable, and integrate with our existing user database..."
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    className="min-h-[120px]"
+                  />
+                </div>
+                
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <span>JIRA Project: {config.jiraProject || 'Not configured'}</span>
+                  <span>Confluence Space: {config.confluenceSpace || 'Not configured'}</span>
+                </div>
+                
+                <Button 
+                  onClick={handleGenerate} 
+                  disabled={!input.trim() || isProcessing}
+                  className="w-full"
+                  size="lg"
+                >
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Generating SDLC Documentation...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-4 h-4 mr-2" />
+                      Generate SDLC Documentation
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Help Section */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <Info className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                <div className="space-y-2">
+                  <h4 className="font-medium text-blue-900">Unified SDLC Documentation</h4>
+                  <div className="space-y-3 text-sm text-blue-800">
+                    <div>
+                      Generate comprehensive documentation including business analysis, functional specs, technical requirements, UX guidelines, and architecture diagrams. 
+                      Customize the depth and detail through the prompt management system to suit your project needs.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Rest of existing SDLC content... */}
+          </TabsContent>
+
+          <TabsContent value="gitdigest" className="mt-6">
+            <GitDigestDashboard config={config} />
+          </TabsContent>
+
+          <TabsContent value="workflow" className="space-y-6">
+            <VisualizationHub />
+          </TabsContent>
+
+          <TabsContent value="prompt" className="space-y-6">
+            <PromptEngineering 
+              onPromptUpdate={handlePromptUpdate}
+              customPrompts={customPrompts}
+              isVisible={true}
+            />
+          </TabsContent>
+
+          <TabsContent value="integrations" className="space-y-6">
+            <IntegrationHub />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )
