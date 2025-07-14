@@ -1,7 +1,7 @@
 import { createOpenAI } from "@ai-sdk/openai"
 import { generateText } from "ai"
 import { type NextRequest, NextResponse } from "next/server"
-import { createPromptService } from '@/lib/prompt-service'
+import { createServerPromptService } from '@/lib/prompt-service-server'
 import { createClient } from "@/lib/supabase/server"
 
 export const maxDuration = 60
@@ -69,7 +69,7 @@ async function generateWithDatabasePrompt(
   projectId: string | undefined,
   fallbackPrompt: string
 ) {
-  const promptService = createPromptService()
+  const promptService = createServerPromptService()
   const startTime = Date.now()
   const openaiClient = createOpenAI({ apiKey: openaiKey })
   

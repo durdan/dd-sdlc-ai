@@ -1,5 +1,35 @@
 import { createClient } from '@/lib/supabase/client'
 
+// Global cache invalidation mechanism
+class GlobalCacheInvalidator {
+  private static instance: GlobalCacheInvalidator;
+  private invalidationTimestamps: Map<string, number> = new Map();
+
+  static getInstance(): GlobalCacheInvalidator {
+    if (!GlobalCacheInvalidator.instance) {
+      GlobalCacheInvalidator.instance = new GlobalCacheInvalidator();
+    }
+    return GlobalCacheInvalidator.instance;
+  }
+
+  invalidateDocumentType(documentType: DocumentType): void {
+    const key = `system-${documentType}`;
+    this.invalidationTimestamps.set(key, Date.now());
+    console.log(`🗑️ Global cache invalidated for document type: ${documentType}`);
+  }
+
+  isInvalidated(documentType: DocumentType, cacheTime: number): boolean {
+    const key = `system-${documentType}`;
+    const invalidationTime = this.invalidationTimestamps.get(key) || 0;
+    return cacheTime < invalidationTime;
+  }
+
+  clearAll(): void {
+    this.invalidationTimestamps.clear();
+    console.log('🗑️ All global cache invalidation timestamps cleared');
+  }
+}
+
 export interface PromptTemplate {
   id: string;
   name: string;
@@ -72,7 +102,7 @@ export interface CreatePromptRequest {
   variables?: Record<string, string>;
   ai_model?: string;
   is_active?: boolean;
-  is_default?: boolean;
+  is_system_default?: boolean;
 }
 
 export interface CreateUserPromptRequest {
@@ -93,7 +123,7 @@ export interface UpdatePromptRequest {
   variables?: Record<string, string>;
   ai_model?: string;
   is_active?: boolean;
-  is_default?: boolean;
+  is_system_default?: boolean;
   is_personal_default?: boolean;
 }
 
@@ -112,9 +142,9 @@ export class PromptService {
   private cache: Map<string, PromptTemplate> = new Map();
   private cacheExpiry: Map<string, number> = new Map();
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+  private globalInvalidator = GlobalCacheInvalidator.getInstance();
 
   constructor() {
-    // Use the existing client from our client.ts file
     this.supabase = createClient();
   }
 
@@ -127,9 +157,12 @@ export class PromptService {
     
     // Check cache first
     if (this.isValidCache(cacheKey)) {
+      console.log(`📋 Using cached prompt for ${documentType}`);
       return this.cache.get(cacheKey) || null;
     }
 
+    console.log(`🔍 Fetching fresh prompt from database for ${documentType}`);
+    
     try {
       const { data, error } = await this.supabase
         .from('prompt_templates')
@@ -142,9 +175,17 @@ export class PromptService {
 
       if (error) {
         console.error('Error fetching active system prompt:', error);
+        console.log('🔍 Query details:', {
+          document_type: documentType,
+          prompt_scope: 'system', 
+          is_active: true,
+          is_system_default: true
+        });
         return null;
       }
 
+      console.log(`✅ Found active system prompt: ${data.name} (ID: ${data.id})`);
+      
       // Cache the result
       this.cache.set(cacheKey, data);
       this.cacheExpiry.set(cacheKey, Date.now() + this.CACHE_TTL);
@@ -577,7 +618,7 @@ export class PromptService {
   async createPrompt(prompt: CreatePromptRequest, userId: string): Promise<PromptTemplate> {
     try {
       // If this is set as default, clear existing defaults
-      if (prompt.is_default) {
+      if (prompt.is_system_default) {
         await this.clearDefaultPrompt(prompt.document_type);
       }
 
@@ -591,7 +632,7 @@ export class PromptService {
         prompt_scope: 'system' as const,
         user_id: null, // System prompts have no user_id
         is_active: prompt.is_active !== false, // Default to true
-        is_system_default: prompt.is_default || false,
+        is_system_default: prompt.is_system_default || false,
         version: 1,
         created_by: userId
       };
@@ -628,7 +669,7 @@ export class PromptService {
       }
 
       // If setting as default, clear existing defaults
-      if (updates.is_default) {
+      if (updates.is_system_default) {
         await this.clearDefaultPrompt(existingPrompt.document_type);
       }
 
@@ -1021,7 +1062,22 @@ export class PromptService {
 
   private isValidCache(key: string): boolean {
     const expiry = this.cacheExpiry.get(key);
-    return expiry ? Date.now() < expiry : false;
+    if (!expiry || Date.now() >= expiry) {
+      return false;
+    }
+
+    // Check for global invalidation for system prompts
+    if (key.startsWith('active-system-')) {
+      const documentType = key.replace('active-system-', '') as DocumentType;
+      if (this.globalInvalidator.isInvalidated(documentType, expiry)) {
+        console.log(`🗑️ Cache invalidated globally for ${documentType}, forcing refresh`);
+        this.cache.delete(key);
+        this.cacheExpiry.delete(key);
+        return false;
+      }
+    }
+
+    return true;
   }
 
   private clearCache(): void {
@@ -1039,6 +1095,9 @@ export class PromptService {
     const legacyCacheKey = `active-${documentType}`;
     this.cache.delete(legacyCacheKey);
     this.cacheExpiry.delete(legacyCacheKey);
+
+    // Trigger global cache invalidation for all PromptService instances
+    this.globalInvalidator.invalidateDocumentType(documentType);
   }
 
   private processAnalyticsData(data: any[]): any {

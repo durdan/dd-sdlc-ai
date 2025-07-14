@@ -88,7 +88,7 @@ export function PromptEditor({ prompt, documentType, onSave, onCancel, userRole 
     prompt_content: '',
     ai_model: 'gpt-4',
     is_active: false,
-    is_default: false
+    is_system_default: false
   });
   const [variables, setVariables] = useState<Variable[]>([]);
   const [loading, setSaving] = useState(false);
@@ -108,7 +108,7 @@ export function PromptEditor({ prompt, documentType, onSave, onCancel, userRole 
         prompt_content: prompt.prompt_content,
         ai_model: prompt.ai_model,
         is_active: prompt.is_active,
-        is_default: prompt.is_default
+        is_system_default: prompt.is_system_default || false
       });
 
       // Extract variables from prompt content
@@ -206,7 +206,7 @@ export function PromptEditor({ prompt, documentType, onSave, onCancel, userRole 
           variables: variablesObj,
           ai_model: formData.ai_model,
           is_active: formData.is_active,
-          is_default: formData.is_default
+          is_system_default: formData.is_system_default
         };
         
         await promptService.updatePrompt(prompt!.id, updateData);
@@ -219,7 +219,7 @@ export function PromptEditor({ prompt, documentType, onSave, onCancel, userRole 
           variables: variablesObj,
           ai_model: formData.ai_model,
           is_active: formData.is_active,
-          is_default: formData.is_default
+          is_system_default: formData.is_system_default
         };
         
         await promptService.createPrompt(createData, 'current-user-id'); // TODO: Get actual user ID
@@ -479,8 +479,8 @@ export function PromptEditor({ prompt, documentType, onSave, onCancel, userRole 
                     </p>
                   </div>
                   <Switch
-                    checked={formData.is_default}
-                    onCheckedChange={(checked) => handleInputChange('is_default', checked)}
+                    checked={formData.is_system_default}
+                    onCheckedChange={(checked) => handleInputChange('is_system_default', checked)}
                     disabled={userRole !== 'admin'}
                   />
                 </div>
