@@ -54,6 +54,7 @@ import {
   FileBarChart,
   Play,
   Code2,
+  Github,
 } from "lucide-react"
 import { HowItWorksVisualization } from "@/components/how-it-works-visualization"
 import { PromptEngineering } from "@/components/prompt-engineering"
@@ -75,6 +76,11 @@ import { SimpleWorkflowDiagram } from "@/components/simple-workflow-diagram"
 import { DetailedSDLCViewer } from '@/components/detailed-sdlc-viewer'
 import { DatabaseTestInterface } from '@/components/database-test-interface'
 import { SlackUICodeAssistant } from '@/components/slack-ui-code-assistant'
+// Use require for the SDLC document parser instead of ES module import
+const sdlcDocumentParser = require('@/lib/dist/sdlc-document-parser');
+const { parseSDLCDocument, ensureDefaultSubsections } = sdlcDocumentParser;
+
+import { GitHubProjectsCreator } from '@/components/github-projects-creator'
 
 // User Header Component with admin panel support
 interface UserHeaderProps {
@@ -202,13 +208,24 @@ interface ProjectResult {
   createdAt: string
   jiraEpic?: string
   confluencePage?: string
+  githubProject?: {
+    id: string
+    url: string
+    number: number
+    issueCount?: number
+    repositoryName?: string
+  }
   documents: {
     businessAnalysis: string
     functionalSpec: string
     technicalSpec: string
     uxSpec: string
     architecture: string
+    comprehensive?: string
+    mermaidDiagrams?: string
   }
+  hasComprehensiveContent: boolean
+  totalDocuments: number
 }
 
 interface WorkflowVisualizationProps {
@@ -276,6 +293,21 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
   const [recentProjects, setRecentProjects] = useState<ProjectResult[]>([])
   const [isLoadingProjects, setIsLoadingProjects] = useState(false)
   const [showDatabaseTest, setShowDatabaseTest] = useState(false)
+
+  // GitHub Project Creation states
+  const [showGitHubProjectDialog, setShowGitHubProjectDialog] = useState(false)
+  const [isCreatingGitHubProject, setIsCreatingGitHubProject] = useState(false)
+  const [gitHubProjectConfig, setGitHubProjectConfig] = useState({
+    projectName: "",
+    repositoryOwner: "",
+    repositoryName: "",
+    includeIssues: true,
+    includeCustomFields: true,
+    createPhaseBasedMilestones: true,
+    generateLabels: true
+  })
+  const [githubRepositories, setGithubRepositories] = useState<any[]>([])
+  const [isLoadingGitHubRepos, setIsLoadingGitHubRepos] = useState(false)
 
   const [showSlackUICodeAssistant, setShowSlackUICodeAssistant] = useState(false)
 
@@ -353,18 +385,109 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
           console.log('📄 Documents for project', project.id, ':', documents.length)
           console.log('🔗 Integrations for project', project.id, ':', integrations.length)
           
-          // Convert documents array to documents object
-          const documentsObj = {
-            businessAnalysis: documents.find(d => d.document_type === 'businessAnalysis')?.content || '',
-            functionalSpec: documents.find(d => d.document_type === 'functionalSpec')?.content || '',
-            technicalSpec: documents.find(d => d.document_type === 'technicalSpec')?.content || '',
-            uxSpec: documents.find(d => d.document_type === 'uxSpec')?.content || '',
-            architecture: documents.find(d => d.document_type === 'architecture')?.content || '',
+          // Find documents by their actual database types (snake_case)
+          const comprehensiveDoc = documents.find(d => d.document_type === 'comprehensive_sdlc')
+          const businessDoc = documents.find(d => d.document_type === 'business_analysis')
+          const functionalDoc = documents.find(d => d.document_type === 'functional_spec')
+          const technicalDoc = documents.find(d => d.document_type === 'technical_spec')
+          const uxDoc = documents.find(d => d.document_type === 'ux_spec')
+          const architectureDoc = documents.find(d => d.document_type === 'architecture')
+          const mermaidDoc = documents.find(d => d.document_type === 'mermaid_diagrams')
+          
+          // Handle multiple comprehensive_sdlc documents (enhanced generation pattern)
+          const comprehensiveDocs = documents.filter(d => d.document_type === 'comprehensive_sdlc')
+          
+          // Smart content mapping for different generation patterns
+          let businessContent = businessDoc?.content || ''
+          let functionalContent = functionalDoc?.content || ''
+          let technicalContent = technicalDoc?.content || ''
+          let uxContent = uxDoc?.content || ''
+          
+          // If we have multiple comprehensive_sdlc documents, try to match content by keywords
+          if (comprehensiveDocs.length > 1) {
+            console.log(`📊 Found ${comprehensiveDocs.length} comprehensive documents, attempting smart content mapping`)
+            
+            comprehensiveDocs.forEach((doc, index) => {
+              const content = doc.content || ''
+              const contentLower = content.toLowerCase()
+              
+              // Business Analysis keywords
+              if (!businessContent && (
+                contentLower.includes('business analysis') || 
+                contentLower.includes('executive summary') ||
+                contentLower.includes('stakeholder') ||
+                contentLower.includes('business objective')
+              )) {
+                businessContent = content
+                console.log(`📋 Mapped comprehensive doc ${index} to Business Analysis`)
+              }
+              // Functional Spec keywords
+              else if (!functionalContent && (
+                contentLower.includes('functional') ||
+                contentLower.includes('system overview') ||
+                contentLower.includes('api specification') ||
+                contentLower.includes('data architecture')
+              )) {
+                functionalContent = content
+                console.log(`📋 Mapped comprehensive doc ${index} to Functional Spec`)
+              }
+              // Technical Spec keywords
+              else if (!technicalContent && (
+                contentLower.includes('technical') ||
+                contentLower.includes('system architecture') ||
+                contentLower.includes('technology stack') ||
+                contentLower.includes('deployment')
+              )) {
+                technicalContent = content
+                console.log(`📋 Mapped comprehensive doc ${index} to Technical Spec`)
+              }
+              // UX Spec keywords
+              else if (!uxContent && (
+                contentLower.includes('ux ') ||
+                contentLower.includes('user experience') ||
+                contentLower.includes('personas') ||
+                contentLower.includes('wireframe') ||
+                contentLower.includes('design system')
+              )) {
+                uxContent = content
+                console.log(`📋 Mapped comprehensive doc ${index} to UX Spec`)
+              }
+            })
           }
           
-          // Find Jira and Confluence integrations
+          // Create fallback content for incomplete projects
+          const hasAnyContent = businessContent || functionalContent || technicalContent || uxContent || comprehensiveDoc?.content || architectureDoc?.content
+          const fallbackContent = comprehensiveDoc?.content || 
+            (architectureDoc?.content ? `# Project Documentation\n\nThis project contains architecture documentation. Please check the **Architecture** tab for detailed diagrams and system design.\n\n${architectureDoc.content}` : '') ||
+            (mermaidDoc?.content ? `# Project Documentation\n\nThis project contains Mermaid diagrams. Please check the **Architecture** tab for visual documentation.\n\n${mermaidDoc.content}` : '') ||
+            '# Project Documentation\n\nThis project appears to be incomplete. Please regenerate the documentation to get full content.'
+          
+          const documentsObj = {
+            businessAnalysis: businessContent || fallbackContent,
+            functionalSpec: functionalContent || fallbackContent,
+            technicalSpec: technicalContent || fallbackContent,
+            uxSpec: uxContent || fallbackContent,
+            architecture: architectureDoc?.content || mermaidDoc?.content || fallbackContent,
+            comprehensive: comprehensiveDoc?.content || fallbackContent,
+            mermaidDiagrams: mermaidDoc?.content || architectureDoc?.content || ''
+          }
+          
+          console.log('📋 Content summary for project', project.id, ':', {
+            hasBusinessDoc: !!businessDoc?.content,
+            hasFunctionalDoc: !!functionalDoc?.content,
+            hasTechnicalDoc: !!technicalDoc?.content,
+            hasUxDoc: !!uxDoc?.content,
+            hasArchitectureDoc: !!architectureDoc?.content,
+            hasComprehensiveDoc: !!comprehensiveDoc?.content,
+            comprehensiveLength: comprehensiveDoc?.content?.length || 0,
+            finalBusinessLength: documentsObj.businessAnalysis?.length || 0,
+            finalFunctionalLength: documentsObj.functionalSpec?.length || 0
+          })
+          
+          // Find Jira, Confluence, and GitHub integrations
           const jiraIntegration = integrations.find(i => i.integration_type === 'jira')
           const confluenceIntegration = integrations.find(i => i.integration_type === 'confluence')
+          const githubIntegration = integrations.find(i => i.integration_type === 'github_projects')
           
           const projectResult = {
             id: project.id,
@@ -373,11 +496,20 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
             createdAt: project.created_at,
             jiraEpic: jiraIntegration?.external_url || '',
             confluencePage: confluenceIntegration?.external_url || '',
-            documents: documentsObj
+            githubProject: githubIntegration ? {
+              id: githubIntegration.external_id,
+              url: githubIntegration.external_url,
+              number: githubIntegration.metadata?.projectNumber || 0,
+              issueCount: githubIntegration.metadata?.issueCount || 0,
+              repositoryName: githubIntegration.metadata?.repositoryName || ''
+            } : undefined,
+            documents: documentsObj,
+            hasComprehensiveContent: !!comprehensiveDoc?.content,
+            totalDocuments: documents.length
           }
           
           projectResults.push(projectResult)
-          console.log('✅ Successfully processed project:', project.id)
+          console.log('✅ Successfully processed project:', project.id, 'with', documents.length, 'documents')
           
         } catch (projectError) {
           console.error('❌ Error processing individual project:', project.id, projectError)
@@ -474,7 +606,262 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
     await generateFreshDocuments()
   }
 
+  // GitHub Project Creation Functions
+  const loadGitHubRepositories = async () => {
+    setIsLoadingGitHubRepos(true)
+    try {
+      const response = await fetch('/api/integrations/github-projects?action=repositories', {
+        method: 'GET',
+        credentials: 'include'
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setGithubRepositories(data.repositories || [])
+      } else {
+        console.warn('Failed to load GitHub repositories')
+        setGithubRepositories([])
+      }
+    } catch (error) {
+      console.error('Error loading GitHub repositories:', error)
+      setGithubRepositories([])
+    } finally {
+      setIsLoadingGitHubRepos(false)
+    }
+  }
 
+  // Helper function to parse document sections into subsections
+  const parseDocumentSections = (content: string): Record<string, string> => {
+    if (!content || typeof content !== 'string') {
+      return {};
+    }
+
+    const sections: Record<string, string> = {};
+    
+    // Try to split by markdown headers (## Section Title)
+    const headerRegex = /^##\s+([^\n]+?)$/gm;
+    let match;
+    let lastIndex = 0;
+    let lastTitle = '';
+    
+    // First pass - identify all section headers
+    const headers: {title: string, index: number}[] = [];
+    while ((match = headerRegex.exec(content)) !== null) {
+      headers.push({
+        title: match[1].trim(),
+        index: match.index
+      });
+    }
+    
+    // Second pass - extract content between headers
+    for (let i = 0; i < headers.length; i++) {
+      const currentHeader = headers[i];
+      const nextHeader = headers[i + 1];
+      const sectionEnd = nextHeader ? nextHeader.index : content.length;
+      
+      // Get section content (excluding the header itself)
+      const headerEndIndex = content.indexOf('\n', currentHeader.index);
+      const sectionStart = headerEndIndex !== -1 ? headerEndIndex + 1 : currentHeader.index + currentHeader.title.length + 3;
+      
+      // Extract and clean up section content
+      const sectionContent = content.substring(sectionStart, sectionEnd).trim();
+      
+      // Convert title to camelCase for the key
+      const sectionKey = currentHeader.title
+        .replace(/[^\w\s]/g, '')
+        .trim()
+        .replace(/(?:^\w|[A-Z]|\b\w)/g, (word, index) => 
+          index === 0 ? word.toLowerCase() : word.toUpperCase()
+        )
+        .replace(/\s+/g, '');
+      
+      sections[sectionKey] = sectionContent;
+    }
+    
+    // If no sections were found, create a default section
+    if (Object.keys(sections).length === 0) {
+      sections['content'] = content;
+    }
+    
+    return sections;
+  };
+
+  const handleCreateGitHubProject = async () => {
+    if (!gitHubProjectConfig.projectName.trim()) {
+      setErrorMessage("Please enter a project name")
+      return
+    }
+
+    if (!gitHubProjectConfig.repositoryOwner || !gitHubProjectConfig.repositoryName) {
+      setErrorMessage("Please select a repository")
+      return
+    }
+
+    setIsCreatingGitHubProject(true)
+    setErrorMessage("")
+
+    try {
+      // Parse the SDLC document into the required structure
+      const parsedDocument = parseSDLCDocument({
+        businessAnalysis: generatedDocuments.businessAnalysis,
+        functionalSpec: generatedDocuments.functionalSpec,
+        technicalSpec: generatedDocuments.technicalSpec,
+        uxSpec: generatedDocuments.uxSpec,
+        mermaidDiagrams: generatedDocuments.mermaidDiagrams
+      })
+      
+      // Ensure we have default subsections if parsing didn't find any
+      const sdlcDocument = ensureDefaultSubsections(parsedDocument)
+      
+      const response = await fetch('/api/integrations/github-projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          action: 'create-sdlc-project',
+          ownerId: gitHubProjectConfig.repositoryOwner, // GitHub user/org that owns the repository
+          projectTitle: gitHubProjectConfig.projectName.trim(),
+          sdlcDocument,
+          repositoryOwner: gitHubProjectConfig.repositoryOwner,
+          repositoryName: gitHubProjectConfig.repositoryName,
+          includeIssues: gitHubProjectConfig.includeIssues,
+          includeCustomFields: gitHubProjectConfig.includeCustomFields,
+          options: {
+            createPhaseBasedMilestones: gitHubProjectConfig.createPhaseBasedMilestones,
+            generateLabels: gitHubProjectConfig.generateLabels
+          }
+        })
+      })
+
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        setSuccessMessage(`🎉 GitHub project "${gitHubProjectConfig.projectName}" created successfully!`)
+        setShowGitHubProjectDialog(false)
+        
+        // Optionally reload recent projects to show the new integration
+        const projects = await getCachedProjects()
+        setRecentProjects(projects)
+      } else {
+        throw new Error(result.error || 'GitHub project creation failed')
+      }
+    } catch (error) {
+      console.error('GitHub project creation error:', error)
+      setErrorMessage(`Failed to create GitHub project: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setIsCreatingGitHubProject(false)
+    }
+  }
+
+  const openGitHubProjectDialog = () => {
+    // Auto-populate project name from input
+    const projectName = extractProjectName(input)
+    setGitHubProjectConfig(prev => ({
+      ...prev,
+      projectName: projectName || `SDLC Project - ${new Date().toLocaleDateString()}`
+    }))
+    
+    // Load repositories when opening dialog
+    loadGitHubRepositories()
+    setShowGitHubProjectDialog(true)
+  }
+
+  // GitHub Project Creation for Existing Projects
+  const [selectedProjectForGitHub, setSelectedProjectForGitHub] = useState<ProjectResult | null>(null)
+  
+  const openGitHubProjectDialogForProject = (project: ProjectResult) => {
+    setSelectedProjectForGitHub(project)
+    setGitHubProjectConfig(prev => ({
+      ...prev,
+      projectName: project.title || `SDLC Project - ${new Date().toLocaleDateString()}`
+    }))
+    
+    // Load repositories when opening dialog
+    loadGitHubRepositories()
+    setShowGitHubProjectDialog(true)
+  }
+
+  const handleCreateGitHubProjectForExisting = async () => {
+    if (!selectedProjectForGitHub) {
+      setErrorMessage("No project selected")
+      return
+    }
+
+    if (!gitHubProjectConfig.projectName.trim()) {
+      setErrorMessage("Please enter a project name")
+      return
+    }
+
+    if (!gitHubProjectConfig.repositoryOwner || !gitHubProjectConfig.repositoryName) {
+      setErrorMessage("Please select a repository")
+      return
+    }
+
+    setIsCreatingGitHubProject(true)
+    setErrorMessage("")
+
+    try {
+      // Parse the SDLC document into the required structure
+      const parsedDocument = parseSDLCDocument({
+        businessAnalysis: selectedProjectForGitHub.documents.businessAnalysis,
+        functionalSpec: selectedProjectForGitHub.documents.functionalSpec,
+        technicalSpec: selectedProjectForGitHub.documents.technicalSpec,
+        uxSpec: selectedProjectForGitHub.documents.uxSpec,
+        comprehensive: selectedProjectForGitHub.documents.comprehensive,
+        mermaidDiagrams: selectedProjectForGitHub.documents.mermaidDiagrams,
+        architecture: selectedProjectForGitHub.documents.architecture
+      })
+      
+      // Ensure we have default subsections if parsing didn't find any
+      const sdlcDocument = ensureDefaultSubsections(parsedDocument)
+      
+      // Log the document structure for debugging
+      console.log('Parsed document structure:', 
+        Object.keys(sdlcDocument).map(section => 
+          `${section}: ${Object.keys(sdlcDocument[section] || {}).length} subsections`
+        )
+      )
+      
+      const response = await fetch('/api/integrations/github-projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          action: 'create-sdlc-project',
+          ownerId: gitHubProjectConfig.repositoryOwner, // GitHub user/org that owns the repository
+          projectTitle: gitHubProjectConfig.projectName.trim(),
+          sdlcDocument,
+          repositoryOwner: gitHubProjectConfig.repositoryOwner,
+          repositoryName: gitHubProjectConfig.repositoryName,
+          includeIssues: gitHubProjectConfig.includeIssues,
+          includeCustomFields: gitHubProjectConfig.includeCustomFields,
+          options: {
+            createPhaseBasedMilestones: gitHubProjectConfig.createPhaseBasedMilestones,
+            generateLabels: gitHubProjectConfig.generateLabels
+          }
+        })
+      })
+
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        setSuccessMessage(`🎉 GitHub project "${gitHubProjectConfig.projectName}" created successfully!`)
+        setShowGitHubProjectDialog(false)
+        setSelectedProjectForGitHub(null)
+        
+        // Optionally reload recent projects to show the new integration
+        const projects = await getCachedProjects()
+        setRecentProjects(projects)
+      } else {
+        throw new Error(result.error || 'GitHub project creation failed')
+      }
+    } catch (error) {
+      console.error('GitHub project creation error:', error)
+      setErrorMessage(`Failed to create GitHub project: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setIsCreatingGitHubProject(false)
+    }
+  }
 
   // Helper function to parse Mermaid content into separate diagrams
   const parseMermaidDiagrams = (mermaidContent: string) => {
@@ -1849,9 +2236,51 @@ Focus on the SPECIFIC project requirements and domain. Avoid generic enterprise 
                         <CheckCircle className="h-5 w-5" />
                         <span className="font-medium">Generation Complete!</span>
                       </div>
-                      <p className="text-sm text-green-600 mt-1">
-                        Your SDLC documentation has been successfully generated. You can now export to Jira/Confluence or view the documents below.
+                      <p className="text-sm text-green-600 mt-1 mb-3">
+                        Your SDLC documentation has been successfully generated. You can now create GitHub projects, export to Jira/Confluence, or view the documents below.
                       </p>
+                      
+                      {/* Action Buttons */}
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        <Button 
+                          onClick={openGitHubProjectDialog}
+                          size="sm"
+                          className="bg-gray-900 hover:bg-gray-800 text-white"
+                        >
+                          <Github className="h-4 w-4 mr-2" />
+                          Create GitHub Project
+                        </Button>
+                        
+                        {config.jiraUrl && (
+                          <Button 
+                            onClick={() => handleJiraExport({ 
+                              documents: generatedDocuments, 
+                              input,
+                              title: extractProjectName(input)
+                            })}
+                            variant="outline"
+                            size="sm"
+                          >
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            Export to Jira
+                          </Button>
+                        )}
+                        
+                        {config.confluenceUrl && (
+                          <Button 
+                            onClick={() => handleConfluenceExport({ 
+                              documents: generatedDocuments, 
+                              input,
+                              title: extractProjectName(input)
+                            })}
+                            variant="outline"
+                            size="sm"
+                          >
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            Export to Confluence
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   )
                 })()
@@ -2042,7 +2471,24 @@ Focus on the SPECIFIC project requirements and domain. Avoid generic enterprise 
                         <Badge variant="outline" className="text-green-700 border-green-200">
                           {project.status}
                         </Badge>
-                        {project.jiraEpic && <Badge variant="outline">JIRA: {project.jiraEpic}</Badge>}
+                        {project.jiraEpic && (
+                          <Badge variant="outline" className="text-blue-700 border-blue-200">
+                            <ExternalLink className="h-3 w-3 mr-1" />
+                            JIRA: {project.jiraEpic}
+                          </Badge>
+                        )}
+                        {project.confluencePage && (
+                          <Badge variant="outline" className="text-green-700 border-green-200">
+                            <ExternalLink className="h-3 w-3 mr-1" />
+                            Confluence
+                          </Badge>
+                        )}
+                        {project.githubProject && (
+                          <Badge variant="outline" className="text-gray-700 border-gray-200">
+                            <Github className="h-3 w-3 mr-1" />
+                            GitHub: #{project.githubProject.number}
+                          </Badge>
+                        )}
                       </div>
                     </div>
                     <div className="flex gap-2 flex-wrap sm:flex-nowrap">
@@ -2118,6 +2564,23 @@ Focus on the SPECIFIC project requirements and domain. Avoid generic enterprise 
                           {isExportingToConfluence ? 'Exporting...' : 'Export to Confluence'}
                         </Button>
                       )}
+                      
+                      {/* GitHub Projects Integration Button */}
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => openGitHubProjectDialogForProject(project)}
+                        disabled={isCreatingGitHubProject}
+                        className="text-gray-800 border-gray-300 hover:bg-gray-50"
+                        title="Create GitHub project with issues and milestones based on SDLC documentation"
+                      >
+                        {isCreatingGitHubProject && selectedProjectForGitHub?.id === project.id ? (
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        ) : (
+                          <Github className="h-4 w-4 mr-1" />
+                        )}
+                        {isCreatingGitHubProject && selectedProjectForGitHub?.id === project.id ? 'Creating...' : 'Create GitHub Project'}
+                      </Button>
                     </div>
                   </div>
 
@@ -2760,6 +3223,85 @@ Focus on the SPECIFIC project requirements and domain. Avoid generic enterprise 
               </DialogDescription>
             </DialogHeader>
             <SlackUICodeAssistant />
+          </DialogContent>
+        </Dialog>
+
+        {/* GitHub Project Creation Dialog */}
+        <Dialog open={showGitHubProjectDialog} onOpenChange={(open) => {
+          setShowGitHubProjectDialog(open)
+          if (!open) {
+            setSelectedProjectForGitHub(null)
+          }
+        }}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>Create GitHub Project</DialogTitle>
+              <DialogDescription>
+                Transform your SDLC documentation into a structured GitHub project with issues and milestones
+              </DialogDescription>
+            </DialogHeader>
+            
+            <GitHubProjectsCreator
+              documents={
+                selectedProjectForGitHub 
+                  ? {
+                      businessAnalysis: selectedProjectForGitHub.documents.businessAnalysis,
+                      functionalSpec: selectedProjectForGitHub.documents.functionalSpec,
+                      technicalSpec: selectedProjectForGitHub.documents.technicalSpec,
+                      uxSpec: selectedProjectForGitHub.documents.uxSpec,
+                      comprehensive: selectedProjectForGitHub.documents.comprehensive,
+                      mermaidDiagrams: selectedProjectForGitHub.documents.mermaidDiagrams,
+                      architecture: selectedProjectForGitHub.documents.architecture
+                    }
+                  : {
+                      businessAnalysis: generatedDocuments.businessAnalysis,
+                      functionalSpec: generatedDocuments.functionalSpec,
+                      technicalSpec: generatedDocuments.technicalSpec,
+                      uxSpec: generatedDocuments.uxSpec,
+                      mermaidDiagrams: generatedDocuments.mermaidDiagrams
+                    }
+              }
+              projectTitle={
+                selectedProjectForGitHub 
+                  ? selectedProjectForGitHub.title
+                  : extractProjectName(input)
+              }
+              onSuccess={async (result) => {
+                setSuccessMessage(`🎉 GitHub project created successfully!`)
+                setShowGitHubProjectDialog(false)
+                
+                // Store GitHub project information in the database if we have a project ID
+                if (selectedProjectForGitHub?.id && result.project) {
+                  try {
+                    // Save GitHub integration to database
+                    await dbService.saveIntegration(selectedProjectForGitHub.id, {
+                      integration_type: 'github_projects',
+                      external_id: result.project.id,
+                      external_url: result.project.url,
+                      metadata: {
+                        projectNumber: result.project.number,
+                        repositoryOwner: result.repositoryOwner,
+                        repositoryName: result.repositoryName,
+                        issueCount: result.steps?.issues?.message?.match(/\d+/)?.[0] || 0
+                      },
+                      status: 'active'
+                    })
+                    console.log('✅ Saved GitHub project integration to database')
+                  } catch (error) {
+                    console.error('❌ Failed to save GitHub integration:', error)
+                  }
+                }
+                
+                setSelectedProjectForGitHub(null)
+                
+                // Refresh recent projects to show the new GitHub integration
+                const updatedProjects = await getCachedProjects()
+                setRecentProjects(updatedProjects)
+              }}
+              onError={(error) => {
+                setErrorMessage(`Failed to create GitHub project: ${error.message}`)
+              }}
+            />
           </DialogContent>
         </Dialog>
 

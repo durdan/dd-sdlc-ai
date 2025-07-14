@@ -32,6 +32,7 @@ import {
   Sparkles,
 } from "lucide-react"
 import SlackOAuthButton from "./slack-oauth-button"
+import { Select, SelectTrigger, SelectValue, SelectItem, SelectContent } from "@/components/ui/select"
 
 interface Integration {
   id: string
@@ -75,6 +76,21 @@ export function IntegrationHub() {
         createProjectBoard: false,
         enableCodeGeneration: true,
         enableIssueSync: true,
+      },
+    },
+    "github-projects": {
+      enabled: false,
+      settings: {
+        connected: false,
+        ownerId: "",
+        projectTitle: "",
+        repositoryOwner: "",
+        repositoryName: "",
+        includeIssues: true,
+        includeCustomFields: true,
+        autoCreateMilestones: true,
+        defaultPriority: "medium",
+        enableLabels: true,
       },
     },
     claude: {
@@ -151,6 +167,43 @@ export function IntegrationHub() {
         includeMetadata: true,
       },
     },
+    clickup: {
+      enabled: false,
+      status: "disconnected",
+      settings: {
+        connected: false,
+        apiToken: "",
+        teamId: "",
+        spaceId: "",
+        folderId: "",
+        listId: "",
+        autoCreateTasks: true,
+        taskPriority: "normal",
+        assignees: [],
+        createSubtasks: true,
+        syncStatus: true,
+        enableTimeTracking: false,
+        customFields: [],
+      },
+    },
+    trello: {
+      enabled: false,
+      status: "disconnected",
+      settings: {
+        connected: false,
+        apiKey: "",
+        token: "",
+        boardId: "",
+        lists: [],
+        autoCreateCards: true,
+        cardLabels: [],
+        defaultList: "",
+        assignMembers: true,
+        dueDateSync: true,
+        enableChecklists: true,
+        memberMapping: {},
+      },
+    },
   })
 
   useEffect(() => {
@@ -191,6 +244,22 @@ export function IntegrationHub() {
             },
           },
         }))
+        
+        // IMMEDIATELY auto-populate GitHub Projects if connected and username is available
+        if (config.connected && config.username) {
+          setIntegrationConfigs((prev) => ({
+            ...prev,
+            'github-projects': {
+              ...prev['github-projects'],
+              settings: {
+                ...prev['github-projects']?.settings,
+                ownerId: config.username,
+                repositoryOwner: config.username,
+                connected: true,
+              },
+            },
+          }))
+        }
         
         console.log('✅ GitHub config loaded from database:', config.connected ? 'Connected' : 'Disconnected')
       }
@@ -344,13 +413,23 @@ export function IntegrationHub() {
     }
   }, [isMounted])
 
-  // Add effect to monitor GitHub config changes
+  // Add effect to monitor GitHub config changes and auto-populate GitHub Projects
   useEffect(() => {
     console.log('🔄 GitHub integration config updated:', {
       enabled: integrationConfigs.github?.enabled,
       connected: integrationConfigs.github?.settings?.connected,
       username: integrationConfigs.github?.settings?.username
     })
+    
+    // Auto-populate GitHub Projects when GitHub gets connected
+    if (integrationConfigs.github?.settings?.connected && integrationConfigs.github?.settings?.username) {
+      if (!integrationConfigs['github-projects']?.settings?.ownerId) {
+        updateIntegrationSetting('github-projects', 'ownerId', integrationConfigs.github.settings.username)
+        updateIntegrationSetting('github-projects', 'repositoryOwner', integrationConfigs.github.settings.username)
+        updateIntegrationSetting('github-projects', 'connected', true)
+        console.log('✅ Auto-populated GitHub Projects with username:', integrationConfigs.github.settings.username)
+      }
+    }
   }, [integrationConfigs.github])
   
   // Function to check if GitHub token exists and update connection status
@@ -370,6 +449,10 @@ export function IntegrationHub() {
           updateIntegrationSetting('github', 'username', data.user.login)
           updateIntegrationSetting('github', 'defaultOwner', data.user.login)
           updateIntegrationSetting('github', 'repositories', data.repositories || [])
+          
+          // AUTO-POPULATE GitHub Projects with the same username
+          updateIntegrationSetting('github-projects', 'ownerId', data.user.login)
+          updateIntegrationSetting('github-projects', 'connected', true)
           
           // Enable the integration
           setIntegrationConfigs((prev) => ({
@@ -426,6 +509,17 @@ export function IntegrationHub() {
       vercelIntegration: true,
     },
     {
+      id: "github-projects",
+      name: "GitHub Projects",
+      description: "Create comprehensive project boards from SDLC documentation",
+      icon: <Github className="h-6 w-6" />,
+      category: "development",
+      status: integrationConfigs.github?.settings?.connected ? "connected" : "disconnected",
+      features: ["Project Creation", "Issue Generation", "Milestone Management", "Custom Fields", "SDLC Integration"],
+      setupRequired: true,
+      vercelIntegration: false,
+    },
+    {
       id: "claude",
       name: "Claude AI",
       description: "Advanced AI coding assistance with agentic workflows",
@@ -448,44 +542,26 @@ export function IntegrationHub() {
       vercelIntegration: false,
     },
     {
-      id: "teams",
-      name: "Microsoft Teams",
-      description: "Enterprise communication and collaboration",
-      icon: <Users className="h-6 w-6" />,
-      category: "communication",
-      status: "coming-soon",
-      features: ["Channel Notifications", "File Sharing", "Meeting Integration", "Bot Commands"],
-      setupRequired: true,
-    },
-    {
-      id: "notion",
-      name: "Notion",
-      description: "Comprehensive documentation and knowledge management",
-      icon: <FileText className="h-6 w-6" />,
-      category: "documentation",
-      status: "coming-soon",
-      features: ["Page Creation", "Database Sync", "Template Import", "Real-time Collaboration"],
-      setupRequired: true,
-    },
-    {
-      id: "linear",
-      name: "Linear",
-      description: "Modern issue tracking and project management",
-      icon: <Zap className="h-6 w-6" />,
+      id: "clickup",
+      name: "ClickUp",
+      description: "Comprehensive project management and team collaboration",
+      icon: <Calendar className="h-6 w-6" />,
       category: "project-management",
-      status: "coming-soon",
-      features: ["Issue Creation", "Project Sync", "Milestone Tracking", "Team Assignment"],
+      status: integrationConfigs.clickup?.status || "disconnected",
+      features: ["Task Management", "Time Tracking", "Custom Fields", "Subtasks", "Team Collaboration"],
       setupRequired: true,
+      vercelIntegration: false,
     },
     {
       id: "trello",
       name: "Trello",
       description: "Visual project management with boards and cards",
       icon: <Trello className="h-6 w-6" />,
-      category: "project-management",
-      status: "coming-soon",
-      features: ["Board Creation", "Card Management", "Checklist Sync", "Due Date Tracking"],
+      category: "project-management", 
+      status: integrationConfigs.trello?.status || "disconnected",
+      features: ["Board Management", "Card Creation", "Lists", "Labels", "Member Assignment"],
       setupRequired: true,
+      vercelIntegration: false,
     },
     {
       id: "asana",
@@ -659,9 +735,9 @@ export function IntegrationHub() {
       return
     }
     
-    // Real GitHub OAuth flow - Enhanced scope for Cline-inspired autonomous coding
+    // Real GitHub OAuth flow - Enhanced scope for Cline-inspired autonomous coding + GitHub Projects v2
     const redirectUri = encodeURIComponent(window.location.origin + '/api/auth/github/callback')
-    const scope = encodeURIComponent('repo user:email read:user write:repo_hook admin:repo_hook workflow actions:write contents:write pull_requests:write issues:write')
+    const scope = encodeURIComponent('repo user:email read:user write:repo_hook admin:repo_hook workflow actions:write contents:write pull_requests:write issues:write project read:project')
     const state = encodeURIComponent(Math.random().toString(36).substring(7)) // CSRF protection
     
     // Store state in sessionStorage for verification
@@ -748,6 +824,10 @@ export function IntegrationHub() {
           updateIntegrationSetting('github', 'defaultOwner', userData.login)
           updateIntegrationSetting('github', 'repositories', repositories)
           
+          // AUTO-POPULATE GitHub Projects with the same username  
+          updateIntegrationSetting('github-projects', 'ownerId', userData.login)
+          updateIntegrationSetting('github-projects', 'connected', true)
+          
           // Store token securely (in httpOnly cookie via backend)
           await fetch('/api/auth/github/store-token', {
             method: 'POST',
@@ -824,6 +904,262 @@ export function IntegrationHub() {
     alert('GitHub disconnected successfully')
   }
 
+  // ClickUp configuration handlers
+  const handleClickUpConnect = async () => {
+    const apiToken = prompt('Enter your ClickUp API token:')
+    if (!apiToken || !apiToken.trim()) return
+    
+    try {
+      // Test the API token by getting user info
+      const response = await fetch('/api/integrations/clickup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'connect',
+          apiToken: apiToken.trim(),
+        })
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        
+        // Update integration state
+        updateIntegrationSetting('clickup', 'connected', true)
+        updateIntegrationSetting('clickup', 'apiToken', apiToken.trim())
+        updateIntegrationSetting('clickup', 'teamId', data.teams?.[0]?.id || '')
+        
+        // Enable the integration
+        setIntegrationConfigs((prev) => ({
+          ...prev,
+          clickup: {
+            ...prev.clickup,
+            enabled: true,
+            status: "connected",
+          },
+        }))
+        
+        alert(`✅ Successfully connected to ClickUp! Found ${data.teams?.length || 0} teams.`)
+      } else {
+        const error = await response.json()
+        throw new Error(error.message || 'Invalid API token')
+      }
+    } catch (error) {
+      console.error('ClickUp connection error:', error)
+      alert('❌ Failed to connect to ClickUp. Please check your API token.')
+    }
+  }
+  
+  const handleClickUpDisconnect = () => {
+    updateIntegrationSetting('clickup', 'connected', false)
+    updateIntegrationSetting('clickup', 'apiToken', '')
+    updateIntegrationSetting('clickup', 'teamId', '')
+    
+    setIntegrationConfigs((prev) => ({
+      ...prev,
+      clickup: {
+        ...prev.clickup,
+        enabled: false,
+        status: "disconnected",
+      },
+    }))
+    
+    alert('ClickUp has been disconnected.')
+  }
+
+  const handleClickUpCreateSDLCProject = async () => {
+    if (!integrationConfigs.clickup?.settings?.connected) {
+      alert('⚠️ Please connect ClickUp first.')
+      return
+    }
+
+    const settings = integrationConfigs.clickup?.settings
+
+    if (!settings?.selectedTeamId || !settings?.projectTitle) {
+      alert('⚠️ Please select a team and enter a project title.')
+      return
+    }
+
+    try {
+      const response = await fetch('/api/integrations/clickup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'create-sdlc-project',
+          apiToken: settings.apiToken,
+          teamId: settings.selectedTeamId,
+          projectTitle: settings.projectTitle,
+          sdlcDocument: {
+            // Mock SDLC document structure - in real app this would come from selected document
+            businessAnalysis: {
+              executiveSummary: 'Executive summary content...',
+              stakeholderAnalysis: 'Stakeholder analysis content...',
+              requirementsAnalysis: 'Requirements analysis content...'
+            },
+            functionalSpec: {
+              systemOverview: 'System overview content...',
+              functionalRequirements: 'Functional requirements content...'
+            },
+            technicalSpec: {
+              systemArchitecture: 'System architecture content...',
+              technologyStack: 'Technology stack content...'
+            }
+          },
+          options: {
+            createSpaces: settings.createSpaces ?? true,
+            createFolders: settings.createFolders ?? true,
+            createLists: settings.createLists ?? true,
+            includeCustomFields: settings.includeCustomFields ?? true,
+            assignToUsers: settings.assignToUsers || [],
+            addTags: settings.addTags || ['sdlc-generated'],
+            estimateTimeEnabled: settings.estimateTimeEnabled ?? true
+          }
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        alert(`✅ SDLC project created successfully!\n\n` +
+              `Spaces: ${data.project.statistics.totalSpaces}\n` +
+              `Folders: ${data.project.statistics.totalFolders}\n` +
+              `Lists: ${data.project.statistics.totalLists}\n` +
+              `Tasks: ${data.project.statistics.totalTasks}\n` +
+              `Sections: ${data.project.statistics.sectionsProcessed}`)
+      } else {
+        throw new Error(data.error || 'Project creation failed')
+      }
+    } catch (error) {
+      console.error('ClickUp project creation error:', error)
+      alert('❌ Failed to create SDLC project. Please try again.')
+    }
+  }
+
+  // Trello configuration handlers
+  const handleTrelloConnect = async () => {
+    const apiKey = prompt('Enter your Trello API Key:')
+    if (!apiKey || !apiKey.trim()) return
+    
+    const token = prompt('Enter your Trello Token:')
+    if (!token || !token.trim()) return
+    
+    try {
+      // Test the API credentials by getting user info
+      const response = await fetch('/api/integrations/trello', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'connect',
+          apiKey: apiKey.trim(),
+          token: token.trim(),
+        })
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        
+        // Update integration state
+        updateIntegrationSetting('trello', 'connected', true)
+        updateIntegrationSetting('trello', 'apiKey', apiKey.trim())
+        updateIntegrationSetting('trello', 'token', token.trim())
+        
+        // Enable the integration
+        setIntegrationConfigs((prev) => ({
+          ...prev,
+          trello: {
+            ...prev.trello,
+            enabled: true,
+            status: "connected",
+          },
+        }))
+        
+        alert(`✅ Successfully connected to Trello! Found ${data.boards?.length || 0} boards.`)
+      } else {
+        const error = await response.json()
+        throw new Error(error.message || 'Invalid API credentials')
+      }
+    } catch (error) {
+      console.error('Trello connection error:', error)
+      alert('❌ Failed to connect to Trello. Please check your API credentials.')
+    }
+  }
+  
+  const handleTrelloDisconnect = () => {
+    updateIntegrationSetting('trello', 'connected', false)
+    updateIntegrationSetting('trello', 'apiKey', '')
+    updateIntegrationSetting('trello', 'token', '')
+    
+    setIntegrationConfigs((prev) => ({
+      ...prev,
+      trello: {
+        ...prev.trello,
+        enabled: false,
+        status: "disconnected",
+      },
+    }))
+    
+    alert('Trello has been disconnected.')
+  }
+
+  const handleTrelloCreateSDLCProject = async () => {
+    if (!lastGeneratedSDLC) {
+      alert('Please generate an SDLC document first before creating a Trello project.')
+      return
+    }
+
+    const projectName = prompt('Enter a name for your Trello project:')
+    if (!projectName || !projectName.trim()) return
+
+    const organizationId = prompt('Enter your Trello Organization ID (optional - leave blank for personal board):') || undefined
+    const teamMembersInput = prompt('Enter team member IDs separated by commas (optional):') || ''
+    const teamMembers = teamMembersInput.split(',').map(id => id.trim()).filter(id => id)
+    
+    setIsCreatingProject(true)
+    try {
+      const response = await fetch('/api/integrations/trello', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'create-sdlc-project',
+          apiKey: integrationConfigs.trello?.settings?.apiKey,
+          token: integrationConfigs.trello?.settings?.token,
+          sdlcDocument: lastGeneratedSDLC,
+          projectName: projectName.trim(),
+          organizationId,
+          teamMembers: teamMembers.length > 0 ? teamMembers : undefined,
+          autoAssignment: integrationConfigs.trello?.settings?.assignMembers || false,
+          dueDate: integrationConfigs.trello?.settings?.dueDateSync ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : undefined, // 30 days from now
+        })
+      })
+
+      const data = await response.json()
+      
+      if (response.ok) {
+        alert(`✅ Successfully created Trello project: ${projectName}!\n\n` +
+              `📋 Board: ${data.project.board.name}\n` +
+              `📊 Lists: ${data.project.summary.totalLists}\n` +
+              `🎯 Cards: ${data.project.summary.totalCards}\n` +
+              `🏷️ Labels: ${data.project.summary.totalLabels}\n` +
+              `⏱️ Estimated Timeline: ${data.project.summary.projectTimeline}\n\n` +
+              `🔗 View your board: ${data.boardUrl}`)
+      } else {
+        throw new Error(data.error || 'Unknown error occurred')
+      }
+    } catch (error) {
+      console.error('Trello project creation error:', error)
+      alert(`❌ Failed to create Trello project: ${error.message}`)
+    } finally {
+      setIsCreatingProject(false)
+    }
+  }
+
   // Connect to Vercel integration
   const connectVercelIntegration = (integrationId: string) => {
     // In a real app, this would redirect to Vercel's OAuth flow
@@ -863,6 +1199,104 @@ export function IntegrationHub() {
       }
     } catch (error) {
       console.error('Error disconnecting Slack:', error)
+    }
+  }
+
+  // GitHub Projects connection handlers
+  const handleGitHubProjectsConnect = async () => {
+    if (!integrationConfigs.github?.settings?.connected) {
+      alert('⚠️ GitHub Projects requires a connected GitHub account. Please connect GitHub first.')
+      return
+    }
+
+    try {
+      const response = await fetch('/api/integrations/github-projects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          action: 'connect'
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        updateIntegrationSetting('github-projects', 'connected', true)
+        updateIntegrationSetting('github-projects', 'user', data.user)
+        updateIntegrationSetting('github-projects', 'capabilities', data.capabilities)
+        
+        alert('✅ GitHub Projects connected successfully!')
+      } else {
+        throw new Error(data.error || 'Connection failed')
+      }
+    } catch (error) {
+      console.error('GitHub Projects connection error:', error)
+      alert('❌ Failed to connect to GitHub Projects. Please try again.')
+    }
+  }
+
+  const handleGitHubProjectsDisconnect = async () => {
+    updateIntegrationSetting('github-projects', 'connected', false)
+    updateIntegrationSetting('github-projects', 'user', null)
+    updateIntegrationSetting('github-projects', 'capabilities', [])
+    
+    alert('✅ GitHub Projects disconnected successfully')
+  }
+
+  const handleCreateSDLCProject = async () => {
+    if (!integrationConfigs['github-projects']?.settings?.connected) {
+      alert('⚠️ Please connect GitHub Projects first.')
+      return
+    }
+
+    if (!integrationConfigs['github-projects']?.settings?.selectedDocument) {
+      alert('⚠️ Please select an SDLC document first.')
+      return
+    }
+
+    const settings = integrationConfigs['github-projects']?.settings
+
+    try {
+      const response = await fetch('/api/integrations/github-projects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          action: 'create-sdlc-project',
+          ownerId: settings.ownerId,
+          projectTitle: settings.projectTitle,
+          sdlcDocument: settings.selectedDocument,
+          repositoryOwner: settings.repositoryOwner,
+          repositoryName: settings.repositoryName,
+          options: {
+            includeDetailedIssues: settings.includeDetailedIssues,
+            createPhaseBasedMilestones: settings.createPhaseBasedMilestones,
+            generateLabels: settings.generateLabels,
+            estimateStoryPoints: settings.estimateStoryPoints
+          }
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        alert(`✅ SDLC project created successfully!\n\n` +
+              `Project: ${data.project.title}\n` +
+              `Issues: ${data.statistics.totalIssues}\n` +
+              `Milestones: ${data.statistics.totalMilestones}\n` +
+              `Epics: ${data.statistics.totalEpics}\n\n` +
+              `View at: ${data.project.url}`)
+      } else {
+        throw new Error(data.error || 'Project creation failed')
+      }
+    } catch (error) {
+      console.error('GitHub Projects creation error:', error)
+      alert('❌ Failed to create SDLC project. Please try again.')
     }
   }
 
@@ -1831,6 +2265,822 @@ export function IntegrationHub() {
                           onCheckedChange={(checked) => updateIntegrationSetting("linear", "autoCreateIssues", checked)}
                         />
                       </div>
+                    </div>
+                  )}
+
+                  {/* ClickUp Settings */}
+                  {integration.id === "clickup" && (
+                    <div className="space-y-4">
+                      {/* Connection Status */}
+                      <div className="p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <Label className="text-sm font-medium">ClickUp Connection</Label>
+                          {integrationConfigs.clickup?.settings?.connected ? (
+                            <Badge variant="default" className="text-xs bg-blue-100 text-blue-700">
+                              Connected
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs">
+                              Not Connected
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        {!integrationConfigs.clickup?.settings?.connected ? (
+                          <div className="space-y-2">
+                            <p className="text-xs text-gray-600">
+                              Enter your ClickUp API token to enable task and project management.
+                            </p>
+                            <div className="space-y-2">
+                              <Label className="text-sm">ClickUp API Token</Label>
+                              <Input
+                                type="password"
+                                value={integrationConfigs.clickup?.settings?.apiToken || ''}
+                                onChange={(e) => updateIntegrationSetting("clickup", "apiToken", e.target.value)}
+                                placeholder="your-api-token"
+                                className="font-mono text-xs"
+                              />
+                              <p className="text-xs text-gray-500">
+                                Get your API token from{' '}
+                                <a 
+                                  href="https://app.clickup.com/api/v2" 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:underline"
+                                >
+                                  ClickUp API
+                                </a>
+                              </p>
+                            </div>
+                            <Button
+                              onClick={handleClickUpConnect}
+                              size="sm"
+                              className="w-full bg-blue-600 hover:bg-blue-700"
+                              disabled={!integrationConfigs.clickup?.settings?.apiToken?.trim()}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Connect ClickUp
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <p className="text-xs text-gray-600">
+                              Connected to ClickUp with API token: <span className="font-mono">***...{integrationConfigs.clickup?.settings?.apiToken?.slice(-4)}</span>
+                            </p>
+                            <Button
+                              onClick={handleClickUpDisconnect}
+                              variant="outline"
+                              size="sm"
+                              className="w-full"
+                            >
+                              Disconnect ClickUp
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* ClickUp Configuration */}
+                      {integrationConfigs.clickup?.settings?.connected && (
+                        <div className="space-y-3">
+                          <Label className="text-sm font-medium">ClickUp Configuration</Label>
+                          
+                          <div>
+                            <Label className="text-sm">Team ID</Label>
+                            <Input
+                              value={integrationConfigs.clickup?.settings?.teamId || ''}
+                              onChange={(e) => updateIntegrationSetting("clickup", "teamId", e.target.value)}
+                              placeholder="Your ClickUp Team ID"
+                              className="mt-1"
+                              size="sm"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Find your Team ID in ClickUp → Settings → API
+                            </p>
+                          </div>
+
+                          <div>
+                            <Label className="text-sm">Space ID (Optional)</Label>
+                            <Input
+                              value={integrationConfigs.clickup?.settings?.spaceId || ''}
+                              onChange={(e) => updateIntegrationSetting("clickup", "spaceId", e.target.value)}
+                              placeholder="Your ClickUp Space ID"
+                              className="mt-1"
+                              size="sm"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Leave empty to use the default space
+                            </p>
+                          </div>
+
+                          <div>
+                            <Label className="text-sm">Folder ID (Optional)</Label>
+                            <Input
+                              value={integrationConfigs.clickup?.settings?.folderId || ''}
+                              onChange={(e) => updateIntegrationSetting("clickup", "folderId", e.target.value)}
+                              placeholder="Your ClickUp Folder ID"
+                              className="mt-1"
+                              size="sm"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Leave empty to create tasks directly in the space
+                            </p>
+                          </div>
+
+                          <div>
+                            <Label className="text-sm">List ID (Optional)</Label>
+                            <Input
+                              value={integrationConfigs.clickup?.settings?.listId || ''}
+                              onChange={(e) => updateIntegrationSetting("clickup", "listId", e.target.value)}
+                              placeholder="Your ClickUp List ID"
+                              className="mt-1"
+                              size="sm"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Leave empty to create tasks directly in the list
+                            </p>
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm">Auto-create tasks</Label>
+                              <p className="text-xs text-gray-500">Automatically create ClickUp tasks from SDLC tasks</p>
+                            </div>
+                            <Switch
+                              checked={integrationConfigs.clickup?.settings?.autoCreateTasks}
+                              onCheckedChange={(checked) => updateIntegrationSetting("clickup", "autoCreateTasks", checked)}
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm">Task Priority</Label>
+                              <p className="text-xs text-gray-500">Set default priority for new tasks</p>
+                            </div>
+                            <select
+                              value={integrationConfigs.clickup?.settings?.taskPriority || 'normal'}
+                              onChange={(e) => updateIntegrationSetting("clickup", "taskPriority", e.target.value)}
+                              className="border rounded px-2 py-1 text-sm"
+                            >
+                              <option value="low">Low</option>
+                              <option value="medium">Medium</option>
+                              <option value="high">High</option>
+                              <option value="urgent">Urgent</option>
+                            </select>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* SDLC Project Creation */}
+                      {integrationConfigs.clickup?.settings?.connected && (
+                        <div className="space-y-4 border-t pt-4">
+                          <Label className="text-sm font-medium">SDLC Project Creation</Label>
+                          
+                          <div className="space-y-3">
+                            <div>
+                              <Label className="text-sm">Project Title</Label>
+                              <Input
+                                value={integrationConfigs.clickup?.settings?.projectTitle || ''}
+                                onChange={(e) => updateIntegrationSetting("clickup", "projectTitle", e.target.value)}
+                                placeholder="Enter project title"
+                                className="mt-1"
+                                size="sm"
+                              />
+                            </div>
+
+                            <div>
+                              <Label className="text-sm">Team ID</Label>
+                              <Input
+                                value={integrationConfigs.clickup?.settings?.selectedTeamId || ''}
+                                onChange={(e) => updateIntegrationSetting("clickup", "selectedTeamId", e.target.value)}
+                                placeholder="Select team for project creation"
+                                className="mt-1"
+                                size="sm"
+                              />
+                            </div>
+
+                            <div>
+                              <Label className="text-sm">SDLC Document</Label>
+                              <Select
+                                value={integrationConfigs.clickup?.settings?.selectedDocumentId || ''}
+                                onValueChange={(value) => updateIntegrationSetting('clickup', 'selectedDocumentId', value)}
+                              >
+                                <SelectTrigger className="mt-1">
+                                  <SelectValue placeholder="Select SDLC document..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="recent">Most Recent Document</SelectItem>
+                                  <SelectItem value="comprehensive">Comprehensive SDLC</SelectItem>
+                                  <SelectItem value="detailed">Detailed SDLC</SelectItem>
+                                  <SelectItem value="enhanced">Enhanced SDLC</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div className="space-y-3">
+                              <Label className="text-sm">Project Options</Label>
+                              
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <Label className="text-sm">Create Spaces</Label>
+                                  <p className="text-xs text-gray-500">Create main project spaces</p>
+                                </div>
+                                <Switch
+                                  checked={integrationConfigs.clickup?.settings?.createSpaces ?? true}
+                                  onCheckedChange={(checked) => updateIntegrationSetting('clickup', 'createSpaces', checked)}
+                                />
+                              </div>
+
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <Label className="text-sm">Create Folders</Label>
+                                  <p className="text-xs text-gray-500">Create folders for each SDLC section</p>
+                                </div>
+                                <Switch
+                                  checked={integrationConfigs.clickup?.settings?.createFolders ?? true}
+                                  onCheckedChange={(checked) => updateIntegrationSetting('clickup', 'createFolders', checked)}
+                                />
+                              </div>
+
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <Label className="text-sm">Create Lists</Label>
+                                  <p className="text-xs text-gray-500">Create lists for different project phases</p>
+                                </div>
+                                <Switch
+                                  checked={integrationConfigs.clickup?.settings?.createLists ?? true}
+                                  onCheckedChange={(checked) => updateIntegrationSetting('clickup', 'createLists', checked)}
+                                />
+                              </div>
+
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <Label className="text-sm">Include Custom Fields</Label>
+                                  <p className="text-xs text-gray-500">Add custom fields for tracking</p>
+                                </div>
+                                <Switch
+                                  checked={integrationConfigs.clickup?.settings?.includeCustomFields ?? true}
+                                  onCheckedChange={(checked) => updateIntegrationSetting('clickup', 'includeCustomFields', checked)}
+                                />
+                              </div>
+
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <Label className="text-sm">Enable Time Tracking</Label>
+                                  <p className="text-xs text-gray-500">Enable time tracking for tasks</p>
+                                </div>
+                                <Switch
+                                  checked={integrationConfigs.clickup?.settings?.estimateTimeEnabled ?? true}
+                                  onCheckedChange={(checked) => updateIntegrationSetting('clickup', 'estimateTimeEnabled', checked)}
+                                />
+                              </div>
+                            </div>
+
+                            <Button
+                              onClick={handleClickUpCreateSDLCProject}
+                              size="sm"
+                              className="w-full"
+                              disabled={!integrationConfigs.clickup?.settings?.selectedTeamId || 
+                                       !integrationConfigs.clickup?.settings?.projectTitle}
+                            >
+                              <Plus className="h-4 w-4 mr-2" />
+                              Create SDLC Project
+                            </Button>
+
+                            <div className="p-3 bg-blue-50 rounded-lg">
+                              <p className="text-xs text-blue-800">
+                                <strong>💡 Tips:</strong> 
+                                <br />• Projects will be organized by SDLC phases (Business, Technical, Implementation)
+                                <br />• Each phase gets its own folder with Planning, In Progress, Review, and Completed lists
+                                <br />• Tasks are automatically created from SDLC document sections
+                                <br />• Custom fields include Epic, Story Points, Complexity, and Business Value
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Trello Settings */}
+                  {integration.id === "trello" && (
+                    <div className="space-y-4">
+                      {/* Connection Status */}
+                      <div className="p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <Label className="text-sm font-medium">Trello Connection</Label>
+                          {integrationConfigs.trello?.settings?.connected ? (
+                            <Badge variant="default" className="text-xs bg-green-100 text-green-700">
+                              Connected
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs">
+                              Not Connected
+                            </Badge>
+                          )}
+                        </div>
+
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm">Assignees (Optional)</Label>
+                              <p className="text-xs text-gray-500">Comma-separated list of ClickUp user IDs to assign tasks</p>
+                            </div>
+                            <Input
+                              value={integrationConfigs.clickup?.settings?.assignees?.join(', ') || ''}
+                              onChange={(e) => updateIntegrationSetting("clickup", "assignees", e.target.value.split(',').map(s => s.trim()))}
+                              placeholder="user1, user2"
+                              className="mt-1"
+                              size="sm"
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm">Create sub-tasks</Label>
+                              <p className="text-xs text-gray-500">Automatically create sub-tasks for each task</p>
+                            </div>
+                            <Switch
+                              checked={integrationConfigs.clickup?.settings?.createSubtasks}
+                              onCheckedChange={(checked) => updateIntegrationSetting("clickup", "createSubtasks", checked)}
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm">Sync status updates</Label>
+                              <p className="text-xs text-gray-500">Automatically update ClickUp task status based on SDLC status</p>
+                            </div>
+                            <Switch
+                              checked={integrationConfigs.clickup?.settings?.syncStatus}
+                              onCheckedChange={(checked) => updateIntegrationSetting("clickup", "syncStatus", checked)}
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm">Enable time tracking</Label>
+                              <p className="text-xs text-gray-500">Track time spent on ClickUp tasks</p>
+                            </div>
+                            <Switch
+                              checked={integrationConfigs.clickup?.settings?.enableTimeTracking}
+                              onCheckedChange={(checked) => updateIntegrationSetting("clickup", "enableTimeTracking", checked)}
+                            />
+                          </div>
+
+                          <div className="flex flex-wrap gap-2">
+                            <Label className="text-sm">Custom Fields (Optional)</Label>
+                            <Input
+                              value={integrationConfigs.clickup?.settings?.customFields?.join(', ') || ''}
+                              onChange={(e) => updateIntegrationSetting("clickup", "customFields", e.target.value.split(',').map(s => s.trim()))}
+                              placeholder="field1:value1,field2:value2"
+                              className="flex-1"
+                            />
+                            <p className="text-xs text-gray-500">Format: field_name:value</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Trello Settings */}
+                  {integration.id === "trello" && (
+                    <div className="space-y-4">
+                      {/* Connection Status */}
+                      <div className="p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <Label className="text-sm font-medium">Trello Connection</Label>
+                          {integrationConfigs.trello?.settings?.connected ? (
+                            <Badge variant="default" className="text-xs bg-green-100 text-green-700">
+                              Connected
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs">
+                              Not Connected
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        {!integrationConfigs.trello?.settings?.connected ? (
+                          <div className="space-y-2">
+                            <p className="text-xs text-gray-600">
+                              Enter your Trello API credentials to enable board and card management.
+                            </p>
+                            <div className="space-y-2">
+                              <Label className="text-sm">Trello API Key</Label>
+                              <Input
+                                type="password"
+                                value={integrationConfigs.trello?.settings?.apiKey || ''}
+                                onChange={(e) => updateIntegrationSetting("trello", "apiKey", e.target.value)}
+                                placeholder="your-api-key"
+                                className="font-mono text-xs"
+                              />
+                              <Label className="text-sm">Trello Token</Label>
+                              <Input
+                                type="password"
+                                value={integrationConfigs.trello?.settings?.token || ''}
+                                onChange={(e) => updateIntegrationSetting("trello", "token", e.target.value)}
+                                placeholder="your-token"
+                                className="font-mono text-xs"
+                              />
+                              <p className="text-xs text-gray-500">
+                                Get your API key and token from{' '}
+                                <a 
+                                  href="https://trello.com/app-key" 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:underline"
+                                >
+                                  Trello API
+                                </a>
+                              </p>
+                            </div>
+                            <Button
+                              onClick={handleTrelloConnect}
+                              size="sm"
+                              className="w-full bg-blue-600 hover:bg-blue-700"
+                              disabled={!integrationConfigs.trello?.settings?.apiKey?.trim() || !integrationConfigs.trello?.settings?.token?.trim()}
+                            >
+                              <Trello className="h-4 w-4 mr-2" />
+                              Connect Trello
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <p className="text-xs text-gray-600">
+                              Connected to Trello with API key: <span className="font-mono">***...{integrationConfigs.trello?.settings?.apiKey?.slice(-4)}</span>
+                            </p>
+                            <Button
+                              onClick={handleTrelloDisconnect}
+                              variant="outline"
+                              size="sm"
+                              className="w-full"
+                            >
+                              Disconnect Trello
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Trello Configuration */}
+                      {integrationConfigs.trello?.settings?.connected && (
+                        <div className="space-y-3">
+                          <Label className="text-sm font-medium">Trello Configuration</Label>
+                          
+                          <div>
+                            <Label className="text-sm">Board ID</Label>
+                            <Input
+                              value={integrationConfigs.trello?.settings?.boardId || ''}
+                              onChange={(e) => updateIntegrationSetting("trello", "boardId", e.target.value)}
+                              placeholder="Your Trello Board ID"
+                              className="mt-1"
+                              size="sm"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Find your Board ID in Trello → Settings → Board Settings
+                            </p>
+                          </div>
+
+                          <div>
+                            <Label className="text-sm">Default List (Optional)</Label>
+                            <Input
+                              value={integrationConfigs.trello?.settings?.defaultList || ''}
+                              onChange={(e) => updateIntegrationSetting("trello", "defaultList", e.target.value)}
+                              placeholder="Your Trello List Name"
+                              className="mt-1"
+                              size="sm"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Leave empty to create cards in the default list
+                            </p>
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm">Assign members</Label>
+                              <p className="text-xs text-gray-500">Automatically assign members to new cards</p>
+                            </div>
+                            <Switch
+                              checked={integrationConfigs.trello?.settings?.assignMembers}
+                              onCheckedChange={(checked) => updateIntegrationSetting("trello", "assignMembers", checked)}
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm">Sync due dates</Label>
+                              <p className="text-xs text-gray-500">Automatically sync due dates from SDLC tasks</p>
+                            </div>
+                            <Switch
+                              checked={integrationConfigs.trello?.settings?.dueDateSync}
+                              onCheckedChange={(checked) => updateIntegrationSetting("trello", "dueDateSync", checked)}
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm">Enable checklists</Label>
+                              <p className="text-xs text-gray-500">Automatically create checklists for new cards</p>
+                            </div>
+                            <Switch
+                              checked={integrationConfigs.trello?.settings?.enableChecklists}
+                              onCheckedChange={(checked) => updateIntegrationSetting("trello", "enableChecklists", checked)}
+                            />
+                          </div>
+
+                          <div className="flex flex-wrap gap-2">
+                            <Label className="text-sm">Member Mapping (Optional)</Label>
+                            <Input
+                              value={Object.entries(integrationConfigs.trello?.settings?.memberMapping || {}).map(([key, value]) => `${key}: ${value}`).join(', ')}
+                              onChange={(e) => {
+                                const mapping: Record<string, string> = {};
+                                e.target.value.split(',').forEach(item => {
+                                  const [key, value] = item.trim().split(':');
+                                  if (key && value) {
+                                    mapping[key] = value;
+                                  }
+                                });
+                                updateIntegrationSetting("trello", "memberMapping", mapping);
+                              }}
+                              placeholder="github:user1,jira:user2"
+                              className="flex-1"
+                            />
+                            <p className="text-xs text-gray-500">Format: source_service:target_id</p>
+                          </div>
+
+                          {/* Trello SDLC Project Creation */}
+                          <div className="border-t pt-4 mt-4">
+                            <div className="space-y-3">
+                              <div>
+                                <Label className="text-sm font-medium">SDLC Project Creation</Label>
+                                <p className="text-xs text-gray-500">Create complete Trello boards from SDLC documents</p>
+                              </div>
+                              
+                              <div className="bg-blue-50 p-3 rounded-lg">
+                                <h4 className="font-medium text-sm mb-2">🎯 Project Structure</h4>
+                                <ul className="text-xs text-gray-600 space-y-1">
+                                  <li>• <strong>Boards</strong> → Project workspaces</li>
+                                  <li>• <strong>Lists</strong> → SDLC phases (Planning, Development, Testing, etc.)</li>
+                                  <li>• <strong>Cards</strong> → Features, epics, and tasks</li>
+                                  <li>• <strong>Labels</strong> → Priority, type, and status categorization</li>
+                                  <li>• <strong>Checklists</strong> → Acceptance criteria and task breakdowns</li>
+                                </ul>
+                              </div>
+
+                              {lastGeneratedSDLC ? (
+                                <div className="space-y-2">
+                                  <div className="flex items-center gap-2 text-green-700 bg-green-50 p-2 rounded">
+                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span className="text-xs font-medium">SDLC Document Ready</span>
+                                  </div>
+                                  <Button
+                                    onClick={handleTrelloCreateSDLCProject}
+                                    disabled={isCreatingProject || !integrationConfigs.trello?.settings?.connected}
+                                    className="w-full"
+                                    size="sm"
+                                  >
+                                    {isCreatingProject ? (
+                                      <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Creating Trello Project...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                        </svg>
+                                        Create Trello Project
+                                      </>
+                                    )}
+                                  </Button>
+                                </div>
+                              ) : (
+                                <div className="text-center py-3">
+                                  <div className="text-gray-400 mb-2">
+                                    <svg className="h-8 w-8 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                  </div>
+                                  <p className="text-sm text-gray-500">Generate an SDLC document first</p>
+                                  <p className="text-xs text-gray-400">Visit the main dashboard to create a comprehensive SDLC</p>
+                                </div>
+                              )}
+
+                              <div className="bg-gray-50 p-3 rounded-lg">
+                                <h4 className="font-medium text-sm mb-2">✨ Features</h4>
+                                <ul className="text-xs text-gray-600 space-y-1">
+                                  <li>• Intelligent epic and feature mapping</li>
+                                  <li>• Automated task breakdown with checklists</li>
+                                  <li>• Smart label categorization and priorities</li>
+                                  <li>• Team member assignment (if configured)</li>
+                                  <li>• Due date synchronization</li>
+                                  <li>• Progress tracking across SDLC phases</li>
+                                </ul>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* GitHub Projects Configuration */}
+                  {integration.id === "github-projects" && (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label className="text-sm">Connection Status</Label>
+                          <p className="text-xs text-gray-500">
+                            {integrationConfigs.github?.settings?.connected 
+                              ? 'GitHub account connected' 
+                              : 'Requires GitHub connection'}
+                          </p>
+                        </div>
+                        <Badge variant={integrationConfigs.github?.settings?.connected ? "default" : "secondary"}>
+                          {integrationConfigs.github?.settings?.connected ? "Ready" : "Pending"}
+                        </Badge>
+                      </div>
+
+                      {integrationConfigs.github?.settings?.connected ? (
+                        <div className="space-y-4">
+                          {/* Project Settings */}
+                          <div className="space-y-2">
+                            <Label className="text-sm">Project Settings</Label>
+                            
+                            <div className="space-y-2">
+                              <Input
+                                placeholder="Project Title"
+                                value={integrationConfigs['github-projects']?.settings?.projectTitle || ''}
+                                onChange={(e) => updateIntegrationSetting('github-projects', 'projectTitle', e.target.value)}
+                              />
+                              
+                              <Input
+                                placeholder={integrationConfigs.github?.settings?.connected 
+                                  ? `Auto-filled: ${integrationConfigs.github?.settings?.username || 'GitHub username'}` 
+                                  : "GitHub Username or Organization (e.g., durdan, microsoft)"}
+                                value={integrationConfigs['github-projects']?.settings?.ownerId || integrationConfigs.github?.settings?.username || ''}
+                                onChange={(e) => updateIntegrationSetting('github-projects', 'ownerId', e.target.value)}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Repository Settings */}
+                          <div className="space-y-2">
+                            <Label className="text-sm">Repository (Optional)</Label>
+                            <p className="text-xs text-gray-500">
+                              Link to a repository to create issues and milestones
+                            </p>
+                            
+                            <div className="grid grid-cols-2 gap-2">
+                              <Input
+                                placeholder={integrationConfigs.github?.settings?.connected 
+                                  ? `Auto-filled: ${integrationConfigs.github?.settings?.username || 'GitHub username'}` 
+                                  : "Repository Owner"}
+                                value={integrationConfigs['github-projects']?.settings?.repositoryOwner || integrationConfigs.github?.settings?.username || ''}
+                                onChange={(e) => updateIntegrationSetting('github-projects', 'repositoryOwner', e.target.value)}
+                              />
+                              <Input
+                                placeholder="Repository Name"
+                                value={integrationConfigs['github-projects']?.settings?.repositoryName || ''}
+                                onChange={(e) => updateIntegrationSetting('github-projects', 'repositoryName', e.target.value)}
+                              />
+                            </div>
+                          </div>
+
+                          {/* SDLC Document Selection */}
+                          <div className="space-y-2">
+                            <Label className="text-sm">SDLC Document</Label>
+                            <p className="text-xs text-gray-500">
+                              Select a generated SDLC document to create the project from
+                            </p>
+                            
+                            <Select
+                              value={integrationConfigs['github-projects']?.settings?.selectedDocumentId || ''}
+                              onValueChange={(value) => updateIntegrationSetting('github-projects', 'selectedDocumentId', value)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select SDLC document..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="recent">Most Recent Document</SelectItem>
+                                <SelectItem value="comprehensive">Comprehensive SDLC</SelectItem>
+                                <SelectItem value="detailed">Detailed SDLC</SelectItem>
+                                <SelectItem value="enhanced">Enhanced SDLC</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {/* Project Options */}
+                          <div className="space-y-3">
+                            <Label className="text-sm">Project Options</Label>
+                            
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <Label className="text-sm">Include Detailed Issues</Label>
+                                <p className="text-xs text-gray-500">Create issues for each SDLC section</p>
+                              </div>
+                              <Switch
+                                checked={integrationConfigs['github-projects']?.settings?.includeDetailedIssues ?? true}
+                                onCheckedChange={(checked) => updateIntegrationSetting('github-projects', 'includeDetailedIssues', checked)}
+                              />
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <Label className="text-sm">Create Phase-Based Milestones</Label>
+                                <p className="text-xs text-gray-500">Generate milestones for SDLC phases</p>
+                              </div>
+                              <Switch
+                                checked={integrationConfigs['github-projects']?.settings?.createPhaseBasedMilestones ?? true}
+                                onCheckedChange={(checked) => updateIntegrationSetting('github-projects', 'createPhaseBasedMilestones', checked)}
+                              />
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <Label className="text-sm">Generate Labels</Label>
+                                <p className="text-xs text-gray-500">Create labels for categorization</p>
+                              </div>
+                              <Switch
+                                checked={integrationConfigs['github-projects']?.settings?.generateLabels ?? true}
+                                onCheckedChange={(checked) => updateIntegrationSetting('github-projects', 'generateLabels', checked)}
+                              />
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <Label className="text-sm">Estimate Story Points</Label>
+                                <p className="text-xs text-gray-500">Auto-estimate story points for issues</p>
+                              </div>
+                              <Switch
+                                checked={integrationConfigs['github-projects']?.settings?.estimateStoryPoints ?? true}
+                                onCheckedChange={(checked) => updateIntegrationSetting('github-projects', 'estimateStoryPoints', checked)}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="space-y-2">
+                            {!integrationConfigs['github-projects']?.settings?.connected ? (
+                              <Button
+                                onClick={handleGitHubProjectsConnect}
+                                size="sm"
+                                className="w-full"
+                              >
+                                <Github className="h-4 w-4 mr-2" />
+                                Connect GitHub Projects
+                              </Button>
+                            ) : (
+                              <div className="space-y-2">
+                                <Button
+                                  onClick={handleCreateSDLCProject}
+                                  size="sm"
+                                  className="w-full"
+                                  disabled={!integrationConfigs['github-projects']?.settings?.projectTitle || 
+                                           !integrationConfigs['github-projects']?.settings?.ownerId}
+                                >
+                                  <Plus className="h-4 w-4 mr-2" />
+                                  Create SDLC Project
+                                </Button>
+                                
+                                <Button
+                                  onClick={handleGitHubProjectsDisconnect}
+                                  variant="outline"
+                                  size="sm"
+                                  className="w-full"
+                                >
+                                  Disconnect GitHub Projects
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Help Text */}
+                          <div className="p-3 bg-blue-50 rounded-lg">
+                            <p className="text-xs text-blue-800">
+                              <strong>💡 Tips:</strong> 
+                              <br />• Username auto-filled from your connected GitHub account
+                              <br />• Repository is optional but enables milestone and issue creation
+                              <br />• Projects will include custom fields for Status, Priority, Epic, and Story Points
+                              <br />• Generated issues will have proper acceptance criteria and descriptions
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <p className="text-xs text-gray-600">
+                            GitHub Projects requires a connected GitHub account. Please connect GitHub first.
+                          </p>
+                          <Button
+                            onClick={() => handleGitHubConnect()}
+                            size="sm"
+                            className="w-full"
+                          >
+                            <Github className="h-4 w-4 mr-2" />
+                            Connect GitHub Account
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

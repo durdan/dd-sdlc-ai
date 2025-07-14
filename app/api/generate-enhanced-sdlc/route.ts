@@ -591,7 +591,88 @@ For each major feature:
 - **Data Maintenance**: Data cleanup and archival procedures
 - **Documentation Updates**: Keeping documentation current
 
-Format as a comprehensive project plan with clear timelines, responsibilities, and deliverables.`
+Format as a comprehensive project plan with clear timelines, responsibilities, and deliverables.`,
+
+  uxSpec: `You are a Senior UX Designer with 15+ years of experience designing enterprise applications.
+Create a comprehensive UX specification based on this project:
+
+PROJECT REQUIREMENTS: {input}
+
+Generate a detailed UX specification that includes:
+
+## User Experience Strategy
+### UX Vision and Goals
+- **Product Vision**: Clear UX vision aligned with business objectives
+- **User Experience Goals**: Specific UX objectives and success metrics
+- **Design Principles**: Core principles guiding design decisions
+- **Brand Alignment**: How UX supports brand identity and values
+
+## User Research and Personas
+### Primary User Personas (3-5 detailed personas)
+- **Persona Name**: Memorable, descriptive name
+- **Demographics**: Age, role, industry, location, education
+- **Goals & Motivations**: What they want to achieve
+- **Pain Points**: Current frustrations and challenges
+- **Behavior Patterns**: How they work and make decisions
+- **Technology Comfort**: Technical skill level and preferences
+
+### User Journey Mapping
+- **Awareness Stage**: How they discover the need/solution
+- **Onboarding Stage**: First-time user experience
+- **Usage Stage**: Regular usage patterns and workflows
+- **Support Stage**: Help-seeking and problem-resolution
+
+## Information Architecture
+### Site Map and Navigation
+- **Primary Navigation**: Main navigation structure
+- **Content Hierarchy**: Information organization and grouping
+- **Search Strategy**: Search functionality and findability
+- **Mobile Navigation**: Mobile-specific navigation patterns
+
+## Interaction Design
+### User Interface Patterns
+- **Layout Patterns**: Grid systems, page layouts, responsive design
+- **Navigation Patterns**: Menu styles, breadcrumbs, pagination
+- **Input Patterns**: Forms, search, filters, data entry
+- **Feedback Patterns**: Success states, error states, loading states
+
+## Visual Design System
+### Design Language
+- **Typography**: Font families, sizes, weights, line heights
+- **Color Palette**: Primary, secondary, neutral, semantic colors
+- **Iconography**: Icon style, sizing, usage guidelines
+- **Spacing**: Margin, padding, and layout spacing rules
+
+### Component Library
+- **Buttons**: Primary, secondary, tertiary actions
+- **Forms**: Input fields, dropdowns, checkboxes
+- **Navigation**: Headers, sidebars, tabs
+- **Data Display**: Tables, cards, lists
+- **Feedback**: Alerts, modals, tooltips
+
+## Wireframes and Prototypes
+### Key Screens
+- **Homepage**: Landing page layout and content structure
+- **Dashboard**: Main application interface
+- **List Views**: Data tables, search results
+- **Detail Views**: Individual item pages
+- **Forms**: Data entry, registration, settings
+
+## Accessibility and Usability
+### Accessibility Standards
+- **WCAG Compliance**: Level AA compliance requirements
+- **Keyboard Navigation**: Full keyboard accessibility
+- **Screen Reader Support**: Proper semantic markup
+- **Color Contrast**: Meeting contrast ratio requirements
+
+## Responsive Design Strategy
+### Breakpoints
+- **Mobile**: 320px - 767px
+- **Tablet**: 768px - 1023px
+- **Desktop**: 1024px - 1439px
+- **Large Desktop**: 1440px+
+
+Format as a comprehensive UX specification with detailed descriptions and design guidelines.`
 }
 
 export async function POST(req: NextRequest) {
@@ -836,16 +917,41 @@ Create a detailed implementation plan that project managers can execute directly
 
     const generationTime = Date.now() - startTime
 
+    // Generate UX specification for completeness
+    console.log('Generating UX specification...')
+    const uxSpec = await generateSection(ENHANCED_PROMPTS.uxSpec || `Create a comprehensive UX specification for: {input}
+    
+    Include user personas, user journeys, wireframes description, design system requirements, accessibility standards, usability testing plans, interaction design principles, information architecture, visual design guidelines, and prototyping approach.`, 
+    { businessAnalysis, functionalSpec, technicalSpec })
+
+    // Generate architecture/diagrams for completeness  
+    console.log('Generating architecture diagrams...')
+    const architecture = await generateSection(`Create comprehensive Mermaid diagrams for the system architecture based on: {input}
+    
+    Include system architecture diagram, database schema diagram, user flow diagram, and API sequence diagram. Format as proper Mermaid syntax with detailed descriptions.`, 
+    { businessAnalysis, functionalSpec, technicalSpec })
+
+    const generationTime = Date.now() - startTime
+
+    // Standard response format matching other generation endpoints
     const response = {
       businessAnalysis,
-      functionalSpec,
+      functionalSpec, 
       technicalSpec,
-      implementationPlan,
+      uxSpec,
+      mermaidDiagrams: architecture, // Use standard field name
       metadata: {
         generationTime,
         detailLevel,
-        sectionsGenerated: 4,
-        tokenEstimate: Math.floor((businessAnalysis.length + functionalSpec.length + technicalSpec.length + implementationPlan.length) / 4)
+        sectionsGenerated: 5,
+        tokenEstimate: Math.floor((businessAnalysis.length + functionalSpec.length + technicalSpec.length + uxSpec.length + architecture.length) / 4),
+        promptSources: {
+          business: 'enhanced_prompts',
+          functional: 'enhanced_prompts', 
+          technical: 'enhanced_prompts',
+          ux: 'enhanced_prompts',
+          architecture: 'enhanced_prompts'
+        }
       }
     }
 

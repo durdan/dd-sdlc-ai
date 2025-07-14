@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     // Parse permissions and return configuration
     return NextResponse.json({
       connected: true,
-      username: gitHubConfig.repository_id?.split('/')[0] || '', // Extract username from repo_id
+      username: gitHubConfig.repository_id || '', // repository_id is stored as username directly
       repositories: [], // Will be populated by separate API call
       permissions: gitHubConfig.permissions || {},
       lastSync: gitHubConfig.last_sync,

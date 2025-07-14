@@ -15,7 +15,7 @@ import { Separator } from '@/components/ui/separator'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { CheckCircle, Clock, AlertCircle, Code, Search, Bug, FileText, Github, Sparkles, Play, RotateCcw, Eye, GitBranch, GitPullRequest, GitMerge, ChevronDown, ChevronRight, Copy, Download, ExternalLink, Trash2, Loader2 } from 'lucide-react'
+import { CheckCircle, Clock, AlertCircle, Code, Search, Bug, FileText, Github, Sparkles, Play, RotateCcw, Eye, GitBranch, GitPullRequest, GitMerge, ChevronDown, ChevronRight, Copy, Download, ExternalLink, Trash2, Loader2, XCircle } from 'lucide-react'
 
 interface ClaudeTask {
   id: string

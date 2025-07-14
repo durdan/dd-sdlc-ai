@@ -391,18 +391,46 @@ export async function POST(req: NextRequest) {
     const generationTime = Date.now() - startTime
     totalTokens = Math.floor(JSON.stringify(response).length / 4)
 
+    // Flatten comprehensive structure to standard format for consistency
+    const businessAnalysis = response.businessAnalysis ? 
+      Object.values(response.businessAnalysis).join('\n\n') : ''
+    const functionalSpec = response.functionalSpec ? 
+      Object.values(response.functionalSpec).join('\n\n') : ''
+    const technicalSpec = response.technicalSpec ? 
+      Object.values(response.technicalSpec).join('\n\n') : ''
+    const uxSpec = response.uxSpec ? 
+      Object.values(response.uxSpec).join('\n\n') : ''
+    
+    // Generate architecture diagrams
+    const mermaidDiagrams = await generateSection(`Create comprehensive Mermaid diagrams for the system architecture based on: {input}
+    
+    Include system architecture diagram, database schema diagram, user flow diagram, and API sequence diagram. Format as proper Mermaid syntax with detailed descriptions.`, 
+    { businessAnalysis, functionalSpec, technicalSpec })
+
     console.log(`Comprehensive SDLC documentation generated in ${generationTime}ms`)
     console.log(`Total sections: ${sectionsGenerated}`)
     console.log(`Estimated tokens: ${totalTokens}`)
 
+    // Return standard format matching other generation endpoints
     return NextResponse.json({
-      ...response,
+      businessAnalysis,
+      functionalSpec,
+      technicalSpec,
+      uxSpec,
+      mermaidDiagrams,
       metadata: {
         generationTime,
         detailLevel,
         sectionsGenerated,
         tokenEstimate: totalTokens,
-        contextContinuity: true
+        contextContinuity: true,
+        promptSources: {
+          business: 'comprehensive_prompts',
+          functional: 'comprehensive_prompts',
+          technical: 'comprehensive_prompts',
+          ux: 'comprehensive_prompts',
+          architecture: 'comprehensive_prompts'
+        }
       }
     })
 

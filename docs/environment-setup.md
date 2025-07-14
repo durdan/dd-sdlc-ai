@@ -217,7 +217,15 @@ CONFLUENCE_EMAIL=your-email@company.com
 1. **Generate Personal Access Token**
    - Go to **Settings → Developer settings → Personal access tokens**
    - Click **Generate new token (classic)**
-   - Select scopes: `repo`, `read:org`, `read:user`
+   - Select scopes: 
+     - `repo` (Full control of private repositories)
+     - `read:org` (Read org membership)
+     - `read:user` (Read user profile data)
+     - `project` (Full control of GitHub Projects v2)
+     - `read:project` (Read GitHub Projects v2 data)
+     - `write:repo_hook` (Write repository hooks)
+     - `workflow` (Update GitHub Action workflows)
+     - `actions:write` (Write GitHub Actions)
 
 2. **Add to Environment**
    ```env

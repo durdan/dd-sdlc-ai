@@ -184,10 +184,10 @@ export default function Home() {
   ]
 
   const stats = [
-    { value: "10x", label: "Faster Project Setup", icon: <Clock className="h-5 w-5" /> },
-    { value: "5 min", label: "Idea to Epic Creation", icon: <Gauge className="h-5 w-5" /> },
+    { value: "90+", label: "Enterprise Doc Sections", icon: <FileText className="h-5 w-5" /> },
+    { value: "200K+", label: "AI Context Tokens", icon: <Bot className="h-5 w-5" /> },
     { value: "100%", label: "Your Own AI Keys", icon: <Key className="h-5 w-5" /> },
-    { value: "6+", label: "Tool Integrations", icon: <Plug className="h-5 w-5" /> }
+    { value: "Multi-Model", label: "Claude + OpenAI", icon: <Layers className="h-5 w-5" /> }
   ]
 
   const sdlcPhases = [
@@ -341,29 +341,29 @@ export default function Home() {
         <div className="absolute inset-0 bg-grid-gray-100 bg-[size:20px_20px] opacity-40"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-24">
           <div className="text-center">
-                          <div className="inline-flex items-center space-x-2 bg-white/60 backdrop-blur-sm rounded-full px-4 py-2 mb-8">
+            <div className="inline-flex items-center space-x-2 bg-white/60 backdrop-blur-sm rounded-full px-4 py-2 mb-8">
                 <img 
                   src="/img/SDLC.dev.logo.png" 
                   alt="SDLC.dev Logo" 
                   className="h-16 w-16 sm:h-16 sm:w-16 object-contain"
                   style={{ minWidth: '64px', minHeight: '64px' }}
                 />
-              <span className="text-sm font-medium text-gray-700">Complete SDLC Automation</span>
+              <span className="text-sm font-medium text-gray-700">Enterprise SDLC Automation</span>
               <Badge variant="secondary" className="bg-purple-100 text-purple-700">AI-Powered</Badge>
-              <Badge variant="secondary" className="bg-green-100 text-green-700">✨ New: Claude AI Code Assistant</Badge>
+              <Badge variant="secondary" className="bg-green-100 text-green-700">✨ Production Ready</Badge>
             </div>
             
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
-              Automate Your Entire
+              Enterprise-Grade AI
               <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent block">
-                Software Development Lifecycle
+                Software Development Platform
               </span>
             </h1>
             
             <p className="text-lg sm:text-xl text-gray-600 mb-10 max-w-4xl mx-auto leading-relaxed">
-              From requirements gathering to autonomous code development, streamline every phase of your SDLC. 
-              <strong>NEW:</strong> Claude AI Code Assistant for automated bug fixes and feature implementation.
-              Use your own AI keys, integrate with existing tools, and accelerate project delivery with intelligent automation.
+              From requirements to autonomous code development with enterprise prompt management. 
+              <strong>Complete platform</strong> featuring Claude AI Code Assistant, 90+ section documentation generation, 
+              advanced prompt engineering, and seamless tool integrations. BYOK security with production-ready workflows.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
@@ -529,6 +529,71 @@ export default function Home() {
               <Link href="/signin">
                 Try Claude AI Code Assistant
                 <Bot className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Enterprise Prompt Management Section */}
+      <section className="py-12 sm:py-24 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8 sm:mb-16">
+            <div className="inline-flex items-center space-x-2 bg-white/60 backdrop-blur-sm rounded-full px-4 py-2 mb-6">
+              <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">🎯 Enterprise Grade</Badge>
+              <span className="text-sm font-medium text-gray-700">Prompt Management System</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Advanced Prompt Engineering
+              <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent block">
+                For Enterprise Teams
+              </span>
+            </h2>
+            <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto">
+              Professional prompt management with version control, A/B testing, and analytics. 
+              Build, test, and deploy enterprise-grade AI workflows with confidence.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+            <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow">
+              <div className="bg-indigo-100 p-3 rounded-lg w-fit mb-4">
+                <Code className="h-6 w-6 text-indigo-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Advanced Editor</h3>
+              <p className="text-gray-600 text-sm">Syntax highlighting, variable management, and template inheritance for professional prompt development.</p>
+            </div>
+
+            <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow">
+              <div className="bg-purple-100 p-3 rounded-lg w-fit mb-4">
+                <GitBranch className="h-6 w-6 text-purple-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Version Control</h3>
+              <p className="text-gray-600 text-sm">Git-like versioning with rollback capabilities, change tracking, and collaborative development workflows.</p>
+            </div>
+
+            <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow">
+              <div className="bg-pink-100 p-3 rounded-lg w-fit mb-4">
+                <Gauge className="h-6 w-6 text-pink-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">A/B Testing</h3>
+              <p className="text-gray-600 text-sm">Statistical comparison of prompt variations with performance analytics and automated optimization.</p>
+            </div>
+
+            <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow">
+              <div className="bg-teal-100 p-3 rounded-lg w-fit mb-4">
+                <Users className="h-6 w-6 text-teal-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Role-Based Access</h3>
+              <p className="text-gray-600 text-sm">Enterprise security with Admin, Manager, and User roles, plus granular permissions and audit trails.</p>
+            </div>
+          </div>
+
+          <div className="mt-8 sm:mt-12 text-center">
+            <Button size="lg" className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700" asChild>
+              <Link href="/signin">
+                Explore Prompt Management
+                <Settings className="ml-2 h-5 w-5" />
               </Link>
             </Button>
           </div>
