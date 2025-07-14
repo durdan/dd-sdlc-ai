@@ -11,6 +11,9 @@ import { Progress } from '@/components/ui/progress'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Switch } from '@/components/ui/switch'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { 
   GitBranch, 
@@ -35,7 +38,11 @@ import {
   Settings,
   Zap,
   Loader2,
-  ChevronRight
+  ChevronRight,
+  Webhook,
+  Copy,
+  Bell,
+  Github
 } from 'lucide-react'
 
 // ============================================================================
@@ -271,6 +278,27 @@ export function GitDigestDashboard({ config }: GitDigestDashboardProps) {
   const [isLoadingRepos, setIsLoadingRepos] = useState(false)
   const [githubConnected, setGithubConnected] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  
+  // Webhook settings state
+  const [webhookSettings, setWebhookSettings] = useState({
+    enabled: false,
+    webhookUrl: '',
+    selectedRepos: [] as string[],
+    triggers: {
+      push: true,
+      pullRequest: true,
+      issues: false,
+      release: false
+    },
+    schedule: {
+      enabled: false,
+      frequency: 'daily',
+      time: '09:00'
+    }
+  })
+  const [isLoadingWebhooks, setIsLoadingWebhooks] = useState(false)
+  const [webhookToken, setWebhookToken] = useState('')
+  const [savingSettings, setSavingSettings] = useState(false)
 
   useEffect(() => {
     loadUserDigests()
@@ -427,24 +455,79 @@ export function GitDigestDashboard({ config }: GitDigestDashboardProps) {
 
   const exportDigest = async (digestId: string, format: 'jira' | 'confluence' | 'github') => {
     try {
-      const response = await fetch('/api/gitdigest/export', {
+      // Implementation for exporting digest
+      console.log(`Exporting digest ${digestId} to ${format}`)
+    } catch (error) {
+      console.error('Error exporting digest:', error)
+    }
+  }
+
+  // ============================================================================
+  // WEBHOOK SETTINGS FUNCTIONS
+  // ============================================================================
+
+  const loadWebhookSettings = async () => {
+    setIsLoadingWebhooks(true)
+    try {
+      const response = await fetch('/api/gitdigest/settings', {
+        credentials: 'include'
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setWebhookSettings(data.settings || webhookSettings)
+      }
+    } catch (error) {
+      console.error('Error loading GitDigest settings:', error)
+    } finally {
+      setIsLoadingWebhooks(false)
+    }
+  }
+
+  const saveWebhookSettings = async () => {
+    try {
+      setSavingSettings(true)
+      const response = await fetch('/api/gitdigest/settings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
-        body: JSON.stringify({ digest_id: digestId, format })
+        body: JSON.stringify(webhookSettings),
       })
-
+      
       if (response.ok) {
-        const data = await response.json()
-        alert(`Successfully exported to ${format}! URL: ${data.url}`)
+        console.log('✅ GitDigest settings saved successfully')
+        // Show success message
+      } else {
+        console.error('❌ Failed to save GitDigest settings')
       }
     } catch (error) {
-      console.error('Error exporting digest:', error)
-      alert(`Failed to export to ${format}`)
+      console.error('Error saving GitDigest settings:', error)
+    } finally {
+      setSavingSettings(false)
     }
   }
+
+  const generateWebhookToken = async () => {
+    // No longer needed - using existing GitHub webhook infrastructure
+    console.log('ℹ️ Using existing GitHub webhook infrastructure')
+  }
+
+  const copyWebhookUrl = () => {
+    const webhookUrl = `${window.location.origin}/api/github/webhooks`
+    navigator.clipboard.writeText(webhookUrl)
+    console.log('📋 Copied webhook URL:', webhookUrl)
+  }
+
+  const copyWebhookToken = () => {
+    // No longer needed - using existing GitHub webhook infrastructure
+    console.log('ℹ️ Token not needed with existing GitHub webhook infrastructure')
+  }
+
+  // Load webhook settings on component mount
+  useEffect(() => {
+    loadWebhookSettings()
+  }, [])
 
   // ============================================================================
   // RENDER FUNCTIONS
@@ -1024,32 +1107,34 @@ export function GitDigestDashboard({ config }: GitDigestDashboardProps) {
 
   const renderMyDigestsTab = () => (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BookOpen className="w-5 h-5" />
-            My Digests
-          </CardTitle>
-          <CardDescription>
-            All your analyzed repositories and their SDLC scores
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">My Digests</h2>
+        <Button
+          variant="outline"
+          onClick={loadUserDigests}
+          disabled={isLoadingDigests}
+        >
+          {isLoadingDigests ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <RefreshCw className="w-4 h-4 mr-2" />
+          )}
+          Refresh
+        </Button>
+      </div>
 
-      {userDigests.length === 0 ? (
+      {isLoadingDigests ? (
+        <div className="text-center py-8">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading your digests...</p>
+        </div>
+      ) : userDigests.length === 0 ? (
         <Card>
           <CardContent className="text-center py-8">
-            <GitBranch className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">No digests yet</p>
-            <p className="text-sm text-muted-foreground mt-2">
-              Analyze your first repository to get started
+            <BookOpen className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+            <p className="text-muted-foreground">
+              No digests found. Analyze a repository to get started!
             </p>
-            <Button 
-              className="mt-4" 
-              onClick={() => setActiveTab('analyze')}
-            >
-              Analyze Repository
-            </Button>
           </CardContent>
         </Card>
       ) : (
@@ -1092,6 +1177,422 @@ export function GitDigestDashboard({ config }: GitDigestDashboardProps) {
   )
 
   // ============================================================================
+  // SETTINGS TAB
+  // ============================================================================
+
+  const renderSettingsTab = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">GitDigest Settings</h2>
+      </div>
+
+      <div className="grid gap-6">
+        {/* GitHub App Integration */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Github className="w-5 h-5" />
+              GitHub App Integration
+            </CardTitle>
+            <CardDescription>
+              Install the GitDigest GitHub App to automatically generate digests when your repositories change.
+              This uses your existing GitHub connection for seamless integration.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* GitHub Connection Status */}
+            <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className={`w-3 h-3 rounded-full ${githubConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+                <div>
+                  <p className="font-medium">
+                    GitHub {githubConnected ? 'Connected' : 'Not Connected'}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {githubConnected 
+                      ? 'Using your existing GitHub OAuth connection' 
+                      : 'Connect GitHub to enable automatic digests'
+                    }
+                  </p>
+                </div>
+              </div>
+              {!githubConnected && (
+                <Button
+                  variant="outline"
+                  onClick={() => window.open('/api/auth/github/config', '_blank')}
+                >
+                  <Github className="w-4 h-4 mr-2" />
+                  Connect GitHub
+                </Button>
+              )}
+            </div>
+
+            {githubConnected && (
+              <>
+                <Separator />
+                
+                {/* Enable GitDigest */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-sm font-medium">Enable GitDigest Automation</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Automatically generate digests when your repositories are updated
+                    </p>
+                  </div>
+                  <Switch
+                    checked={webhookSettings.enabled}
+                    onCheckedChange={(checked) => 
+                      setWebhookSettings(prev => ({ ...prev, enabled: checked }))
+                    }
+                  />
+                </div>
+
+                {webhookSettings.enabled && (
+                  <>
+                    {/* Repository Selection */}
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium">Connected Repositories</Label>
+                      <div className="max-h-48 overflow-y-auto border rounded-lg">
+                        {isLoadingRepos ? (
+                          <div className="p-4 text-center">
+                            <Loader2 className="w-4 h-4 animate-spin mx-auto mb-2" />
+                            <p className="text-sm text-muted-foreground">Loading repositories...</p>
+                          </div>
+                        ) : connectedRepos.length === 0 ? (
+                          <div className="p-4 text-center">
+                            <p className="text-sm text-muted-foreground">No repositories found</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-2 p-3">
+                            {connectedRepos.map((repo) => (
+                              <div key={repo.id} className="flex items-center justify-between p-2 hover:bg-muted rounded">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                                  <span className="text-sm font-medium">{repo.name}</span>
+                                  <Badge variant="outline" className="text-xs">
+                                    {repo.private ? 'Private' : 'Public'}
+                                  </Badge>
+                                </div>
+                                <Switch
+                                  checked={webhookSettings.selectedRepos.includes(repo.fullName)}
+                                  onCheckedChange={(checked) => {
+                                    setWebhookSettings(prev => ({
+                                      ...prev,
+                                      selectedRepos: checked 
+                                        ? [...prev.selectedRepos, repo.fullName]
+                                        : prev.selectedRepos.filter(r => r !== repo.fullName)
+                                    }))
+                                  }}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={loadConnectedRepositories}
+                        disabled={isLoadingRepos}
+                      >
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Refresh Repositories
+                      </Button>
+                    </div>
+
+                    {/* Trigger Events */}
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium">Trigger Events</Label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Label className="text-sm">Push Events</Label>
+                            <p className="text-xs text-muted-foreground">Trigger on code pushes</p>
+                          </div>
+                          <Switch
+                            checked={webhookSettings.triggers.push}
+                            onCheckedChange={(checked) => 
+                              setWebhookSettings(prev => ({ 
+                                ...prev, 
+                                triggers: { ...prev.triggers, push: checked }
+                              }))
+                            }
+                          />
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Label className="text-sm">Pull Requests</Label>
+                            <p className="text-xs text-muted-foreground">Trigger on PR events</p>
+                          </div>
+                          <Switch
+                            checked={webhookSettings.triggers.pullRequest}
+                            onCheckedChange={(checked) => 
+                              setWebhookSettings(prev => ({ 
+                                ...prev, 
+                                triggers: { ...prev.triggers, pullRequest: checked }
+                              }))
+                            }
+                          />
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Label className="text-sm">Issues</Label>
+                            <p className="text-xs text-muted-foreground">Trigger on issue events</p>
+                          </div>
+                          <Switch
+                            checked={webhookSettings.triggers.issues}
+                            onCheckedChange={(checked) => 
+                              setWebhookSettings(prev => ({ 
+                                ...prev, 
+                                triggers: { ...prev.triggers, issues: checked }
+                              }))
+                            }
+                          />
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Label className="text-sm">Releases</Label>
+                            <p className="text-xs text-muted-foreground">Trigger on new releases</p>
+                          </div>
+                          <Switch
+                            checked={webhookSettings.triggers.release}
+                            onCheckedChange={(checked) => 
+                              setWebhookSettings(prev => ({ 
+                                ...prev, 
+                                triggers: { ...prev.triggers, release: checked }
+                              }))
+                            }
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Scheduled Digests */}
+                    <Separator />
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label className="text-sm font-medium">Scheduled Digests</Label>
+                          <p className="text-xs text-muted-foreground">
+                            Generate regular digests on a schedule
+                          </p>
+                        </div>
+                        <Switch
+                          checked={webhookSettings.schedule.enabled}
+                          onCheckedChange={(checked) => 
+                            setWebhookSettings(prev => ({ 
+                              ...prev, 
+                              schedule: { ...prev.schedule, enabled: checked }
+                            }))
+                          }
+                        />
+                      </div>
+
+                      {webhookSettings.schedule.enabled && (
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <Label className="text-sm">Frequency</Label>
+                            <Select
+                              value={webhookSettings.schedule.frequency}
+                              onValueChange={(value) => 
+                                setWebhookSettings(prev => ({ 
+                                  ...prev, 
+                                  schedule: { ...prev.schedule, frequency: value }
+                                }))
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="daily">Daily</SelectItem>
+                                <SelectItem value="weekly">Weekly</SelectItem>
+                                <SelectItem value="monthly">Monthly</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label className="text-sm">Time</Label>
+                            <Input
+                              type="time"
+                              value={webhookSettings.schedule.time}
+                              onChange={(e) => 
+                                setWebhookSettings(prev => ({ 
+                                  ...prev, 
+                                  schedule: { ...prev.schedule, time: e.target.value }
+                                }))
+                              }
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Save Settings */}
+                    <div className="flex justify-end">
+                      <Button 
+                        onClick={saveWebhookSettings}
+                        disabled={savingSettings}
+                      >
+                        {savingSettings ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <Bell className="w-4 h-4 mr-2" />
+                        )}
+                        {savingSettings ? 'Saving...' : 'Save Settings'}
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* GitHub App Installation Instructions */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Webhook className="w-5 h-5" />
+              How It Works
+            </CardTitle>
+            <CardDescription>
+              GitDigest uses your existing GitHub connection to automatically generate repository insights.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-semibold">
+                  1
+                </div>
+                <div>
+                  <p className="font-medium">Connect GitHub</p>
+                  <p className="text-sm text-muted-foreground">
+                    Uses your existing GitHub OAuth connection for secure access
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-semibold">
+                  2
+                </div>
+                <div>
+                  <p className="font-medium">Select Repositories</p>
+                  <p className="text-sm text-muted-foreground">
+                    Choose which repositories should generate automatic digests
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-semibold">
+                  3
+                </div>
+                <div>
+                  <p className="font-medium">Configure Triggers</p>
+                  <p className="text-sm text-muted-foreground">
+                    Set which events (pushes, PRs, issues) should trigger digest generation
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-semibold">
+                  4
+                </div>
+                <div>
+                  <p className="font-medium">Automatic Generation</p>
+                  <p className="text-sm text-muted-foreground">
+                    GitDigest monitors your repositories and generates insights automatically
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <Alert>
+              <Shield className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Secure & Private:</strong> GitDigest uses your existing GitHub permissions 
+                and only analyzes metadata - no source code is stored or transmitted to third parties.
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+
+        {/* Advanced Configuration */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Settings className="w-5 h-5" />
+              Advanced Configuration
+            </CardTitle>
+            <CardDescription>
+              Fine-tune your GitDigest automation settings.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Analysis Depth</Label>
+                <Select defaultValue="standard">
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="light">Light (Basic metrics)</SelectItem>
+                    <SelectItem value="standard">Standard (Recommended)</SelectItem>
+                    <SelectItem value="deep">Deep (Comprehensive analysis)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Digest Format</Label>
+                <Select defaultValue="markdown">
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="markdown">Markdown</SelectItem>
+                    <SelectItem value="json">JSON</SelectItem>
+                    <SelectItem value="html">HTML</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-sm font-medium">Include Mermaid Diagrams</Label>
+                <p className="text-xs text-muted-foreground">
+                  Generate architecture diagrams in digest artifacts
+                </p>
+              </div>
+              <Switch defaultChecked />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-sm font-medium">Notify on Completion</Label>
+                <p className="text-xs text-muted-foreground">
+                  Send notifications when digests are generated
+                </p>
+              </div>
+              <Switch defaultChecked />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+
+  // ============================================================================
   // MAIN RENDER
   // ============================================================================
 
@@ -1107,7 +1608,7 @@ export function GitDigestDashboard({ config }: GitDigestDashboardProps) {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="analyze" className="flex items-center gap-2">
             <Zap className="w-4 h-4 mr-2" />
             Analyze
@@ -1123,6 +1624,10 @@ export function GitDigestDashboard({ config }: GitDigestDashboardProps) {
           <TabsTrigger value="my-digests" className="flex items-center gap-2">
             <BookOpen className="w-4 h-4 mr-2" />
             My Digests
+          </TabsTrigger>
+          <TabsTrigger value="settings" className="flex items-center gap-2">
+            <Settings className="w-4 h-4 mr-2" />
+            Settings
           </TabsTrigger>
         </TabsList>
 
@@ -1140,6 +1645,10 @@ export function GitDigestDashboard({ config }: GitDigestDashboardProps) {
 
         <TabsContent value="my-digests" className="space-y-6">
           {renderMyDigestsTab()}
+        </TabsContent>
+
+        <TabsContent value="settings" className="space-y-6">
+          {renderSettingsTab()}
         </TabsContent>
       </Tabs>
     </div>

@@ -1,0 +1,217 @@
+name: GitDigest Automation
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    types: [closed]
+  issues:
+    types: [labeled]
+  schedule:
+    # Run daily at 9 AM UTC
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+    inputs:
+      force_digest:
+        description: 'Force generate digest'
+        required: false
+        default: 'false'
+
+env:
+  SDLC_API_URL: ${{ secrets.SDLC_API_URL || 'https://sdlc.dev' }}
+  SDLC_USER_TOKEN: ${{ secrets.SDLC_USER_TOKEN }}
+
+jobs:
+  gitdigest:
+    runs-on: ubuntu-latest
+    if: >
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true) ||
+      (github.event_name == 'issues' && contains(github.event.issue.labels.*.name, 'gitdigest')) ||
+      (github.event_name == 'schedule') ||
+      (github.event_name == 'workflow_dispatch')
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 100  # Get enough history for analysis
+
+      - name: Determine trigger type
+        id: trigger
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "type=push" >> $GITHUB_OUTPUT
+            echo "context={\"commits\": ${{ github.event.commits | length }}, \"pusher\": \"${{ github.event.pusher.name }}\"}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "type=pull_request" >> $GITHUB_OUTPUT
+            echo "context={\"pr_number\": ${{ github.event.pull_request.number }}, \"title\": \"${{ github.event.pull_request.title }}\"}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" = "issues" ]; then
+            echo "type=manual" >> $GITHUB_OUTPUT
+            echo "context={\"issue_number\": ${{ github.event.issue.number }}, \"title\": \"${{ github.event.issue.title }}\"}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "type=scheduled" >> $GITHUB_OUTPUT
+            echo "context={\"type\": \"daily\"}" >> $GITHUB_OUTPUT
+          else
+            echo "type=manual" >> $GITHUB_OUTPUT
+            echo "context={\"force\": true}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Get repository metadata
+        id: repo
+        run: |
+          echo "owner=${{ github.repository_owner }}" >> $GITHUB_OUTPUT
+          echo "name=${{ github.event.repository.name }}" >> $GITHUB_OUTPUT
+          echo "full_name=${{ github.repository }}" >> $GITHUB_OUTPUT
+          echo "url=${{ github.event.repository.html_url }}" >> $GITHUB_OUTPUT
+          echo "default_branch=${{ github.event.repository.default_branch }}" >> $GITHUB_OUTPUT
+
+      - name: Get recent changes
+        id: changes
+        run: |
+          # Get recent commits (last 7 days or since last digest)
+          SINCE_DATE=$(date -d '7 days ago' -Idate)
+          
+          # Get commit information
+          COMMITS=$(git log --since="$SINCE_DATE" --pretty=format:'{"sha":"%H","message":"%s","author":"%an","date":"%ai"}' | jq -s .)
+          echo "commits=$COMMITS" >> $GITHUB_OUTPUT
+          
+          # Get changed files
+          CHANGED_FILES=$(git diff --name-only HEAD~10..HEAD | head -20 | jq -R . | jq -s .)
+          echo "changed_files=$CHANGED_FILES" >> $GITHUB_OUTPUT
+          
+          # Get basic stats
+          COMMIT_COUNT=$(git log --since="$SINCE_DATE" --oneline | wc -l)
+          echo "commit_count=$COMMIT_COUNT" >> $GITHUB_OUTPUT
+
+      - name: Call GitDigest API
+        id: digest
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const triggerType = '${{ steps.trigger.outputs.type }}';
+            const triggerContext = JSON.parse('${{ steps.trigger.outputs.context }}');
+            const repoMetadata = {
+              owner: '${{ steps.repo.outputs.owner }}',
+              name: '${{ steps.repo.outputs.name }}',
+              full_name: '${{ steps.repo.outputs.full_name }}',
+              url: '${{ steps.repo.outputs.url }}',
+              default_branch: '${{ steps.repo.outputs.default_branch }}'
+            };
+            
+            const changes = {
+              commits: JSON.parse('${{ steps.changes.outputs.commits }}'),
+              changed_files: JSON.parse('${{ steps.changes.outputs.changed_files }}'),
+              commit_count: parseInt('${{ steps.changes.outputs.commit_count }}')
+            };
+
+            // Call SDLC.dev GitDigest API
+            try {
+              const response = await fetch(`${process.env.SDLC_API_URL}/api/gitdigest/webhook`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${process.env.SDLC_USER_TOKEN}`,
+                  'X-GitHub-Event': '${{ github.event_name }}',
+                  'X-GitHub-Delivery': '${{ github.run_id }}'
+                },
+                body: JSON.stringify({
+                  trigger: {
+                    type: triggerType,
+                    context: triggerContext
+                  },
+                  repository: repoMetadata,
+                  changes: changes,
+                  github: {
+                    event_name: '${{ github.event_name }}',
+                    run_id: '${{ github.run_id }}',
+                    sha: '${{ github.sha }}',
+                    ref: '${{ github.ref }}'
+                  }
+                })
+              });
+
+              if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`GitDigest API failed: ${response.status} - ${errorText}`);
+              }
+
+              const result = await response.json();
+              console.log('✅ GitDigest API response:', result);
+              
+              core.setOutput('success', 'true');
+              core.setOutput('digest_id', result.digest_id || '');
+              core.setOutput('message', result.message || 'Digest generated successfully');
+              
+              return result;
+            } catch (error) {
+              console.error('❌ GitDigest API error:', error);
+              core.setOutput('success', 'false');
+              core.setOutput('error', error.message);
+              throw error;
+            }
+
+      - name: Update issue comment (if triggered by issue)
+        if: github.event_name == 'issues' && steps.digest.outputs.success == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const digestId = '${{ steps.digest.outputs.digest_id }}';
+            const message = '${{ steps.digest.outputs.message }}';
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ github.event.issue.number }},
+              body: `## 📊 GitDigest Generated\n\n${message}\n\n**Digest ID:** \`${digestId}\`\n\n[View Digest](${process.env.SDLC_API_URL}/gitdigest/${digestId})\n\n---\n*Generated by GitDigest Automation*`
+            });
+
+      - name: Create PR comment (if triggered by PR)
+        if: github.event_name == 'pull_request' && steps.digest.outputs.success == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const digestId = '${{ steps.digest.outputs.digest_id }}';
+            const message = '${{ steps.digest.outputs.message }}';
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ github.event.pull_request.number }},
+              body: `## 📊 Repository Digest Updated\n\nYour merged PR has triggered a GitDigest update!\n\n**Digest ID:** \`${digestId}\`\n\n[View Updated Digest](${process.env.SDLC_API_URL}/gitdigest/${digestId})\n\n---\n*Generated by GitDigest Automation*`
+            });
+
+      - name: Handle errors
+        if: steps.digest.outputs.success == 'false'
+        run: |
+          echo "❌ GitDigest generation failed: ${{ steps.digest.outputs.error }}"
+          exit 1
+
+  # Optional: Notify on success/failure
+  notify:
+    runs-on: ubuntu-latest
+    needs: gitdigest
+    if: always() && (needs.gitdigest.result == 'success' || needs.gitdigest.result == 'failure')
+    
+    steps:
+      - name: Send notification
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const status = '${{ needs.gitdigest.result }}';
+            const emoji = status === 'success' ? '✅' : '❌';
+            const message = status === 'success' ? 'GitDigest generated successfully' : 'GitDigest generation failed';
+            
+            console.log(`${emoji} ${message} for ${{ github.repository }}`);
+            
+            // Here you could add Slack, Discord, or email notifications
+            // Example: Send to webhook
+            // await fetch('YOUR_WEBHOOK_URL', {
+            //   method: 'POST',
+            //   headers: { 'Content-Type': 'application/json' },
+            //   body: JSON.stringify({
+            //     text: `${emoji} ${message} for ${{ github.repository }}`,
+            //     repository: '${{ github.repository }}',
+            //     status: status,
+            //     run_url: `${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`
+            //   })
+            // }); 

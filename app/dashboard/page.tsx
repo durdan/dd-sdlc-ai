@@ -3286,18 +3286,6 @@ Focus on the SPECIFIC project requirements and domain. Avoid generic enterprise 
                 <GitBranch className="w-4 h-4 mr-1 sm:mr-2" />
                 <span className="hidden sm:inline">GitDigest</span>
               </TabsTrigger>
-              <TabsTrigger value="workflow" className="flex-shrink-0 min-w-[60px] px-2 sm:px-3">
-                <Workflow className="w-4 h-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Workflow</span>
-              </TabsTrigger>
-              <TabsTrigger value="prompt" className="flex-shrink-0 min-w-[60px] px-2 sm:px-3">
-                <MessageSquare className="w-4 h-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Prompt</span>
-              </TabsTrigger>
-              <TabsTrigger value="integrations" className="flex-shrink-0 min-w-[60px] px-2 sm:px-3">
-                <Settings className="w-4 h-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Integrations</span>
-              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -3369,22 +3357,6 @@ Focus on the SPECIFIC project requirements and domain. Avoid generic enterprise 
 
           <TabsContent value="gitdigest" className="mt-6">
             <GitDigestDashboard config={config} />
-          </TabsContent>
-
-          <TabsContent value="workflow" className="space-y-6">
-            <VisualizationHub />
-          </TabsContent>
-
-          <TabsContent value="prompt" className="space-y-6">
-            <PromptEngineering 
-              onPromptUpdate={handlePromptUpdate}
-              customPrompts={customPrompts}
-              isVisible={true}
-            />
-          </TabsContent>
-
-          <TabsContent value="integrations" className="space-y-6">
-            <IntegrationHub />
           </TabsContent>
         </Tabs>
       </div>
