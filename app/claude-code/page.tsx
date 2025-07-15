@@ -15,6 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { useFreemiumUsage } from '@/hooks/use-freemium-usage'
 
 // User Header Component
 interface UserHeaderProps {
@@ -24,6 +25,8 @@ interface UserHeaderProps {
 }
 
 const UserHeader: React.FC<UserHeaderProps> = ({ user, userRole, onSignOut }) => {
+  const { usage, loading: usageLoading } = useFreemiumUsage()
+  
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -31,6 +34,19 @@ const UserHeader: React.FC<UserHeaderProps> = ({ user, userRole, onSignOut }) =>
       .join('')
       .toUpperCase()
       .substring(0, 2)
+  }
+
+  const getUsageBadgeColor = () => {
+    if (!usage) return 'bg-gray-100 text-gray-600'
+    
+    if (usage.remainingProjects === 0) return 'bg-red-100 text-red-700 border-red-200'
+    if (usage.remainingProjects === 1) return 'bg-yellow-100 text-yellow-700 border-yellow-200'
+    return 'bg-green-100 text-green-700 border-green-200'
+  }
+
+  const getUsageText = () => {
+    if (!usage) return 'Loading...'
+    return `${usage.remainingProjects}/${usage.dailyLimit} Free`
   }
 
   return (
@@ -65,6 +81,14 @@ const UserHeader: React.FC<UserHeaderProps> = ({ user, userRole, onSignOut }) =>
                 {user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
               </span>
             </div>
+            
+            {/* Freemium Usage Indicator */}
+            {!usageLoading && usage && (
+              <div className={`px-2 py-1 rounded-full text-xs font-medium border ${getUsageBadgeColor()}`}>
+                {getUsageText()}
+              </div>
+            )}
+            
             {(userRole === 'admin' || userRole === 'manager') && (
               <Button
                 variant="outline"
@@ -98,6 +122,15 @@ const UserHeader: React.FC<UserHeaderProps> = ({ user, userRole, onSignOut }) =>
                     <p className="text-xs leading-none text-muted-foreground">
                       {user.email}
                     </p>
+                    {/* Usage info in dropdown */}
+                    {usage && (
+                      <div className="flex items-center justify-between mt-2 pt-1 border-t">
+                        <span className="text-xs text-muted-foreground">Today's usage:</span>
+                        <span className={`text-xs font-medium ${usage.remainingProjects === 0 ? 'text-red-600' : 'text-green-600'}`}>
+                          {usage.projectsToday}/{usage.dailyLimit}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />

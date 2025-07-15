@@ -165,7 +165,7 @@ export function PromptEditor({ prompt, documentType, onSave, onCancel, userRole 
     
     variables.forEach(variable => {
       const value = previewVariables[variable.key] || variable.example || `{${variable.key}}`;
-      const regex = new RegExp(`\\{${variable.key}\\}`, 'g');
+      const regex = new RegExp(`\\{${escapeRegExp(variable.key)}\\}`, 'g');
       preview = preview.replace(regex, value);
     });
     
@@ -516,3 +516,7 @@ export function PromptEditor({ prompt, documentType, onSave, onCancel, userRole 
     </Dialog>
   );
 } 
+
+function escapeRegExp(key: string) {
+  return key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}

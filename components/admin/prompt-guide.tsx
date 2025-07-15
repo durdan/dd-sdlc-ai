@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 
 interface PromptGuideProps {
-  userRole: 'admin' | 'manager' | 'user';
+  userRole: 'admin' | 'manager' | 'user' | 'super_admin';
 }
 
 export function PromptGuide({ userRole }: PromptGuideProps) {
@@ -66,6 +66,17 @@ export function PromptGuide({ userRole }: PromptGuideProps) {
   ];
 
   const rolePermissions = {
+    super_admin: {
+      title: 'Super Administrator',
+      color: 'bg-purple-100 text-purple-800',
+      permissions: [
+        'Full system access and control',
+        'Manage all users and administrators',
+        'Configure system-wide settings',
+        'Access to all features and data',
+        'Database and security management'
+      ]
+    },
     admin: {
       title: 'Administrator',
       color: 'bg-red-100 text-red-800',
@@ -109,8 +120,8 @@ export function PromptGuide({ userRole }: PromptGuideProps) {
             Complete guide to using the AI prompt management system
           </p>
         </div>
-        <Badge className={rolePermissions[userRole].color}>
-          {rolePermissions[userRole].title}
+        <Badge className={rolePermissions[userRole] ? rolePermissions[userRole].color : rolePermissions.user.color}>
+          {rolePermissions[userRole] ? rolePermissions[userRole].title : rolePermissions.user.title}
         </Badge>
       </div>
 

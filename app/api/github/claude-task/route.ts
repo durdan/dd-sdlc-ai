@@ -2,14 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { ClaudeCodeService, AgenticCodeRequest } from '@/lib/claude-service'
 import taskStore, { StoredTask } from '@/lib/task-store'
+import { handleClaudeFreemiumRequest, recordClaudeProjectGeneration } from '@/lib/claude-freemium-middleware'
+import { usageTracker } from '@/lib/usage-tracking-service'
 
 /**
  * GitHub Claude Task API
  * Called by user-installed GitHub Actions to request Claude AI assistance
+ * Now integrated with freemium system
  */
 export async function POST(request: NextRequest) {
   try {
-    console.log('🚀 GitHub Claude Task API called')
+    console.log('🚀 GitHub Claude Task API called with freemium support')
     
     // Verify authorization header
     const authHeader = request.headers.get('authorization')
@@ -24,7 +27,7 @@ export async function POST(request: NextRequest) {
     console.log('🔑 Received user token:', userToken.slice(0, 10) + '...')
 
     // Get user from token
-    const supabase = await createClient()
+    const supabase = createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser(userToken)
     
     if (authError || !user) {
@@ -54,7 +57,24 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Check if user has GitHub and Claude configured
+    // Check freemium limits first
+    const freemiumResult = await handleClaudeFreemiumRequest(request, {
+      projectType: 'github_code_assistant',
+      requiresAuth: true,
+      allowSystemKey: true,
+      maxTokens: 8192,
+      estimatedCost: 0.024
+    })
+
+    if (!freemiumResult.canProceed) {
+      return NextResponse.json({ 
+        error: 'Freemium limit exceeded',
+        details: freemiumResult.error || 'Daily limit exceeded',
+        suggestion: 'Provide your own Claude API key or upgrade your plan'
+      }, { status: 429 })
+    }
+
+    // Check if user has GitHub configured
     const { data: githubConfig } = await supabase
       .from('sdlc_user_ai_configurations')
       .select('encrypted_api_key')
@@ -69,27 +89,6 @@ export async function POST(request: NextRequest) {
       .eq('is_active', true)
       .single()
 
-    const { data: claudeConfig } = await supabase
-      .from('sdlc_user_ai_configurations')
-      .select('encrypted_api_key')
-      .eq('user_id', user.id)
-      .eq('provider_id', (
-        await supabase
-          .from('sdlc_ai_providers')
-          .select('id')
-          .eq('type', 'anthropic')
-          .single()
-      ).data?.id)
-      .eq('is_active', true)
-      .single()
-
-    if (!claudeConfig?.encrypted_api_key) {
-      return NextResponse.json({ 
-        error: 'Claude API key not configured',
-        details: 'Please configure your Claude API key in the SDLC.dev Integration Hub'
-      }, { status: 400 })
-    }
-
     // Parse repository info
     const [owner, name] = github.repository.split('/')
     if (!owner || !name) {
@@ -102,7 +101,7 @@ export async function POST(request: NextRequest) {
     // Create task ID
     const taskId = `github-task-${user.id}-${Date.now()}`
 
-    // Create task object
+    // Create task object with freemium info
     const storedTask: StoredTask = {
       id: taskId,
       type: task.type === 'review' ? 'review' : 'feature',
@@ -122,7 +121,9 @@ export async function POST(request: NextRequest) {
         issue_number: github.issue_number,
         pr_number: github.pr_number,
         changed_files: github.changed_files,
-        source: 'github-action'
+        source: 'github-action',
+        used_system_key: freemiumResult.useSystemKey,
+        remaining_projects: freemiumResult.remainingProjects
       }),
       requirements: task.description,
       createdAt: new Date().toISOString(),
@@ -134,9 +135,17 @@ export async function POST(request: NextRequest) {
     taskStore.addActiveTask(storedTask)
     
     console.log(`✅ Created GitHub task: ${taskId}`)
+    console.log(`🔑 Using system key: ${freemiumResult.useSystemKey}`)
+    console.log(`📊 Remaining projects: ${freemiumResult.remainingProjects}`)
 
-    // Start async processing
-    processGitHubTaskAsync(storedTask, claudeConfig.encrypted_api_key, githubConfig?.encrypted_api_key)
+    // Start async processing with freemium support
+    processGitHubTaskAsync(
+      storedTask, 
+      freemiumResult.claudeService!, 
+      freemiumResult.useSystemKey,
+      freemiumResult.userId!,
+      githubConfig?.encrypted_api_key
+    )
 
     return NextResponse.json({
       status: 'accepted',
@@ -144,7 +153,9 @@ export async function POST(request: NextRequest) {
       task: {
         id: taskId,
         status: 'pending',
-        estimated_duration: '2-5 minutes'
+        estimated_duration: '2-5 minutes',
+        used_system_key: freemiumResult.useSystemKey,
+        remaining_free_projects: freemiumResult.remainingProjects
       }
     })
 
@@ -176,7 +187,7 @@ export async function GET(request: NextRequest) {
     }
 
     const userToken = authHeader.replace('Bearer ', '')
-    const supabase = await createClient()
+    const supabase = createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser(userToken)
     
     if (authError || !user) {
@@ -195,6 +206,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
+    // Parse context to get freemium info
+    let freemiumInfo = {}
+    try {
+      const context = JSON.parse(task.context || '{}')
+      freemiumInfo = {
+        used_system_key: context.used_system_key,
+        remaining_projects: context.remaining_projects
+      }
+    } catch (e) {
+      // Context parsing failed, continue without freemium info
+    }
+
     return NextResponse.json({
       task: {
         id: task.id,
@@ -204,7 +227,8 @@ export async function GET(request: NextRequest) {
         result: task.result,
         error: task.status === 'failed' ? 'Task execution failed' : undefined,
         created_at: task.createdAt,
-        completed_at: task.completedAt
+        completed_at: task.completedAt,
+        ...freemiumInfo
       }
     })
 
@@ -214,10 +238,19 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Async task processing function
-async function processGitHubTaskAsync(task: StoredTask, claudeApiKey: string, githubToken?: string) {
+// Async task processing function with freemium support
+async function processGitHubTaskAsync(
+  task: StoredTask, 
+  claudeService: ClaudeCodeService,
+  useSystemKey: boolean,
+  userId: string,
+  githubToken?: string
+) {
+  const startTime = Date.now()
+  
   try {
     console.log(`🚀 Starting GitHub task processing: ${task.id}`)
+    console.log(`🔑 Using system key: ${useSystemKey}`)
     
     // Update task status
     task.status = 'analyzing'
@@ -231,14 +264,6 @@ async function processGitHubTaskAsync(task: StoredTask, claudeApiKey: string, gi
       throw new Error('No GitHub token available')
     }
 
-    // Create unified Claude service
-    const claudeService = new ClaudeCodeService({
-      apiKey: claudeApiKey,
-      model: 'claude-3-5-sonnet-20241022',
-      maxTokens: 8192,
-      temperature: 0.1
-    })
-
     // Create agentic request
     const agenticRequest: AgenticCodeRequest = {
       task_type: task.type === 'bug_fix' ? 'bug_fix' : 'feature_implementation',
@@ -247,10 +272,10 @@ async function processGitHubTaskAsync(task: StoredTask, claudeApiKey: string, gi
       requirements: task.requirements
     }
 
-    // Execute task with unified Claude service
+    // Execute task with Claude service
     const claudeResult = await claudeService.generateAgenticCode(agenticRequest)
     
-    // Update task with progress tracking
+    // Update task with completion
     task.status = 'completed'
     task.completedAt = new Date().toISOString()
     task.result = claudeResult
@@ -258,7 +283,25 @@ async function processGitHubTaskAsync(task: StoredTask, claudeApiKey: string, gi
 
     console.log(`✅ GitHub task ${task.id} completed successfully`)
     
-    // Update final task status
+    // Record usage in freemium system
+    const generationTime = Date.now() - startTime
+    await recordClaudeProjectGeneration(
+      userId,
+      'github_code_assistant',
+      useSystemKey,
+      8192, // Estimated tokens
+      generationTime,
+      true,
+      undefined,
+      { 
+        task_id: task.id,
+        repository: task.repository,
+        task_type: task.type,
+        source: 'github-action'
+      }
+    )
+    
+    // Update final task status with freemium info
     const completedTask = taskStore.getTask(task.id)
     if (completedTask) {
       completedTask.status = 'completed'
@@ -270,7 +313,12 @@ async function processGitHubTaskAsync(task: StoredTask, claudeApiKey: string, gi
         pull_request: null, // No PR creation in this simplified version
         files_modified: [],
         files_created: [],
-        findings: claudeResult.implementation?.files_to_modify?.map(f => f.description) || []
+        findings: claudeResult.implementation?.files_to_modify?.map(f => f.description) || [],
+        usage_info: {
+          used_system_key: useSystemKey,
+          ai_provider: 'claude',
+          completion_time: generationTime
+        }
       }
       
       taskStore.completeTask(task.id)
@@ -279,12 +327,35 @@ async function processGitHubTaskAsync(task: StoredTask, claudeApiKey: string, gi
   } catch (error) {
     console.error(`❌ GitHub task processing failed: ${task.id}`, error)
     
+    // Record failed generation in freemium system
+    const generationTime = Date.now() - startTime
+    await recordClaudeProjectGeneration(
+      userId,
+      'github_code_assistant',
+      useSystemKey,
+      0,
+      generationTime,
+      false,
+      error instanceof Error ? error.message : 'Unknown error',
+      { 
+        task_id: task.id,
+        repository: task.repository,
+        task_type: task.type,
+        source: 'github-action'
+      }
+    )
+    
     const failedTask = taskStore.getTask(task.id)
     if (failedTask) {
       failedTask.status = 'failed'
       failedTask.completedAt = new Date().toISOString()
       failedTask.result = {
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
+        usage_info: {
+          used_system_key: useSystemKey,
+          ai_provider: 'claude',
+          completion_time: generationTime
+        }
       }
       taskStore.completeTask(task.id)
     }

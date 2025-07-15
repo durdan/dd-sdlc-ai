@@ -81,7 +81,12 @@ import {
   Terminal,
   Server,
   Cloud,
-  Github
+  Github,
+  Rocket,
+  Sparkles,
+  Gift,
+  Target,
+  Building
 } from "lucide-react"
 import { HowItWorksVisualization } from "@/components/how-it-works-visualization"
 import { PromptEngineering } from "@/components/prompt-engineering"
@@ -109,15 +114,121 @@ const sdlcDocumentParser = require('@/lib/dist/sdlc-document-parser');
 const { parseSDLCDocument, ensureDefaultSubsections } = sdlcDocumentParser;
 
 import { GitHubProjectsCreator } from '@/components/github-projects-creator'
+import { useFreemiumUsage } from '@/hooks/use-freemium-usage'
+import BetaFeaturesIndicator from '@/components/beta-features-indicator'
+import UsageIndicatorCompact from '@/components/usage-indicator-compact'
+import EarlyAccessWaitingList from '@/components/early-access-waiting-list'
+
+// Type definitions for dashboard state
+interface GeneratedDocuments {
+  businessAnalysis?: string
+  functionalSpec?: string
+  technicalSpec?: string
+  uxSpec?: string
+  mermaidDiagrams?: string
+  architecture?: string
+  comprehensive?: string
+  jiraEpic?: any
+  confluencePage?: any
+}
+
+interface ConfigState {
+  openaiKey: string
+  aiModel?: string
+  jiraUrl: string
+  jiraProject?: string
+  jiraEmail?: string
+  jiraToken: string
+  jiraAutoCreate: boolean
+  confluenceUrl: string
+  confluenceSpace?: string
+  confluenceEmail?: string
+  confluenceToken: string
+  confluenceAutoCreate: boolean
+  githubToken: string
+  githubAutoCreate: boolean
+  clickupToken: string
+  clickupAutoCreate: boolean
+  trelloToken: string
+  trelloAutoCreate: boolean
+  notionToken: string
+  notionAutoCreate: boolean
+  slackToken: string
+  slackAutoCreate: boolean
+  template?: string
+  outputFormat?: string
+  emailNotifications?: boolean
+  slackNotifications?: boolean
+}
+
+interface RecentProject {
+  id: string
+  title: string
+  status: string
+  createdAt: string
+  jiraEpic?: string
+  confluencePage?: string
+  githubProject?: {
+    id: string
+    url: string
+    number: number
+    issueCount?: number
+    repositoryName?: string
+  }
+  documents: {
+    businessAnalysis: string
+    functionalSpec: string
+    technicalSpec: string
+    uxSpec: string
+    architecture: string
+    comprehensive?: string
+    mermaidDiagrams?: string
+  }
+  hasComprehensiveContent: boolean
+  totalDocuments: number
+  jiraEpicUrl?: string
+  jiraSummary?: any
+  confluencePageUrl?: string
+}
+
+interface GitHubProjectConfig {
+  projectName: string
+  repositoryOwner: string
+  repositoryName: string
+  includeIssues: boolean
+  includeCustomFields: boolean
+  createPhaseBasedMilestones: boolean
+  generateLabels: boolean
+}
+
+interface GitHubRepository {
+  id: string
+  full_name: string
+  name: string
+  owner: {
+    login: string
+  }
+}
+
+interface CustomPrompts {
+  businessAnalysis?: string
+  functionalSpec?: string
+  technicalSpec?: string
+  uxSpec?: string
+  mermaidDiagrams?: string
+}
 
 // User Header Component with admin panel support
 interface UserHeaderProps {
   user: any;
   userRole: string;
   onSignOut: () => void;
+  onConfigureKeys?: () => void;
 }
 
-const UserHeader: React.FC<UserHeaderProps> = ({ user, userRole, onSignOut }) => {
+const UserHeader: React.FC<UserHeaderProps> = ({ user, userRole, onSignOut, onConfigureKeys }) => {
+  const { usage, loading: usageLoading } = useFreemiumUsage()
+  
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -125,6 +236,19 @@ const UserHeader: React.FC<UserHeaderProps> = ({ user, userRole, onSignOut }) =>
       .join('')
       .toUpperCase()
       .substring(0, 2)
+  }
+
+  const getUsageBadgeColor = () => {
+    if (!usage) return 'bg-gray-100 text-gray-600'
+    
+    if (usage.remainingProjects === 0) return 'bg-red-100 text-red-700 border-red-200'
+    if (usage.remainingProjects === 1) return 'bg-yellow-100 text-yellow-700 border-yellow-200'
+    return 'bg-green-100 text-green-700 border-green-200'
+  }
+
+  const getUsageText = () => {
+    if (!usage) return 'Loading...'
+    return `${usage.remainingProjects}/${usage.dailyLimit} Free`
   }
 
   return (
@@ -150,6 +274,19 @@ const UserHeader: React.FC<UserHeaderProps> = ({ user, userRole, onSignOut }) =>
                 {user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
               </span>
             </div>
+            
+            {/* Compact Usage Indicator */}
+            <UsageIndicatorCompact 
+              onViewDashboard={() => window.location.href = '/usage-dashboard'}
+            />
+            
+            {/* Beta Features Indicator */}
+            <BetaFeaturesIndicator 
+              user={user}
+              compact={true}
+              showEnrollment={true}
+            />
+            
             {(userRole === 'admin' || userRole === 'manager') && (
               <Button
                 variant="outline"
@@ -183,6 +320,15 @@ const UserHeader: React.FC<UserHeaderProps> = ({ user, userRole, onSignOut }) =>
                     <p className="text-xs leading-none text-muted-foreground">
                       {user.email}
                     </p>
+                    {/* Usage info in dropdown */}
+                    {usage && (
+                      <div className="flex items-center justify-between mt-2 pt-1 border-t">
+                        <span className="text-xs text-muted-foreground">Today's usage:</span>
+                        <span className={`text-xs font-medium ${usage.remainingProjects === 0 ? 'text-red-600' : 'text-green-600'}`}>
+                          {usage.projectsToday}/{usage.dailyLimit}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -277,68 +423,71 @@ const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({ currentSt
 }
 
 
-function SDLCAutomationPlatform({ user }: { user: any }) {
+function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, userRole: string, onSignOut: () => void }) {
   const [input, setInput] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
-  const [currentStep, setCurrentStep] = useState(0)
-  const [showConfig, setShowConfig] = useState(false)
+  const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>([])
+  const [generatedDocuments, setGeneratedDocuments] = useState<GeneratedDocuments>({})
   const [errorMessage, setErrorMessage] = useState("")
   const [successMessage, setSuccessMessage] = useState("")
-  const [isSavingConfig, setIsSavingConfig] = useState(false)
-  const [config, setConfig] = useState({
-    openaiKey: "",
-    aiModel: "gpt-4",
-    jiraUrl: "",
-    jiraToken: "",
-    jiraProject: "",
-    jiraEmail: "",
-    confluenceUrl: "",
-    confluenceToken: "",
-    confluenceSpace: "",
-    confluenceEmail: "",
-    jiraAutoCreate: false,
-    confluenceAutoCreate: false,
-    template: "default",
-    outputFormat: "markdown",
-    emailNotifications: true,
-    slackNotifications: false,
-  })
-  const [generatedDocuments, setGeneratedDocuments] = useState<any>({})
-  const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>(() => [])
+  const [showConfig, setShowConfig] = useState(false)
+  const [showIntegrations, setShowIntegrations] = useState(false)
+  const [showVisualization, setShowVisualization] = useState(false)
+  const [showHowItWorks, setShowHowItWorks] = useState(false)
   const [showPromptEngineering, setShowPromptEngineering] = useState(false)
-  const [customPrompts, setCustomPrompts] = useState<any>({
-    analysis: "",
-    functional: "",
-    technical: "",
-    ux: "",
-    mermaid: ""
-  })
-  const [showCacheDialog, setShowCacheDialog] = useState(false)
-  const [pendingCachedResults, setPendingCachedResults] = useState<any>(null)
-  const [showApiKeyDialog, setShowApiKeyDialog] = useState(false)
-  const [tempApiKey, setTempApiKey] = useState("")
-  const [projects, setProjects] = useState<ProjectResult[]>([])
-  const [recentProjects, setRecentProjects] = useState<ProjectResult[]>([])
-  const [isLoadingProjects, setIsLoadingProjects] = useState(false)
+  const [showWorkflow, setShowWorkflow] = useState(false)
+  const [showWorkflowDiagram, setShowWorkflowDiagram] = useState(false)
+  const [showGitDigest, setShowGitDigest] = useState(false)
   const [showDatabaseTest, setShowDatabaseTest] = useState(false)
-
-  // GitHub Project Creation states
+  const [showSlackUI, setShowSlackUI] = useState(false)
+  const [showSlackUICodeAssistant, setShowSlackUICodeAssistant] = useState(false)
+  const [showGitHubProjects, setShowGitHubProjects] = useState(false)
   const [showGitHubProjectDialog, setShowGitHubProjectDialog] = useState(false)
+  const [showCacheDialog, setShowCacheDialog] = useState(false)
+  const [showApiKeyDialog, setShowApiKeyDialog] = useState(false)
+  const [tempApiKey, setTempApiKey] = useState('')
+  const [pendingCachedResults, setPendingCachedResults] = useState<any>(null)
+  const [isSavingConfig, setIsSavingConfig] = useState(false)
   const [isCreatingGitHubProject, setIsCreatingGitHubProject] = useState(false)
-  const [gitHubProjectConfig, setGitHubProjectConfig] = useState({
-    projectName: "",
-    repositoryOwner: "",
-    repositoryName: "",
+  const [isLoadingGitHubRepos, setIsLoadingGitHubRepos] = useState(false)
+  const [githubRepositories, setGithubRepositories] = useState<GitHubRepository[]>([])
+  const [customPrompts, setCustomPrompts] = useState<CustomPrompts>({})
+  const [config, setConfig] = useState<ConfigState>({
+    openaiKey: '',
+    jiraUrl: '',
+    jiraToken: '',
+    jiraAutoCreate: false,
+    confluenceUrl: '',
+    confluenceToken: '',
+    confluenceAutoCreate: false,
+    githubToken: '',
+    githubAutoCreate: false,
+    clickupToken: '',
+    clickupAutoCreate: false,
+    trelloToken: '',
+    trelloAutoCreate: false,
+    notionToken: '',
+    notionAutoCreate: false,
+    slackToken: '',
+    slackAutoCreate: false,
+  })
+  const [recentProjects, setRecentProjects] = useState<RecentProject[]>([])
+  const [isLoadingProjects, setIsLoadingProjects] = useState(false)
+  const [activeTab, setActiveTab] = useState('comprehensive')
+  const [showDetailedViewer, setShowDetailedViewer] = useState(false)
+  const [selectedProjectForGitHub, setSelectedProjectForGitHub] = useState<ProjectResult | null>(null)
+  const [gitHubProjectConfig, setGitHubProjectConfig] = useState<GitHubProjectConfig>({
+    projectName: '',
+    repositoryOwner: '',
+    repositoryName: '',
     includeIssues: true,
     includeCustomFields: true,
     createPhaseBasedMilestones: true,
     generateLabels: true
   })
-  const [githubRepositories, setGithubRepositories] = useState<any[]>([])
-  const [isLoadingGitHubRepos, setIsLoadingGitHubRepos] = useState(false)
-
-  const [showSlackUICodeAssistant, setShowSlackUICodeAssistant] = useState(false)
-  const [activeTab, setActiveTab] = useState("sdlc")
+  
+  // Add freemium usage hook
+  const { usage, refetch: refetchUsage, incrementUsage } = useFreemiumUsage()
 
   // Function to update step progress - moved to component level for global access
   const updateStepProgress = (stepId: string, progress: number, status: "pending" | "in_progress" | "completed" | "error" = "in_progress") => {
@@ -355,15 +504,11 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
   
   // Handle prompt updates from PromptEngineering component
   const handlePromptUpdate = (promptType: string, promptContent: string) => {
-    setCustomPrompts(prev => ({
+    setCustomPrompts((prev: CustomPrompts) => ({
       ...prev,
       [promptType]: promptContent
     }))
   }
-  const [showIntegrations, setShowIntegrations] = useState(false)
-  const [showVisualization, setShowVisualization] = useState(false)
-  const [showWorkflow, setShowWorkflow] = useState(false)
-  const [showHowItWorks, setShowHowItWorks] = useState(false)
   
   // Export state
   const [isExportingToJira, setIsExportingToJira] = useState(false)
@@ -372,22 +517,22 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
   // Initialize processing steps - conditionally include Jira/Confluence based on automation settings
   const getInitialProcessingSteps = (): ProcessingStep[] => {
     const coreSteps: ProcessingStep[] = [
-      { id: "analysis", name: "Business Analysis", status: "pending", progress: 0 },
-      { id: "functional", name: "Functional Specification", status: "pending", progress: 0 },
-      { id: "technical", name: "Technical Specification", status: "pending", progress: 0 },
-      { id: "ux", name: "UX Specification", status: "pending", progress: 0 },
-      { id: "mermaid", name: "Mermaid Diagrams", status: "pending", progress: 0 },
+      { id: "analysis", name: "Business Analysis", status: "pending" as const, progress: 0 },
+      { id: "functional", name: "Functional Specification", status: "pending" as const, progress: 0 },
+      { id: "technical", name: "Technical Specification", status: "pending" as const, progress: 0 },
+      { id: "ux", name: "UX Specification", status: "pending" as const, progress: 0 },
+      { id: "mermaid", name: "Mermaid Diagrams", status: "pending" as const, progress: 0 },
     ]
     
     // Add integration steps only if automation is enabled
     if (config.jiraAutoCreate && config.jiraUrl && config.jiraToken) {
-      coreSteps.push({ id: "jira", name: "JIRA Epic Creation", status: "pending", progress: 0 })
+      coreSteps.push({ id: "jira", name: "JIRA Epic Creation", status: "pending" as const, progress: 0 })
     }
     if (config.confluenceAutoCreate && config.confluenceUrl && config.confluenceToken) {
-      coreSteps.push({ id: "confluence", name: "Confluence Documentation", status: "pending", progress: 0 })
+      coreSteps.push({ id: "confluence", name: "Confluence Documentation", status: "pending" as const, progress: 0 })
     }
     if (coreSteps.length > 5) { // More than core 5 steps means integrations are enabled
-      coreSteps.push({ id: "linking", name: "Cross-platform Linking", status: "pending", progress: 0 })
+      coreSteps.push({ id: "linking", name: "Cross-platform Linking", status: "pending" as const, progress: 0 })
     }
     
     return coreSteps
@@ -631,6 +776,19 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
     setTempApiKey('')
     setErrorMessage('')
     
+    // Save the API key to database if user is authenticated
+    if (user?.id) {
+      try {
+        await dbService.upsertUserConfiguration(user.id, {
+          openai_api_key: tempApiKey.trim()
+        })
+        console.log("✅ Saved API key to user configuration")
+      } catch (error) {
+        console.warn("⚠️ Failed to save API key to database:", error)
+        // Continue anyway - the key is in memory
+      }
+    }
+    
     // Continue with generation now that we have the API key
     await generateFreshDocuments()
   }
@@ -796,7 +954,7 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
   }
 
   // GitHub Project Creation for Existing Projects
-  const [selectedProjectForGitHub, setSelectedProjectForGitHub] = useState<ProjectResult | null>(null)
+  // selectedProjectForGitHub is already declared above
   
   const openGitHubProjectDialogForProject = (project: ProjectResult) => {
     setSelectedProjectForGitHub(project)
@@ -1139,6 +1297,7 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
     }
 
     // No cache found, proceed with fresh generation
+    // REMOVED: API key check - let the backend handle it
     await generateFreshDocuments()
   }
 
@@ -1239,14 +1398,6 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
   }
 
   const generateFreshDocuments = async () => {
-
-    // Check if OpenAI API key is missing - prompt just-in-time
-    if (!config.openaiKey || config.openaiKey.trim() === '') {
-      setTempApiKey('')
-      setShowApiKeyDialog(true)
-      return
-    }
-
     setIsProcessing(true)
     setErrorMessage("")
     setGeneratedDocuments({})
@@ -1267,7 +1418,7 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
     if (config.confluenceAutoCreate && config.confluenceUrl && config.confluenceToken) {
       initialSteps.push({ id: "confluence", name: "Confluence Documentation", status: "pending" as const, progress: 0 })
     }
-    if (initialSteps.length > 4) {
+    if (initialSteps.length > 5) {
       initialSteps.push({ id: "linking", name: "Cross-platform Linking", status: "pending" as const, progress: 0 })
     }
 
@@ -1277,22 +1428,36 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
       // Execute each step sequentially with real progress tracking
       const results: any = {}
       
-      // Step 1: Business Analysis
+      // Step 1: Business Analysis - Let backend handle freemium limits
       updateStepProgress("analysis", 0, "in_progress")
       const businessResponse = await fetch("/api/generate-business-analysis", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           input,
-          // Use database prompt hierarchy: User Default → System Default → Fallback
-          openaiKey: config.openaiKey,
-          userId: user?.id, // Enable user-specific prompts
+          openaiKey: config.openaiKey || "", // Send empty string if not configured
+          userId: user?.id,
         }),
       })
       
       if (!businessResponse.ok) {
         const errorData = await businessResponse.json().catch(() => ({ error: "Unknown API error" }))
         updateStepProgress("analysis", 0, "error")
+        
+        // Check if this is a freemium limit error from the backend
+        if (errorData?.error && (
+          errorData.error.toLowerCase().includes("freemium limit") ||
+          errorData.error.toLowerCase().includes("daily limit") ||
+          errorData.error.toLowerCase().includes("usage limit") ||
+          errorData.error.toLowerCase().includes("upgrade required") ||
+          errorData.error.toLowerCase().includes("api key required")
+        )) {
+          console.log("🔑 Backend indicated freemium limit reached, prompting for API key")
+          setIsProcessing(false) // Stop processing
+          setShowApiKeyDialog(true)
+          return // Exit early - user needs to provide API key
+        }
+        
         throw new Error(errorData?.error || `API request failed with status ${businessResponse.status}`)
       }
       
@@ -1314,63 +1479,29 @@ function SDLCAutomationPlatform({ user }: { user: any }) {
         body: JSON.stringify({
           input,
           businessAnalysis: results.businessAnalysis,
-          customPrompt: `You are an expert systems analyst. Create a detailed functional specification based on the SPECIFIC project requirements and business analysis provided.
-
-IMPORTANT: Base your specification ONLY on the specific project described below. Do NOT use generic enterprise examples like CRM, SCM, HRM, or Financial Management unless they are specifically mentioned in the requirements.
-
-Original Project Requirements:
-"${input}"
-
-Business Analysis Context:
-Use the provided business analysis to inform your functional specification.
-
-Create a functional specification that includes:
-
-## System Overview
-- **Purpose**: What this specific system does (based on the actual requirements)
-- **Scope**: What's included/excluded for this specific project
-- **Target Users**: Who will use this specific system (from business analysis)
-- **Environment**: Where this specific system will operate
-
-## Functional Requirements
-- **Core Features**: Essential functionality for this specific system
-- **User Actions**: What users can do in this specific system
-- **System Responses**: How this system responds to user actions
-- **Business Rules**: Specific rules and logic for this domain/use case
-- **Workflow**: Step-by-step processes for this specific system
-
-## Data Requirements
-- **Data Entities**: What data this specific system manages
-- **Data Relationships**: How data connects in this specific context
-- **Data Validation**: Rules specific to this domain
-- **Data Flow**: How data moves through this specific system
-
-## Integration Requirements  
-- **External Systems**: What systems this specific project needs to connect with
-- **APIs**: Required interfaces for this specific use case
-- **Data Exchange**: What data needs to be shared for this project
-- **Third-party Services**: External services needed for this specific system
-
-## Security & Compliance Requirements
-- **Authentication**: How users log into this specific system
-- **Authorization**: Access controls specific to this domain
-- **Data Protection**: Security measures for this specific type of data
-- **Compliance**: Any regulatory requirements mentioned in the project requirements
-
-## Performance Requirements
-- **Response Time**: Performance needs for this specific use case
-- **Throughput**: Volume requirements for this specific system
-- **Availability**: Uptime needs for this specific application
-- **Scalability**: Growth expectations for this specific project
-
-Focus on the SPECIFIC project requirements. Avoid generic enterprise features unless explicitly requested.`,
-          openaiKey: config.openaiKey,
+          openaiKey: config.openaiKey || "", // Send whatever we have (could be empty)
+          userId: user?.id,
         }),
       })
       
       if (!functionalResponse.ok) {
         const errorData = await functionalResponse.json().catch(() => ({ error: "Unknown API error" }))
         updateStepProgress("functional", 0, "error")
+        
+        // Check for freemium limit error again
+        if (errorData?.error && (
+          errorData.error.toLowerCase().includes("freemium limit") ||
+          errorData.error.toLowerCase().includes("daily limit") ||
+          errorData.error.toLowerCase().includes("usage limit") ||
+          errorData.error.toLowerCase().includes("upgrade required") ||
+          errorData.error.toLowerCase().includes("api key required")
+        )) {
+          console.log("🔑 Backend indicated freemium limit reached during functional spec, prompting for API key")
+          setIsProcessing(false)
+          setShowApiKeyDialog(true)
+          return
+        }
+        
         throw new Error(errorData?.error || `API request failed with status ${functionalResponse.status}`)
       }
       
@@ -1393,65 +1524,29 @@ Focus on the SPECIFIC project requirements. Avoid generic enterprise features un
           input,
           businessAnalysis: results.businessAnalysis,
           functionalSpec: results.functionalSpec,
-          customPrompt: `You are an expert technical architect. Create a detailed technical specification based on the SPECIFIC project requirements and previous analysis provided.
-
-IMPORTANT: Base your specification ONLY on the specific project described below. Do NOT use generic enterprise architecture unless specifically mentioned in the requirements.
-
-Original Project Requirements:
-"${input}"
-
-Business Analysis Context:
-Use the provided business analysis to understand the domain and requirements.
-
-Functional Specification Context:
-Use the provided functional specification to understand the system features and requirements.
-
-Create a technical specification that includes:
-
-## System Architecture
-- **Architecture Pattern**: Design pattern suitable for this specific system
-- **Components**: System components needed for this specific project
-- **Data Flow**: How data moves through this specific system
-- **Technology Stack**: Languages, frameworks, databases appropriate for this use case
-
-## Database Design
-- **Data Model**: Entity relationships for this specific domain
-- **Schema Design**: Table structures needed for this specific system
-- **Indexing Strategy**: Performance optimization for this specific use case
-- **Data Migration**: Upgrade procedures for this specific project
-
-## API Design
-- **REST Endpoints**: API specifications for this specific system
-- **Request/Response**: Data formats for this specific use case
-- **Authentication**: Security mechanisms appropriate for this domain
-- **Rate Limiting**: Usage controls for this specific system
-
-## Security Implementation
-- **Authentication System**: Login mechanisms for this specific system
-- **Authorization Controls**: Access permissions for this specific domain
-- **Data Encryption**: Protection methods for this specific type of data
-- **Compliance**: Any regulatory requirements mentioned in the original requirements
-
-## Performance Specifications
-- **Response Times**: Latency requirements for this specific use case
-- **Throughput**: Transaction volumes for this specific system
-- **Scalability Plan**: Growth handling for this specific project
-- **Caching Strategy**: Performance optimization for this specific domain
-
-## Deployment Strategy
-- **Infrastructure**: Server requirements for this specific system
-- **Environment Setup**: Dev/Test/Prod for this specific project
-- **CI/CD Pipeline**: Automated deployment for this specific codebase
-- **Monitoring**: Health checks and alerts for this specific system
-
-Focus on the SPECIFIC project requirements and domain. Avoid generic enterprise architecture unless explicitly requested.`,
-          openaiKey: config.openaiKey,
+          openaiKey: config.openaiKey || "",
+          userId: user?.id,
         }),
       })
       
       if (!technicalResponse.ok) {
         const errorData = await technicalResponse.json().catch(() => ({ error: "Unknown API error" }))
         updateStepProgress("technical", 0, "error")
+        
+        // Check for freemium limit error
+        if (errorData?.error && (
+          errorData.error.toLowerCase().includes("freemium limit") ||
+          errorData.error.toLowerCase().includes("daily limit") ||
+          errorData.error.toLowerCase().includes("usage limit") ||
+          errorData.error.toLowerCase().includes("upgrade required") ||
+          errorData.error.toLowerCase().includes("api key required")
+        )) {
+          console.log("🔑 Backend indicated freemium limit reached during technical spec, prompting for API key")
+          setIsProcessing(false)
+          setShowApiKeyDialog(true)
+          return
+        }
+        
         throw new Error(errorData?.error || `API request failed with status ${technicalResponse.status}`)
       }
       
@@ -1475,15 +1570,29 @@ Focus on the SPECIFIC project requirements and domain. Avoid generic enterprise 
           businessAnalysis: results.businessAnalysis,
           functionalSpec: results.functionalSpec,
           technicalSpec: results.technicalSpec,
-          // Use database prompt hierarchy: User Default → System Default → Fallback
-          openaiKey: config.openaiKey,
-          userId: user?.id, // Enable user-specific prompts
+          openaiKey: config.openaiKey || "",
+          userId: user?.id,
         }),
       })
       
       if (!uxResponse.ok) {
         const errorData = await uxResponse.json().catch(() => ({ error: "Unknown API error" }))
         updateStepProgress("ux", 0, "error")
+        
+        // Check for freemium limit error
+        if (errorData?.error && (
+          errorData.error.toLowerCase().includes("freemium limit") ||
+          errorData.error.toLowerCase().includes("daily limit") ||
+          errorData.error.toLowerCase().includes("usage limit") ||
+          errorData.error.toLowerCase().includes("upgrade required") ||
+          errorData.error.toLowerCase().includes("api key required")
+        )) {
+          console.log("🔑 Backend indicated freemium limit reached during UX spec, prompting for API key")
+          setIsProcessing(false)
+          setShowApiKeyDialog(true)
+          return
+        }
+        
         throw new Error(errorData?.error || `API request failed with status ${uxResponse.status}`)
       }
       
@@ -1502,15 +1611,29 @@ Focus on the SPECIFIC project requirements and domain. Avoid generic enterprise 
           businessAnalysis: results.businessAnalysis,
           functionalSpec: results.functionalSpec,
           technicalSpec: results.technicalSpec,
-          // Use database prompt hierarchy: User Default → System Default → Fallback
-          openaiKey: config.openaiKey,
-          userId: user?.id, // Enable user-specific prompts
+          openaiKey: config.openaiKey || "",
+          userId: user?.id,
         }),
       })
       
       if (!mermaidResponse.ok) {
         const errorData = await mermaidResponse.json().catch(() => ({ error: "Unknown API error" }))
         updateStepProgress("mermaid", 0, "error")
+        
+        // Check for freemium limit error
+        if (errorData?.error && (
+          errorData.error.toLowerCase().includes("freemium limit") ||
+          errorData.error.toLowerCase().includes("daily limit") ||
+          errorData.error.toLowerCase().includes("usage limit") ||
+          errorData.error.toLowerCase().includes("upgrade required") ||
+          errorData.error.toLowerCase().includes("api key required")
+        )) {
+          console.log("🔑 Backend indicated freemium limit reached during mermaid generation, prompting for API key")
+          setIsProcessing(false)
+          setShowApiKeyDialog(true)
+          return
+        }
+        
         console.warn("Failed to generate Mermaid diagrams:", errorData?.error || `API request failed with status ${mermaidResponse.status}`)
         results.mermaidDiagrams = ""
       } else {
@@ -1532,6 +1655,9 @@ Focus on the SPECIFIC project requirements and domain. Avoid generic enterprise 
         status: "completed" as const,
         progress: 100
       })))
+
+      // Update usage count after successful generation
+      incrementUsage()
       
     } catch (error) {
       console.error("Error generating SDLC documentation:", error)
@@ -1728,7 +1854,7 @@ Focus on the SPECIFIC project requirements and domain. Avoid generic enterprise 
           localStorage.setItem('sdlc-cached-results', JSON.stringify(cachedResults))
           
           // Refresh the recent projects display
-          const updatedProjects = getCachedResults()
+          const updatedProjects = await getCachedProjects()
           setRecentProjects(updatedProjects)
         }
       } else {
@@ -1737,7 +1863,7 @@ Focus on the SPECIFIC project requirements and domain. Avoid generic enterprise 
       }
     } catch (error) {
       console.error('❌ Manual JIRA integration error:', error)
-      alert(`Error creating JIRA artifacts: ${error.message}`)
+      alert(`Error creating JIRA artifacts: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
   
@@ -1776,7 +1902,7 @@ Focus on the SPECIFIC project requirements and domain. Avoid generic enterprise 
           localStorage.setItem('sdlc-cached-results', JSON.stringify(cachedResults))
           
           // Refresh the recent projects display
-          const updatedProjects = getCachedResults()
+          const updatedProjects = await getCachedProjects()
           setRecentProjects(updatedProjects)
         }
       } else {
@@ -1785,7 +1911,7 @@ Focus on the SPECIFIC project requirements and domain. Avoid generic enterprise 
       }
     } catch (error) {
       console.error('❌ Manual Confluence integration error:', error)
-      alert(`Error creating Confluence documentation: ${error.message}`)
+      alert(`Error creating Confluence documentation: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 
@@ -2036,6 +2162,9 @@ Focus on the SPECIFIC project requirements and domain. Avoid generic enterprise 
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-2 sm:p-4">
+      {/* User Header */}
+      <UserHeader user={user} userRole={userRole} onSignOut={onSignOut} onConfigureKeys={() => setShowConfig(true)} />
+      
       <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
         {/* Header */}
         <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
@@ -2079,6 +2208,12 @@ Focus on the SPECIFIC project requirements and domain. Avoid generic enterprise 
                 <Settings className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">Prompt Engineering</span>
                 <span className="sm:hidden">Prompts</span>
+              </Button>
+
+              <Button variant="outline" size="sm" onClick={() => window.location.href = '/usage-dashboard'} className="flex-shrink-0 min-w-[80px]">
+                <BarChart3 className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Usage Dashboard</span>
+                <span className="sm:hidden">Usage</span>
               </Button>
 
               <Button variant="outline" size="sm" onClick={() => setShowDatabaseTest(true)} className="flex-shrink-0 min-w-[80px]">
@@ -2346,7 +2481,7 @@ Focus on the SPECIFIC project requirements and domain. Avoid generic enterprise 
 
                   <TabsContent value="business">
                     <MarkdownRenderer 
-                      content={generatedDocuments.businessAnalysis}
+                      content={generatedDocuments.businessAnalysis || ''}
                       title="Business Analysis"
                       type="business"
                     />
@@ -2354,7 +2489,7 @@ Focus on the SPECIFIC project requirements and domain. Avoid generic enterprise 
 
                   <TabsContent value="functional">
                     <MarkdownRenderer 
-                      content={generatedDocuments.functionalSpec}
+                      content={generatedDocuments.functionalSpec || ''}
                       title="Functional Specification"
                       type="functional"
                     />
@@ -2362,7 +2497,7 @@ Focus on the SPECIFIC project requirements and domain. Avoid generic enterprise 
 
                   <TabsContent value="technical">
                     <MarkdownRenderer 
-                      content={generatedDocuments.technicalSpec}
+                      content={generatedDocuments.technicalSpec || ''}
                       title="Technical Specification"
                       type="technical"
                     />
@@ -2370,7 +2505,7 @@ Focus on the SPECIFIC project requirements and domain. Avoid generic enterprise 
 
                   <TabsContent value="ux">
                     <MarkdownRenderer 
-                      content={generatedDocuments.uxSpec}
+                      content={generatedDocuments.uxSpec || ''}
                       title="UX Specification"
                       type="ux"
                     />
@@ -3286,10 +3421,52 @@ Focus on the SPECIFIC project requirements and domain. Avoid generic enterprise 
                 <GitBranch className="w-4 h-4 mr-1 sm:mr-2" />
                 <span className="hidden sm:inline">GitDigest</span>
               </TabsTrigger>
+              <TabsTrigger value="early-access" className="flex-shrink-0 min-w-[60px] px-2 sm:px-3">
+                <Rocket className="w-4 h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Early Access</span>
+              </TabsTrigger>
             </TabsList>
           </div>
 
           <TabsContent value="sdlc" className="space-y-6">
+            {/* Compact Usage & Features Bar */}
+            <div className="bg-white rounded-lg border p-4">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div className="flex items-center space-x-4">
+                  <UsageIndicatorCompact 
+                    onViewDashboard={() => window.location.href = '/usage-dashboard'}
+                  />
+                  <BetaFeaturesIndicator 
+                    user={user}
+                    compact={true}
+                    showEnrollment={true}
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.location.href = '/usage-dashboard'}
+                    className="flex items-center gap-2"
+                  >
+                    <BarChart3 className="h-4 w-4" />
+                    <span className="hidden sm:inline">Usage Dashboard</span>
+                    <span className="sm:hidden">Usage</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setActiveTab('early-access')}
+                    className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 text-blue-700 hover:from-blue-100 hover:to-purple-100"
+                  >
+                    <Rocket className="h-4 w-4" />
+                    <span className="hidden sm:inline">Join Waitlist</span>
+                    <span className="sm:hidden">Waitlist</span>
+                  </Button>
+                </div>
+              </div>
+            </div>
+
             {/* Main Input Section */}
             <Card>
               <CardHeader>
@@ -3356,7 +3533,115 @@ Focus on the SPECIFIC project requirements and domain. Avoid generic enterprise 
           </TabsContent>
 
           <TabsContent value="gitdigest" className="mt-6">
-            <GitDigestDashboard config={config} />
+            <GitDigestDashboard config={{
+              openaiKey: config.openaiKey || '',
+              jiraUrl: config.jiraUrl || '',
+              jiraEmail: config.jiraEmail || '',
+              jiraToken: config.jiraToken || '',
+              confluenceUrl: config.confluenceUrl || '',
+              confluenceEmail: config.confluenceEmail || '',
+              confluenceToken: config.confluenceToken || ''
+            }} />
+          </TabsContent>
+
+          <TabsContent value="early-access" className="mt-6">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Rocket className="h-5 w-5 text-blue-500" />
+                    Early Access Program
+                  </CardTitle>
+                  <CardDescription>
+                    Join our early access waiting list to get priority access to beta features and help shape the future of SDLC.dev
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <Card className="border-blue-200 bg-blue-50">
+                      <CardHeader>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Zap className="h-5 w-5 text-blue-500" />
+                          Early Access Benefits
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ul className="space-y-2 text-sm">
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                            <span>Priority access to beta features</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                            <span>Direct feedback channel to development team</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                            <span>Influence roadmap and feature prioritization</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                            <span>Early access to advanced AI integrations</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                            <span>Exclusive community access and networking</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                            <span>Get notified first when new features launch</span>
+                          </li>
+                        </ul>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-green-200 bg-green-50">
+                      <CardHeader>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Star className="h-5 w-5 text-green-500" />
+                          Coming Soon Features
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ul className="space-y-2 text-sm">
+                          <li className="flex items-center gap-2">
+                            <Sparkles className="h-4 w-4 text-purple-500 flex-shrink-0" />
+                            <span>Advanced Claude Integration</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <Gift className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                            <span>Premium SDLC Templates</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <Target className="h-4 w-4 text-red-500 flex-shrink-0" />
+                            <span>Advanced Analytics Dashboard</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <Code className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                            <span>Custom API Integrations</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <Zap className="h-4 w-4 text-yellow-500 flex-shrink-0" />
+                            <span>Bulk Project Processing</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <Building className="h-4 w-4 text-gray-700 flex-shrink-0" />
+                            <span>Team Collaboration Tools</span>
+                          </li>
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <EarlyAccessWaitingList 
+                user={user}
+                onSuccess={(position) => {
+                  console.log(`User joined waitlist at position ${position}`)
+                }}
+              />
+            </div>
           </TabsContent>
         </Tabs>
       </div>
@@ -3434,8 +3719,7 @@ function AuthenticatedSDLCPlatform() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <UserHeader user={user} userRole={userRole} onSignOut={handleSignOut} />
-      <SDLCAutomationPlatform user={user} />
+      <SDLCAutomationPlatform user={user} userRole={userRole} onSignOut={handleSignOut} />
     </div>
   );
 }

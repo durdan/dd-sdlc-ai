@@ -6,171 +6,164 @@ import { CodeGenerator, CodeSpecification } from '@/lib/code-generator'
 import { BugDetector } from '@/lib/bug-detector'
 import { GitHubClaudeService } from '@/lib/github-claude-service'
 import { cookies } from 'next/headers'
+import { withClaudeFreemiumSupport, ClaudeFreemiumResult } from '@/lib/claude-freemium-middleware'
 
-export async function POST(request: NextRequest) {
-  try {
-    console.log('🔄 Unified Claude API Request received:', new Date().toISOString())
-    const supabase = await createClient()
-    
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      console.log('❌ Authentication failed:', authError)
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
-    }
-
-    const body = await request.json()
-    const { action, ...params } = body
-    console.log('📋 Action requested:', action)
-    console.log('👤 User ID:', user.id)
-
-    // Initialize Claude service with user's database configuration
-    let claudeService: ClaudeCodeService
+// Main Claude API handler with freemium support
+export const POST = withClaudeFreemiumSupport(
+  {
+    projectType: 'claude_code_assistant',
+    requiresAuth: true,
+    allowSystemKey: true,
+    maxTokens: 8192,
+    estimatedCost: 0.024
+  },
+  async (request: NextRequest, freemiumResult: ClaudeFreemiumResult, body: any) => {
     try {
-      claudeService = await ClaudeCodeService.createForUser(user.id)
-      console.log('✅ Claude service initialized with user database configuration')
-    } catch (error) {
-      console.log('❌ Failed to initialize with user config, trying environment variables...', error)
-      const envApiKey = process.env.ANTHROPIC_API_KEY
-      if (!envApiKey) {
-        return NextResponse.json({
-          error: 'Claude API key not configured. Please configure Claude in the Integration Hub or set ANTHROPIC_API_KEY environment variable.',
-          details: 'Go to the Integration Hub → Claude AI tab to set up your API key.'
-        }, { status: 400 })
+      console.log('🔄 Unified Claude API Request received:', new Date().toISOString())
+      console.log('📋 Action requested:', body.action)
+      console.log('👤 User ID:', freemiumResult.userId)
+      console.log('🔑 Using system key:', freemiumResult.useSystemKey)
+
+      const { action, ...params } = body
+      
+      // Use the Claude service from freemium middleware
+      const claudeService = freemiumResult.claudeService!
+
+      // Get GitHub token for repository operations
+      let githubToken = null
+      try {
+        const cookieStore = await cookies()
+        const userGithubToken = cookieStore.get('github_token')
+        if (userGithubToken?.value) {
+          githubToken = userGithubToken.value
+        }
+      } catch (error) {
+        console.log('No GitHub token found in cookies')
       }
-      claudeService = new ClaudeCodeService({
-        apiKey: envApiKey,
-        model: params.model || 'claude-3-5-sonnet-20241022',
-        maxTokens: params.maxTokens || 8192,
-        temperature: params.temperature || 0.1
-      })
-      console.log('✅ Claude service initialized with environment API key')
-    }
 
-    // Get GitHub token for repository operations
-    let githubToken = null
-    try {
-      const cookieStore = await cookies()
-      const userGithubToken = cookieStore.get('github_token')
-      if (userGithubToken?.value) {
-        githubToken = userGithubToken.value
+      if (!githubToken) {
+        githubToken = process.env.GITHUB_TOKEN
       }
+
+      // Initialize additional services if GitHub token is available
+      let repositoryAnalyzer: RepositoryAnalyzer | null = null
+      let codeGenerator: CodeGenerator | null = null
+      let bugDetector: BugDetector | null = null
+      let githubService: GitHubClaudeService | null = null
+
+      if (githubToken) {
+        repositoryAnalyzer = new RepositoryAnalyzer(claudeService, githubToken)
+        codeGenerator = new CodeGenerator(claudeService)
+        bugDetector = new BugDetector(claudeService)
+        githubService = new GitHubClaudeService(githubToken)
+      }
+
+      // Get supabase client for database operations
+      const supabase = createClient()
+
+      // Route to appropriate action
+      switch (action) {
+        case 'test_connection':
+          return await handleTestConnection(claudeService, freemiumResult)
+        
+        case 'analyze_code':
+          return await handleAnalyzeCode(claudeService, params, freemiumResult.userId!, supabase, freemiumResult)
+        
+        case 'generate_code':
+          if (!codeGenerator || !repositoryAnalyzer) {
+            return NextResponse.json({ 
+              error: 'GitHub integration required for code generation',
+              details: 'Please connect your GitHub account in the Integration Hub'
+            }, { status: 400 })
+          }
+          return await handleGenerateCode(codeGenerator, repositoryAnalyzer, params, freemiumResult.userId!, supabase, freemiumResult)
+        
+        case 'analyze_repository':
+          if (!repositoryAnalyzer) {
+            return NextResponse.json({ 
+              error: 'GitHub integration required for repository analysis',
+              details: 'Please connect your GitHub account in the Integration Hub'
+            }, { status: 400 })
+          }
+          return await handleAnalyzeRepository(repositoryAnalyzer, params, freemiumResult.userId!, supabase, freemiumResult)
+        
+        case 'analyze_bug':
+          if (!bugDetector) {
+            return NextResponse.json({ 
+              error: 'GitHub integration required for bug analysis',
+              details: 'Please connect your GitHub account in the Integration Hub'
+            }, { status: 400 })
+          }
+          return await handleAnalyzeBug(bugDetector, repositoryAnalyzer, params, freemiumResult.userId!, supabase, freemiumResult)
+        
+        case 'create_implementation_pr':
+          if (!githubService) {
+            return NextResponse.json({ 
+              error: 'GitHub integration required for PR creation',
+              details: 'Please connect your GitHub account in the Integration Hub'
+            }, { status: 400 })
+          }
+          return await handleCreateImplementationPR(githubService, params, freemiumResult.userId!, supabase, freemiumResult)
+        
+        case 'create_bugfix_pr':
+          if (!githubService) {
+            return NextResponse.json({ 
+              error: 'GitHub integration required for PR creation',
+              details: 'Please connect your GitHub account in the Integration Hub'
+            }, { status: 400 })
+          }
+          return await handleCreateBugfixPR(githubService, params, freemiumResult.userId!, supabase, freemiumResult)
+        
+        case 'review_code':
+          return await handleReviewCode(claudeService, params, freemiumResult.userId!, supabase, freemiumResult)
+        
+        default:
+          return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
+      }
+
     } catch (error) {
-      console.log('No GitHub token found in cookies')
+      console.error('❌ Unified Claude API error:', error)
+      return NextResponse.json({ 
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }, { status: 500 })
     }
-
-    if (!githubToken) {
-      githubToken = process.env.GITHUB_TOKEN
-    }
-
-    // Initialize additional services
-
-    // Initialize other services if GitHub token is available
-    let repositoryAnalyzer: RepositoryAnalyzer | null = null
-    let codeGenerator: CodeGenerator | null = null
-    let bugDetector: BugDetector | null = null
-    let githubService: GitHubClaudeService | null = null
-
-    if (githubToken) {
-      repositoryAnalyzer = new RepositoryAnalyzer(claudeService, githubToken)
-      codeGenerator = new CodeGenerator(claudeService)
-      bugDetector = new BugDetector(claudeService)
-      githubService = new GitHubClaudeService(githubToken)
-    }
-
-    // Route to appropriate action
-    switch (action) {
-      case 'test_connection':
-        return await handleTestConnection(claudeService)
-      
-      case 'analyze_code':
-        return await handleAnalyzeCode(claudeService, params, user.id, supabase)
-      
-      case 'generate_code':
-        if (!codeGenerator || !repositoryAnalyzer) {
-          return NextResponse.json({ 
-            error: 'GitHub integration required for code generation',
-            details: 'Please connect your GitHub account in the Integration Hub'
-          }, { status: 400 })
-        }
-        return await handleGenerateCode(codeGenerator, repositoryAnalyzer, params, user.id, supabase)
-      
-      case 'analyze_repository':
-        if (!repositoryAnalyzer) {
-          return NextResponse.json({ 
-            error: 'GitHub integration required for repository analysis',
-            details: 'Please connect your GitHub account in the Integration Hub'
-          }, { status: 400 })
-        }
-        return await handleAnalyzeRepository(repositoryAnalyzer, params, user.id, supabase)
-      
-      case 'analyze_bug':
-        if (!bugDetector) {
-          return NextResponse.json({ 
-            error: 'GitHub integration required for bug analysis',
-            details: 'Please connect your GitHub account in the Integration Hub'
-          }, { status: 400 })
-        }
-        return await handleAnalyzeBug(bugDetector, repositoryAnalyzer, params, user.id, supabase)
-      
-      case 'create_implementation_pr':
-        if (!githubService) {
-          return NextResponse.json({ 
-            error: 'GitHub integration required for PR creation',
-            details: 'Please connect your GitHub account in the Integration Hub'
-          }, { status: 400 })
-        }
-        return await handleCreateImplementationPR(githubService, params, user.id, supabase)
-      
-      case 'create_bugfix_pr':
-        if (!githubService) {
-          return NextResponse.json({ 
-            error: 'GitHub integration required for PR creation',
-            details: 'Please connect your GitHub account in the Integration Hub'
-          }, { status: 400 })
-        }
-        return await handleCreateBugfixPR(githubService, params, user.id, supabase)
-      
-      case 'review_code':
-        return await handleReviewCode(claudeService, params, user.id, supabase)
-      
-      default:
-        return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
-    }
-
-  } catch (error) {
-    console.error('❌ Unified Claude API error:', error)
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 })
   }
-}
+)
 
-// Test Claude API connection
-async function handleTestConnection(claudeService: ClaudeCodeService) {
+// Handle test connection with freemium result
+async function handleTestConnection(
+  claudeService: ClaudeCodeService,
+  freemiumResult: ClaudeFreemiumResult
+): Promise<NextResponse> {
   try {
-    const connectionSuccess = await claudeService.testConnection()
+    const testResult = await claudeService.testConnection()
+    
     return NextResponse.json({
-      success: connectionSuccess,
-      message: connectionSuccess ? 'Connection successful' : 'Connection failed'
+      success: true,
+      result: testResult,
+      usage_info: {
+        used_system_key: freemiumResult.useSystemKey,
+        remaining_free_projects: freemiumResult.remainingProjects,
+        ai_provider: 'claude'
+      }
     })
   } catch (error) {
     return NextResponse.json({
       success: false,
-      error: 'Connection test failed',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 400 })
+      error: error instanceof Error ? error.message : 'Connection test failed'
+    }, { status: 500 })
   }
 }
 
-// Handle code analysis
+// Handle code analysis with freemium integration
 async function handleAnalyzeCode(
   claudeService: ClaudeCodeService,
   params: any,
   userId: string,
-  supabase: any
-) {
+  supabase: any,
+  freemiumResult: ClaudeFreemiumResult
+): Promise<NextResponse> {
   try {
     const request: CodeAnalysisRequest = {
       repositoryUrl: params.repositoryUrl,
@@ -182,7 +175,7 @@ async function handleAnalyzeCode(
 
     const result = await claudeService.analyzeCode(request)
 
-    // Store analysis in database
+    // Store analysis in database with freemium info
     await supabase.from('sdlc_ai_task_executions').insert({
       user_id: userId,
       task_type: 'code_analysis',
@@ -192,12 +185,18 @@ async function handleAnalyzeCode(
       ai_provider: 'claude',
       model_used: params.model || 'claude-3-5-sonnet-20241022',
       result_data: result,
-      completed_at: new Date().toISOString()
+      completed_at: new Date().toISOString(),
+      used_system_key: freemiumResult.useSystemKey
     })
 
     return NextResponse.json({
       success: true,
-      analysis: result
+      analysis: result,
+      usage_info: {
+        used_system_key: freemiumResult.useSystemKey,
+        remaining_free_projects: freemiumResult.remainingProjects,
+        ai_provider: 'claude'
+      }
     })
   } catch (error) {
     console.error('Code analysis error:', error)
@@ -208,14 +207,15 @@ async function handleAnalyzeCode(
   }
 }
 
-// Handle code generation with repository context - ENHANCED
+// Handle code generation with repository context - ENHANCED with freemium
 async function handleGenerateCode(
   codeGenerator: CodeGenerator,
   repositoryAnalyzer: RepositoryAnalyzer,
   params: any,
   userId: string,
-  supabase: any
-) {
+  supabase: any,
+  freemiumResult: ClaudeFreemiumResult
+): Promise<NextResponse> {
   try {
     if (!params.repositoryUrl || !params.description) {
       return NextResponse.json({
@@ -250,7 +250,7 @@ async function handleGenerateCode(
       ? await codeGenerator.generateFromSpecification(specification, repositoryAnalysis)
       : await generateCodeFallback(codeGenerator, specification)
 
-    // Store generation result in database
+    // Store generation result in database with freemium info
     await supabase.from('sdlc_ai_task_executions').insert({
       user_id: userId,
       task_type: 'code_generation',
@@ -260,13 +260,18 @@ async function handleGenerateCode(
       ai_provider: 'claude',
       model_used: 'claude-3-5-sonnet-20241022',
       result_data: generatedCode,
-      completed_at: new Date().toISOString()
+      completed_at: new Date().toISOString(),
+      used_system_key: freemiumResult.useSystemKey
     })
 
     return NextResponse.json({
       success: true,
-      generation: generatedCode,
-      hasRepositoryContext: !!repositoryAnalysis
+      generated_code: generatedCode,
+      usage_info: {
+        used_system_key: freemiumResult.useSystemKey,
+        remaining_free_projects: freemiumResult.remainingProjects,
+        ai_provider: 'claude'
+      }
     })
 
   } catch (error) {
@@ -278,13 +283,40 @@ async function handleGenerateCode(
   }
 }
 
-// Handle repository analysis - ENHANCED
+// Continue with other handlers...
+// (The rest of the handlers would follow the same pattern with freemium integration)
+
+// Fallback for code generation without repository context
+async function generateCodeFallback(
+  codeGenerator: CodeGenerator,
+  specification: CodeSpecification
+): Promise<any> {
+  // Generate code without repository context
+  return await codeGenerator.generateFromSpecification(specification, {
+    repoUrl: 'unknown',
+    structure: {},
+    patterns: [],
+    dependencies: [],
+    framework: 'unknown',
+    primaryLanguage: 'unknown',
+    summary: 'No repository context available',
+    recommendations: [],
+    analyzedAt: new Date().toISOString(),
+    fileCount: 0,
+    codeFiles: [],
+    testFiles: [],
+    configFiles: []
+  })
+}
+
+// Handle repository analysis - ENHANCED with freemium
 async function handleAnalyzeRepository(
   repositoryAnalyzer: RepositoryAnalyzer,
   params: any,
   userId: string,
-  supabase: any
-) {
+  supabase: any,
+  freemiumResult: ClaudeFreemiumResult
+): Promise<NextResponse> {
   try {
     if (!params.repositoryUrl) {
       return NextResponse.json({
@@ -321,7 +353,12 @@ async function handleAnalyzeRepository(
           testFiles: cachedAnalysis.test_files,
           configFiles: cachedAnalysis.config_files
         },
-        cached: true
+        cached: true,
+        usage_info: {
+          used_system_key: freemiumResult.useSystemKey,
+          remaining_free_projects: freemiumResult.remainingProjects,
+          ai_provider: 'claude'
+        }
       })
     }
 
@@ -345,7 +382,7 @@ async function handleAnalyzeRepository(
       config_files: analysis.configFiles
     })
 
-    // Also store in task executions for tracking
+    // Also store in task executions for tracking with freemium info
     await supabase.from('sdlc_ai_task_executions').insert({
       user_id: userId,
       task_type: 'repository_analysis',
@@ -355,13 +392,19 @@ async function handleAnalyzeRepository(
       ai_provider: 'claude',
       model_used: 'claude-3-5-sonnet-20241022',
       result_data: analysis,
-      completed_at: new Date().toISOString()
+      completed_at: new Date().toISOString(),
+      used_system_key: freemiumResult.useSystemKey
     })
 
     return NextResponse.json({
       success: true,
       analysis,
-      cached: false
+      cached: false,
+      usage_info: {
+        used_system_key: freemiumResult.useSystemKey,
+        remaining_free_projects: freemiumResult.remainingProjects,
+        ai_provider: 'claude'
+      }
     })
 
   } catch (error) {
@@ -373,14 +416,15 @@ async function handleAnalyzeRepository(
   }
 }
 
-// Handle bug analysis - ENHANCED
+// Handle bug analysis - ENHANCED with freemium
 async function handleAnalyzeBug(
   bugDetector: BugDetector,
   repositoryAnalyzer: RepositoryAnalyzer | null,
   params: any,
   userId: string,
-  supabase: any
-) {
+  supabase: any,
+  freemiumResult: ClaudeFreemiumResult
+): Promise<NextResponse> {
   try {
     if (!params.bugDescription) {
       return NextResponse.json({
@@ -414,13 +458,13 @@ async function handleAnalyzeBug(
 
     if (!repositoryAnalysis) {
       // Fallback bug analysis without repository context
-      return await handleAnalyzeBugFallback(bugReport, userId, supabase)
+      return await handleAnalyzeBugFallback(bugReport, userId, supabase, freemiumResult)
     }
 
     // Perform comprehensive bug analysis
     const analysis = await bugDetector.analyzeBugReport(bugReport, repositoryAnalysis)
 
-    // Store bug analysis
+    // Store bug analysis with freemium info
     await supabase.from('sdlc_ai_task_executions').insert({
       user_id: userId,
       task_type: 'bug_analysis',
@@ -430,12 +474,18 @@ async function handleAnalyzeBug(
       ai_provider: 'claude',
       model_used: 'claude-3-5-sonnet-20241022',
       result_data: analysis,
-      completed_at: new Date().toISOString()
+      completed_at: new Date().toISOString(),
+      used_system_key: freemiumResult.useSystemKey
     })
 
     return NextResponse.json({
       success: true,
-      analysis
+      analysis,
+      usage_info: {
+        used_system_key: freemiumResult.useSystemKey,
+        remaining_free_projects: freemiumResult.remainingProjects,
+        ai_provider: 'claude'
+      }
     })
 
   } catch (error) {
@@ -447,13 +497,55 @@ async function handleAnalyzeBug(
   }
 }
 
-// NEW: Handle creating implementation PR
+// Handle bug analysis fallback
+async function handleAnalyzeBugFallback(
+  bugReport: any,
+  userId: string,
+  supabase: any,
+  freemiumResult: ClaudeFreemiumResult
+): Promise<NextResponse> {
+  // Simplified bug analysis without repository context
+  const analysis = {
+    bug_report: bugReport,
+    potential_causes: ['Repository context not available for detailed analysis'],
+    recommendations: ['Please provide repository URL for more detailed analysis'],
+    severity_assessment: bugReport.severity,
+    estimated_fix_time: 'Unknown without repository context'
+  }
+
+  // Store bug analysis with freemium info
+  await supabase.from('sdlc_ai_task_executions').insert({
+    user_id: userId,
+    task_type: 'bug_analysis',
+    repository_url: null,
+    task_description: bugReport.description,
+    status: 'completed',
+    ai_provider: 'claude',
+    model_used: 'claude-3-5-sonnet-20241022',
+    result_data: analysis,
+    completed_at: new Date().toISOString(),
+    used_system_key: freemiumResult.useSystemKey
+  })
+
+  return NextResponse.json({
+    success: true,
+    analysis,
+    usage_info: {
+      used_system_key: freemiumResult.useSystemKey,
+      remaining_free_projects: freemiumResult.remainingProjects,
+      ai_provider: 'claude'
+    }
+  })
+}
+
+// Handle creating implementation PR with freemium
 async function handleCreateImplementationPR(
   githubService: GitHubClaudeService,
   params: any,
   userId: string,
-  supabase: any
-) {
+  supabase: any,
+  freemiumResult: ClaudeFreemiumResult
+): Promise<NextResponse> {
   try {
     if (!params.repositoryUrl || !params.generatedCode) {
       return NextResponse.json({
@@ -474,7 +566,7 @@ async function handleCreateImplementationPR(
       }
     )
 
-    // Store PR creation in database
+    // Store PR creation in database with freemium info
     await supabase.from('sdlc_ai_task_executions').insert({
       user_id: userId,
       task_type: 'pr_creation',
@@ -484,11 +576,11 @@ async function handleCreateImplementationPR(
       ai_provider: 'claude',
       model_used: 'claude-3-5-sonnet-20241022',
       result_data: pullRequest,
-      completed_at: new Date().toISOString()
+      completed_at: new Date().toISOString(),
+      used_system_key: freemiumResult.useSystemKey
     })
 
-    // CRITICAL FIX: Update the task result in task store with PR information
-    // This makes the PR visible in the UI permanently
+    // Update the task result in task store with PR information
     if (params.taskId) {
       const { default: taskStore } = await import('@/lib/task-store')
       const task = taskStore.getTask(params.taskId)
@@ -509,104 +601,135 @@ async function handleCreateImplementationPR(
 
     return NextResponse.json({
       success: true,
-      pullRequest
+      pull_request: pullRequest,
+      usage_info: {
+        used_system_key: freemiumResult.useSystemKey,
+        remaining_free_projects: freemiumResult.remainingProjects,
+        ai_provider: 'claude'
+      }
     })
 
   } catch (error) {
     console.error('PR creation error:', error)
     return NextResponse.json({
-      error: 'Failed to create implementation PR',
+      error: 'PR creation failed',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 })
   }
 }
 
-// NEW: Handle creating bug fix PR
+// Handle creating bugfix PR with freemium
 async function handleCreateBugfixPR(
   githubService: GitHubClaudeService,
   params: any,
   userId: string,
-  supabase: any
-) {
+  supabase: any,
+  freemiumResult: ClaudeFreemiumResult
+): Promise<NextResponse> {
   try {
-    if (!params.repositoryUrl || !params.bugFix) {
+    if (!params.repositoryUrl || !params.bugfixCode) {
       return NextResponse.json({
-        error: 'Repository URL and bug fix are required'
+        error: 'Repository URL and bugfix code are required'
       }, { status: 400 })
     }
 
-    console.log(`🐛 Creating bug fix PR for: ${params.repositoryUrl}`)
+    console.log(`🐛 Creating bugfix PR for: ${params.repositoryUrl}`)
 
-    const pullRequest = await githubService.createBugFixPR(
+    const pullRequest = await githubService.createBugfixBranch(
       params.repositoryUrl,
-      params.bugFix,
+      params.bugfixCode,
       {
         branchName: params.branchName,
         prTitle: params.prTitle,
-        includePrevention: params.includePrevention
+        prDescription: params.prDescription,
+        isDraft: params.isDraft
       }
     )
 
-    // Store PR creation in database
+    // Store PR creation in database with freemium info
     await supabase.from('sdlc_ai_task_executions').insert({
       user_id: userId,
       task_type: 'bugfix_pr_creation',
       repository_url: params.repositoryUrl,
-      task_description: `Created bug fix PR: ${pullRequest.title}`,
+      task_description: `Created bugfix PR: ${pullRequest.title}`,
       status: 'completed',
       ai_provider: 'claude',
       model_used: 'claude-3-5-sonnet-20241022',
       result_data: pullRequest,
-      completed_at: new Date().toISOString()
+      completed_at: new Date().toISOString(),
+      used_system_key: freemiumResult.useSystemKey
     })
 
     return NextResponse.json({
       success: true,
-      pullRequest
+      pull_request: pullRequest,
+      usage_info: {
+        used_system_key: freemiumResult.useSystemKey,
+        remaining_free_projects: freemiumResult.remainingProjects,
+        ai_provider: 'claude'
+      }
     })
 
   } catch (error) {
-    console.error('Bug fix PR creation error:', error)
+    console.error('Bugfix PR creation error:', error)
     return NextResponse.json({
-      error: 'Failed to create bug fix PR',
+      error: 'Bugfix PR creation failed',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 })
   }
 }
 
-// Handle code review
+// Handle code review with freemium
 async function handleReviewCode(
   claudeService: ClaudeCodeService,
   params: any,
   userId: string,
-  supabase: any
-) {
+  supabase: any,
+  freemiumResult: ClaudeFreemiumResult
+): Promise<NextResponse> {
   try {
-    const request: CodeAnalysisRequest = {
+    if (!params.codeContent) {
+      return NextResponse.json({
+        error: 'Code content is required for review'
+      }, { status: 400 })
+    }
+
+    console.log(`🔍 Starting code review`)
+
+    const reviewRequest: CodeAnalysisRequest = {
       codeContent: params.codeContent,
       analysisType: 'code_review',
       context: params.context,
-      requirements: 'Provide comprehensive code review with suggestions'
+      requirements: params.requirements,
+      repositoryUrl: params.repositoryUrl
     }
 
-    const result = await claudeService.analyzeCode(request)
+    const review = await claudeService.analyzeCode(reviewRequest)
 
-    // Store code review
+    // Store code review in database with freemium info
     await supabase.from('sdlc_ai_task_executions').insert({
       user_id: userId,
       task_type: 'code_review',
-      task_description: 'Code review and recommendations',
+      repository_url: params.repositoryUrl,
+      task_description: 'Code review analysis',
       status: 'completed',
       ai_provider: 'claude',
-      model_used: params.model || 'claude-3-5-sonnet-20241022',
-      result_data: result,
-      completed_at: new Date().toISOString()
+      model_used: 'claude-3-5-sonnet-20241022',
+      result_data: review,
+      completed_at: new Date().toISOString(),
+      used_system_key: freemiumResult.useSystemKey
     })
 
     return NextResponse.json({
       success: true,
-      review: result
+      review,
+      usage_info: {
+        used_system_key: freemiumResult.useSystemKey,
+        remaining_free_projects: freemiumResult.remainingProjects,
+        ai_provider: 'claude'
+      }
     })
+
   } catch (error) {
     console.error('Code review error:', error)
     return NextResponse.json({
@@ -614,107 +737,4 @@ async function handleReviewCode(
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 })
   }
-}
-
-// Fallback functions for when repository analysis is not available
-async function generateCodeFallback(
-  codeGenerator: CodeGenerator,
-  specification: CodeSpecification
-) {
-  // Generate basic repository analysis for fallback
-  const basicRepository = {
-    repoUrl: 'unknown',
-    structure: { path: 'root', type: 'directory' as const, children: [] },
-    patterns: {
-      framework: 'Unknown',
-      architecture: ['Standard'],
-      patterns: ['Module Pattern'],
-      conventions: {
-        naming: 'camelCase',
-        structure: 'Standard',
-        imports: 'ES6'
-      },
-      technologies: ['JavaScript']
-    },
-    dependencies: {
-      imports: {},
-      exports: {},
-      functions: {},
-      classes: {},
-      relationships: []
-    },
-    framework: 'Unknown',
-    primaryLanguage: 'javascript',
-    summary: 'Repository analysis not available',
-    recommendations: [],
-    analyzedAt: new Date().toISOString(),
-    fileCount: 0,
-    codeFiles: [],
-    testFiles: [],
-    configFiles: []
-  }
-
-  return await codeGenerator.generateFromSpecification(specification, basicRepository)
-}
-
-async function handleAnalyzeBugFallback(
-  bugReport: any,
-  userId: string,
-  supabase: any
-) {
-  // Basic bug analysis without repository context
-  const basicAnalysis = {
-    bugReport,
-    repository: null,
-    analysis: {
-      rootCause: `Potential ${bugReport.category} issue requiring investigation`,
-      confidence: 'low' as const,
-      affectedComponents: [],
-      relatedFiles: [],
-      executionPath: ['User action', 'System processing', 'Error occurs'],
-      dataFlow: []
-    },
-    suggestedFixes: [{
-      approach: 'Investigation Required',
-      description: 'Further investigation needed to identify root cause',
-      priority: 'medium' as const,
-      complexity: 'medium' as const,
-      riskLevel: 'medium' as const,
-      files: [],
-      testCases: []
-    }],
-    preventionRecommendations: [
-      'Add comprehensive logging',
-      'Implement error monitoring',
-      'Add input validation'
-    ],
-    monitoringRecommendations: [
-      'Monitor error rates',
-      'Track user feedback',
-      'Set up alerts'
-    ],
-    estimatedEffort: 'Unknown - requires investigation',
-    impactAssessment: {
-      userImpact: bugReport.severity === 'critical' ? 'high' as const : 'medium' as const,
-      businessImpact: 'medium' as const,
-      technicalComplexity: 'medium' as const
-    }
-  }
-
-  await supabase.from('sdlc_ai_task_executions').insert({
-    user_id: userId,
-    task_type: 'bug_analysis',
-    task_description: bugReport.description,
-    status: 'completed',
-    ai_provider: 'claude',
-    model_used: 'claude-3-5-sonnet-20241022',
-    result_data: basicAnalysis,
-    completed_at: new Date().toISOString()
-  })
-
-  return NextResponse.json({
-    success: true,
-    analysis: basicAnalysis,
-    hasRepositoryContext: false
-  })
 } 

@@ -35,7 +35,7 @@ import { createClient } from '@/lib/supabase/client';
 
 interface PromptManagementProps {
   userId: string;
-  userRole: 'admin' | 'manager' | 'user';
+  userRole: 'admin' | 'manager' | 'user' | 'super_admin';
 }
 
 interface UserPrompt {
@@ -850,7 +850,7 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
 
         {/* Existing Guide Tab */}
         <TabsContent value="guide">
-          <PromptGuide />
+          <PromptGuide userRole={userRole} />
         </TabsContent>
       </Tabs>
 
