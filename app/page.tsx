@@ -125,22 +125,22 @@ export default function ModernLandingPage() {
     <div className="flex flex-col min-h-screen bg-black text-white">
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-gray-800 bg-black/95 backdrop-blur supports-[backdrop-filter]:bg-black/60">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between">
-          <div className="flex items-center space-x-3">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex h-14 items-center justify-between">
+          <div className="flex items-center space-x-2">
             <div className="relative">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg flex items-center justify-center">
-                <Cpu className="h-5 w-5 text-white" />
+              <div className="w-7 h-7 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg flex items-center justify-center">
+                <Cpu className="h-4 w-4 text-white" />
               </div>
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse" />
+              <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse" />
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+            <span className="text-lg font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
               SDLC.dev
             </span>
             <Badge variant="secondary" className="bg-blue-500/10 text-blue-400 border-blue-500/20 text-xs">
               AI Agent
             </Badge>
           </div>
-          <nav className="hidden md:flex items-center space-x-8 text-sm font-medium">
+          <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
             <Link href="#features" className="text-gray-400 hover:text-white transition-colors">
               Features
             </Link>
@@ -157,7 +157,7 @@ export default function ModernLandingPage() {
               Pricing
             </Link>
           </nav>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
             {user ? (
               <Button
                 size="sm"
@@ -235,12 +235,12 @@ export default function ModernLandingPage() {
                   </span>
                   <br />
                   <span className="bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-                    Software Engineer
+                  CodeYodha
                   </span>
                 </h1>
 
                 <p className="text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed">
-                  SDLC.dev is an AI agent that handles your entire software development lifecycle. From requirements to
+                  At SDLC.DEV CodeYodha is an AI agent that handles your entire software development lifecycle. From requirements to
                   deployment, it writes specs, creates projects, analyzes code, and provides intelligent assistance —
                   all autonomously.
                 </p>
@@ -1205,17 +1205,17 @@ export default function ModernLandingPage() {
 
       {/* Footer */}
       <footer className="border-t border-gray-800 bg-gray-900/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid gap-8 md:grid-cols-4">
-            <div className="space-y-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg flex items-center justify-center">
-                  <Cpu className="h-5 w-5 text-white" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="grid gap-6 md:grid-cols-4">
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <div className="w-7 h-7 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg flex items-center justify-center">
+                  <Cpu className="h-4 w-4 text-white" />
                 </div>
-                <span className="text-lg font-bold text-white">SDLC.dev</span>
+                <span className="text-base font-bold text-white">SDLC.dev</span>
               </div>
               <p className="text-sm text-gray-400 max-w-xs">
-                The world's first AI software engineer that handles your complete development lifecycle.
+              Automate. Architect. Accelerate. With Code Yodha
               </p>
               <div className="flex space-x-4">
                 <Badge className="bg-green-500/10 text-green-400 border-green-500/20 text-xs">
@@ -1225,9 +1225,9 @@ export default function ModernLandingPage() {
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3">
               <h4 className="text-sm font-semibold text-white">Product</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
+              <ul className="space-y-1.5 text-sm text-gray-400">
                 <li>
                   <Link href="#features" className="hover:text-white transition-colors">
                     AI Capabilities
@@ -1238,74 +1238,77 @@ export default function ModernLandingPage() {
                     Integrations
                   </Link>
                 </li>
-                <li>
-                  <Link href="#pricing" className="hover:text-white transition-colors">
-                    Pricing
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/docs" className="hover:text-white transition-colors">
-                    API Documentation
-                  </Link>
-                </li>
+                
               </ul>
             </div>
 
-            <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-white">Resources</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li>
-                  <Link href="/docs" className="hover:text-white transition-colors">
-                    Documentation
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/tutorials" className="hover:text-white transition-colors">
-                    Tutorials
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/blog" className="hover:text-white transition-colors">
-                    Blog
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/changelog" className="hover:text-white transition-colors">
-                    Changelog
-                  </Link>
-                </li>
-              </ul>
-            </div>
+            
 
-            <div className="space-y-4">
+            <div className="space-y-3">
               <h4 className="text-sm font-semibold text-white">Company</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
+              <ul className="space-y-1.5 text-sm text-gray-400">
                 <li>
                   <Link href="/about" className="hover:text-white transition-colors">
                     About
                   </Link>
                 </li>
                 <li>
-                  <Link href="/careers" className="hover:text-white transition-colors">
-                    Careers
-                  </Link>
-                </li>
-                <li>
                   <Link href="/privacy" className="hover:text-white transition-colors">
-                    Privacy
+                    Privacy Policy
                   </Link>
                 </li>
                 <li>
                   <Link href="/terms" className="hover:text-white transition-colors">
-                    Terms
+                    Terms of Service
                   </Link>
+                </li>
+              </ul>
+            </div>
+
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-white">Legal</h4>
+              <ul className="space-y-1.5 text-sm text-gray-400">
+                <li>
+                  <button className="hover:text-white transition-colors text-left" onClick={() => window.dispatchEvent(new CustomEvent('show-cookie-settings'))}>
+                    Cookie Settings
+                  </button>
+                </li>
+                <li>
+                  <span className="text-green-400">
+                    GDPR Compliant
+                  </span>
+                </li>
+                <li>
+                  <div className="flex items-center space-x-2">
+                    <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></span>
+                    <span className="text-amber-400">Experimental</span>
+                  </div>
                 </li>
               </ul>
             </div>
           </div>
 
-          <div className="mt-12 pt-8 border-t border-gray-800 text-center text-sm text-gray-500">
-            <p>&copy; {new Date().getFullYear()} SDLC.dev. All rights reserved.</p>
+          <div className="mt-8 pt-6 border-t border-gray-800">
+            <div className="flex flex-col sm:flex-row justify-between items-center">
+              <div className="text-center sm:text-left">
+                <p className="text-sm text-gray-500">
+                  &copy; {new Date().getFullYear()} SDLC.dev. All rights reserved.
+                </p>
+                <p className="text-xs text-gray-600 mt-1">
+                  Experimental platform for research and development purposes.
+                </p>
+              </div>
+              
+              <div className="flex items-center space-x-6 mt-4 sm:mt-0">
+                <div className="flex items-center space-x-2 text-xs text-gray-500">
+                  <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                  <span>All systems operational</span>
+                </div>
+                <div className="text-xs text-gray-500">
+                  GDPR Compliant
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </footer>

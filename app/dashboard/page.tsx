@@ -252,25 +252,33 @@ const UserHeader: React.FC<UserHeaderProps> = ({ user, userRole, onSignOut, onCo
   }
 
   return (
-    <div className="bg-white border-b">
+    <div className="bg-white border-b border-gray-200/50 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <img 
-              src="/img/SDLC.dev.logo.svg" 
-              alt="SDLC.dev Logo" 
-              className="h-48 w-auto filter contrast-125 brightness-110" 
-            />
-            <div className="ml-3 font-bold text-gray-900">
-              <span className="hidden lg:inline text-xl">SDLC AI Dashboard</span>
-              <span className="hidden sm:inline lg:hidden text-lg">SDLC Dashboard</span>
-              <span className="sm:hidden text-base">SDLC</span>
+            <div className="flex items-center space-x-3">
+              <img 
+                src="/img/SDLC.dev.logo.svg" 
+                alt="SDLC.dev Logo" 
+                className="h-12 w-auto filter drop-shadow-lg" 
+              />
+              <div className="flex flex-col">
+                <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 bg-clip-text text-transparent font-black tracking-tight">
+                  <span className="hidden lg:inline text-2xl">SDLC AI Dashboard</span>
+                  <span className="hidden sm:inline lg:hidden text-xl">SDLC Dashboard</span>
+                  <span className="sm:hidden text-lg">SDLC</span>
+                </div>
+                <div className="text-xs text-gray-500 font-medium tracking-wide">
+                  <span className="hidden sm:inline">Automate. Architect. Accelerate. With Code Yodha</span>
+                  <span className="sm:hidden">AI-Powered</span>
+                </div>
+              </div>
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
-              <span>Welcome back,</span>
-              <span className="font-medium">
+            <div className="flex items-center space-x-2 text-sm">
+              <span className="text-gray-600">Welcome back,</span>
+              <span className="font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 {user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
               </span>
             </div>
