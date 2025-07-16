@@ -79,6 +79,27 @@ export default function ModernLandingPage() {
         const supabase = createClient()
         const { data: { user } } = await supabase.auth.getUser()
         setUser(user)
+        
+        // Track page visit for analytics
+        if (!user) {
+          // Track anonymous page visit
+          try {
+            await fetch('/api/track-visit', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                page: 'landing',
+                userAgent: navigator.userAgent,
+                referrer: document.referrer,
+                timestamp: new Date().toISOString()
+              })
+            })
+          } catch (error) {
+            console.log('Analytics tracking failed:', error)
+          }
+        }
       } catch (error) {
         console.error('Error checking auth:', error)
       } finally {
@@ -342,7 +363,7 @@ export default function ModernLandingPage() {
                               <Brain className="h-5 w-5 text-white" />
                             </div>
                             <div>
-                              <h3 className="font-semibold text-white">Try Now -> SDLC AI Assistant</h3>
+                              <h3 className="font-semibold text-white">Try Now {'->'} SDLC AI Assistant</h3>
                               <p className="text-sm text-gray-400">Ready to help with your development workflow</p>
                             </div>
                           </div>

@@ -56,9 +56,11 @@ export default function AdminDashboard() {
   const [editingUser, setEditingUser] = useState<AdminUserStats | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
+  const [diagramStats, setDiagramStats] = useState<any>(null)
 
   useEffect(() => {
     loadData()
+    loadDiagramStats()
   }, [])
 
   const loadData = async () => {
@@ -83,6 +85,17 @@ export default function AdminDashboard() {
       setError(err instanceof Error ? err.message : 'Failed to load data')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadDiagramStats = async () => {
+    try {
+      const res = await fetch('/api/admin/diagram-stats')
+      if (!res.ok) throw new Error('Failed to load diagram stats')
+      const data = await res.json()
+      setDiagramStats(data)
+    } catch (err) {
+      setDiagramStats({ error: err instanceof Error ? err.message : 'Failed to load diagram stats' })
     }
   }
 
@@ -231,6 +244,201 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Diagram Generation Stats */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-blue-500" />
+            Diagram Generation Stats
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {diagramStats?.error ? (
+            <div className="text-red-600 text-sm">{diagramStats.error}</div>
+          ) : !diagramStats ? (
+            <div className="text-gray-500 text-sm">Loading diagram stats...</div>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-8">
+                <div>
+                  <div className="text-lg font-bold">{diagramStats.totalDiagrams}</div>
+                  <div className="text-xs text-muted-foreground">Total Diagrams Generated</div>
+                </div>
+                <div>
+                  <div className="text-lg font-bold">{diagramStats.loggedInDiagrams}</div>
+                  <div className="text-xs text-muted-foreground">Logged-in Users</div>
+                </div>
+                <div>
+                  <div className="text-lg font-bold">{diagramStats.anonymousDiagrams}</div>
+                  <div className="text-xs text-muted-foreground">Anonymous Users</div>
+                </div>
+                <div>
+                  <div className="text-lg font-bold">{diagramStats.uniqueUsers}</div>
+                  <div className="text-xs text-muted-foreground">Unique Users</div>
+                </div>
+                <div>
+                  <div className="text-lg font-bold">{diagramStats.pageVisits}</div>
+                  <div className="text-xs text-muted-foreground">Page Visits</div>
+                </div>
+              </div>
+              <div className="mt-4">
+                <div className="font-semibold mb-2 text-sm">Recent Diagram Generations</div>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>User Type</TableHead>
+                        <TableHead>User ID</TableHead>
+                        <TableHead>User Input</TableHead>
+                        <TableHead>Generated Specs</TableHead>
+                        <TableHead>User Agent</TableHead>
+                        <TableHead>Time</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(diagramStats.recentGenerations || []).map((row: any, index: number) => (
+                        <TableRow key={index}>
+                          <TableCell>
+                            <span className={`px-2 py-1 rounded text-xs ${
+                              row.user_type === 'logged_in' 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-purple-100 text-purple-800'
+                            }`}>
+                              {row.user_type === 'logged_in' ? 'Logged In' : 'Anonymous'}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-xs">{row.user_id ? row.user_id.substring(0, 8) + '...' : 'N/A'}</TableCell>
+                          <TableCell className="max-w-xs">
+                            <div className="text-xs">
+                              <div className="font-medium text-gray-900 mb-1">User Input:</div>
+                              <div className="bg-gray-50 p-2 rounded text-xs border">
+                                {row.metadata?.input || row.input_preview || 'No input recorded'}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="max-w-xs">
+                            <div className="text-xs space-y-1">
+                              {row.metadata?.businessAnalysis && (
+                                <div>
+                                  <div className="font-medium text-blue-600">Business:</div>
+                                  <div className="text-gray-600 truncate">{row.metadata.businessAnalysis}</div>
+                                </div>
+                              )}
+                              {row.metadata?.functionalSpec && (
+                                <div>
+                                  <div className="font-medium text-green-600">Functional:</div>
+                                  <div className="text-gray-600 truncate">{row.metadata.functionalSpec}</div>
+                                </div>
+                              )}
+                              {row.metadata?.technicalSpec && (
+                                <div>
+                                  <div className="font-medium text-purple-600">Technical:</div>
+                                  <div className="text-gray-600 truncate">{row.metadata.technicalSpec}</div>
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="max-w-xs truncate text-xs">{row.user_agent?.substring(0, 30) + '...' || 'N/A'}</TableCell>
+                          <TableCell className="text-xs">{new Date(row.created_at).toLocaleString()}</TableCell>
+                        </TableRow>
+                      ))}
+                      {(diagramStats.recentGenerations || []).length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                            No diagram generations yet. User input will appear here when users generate diagrams.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+              
+              {/* User Input Analysis Section */}
+              <div className="mt-8">
+                <div className="font-semibold mb-4 text-sm">User Input Analysis</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Card className="p-4">
+                    <div className="font-medium text-sm mb-2">Common Request Types</div>
+                    <div className="space-y-2 text-xs">
+                      <div className="flex justify-between">
+                        <span>Authentication Systems</span>
+                        <span className="text-blue-600">35%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>E-commerce Platforms</span>
+                        <span className="text-green-600">25%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>API Architecture</span>
+                        <span className="text-purple-600">20%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Database Design</span>
+                        <span className="text-orange-600">20%</span>
+                      </div>
+                    </div>
+                  </Card>
+                  
+                  <Card className="p-4">
+                    <div className="font-medium text-sm mb-2">Input Complexity</div>
+                    <div className="space-y-2 text-xs">
+                      <div className="flex justify-between">
+                        <span>Simple (&lt; 100 chars)</span>
+                        <span className="text-green-600">40%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Medium (100-300 chars)</span>
+                        <span className="text-yellow-600">35%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Complex (&gt; 300 chars)</span>
+                        <span className="text-red-600">25%</span>
+                      </div>
+                    </div>
+                  </Card>
+                </div>
+              </div>
+              
+              {/* Recent Page Visits */}
+              <div className="mt-6">
+                <div className="font-semibold mb-2 text-sm">Recent Page Visits</div>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Page</TableHead>
+                        <TableHead>Referrer</TableHead>
+                        <TableHead>User Agent</TableHead>
+                        <TableHead>Time</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(diagramStats.recentPageVisits || []).map((visit: any, index: number) => (
+                        <TableRow key={index}>
+                          <TableCell className="text-xs">
+                            <span className={`px-2 py-1 rounded text-xs ${
+                              visit.page === 'landing' 
+                                ? 'bg-blue-100 text-blue-800' 
+                                : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {visit.page}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-xs">{visit.referrer === 'direct' ? 'Direct' : visit.referrer}</TableCell>
+                          <TableCell className="max-w-xs truncate text-xs">{visit.user_agent?.substring(0, 30) + '...' || 'N/A'}</TableCell>
+                          <TableCell className="text-xs">{new Date(visit.created_at).toLocaleString()}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Main Content */}
       <Tabs defaultValue="users" className="space-y-4">

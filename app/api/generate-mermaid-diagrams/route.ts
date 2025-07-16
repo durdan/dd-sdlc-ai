@@ -305,7 +305,53 @@ export async function POST(req: NextRequest) {
       projectId
     )
 
-    
+    // Log diagram generation for analytics (logged-in and anonymous)
+    try {
+      const supabase = await createClient()
+      const userAgent = req.headers.get('user-agent') || 'unknown'
+      
+      if (effectiveUserId) {
+        // Log for authenticated users
+        await supabase.from('project_generations').insert({
+          user_id: effectiveUserId,
+          project_type: 'diagram',
+          generation_method: 'user',
+          ai_provider: 'openai',
+          tokens_used: 0,
+          success: true,
+          metadata: {
+            input,
+            businessAnalysis,
+            functionalSpec,
+            technicalSpec,
+            userAgent
+          },
+          created_at: new Date().toISOString()
+        })
+      } else {
+        // Log for anonymous users in separate table using service role
+        const { createClient: createServiceClient } = await import('@supabase/supabase-js')
+        const serviceSupabase = createServiceClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!
+        )
+        
+        await serviceSupabase.from('anonymous_analytics').insert({
+          action_type: 'diagram_generation',
+          action_data: {
+            input: input.substring(0, 500), // Limit input size
+            businessAnalysis: businessAnalysis?.substring(0, 200),
+            functionalSpec: functionalSpec?.substring(0, 200),
+            technicalSpec: technicalSpec?.substring(0, 200),
+            ai_provider: 'openai'
+          },
+          user_agent: userAgent,
+          timestamp: new Date().toISOString()
+        })
+      }
+    } catch (logError) {
+      console.warn('Failed to log diagram generation:', logError)
+    }
 
     return NextResponse.json({
       mermaidDiagrams: result.content,
