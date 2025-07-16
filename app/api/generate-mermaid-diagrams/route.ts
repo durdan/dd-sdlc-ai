@@ -119,6 +119,7 @@ VALIDATION CHECKLIST:
 ✓ All nodes and edges are properly defined
 ✓ Diagrams are complete and rendereable
 ✓ Professional labeling and structure
+`;
 
 async function getAuthenticatedUser() {
   try {
@@ -304,8 +305,7 @@ export async function POST(req: NextRequest) {
       projectId
     )
 
-    console.log(`Mermaid Diagrams generated successfully using ${result.promptSource} prompt`)
-    console.log(`Response time: ${result.responseTime}ms`)
+    
 
     return NextResponse.json({
       mermaidDiagrams: result.content,
