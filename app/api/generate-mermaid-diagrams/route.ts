@@ -99,16 +99,26 @@ sequenceDiagram
     API-->>Client: JSON Response
 \`\`\`
 
-Ensure diagrams are:
-- Technically accurate and detailed
-- Easy to understand and well-labeled
-- Include proper Mermaid syntax
+CRITICAL REQUIREMENTS:
+- ALL diagrams MUST use proper Mermaid syntax
+- Each diagram MUST be wrapped in \`\`\`mermaid code blocks
+- NO truncated or incomplete diagrams
+- Generate COMPLETE diagrams with all nodes and relationships
+- Test each diagram type for valid Mermaid syntax
+- Include meaningful labels and descriptions
 - Show realistic system interactions
 - Include error handling and edge cases
 
 Diagram Style: Professional
-Complexity Level: Detailed
-Focus Area: System Architecture`
+Complexity Level: Detailed  
+Focus Area: System Architecture
+
+VALIDATION CHECKLIST:
+✓ All diagrams use \`\`\`mermaid syntax
+✓ No syntax errors or incomplete structures
+✓ All nodes and edges are properly defined
+✓ Diagrams are complete and rendereable
+✓ Professional labeling and structure
 
 async function getAuthenticatedUser() {
   try {
@@ -154,6 +164,7 @@ async function generateWithDatabasePrompt(
       const result = await generateText({
         model: openaiClient("gpt-4o"),
         prompt: processedPrompt,
+        maxTokens: 8000,
       })
       
       return {
@@ -167,7 +178,7 @@ async function generateWithDatabasePrompt(
     const promptTemplate = await promptService.getPromptForExecution('mermaid', userId || 'anonymous')
     
     if (promptTemplate) {
-      console.log(`Using database prompt: ${promptTemplate.name} (v${promptTemplate.version})`)
+      console.log('Using database prompt:', promptTemplate.name, 'version:', promptTemplate.version)
       
       try {
         // Prepare the prompt
@@ -185,6 +196,7 @@ async function generateWithDatabasePrompt(
         const aiResult = await generateText({
           model: openaiClient("gpt-4o"),
           prompt: processedContent,
+          maxTokens: 8000,
         })
         
         const responseTime = Date.now() - startTime
@@ -249,6 +261,7 @@ async function generateWithDatabasePrompt(
     const result = await generateText({
       model: openaiClient("gpt-4o"),
       prompt: processedPrompt,
+      maxTokens: 8000,
     })
     
     return {

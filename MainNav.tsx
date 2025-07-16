@@ -4,15 +4,17 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { UserProfile } from '@/components/UserProfile'
+import { UserProfile } from './UserProfile'
 import { useAuth } from '@/contexts/AuthContext'
 import { Icons } from '@/components/icons'
+import { Sparkles } from 'lucide-react'
 
 interface NavItem {
   title: string;
   href: string;
   protected?: boolean;
   badge?: string;
+  icon?: React.ReactNode;
 }
 
 export function MainNav() {
@@ -25,9 +27,9 @@ export function MainNav() {
       href: '/',
     },
     {
-      title: 'Dashboard',
-      href: '/dashboard',
-      protected: true,
+      title: 'CodeYodha',
+      href: '/dashboard', // Change to the specific Claude Code Assistant route if needed
+      icon: <Sparkles className="h-4 w-4 mr-1 text-purple-500" />, // Add a sparkles icon
     },
     {
       title: 'My Prompts',
@@ -69,6 +71,7 @@ export function MainNav() {
                   isActive ? 'text-foreground' : 'text-foreground/60'
                 )}
               >
+                {item.icon}
                 <span>{item.title}</span>
                 {item.badge && (
                   <span className="bg-blue-100 text-blue-700 text-xs px-1.5 py-0.5 rounded font-medium">

@@ -275,6 +275,40 @@ export class GitHubClaudeService {
   }
 
   /**
+   * Find an existing pull request for a given branch
+   */
+  async findPullRequestForBranch(repoUrl: string, branchName: string): Promise<PullRequestResult | null> {
+    const { owner, name } = this.parseRepoUrl(repoUrl)
+    const endpoint = `/repos/${owner}/${name}/pulls?head=${owner}:${branchName}&state=all`
+    try {
+      const prs = await this.githubApiRequest(endpoint, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${this.githubToken}`,
+          'Accept': 'application/vnd.github+json'
+        }
+      })
+      if (Array.isArray(prs) && prs.length > 0) {
+        const pr = prs[0]
+        return {
+          url: pr.html_url,
+          number: pr.number,
+          title: pr.title,
+          body: pr.body,
+          state: pr.state,
+          mergeable: pr.mergeable,
+          created_at: pr.created_at,
+          commits: [] // Optionally fetch commits if needed
+        }
+      }
+      return null
+    } catch (error) {
+      console.error('Error finding PR for branch:', error)
+      return null
+    }
+  }
+
+  /**
    * Get repository information
    */
   async getRepository(owner: string, name: string): Promise<GitHubRepository> {

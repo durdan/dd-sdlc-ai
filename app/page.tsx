@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState,useRef } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -168,7 +168,7 @@ export default function ModernLandingPage() {
               </Button>
             ) : (
               <>
-                <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white" onClick={() => window.location.href = '/signin'}>
+                <Button variant="ghost" size="sm" className="text-gray-400 hover:text-blue-400" onClick={() => window.location.href = '/signin'}>
                   Sign In
                 </Button>
                 <Button
@@ -263,7 +263,7 @@ export default function ModernLandingPage() {
                   onClick={() => document.getElementById('try-ai')?.scrollIntoView({ behavior: 'smooth' })}
                 >
                   <Sparkles className="mr-2 h-5 w-5" />
-                  Try AI Free
+                  Try CodeYodha Free
                 </Button>
                 <Button
                   variant="outline"
@@ -355,7 +355,7 @@ export default function ModernLandingPage() {
                         size="lg"
                       >
                         <Sparkles className="w-5 h-5 mr-2" />
-                        Generate Architecture Diagrams
+                        Generate Specs
                       </Button>
                     </div>
                   </div>

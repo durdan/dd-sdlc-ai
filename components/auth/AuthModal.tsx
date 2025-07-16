@@ -61,10 +61,12 @@ export function AuthModal({ open, onOpenChange }: { open: boolean; onOpenChange:
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] bg-gray-900 border border-gray-800 text-white shadow-2xl">
         <DialogHeader>
-          <DialogTitle>{mode === 'signin' ? 'Sign In' : 'Create an Account'}</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-white">
+            {mode === 'signin' ? 'Sign In' : 'Create an Account'}
+          </DialogTitle>
+          <DialogDescription className="text-gray-400">
             {mode === 'signin' 
               ? 'Enter your credentials to access your account.'
               : 'Create a new account to get started.'}
@@ -77,7 +79,7 @@ export function AuthModal({ open, onOpenChange }: { open: boolean; onOpenChange:
             variant="outline"
             onClick={handleGoogleSignInWrapper}
             disabled={isLoading}
-            className="w-full"
+            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0 hover:from-blue-600 hover:to-purple-700"
           >
             {isLoading ? (
               <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
@@ -89,10 +91,10 @@ export function AuthModal({ open, onOpenChange }: { open: boolean; onOpenChange:
 
           <div className="relative my-4">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
+              <span className="w-full border-t border-gray-700" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
+              <span className="bg-gray-900 px-2 text-gray-500">
                 Or continue with
               </span>
             </div>
@@ -101,7 +103,7 @@ export function AuthModal({ open, onOpenChange }: { open: boolean; onOpenChange:
           <form onSubmit={handleEmailSubmit} className="space-y-4">
             {mode === 'signup' && (
               <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
+                <Label htmlFor="fullName" className="text-gray-300">Full Name</Label>
                 <Input
                   id="fullName"
                   placeholder="John Doe"
@@ -109,12 +111,13 @@ export function AuthModal({ open, onOpenChange }: { open: boolean; onOpenChange:
                   onChange={(e) => setFullName(e.target.value)}
                   disabled={isLoading}
                   required={mode === 'signup'}
+                  className="bg-gray-800 border-gray-700 text-white placeholder-gray-500"
                 />
               </div>
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-gray-300">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -123,16 +126,17 @@ export function AuthModal({ open, onOpenChange }: { open: boolean; onOpenChange:
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading}
                 required
+                className="bg-gray-800 border-gray-700 text-white placeholder-gray-500"
               />
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password" className="text-gray-300">Password</Label>
                 {mode === 'signin' && (
                   <a
                     href="#"
-                    className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+                    className="text-sm font-medium text-blue-400 underline-offset-4 hover:underline"
                     onClick={(e) => {
                       e.preventDefault()
                       // TODO: Implement password reset
@@ -149,16 +153,17 @@ export function AuthModal({ open, onOpenChange }: { open: boolean; onOpenChange:
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
                 required
+                className="bg-gray-800 border-gray-700 text-white placeholder-gray-500"
               />
             </div>
 
             {error && (
-              <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+              <div className="rounded-md bg-red-900/30 p-3 text-sm text-red-300 border border-red-800">
                 {error}
               </div>
             )}
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0 hover:from-blue-600 hover:to-purple-700" disabled={isLoading}>
               {isLoading && <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />}
               {mode === 'signin' ? 'Sign In' : 'Create Account'}
             </Button>
@@ -166,11 +171,11 @@ export function AuthModal({ open, onOpenChange }: { open: boolean; onOpenChange:
         </div>
 
         <DialogFooter className="flex flex-col space-y-2">
-          <p className="text-center text-sm text-muted-foreground">
+          <p className="text-center text-sm text-gray-400">
             {mode === 'signin' ? "Don't have an account?" : 'Already have an account?'}{' '}
             <button
               type="button"
-              className="font-medium text-primary hover:underline"
+              className="font-medium text-blue-400 hover:underline"
               onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
               disabled={isLoading}
             >

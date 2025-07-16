@@ -16,7 +16,6 @@ export interface ClaudeFreemiumResult {
   useSystemKey: boolean
   claudeService: ClaudeCodeService | null
   userId: string | null
-  usageTracker: UsageTrackingService | null
   error?: string
   remainingProjects?: number
   requestBody?: any
@@ -29,11 +28,9 @@ export async function handleClaudeFreemiumRequest(
   request: NextRequest,
   config: ClaudeFreemiumConfig
 ): Promise<ClaudeFreemiumResult> {
-  let usageTracker: UsageTrackingService | null = null
-  
   try {
     const supabase = await createClient()
-    usageTracker = await UsageTrackingService.createServerInstance()
+    const usageTracker = new UsageTrackingService(supabase)
     let userId: string | null = null
     let userClaudeKey: string | null = null
 
@@ -48,7 +45,6 @@ export async function handleClaudeFreemiumRequest(
         useSystemKey: false,
         claudeService: null,
         userId: null,
-        usageTracker,
         error: 'Invalid JSON in request body',
         requestBody: {}
       }
@@ -64,7 +60,6 @@ export async function handleClaudeFreemiumRequest(
           useSystemKey: false,
           claudeService: null,
           userId: null,
-          usageTracker,
           error: 'Authentication required',
           requestBody: body
         }
@@ -113,7 +108,6 @@ export async function handleClaudeFreemiumRequest(
             useSystemKey: false,
             claudeService: null,
             userId,
-            usageTracker,
             error: `Daily limit exceeded. You've used ${usageStats.projects_today}/${usageStats.daily_limit} free Claude projects today. Please provide your own Claude API key or try again tomorrow.`,
             remainingProjects: usageStats.remaining,
             requestBody: body
@@ -126,7 +120,6 @@ export async function handleClaudeFreemiumRequest(
           useSystemKey: false,
           claudeService: null,
           userId,
-          usageTracker,
           error: 'Unable to check usage limits. Please try again or provide your own Claude API key.',
           requestBody: body
         }
@@ -140,7 +133,6 @@ export async function handleClaudeFreemiumRequest(
           useSystemKey: false,
           claudeService: null,
           userId,
-          usageTracker,
           error: 'System Claude API key not configured. Please provide your own Claude API key.',
           requestBody: body
         }
@@ -159,7 +151,6 @@ export async function handleClaudeFreemiumRequest(
         useSystemKey: false,
         claudeService: null,
         userId,
-        usageTracker,
         error: 'Please provide your Claude API key to continue.',
         requestBody: body
       }
@@ -170,7 +161,6 @@ export async function handleClaudeFreemiumRequest(
       useSystemKey,
       claudeService,
       userId,
-      usageTracker,
       requestBody: body
     }
 
@@ -181,7 +171,6 @@ export async function handleClaudeFreemiumRequest(
       useSystemKey: false,
       claudeService: null,
       userId: null,
-      usageTracker,
       error: 'Internal server error'
     }
   }
@@ -199,8 +188,13 @@ export async function withClaudeFreemium(
   console.log('📝 Config:', JSON.stringify(config, null, 2))
   
   try {
-    // Initialize usage tracker
-    console.log('📊 Initializing usage tracker...')
+    // Parse request body
+    console.log('📋 Parsing request body...')
+    const requestBody = await request.json()
+    console.log('📋 Request body parsed:', JSON.stringify(requestBody, null, 2))
+    
+    // Check authentication
+    console.log('🔐 Checking authentication...')
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
@@ -211,6 +205,8 @@ export async function withClaudeFreemium(
     
     console.log('✅ User authenticated:', user.id)
     
+    // Initialize usage tracker
+    console.log('📊 Initializing usage tracker...')
     const usageTracker = await UsageTrackingService.createServerInstance()
     
     // Upsert user profile
@@ -224,11 +220,6 @@ export async function withClaudeFreemium(
     )
     
     console.log('✅ User profile upserted successfully')
-    
-    // Parse request body
-    console.log('📋 Parsing request body...')
-    const requestBody = await request.json()
-    console.log('📋 Request body parsed:', JSON.stringify(requestBody, null, 2))
     
     // Check for user's API key
     console.log('🔑 Checking for user API key...')
@@ -248,7 +239,6 @@ export async function withClaudeFreemium(
         useSystemKey: false,
         claudeService,
         userId: user.id,
-        usageTracker,
         requestBody
       }
       
@@ -296,7 +286,6 @@ export async function withClaudeFreemium(
       useSystemKey: true,
       claudeService,
       userId: user.id,
-      usageTracker,
       requestBody
     }
     
@@ -348,7 +337,7 @@ export async function checkUserDailyLimit(userId: string): Promise<{
 }> {
   try {
     const supabase = await createClient()
-    const usageTracker = await UsageTrackingService.createServerInstance()
+    const usageTracker = new UsageTrackingService(supabase)
     const stats = await usageTracker.checkDailyLimit(userId)
     
     return {
@@ -380,7 +369,7 @@ export async function incrementUserUsage(
 ): Promise<void> {
   try {
     const supabase = await createClient()
-    const usageTracker = await UsageTrackingService.createServerInstance()
+    const usageTracker = new UsageTrackingService(supabase)
     await usageTracker.recordProjectGeneration({
       user_id: userId,
       project_type: projectType,
@@ -408,7 +397,7 @@ export async function getUserUsageStats(userId: string): Promise<{
 } | null> {
   try {
     const supabase = await createClient()
-    const usageTracker = await UsageTrackingService.createServerInstance()
+    const usageTracker = new UsageTrackingService(supabase)
     const stats = await usageTracker.checkDailyLimit(userId)
     
     return {

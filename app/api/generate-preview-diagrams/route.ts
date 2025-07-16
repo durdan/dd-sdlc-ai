@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
     if (stream) {
       // Streaming response
       const result = await streamText({
-        model: openai("gpt-4-turbo-preview"),
+        model: openai("gpt-4o"),
         system: systemPrompt,
         prompt: `Based on the following requirements, generate comprehensive Mermaid diagrams that demonstrate professional system architecture thinking:
 
@@ -181,7 +181,7 @@ Requirements: ${input}
 
 Generate exactly 4 different diagram types with clear sections and proper Mermaid syntax.`,
         temperature: 0.7,
-        maxTokens: 3000,
+        maxTokens: 8000,
       })
 
       let fullContent = ""
@@ -266,7 +266,7 @@ Requirements: ${input}
 
 Generate exactly 4 different diagram types with clear sections and proper Mermaid syntax.`,
         temperature: 0.7,
-        maxTokens: 3000,
+        maxTokens: 8000,
       })
 
       return NextResponse.json({

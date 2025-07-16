@@ -46,6 +46,7 @@ import {
   LogOut,
   Shield,
   ChevronRight,
+  ChevronLeft,
   ArrowRight,
   Download,
   MessageSquare,
@@ -118,6 +119,7 @@ import { useFreemiumUsage } from '@/hooks/use-freemium-usage'
 import BetaFeaturesIndicator from '@/components/beta-features-indicator'
 import UsageIndicatorCompact from '@/components/usage-indicator-compact'
 import EarlyAccessWaitingList from '@/components/early-access-waiting-list'
+import ClaudeCodeDashboard from '@/components/claude-code-dashboard'
 
 // Type definitions for dashboard state
 interface GeneratedDocuments {
@@ -441,6 +443,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
   const [showConfig, setShowConfig] = useState(false)
   const [showIntegrations, setShowIntegrations] = useState(false)
   const [showVisualization, setShowVisualization] = useState(false)
+  const [toolkitExpanded, setToolkitExpanded] = useState(false)
   const [showHowItWorks, setShowHowItWorks] = useState(false)
   const [showPromptEngineering, setShowPromptEngineering] = useState(false)
   const [showWorkflow, setShowWorkflow] = useState(false)
@@ -481,7 +484,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
   })
   const [recentProjects, setRecentProjects] = useState<RecentProject[]>([])
   const [isLoadingProjects, setIsLoadingProjects] = useState(false)
-  const [activeTab, setActiveTab] = useState('comprehensive')
+  const [activeTab, setActiveTab] = useState('sdlc')
   const [showDetailedViewer, setShowDetailedViewer] = useState(false)
   const [selectedProjectForGitHub, setSelectedProjectForGitHub] = useState<ProjectResult | null>(null)
   const [gitHubProjectConfig, setGitHubProjectConfig] = useState<GitHubProjectConfig>({
@@ -2175,381 +2178,23 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
       
       <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">SDLC Automation Platform</h1>
             <p className="text-sm sm:text-base text-gray-600">Transform ideas into complete project documentation with AI</p>
           </div>
-          <div className="w-full lg:w-auto overflow-x-auto whitespace-nowrap -mx-2 px-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-            <div className="flex gap-2 sm:gap-2 w-max">
-              <Button variant="outline" size="sm" onClick={() => setShowConfig(true)} className="flex-shrink-0 min-w-[80px]">
-                <Settings className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Configuration</span>
-                <span className="sm:hidden">Config</span>
-              </Button>
-
-              <Button variant="outline" size="sm" onClick={() => setShowIntegrations(true)} className="flex-shrink-0 min-w-[80px]">
-                <Plug className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Integrations</span>
-                <span className="sm:hidden">Integrate</span>
-              </Button>
-
-              <Button variant="outline" size="sm" onClick={() => setShowVisualization(true)} className="flex-shrink-0 min-w-[80px]">
-                <Presentation className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Visualize</span>
-                <span className="sm:hidden">Visual</span>
-              </Button>
-
-              <Button variant="outline" size="sm" onClick={() => setShowWorkflow(true)} className="flex-shrink-0 min-w-[80px]">
-                <Workflow className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">View Workflow</span>
-                <span className="sm:hidden">Workflow</span>
-              </Button>
-
-              <Button variant="outline" size="sm" onClick={() => setShowHowItWorks(true)} className="flex-shrink-0 min-w-[80px]">
-                <Info className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">How It Works</span>
-                <span className="sm:hidden">Help</span>
-              </Button>
-
-              <Button variant="outline" size="sm" onClick={() => setShowPromptEngineering(true)} className="flex-shrink-0 min-w-[80px]">
-                <Settings className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Prompt Engineering</span>
-                <span className="sm:hidden">Prompts</span>
-              </Button>
-
-              <Button variant="outline" size="sm" onClick={() => window.location.href = '/usage-dashboard'} className="flex-shrink-0 min-w-[80px]">
-                <BarChart3 className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Usage Dashboard</span>
-                <span className="sm:hidden">Usage</span>
-              </Button>
-
-              <Button variant="outline" size="sm" onClick={() => setShowDatabaseTest(true)} className="flex-shrink-0 min-w-[80px]">
-                <Database className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Test Database</span>
-                <span className="sm:hidden">DB Test</span>
-                <Badge variant="secondary" className="ml-1 text-xs">T1.2</Badge>
-              </Button>
-
-              <Button 
-                variant="default" 
-                size="sm" 
-                onClick={() => window.location.href = '/claude-code'} 
-                className="flex-shrink-0 min-w-[100px] bg-indigo-600 hover:bg-indigo-700"
-              >
-                <Zap className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Claude AI</span>
-                <span className="sm:hidden">Claude</span>
-              </Button>
-
-              <Button variant="outline" size="sm" onClick={() => setShowSlackUICodeAssistant(true)} className="flex-shrink-0 min-w-[80px]">
-                <Code className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Slack UI Assistant</span>
-                <span className="sm:hidden">Slack UI</span>
-                <Badge variant="secondary" className="ml-1 text-xs bg-blue-100 text-blue-700">
-                  Web UI
-                </Badge>
-              </Button>
-            </div>
-          </div>
+          
+          {/* <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <span>JIRA Project: {config.jiraProject || 'Not configured'}</span>
+            <span>Confluence Space: {config.confluenceSpace || 'Not configured'}</span>
+          </div> */}
         </div>
 
 
 
-        {/* Processing Status - Only show after generation is triggered */}
-        {(isProcessing || (generatedDocuments && Object.keys(generatedDocuments).length > 0)) && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  {(() => {
-                    const allCompleted = processingSteps.every(step => step.status === 'completed')
-                    const hasInProgress = processingSteps.some(step => step.status === 'in_progress')
-                    
-                    if (allCompleted && !isProcessing) {
-                      return (
-                        <>
-                          <CheckCircle className="h-5 w-5 text-green-500" />
-                          <span className="text-green-700">All Done! 🎉</span>
-                        </>
-                      )
-                    } else if (hasInProgress || isProcessing) {
-                      return (
-                        <>
-                          <Clock className="h-5 w-5 animate-spin text-blue-500" />
-                          <span>Processing Your Request...</span>
-                        </>
-                      )
-                    } else {
-                      return (
-                        <>
-                          <Clock className="h-5 w-5 text-gray-500" />
-                          <span>Ready to Process</span>
-                        </>
-                      )
-                    }
-                  })()
-                  }
-                </div>
-                
-                {/* Close button when all steps are complete */}
-                {(() => {
-                  const allCompleted = processingSteps.every(step => step.status === 'completed')
-                  return allCompleted && !isProcessing && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => {
-                        // Clear the processing state and move to Recent Projects
-                        setIsProcessing(false)
-                        setProcessingSteps([])
-                        // Scroll to Recent Projects section
-                        const recentProjectsElement = document.getElementById('recent-projects')
-                        if (recentProjectsElement) {
-                          recentProjectsElement.scrollIntoView({ behavior: 'smooth' })
-                        }
-                      }}
-                      className="text-gray-600 hover:text-gray-800"
-                    >
-                      <X className="h-4 w-4 mr-1" />
-                      Close
-                    </Button>
-                  )
-                })()
-                }
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {processingSteps.map((step, index) => (
-                  <div key={step.id} className="flex items-center gap-3">
-                    {getStatusIcon(step.status)}
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <span
-                          className={`font-medium ${step.status === "completed" ? "text-green-700" : step.status === "in_progress" ? "text-blue-700" : "text-gray-500"}`}
-                        >
-                          {step.name}
-                        </span>
-                        {step.status === "in_progress" && (
-                          <span className="text-sm text-blue-600 font-medium">In progress...</span>
-                        )}
-                      </div>
 
-                    </div>
-                  </div>
-                ))}
-                
-                {/* Completion message */}
-                {(() => {
-                  const allCompleted = processingSteps.every(step => step.status === 'completed')
-                  return allCompleted && !isProcessing && (
-                    <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                      <div className="flex items-center gap-2 text-green-700">
-                        <CheckCircle className="h-5 w-5" />
-                        <span className="font-medium">Generation Complete!</span>
-                      </div>
-                      <p className="text-sm text-green-600 mt-1 mb-3">
-                        Your SDLC documentation has been successfully generated. You can now create GitHub projects, export to Jira/Confluence, or view the documents below.
-                      </p>
-                      
-                      {/* Action Buttons */}
-                      <div className="flex flex-wrap gap-2 mt-3">
-                        <Button 
-                          onClick={openGitHubProjectDialog}
-                          size="sm"
-                          className="bg-gray-900 hover:bg-gray-800 text-white"
-                        >
-                          <Github className="h-4 w-4 mr-2" />
-                          Create GitHub Project
-                        </Button>
-                        
-                        {config.jiraUrl && (
-                          <Button 
-                            onClick={() => handleJiraExport({ 
-                              documents: generatedDocuments, 
-                              input,
-                              title: extractProjectName(input)
-                            })}
-                            variant="outline"
-                            size="sm"
-                          >
-                            <ExternalLink className="h-4 w-4 mr-2" />
-                            Export to Jira
-                          </Button>
-                        )}
-                        
-                        {config.confluenceUrl && (
-                          <Button 
-                            onClick={() => handleConfluenceExport({ 
-                              documents: generatedDocuments, 
-                              input,
-                              title: extractProjectName(input)
-                            })}
-                            variant="outline"
-                            size="sm"
-                          >
-                            <ExternalLink className="h-4 w-4 mr-2" />
-                            Export to Confluence
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })()
-                }
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
-        {/* Generated Documents Display - Only show after generation is triggered */}
-        {(isProcessing || (generatedDocuments && Object.keys(generatedDocuments).length > 0)) && (
-          <div className="space-y-6">
-            {/* Document Tabs */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Generated Documentation
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Tabs defaultValue={
-                  generatedDocuments.businessAnalysis ? "business" :
-                  generatedDocuments.functionalSpec ? "functional" :
-                  generatedDocuments.technicalSpec ? "technical" :
-                  generatedDocuments.uxSpec ? "ux" :
-                  generatedDocuments.mermaidDiagrams ? "diagrams" :
-                  "business"
-                } className="space-y-4">
-                  <div className="w-full overflow-x-auto whitespace-nowrap -mx-2 px-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                    <TabsList className="inline-flex w-max">
-                      <TabsTrigger 
-                        value="business" 
-                        disabled={!generatedDocuments.businessAnalysis && !processingSteps.find(s => s.id === 'analysis')?.status.includes('completed')}
-                        className="text-xs sm:text-sm min-w-[120px]"
-                      >
-                        <span className="hidden sm:inline">Business Analysis</span>
-                        <span className="sm:hidden">Business</span>
-                        {processingSteps.find(s => s.id === 'analysis')?.status === 'completed' && (
-                          <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
-                        )}
-                      </TabsTrigger>
-                      
-                      <TabsTrigger 
-                        value="functional" 
-                        disabled={!generatedDocuments.functionalSpec && !processingSteps.find(s => s.id === 'functional')?.status.includes('completed')}
-                        className="text-xs sm:text-sm min-w-[120px]"
-                      >
-                        <span className="hidden sm:inline">Functional Spec</span>
-                        <span className="sm:hidden">Functional</span>
-                        {processingSteps.find(s => s.id === 'functional')?.status === 'completed' && (
-                          <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
-                        )}
-                      </TabsTrigger>
-                      
-                      <TabsTrigger 
-                        value="technical" 
-                        disabled={!generatedDocuments.technicalSpec && !processingSteps.find(s => s.id === 'technical')?.status.includes('completed')}
-                        className="text-xs sm:text-sm min-w-[120px]"
-                      >
-                        <span className="hidden sm:inline">Technical Spec</span>
-                        <span className="sm:hidden">Technical</span>
-                        {processingSteps.find(s => s.id === 'technical')?.status === 'completed' && (
-                          <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
-                        )}
-                      </TabsTrigger>
-                      
-                      <TabsTrigger 
-                        value="ux" 
-                        disabled={!generatedDocuments.uxSpec && !processingSteps.find(s => s.id === 'ux')?.status.includes('completed')}
-                        className="text-xs sm:text-sm min-w-[120px]"
-                      >
-                        <span className="hidden sm:inline">UX Specification</span>
-                        <span className="sm:hidden">UX</span>
-                        {processingSteps.find(s => s.id === 'ux')?.status === 'completed' && (
-                          <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
-                        )}
-                      </TabsTrigger>
-                      
-                      <TabsTrigger 
-                        value="diagrams" 
-                        disabled={!generatedDocuments.mermaidDiagrams && !processingSteps.find(s => s.id === 'mermaid')?.status.includes('completed')}
-                        className="text-xs sm:text-sm min-w-[120px]"
-                      >
-                        <span className="hidden sm:inline">Architecture</span>
-                        <span className="sm:hidden">Arch</span>
-                        {processingSteps.find(s => s.id === 'mermaid')?.status === 'completed' && (
-                          <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
-                        )}
-                      </TabsTrigger>
-                    </TabsList>
-                  </div>
 
-                  <TabsContent value="business">
-                    <MarkdownRenderer 
-                      content={generatedDocuments.businessAnalysis || ''}
-                      title="Business Analysis"
-                      type="business"
-                    />
-                  </TabsContent>
-
-                  <TabsContent value="functional">
-                    <MarkdownRenderer 
-                      content={generatedDocuments.functionalSpec || ''}
-                      title="Functional Specification"
-                      type="functional"
-                    />
-                  </TabsContent>
-
-                  <TabsContent value="technical">
-                    <MarkdownRenderer 
-                      content={generatedDocuments.technicalSpec || ''}
-                      title="Technical Specification"
-                      type="technical"
-                    />
-                  </TabsContent>
-
-                  <TabsContent value="ux">
-                    <MarkdownRenderer 
-                      content={generatedDocuments.uxSpec || ''}
-                      title="UX Specification"
-                      type="ux"
-                    />
-                  </TabsContent>
-
-                  <TabsContent value="diagrams">
-                    <MermaidViewer
-                      diagrams={parseMermaidDiagrams(generatedDocuments.mermaidDiagrams || "")}
-                    />
-                  </TabsContent>
-                </Tabs>
-
-                {/* Integration Links */}
-                {(generatedDocuments.jiraEpic || generatedDocuments.confluencePage) && (
-                  <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                    <h4 className="font-semibold text-blue-900 mb-2">Integration Links</h4>
-                    <div className="flex gap-4">
-                      {generatedDocuments.jiraEpic && (
-                        <Button variant="outline" size="sm">
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          JIRA Epic: {generatedDocuments.jiraEpic.key}
-                        </Button>
-                      )}
-                      {generatedDocuments.confluencePage && (
-                        <Button variant="outline" size="sm">
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          Confluence Page
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        )}
 
         {/* Recent Projects - Only show if there are cached projects */}
         {recentProjects.length > 0 && (
@@ -3425,6 +3070,10 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                 <FileText className="w-4 h-4 mr-1 sm:mr-2" />
                 <span className="hidden sm:inline">SDLC</span>
               </TabsTrigger>
+              <TabsTrigger value="codeyodha" className="flex-shrink-0 min-w-[60px] px-2 sm:px-3">
+                <Sparkles className="w-4 h-4 mr-1 sm:mr-2 text-purple-500" />
+                <span className="hidden sm:inline">CodeYodha</span>
+              </TabsTrigger>
               <TabsTrigger value="gitdigest" className="flex-shrink-0 min-w-[60px] px-2 sm:px-3">
                 <GitBranch className="w-4 h-4 mr-1 sm:mr-2" />
                 <span className="hidden sm:inline">GitDigest</span>
@@ -3495,9 +3144,205 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                   />
                 </div>
                 
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <span>JIRA Project: {config.jiraProject || 'Not configured'}</span>
-                  <span>Confluence Space: {config.confluenceSpace || 'Not configured'}</span>
+                <div className="flex items-center justify-between gap-4">
+                  {/* Collapsible Horizontal Toolkit */}
+                  <div className="relative">
+                    {/* Collapsed Tab */}
+                    {!toolkitExpanded && (
+                      <button
+                        onClick={() => setToolkitExpanded(true)}
+                        className="bg-gray-100 hover:bg-gray-200 rounded-lg px-3 py-2 border transition-colors flex items-center gap-2"
+                      >
+                        <span className="text-xs text-gray-600 font-medium">Tools</span>
+                        <ChevronLeft className="h-4 w-4 text-gray-600 rotate-180" />
+                      </button>
+                    )}
+
+                    {/* Expanded Toolkit - Horizontal Overlay */}
+                    {toolkitExpanded && (
+                      <>
+                        {/* Backdrop */}
+                        <div 
+                          className="fixed inset-0 z-40" 
+                          onClick={() => setToolkitExpanded(false)}
+                        />
+                        <div className="absolute left-0 top-0 z-50 bg-white rounded-lg shadow-lg border p-3 min-w-[400px]">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-sm font-medium text-gray-700">Tools</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setToolkitExpanded(false)}
+                            className="h-6 w-6 p-0 hover:bg-gray-200"
+                            title="Collapse"
+                          >
+                            <X className="h-4 w-4 text-gray-600" />
+                          </Button>
+                        </div>
+                        
+                        <div className="grid grid-cols-6 gap-2">
+                          {/* Settings */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setShowConfig(true)
+                              setToolkitExpanded(false)
+                            }}
+                            className="h-10 w-10 p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
+                            title="Configuration"
+                          >
+                            <Settings className="h-4 w-4" />
+                            <span className="text-xs">Config</span>
+                          </Button>
+                          
+                          {/* Integrations */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setShowIntegrations(true)
+                              setToolkitExpanded(false)
+                            }}
+                            className="h-10 w-10 p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
+                            title="Integrations"
+                          >
+                            <Plug className="h-4 w-4" />
+                            <span className="text-xs">Integrations</span>
+                          </Button>
+                          
+                          {/* Presentation */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setShowVisualization(true)
+                              setToolkitExpanded(false)
+                            }}
+                            className="h-10 w-10 p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
+                            title="Visualize"
+                          >
+                            <Presentation className="h-4 w-4" />
+                            <span className="text-xs">Visualize</span>
+                          </Button>
+                          
+                          {/* Workflow */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setShowWorkflow(true)
+                              setToolkitExpanded(false)
+                            }}
+                            className="h-10 w-10 p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
+                            title="View Workflow"
+                          >
+                            <Workflow className="h-4 w-4" />
+                            <span className="text-xs">Workflow</span>
+                          </Button>
+                          
+                          {/* Info */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setShowHowItWorks(true)
+                              setToolkitExpanded(false)
+                            }}
+                            className="h-10 w-10 p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
+                            title="How It Works"
+                          >
+                            <Info className="h-4 w-4" />
+                            <span className="text-xs">Info</span>
+                          </Button>
+                          
+                          {/* Prompt Engineering */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setShowPromptEngineering(true)
+                              setToolkitExpanded(false)
+                            }}
+                            className="h-10 w-10 p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
+                            title="Prompt Engineering"
+                          >
+                            <Settings className="h-4 w-4" />
+                            <span className="text-xs">Prompts</span>
+                          </Button>
+                          
+                          {/* Analytics */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              window.location.href = '/usage-dashboard'
+                              setToolkitExpanded(false)
+                            }}
+                            className="h-10 w-10 p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
+                            title="Usage Dashboard"
+                          >
+                            <BarChart3 className="h-4 w-4" />
+                            <span className="text-xs">Analytics</span>
+                          </Button>
+                          
+                          {/* Database Test */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setShowDatabaseTest(true)
+                              setToolkitExpanded(false)
+                            }}
+                            className="h-10 w-10 p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1 relative"
+                            title="Test Database"
+                          >
+                            <Database className="h-4 w-4" />
+                            <span className="text-xs">Database</span>
+                            <Badge variant="secondary" className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-xs">
+                              T
+                            </Badge>
+                          </Button>
+                          
+                          {/* Claude AI - Special styling */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setActiveTab('codeyodha')
+                              setToolkitExpanded(false)
+                            }}
+                            className="h-10 w-10 p-0 hover:bg-indigo-100 bg-indigo-50 flex flex-col items-center justify-center gap-1"
+                            title="Claude AI"
+                          >
+                            <Sparkles className="h-4 w-4 text-indigo-600" />
+                            <span className="text-xs text-indigo-600">Claude</span>
+                          </Button>
+                          
+                          {/* Slack UI Assistant */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setShowSlackUICodeAssistant(true)
+                              setToolkitExpanded(false)
+                            }}
+                            className="h-10 w-10 p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
+                            title="Slack UI Assistant"
+                          >
+                            <Code className="h-4 w-4" />
+                            <span className="text-xs">Slack</span>
+                          </Button>
+                        </div>
+                      </div>
+                      </>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <span>JIRA Project: {config.jiraProject || 'Not configured'}</span>
+                    <span>Confluence Space: {config.confluenceSpace || 'Not configured'}</span>
+                  </div>
                 </div>
                 
                 <Button 
@@ -3537,7 +3382,302 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
               </div>
             </div>
 
-            {/* Rest of existing SDLC content... */}
+            {/* Processing Status and Generated Documentation - moved below help section */}
+            {(isProcessing || (generatedDocuments && Object.keys(generatedDocuments).length > 0)) && (
+              <>
+                {/* Processing Status - Now appears first */}
+                <Card className="mt-6">
+                  <CardHeader>
+                    <CardTitle className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {(() => {
+                          const allCompleted = processingSteps.every(step => step.status === 'completed')
+                          const hasInProgress = processingSteps.some(step => step.status === 'in_progress')
+                          
+                          if (allCompleted && !isProcessing) {
+                            return (
+                              <>
+                                <CheckCircle className="h-5 w-5 text-green-500" />
+                                <span className="text-green-700">All Done! 🎉</span>
+                              </>
+                            )
+                          } else if (hasInProgress || isProcessing) {
+                            return (
+                              <>
+                                <Clock className="h-5 w-5 animate-spin text-blue-500" />
+                                <span>Processing Your Request...</span>
+                              </>
+                            )
+                          } else {
+                            return (
+                              <>
+                                <Clock className="h-5 w-5 text-gray-500" />
+                                <span>Ready to Process</span>
+                              </>
+                            )
+                          }
+                        })()
+                        }
+                      </div>
+                      
+                      {/* Close button when all steps are complete */}
+                      {(() => {
+                        const allCompleted = processingSteps.every(step => step.status === 'completed')
+                        return allCompleted && !isProcessing && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => {
+                              // Clear the processing state and move to Recent Projects
+                              setIsProcessing(false)
+                              setProcessingSteps([])
+                              // Scroll to Recent Projects section
+                              const recentProjectsElement = document.getElementById('recent-projects')
+                              if (recentProjectsElement) {
+                                recentProjectsElement.scrollIntoView({ behavior: 'smooth' })
+                              }
+                            }}
+                            className="text-gray-600 hover:text-gray-800"
+                          >
+                            <X className="h-4 w-4 mr-1" />
+                            Close
+                          </Button>
+                        )
+                      })()
+                      }
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {processingSteps.map((step, index) => (
+                        <div key={step.id} className="flex items-center gap-3">
+                          {getStatusIcon(step.status)}
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <span
+                                className={`font-medium ${step.status === "completed" ? "text-green-700" : step.status === "in_progress" ? "text-blue-700" : "text-gray-500"}`}
+                              >
+                                {step.name}
+                              </span>
+                              {step.status === "in_progress" && (
+                                <span className="text-sm text-blue-600 font-medium">In progress...</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {/* Completion message */}
+                      {(() => {
+                        const allCompleted = processingSteps.every(step => step.status === 'completed')
+                        return allCompleted && !isProcessing && (
+                          <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                            <div className="flex items-center gap-2 text-green-700">
+                              <CheckCircle className="h-5 w-5" />
+                              <span className="font-medium">Generation Complete!</span>
+                            </div>
+                            <p className="text-sm text-green-600 mt-1 mb-3">
+                              Your SDLC documentation has been successfully generated. You can now create GitHub projects, export to Jira/Confluence, or view the documents below.
+                            </p>
+                            
+                            {/* Action Buttons */}
+                            <div className="flex flex-wrap gap-2 mt-3">
+                              <Button 
+                                onClick={openGitHubProjectDialog}
+                                size="sm"
+                                className="bg-gray-900 hover:bg-gray-800 text-white"
+                              >
+                                <Github className="h-4 w-4 mr-2" />
+                                Create GitHub Project
+                              </Button>
+                              
+                              {config.jiraUrl && (
+                                <Button 
+                                  onClick={() => handleJiraExport({ 
+                                    documents: generatedDocuments, 
+                                    input,
+                                    title: extractProjectName(input)
+                                  })}
+                                  variant="outline"
+                                  size="sm"
+                                >
+                                  <ExternalLink className="h-4 w-4 mr-2" />
+                                  Export to Jira
+                                </Button>
+                              )}
+                              
+                              {config.confluenceUrl && (
+                                <Button 
+                                  onClick={() => handleConfluenceExport({ 
+                                    documents: generatedDocuments, 
+                                    input,
+                                    title: extractProjectName(input)
+                                  })}
+                                  variant="outline"
+                                  size="sm"
+                                >
+                                  <ExternalLink className="h-4 w-4 mr-2" />
+                                  Export to Confluence
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })()
+                      }
+                    </div>
+                  </CardContent>
+                </Card>
+                {/* Generated Documents Display - Now appears below */}
+                <div className="space-y-6 mt-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <FileText className="h-5 w-5" />
+                        Generated Documentation
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Tabs defaultValue={
+                        generatedDocuments.businessAnalysis ? "business" :
+                        generatedDocuments.functionalSpec ? "functional" :
+                        generatedDocuments.technicalSpec ? "technical" :
+                        generatedDocuments.uxSpec ? "ux" :
+                        generatedDocuments.mermaidDiagrams ? "diagrams" :
+                        "business"
+                      } className="space-y-4">
+                        <div className="w-full overflow-x-auto whitespace-nowrap -mx-2 px-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                          <TabsList className="inline-flex w-max">
+                            <TabsTrigger 
+                              value="business" 
+                              disabled={!generatedDocuments.businessAnalysis && !processingSteps.find(s => s.id === 'analysis')?.status.includes('completed')}
+                              className="text-xs sm:text-sm min-w-[120px]"
+                            >
+                              <span className="hidden sm:inline">Business Analysis</span>
+                              <span className="sm:hidden">Business</span>
+                              {processingSteps.find(s => s.id === 'analysis')?.status === 'completed' && (
+                                <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
+                              )}
+                            </TabsTrigger>
+                            
+                            <TabsTrigger 
+                              value="functional" 
+                              disabled={!generatedDocuments.functionalSpec && !processingSteps.find(s => s.id === 'functional')?.status.includes('completed')}
+                              className="text-xs sm:text-sm min-w-[120px]"
+                            >
+                              <span className="hidden sm:inline">Functional Spec</span>
+                              <span className="sm:hidden">Functional</span>
+                              {processingSteps.find(s => s.id === 'functional')?.status === 'completed' && (
+                                <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
+                              )}
+                            </TabsTrigger>
+                            
+                            <TabsTrigger 
+                              value="technical" 
+                              disabled={!generatedDocuments.technicalSpec && !processingSteps.find(s => s.id === 'technical')?.status.includes('completed')}
+                              className="text-xs sm:text-sm min-w-[120px]"
+                            >
+                              <span className="hidden sm:inline">Technical Spec</span>
+                              <span className="sm:hidden">Technical</span>
+                              {processingSteps.find(s => s.id === 'technical')?.status === 'completed' && (
+                                <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
+                              )}
+                            </TabsTrigger>
+                            
+                            <TabsTrigger 
+                              value="ux" 
+                              disabled={!generatedDocuments.uxSpec && !processingSteps.find(s => s.id === 'ux')?.status.includes('completed')}
+                              className="text-xs sm:text-sm min-w-[120px]"
+                            >
+                              <span className="hidden sm:inline">UX Specification</span>
+                              <span className="sm:hidden">UX</span>
+                              {processingSteps.find(s => s.id === 'ux')?.status === 'completed' && (
+                                <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
+                              )}
+                            </TabsTrigger>
+                            
+                            <TabsTrigger 
+                              value="diagrams" 
+                              disabled={!generatedDocuments.mermaidDiagrams && !processingSteps.find(s => s.id === 'mermaid')?.status.includes('completed')}
+                              className="text-xs sm:text-sm min-w-[120px]"
+                            >
+                              <span className="hidden sm:inline">Architecture</span>
+                              <span className="sm:hidden">Arch</span>
+                              {processingSteps.find(s => s.id === 'mermaid')?.status === 'completed' && (
+                                <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
+                              )}
+                            </TabsTrigger>
+                          </TabsList>
+                        </div>
+
+                        <TabsContent value="business">
+                          <MarkdownRenderer 
+                            content={generatedDocuments.businessAnalysis || ''}
+                            title="Business Analysis"
+                            type="business"
+                          />
+                        </TabsContent>
+
+                        <TabsContent value="functional">
+                          <MarkdownRenderer 
+                            content={generatedDocuments.functionalSpec || ''}
+                            title="Functional Specification"
+                            type="functional"
+                          />
+                        </TabsContent>
+
+                        <TabsContent value="technical">
+                          <MarkdownRenderer 
+                            content={generatedDocuments.technicalSpec || ''}
+                            title="Technical Specification"
+                            type="technical"
+                          />
+                        </TabsContent>
+
+                        <TabsContent value="ux">
+                          <MarkdownRenderer 
+                            content={generatedDocuments.uxSpec || ''}
+                            title="UX Specification"
+                            type="ux"
+                          />
+                        </TabsContent>
+
+                        <TabsContent value="diagrams">
+                          <MermaidViewer
+                            diagrams={parseMermaidDiagrams(generatedDocuments.mermaidDiagrams || "")}
+                          />
+                        </TabsContent>
+                      </Tabs>
+
+                      {/* Integration Links */}
+                      {(generatedDocuments.jiraEpic || generatedDocuments.confluencePage) && (
+                        <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                          <h4 className="font-semibold text-blue-900 mb-2">Integration Links</h4>
+                          <div className="flex gap-4">
+                            {generatedDocuments.jiraEpic && (
+                              <Button variant="outline" size="sm">
+                                <ExternalLink className="h-4 w-4 mr-2" />
+                                JIRA Epic: {generatedDocuments.jiraEpic.key}
+                              </Button>
+                            )}
+                            {generatedDocuments.confluencePage && (
+                              <Button variant="outline" size="sm">
+                                <ExternalLink className="h-4 w-4 mr-2" />
+                                Confluence Page
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </>
+            )}
+          </TabsContent>
+
+          <TabsContent value="codeyodha" className="space-y-6">
+            <ClaudeCodeDashboard />
           </TabsContent>
 
           <TabsContent value="gitdigest" className="mt-6">

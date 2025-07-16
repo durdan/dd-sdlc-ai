@@ -16,6 +16,7 @@ export interface FreemiumResult {
   useSystemKey: boolean
   openaiClient: any
   userId: string | null
+  usageTracker: any
   error?: string
   remainingProjects?: number
 }
@@ -42,6 +43,7 @@ export async function handleFreemiumRequest(
           useSystemKey: false,
           openaiClient: null,
           userId: null,
+          usageTracker,
           error: 'Authentication required'
         }
       }
@@ -79,6 +81,7 @@ export async function handleFreemiumRequest(
           useSystemKey: false,
           openaiClient: null,
           userId,
+          usageTracker,
           error: `Daily limit exceeded. You've used ${usageStats.projects_today}/${usageStats.daily_limit} free projects today. Please provide your own OpenAI key or try again tomorrow.`,
           remainingProjects: usageStats.remaining
         }
@@ -92,6 +95,7 @@ export async function handleFreemiumRequest(
           useSystemKey: false,
           openaiClient: null,
           userId,
+          usageTracker,
           error: 'System OpenAI key not configured. Please provide your own OpenAI key.'
         }
       }
@@ -105,6 +109,7 @@ export async function handleFreemiumRequest(
         useSystemKey: false,
         openaiClient: null,
         userId,
+        usageTracker,
         error: 'OpenAI API key required. Please provide your own key or sign in to use free daily credits.'
       }
     }
@@ -114,6 +119,7 @@ export async function handleFreemiumRequest(
       useSystemKey,
       openaiClient,
       userId,
+      usageTracker,
       remainingProjects: userId ? (await usageTracker.checkDailyLimit(userId)).remaining : undefined
     }
   } catch (error) {
@@ -123,6 +129,7 @@ export async function handleFreemiumRequest(
       useSystemKey: false,
       openaiClient: null,
       userId: null,
+      usageTracker,
       error: 'Internal server error'
     }
   }

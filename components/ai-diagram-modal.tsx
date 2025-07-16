@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect,useRef } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -52,7 +52,13 @@ export function AIDiagramModal({ isOpen, onClose, input }: AIDiagramModalProps) 
   const [error, setError] = useState("")
   const [isComplete, setIsComplete] = useState(false)
   const [generatedDiagrams, setGeneratedDiagrams] = useState<Record<string, string>>({})
+  const streamContainerRef = useRef<HTMLDivElement>(null);
 
+useEffect(() => {
+  if (streamContainerRef.current) {
+    streamContainerRef.current.scrollTop = streamContainerRef.current.scrollHeight;
+  }
+}, [streamedContent]);
   // Helper function to parse Mermaid diagrams
   const parseMermaidDiagrams = (mermaidContent: string) => {
     if (!mermaidContent) return {}
@@ -364,13 +370,16 @@ export function AIDiagramModal({ isOpen, onClose, input }: AIDiagramModalProps) 
 
                 {/* Streaming Content Preview */}
                 {streamedContent && (
-                  <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4 max-h-32 overflow-y-auto">
-                    <div className="text-sm text-gray-300 font-mono whitespace-pre-wrap">
-                      {streamedContent}
-                      {isGenerating && <span className="animate-pulse text-blue-400">|</span>}
-                    </div>
-                  </div>
-                )}
+  <div
+    className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4 max-h-32 overflow-y-auto"
+    ref={streamContainerRef}
+  >
+    <div className="text-sm text-gray-300 font-mono whitespace-pre-wrap">
+      {streamedContent}
+      {isGenerating && <span className="animate-pulse text-blue-400">|</span>}
+    </div>
+  </div>
+)}
 
                 {/* Generation in Progress Notice */}
                 {isGenerating && (
