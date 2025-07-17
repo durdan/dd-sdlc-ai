@@ -30,16 +30,15 @@ export function AuthModal({ open, onOpenChange }: { open: boolean; onOpenChange:
     try {
       setIsLoading(true)
       setError(null)
-      console.log('Google sign-in button clicked')
+      console.log('Google sign-in initiated')
       await handleGoogleSignIn()
-      // Don't close modal here - let the redirect handle it
-      // onOpenChange(false)
+      onOpenChange(false)
     } catch (error: any) {
+      setError(error.message || 'Failed to sign in with Google')
       console.error('Google sign-in error:', error)
-      setError(error.message || 'Failed to sign in with Google. Please try again.')
+    } finally {
       setIsLoading(false)
     }
-    // Don't set loading to false here - the redirect will handle the flow
   }
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
