@@ -1645,13 +1645,18 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         throw new Error(errorData?.error || `API request failed with status ${uxResponse.status}`)
       }
       
-      const uxResult = await uxResponse.json()
-      results.uxSpec = uxResult.uxSpec
+      // ✨ Handle streaming response with real-time display
+      const uxContent = await handleStreamingResponse(
+        uxResponse,
+        "ux",
+        (content) => setGeneratedDocuments((prev: any) => ({ ...prev, uxSpec: content }))
+      )
+      
+      results.uxSpec = uxContent
       updateStepProgress("ux", 100, "completed")
       
       // ✨ NEW: Smooth transition delay between steps
       await new Promise(resolve => setTimeout(resolve, 500))
-      setGeneratedDocuments(prev => ({ ...prev, uxSpec: uxResult.uxSpec }))
 
       // Step 5: Mermaid Diagrams
       updateStepProgress("mermaid", 0, "in_progress")

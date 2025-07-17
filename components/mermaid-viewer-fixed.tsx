@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Button } from "@/components/ui/button"
+import { Eye, Code, Copy, Check } from "lucide-react"
 
 interface MermaidViewerProps {
   diagrams: {
@@ -124,6 +126,8 @@ export function MermaidViewer({
   const defaultKey = diagramKeys.length > 0 ? diagramKeys[0] : 'diagrams'
   
   const [activeTab, setActiveTab] = useState(defaultKey)
+  const [viewMode, setViewMode] = useState<'preview' | 'raw'>('preview')
+  const [copiedDiagram, setCopiedDiagram] = useState<string | null>(null)
   
   // Debug tab changes
   useEffect(() => {
@@ -238,65 +242,128 @@ export function MermaidViewer({
             const wrapper = document.createElement("div")
             wrapper.className = "border rounded-lg p-3 sm:p-4 bg-white shadow-sm overflow-x-auto"
             
-            try {
-              // More flexible validation - just check if it looks like a valid diagram
-              if (content.length < 10 || !/^\s*\w+\s/.test(content)) {
-                throw new Error("Invalid diagram format: Must start with a diagram type keyword")
-              }
-              
-              // Use a completely isolated approach - render to string without DOM manipulation
-              const uniqueId = `diagram-${tabKey.replace(/\s+/g, '-')}-${i}-${Date.now()}`
-              
+            // Create header with view toggle and copy button
+            const header = document.createElement("div")
+            header.className = "flex items-center justify-between mb-3 pb-2 border-b border-gray-200"
+            
+            const title = document.createElement("h4")
+            title.className = "text-sm font-medium text-gray-700"
+            title.textContent = `Diagram ${i + 1}`
+            
+            const controls = document.createElement("div")
+            controls.className = "flex items-center gap-2"
+            
+            // View mode toggle buttons
+            const previewBtn = document.createElement("button")
+            previewBtn.className = `px-2 py-1 text-xs rounded transition-colors ${
+              viewMode === 'preview' 
+                ? 'bg-blue-100 text-blue-700 border border-blue-200' 
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`
+            previewBtn.innerHTML = '<svg class="w-3 h-3 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>Preview'
+            previewBtn.onclick = () => setViewMode('preview')
+            
+            const rawBtn = document.createElement("button")
+            rawBtn.className = `px-2 py-1 text-xs rounded transition-colors ${
+              viewMode === 'raw' 
+                ? 'bg-blue-100 text-blue-700 border border-blue-200' 
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`
+            rawBtn.innerHTML = '<svg class="w-3 h-3 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>Raw'
+            rawBtn.onclick = () => setViewMode('raw')
+            
+            // Copy button
+            const copyBtn = document.createElement("button")
+            copyBtn.className = "px-2 py-1 text-xs rounded bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+            const diagramId = `${tabKey}-${i}`
+            const isCopied = copiedDiagram === diagramId
+            copyBtn.innerHTML = isCopied 
+              ? '<svg class="w-3 h-3 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>Copied!'
+              : '<svg class="w-3 h-3 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>Copy'
+            copyBtn.onclick = () => copyDiagram(content, i)
+            
+            controls.appendChild(previewBtn)
+            controls.appendChild(rawBtn)
+            controls.appendChild(copyBtn)
+            
+            header.appendChild(title)
+            header.appendChild(controls)
+            wrapper.appendChild(header)
+            
+            // Content area
+            const contentArea = document.createElement("div")
+            contentArea.className = "min-h-[200px]"
+            
+            if (viewMode === 'raw') {
+              // Show raw script
+              const pre = document.createElement("pre")
+              pre.className = "text-xs bg-gray-50 p-3 rounded border overflow-auto max-h-96"
+              pre.textContent = content
+              contentArea.appendChild(pre)
+            } else {
+              // Show preview
               try {
-                // Reset mermaid to clean state
-                const mermaid = (await import("mermaid")).default
-                await mermaid.initialize({
-                  startOnLoad: false,
-                  theme: "default",
-                  securityLevel: "loose",
-                  suppressErrorRendering: true,
-                  deterministicIds: false,
-                  maxTextSize: 50000
-                })
-                
-                // Use render method that doesn't require DOM elements
-                const renderResult = await mermaid.render(uniqueId, content)
-                
-                // Create responsive wrapper for the SVG
-                const svgWrapper = document.createElement("div")
-                svgWrapper.className = "mermaid-container w-full overflow-auto"
-                svgWrapper.innerHTML = renderResult.svg
-                
-                // Add mobile-friendly styling to the SVG
-                const svgElement = svgWrapper.querySelector('svg')
-                if (svgElement) {
-                  svgElement.style.maxWidth = '100%'
-                  svgElement.style.height = 'auto'
-                  svgElement.style.fontSize = 'clamp(10px, 2vw, 14px)'
-                  // Ensure proper scaling
-                  svgElement.setAttribute('preserveAspectRatio', 'xMidYMid meet')
+                // More flexible validation - just check if it looks like a valid diagram
+                if (content.length < 10 || !/^\s*\w+\s/.test(content)) {
+                  throw new Error("Invalid diagram format: Must start with a diagram type keyword")
                 }
                 
-                wrapper.appendChild(svgWrapper)
+                // Use a completely isolated approach - render to string without DOM manipulation
+                const uniqueId = `diagram-${tabKey.replace(/\s+/g, '-')}-${i}-${Date.now()}`
                 
-              } catch (mermaidError: any) {
-                console.error(`[MermaidViewer] Mermaid render error for diagram ${i + 1}:`, mermaidError)
-                throw mermaidError
+                try {
+                  // Reset mermaid to clean state
+                  const mermaid = (await import("mermaid")).default
+                  await mermaid.initialize({
+                    startOnLoad: false,
+                    theme: "default",
+                    securityLevel: "loose",
+                    suppressErrorRendering: true,
+                    deterministicIds: false,
+                    maxTextSize: 50000
+                  })
+                  
+                  // Use render method that doesn't require DOM elements
+                  const renderResult = await mermaid.render(uniqueId, content)
+                  
+                  // Create responsive wrapper for the SVG
+                  const svgWrapper = document.createElement("div")
+                  svgWrapper.className = "mermaid-container w-full overflow-auto"
+                  svgWrapper.innerHTML = renderResult.svg
+                  
+                  // Add mobile-friendly styling to the SVG
+                  const svgElement = svgWrapper.querySelector('svg')
+                  if (svgElement) {
+                    svgElement.style.maxWidth = '100%'
+                    svgElement.style.height = 'auto'
+                    svgElement.style.fontSize = 'clamp(10px, 2vw, 14px)'
+                    // Ensure proper scaling
+                    svgElement.setAttribute('preserveAspectRatio', 'xMidYMid meet')
+                  }
+                  
+                  contentArea.appendChild(svgWrapper)
+                  
+                } catch (mermaidError: any) {
+                  console.error(`[MermaidViewer] Mermaid render error for diagram ${i + 1}:`, mermaidError)
+                  throw mermaidError
+                }
+                
+              } catch (err: any) {
+                console.error(`[MermaidViewer] Error rendering diagram ${i + 1} in tab ${tabKey}:`, err)
+                contentArea.innerHTML = `
+                  <div class="p-3 sm:p-4 text-center border border-red-200 rounded-lg bg-red-50">
+                    <div class="text-red-500 font-medium mb-2 text-sm sm:text-base">Diagram ${i + 1} Rendering Error</div>
+                    <div class="text-xs sm:text-sm text-gray-600 mb-2">${err?.message || "Unknown error"}</div>
+                    <details class="text-left bg-white p-2 rounded border">
+                      <summary class="cursor-pointer font-medium text-blue-600 text-xs sm:text-sm">Show Raw Content</summary>
+                      <pre class="mt-2 text-xs overflow-auto max-h-32 p-2 bg-gray-50 rounded">${content}</pre>
+                    </details>
+                  </div>
+                `
               }
-              
-            } catch (err: any) {
-              console.error(`[MermaidViewer] Error rendering diagram ${i + 1} in tab ${tabKey}:`, err)
-              wrapper.innerHTML = `
-                <div class="p-3 sm:p-4 text-center border border-red-200 rounded-lg bg-red-50">
-                  <div class="text-red-500 font-medium mb-2 text-sm sm:text-base">Diagram ${i + 1} Rendering Error</div>
-                  <div class="text-xs sm:text-sm text-gray-600 mb-2">${err?.message || "Unknown error"}</div>
-                  <details class="text-left bg-white p-2 rounded border">
-                    <summary class="cursor-pointer font-medium text-blue-600 text-xs sm:text-sm">Show Raw Content</summary>
-                    <pre class="mt-2 text-xs overflow-auto max-h-32 p-2 bg-gray-50 rounded">${content}</pre>
-                  </details>
-                </div>
-              `
             }
+            
+            wrapper.appendChild(contentArea)
             diagramsContainer.appendChild(wrapper)
           }
           
@@ -313,7 +380,7 @@ export function MermaidViewer({
     if (Object.keys(diagrams).length > 0) {
       renderAllTabs()
     }
-  }, [diagrams])
+  }, [diagrams, viewMode])
 
   // Get tabs that have at least one diagram
   const tabsWithContent = Object.keys(diagrams)
@@ -360,6 +427,18 @@ export function MermaidViewer({
       
       return { key, label, icon }
     })
+
+  // Copy diagram content to clipboard
+  const copyDiagram = async (content: string, diagramIndex: number) => {
+    try {
+      await navigator.clipboard.writeText(content)
+      const diagramId = `${activeTab}-${diagramIndex}`
+      setCopiedDiagram(diagramId)
+      setTimeout(() => setCopiedDiagram(null), 2000)
+    } catch (error) {
+      console.error('Failed to copy diagram:', error)
+    }
+  }
 
   return (
     <Card className="w-full">
