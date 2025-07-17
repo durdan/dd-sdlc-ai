@@ -84,6 +84,13 @@ export default function ModernLandingPage() {
         if (!user) {
           // Track anonymous page visit
           try {
+            // Don't track during authentication flows
+            if (window.location.pathname.includes('/auth/') || 
+                window.location.search.includes('code=') ||
+                window.location.search.includes('error=')) {
+              return;
+            }
+
             await fetch('/api/track-visit', {
               method: 'POST',
               headers: {
