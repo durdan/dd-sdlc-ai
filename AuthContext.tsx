@@ -105,6 +105,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true)
       
+      // Detect mobile device
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+      
+      console.log('Google OAuth initiated:', {
+        isMobile,
+        userAgent: navigator.userAgent,
+        timestamp: new Date().toISOString()
+      })
+      
       // Generate a random code verifier
       const codeVerifier = generateRandomString(64)
       
@@ -122,15 +131,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             access_type: 'offline',
             prompt: 'consent'
           },
-          scopes: 'openid profile email',
-          skipBrowserRedirect: false
+          scopes: 'openid profile email https://www.googleapis.com/auth/userinfo.email',
+          skipBrowserRedirect: isMobile ? true : false  // Skip redirect on mobile
         }
       })
 
       if (error) throw error
+      
+      // Handle mobile redirect manually
+      if (isMobile && data.url) {
+        console.log('Mobile redirect to:', data.url)
+        window.location.href = data.url
+      }
+      
       return data
     } catch (error) {
-      console.error('Error signing in with Google:', error)
+      console.error('Google OAuth error:', {
+        error: error.message,
+        isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+        userAgent: navigator.userAgent,
+        timestamp: new Date().toISOString()
+      })
       throw error
     } finally {
       setLoading(false)
