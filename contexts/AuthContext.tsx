@@ -21,6 +21,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Check environment variables on initialization
+  useEffect(() => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('🚨 SUPABASE CONFIGURATION MISSING!');
+      console.error('Missing environment variables:');
+      console.error('NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl ? '✅' : '❌');
+      console.error('NEXT_PUBLIC_SUPABASE_ANON_KEY:', supabaseAnonKey ? '✅' : '❌');
+      console.error('Please create a .env.local file with your Supabase credentials.');
+    } else {
+      console.log('✅ Supabase configuration loaded successfully');
+    }
+  }, []);
+
   useEffect(() => {
     // Get initial session
     const getInitialSession = async () => {
@@ -54,17 +70,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signInWithEmail = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
+    console.log('Starting email signin for:', email);
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ 
+        email, 
+        password 
+      });
+      
+      console.log('Signin response:', { data, error });
+      
+      if (error) {
+        console.error('Signin error:', error);
+        throw error;
+      }
+      
+      console.log('Signin successful for:', email);
+      return data;
+    } catch (error) {
+      console.error('SignIn error:', error);
+      throw error;
+    }
   };
 
   const signUpWithEmail = async (email: string, password: string, fullName: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: fullName } },
-    });
-    if (error) throw error;
+    console.log('Starting email signup for:', email);
+    
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: fullName } },
+      });
+      
+      console.log('Signup response:', { data, error });
+      
+      if (error) {
+        console.error('Signup error:', error);
+        throw error;
+      }
+      
+      // Check if email confirmation is required
+      if (data.user && !data.session) {
+        console.log('Email confirmation required for:', email);
+        throw new Error('Please check your email and click the confirmation link to complete your account setup.');
+      }
+      
+      console.log('Signup successful for:', email);
+      return data;
+    } catch (error) {
+      console.error('SignUp error:', error);
+      throw error;
+    }
   };
 
   const signOut = async () => {

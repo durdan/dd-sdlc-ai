@@ -30,11 +30,12 @@ export function AuthModal({ open, onOpenChange }: { open: boolean; onOpenChange:
     try {
       setIsLoading(true)
       setError(null)
+      console.log('Google sign-in initiated')
       await handleGoogleSignIn()
       onOpenChange(false)
-    } catch (error) {
-      setError('Failed to sign in with Google')
-      console.error(error)
+    } catch (error: any) {
+      setError(error.message || 'Failed to sign in with Google')
+      console.error('Google sign-in error:', error)
     } finally {
       setIsLoading(false)
     }
@@ -45,16 +46,41 @@ export function AuthModal({ open, onOpenChange }: { open: boolean; onOpenChange:
     setError(null)
     setIsLoading(true)
 
+    console.log(`Starting ${mode} process for:`, email)
+
     try {
       if (mode === 'signin') {
+        console.log('Calling signInWithEmail...')
         await signInWithEmail(email, password)
+        console.log('Sign in successful, closing modal')
+        onOpenChange(false)
       } else {
+        console.log('Calling signUpWithEmail...')
         await signUpWithEmail(email, password, fullName)
+        console.log('Sign up successful, closing modal')
+        onOpenChange(false)
       }
-      onOpenChange(false)
     } catch (error: any) {
-      setError(error.message || 'An error occurred')
+      console.error(`${mode} error:`, error)
+      
+      // Handle specific error cases
+      let errorMessage = error.message || 'An error occurred'
+      
+      if (error.message?.includes('Invalid login credentials')) {
+        errorMessage = 'Invalid email or password. Please try again.'
+      } else if (error.message?.includes('Email not confirmed')) {
+        errorMessage = 'Please check your email and click the confirmation link before signing in.'
+      } else if (error.message?.includes('User already registered')) {
+        errorMessage = 'An account with this email already exists. Please sign in instead.'
+      } else if (error.message?.includes('Password should be at least')) {
+        errorMessage = 'Password must be at least 6 characters long.'
+      } else if (error.message?.includes('confirmation link')) {
+        errorMessage = error.message // Use the custom message from signUpWithEmail
+      }
+      
+      setError(errorMessage)
     } finally {
+      console.log(`${mode} process completed, setting loading to false`)
       setIsLoading(false)
     }
   }
