@@ -121,6 +121,7 @@ import BetaFeaturesIndicator from '@/components/beta-features-indicator'
 import UsageIndicatorCompact from '@/components/usage-indicator-compact'
 import EarlyAccessWaitingList from '@/components/early-access-waiting-list'
 import ClaudeCodeDashboard from '@/components/claude-code-dashboard'
+import { DocumentSelectionModal } from '@/components/document-selection-modal'
 
 // Type definitions for dashboard state
 interface GeneratedDocuments {
@@ -517,6 +518,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
   
   // Cache management state
   const [pendingCachedResults, setPendingCachedResults] = useState<any>(null)
+  const [showDocumentSelectionModal, setShowDocumentSelectionModal] = useState(false)
 
   // Function to update step progress - moved to component level for global access
   const updateStepProgress = (stepId: string, progress: number, status: "pending" | "in_progress" | "completed" | "error" = "in_progress") => {
@@ -829,14 +831,14 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
       
       if (response.ok) {
         const data = await response.json()
-        setGithubRepositories(data.repositories || [])
+        setGitHubRepositories(data.repositories || [])
       } else {
         console.warn('Failed to load GitHub repositories')
-        setGithubRepositories([])
+        setGitHubRepositories([])
       }
     } catch (error) {
       console.error('Error loading GitHub repositories:', error)
-      setGithubRepositories([])
+      setGitHubRepositories([])
     } finally {
       setIsLoadingGitHubRepos(false)
     }
@@ -1077,18 +1079,30 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
 
   // Helper function to parse Mermaid content into separate diagrams
   const parseMermaidDiagrams = (mermaidContent: string) => {
-    if (!mermaidContent) {
+    if (!mermaidContent || mermaidContent.trim() === '') {
       console.log('No mermaid content to parse')
       return {}
     }
 
+    // Clean the content first - remove any streaming artifacts
+    let cleanedContent = mermaidContent
+      .replace(/data:\s*\{[^}]*\}/g, '') // Remove data: {...} lines
+      .replace(/data:\s*\[DONE\]/g, '') // Remove [DONE] markers
+      .replace(/^\s*[\r\n]+/gm, '') // Remove empty lines
+      .trim()
+    
+    if (!cleanedContent || cleanedContent.length < 10) {
+      console.log('Content too short after cleaning:', cleanedContent.length)
+      return {}
+    }
+
     // Log the raw content for debugging
-    console.log('Raw mermaid content:', mermaidContent.substring(0, 200) + '...')
-    console.log('Raw mermaid content length:', mermaidContent.length)
+    console.log('Raw mermaid content:', cleanedContent.substring(0, 200) + '...')
+    console.log('Raw mermaid content length:', cleanedContent.length)
     
     // Check for markdown headers and code blocks
-    const hasMarkdownHeaders = /^\s*#+\s+.+$/m.test(mermaidContent)
-    const hasMermaidCodeBlocks = /```(?:mermaid)?[\s\S]*?```/g.test(mermaidContent)
+    const hasMarkdownHeaders = /^\s*#+\s+.+$/m.test(cleanedContent)
+    const hasMermaidCodeBlocks = /```(?:mermaid)?[\s\S]*?```/g.test(cleanedContent)
     console.log('Content analysis:', { hasMarkdownHeaders, hasMermaidCodeBlocks })
 
     // Fully generic approach - create an empty diagram object with no hardcoded keys
@@ -1101,7 +1115,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
     // First, try to find markdown headers like "## System Architecture Diagram"
     const markdownHeaderRegex = /^##\s+([^\n]+?)\s*(?:Diagram)?\s*$/gmi
     let match
-    while ((match = markdownHeaderRegex.exec(mermaidContent)) !== null) {
+    while ((match = markdownHeaderRegex.exec(cleanedContent)) !== null) {
       foundSections = true
       const sectionName = match[1].trim().toLowerCase().replace(/\s+/g, '')
       sectionMarkers.push({
@@ -1114,7 +1128,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
     // Also try Mermaid section comments like "%% System Architecture Diagram"
     const sectionCommentRegex = /%%\s*([A-Za-z\s]+)\s*Diagram/gi
     sectionCommentRegex.lastIndex = 0 // Reset regex state
-    while ((match = sectionCommentRegex.exec(mermaidContent)) !== null) {
+    while ((match = sectionCommentRegex.exec(cleanedContent)) !== null) {
       foundSections = true
       const sectionName = match[1].trim().toLowerCase().replace(/\s+/g, '')
       sectionMarkers.push({
@@ -1132,10 +1146,10 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
       for (let i = 0; i < sectionMarkers.length; i++) {
         const currentMarker = sectionMarkers[i]
         const nextMarker = sectionMarkers[i + 1]
-        const endIndex = nextMarker ? nextMarker.index : mermaidContent.length
+        const endIndex = nextMarker ? nextMarker.index : cleanedContent.length
         
         // Extract the diagram content
-        const diagramContent = mermaidContent.substring(currentMarker.index, endIndex).trim()
+        const diagramContent = cleanedContent.substring(currentMarker.index, endIndex).trim()
         console.log(`Processing section: ${currentMarker.name}, content length: ${diagramContent.length}`)
         
         // Store each diagram with its own section name as the key
@@ -1154,7 +1168,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
       if (hasMermaidCodeBlocks) {
         const codeBlockRegex = /```(?:mermaid)?\s*([\s\S]*?)```/g
         let codeMatch
-        while ((codeMatch = codeBlockRegex.exec(mermaidContent)) !== null) {
+        while ((codeMatch = codeBlockRegex.exec(cleanedContent)) !== null) {
           if (codeMatch[1] && codeMatch[1].trim()) {
             diagramBlocks.push(codeMatch[1].trim())
           }
@@ -1166,9 +1180,9 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         let lastTypeIndex = 0
         let typeMatch
         
-        while ((typeMatch = diagramTypeRegex.exec(mermaidContent)) !== null) {
+        while ((typeMatch = diagramTypeRegex.exec(cleanedContent)) !== null) {
           if (typeMatch.index > lastTypeIndex) {
-            const previousContent = mermaidContent.substring(lastTypeIndex, typeMatch.index).trim()
+            const previousContent = cleanedContent.substring(lastTypeIndex, typeMatch.index).trim()
             if (previousContent && /^\w+\s/.test(previousContent)) {
               diagramBlocks.push(previousContent)
             }
@@ -1177,8 +1191,8 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         }
         
         // Add the last block
-        if (lastTypeIndex < mermaidContent.length) {
-          const lastBlock = mermaidContent.substring(lastTypeIndex).trim()
+        if (lastTypeIndex < cleanedContent.length) {
+          const lastBlock = cleanedContent.substring(lastTypeIndex).trim()
           if (lastBlock) diagramBlocks.push(lastBlock)
         }
         
@@ -1224,7 +1238,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
           [key, value ? `Found (${value.length} chars)` : 'Empty']
         )
       ),
-      originalLength: mermaidContent.length
+      originalLength: cleanedContent.length
     })
     
     // Also log the actual diagram keys and content previews
@@ -1321,9 +1335,26 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
       return
     }
 
-    // No cache found, proceed with fresh generation
-    // REMOVED: API key check - let the backend handle it
-    await generateFreshDocuments()
+    // ✨ NEW: Show document selection modal instead of direct generation
+    setShowDocumentSelectionModal(true)
+  }
+
+  // ✨ NEW: Handle document selection and generation
+  const handleDocumentSelection = async (selectedDocuments: string[]) => {
+    setShowDocumentSelectionModal(false)
+    
+    // ✨ NEW: Scroll to status window when generation starts
+    setTimeout(() => {
+      const statusWindow = document.getElementById('status-window')
+      if (statusWindow) {
+        statusWindow.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start' 
+        })
+      }
+    }, 100) // Small delay to ensure UI updates first
+    
+    await generateFreshDocuments(selectedDocuments)
   }
 
   const loadCachedResults = (cached: any) => {
@@ -1367,6 +1398,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
     updateDocuments: (content: string) => void
   ): Promise<string> => {
     let fullContent = ''
+    let rawContent = '' // Track raw content for fallback
     const reader = response.body?.getReader()
     const decoder = new TextDecoder()
     
@@ -1382,6 +1414,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
           if (done) break
           
           const chunk = decoder.decode(value)
+          rawContent += chunk // Accumulate raw content
           const lines = chunk.split('\n')
           
           for (const line of lines) {
@@ -1413,7 +1446,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                 }
               } catch (parseError) {
                 console.warn('Skipping invalid JSON line:', line.substring(0, 100) + '...')
-                // Skip invalid JSON lines
+                // Skip invalid JSON lines but continue processing
               }
             }
           }
@@ -1427,14 +1460,55 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
     setStepStreamingWindows(prev => ({ ...prev, [stepId]: false }))
     setCurrentStreamingStep(null)
     
+    // ✨ ENHANCED: Fallback handling for malformed streaming responses
     if (!fullContent) {
-      throw new Error(`No content received from ${stepId}`)
+      console.warn(`No structured content received from ${stepId}, attempting to extract from raw response`)
+      
+      // Try to extract content from raw response if structured streaming failed
+      if (rawContent) {
+        // Look for content patterns in the raw response
+        const contentPatterns = [
+          /```[\s\S]*?```/g, // Code blocks
+          /##[\s\S]*?(?=##|$)/g, // Markdown sections
+          /graph[\s\S]*?(?=\n\n|\n#|$)/gi, // Mermaid diagrams
+          /flowchart[\s\S]*?(?=\n\n|\n#|$)/gi, // Flowcharts
+          /sequenceDiagram[\s\S]*?(?=\n\n|\n#|$)/gi, // Sequence diagrams
+        ]
+        
+        for (const pattern of contentPatterns) {
+          const matches = rawContent.match(pattern)
+          if (matches && matches.length > 0) {
+            fullContent = matches.join('\n\n')
+            console.log(`Extracted content from ${stepId} using pattern:`, pattern.source)
+            break
+          }
+        }
+        
+        // If still no content, try to extract any meaningful text
+        if (!fullContent) {
+          // Remove common streaming artifacts and extract meaningful content
+          const cleanedContent = rawContent
+            .replace(/data:\s*\{[^}]*\}/g, '') // Remove data: {...} lines
+            .replace(/data:\s*\[DONE\]/g, '') // Remove [DONE] markers
+            .replace(/^\s*[\r\n]+/gm, '') // Remove empty lines
+            .trim()
+          
+          if (cleanedContent.length > 50) { // Only use if we have substantial content
+            fullContent = cleanedContent
+            console.log(`Extracted fallback content from ${stepId}:`, fullContent.substring(0, 200) + '...')
+          }
+        }
+      }
+    }
+    
+    if (!fullContent) {
+      throw new Error(`No content received from ${stepId} - streaming response was malformed or empty`)
     }
     
     return fullContent
   }
 
-  const generateFreshDocuments = async () => {
+  const generateFreshDocuments = async (selectedDocuments?: string[]) => {
     setIsProcessing(true)
     setErrorMessage("")
     setGeneratedDocuments({})
@@ -1442,14 +1516,19 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
     // ✨ NEW: Show refresh warning
     setShowRefreshWarning(true)
     
-    // Build initial steps array properly
-    const initialSteps: ProcessingStep[] = [
+    // Build initial steps array based on selected documents
+    const allSteps: ProcessingStep[] = [
       { id: "analysis", name: "Business Analysis", status: "pending" as const, progress: 0 },
       { id: "functional", name: "Functional Specification", status: "pending" as const, progress: 0 },
       { id: "technical", name: "Technical Specification", status: "pending" as const, progress: 0 },
       { id: "ux", name: "UX Specification", status: "pending" as const, progress: 0 },
       { id: "mermaid", name: "Mermaid Diagrams", status: "pending" as const, progress: 0 },
     ]
+
+    // Filter steps based on selected documents
+    const initialSteps = selectedDocuments 
+      ? allSteps.filter(step => selectedDocuments.includes(step.id))
+      : allSteps
 
     // Add optional steps if integrations are enabled
     if (config.jiraAutoCreate && config.jiraUrl && config.jiraToken) {
@@ -1469,248 +1548,258 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
       const results: any = {}
       
       // Step 1: Business Analysis - Let backend handle freemium limits
-      updateStepProgress("analysis", 0, "in_progress")
-      const businessResponse = await fetch("/api/generate-business-analysis", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          input,
-          openaiKey: config.openaiKey || "", // Send empty string if not configured
-          userId: user?.id,
-        }),
-      })
-      
-      if (!businessResponse.ok) {
-        const errorData = await businessResponse.json().catch(() => ({ error: "Unknown API error" }))
-        updateStepProgress("analysis", 0, "error")
+      if (!selectedDocuments || selectedDocuments.includes("analysis")) {
+        updateStepProgress("analysis", 0, "in_progress")
+        const businessResponse = await fetch("/api/generate-business-analysis", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            input,
+            openaiKey: config.openaiKey || "", // Send empty string if not configured
+            userId: user?.id,
+          }),
+        })
         
-        // Check if this is a freemium limit error from the backend
-        if (errorData?.error && (
-          errorData.error.toLowerCase().includes("freemium limit") ||
-          errorData.error.toLowerCase().includes("daily limit") ||
-          errorData.error.toLowerCase().includes("usage limit") ||
-          errorData.error.toLowerCase().includes("upgrade required") ||
-          errorData.error.toLowerCase().includes("api key required")
-        )) {
-          console.log("🔑 Backend indicated freemium limit reached, prompting for API key")
-          setIsProcessing(false) // Stop processing
-          setShowApiKeyDialog(true)
-          return // Exit early - user needs to provide API key
+        if (!businessResponse.ok) {
+          const errorData = await businessResponse.json().catch(() => ({ error: "Unknown API error" }))
+          updateStepProgress("analysis", 0, "error")
+          
+          // Check if this is a freemium limit error from the backend
+          if (errorData?.error && (
+            errorData.error.toLowerCase().includes("freemium limit") ||
+            errorData.error.toLowerCase().includes("daily limit") ||
+            errorData.error.toLowerCase().includes("usage limit") ||
+            errorData.error.toLowerCase().includes("upgrade required") ||
+            errorData.error.toLowerCase().includes("api key required")
+          )) {
+            console.log("🔑 Backend indicated freemium limit reached, prompting for API key")
+            setIsProcessing(false) // Stop processing
+            setShowApiKeyDialog(true)
+            return // Exit early - user needs to provide API key
+          }
+          
+          throw new Error(errorData?.error || `API request failed with status ${businessResponse.status}`)
         }
         
-        throw new Error(errorData?.error || `API request failed with status ${businessResponse.status}`)
+        // ✨ Handle streaming response with real-time display
+        const businessAnalysisContent = await handleStreamingResponse(
+          businessResponse,
+          "analysis", 
+          (content) => setGeneratedDocuments((prev: any) => ({ ...prev, businessAnalysis: content }))
+        )
+        
+        results.businessAnalysis = businessAnalysisContent
+        updateStepProgress("analysis", 100, "completed")
+        
+        // ✨ NEW: Smooth transition delay between steps
+        await new Promise(resolve => setTimeout(resolve, 500))
       }
-      
-      // ✨ Handle streaming response with real-time display
-      const businessAnalysisContent = await handleStreamingResponse(
-        businessResponse,
-        "analysis", 
-        (content) => setGeneratedDocuments((prev: any) => ({ ...prev, businessAnalysis: content }))
-      )
-      
-      results.businessAnalysis = businessAnalysisContent
-      updateStepProgress("analysis", 100, "completed")
-      
-      // ✨ NEW: Smooth transition delay between steps
-      await new Promise(resolve => setTimeout(resolve, 500))
 
       // Step 2: Functional Specification
-      updateStepProgress("functional", 0, "in_progress")
-      const functionalResponse = await fetch("/api/generate-functional-spec", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          input,
-          businessAnalysis: results.businessAnalysis,
-          openaiKey: config.openaiKey || "", // Send whatever we have (could be empty)
-          userId: user?.id,
-        }),
-      })
-      
-      if (!functionalResponse.ok) {
-        const errorData = await functionalResponse.json().catch(() => ({ error: "Unknown API error" }))
-        updateStepProgress("functional", 0, "error")
+      if (!selectedDocuments || selectedDocuments.includes("functional")) {
+        updateStepProgress("functional", 0, "in_progress")
+        const functionalResponse = await fetch("/api/generate-functional-spec", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            input,
+            businessAnalysis: results.businessAnalysis || "",
+            openaiKey: config.openaiKey || "", // Send whatever we have (could be empty)
+            userId: user?.id,
+          }),
+        })
         
-        // Check for freemium limit error again
-        if (errorData?.error && (
-          errorData.error.toLowerCase().includes("freemium limit") ||
-          errorData.error.toLowerCase().includes("daily limit") ||
-          errorData.error.toLowerCase().includes("usage limit") ||
-          errorData.error.toLowerCase().includes("upgrade required") ||
-          errorData.error.toLowerCase().includes("api key required")
-        )) {
-          console.log("🔑 Backend indicated freemium limit reached during functional spec, prompting for API key")
-          setIsProcessing(false)
-          setShowApiKeyDialog(true)
-          return
+        if (!functionalResponse.ok) {
+          const errorData = await functionalResponse.json().catch(() => ({ error: "Unknown API error" }))
+          updateStepProgress("functional", 0, "error")
+          
+          // Check for freemium limit error again
+          if (errorData?.error && (
+            errorData.error.toLowerCase().includes("freemium limit") ||
+            errorData.error.toLowerCase().includes("daily limit") ||
+            errorData.error.toLowerCase().includes("usage limit") ||
+            errorData.error.toLowerCase().includes("upgrade required") ||
+            errorData.error.toLowerCase().includes("api key required")
+          )) {
+            console.log("🔑 Backend indicated freemium limit reached during functional spec, prompting for API key")
+            setIsProcessing(false)
+            setShowApiKeyDialog(true)
+            return
+          }
+          
+          throw new Error(errorData?.error || `API request failed with status ${functionalResponse.status}`)
         }
         
-        throw new Error(errorData?.error || `API request failed with status ${functionalResponse.status}`)
+        // ✨ Handle streaming response with real-time display
+        const functionalSpecContent = await handleStreamingResponse(
+          functionalResponse,
+          "functional",
+          (content) => setGeneratedDocuments((prev: any) => ({ ...prev, functionalSpec: content }))
+        )
+        
+        results.functionalSpec = functionalSpecContent
+        updateStepProgress("functional", 100, "completed")
+        
+        // ✨ NEW: Smooth transition delay between steps
+        await new Promise(resolve => setTimeout(resolve, 500))
       }
-      
-      // ✨ Handle streaming response with real-time display
-      const functionalSpecContent = await handleStreamingResponse(
-        functionalResponse,
-        "functional",
-        (content) => setGeneratedDocuments((prev: any) => ({ ...prev, functionalSpec: content }))
-      )
-      
-      results.functionalSpec = functionalSpecContent
-      updateStepProgress("functional", 100, "completed")
-      
-      // ✨ NEW: Smooth transition delay between steps
-      await new Promise(resolve => setTimeout(resolve, 500))
 
       // Step 3: Technical Specification
-      updateStepProgress("technical", 0, "in_progress")
-      const technicalResponse = await fetch("/api/generate-technical-spec", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          input,
-          businessAnalysis: results.businessAnalysis,
-          functionalSpec: results.functionalSpec,
-          openaiKey: config.openaiKey || "",
-          userId: user?.id,
-        }),
-      })
-      
-      if (!technicalResponse.ok) {
-        const errorData = await technicalResponse.json().catch(() => ({ error: "Unknown API error" }))
-        updateStepProgress("technical", 0, "error")
+      if (!selectedDocuments || selectedDocuments.includes("technical")) {
+        updateStepProgress("technical", 0, "in_progress")
+        const technicalResponse = await fetch("/api/generate-technical-spec", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            input,
+            businessAnalysis: results.businessAnalysis || "",
+            functionalSpec: results.functionalSpec || "",
+            openaiKey: config.openaiKey || "",
+            userId: user?.id,
+          }),
+        })
         
-        // Check for freemium limit error
-        if (errorData?.error && (
-          errorData.error.toLowerCase().includes("freemium limit") ||
-          errorData.error.toLowerCase().includes("daily limit") ||
-          errorData.error.toLowerCase().includes("usage limit") ||
-          errorData.error.toLowerCase().includes("upgrade required") ||
-          errorData.error.toLowerCase().includes("api key required")
-        )) {
-          console.log("🔑 Backend indicated freemium limit reached during technical spec, prompting for API key")
-          setIsProcessing(false)
-          setShowApiKeyDialog(true)
-          return
+        if (!technicalResponse.ok) {
+          const errorData = await technicalResponse.json().catch(() => ({ error: "Unknown API error" }))
+          updateStepProgress("technical", 0, "error")
+          
+          // Check for freemium limit error
+          if (errorData?.error && (
+            errorData.error.toLowerCase().includes("freemium limit") ||
+            errorData.error.toLowerCase().includes("daily limit") ||
+            errorData.error.toLowerCase().includes("usage limit") ||
+            errorData.error.toLowerCase().includes("upgrade required") ||
+            errorData.error.toLowerCase().includes("api key required")
+          )) {
+            console.log("🔑 Backend indicated freemium limit reached during technical spec, prompting for API key")
+            setIsProcessing(false)
+            setShowApiKeyDialog(true)
+            return
+          }
+          
+          throw new Error(errorData?.error || `API request failed with status ${technicalResponse.status}`)
         }
         
-        throw new Error(errorData?.error || `API request failed with status ${technicalResponse.status}`)
+        // ✨ Handle streaming response with real-time display  
+        const technicalSpecContent = await handleStreamingResponse(
+          technicalResponse,
+          "technical",
+          (content) => setGeneratedDocuments((prev: any) => ({ ...prev, technicalSpec: content }))
+        )
+        
+        results.technicalSpec = technicalSpecContent
+        updateStepProgress("technical", 100, "completed")
+        
+        // ✨ NEW: Smooth transition delay between steps
+        await new Promise(resolve => setTimeout(resolve, 500))
       }
-      
-      // ✨ Handle streaming response with real-time display  
-      const technicalSpecContent = await handleStreamingResponse(
-        technicalResponse,
-        "technical",
-        (content) => setGeneratedDocuments((prev: any) => ({ ...prev, technicalSpec: content }))
-      )
-      
-      results.technicalSpec = technicalSpecContent
-      updateStepProgress("technical", 100, "completed")
-      
-      // ✨ NEW: Smooth transition delay between steps
-      await new Promise(resolve => setTimeout(resolve, 500))
 
       // Step 4: UX Specification
-      updateStepProgress("ux", 0, "in_progress")
-      const uxResponse = await fetch("/api/generate-ux-spec", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          input,
-          businessAnalysis: results.businessAnalysis,
-          functionalSpec: results.functionalSpec,
-          technicalSpec: results.technicalSpec,
-          openaiKey: config.openaiKey || "",
-          userId: user?.id,
-        }),
-      })
-      
-      if (!uxResponse.ok) {
-        const errorData = await uxResponse.json().catch(() => ({ error: "Unknown API error" }))
-        updateStepProgress("ux", 0, "error")
+      if (!selectedDocuments || selectedDocuments.includes("ux")) {
+        updateStepProgress("ux", 0, "in_progress")
+        const uxResponse = await fetch("/api/generate-ux-spec", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            input,
+            businessAnalysis: results.businessAnalysis || "",
+            functionalSpec: results.functionalSpec || "",
+            technicalSpec: results.technicalSpec || "",
+            openaiKey: config.openaiKey || "",
+            userId: user?.id,
+          }),
+        })
         
-        // Check for freemium limit error
-        if (errorData?.error && (
-          errorData.error.toLowerCase().includes("freemium limit") ||
-          errorData.error.toLowerCase().includes("daily limit") ||
-          errorData.error.toLowerCase().includes("usage limit") ||
-          errorData.error.toLowerCase().includes("upgrade required") ||
-          errorData.error.toLowerCase().includes("api key required")
-        )) {
-          console.log("🔑 Backend indicated freemium limit reached during UX spec, prompting for API key")
-          setIsProcessing(false)
-          setShowApiKeyDialog(true)
-          return
+        if (!uxResponse.ok) {
+          const errorData = await uxResponse.json().catch(() => ({ error: "Unknown API error" }))
+          updateStepProgress("ux", 0, "error")
+          
+          // Check for freemium limit error
+          if (errorData?.error && (
+            errorData.error.toLowerCase().includes("freemium limit") ||
+            errorData.error.toLowerCase().includes("daily limit") ||
+            errorData.error.toLowerCase().includes("usage limit") ||
+            errorData.error.toLowerCase().includes("upgrade required") ||
+            errorData.error.toLowerCase().includes("api key required")
+          )) {
+            console.log("🔑 Backend indicated freemium limit reached during UX spec, prompting for API key")
+            setIsProcessing(false)
+            setShowApiKeyDialog(true)
+            return
+          }
+          
+          throw new Error(errorData?.error || `API request failed with status ${uxResponse.status}`)
         }
         
-        throw new Error(errorData?.error || `API request failed with status ${uxResponse.status}`)
+        // ✨ Handle streaming response with real-time display
+        const uxContent = await handleStreamingResponse(
+          uxResponse,
+          "ux",
+          (content) => setGeneratedDocuments((prev: any) => ({ ...prev, uxSpec: content }))
+        )
+        
+        results.uxSpec = uxContent
+        updateStepProgress("ux", 100, "completed")
+        
+        // ✨ NEW: Smooth transition delay between steps
+        await new Promise(resolve => setTimeout(resolve, 500))
       }
-      
-      // ✨ Handle streaming response with real-time display
-      const uxContent = await handleStreamingResponse(
-        uxResponse,
-        "ux",
-        (content) => setGeneratedDocuments((prev: any) => ({ ...prev, uxSpec: content }))
-      )
-      
-      results.uxSpec = uxContent
-      updateStepProgress("ux", 100, "completed")
-      
-      // ✨ NEW: Smooth transition delay between steps
-      await new Promise(resolve => setTimeout(resolve, 500))
 
       // Step 5: Mermaid Diagrams
-      updateStepProgress("mermaid", 0, "in_progress")
-      const mermaidResponse = await fetch("/api/generate-mermaid-diagrams", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          input,
-          businessAnalysis: results.businessAnalysis,
-          functionalSpec: results.functionalSpec,
-          technicalSpec: results.technicalSpec,
-          uxSpec: results.uxSpec,
-          openaiKey: config.openaiKey || "",
-          userId: user?.id,
-        }),
-      })
-      
-      if (!mermaidResponse.ok) {
-        const errorData = await mermaidResponse.json().catch(() => ({ error: "Unknown API error" }))
-        updateStepProgress("mermaid", 0, "error")
+      if (!selectedDocuments || selectedDocuments.includes("mermaid")) {
+        updateStepProgress("mermaid", 0, "in_progress")
+        const mermaidResponse = await fetch("/api/generate-mermaid-diagrams", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            input,
+            businessAnalysis: results.businessAnalysis || "",
+            functionalSpec: results.functionalSpec || "",
+            technicalSpec: results.technicalSpec || "",
+            uxSpec: results.uxSpec || "",
+            openaiKey: config.openaiKey || "",
+            userId: user?.id,
+          }),
+        })
         
-        // Check for freemium limit error
-        if (errorData?.error && (
-          errorData.error.toLowerCase().includes("freemium limit") ||
-          errorData.error.toLowerCase().includes("daily limit") ||
-          errorData.error.toLowerCase().includes("usage limit") ||
-          errorData.error.toLowerCase().includes("upgrade required") ||
-          errorData.error.toLowerCase().includes("api key required")
-        )) {
-          console.log("🔑 Backend indicated freemium limit reached during mermaid generation, prompting for API key")
-          setIsProcessing(false)
-          setShowApiKeyDialog(true)
-          return
+        if (!mermaidResponse.ok) {
+          const errorData = await mermaidResponse.json().catch(() => ({ error: "Unknown API error" }))
+          updateStepProgress("mermaid", 0, "error")
+          
+          // Check for freemium limit error
+          if (errorData?.error && (
+            errorData.error.toLowerCase().includes("freemium limit") ||
+            errorData.error.toLowerCase().includes("daily limit") ||
+            errorData.error.toLowerCase().includes("usage limit") ||
+            errorData.error.toLowerCase().includes("upgrade required") ||
+            errorData.error.toLowerCase().includes("api key required")
+          )) {
+            console.log("🔑 Backend indicated freemium limit reached during Mermaid diagrams, prompting for API key")
+            setIsProcessing(false)
+            setShowApiKeyDialog(true)
+            return
+          }
+          
+          throw new Error(errorData?.error || `API request failed with status ${mermaidResponse.status}`)
         }
         
-        throw new Error(errorData?.error || `API request failed with status ${mermaidResponse.status}`)
+        // ✨ Handle streaming response with real-time display
+        const mermaidContent = await handleStreamingResponse(
+          mermaidResponse,
+          "mermaid",
+          (content) => setGeneratedDocuments((prev: any) => ({ ...prev, mermaidDiagrams: content }))
+        )
+        
+        results.mermaidDiagrams = mermaidContent
+        updateStepProgress("mermaid", 100, "completed")
+        
+        // ✨ NEW: Smooth transition delay between steps
+        await new Promise(resolve => setTimeout(resolve, 500))
       }
-      
-      // ✨ Handle streaming response with real-time display
-      const mermaidContent = await handleStreamingResponse(
-        mermaidResponse,
-        "mermaid",
-        (content) => setGeneratedDocuments((prev: any) => ({ ...prev, mermaidDiagrams: content }))
-      )
-      
-      results.mermaidDiagrams = mermaidContent
-      updateStepProgress("mermaid", 100, "completed")
-      
-      // ✨ NEW: Smooth transition delay between steps
-      await new Promise(resolve => setTimeout(resolve, 500))
 
       // Cache the complete results
       await cacheResults(input.trim(), results)
-      
+
       // Handle optional integrations (JIRA, Confluence) if enabled
       await handleIntegrations(results, input)
 
@@ -3463,7 +3552,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
             {(isProcessing || (generatedDocuments && Object.keys(generatedDocuments).length > 0)) && (
               <>
                 {/* ✨ ENHANCED: Processing Status with Streaming Windows */}
-                <Card className={`mt-6 ${isProcessing ? 'border-blue-200 bg-blue-50/50' : ''}`}>
+                <Card id="status-window" className={`mt-6 ${isProcessing ? 'border-blue-200 bg-blue-50/50' : ''}`}>
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -3926,6 +4015,15 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* ✨ NEW: Document Selection Modal */}
+      <DocumentSelectionModal
+        isOpen={showDocumentSelectionModal}
+        onClose={() => setShowDocumentSelectionModal(false)}
+        onGenerate={handleDocumentSelection}
+        input={input}
+        isLoading={isProcessing}
+      />
     </div>
   )
 }

@@ -1,6 +1,6 @@
 import { createOpenAI } from "@ai-sdk/openai"
-import { generateText } from "ai"
-import { type NextRequest, NextResponse } from "next/server"
+import { streamText } from "ai"
+import { type NextRequest } from "next/server"
 import { createServerPromptService } from '@/lib/prompt-service-server'
 import { createClient } from "@/lib/supabase/server"
 
@@ -138,7 +138,7 @@ async function getAuthenticatedUser() {
   }
 }
 
-async function generateWithDatabasePrompt(
+async function generateWithDatabasePromptStreaming(
   input: string,
   businessAnalysis: string,
   functionalSpec: string,
@@ -155,122 +155,65 @@ async function generateWithDatabasePrompt(
   try {
     // Priority 1: Use custom prompt if provided (legacy support)
     if (customPrompt && customPrompt.trim() !== "") {
-      console.log('Using custom prompt from request')
+      console.log('Using custom prompt from request (streaming)')
       const processedPrompt = customPrompt
         .replace(/{{input}}/g, input)
         .replace(/{{business_analysis}}/g, businessAnalysis)
         .replace(/{{functional_spec}}/g, functionalSpec)
         .replace(/{{technical_spec}}/g, technicalSpec)
       
-      const result = await generateText({
+      return await streamText({
         model: openaiClient("gpt-4o"),
         prompt: processedPrompt,
         maxTokens: 8000,
       })
-      
-      return {
-        content: result.text,
-        promptSource: 'custom',
-        responseTime: Date.now() - startTime
-      }
     }
 
     // Priority 2: Load prompt from database
     const promptTemplate = await promptService.getPromptForExecution('mermaid', userId || 'anonymous')
     
     if (promptTemplate) {
-      console.log('Using database prompt:', promptTemplate.name, 'version:', promptTemplate.version)
+      console.log('Using database prompt for streaming:', promptTemplate.name, 'version:', promptTemplate.version)
       
-      try {
-        // Prepare the prompt
-        const { processedContent } = await promptService.preparePrompt(
-          promptTemplate.id,
-          { 
-            input: input,
-            business_analysis: businessAnalysis,
-            functional_spec: functionalSpec,
-            technical_spec: technicalSpec,
-          }
-        )
-        
-        // Execute AI call
-        const aiResult = await generateText({
-          model: openaiClient("gpt-4o"),
-          prompt: processedContent,
-          maxTokens: 8000,
-        })
-        
-        const responseTime = Date.now() - startTime
-        
-        // Log successful usage
-        const usageLogId = await promptService.logUsage(
-          promptTemplate.id,
-          userId || 'anonymous',
-          { input, business_analysis: businessAnalysis, functional_spec: functionalSpec, technical_spec: technicalSpec },
-          {
-            content: aiResult.text,
-            input_tokens: Math.floor(processedContent.length / 4),
-            output_tokens: Math.floor(aiResult.text.length / 4),
-          },
-          responseTime,
-          true,
-          undefined,
-          projectId,
-          'gpt-4o'
-        )
-        
-        return {
-          content: aiResult.text,
-          promptSource: 'database',
-          promptId: promptTemplate.id,
-          promptName: promptTemplate.name,
-          responseTime,
-          usageLogId
+      // Prepare the prompt
+      const { processedContent } = await promptService.preparePrompt(
+        promptTemplate.id,
+        { 
+          input: input,
+          business_analysis: businessAnalysis,
+          functional_spec: functionalSpec,
+          technical_spec: technicalSpec,
         }
-      } catch (aiError) {
-        // Log failed usage
-        const responseTime = Date.now() - startTime
-        await promptService.logUsage(
-          promptTemplate.id,
-          userId || 'anonymous',
-          { input, business_analysis: businessAnalysis, functional_spec: functionalSpec, technical_spec: technicalSpec },
-          { content: '', input_tokens: 0, output_tokens: 0 },
-          responseTime,
-          false,
-          aiError instanceof Error ? aiError.message : 'AI execution failed',
-          projectId,
-          'gpt-4o'
-        )
-        throw aiError
-      }
+      )
+      
+      // Execute AI streaming call
+      const streamResult = await streamText({
+        model: openaiClient("gpt-4o"),
+        prompt: processedContent,
+        maxTokens: 8000,
+      })
+      
+      // Note: We'll log usage after streaming completes in the response handler
+      return streamResult
     }
 
     // Priority 3: Fallback to hardcoded prompt
-    console.warn('No database prompt found, using hardcoded fallback')
-    throw new Error('No database prompt available')
-    
-  } catch (error) {
-    console.warn('Database prompt failed, using hardcoded fallback:', error)
-    
-    // Fallback execution with hardcoded prompt
+    console.warn('No database prompt found, using hardcoded fallback for streaming')
     const processedPrompt = FALLBACK_PROMPT
       .replace(/\{input\}/g, input)
       .replace(/\{business_analysis\}/g, businessAnalysis)
       .replace(/\{functional_spec\}/g, functionalSpec)
       .replace(/\{technical_spec\}/g, technicalSpec)
     
-    const result = await generateText({
+    return await streamText({
       model: openaiClient("gpt-4o"),
       prompt: processedPrompt,
       maxTokens: 8000,
     })
     
-    return {
-      content: result.text,
-      promptSource: 'fallback',
-      responseTime: Date.now() - startTime,
-      fallbackReason: error instanceof Error ? error.message : 'Unknown error'
-    }
+  } catch (error) {
+    console.error('Error in streaming generation:', error)
+    throw error
   }
 }
 
@@ -280,9 +223,12 @@ export async function POST(req: NextRequest) {
     
     // Validate OpenAI API key
     if (!openaiKey || openaiKey.trim() === '') {
-      return NextResponse.json(
-        { error: "OpenAI API key is required" },
-        { status: 400 }
+      return new Response(
+        JSON.stringify({ error: "OpenAI API key is required" }),
+        { 
+          status: 400, 
+          headers: { 'Content-Type': 'application/json' }
+        }
       )
     }
 
@@ -290,11 +236,11 @@ export async function POST(req: NextRequest) {
     const user = await getAuthenticatedUser()
     const effectiveUserId = userId || user?.id
 
-    console.log('Generating Mermaid Diagrams with database prompts...')
+    console.log('🚀 Starting streaming Mermaid Diagrams generation...')
     console.log('User ID:', effectiveUserId)
     console.log('Project ID:', projectId)
 
-    const result = await generateWithDatabasePrompt(
+    const streamResult = await generateWithDatabasePromptStreaming(
       input,
       businessAnalysis,
       functionalSpec,
@@ -305,75 +251,70 @@ export async function POST(req: NextRequest) {
       projectId
     )
 
-    // Log diagram generation for analytics (logged-in and anonymous)
-    try {
-      const supabase = await createClient()
-      const userAgent = req.headers.get('user-agent') || 'unknown'
-      
-      if (effectiveUserId) {
-        // Log for authenticated users
-        await supabase.from('project_generations').insert({
-          user_id: effectiveUserId,
-          project_type: 'diagram',
-          generation_method: 'user',
-          ai_provider: 'openai',
-          tokens_used: 0,
-          success: true,
-          metadata: {
-            input,
-            businessAnalysis,
-            functionalSpec,
-            technicalSpec,
-            userAgent
-          },
-          created_at: new Date().toISOString()
-        })
-      } else {
-        // Log for anonymous users in separate table using service role
-        const { createClient: createServiceClient } = await import('@supabase/supabase-js')
-        const serviceSupabase = createServiceClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.SUPABASE_SERVICE_ROLE_KEY!
-        )
-        
-        await serviceSupabase.from('anonymous_analytics').insert({
-          action_type: 'diagram_generation',
-          action_data: {
-            input: input.substring(0, 500), // Limit input size
-            businessAnalysis: businessAnalysis?.substring(0, 200),
-            functionalSpec: functionalSpec?.substring(0, 200),
-            technicalSpec: technicalSpec?.substring(0, 200),
-            ai_provider: 'openai'
-          },
-          user_agent: userAgent,
-          timestamp: new Date().toISOString()
-        })
+    // Convert the AI stream to a web-compatible ReadableStream
+    const encoder = new TextEncoder()
+    let fullContent = ''
+    
+    const readableStream = new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const chunk of streamResult.textStream) {
+            fullContent += chunk
+            
+            // Send each chunk as JSON with metadata
+            const chunkData = JSON.stringify({
+              type: 'chunk',
+              content: chunk,
+              fullContent: fullContent,
+              timestamp: Date.now()
+            })
+            
+            controller.enqueue(encoder.encode(`data: ${chunkData}\n\n`))
+          }
+          
+          // Send completion signal
+          const completionData = JSON.stringify({
+            type: 'complete',
+            fullContent: fullContent,
+            timestamp: Date.now()
+          })
+          
+          controller.enqueue(encoder.encode(`data: ${completionData}\n\n`))
+          controller.close()
+          
+        } catch (error) {
+          console.error('Error in streaming:', error)
+          const errorData = JSON.stringify({
+            type: 'error',
+            error: error instanceof Error ? error.message : 'Streaming failed',
+            timestamp: Date.now()
+          })
+          
+          controller.enqueue(encoder.encode(`data: ${errorData}\n\n`))
+          controller.close()
+        }
       }
-    } catch (logError) {
-      console.warn('Failed to log diagram generation:', logError)
-    }
+    })
 
-    return NextResponse.json({
-      mermaidDiagrams: result.content,
-      success: true,
-      metadata: {
-        promptSource: result.promptSource,
-        promptId: result.promptId,
-        promptName: result.promptName,
-        responseTime: result.responseTime,
-        fallbackReason: result.fallbackReason,
-        usageLogId: result.usageLogId
-      }
+    return new Response(readableStream, {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
     })
 
   } catch (error) {
     console.error("Error generating Mermaid diagrams:", error)
-    return NextResponse.json(
-      { 
+    return new Response(
+      JSON.stringify({ 
         error: error instanceof Error ? error.message : "Failed to generate Mermaid diagrams",
         success: false 
-      },
-      { status: 500 }
+      }),
+      { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
     )
   }
 }

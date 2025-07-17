@@ -1,6 +1,6 @@
 import { createOpenAI } from "@ai-sdk/openai"
-import { generateText } from "ai"
-import { type NextRequest, NextResponse } from "next/server"
+import { streamText } from "ai"
+import { type NextRequest } from "next/server"
 import { createServerPromptService } from '@/lib/prompt-service-server'
 import { createClient } from "@/lib/supabase/server"
 
@@ -99,7 +99,7 @@ async function getAuthenticatedUser() {
   }
 }
 
-async function generateWithDatabasePrompt(
+async function generateWithDatabasePromptStreaming(
   input: string,
   businessAnalysis: string,
   functionalSpec: string,
@@ -116,119 +116,62 @@ async function generateWithDatabasePrompt(
   try {
     // Priority 1: Use custom prompt if provided (legacy support)
     if (customPrompt && customPrompt.trim() !== "") {
-      console.log('Using custom prompt from request')
+      console.log('Using custom prompt from request (streaming)')
       const processedPrompt = customPrompt
         .replace(/{{input}}/g, input)
         .replace(/{{business_analysis}}/g, businessAnalysis)
         .replace(/{{functional_spec}}/g, functionalSpec)
         .replace(/{{technical_spec}}/g, technicalSpec)
       
-      const result = await generateText({
+      return await streamText({
         model: openaiClient("gpt-4o"),
         prompt: processedPrompt,
       })
-      
-      return {
-        content: result.text,
-        promptSource: 'custom',
-        responseTime: Date.now() - startTime
-      }
     }
 
     // Priority 2: Load prompt from database
     const promptTemplate = await promptService.getPromptForExecution('ux', userId || 'anonymous')
     
     if (promptTemplate) {
-      console.log(`Using database prompt: ${promptTemplate.name} (v${promptTemplate.version})`)
+      console.log(`Using database prompt for streaming: ${promptTemplate.name} (v${promptTemplate.version})`)
       
-      try {
-        // Prepare the prompt
-        const { processedContent } = await promptService.preparePrompt(
-          promptTemplate.id,
-          { 
-            input: input,
-            business_analysis: businessAnalysis,
-            functional_spec: functionalSpec,
-            technical_spec: technicalSpec,
-          }
-        )
-        
-        // Execute AI call
-        const aiResult = await generateText({
-          model: openaiClient("gpt-4o"),
-          prompt: processedContent,
-        })
-        
-        const responseTime = Date.now() - startTime
-        
-        // Log successful usage
-        const usageLogId = await promptService.logUsage(
-          promptTemplate.id,
-          userId || 'anonymous',
-          { input, business_analysis: businessAnalysis, functional_spec: functionalSpec, technical_spec: technicalSpec },
-          {
-            content: aiResult.text,
-            input_tokens: Math.floor(processedContent.length / 4),
-            output_tokens: Math.floor(aiResult.text.length / 4),
-          },
-          responseTime,
-          true,
-          undefined,
-          projectId,
-          'gpt-4o'
-        )
-        
-        return {
-          content: aiResult.text,
-          promptSource: 'database',
-          promptId: promptTemplate.id,
-          promptName: promptTemplate.name,
-          responseTime,
-          usageLogId
+      // Prepare the prompt
+      const { processedContent } = await promptService.preparePrompt(
+        promptTemplate.id,
+        { 
+          input: input,
+          business_analysis: businessAnalysis,
+          functional_spec: functionalSpec,
+          technical_spec: technicalSpec,
         }
-      } catch (aiError) {
-        // Log failed usage
-        const responseTime = Date.now() - startTime
-        await promptService.logUsage(
-          promptTemplate.id,
-          userId || 'anonymous',
-          { input, business_analysis: businessAnalysis, functional_spec: functionalSpec, technical_spec: technicalSpec },
-          { content: '', input_tokens: 0, output_tokens: 0 },
-          responseTime,
-          false,
-          aiError instanceof Error ? aiError.message : 'AI execution failed',
-          projectId,
-          'gpt-4o'
-        )
-        throw aiError
-      }
+      )
+      
+      // Execute AI streaming call
+      const streamResult = await streamText({
+        model: openaiClient("gpt-4o"),
+        prompt: processedContent,
+      })
+      
+      // Note: We'll log usage after streaming completes in the response handler
+      return streamResult
     }
 
     // Priority 3: Fallback to hardcoded prompt
-    console.warn('No database prompt found, using hardcoded fallback')
-    throw new Error('No database prompt available')
-    
-  } catch (error) {
-    console.warn('Database prompt failed, using hardcoded fallback:', error)
-    
-    // Fallback execution with hardcoded prompt
+    console.warn('No database prompt found, using hardcoded fallback for streaming')
     const processedPrompt = FALLBACK_PROMPT
       .replace(/\{input\}/g, input)
       .replace(/\{business_analysis\}/g, businessAnalysis)
       .replace(/\{functional_spec\}/g, functionalSpec)
       .replace(/\{technical_spec\}/g, technicalSpec)
     
-    const result = await generateText({
+    return await streamText({
       model: openaiClient("gpt-4o"),
       prompt: processedPrompt,
     })
     
-    return {
-      content: result.text,
-      promptSource: 'fallback',
-      responseTime: Date.now() - startTime,
-      fallbackReason: error instanceof Error ? error.message : 'Unknown error'
-    }
+  } catch (error) {
+    console.error('Error in streaming generation:', error)
+    throw error
   }
 }
 
@@ -238,9 +181,12 @@ export async function POST(req: NextRequest) {
     
     // Validate OpenAI API key
     if (!openaiKey || openaiKey.trim() === '') {
-      return NextResponse.json(
-        { error: "OpenAI API key is required" },
-        { status: 400 }
+      return new Response(
+        JSON.stringify({ error: "OpenAI API key is required" }),
+        { 
+          status: 400, 
+          headers: { 'Content-Type': 'application/json' }
+        }
       )
     }
 
@@ -248,11 +194,11 @@ export async function POST(req: NextRequest) {
     const user = await getAuthenticatedUser()
     const effectiveUserId = userId || user?.id
 
-    console.log('Generating UX Specification with database prompts...')
+    console.log('🚀 Starting streaming UX Specification generation...')
     console.log('User ID:', effectiveUserId)
     console.log('Project ID:', projectId)
 
-    const result = await generateWithDatabasePrompt(
+    const streamResult = await generateWithDatabasePromptStreaming(
       input,
       businessAnalysis,
       functionalSpec,
@@ -263,30 +209,70 @@ export async function POST(req: NextRequest) {
       projectId
     )
 
-    console.log(`UX Specification generated successfully using ${result.promptSource} prompt`)
-    console.log(`Response time: ${result.responseTime}ms`)
-
-    return NextResponse.json({
-      uxSpec: result.content,
-      success: true,
-      metadata: {
-        promptSource: result.promptSource,
-        promptId: result.promptId,
-        promptName: result.promptName,
-        responseTime: result.responseTime,
-        fallbackReason: result.fallbackReason,
-        usageLogId: result.usageLogId
+    // Convert the AI stream to a web-compatible ReadableStream
+    const encoder = new TextEncoder()
+    let fullContent = ''
+    
+    const readableStream = new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const chunk of streamResult.textStream) {
+            fullContent += chunk
+            
+            // Send each chunk as JSON with metadata
+            const chunkData = JSON.stringify({
+              type: 'chunk',
+              content: chunk,
+              fullContent: fullContent,
+              timestamp: Date.now()
+            })
+            
+            controller.enqueue(encoder.encode(`data: ${chunkData}\n\n`))
+          }
+          
+          // Send completion signal
+          const completionData = JSON.stringify({
+            type: 'complete',
+            fullContent: fullContent,
+            timestamp: Date.now()
+          })
+          
+          controller.enqueue(encoder.encode(`data: ${completionData}\n\n`))
+          controller.close()
+          
+        } catch (error) {
+          console.error('Error in streaming:', error)
+          const errorData = JSON.stringify({
+            type: 'error',
+            error: error instanceof Error ? error.message : 'Streaming failed',
+            timestamp: Date.now()
+          })
+          
+          controller.enqueue(encoder.encode(`data: ${errorData}\n\n`))
+          controller.close()
+        }
       }
+    })
+
+    return new Response(readableStream, {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
     })
 
   } catch (error) {
     console.error("Error generating UX specification:", error)
-    return NextResponse.json(
-      { 
+    return new Response(
+      JSON.stringify({ 
         error: error instanceof Error ? error.message : "Failed to generate UX specification",
         success: false 
-      },
-      { status: 500 }
+      }),
+      { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
     )
   }
 }
