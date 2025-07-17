@@ -61,12 +61,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const handleGoogleSignIn = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { 
-        redirectTo: `${window.location.origin}/auth/callback?redirectTo=/dashboard` 
-      },
-    });
+    try {
+      console.log('🔍 Starting Google sign-in...');
+      console.log('📱 User Agent:', navigator.userAgent);
+      console.log('🌐 Current Origin:', window.location.origin);
+      
+      // Detect mobile device
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      console.log('📱 Is Mobile Device:', isMobile);
+      
+      // Create redirect URL with proper encoding
+      const redirectUrl = `${window.location.origin}/auth/callback?redirectTo=${encodeURIComponent('/dashboard')}`;
+      console.log('🔄 Redirect URL:', redirectUrl);
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { 
+          redirectTo: redirectUrl,
+          queryParams: {
+            // Add mobile-specific parameters
+            prompt: 'select_account',
+            access_type: 'offline'
+          }
+        },
+      });
+      
+      if (error) {
+        console.error('❌ Google OAuth error:', error);
+        throw error;
+      }
+      
+      console.log('✅ Google OAuth initiated successfully:', data);
+      
+      // For mobile, we might need to handle the redirect differently
+      if (isMobile && data.url) {
+        console.log('📱 Mobile device detected, handling redirect...');
+        // On mobile, we might need to use window.location.href instead of the popup
+        window.location.href = data.url;
+      }
+      
+    } catch (error) {
+      console.error('💥 Google sign-in failed:', error);
+      throw error;
+    }
   };
 
   const signInWithEmail = async (email: string, password: string) => {

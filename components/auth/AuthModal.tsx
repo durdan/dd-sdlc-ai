@@ -30,12 +30,37 @@ export function AuthModal({ open, onOpenChange }: { open: boolean; onOpenChange:
     try {
       setIsLoading(true)
       setError(null)
-      console.log('Google sign-in initiated')
+      console.log('🔍 Google sign-in initiated from modal')
+      
+      // Detect mobile device for better user feedback
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      if (isMobile) {
+        console.log('📱 Mobile device detected - providing mobile-specific feedback');
+        // Don't close modal immediately on mobile as redirect might take longer
+      }
+      
       await handleGoogleSignIn()
-      onOpenChange(false)
+      
+      // Only close modal on desktop, mobile will redirect
+      if (!isMobile) {
+        onOpenChange(false)
+      }
     } catch (error: any) {
-      setError(error.message || 'Failed to sign in with Google')
-      console.error('Google sign-in error:', error)
+      console.error('❌ Google sign-in error in modal:', error)
+      
+      // Provide mobile-specific error messages
+      let errorMessage = error.message || 'Failed to sign in with Google'
+      
+      if (error.message?.includes('popup')) {
+        errorMessage = 'Popup blocked. Please allow popups for this site and try again.'
+      } else if (error.message?.includes('redirect')) {
+        errorMessage = 'Redirect failed. Please try again or check your internet connection.'
+      } else if (error.message?.includes('network')) {
+        errorMessage = 'Network error. Please check your internet connection and try again.'
+      }
+      
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }
