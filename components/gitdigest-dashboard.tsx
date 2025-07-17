@@ -1608,28 +1608,35 @@ export function GitDigestDashboard({ config }: GitDigestDashboardProps) {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="analyze" className="flex items-center gap-2">
-            <Zap className="w-4 h-4 mr-2" />
-            Analyze
-          </TabsTrigger>
-          <TabsTrigger value="digest" className="flex items-center gap-2">
-            <FileText className="w-4 h-4 mr-2" />
-            Digest
-          </TabsTrigger>
-          <TabsTrigger value="reports" className="flex items-center gap-2">
-            <Clock className="w-4 h-4 mr-2" />
-            Daily Reports
-          </TabsTrigger>
-          <TabsTrigger value="my-digests" className="flex items-center gap-2">
-            <BookOpen className="w-4 h-4 mr-2" />
-            My Digests
-          </TabsTrigger>
-          <TabsTrigger value="settings" className="flex items-center gap-2">
-            <Settings className="w-4 h-4 mr-2" />
-            Settings
-          </TabsTrigger>
-        </TabsList>
+        <div className="tabs-mobile-container tabs-scroll-container mb-4">
+          <TabsList className="tabs-mobile-list">
+            <TabsTrigger value="analyze" className="tab-trigger-mobile">
+              <Zap className="w-4 h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Analyze</span>
+              <span className="sm:hidden">Analyze</span>
+            </TabsTrigger>
+            <TabsTrigger value="digest" className="tab-trigger-mobile">
+              <FileText className="w-4 h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Digest</span>
+              <span className="sm:hidden">Digest</span>
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="tab-trigger-mobile">
+              <Clock className="w-4 h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Daily Reports</span>
+              <span className="sm:hidden">Reports</span>
+            </TabsTrigger>
+            <TabsTrigger value="my-digests" className="tab-trigger-mobile">
+              <BookOpen className="w-4 h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">My Digests</span>
+              <span className="sm:hidden">My Digests</span>
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="tab-trigger-mobile">
+              <Settings className="w-4 h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Settings</span>
+              <span className="sm:hidden">Settings</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="analyze" className="space-y-6">
           {renderAnalyzeTab()}

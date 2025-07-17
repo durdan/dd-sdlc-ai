@@ -1,7 +1,7 @@
 import { createOpenAI } from "@ai-sdk/openai"
-import { generateText } from "ai"
+import { streamText } from "ai"
 import { type NextRequest, NextResponse } from "next/server"
-import { createPromptService } from '@/lib/prompt-service'
+import { createServerPromptService } from '@/lib/prompt-service-server'
 import { createClient } from "@/lib/supabase/server"
 
 export const maxDuration = 600 // 10 minutes for comprehensive generation
@@ -362,7 +362,7 @@ export async function POST(req: NextRequest) {
         processedPrompt += `\n\nContext from Functional Spec:\n${context.functionalSpec.substring(0, 2000)}`
       }
       
-      const result = await generateText({
+      const result = await streamText({
         model: openaiClient("gpt-4o"),
         prompt: processedPrompt,
         maxTokens: maxTokens, // Significantly increased token limit

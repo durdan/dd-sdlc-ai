@@ -459,20 +459,46 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
 
       {/* Tabs for different document types */}
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as DocumentType | 'guide' | 'user-prompts' | 'analytics')}>
-        <TabsList className="grid w-full grid-cols-8">
-          <TabsTrigger value="business">Business</TabsTrigger>
-          <TabsTrigger value="functional">Functional</TabsTrigger>
-          <TabsTrigger value="technical">Technical</TabsTrigger>
-          <TabsTrigger value="ux">UX</TabsTrigger>
-          <TabsTrigger value="mermaid">Mermaid</TabsTrigger>
-          {userRole === 'admin' && (
-            <>
-              <TabsTrigger value="user-prompts">User Prompts</TabsTrigger>
-              <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            </>
-          )}
-          <TabsTrigger value="guide">Guide</TabsTrigger>
-        </TabsList>
+        <div className="tabs-mobile-container tabs-scroll-container mb-4">
+          <TabsList className="tabs-mobile-list">
+            <TabsTrigger value="business" className="tab-trigger-mobile">
+              <span className="hidden sm:inline">Business</span>
+              <span className="sm:hidden">Business</span>
+            </TabsTrigger>
+            <TabsTrigger value="functional" className="tab-trigger-mobile">
+              <span className="hidden sm:inline">Functional</span>
+              <span className="sm:hidden">Functional</span>
+            </TabsTrigger>
+            <TabsTrigger value="technical" className="tab-trigger-mobile">
+              <span className="hidden sm:inline">Technical</span>
+              <span className="sm:hidden">Technical</span>
+            </TabsTrigger>
+            <TabsTrigger value="ux" className="tab-trigger-mobile">
+              <span className="hidden sm:inline">UX</span>
+              <span className="sm:hidden">UX</span>
+            </TabsTrigger>
+            <TabsTrigger value="mermaid" className="tab-trigger-mobile">
+              <span className="hidden sm:inline">Mermaid</span>
+              <span className="sm:hidden">Mermaid</span>
+            </TabsTrigger>
+            {userRole === 'admin' && (
+              <>
+                <TabsTrigger value="user-prompts" className="tab-trigger-mobile">
+                  <span className="hidden sm:inline">User Prompts</span>
+                  <span className="sm:hidden">Users</span>
+                </TabsTrigger>
+                <TabsTrigger value="analytics" className="tab-trigger-mobile">
+                  <span className="hidden sm:inline">Analytics</span>
+                  <span className="sm:hidden">Analytics</span>
+                </TabsTrigger>
+              </>
+            )}
+            <TabsTrigger value="guide" className="tab-trigger-mobile">
+              <span className="hidden sm:inline">Guide</span>
+              <span className="sm:hidden">Guide</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {Object.entries(prompts).map(([type, typePrompts]) => (
           <TabsContent key={type} value={type} className="space-y-4">
@@ -501,31 +527,35 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
                 {typePrompts.map((prompt) => (
                   <Card key={prompt.id} className="relative">
                     <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <div>
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+                        <div className="flex-1 min-w-0">
                           <CardTitle className="flex items-center gap-2">
-                            {prompt.name}
+                            <span className="truncate">{prompt.name}</span>
                             {getStatusBadge(prompt)}
                             <Badge variant="outline">v{prompt.version}</Badge>
                           </CardTitle>
-                          <CardDescription>
+                          <CardDescription className="line-clamp-2">
                             {prompt.description || 'No description provided'}
                           </CardDescription>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleTestPrompt(prompt)}
+                            className="flex items-center gap-1"
                           >
                             <Play className="h-4 w-4" />
+                            <span className="hidden sm:inline">Test</span>
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleViewAnalytics(prompt)}
+                            className="flex items-center gap-1"
                           >
                             <BarChart3 className="h-4 w-4" />
+                            <span className="hidden sm:inline">Analytics</span>
                           </Button>
                           {userRole === 'admin' && (
                             <>
@@ -533,31 +563,39 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleEditPrompt(prompt)}
+                                className="flex items-center gap-1"
                               >
                                 <Edit className="h-4 w-4" />
+                                <span className="hidden sm:inline">Edit</span>
                               </Button>
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleClonePrompt(prompt)}
+                                className="flex items-center gap-1"
                               >
                                 <Copy className="h-4 w-4" />
+                                <span className="hidden sm:inline">Clone</span>
                               </Button>
                               {prompt.is_active ? (
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleDeactivatePrompt(prompt)}
+                                  className="flex items-center gap-1"
                                 >
                                   <Pause className="h-4 w-4" />
+                                  <span className="hidden sm:inline">Pause</span>
                                 </Button>
                               ) : (
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleActivatePrompt(prompt)}
+                                  className="flex items-center gap-1"
                                 >
                                   <Play className="h-4 w-4" />
+                                  <span className="hidden sm:inline">Activate</span>
                                 </Button>
                               )}
                               {!prompt.is_default && (
@@ -565,17 +603,20 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleActivatePrompt(prompt, true)}
+                                  className="flex items-center gap-1"
                                 >
-                                  Set Default
+                                  <span className="hidden sm:inline">Set Default</span>
+                                  <span className="sm:hidden">Default</span>
                                 </Button>
                               )}
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleDeletePrompt(prompt)}
-                                className="text-red-600 hover:text-red-700"
+                                className="text-red-600 hover:text-red-700 flex items-center gap-1"
                               >
                                 <Trash2 className="h-4 w-4" />
+                                <span className="hidden sm:inline">Delete</span>
                               </Button>
                             </>
                           )}
@@ -627,7 +668,7 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
               </CardHeader>
               <CardContent>
                 {/* Filters */}
-                <div className="flex gap-4 mb-6">
+                <div className="flex flex-col sm:flex-row gap-4 mb-6">
                   <div className="flex-1">
                     <div className="relative">
                       <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -640,7 +681,7 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
                     </div>
                   </div>
                   <Select value={userPromptTypeFilter} onValueChange={setUserPromptTypeFilter}>
-                    <SelectTrigger className="w-[180px]">
+                    <SelectTrigger className="w-full sm:w-[180px]">
                       <SelectValue placeholder="Document Type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -653,7 +694,7 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
                     </SelectContent>
                   </Select>
                   <Select value={userPromptStatusFilter} onValueChange={setUserPromptStatusFilter}>
-                    <SelectTrigger className="w-[140px]">
+                    <SelectTrigger className="w-full sm:w-[140px]">
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent>

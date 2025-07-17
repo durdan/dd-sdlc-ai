@@ -207,29 +207,36 @@ export default function UserPromptsPage() {
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="container mx-auto p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">My Prompts</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">My Prompts</h1>
           <p className="text-gray-600 mt-1">
             Create and manage your personal AI prompts
           </p>
         </div>
-        <Button onClick={handleCreatePrompt} className="flex items-center gap-2">
+        <Button onClick={handleCreatePrompt} className="flex items-center gap-2 w-full sm:w-auto">
           <Plus size={16} />
-          Create New Prompt
+          <span className="hidden sm:inline">Create New Prompt</span>
+          <span className="sm:hidden">New Prompt</span>
         </Button>
       </div>
 
       <Tabs value={selectedType} onValueChange={setSelectedType} className="w-full">
-        <TabsList className="grid w-full grid-cols-7">
-          <TabsTrigger value="all">All ({prompts.length})</TabsTrigger>
-          {DOCUMENT_TYPES.map(type => (
-            <TabsTrigger key={type.value} value={type.value}>
-              {type.label.split(' ')[0]} ({prompts.filter(p => p.document_type === type.value).length})
+        <div className="tabs-mobile-container tabs-scroll-container mb-4">
+          <TabsList className="tabs-mobile-list">
+            <TabsTrigger value="all" className="tab-trigger-mobile">
+              <span className="hidden sm:inline">All ({prompts.length})</span>
+              <span className="sm:hidden">All</span>
             </TabsTrigger>
-          ))}
-        </TabsList>
+            {DOCUMENT_TYPES.map(type => (
+              <TabsTrigger key={type.value} value={type.value} className="tab-trigger-mobile">
+                <span className="hidden sm:inline">{type.label.split(' ')[0]} ({prompts.filter(p => p.document_type === type.value).length})</span>
+                <span className="sm:hidden">{type.label.split(' ')[0]}</span>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
 
         <TabsContent value={selectedType} className="mt-6">
           {filteredPrompts.length === 0 ? (
@@ -251,26 +258,27 @@ export default function UserPromptsPage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
               {filteredPrompts.map((prompt) => (
                 <Card key={prompt.id} className="relative">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <CardTitle className="text-lg flex items-center gap-2">
-                          {prompt.name}
+                          <span className="truncate">{prompt.name}</span>
                           {prompt.is_personal_default && (
-                            <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                            <Star className="h-4 w-4 text-yellow-500 fill-current flex-shrink-0" />
                           )}
                         </CardTitle>
-                        <CardDescription className="mt-1">
+                        <CardDescription className="mt-1 line-clamp-2">
                           {prompt.description || 'No description provided'}
                         </CardDescription>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 mt-2">
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
                       <Badge className={getTypeColor(prompt.document_type)}>
-                        {getTypeLabel(prompt.document_type)}
+                        <span className="hidden sm:inline">{getTypeLabel(prompt.document_type)}</span>
+                        <span className="sm:hidden">{getTypeLabel(prompt.document_type).split(' ')[0]}</span>
                       </Badge>
                       <Badge variant="outline">
                         v{prompt.version}
@@ -297,46 +305,46 @@ export default function UserPromptsPage() {
                       )}
 
                       {/* Action Buttons */}
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleEditPrompt(prompt.id)}
-                          className="flex items-center gap-1"
+                          className="flex items-center gap-1 flex-1 sm:flex-none"
                         >
                           <Edit size={14} />
-                          Edit
+                          <span className="hidden sm:inline">Edit</span>
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleTestPrompt(prompt.id)}
-                          className="flex items-center gap-1"
+                          className="flex items-center gap-1 flex-1 sm:flex-none"
                         >
                           <TestTube size={14} />
-                          Test
+                          <span className="hidden sm:inline">Test</span>
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleToggleDefault(prompt.id, prompt.is_personal_default)}
-                          className="flex items-center gap-1"
+                          className="flex items-center gap-1 flex-1 sm:flex-none"
                         >
                           {prompt.is_personal_default ? (
                             <StarOff size={14} />
                           ) : (
                             <Star size={14} />
                           )}
-                          {prompt.is_personal_default ? 'Unset' : 'Default'}
+                          <span className="hidden sm:inline">{prompt.is_personal_default ? 'Unset' : 'Default'}</span>
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleDeletePrompt(prompt.id)}
-                          className="flex items-center gap-1 text-red-600 hover:text-red-700"
+                          className="flex items-center gap-1 text-red-600 hover:text-red-700 flex-1 sm:flex-none"
                         >
                           <Trash2 size={14} />
-                          Delete
+                          <span className="hidden sm:inline">Delete</span>
                         </Button>
                       </div>
                     </div>

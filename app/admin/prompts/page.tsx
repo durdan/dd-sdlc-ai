@@ -163,17 +163,17 @@ export default function AdminPromptsPage() {
     <div className="min-h-screen bg-background">
       <div className="border-b">
         <div className="container mx-auto py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <Shield className="h-6 w-6 text-primary" />
               <div>
-                <h1 className="text-2xl font-bold">Admin Panel</h1>
+                <h1 className="text-xl sm:text-2xl font-bold">Admin Panel</h1>
                 <p className="text-sm text-muted-foreground">
                   Prompt Management System
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-2">
               <span className="text-sm text-muted-foreground">
                 Logged in as {user.email}
               </span>

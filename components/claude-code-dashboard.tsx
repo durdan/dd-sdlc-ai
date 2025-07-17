@@ -39,7 +39,9 @@ import {
   Github,
   Eye,
   RotateCcw,
-  Trash2
+  Trash2,
+  RefreshCw,
+  Settings
 } from 'lucide-react'
 import { useFreemiumUsage } from '@/hooks/use-freemium-usage'
 import { StreamingResponseWindow } from './streaming-response-window'
@@ -122,6 +124,14 @@ export default function ClaudeCodeDashboard() {
   // Streaming response state
   const [streamingResponses, setStreamingResponses] = useState<Record<string, string>>({})
   const [streamingTasks, setStreamingTasks] = useState<Set<string>>(new Set())
+
+  // GitHub repository loading states
+  const [isLoadingRepositories, setIsLoadingRepositories] = useState(false)
+  const [repositoryError, setRepositoryError] = useState<string | null>(null)
+  const [repositoryRetryCount, setRepositoryRetryCount] = useState(0)
+  const [lastRepositoryLoadTime, setLastRepositoryLoadTime] = useState<number | null>(null)
+  const [showTimeoutWarning, setShowTimeoutWarning] = useState(false)
+  const [loadStartTime, setLoadStartTime] = useState<number | null>(null)
 
   // Auto-clear success messages after 10 seconds
   useEffect(() => {
@@ -402,23 +412,117 @@ export default function ClaudeCodeDashboard() {
     }
   }
 
-  const loadRepositories = async () => {
-    console.log('🔵 loadRepositories called')
+  const loadRepositories = async (isRetry = false) => {
+    console.log('🔵 loadRepositories called', { isRetry, retryCount: repositoryRetryCount })
+    
+    // Prevent multiple simultaneous loads
+    if (isLoadingRepositories && !isRetry) {
+      console.log('⚠️ Repository loading already in progress, skipping')
+      return
+    }
+    
+    setIsLoadingRepositories(true)
+    setRepositoryError(null)
+    setShowTimeoutWarning(false)
+    setLoadStartTime(Date.now())
+    
+    // Set timeout warning for mobile users
+    const timeoutWarning = setTimeout(() => {
+      if (isLoadingRepositories) {
+        setShowTimeoutWarning(true)
+      }
+    }, 10000) // Show warning after 10 seconds
+    
     try {
-      const response = await fetch('/api/auth/github/repos')
+      console.log('📡 Fetching GitHub repositories...')
+      const response = await fetch('/api/auth/github/repos', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // Add timeout for mobile devices
+        signal: AbortSignal.timeout(30000) // 30 second timeout
+      })
+      
+      clearTimeout(timeoutWarning)
       console.log('📥 GitHub repos response status:', response.status)
       
       if (response.ok) {
         const data = await response.json()
         console.log('📥 GitHub repos data:', data)
         console.log('📥 Repositories count:', data.repositories?.length || 0)
+        
         setRepositories(data.repositories || [])
+        setRepositoryRetryCount(0)
+        setLastRepositoryLoadTime(Date.now())
+        
+        // Show success message for mobile users
+        if (data.repositories?.length > 0) {
+          setSuccess(`✅ Loaded ${data.repositories.length} repositories successfully`)
+        } else {
+          setRepositoryError('No repositories found. Please check your GitHub connection.')
+        }
+        
       } else {
-        console.log('❌ Failed to load repositories:', response.status)
+        const errorData = await response.json().catch(() => ({}))
+        console.log('❌ Failed to load repositories:', response.status, errorData)
+        
+        let errorMessage = 'Failed to load repositories'
+        
+        if (response.status === 401) {
+          errorMessage = 'GitHub authentication required. Please reconnect your GitHub account.'
+        } else if (response.status === 403) {
+          errorMessage = 'GitHub access denied. Please check your repository permissions.'
+        } else if (response.status === 429) {
+          errorMessage = 'GitHub rate limit exceeded. Please try again in a few minutes.'
+        } else if (response.status >= 500) {
+          errorMessage = 'GitHub service temporarily unavailable. Please try again later.'
+        } else if (errorData.error) {
+          errorMessage = errorData.error
+        }
+        
+        setRepositoryError(errorMessage)
+        
+        // Auto-retry for network errors on mobile
+        if (response.status >= 500 && repositoryRetryCount < 2) {
+          console.log(`🔄 Auto-retrying repository load (attempt ${repositoryRetryCount + 1}/3)`)
+          setTimeout(() => {
+            setRepositoryRetryCount(prev => prev + 1)
+            loadRepositories(true)
+          }, 2000)
+        }
       }
     } catch (error) {
-      console.log('❌ Error loading repositories:', error)
-      console.error('Failed to load repositories:', error)
+      clearTimeout(timeoutWarning)
+      const loadTime = Date.now() - (loadStartTime || Date.now())
+      console.log('❌ Error loading repositories:', error, `(took ${loadTime}ms)`)
+      
+      let errorMessage = 'Failed to load repositories'
+      
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorMessage = 'Repository loading timed out. Please check your internet connection and try again.'
+        } else if (error.message.includes('fetch')) {
+          errorMessage = 'Network error. Please check your internet connection.'
+        } else {
+          errorMessage = error.message
+        }
+      }
+      
+      setRepositoryError(errorMessage)
+      
+      // Auto-retry for network errors
+      if (repositoryRetryCount < 2 && (error instanceof Error && error.name !== 'AbortError')) {
+        console.log(`🔄 Auto-retrying repository load due to network error (attempt ${repositoryRetryCount + 1}/3)`)
+        setTimeout(() => {
+          setRepositoryRetryCount(prev => prev + 1)
+          loadRepositories(true)
+        }, 3000)
+      }
+    } finally {
+      setIsLoadingRepositories(false)
+      setShowTimeoutWarning(false)
+      setLoadStartTime(null)
     }
   }
 
@@ -1204,30 +1308,106 @@ export default function ClaudeCodeDashboard() {
           </Alert>
         )}
 
+        {/* Mobile-Friendly Notifications */}
+        {(isLoadingRepositories || repositoryError || showTimeoutWarning) && (
+          <div className="mb-4">
+            {isLoadingRepositories && (
+              <Alert className="bg-blue-50 border-blue-200">
+                <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                <AlertDescription className="text-blue-800">
+                  <span className="font-medium">Loading GitHub repositories...</span>
+                  {repositoryRetryCount > 0 && (
+                    <span className="block text-sm mt-1">Retry attempt {repositoryRetryCount}/3</span>
+                  )}
+                  {showTimeoutWarning && (
+                    <span className="block text-sm mt-1 text-amber-700">
+                      ⚠️ Taking longer than usual. This is normal on slower connections.
+                    </span>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            {showTimeoutWarning && !isLoadingRepositories && (
+              <Alert className="bg-amber-50 border-amber-200">
+                <AlertCircle className="h-4 w-4 text-amber-600" />
+                <AlertDescription className="text-amber-800">
+                  <span className="font-medium">Repository loading is taking longer than expected</span>
+                  <span className="block text-sm mt-1">
+                    This might be due to a slow internet connection or GitHub API delays. 
+                    The request will continue for up to 30 seconds.
+                  </span>
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            {repositoryError && !isLoadingRepositories && (
+              <Alert className="bg-red-50 border-red-200">
+                <AlertCircle className="h-4 w-4 text-red-600" />
+                <AlertDescription className="text-red-800">
+                  <span className="font-medium">Repository loading failed:</span>
+                  <span className="block text-sm mt-1">{repositoryError}</span>
+                  <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setRepositoryRetryCount(0)
+                        loadRepositories()
+                      }}
+                      disabled={isLoadingRepositories}
+                      className="text-red-700 border-red-300 hover:bg-red-100"
+                    >
+                      <RefreshCw className="h-3 w-3 mr-1" />
+                      Try Again
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => window.location.href = '/admin/integrations'}
+                      className="text-red-700 border-red-300 hover:bg-red-100"
+                    >
+                      <Settings className="h-3 w-3 mr-1" />
+                      Check Connection
+                    </Button>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+        )}
+
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="overview" className="flex items-center gap-2">
-              <Search className="h-4 w-4" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="tasks" className="flex items-center gap-2">
-              <Code className="h-4 w-4" />
-              Tasks
-            </TabsTrigger>
-            <TabsTrigger value="analyze" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Code Analysis
-            </TabsTrigger>
-            <TabsTrigger value="bugs" className="flex items-center gap-2">
-              <Bug className="h-4 w-4" />
-              Bug Detection
-            </TabsTrigger>
-            <TabsTrigger value="repositories" className="flex items-center gap-2">
-              <Github className="h-4 w-4" />
-              Repositories
-            </TabsTrigger>
-          </TabsList>
+          <div className="tabs-mobile-container tabs-scroll-container mb-4">
+            <TabsList className="tabs-mobile-list">
+              <TabsTrigger value="overview" className="tab-trigger-mobile">
+                <Search className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Overview</span>
+                <span className="sm:hidden">Overview</span>
+              </TabsTrigger>
+              <TabsTrigger value="tasks" className="tab-trigger-mobile">
+                <Code className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Tasks</span>
+                <span className="sm:hidden">Tasks</span>
+              </TabsTrigger>
+              <TabsTrigger value="analyze" className="tab-trigger-mobile">
+                <FileText className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Code Analysis</span>
+                <span className="sm:hidden">Analysis</span>
+              </TabsTrigger>
+              <TabsTrigger value="bugs" className="tab-trigger-mobile">
+                <Bug className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Bug Detection</span>
+                <span className="sm:hidden">Bugs</span>
+              </TabsTrigger>
+              <TabsTrigger value="repositories" className="tab-trigger-mobile">
+                <Github className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Repositories</span>
+                <span className="sm:hidden">Repos</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="overview" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -1664,48 +1844,164 @@ export default function ClaudeCodeDashboard() {
           <TabsContent value="repositories" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Connected Repositories</CardTitle>
-                <CardDescription>Repositories available for Claude AI operations</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Connected Repositories</CardTitle>
+                    <CardDescription>Repositories available for Claude AI operations</CardDescription>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    {lastRepositoryLoadTime && (
+                      <span className="text-xs text-gray-500">
+                        Last updated: {new Date(lastRepositoryLoadTime).toLocaleTimeString()}
+                      </span>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => loadRepositories()}
+                      disabled={isLoadingRepositories}
+                      className="flex items-center space-x-1"
+                    >
+                      {isLoadingRepositories ? (
+                        <>
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          <span>Loading...</span>
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="h-3 w-3" />
+                          <span>Refresh</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
-                {repositories.length === 0 ? (
+                {/* Loading State */}
+                {isLoadingRepositories && (
+                  <div className="text-center py-8">
+                    <Loader2 className="h-8 w-8 text-blue-500 animate-spin mx-auto mb-3" />
+                    <p className="text-gray-600 font-medium">Loading repositories...</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {repositoryRetryCount > 0 ? `Retry attempt ${repositoryRetryCount}/3` : 'Connecting to GitHub'}
+                    </p>
+                    <div className="mt-4 flex justify-center">
+                      <div className="flex space-x-1">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Error State */}
+                {repositoryError && !isLoadingRepositories && (
+                  <div className="text-center py-6">
+                    <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-3" />
+                    <p className="text-red-600 font-medium mb-2">Failed to load repositories</p>
+                    <p className="text-sm text-gray-500 mb-4 max-w-md mx-auto">{repositoryError}</p>
+                    <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setRepositoryRetryCount(0)
+                          loadRepositories()
+                        }}
+                        disabled={isLoadingRepositories}
+                        className="flex items-center space-x-1"
+                      >
+                        <RefreshCw className="h-3 w-3" />
+                        <span>Try Again</span>
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => window.location.href = '/admin/integrations'}
+                        className="flex items-center space-x-1"
+                      >
+                        <Settings className="h-3 w-3" />
+                        <span>Check GitHub Connection</span>
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Empty State */}
+                {!isLoadingRepositories && !repositoryError && repositories.length === 0 && (
                   <div className="text-center py-6">
                     <Github className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                    <p className="text-gray-500">No repositories connected.</p>
-                    <p className="text-sm text-gray-400">Connect your GitHub account to get started.</p>
+                    <p className="text-gray-500 font-medium">No repositories connected</p>
+                    <p className="text-sm text-gray-400 mb-4">Connect your GitHub account to get started</p>
+                    <Button
+                      size="sm"
+                      onClick={() => window.location.href = '/admin/integrations'}
+                      className="flex items-center space-x-1"
+                    >
+                      <Github className="h-3 w-3" />
+                      <span>Connect GitHub</span>
+                    </Button>
                   </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {repositories.map((repo) => (
-                      <div key={repo.fullName} className="border rounded-lg p-4">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h4 className="font-medium">{repo.name}</h4>
-                            <p className="text-sm text-gray-500">{repo.fullName}</p>
-                            {repo.description && (
-                              <p className="text-xs text-gray-400 mt-1">{repo.description}</p>
-                            )}
-                            {repo.language && (
-                              <Badge variant="outline" className="mt-2 text-xs">
-                                {repo.language}
-                              </Badge>
-                            )}
-                          </div>
-                          <Badge variant={repo.private ? 'secondary' : 'outline'}>
-                            {repo.private ? 'Private' : 'Public'}
-                          </Badge>
-                        </div>
-                        <Separator className="my-2" />
-                        <div className="flex items-center justify-between">
-                          <Button size="sm" variant="outline" asChild>
-                            <a href={repo.url} target="_blank" rel="noopener noreferrer">
-                              <Github className="h-3 w-3 mr-1" />
-                              View on GitHub
-                            </a>
-                          </Button>
-                        </div>
+                )}
+
+                {/* Success State - Repositories List */}
+                {!isLoadingRepositories && !repositoryError && repositories.length > 0 && (
+                  <div className="space-y-4">
+                    {/* Success Message */}
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                      <div className="flex items-center space-x-2">
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                        <span className="text-sm text-green-700">
+                          {repositories.length} repository{repositories.length !== 1 ? 'ies' : 'y'} loaded successfully
+                        </span>
                       </div>
-                    ))}
+                    </div>
+
+                    {/* Repositories Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {repositories.map((repo) => (
+                        <div key={repo.fullName} className="border rounded-lg p-4 hover:border-blue-300 transition-colors">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium text-gray-900 truncate">{repo.name}</h4>
+                              <p className="text-sm text-gray-500 truncate">{repo.fullName}</p>
+                              {repo.description && (
+                                <p className="text-xs text-gray-400 mt-1 line-clamp-2">{repo.description}</p>
+                              )}
+                              <div className="flex items-center space-x-2 mt-2">
+                                {repo.language && (
+                                  <Badge variant="outline" className="text-xs">
+                                    {repo.language}
+                                  </Badge>
+                                )}
+                                <Badge variant={repo.private ? 'secondary' : 'outline'} className="text-xs">
+                                  {repo.private ? 'Private' : 'Public'}
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                          <Separator className="my-3" />
+                          <div className="flex items-center justify-between">
+                            <Button size="sm" variant="outline" asChild>
+                              <a href={repo.url} target="_blank" rel="noopener noreferrer" className="flex items-center space-x-1">
+                                <Github className="h-3 w-3" />
+                                <span>View on GitHub</span>
+                              </a>
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setSelectedRepo(repo.fullName)}
+                              className="flex items-center space-x-1"
+                            >
+                              <Code className="h-3 w-3" />
+                              <span>Use for AI</span>
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </CardContent>
@@ -1858,230 +2154,215 @@ export default function ClaudeCodeDashboard() {
                           <Button size="sm" variant="outline" asChild>
                             <a href={getPullRequestInfo(selectedTask)?.url} target="_blank" rel="noopener noreferrer">
                               <ExternalLink className="h-3 w-3 mr-1" />
-                              Review PR
+                              View PR
                             </a>
                           </Button>
-                          <Badge variant={prStatuses[selectedTask.id]?.merged ? 'default' : 'secondary'}>
-                            {prStatuses[selectedTask.id]?.merged ? 'Merged' : prStatuses[selectedTask.id]?.state || getPullRequestInfo(selectedTask)?.state || 'Open'}
-                          </Badge>
                         </div>
                       </div>
                     )}
                   </div>
 
-                  {/* Task Status and Timing */}
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-4">
-                      <div className="flex items-center space-x-2">
-                        {getEnhancedStatusIcon(selectedTask)}
-                        <span className="font-medium">Status</span>
-                      </div>
-                      <Badge variant="outline" className={getStatusColor(selectedTask.status)}>
-                        {selectedTask.status}
-                      </Badge>
-                      {selectedTask.progress !== undefined && (
-                        <div className="flex items-center gap-2">
-                          <Progress value={selectedTask.progress} className="w-24 h-2" />
-                          <span className="text-sm text-gray-600">{selectedTask.progress}%</span>
+                  {/* Generated Code Results */}
+                  {selectedTask.result && (
+                    <div className="space-y-4">
+                      <h3 className="font-semibold flex items-center gap-2">
+                        <Code className="h-4 w-4" />
+                        Generated Code
+                      </h3>
+                      
+                      {/* Files to Create */}
+                      {selectedTask.result.implementation?.files_to_create?.length > 0 && (
+                        <div className="space-y-2">
+                          <h4 className="font-medium text-sm text-gray-700">Files to Create:</h4>
+                          {selectedTask.result.implementation.files_to_create.map((file: any, index: number) => (
+                            <div key={index} className="border rounded-lg p-3 bg-gray-50">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="font-mono text-sm text-blue-600">{file.path}</span>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => toggleFileExpansion(`create-${file.path}`)}
+                                  className="h-6 px-2"
+                                >
+                                  {expandedFiles.has(`create-${file.path}`) ? 'Hide' : 'Show'} Code
+                                </Button>
+                              </div>
+                              <p className="text-sm text-gray-600 mb-2">{file.description}</p>
+                              {expandedFiles.has(`create-${file.path}`) && (
+                                <div className="bg-black text-green-400 p-3 rounded font-mono text-xs overflow-x-auto">
+                                  <pre>{file.content}</pre>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => copyToClipboard(file.content)}
+                                    className="mt-2 h-6 px-2 text-xs"
+                                  >
+                                    Copy Code
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          ))}
                         </div>
                       )}
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm text-gray-500">Created: {new Date(selectedTask.created_at).toLocaleString()}</div>
-                      {selectedTask.completed_at && (
-                        <div className="text-sm text-gray-500">Completed: {new Date(selectedTask.completed_at).toLocaleString()}</div>
-                      )}
-                    </div>
-                  </div>
 
-                  {/* Committed Files Summary */}
-                  {(selectedTask.result?.implementation?.files_to_create?.length > 0 || selectedTask.result?.implementation?.files_to_modify?.length > 0) && (
-                    <div className="bg-green-50 p-4 rounded-lg">
-                      <h3 className="font-semibold mb-3 flex items-center gap-2">
-                        <GitMerge className="h-4 w-4" />
-                        Generated Files ({(selectedTask.result?.implementation?.files_to_create?.length || 0) + (selectedTask.result?.implementation?.files_to_modify?.length || 0)})
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {selectedTask.result?.implementation?.files_to_create?.length > 0 && (
-                          <div>
-                            <h4 className="text-sm font-medium text-green-700 mb-2">📄 Files Created ({selectedTask.result.implementation.files_to_create.length})</h4>
-                            <div className="space-y-1">
-                              {selectedTask.result.implementation.files_to_create.map((file: any, index: number) => (
-                                <div key={index} className="bg-white p-2 rounded border border-green-200">
-                                  <code className="text-xs text-green-700">{typeof file === 'string' ? file : file.path}</code>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        {selectedTask.result?.implementation?.files_to_modify?.length > 0 && (
-                          <div>
-                            <h4 className="text-sm font-medium text-blue-700 mb-2">✏️ Files Modified ({selectedTask.result.implementation.files_to_modify.length})</h4>
-                            <div className="space-y-1">
-                              {selectedTask.result.implementation.files_to_modify.map((file: any, index: number) => (
-                                <div key={index} className="bg-white p-2 rounded border border-blue-200">
-                                  <code className="text-xs text-blue-700">{typeof file === 'string' ? file : file.path}</code>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Generated Files (Preview) */}
-                  {selectedTask.result?.implementation?.files_to_create && selectedTask.result.implementation.files_to_create.length > 0 && (
-                    <div className="space-y-4">
-                      <h3 className="font-semibold text-lg flex items-center gap-2">
-                        <FileText className="h-5 w-5" />
-                        Generated Code Preview ({selectedTask.result.implementation.files_to_create.length} files)
-                      </h3>
-                      {selectedTask.result.implementation.files_to_create.map((file: any, index: number) => (
-                        <Collapsible key={index}>
-                          <CollapsibleTrigger
-                            className="flex items-center justify-between w-full p-3 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100"
-                            onClick={() => toggleFileExpansion(`create-${index}`)}
-                          >
-                            <div className="flex items-center space-x-2">
-                              {expandedFiles.has(`create-${index}`) ? 
-                                <ChevronDown className="h-4 w-4" /> : 
-                                <ChevronRight className="h-4 w-4" />
-                              }
-                              <code className="text-sm font-mono">{file.path}</code>
-                              <Badge variant="outline" className="text-xs text-green-700">
-                                NEW
-                              </Badge>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <span
-                                className="inline-flex items-center justify-center h-8 w-8 rounded-md text-sm font-medium transition-colors hover:bg-gray-100 text-gray-600 hover:text-gray-900 cursor-pointer"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  copyToClipboard(file.content)
-                                }}
-                              >
-                                <Copy className="h-3 w-3" />
-                              </span>
-                            </div>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent className="mt-2">
-                            <div className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto">
+                      {/* Files to Modify */}
+                      {selectedTask.result.implementation?.files_to_modify?.length > 0 && (
+                        <div className="space-y-2">
+                          <h4 className="font-medium text-sm text-gray-700">Files to Modify:</h4>
+                          {selectedTask.result.implementation.files_to_modify.map((file: any, index: number) => (
+                            <div key={index} className="border rounded-lg p-3 bg-gray-50">
                               <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm text-gray-400">{file.description}</span>
-                                <span className="text-xs text-gray-500">
-                                  {file.content.split('\n').length} lines
-                                </span>
+                                <span className="font-mono text-sm text-orange-600">{file.path}</span>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => toggleFileExpansion(`modify-${file.path}`)}
+                                  className="h-6 px-2"
+                                >
+                                  {expandedFiles.has(`modify-${file.path}`) ? 'Hide' : 'Show'} Changes
+                                </Button>
                               </div>
-                              <pre className="text-sm">
-                                <code>{file.content}</code>
-                              </pre>
+                              <p className="text-sm text-gray-600 mb-2">{file.description}</p>
+                              {expandedFiles.has(`modify-${file.path}`) && (
+                                <div className="bg-black text-green-400 p-3 rounded font-mono text-xs overflow-x-auto">
+                                  <pre>{file.changes}</pre>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => copyToClipboard(file.changes)}
+                                    className="mt-2 h-6 px-2 text-xs"
+                                  >
+                                    Copy Changes
+                                  </Button>
+                                </div>
+                              )}
                             </div>
-                          </CollapsibleContent>
-                        </Collapsible>
-                      ))}
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Tests */}
+                      {selectedTask.result.tests?.unit_tests?.length > 0 && (
+                        <div className="space-y-2">
+                          <h4 className="font-medium text-sm text-gray-700">Unit Tests:</h4>
+                          {selectedTask.result.tests.unit_tests.map((test: any, index: number) => (
+                            <div key={index} className="border rounded-lg p-3 bg-gray-50">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="font-mono text-sm text-green-600">{test.file_path}</span>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => toggleFileExpansion(`test-${test.file_path}`)}
+                                  className="h-6 px-2"
+                                >
+                                  {expandedFiles.has(`test-${test.file_path}`) ? 'Hide' : 'Show'} Tests
+                                </Button>
+                              </div>
+                              <p className="text-sm text-gray-600 mb-2">{test.description}</p>
+                              {expandedFiles.has(`test-${test.file_path}`) && (
+                                <div className="bg-black text-green-400 p-3 rounded font-mono text-xs overflow-x-auto">
+                                  <pre>{test.content}</pre>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => copyToClipboard(test.content)}
+                                    className="mt-2 h-6 px-2 text-xs"
+                                  >
+                                    Copy Tests
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Validation Steps */}
+                      {selectedTask.result.validation_steps?.length > 0 && (
+                        <div className="space-y-2">
+                          <h4 className="font-medium text-sm text-gray-700">Validation Steps:</h4>
+                          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                            <ol className="list-decimal list-inside space-y-1 text-sm">
+                              {selectedTask.result.validation_steps.map((step: string, index: number) => (
+                                <li key={index} className="text-gray-700">{step}</li>
+                              ))}
+                            </ol>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
                   {/* Action Buttons */}
-                  <div className="flex items-center justify-between pt-4 border-t">
-                    <div className="flex gap-2">
-                      {/* Create Pull Request Button */}
-                      {selectedTask.status === 'completed' && !hasPullRequest(selectedTask) && (
-                        <div className="flex justify-center">
-                          <Button 
-                            onClick={() => handleCreatePR(selectedTask)}
-                            disabled={creatingPrForTask === selectedTask.id}
-                            className="bg-blue-600 hover:bg-blue-700 text-white"
-                          >
-                            {creatingPrForTask === selectedTask.id ? (
-                              <>
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                Creating Pull Request...
-                              </>
-                            ) : (
-                              <>
-                                <GitPullRequest className="h-4 w-4 mr-2" />
-                                Create Pull Request
-                              </>
-                            )}
-                          </Button>
-                        </div>
+                  <div className="flex flex-wrap gap-2 pt-4 border-t">
+                    {selectedTask.status === 'completed' && selectedTask.result && !hasPullRequest(selectedTask) && (
+                      <Button
+                        onClick={() => handleCreatePR(selectedTask)}
+                        disabled={creatingPrForTask === selectedTask.id}
+                        className="flex items-center gap-2"
+                      >
+                        {creatingPrForTask === selectedTask.id ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Creating PR...
+                          </>
+                        ) : (
+                          <>
+                            <GitPullRequest className="h-4 w-4" />
+                            Create Pull Request
+                          </>
+                        )}
+                      </Button>
+                    )}
+                    
+                    {isTaskStuck(selectedTask) && (
+                      <Button
+                        variant="outline"
+                        onClick={() => handleRetryTask(selectedTask.id)}
+                        className="flex items-center gap-2"
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                        Retry Stuck Task
+                      </Button>
+                    )}
+                    
+                    <Button
+                      variant="outline"
+                      onClick={() => handleCancelTask(selectedTask.id)}
+                      disabled={cancellingTaskId === selectedTask.id}
+                      className="flex items-center gap-2"
+                    >
+                      {cancellingTaskId === selectedTask.id ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Cancelling...
+                        </>
+                      ) : (
+                        <>
+                          <X className="h-4 w-4" />
+                          Cancel Task
+                        </>
                       )}
-
-                      {/* PR Success Message */}
-                      {hasPullRequest(selectedTask) && (
-                        <div className="flex justify-center">
-                          <div className="bg-green-50 border border-green-200 rounded-lg p-4 max-w-md text-center">
-                            <div className="flex items-center justify-center mb-2">
-                              <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
-                              <span className="font-medium text-green-800">Pull Request Created!</span>
-                            </div>
-                            <p className="text-sm text-green-700 mb-3">
-                              Your pull request has been successfully created and is ready for review.
-                            </p>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => {
-                                const prInfo = getPullRequestInfo(selectedTask)
-                                if (prInfo?.url) {
-                                  window.open(prInfo.url, '_blank')
-                                }
-                              }}
-                              className="border-green-300 text-green-700 hover:bg-green-100"
-                            >
-                              <ExternalLink className="h-3 w-3 mr-1" />
-                              View Pull Request
-                            </Button>
-                          </div>
-                        </div>
+                    </Button>
+                    
+                    <Button
+                      variant="outline"
+                      onClick={() => handleDeleteTask(selectedTask.id)}
+                      disabled={deletingTaskId === selectedTask.id}
+                      className="flex items-center gap-2 text-red-600 hover:text-red-700"
+                    >
+                      {deletingTaskId === selectedTask.id ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Deleting...
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="h-4 w-4" />
+                          Delete Task
+                        </>
                       )}
-                      {selectedTask.status === 'failed' && (
-                        <Button variant="outline" onClick={() => handleRetryTask(selectedTask.id)}>
-                          <RotateCcw className="h-4 w-4 mr-2" />
-                          Retry Task
-                        </Button>
-                      )}
-                      {selectedTask.status === 'in_progress' && (
-                        <Button variant="outline" onClick={() => handleCancelTask(selectedTask.id)} disabled={cancellingTaskId === selectedTask.id}>
-                          {cancellingTaskId === selectedTask.id ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Cancelling...
-                            </>
-                          ) : (
-                            <>
-                              <XCircle className="h-4 w-4 mr-2" />
-                              Cancel Task
-                            </>
-                          )}
-                        </Button>
-                      )}
-                      {selectedTask.status === 'pending' && (
-                        <Button variant="outline" onClick={() => handleDeleteTask(selectedTask.id)} disabled={deletingTaskId === selectedTask.id}>
-                          {deletingTaskId === selectedTask.id ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Deleting...
-                            </>
-                          ) : (
-                            <>
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete Task
-                            </>
-                          )}
-                        </Button>
-                      )}
-                      {selectedTask.status === 'pending' && isTaskStuck(selectedTask) && (
-                        <Button variant="outline" onClick={() => handleRetryTask(selectedTask.id)} className="text-amber-600 border-amber-600 hover:bg-amber-50">
-                          <RotateCcw className="h-4 w-4 mr-2" />
-                          Retry Stuck Task
-                        </Button>
-                      )}
-                    </div>
-                    <Button variant="outline" onClick={() => setSelectedTask(null)}>
-                      Close
                     </Button>
                   </div>
                 </div>
@@ -2092,4 +2373,4 @@ export default function ClaudeCodeDashboard() {
       </div>
     </div>
   )
-} 
+}

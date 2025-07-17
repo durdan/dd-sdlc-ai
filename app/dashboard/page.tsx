@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Dialog,
@@ -443,32 +444,50 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
   const [showConfig, setShowConfig] = useState(false)
   const [showIntegrations, setShowIntegrations] = useState(false)
   const [showVisualization, setShowVisualization] = useState(false)
-  const [toolkitExpanded, setToolkitExpanded] = useState(false)
+  const [showWorkflow, setShowWorkflow] = useState(false)
   const [showHowItWorks, setShowHowItWorks] = useState(false)
   const [showPromptEngineering, setShowPromptEngineering] = useState(false)
-  const [showWorkflow, setShowWorkflow] = useState(false)
-  const [showWorkflowDiagram, setShowWorkflowDiagram] = useState(false)
-  const [showGitDigest, setShowGitDigest] = useState(false)
   const [showDatabaseTest, setShowDatabaseTest] = useState(false)
-  const [showSlackUI, setShowSlackUI] = useState(false)
-  const [showSlackUICodeAssistant, setShowSlackUICodeAssistant] = useState(false)
-  const [showGitHubProjects, setShowGitHubProjects] = useState(false)
-  const [showGitHubProjectDialog, setShowGitHubProjectDialog] = useState(false)
-  const [showCacheDialog, setShowCacheDialog] = useState(false)
   const [showApiKeyDialog, setShowApiKeyDialog] = useState(false)
-  const [tempApiKey, setTempApiKey] = useState('')
-  const [pendingCachedResults, setPendingCachedResults] = useState<any>(null)
-  const [isSavingConfig, setIsSavingConfig] = useState(false)
+  const [tempApiKey, setTempApiKey] = useState("")
+  const [showGitHubProjectDialog, setShowGitHubProjectDialog] = useState(false)
+  const [showGitHubProjectDialogForExisting, setShowGitHubProjectDialogForExisting] = useState(false)
+  const [showCacheDialog, setShowCacheDialog] = useState(false)
+  const [showSlackUICodeAssistant, setShowSlackUICodeAssistant] = useState(false)
+  const [selectedProjectForGitHub, setSelectedProjectForGitHub] = useState<ProjectResult | null>(null)
   const [isCreatingGitHubProject, setIsCreatingGitHubProject] = useState(false)
+  const [isExportingToJira, setIsExportingToJira] = useState(false)
+  const [isExportingToConfluence, setIsExportingToConfluence] = useState(false)
+  const [isSavingConfig, setIsSavingConfig] = useState(false)
   const [isLoadingGitHubRepos, setIsLoadingGitHubRepos] = useState(false)
-  const [githubRepositories, setGithubRepositories] = useState<GitHubRepository[]>([])
+  const [recentProjects, setRecentProjects] = useState<RecentProject[]>([])
+  const [recentProjectsExpanded, setRecentProjectsExpanded] = useState(false)
+  const [toolkitExpanded, setToolkitExpanded] = useState(false)
+  const [activeTab, setActiveTab] = useState('sdlc')
+  const [gitHubRepositories, setGitHubRepositories] = useState<GitHubRepository[]>([])
+  const [gitHubProjectConfig, setGitHubProjectConfig] = useState<GitHubProjectConfig>({
+    projectName: '',
+    repositoryOwner: '',
+    repositoryName: '',
+    includeIssues: true,
+    includeCustomFields: true,
+    createPhaseBasedMilestones: true,
+    generateLabels: true
+  })
   const [customPrompts, setCustomPrompts] = useState<CustomPrompts>({})
+  
+  // Configuration state
   const [config, setConfig] = useState<ConfigState>({
     openaiKey: '',
+    aiModel: 'gpt-4',
     jiraUrl: '',
+    jiraProject: '',
+    jiraEmail: '',
     jiraToken: '',
     jiraAutoCreate: false,
     confluenceUrl: '',
+    confluenceSpace: '',
+    confluenceEmail: '',
     confluenceToken: '',
     confluenceAutoCreate: false,
     githubToken: '',
@@ -481,24 +500,23 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
     notionAutoCreate: false,
     slackToken: '',
     slackAutoCreate: false,
+    template: 'comprehensive',
+    outputFormat: 'markdown',
+    emailNotifications: false,
+    slackNotifications: false
   })
-  const [recentProjects, setRecentProjects] = useState<RecentProject[]>([])
-  const [isLoadingProjects, setIsLoadingProjects] = useState(false)
-  const [activeTab, setActiveTab] = useState('sdlc')
-  const [showDetailedViewer, setShowDetailedViewer] = useState(false)
-  const [selectedProjectForGitHub, setSelectedProjectForGitHub] = useState<ProjectResult | null>(null)
-  const [gitHubProjectConfig, setGitHubProjectConfig] = useState<GitHubProjectConfig>({
-    projectName: '',
-    repositoryOwner: '',
-    repositoryName: '',
-    includeIssues: true,
-    includeCustomFields: true,
-    createPhaseBasedMilestones: true,
-    generateLabels: true
-  })
+  
+  // ✨ NEW: Enhanced UX state variables
+  const [showRefreshWarning, setShowRefreshWarning] = useState(false)
+  const [currentStreamingStep, setCurrentStreamingStep] = useState<string | null>(null)
+  const [streamingContent, setStreamingContent] = useState<Record<string, string>>({})
+  const [stepStreamingWindows, setStepStreamingWindows] = useState<Record<string, boolean>>({})
   
   // Add freemium usage hook
   const { usage, refetch: refetchUsage, incrementUsage } = useFreemiumUsage()
+  
+  // Cache management state
+  const [pendingCachedResults, setPendingCachedResults] = useState<any>(null)
 
   // Function to update step progress - moved to component level for global access
   const updateStepProgress = (stepId: string, progress: number, status: "pending" | "in_progress" | "completed" | "error" = "in_progress") => {
@@ -521,9 +539,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
     }))
   }
   
-  // Export state
-  const [isExportingToJira, setIsExportingToJira] = useState(false)
-  const [isExportingToConfluence, setIsExportingToConfluence] = useState(false)
+
 
   // Initialize processing steps - conditionally include Jira/Confluence based on automation settings
   const getInitialProcessingSteps = (): ProcessingStep[] => {
@@ -710,8 +726,6 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
       return []
     }
   }
-
-  const [recentProjectsExpanded, setRecentProjectsExpanded] = useState(false) // Default: folded
 
   // Clear potentially corrupted cache on component mount
   useEffect(() => {
@@ -1356,6 +1370,11 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
     const reader = response.body?.getReader()
     const decoder = new TextDecoder()
     
+    // ✨ NEW: Initialize streaming window for this step
+    setCurrentStreamingStep(stepId)
+    setStepStreamingWindows(prev => ({ ...prev, [stepId]: true }))
+    setStreamingContent(prev => ({ ...prev, [stepId]: '' }))
+    
     if (reader) {
       try {
         while (true) {
@@ -1380,6 +1399,9 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                   const progress = Math.min(90, Math.floor(fullContent.length / 50))
                   updateStepProgress(stepId, progress, "in_progress")
                   
+                  // ✨ ENHANCED: Update streaming content for real-time display
+                  setStreamingContent(prev => ({ ...prev, [stepId]: fullContent }))
+                  
                   // ✨ REAL-TIME DISPLAY: Update documents as content streams in
                   updateDocuments(fullContent)
                   
@@ -1401,6 +1423,10 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
       }
     }
     
+    // ✨ NEW: Close streaming window for this step
+    setStepStreamingWindows(prev => ({ ...prev, [stepId]: false }))
+    setCurrentStreamingStep(null)
+    
     if (!fullContent) {
       throw new Error(`No content received from ${stepId}`)
     }
@@ -1412,6 +1438,9 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
     setIsProcessing(true)
     setErrorMessage("")
     setGeneratedDocuments({})
+    
+    // ✨ NEW: Show refresh warning
+    setShowRefreshWarning(true)
     
     // Build initial steps array properly
     const initialSteps: ProcessingStep[] = [
@@ -1481,6 +1510,9 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
       
       results.businessAnalysis = businessAnalysisContent
       updateStepProgress("analysis", 100, "completed")
+      
+      // ✨ NEW: Smooth transition delay between steps
+      await new Promise(resolve => setTimeout(resolve, 500))
 
       // Step 2: Functional Specification
       updateStepProgress("functional", 0, "in_progress")
@@ -1525,6 +1557,9 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
       
       results.functionalSpec = functionalSpecContent
       updateStepProgress("functional", 100, "completed")
+      
+      // ✨ NEW: Smooth transition delay between steps
+      await new Promise(resolve => setTimeout(resolve, 500))
 
       // Step 3: Technical Specification
       updateStepProgress("technical", 0, "in_progress")
@@ -1570,6 +1605,9 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
       
       results.technicalSpec = technicalSpecContent
       updateStepProgress("technical", 100, "completed")
+      
+      // ✨ NEW: Smooth transition delay between steps
+      await new Promise(resolve => setTimeout(resolve, 500))
 
       // Step 4: UX Specification
       updateStepProgress("ux", 0, "in_progress")
@@ -1610,6 +1648,9 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
       const uxResult = await uxResponse.json()
       results.uxSpec = uxResult.uxSpec
       updateStepProgress("ux", 100, "completed")
+      
+      // ✨ NEW: Smooth transition delay between steps
+      await new Promise(resolve => setTimeout(resolve, 500))
       setGeneratedDocuments(prev => ({ ...prev, uxSpec: uxResult.uxSpec }))
 
       // Step 5: Mermaid Diagrams
@@ -1622,6 +1663,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
           businessAnalysis: results.businessAnalysis,
           functionalSpec: results.functionalSpec,
           technicalSpec: results.technicalSpec,
+          uxSpec: results.uxSpec,
           openaiKey: config.openaiKey || "",
           userId: user?.id,
         }),
@@ -1645,17 +1687,24 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
           return
         }
         
-        console.warn("Failed to generate Mermaid diagrams:", errorData?.error || `API request failed with status ${mermaidResponse.status}`)
-        results.mermaidDiagrams = ""
-      } else {
-        const mermaidResult = await mermaidResponse.json()
-        results.mermaidDiagrams = mermaidResult.mermaidDiagrams
-        updateStepProgress("mermaid", 100, "completed")
-        setGeneratedDocuments(prev => ({ ...prev, mermaidDiagrams: mermaidResult.mermaidDiagrams }))
+        throw new Error(errorData?.error || `API request failed with status ${mermaidResponse.status}`)
       }
+      
+      // ✨ Handle streaming response with real-time display
+      const mermaidContent = await handleStreamingResponse(
+        mermaidResponse,
+        "mermaid",
+        (content) => setGeneratedDocuments((prev: any) => ({ ...prev, mermaidDiagrams: content }))
+      )
+      
+      results.mermaidDiagrams = mermaidContent
+      updateStepProgress("mermaid", 100, "completed")
+      
+      // ✨ NEW: Smooth transition delay between steps
+      await new Promise(resolve => setTimeout(resolve, 500))
 
       // Cache the complete results
-      await setCachedResults(input.trim(), results)
+      await cacheResults(input.trim(), results)
       
       // Handle optional integrations (JIRA, Confluence) if enabled
       await handleIntegrations(results, input)
@@ -2267,7 +2316,8 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                           }
                         >
                           <ExternalLink className="h-4 w-4 mr-1" />
-                          View JIRA Epic ({project.jiraEpic})
+                          <span className="hidden sm:inline">View JIRA Epic ({project.jiraEpic})</span>
+                          <span className="sm:hidden">View JIRA</span>
                         </Button>
                       ) : (
                         <Button 
@@ -2286,7 +2336,17 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                           ) : (
                             <ExternalLink className="h-4 w-4 mr-1" />
                           )}
-                          {isExportingToJira ? 'Exporting...' : 'Export to Jira'}
+                          {isExportingToJira ? (
+                            <>
+                              <span className="hidden sm:inline">Exporting...</span>
+                              <span className="sm:hidden">Exporting</span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="hidden sm:inline">Export to Jira</span>
+                              <span className="sm:hidden">Export Jira</span>
+                            </>
+                          )}
                         </Button>
                       )}
                       
@@ -2303,7 +2363,8 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                           }}
                         >
                           <ExternalLink className="h-4 w-4 mr-1" />
-                          View Confluence
+                          <span className="hidden sm:inline">View Confluence</span>
+                          <span className="sm:hidden">Confluence</span>
                         </Button>
                       ) : (
                         <Button 
@@ -2319,7 +2380,17 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                           ) : (
                             <FileText className="h-4 w-4 mr-1" />
                           )}
-                          {isExportingToConfluence ? 'Exporting...' : 'Export to Confluence'}
+                          {isExportingToConfluence ? (
+                            <>
+                              <span className="hidden sm:inline">Exporting...</span>
+                              <span className="sm:hidden">Exporting</span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="hidden sm:inline">Export to Confluence</span>
+                              <span className="sm:hidden">Export Conf</span>
+                            </>
+                          )}
                         </Button>
                       )}
                       
@@ -2337,7 +2408,17 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                         ) : (
                           <Github className="h-4 w-4 mr-1" />
                         )}
-                        {isCreatingGitHubProject && selectedProjectForGitHub?.id === project.id ? 'Creating...' : 'Create GitHub Project'}
+                        {isCreatingGitHubProject && selectedProjectForGitHub?.id === project.id ? (
+                          <>
+                            <span className="hidden sm:inline">Creating...</span>
+                            <span className="sm:hidden">Creating</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="hidden sm:inline">Create GitHub Project</span>
+                            <span className="sm:hidden">GitHub</span>
+                          </>
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -3166,7 +3247,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                           className="fixed inset-0 z-40" 
                           onClick={() => setToolkitExpanded(false)}
                         />
-                        <div className="absolute left-0 top-0 z-50 bg-white rounded-lg shadow-lg border p-3 min-w-[400px]">
+                        <div className="absolute left-0 top-0 z-50 bg-white rounded-lg shadow-lg border p-3 min-w-[400px] sm:min-w-[400px] w-[calc(100vw-2rem)] max-w-[400px]">
                         <div className="flex items-center justify-between mb-3">
                           <span className="text-sm font-medium text-gray-700">Tools</span>
                           <Button
@@ -3180,7 +3261,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                           </Button>
                         </div>
                         
-                        <div className="grid grid-cols-6 gap-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
                           {/* Settings */}
                           <Button
                             variant="ghost"
@@ -3189,13 +3270,12 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                               setShowConfig(true)
                               setToolkitExpanded(false)
                             }}
-                            className="h-10 w-10 p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
+                            className="h-10 min-w-[72px] max-w-[110px] p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
                             title="Configuration"
                           >
                             <Settings className="h-4 w-4" />
-                            <span className="text-xs">Config</span>
+                            <span className="text-xs truncate w-full">Config</span>
                           </Button>
-                          
                           {/* Integrations */}
                           <Button
                             variant="ghost"
@@ -3204,13 +3284,12 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                               setShowIntegrations(true)
                               setToolkitExpanded(false)
                             }}
-                            className="h-10 w-10 p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
+                            className="h-10 min-w-[72px] max-w-[110px] p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
                             title="Integrations"
                           >
                             <Plug className="h-4 w-4" />
-                            <span className="text-xs">Integrations</span>
+                            <span className="text-xs truncate w-full">Integration</span>
                           </Button>
-                          
                           {/* Presentation */}
                           <Button
                             variant="ghost"
@@ -3219,13 +3298,12 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                               setShowVisualization(true)
                               setToolkitExpanded(false)
                             }}
-                            className="h-10 w-10 p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
+                            className="h-10 min-w-[72px] max-w-[110px] p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
                             title="Visualize"
                           >
                             <Presentation className="h-4 w-4" />
-                            <span className="text-xs">Visualize</span>
+                            <span className="text-xs truncate w-full">Visualization</span>
                           </Button>
-                          
                           {/* Workflow */}
                           <Button
                             variant="ghost"
@@ -3234,13 +3312,12 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                               setShowWorkflow(true)
                               setToolkitExpanded(false)
                             }}
-                            className="h-10 w-10 p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
+                            className="h-10 min-w-[72px] max-w-[110px] p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
                             title="View Workflow"
                           >
                             <Workflow className="h-4 w-4" />
-                            <span className="text-xs">Workflow</span>
+                            <span className="text-xs truncate w-full">Workflow</span>
                           </Button>
-                          
                           {/* Info */}
                           <Button
                             variant="ghost"
@@ -3249,13 +3326,12 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                               setShowHowItWorks(true)
                               setToolkitExpanded(false)
                             }}
-                            className="h-10 w-10 p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
+                            className="h-10 min-w-[72px] max-w-[110px] p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
                             title="How It Works"
                           >
                             <Info className="h-4 w-4" />
-                            <span className="text-xs">Info</span>
+                            <span className="text-xs truncate w-full">Info</span>
                           </Button>
-                          
                           {/* Prompt Engineering */}
                           <Button
                             variant="ghost"
@@ -3264,13 +3340,12 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                               setShowPromptEngineering(true)
                               setToolkitExpanded(false)
                             }}
-                            className="h-10 w-10 p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
+                            className="h-10 min-w-[72px] max-w-[110px] p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
                             title="Prompt Engineering"
                           >
                             <Settings className="h-4 w-4" />
-                            <span className="text-xs">Prompts</span>
+                            <span className="text-xs truncate w-full">Prompts</span>
                           </Button>
-                          
                           {/* Analytics */}
                           <Button
                             variant="ghost"
@@ -3279,13 +3354,12 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                               window.location.href = '/usage-dashboard'
                               setToolkitExpanded(false)
                             }}
-                            className="h-10 w-10 p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
+                            className="h-10 min-w-[72px] max-w-[110px] p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
                             title="Usage Dashboard"
                           >
                             <BarChart3 className="h-4 w-4" />
-                            <span className="text-xs">Analytics</span>
+                            <span className="text-xs truncate w-full">Analytics</span>
                           </Button>
-                          
                           {/* Database Test */}
                           <Button
                             variant="ghost"
@@ -3294,16 +3368,15 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                               setShowDatabaseTest(true)
                               setToolkitExpanded(false)
                             }}
-                            className="h-10 w-10 p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1 relative"
+                            className="h-10 min-w-[72px] max-w-[110px] p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1 relative"
                             title="Test Database"
                           >
                             <Database className="h-4 w-4" />
-                            <span className="text-xs">Database</span>
+                            <span className="text-xs truncate w-full">Database</span>
                             <Badge variant="secondary" className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-xs">
                               T
                             </Badge>
                           </Button>
-                          
                           {/* Claude AI - Special styling */}
                           <Button
                             variant="ghost"
@@ -3312,13 +3385,12 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                               setActiveTab('codeyodha')
                               setToolkitExpanded(false)
                             }}
-                            className="h-10 w-10 p-0 hover:bg-indigo-100 bg-indigo-50 flex flex-col items-center justify-center gap-1"
+                            className="h-10 min-w-[72px] max-w-[110px] p-0 hover:bg-indigo-100 bg-indigo-50 flex flex-col items-center justify-center gap-1"
                             title="Claude AI"
                           >
                             <Sparkles className="h-4 w-4 text-indigo-600" />
-                            <span className="text-xs text-indigo-600">Claude</span>
+                            <span className="text-xs truncate w-full text-indigo-600">Claude</span>
                           </Button>
-                          
                           {/* Slack UI Assistant */}
                           <Button
                             variant="ghost"
@@ -3327,11 +3399,11 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                               setShowSlackUICodeAssistant(true)
                               setToolkitExpanded(false)
                             }}
-                            className="h-10 w-10 p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
+                            className="h-10 min-w-[72px] max-w-[110px] p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
                             title="Slack UI Assistant"
                           >
                             <Code className="h-4 w-4" />
-                            <span className="text-xs">Slack</span>
+                            <span className="text-xs truncate w-full">Slack</span>
                           </Button>
                         </div>
                       </div>
@@ -3339,9 +3411,9 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                     )}
                   </div>
                   
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span>JIRA Project: {config.jiraProject || 'Not configured'}</span>
-                    <span>Confluence Space: {config.confluenceSpace || 'Not configured'}</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
+                    <span className="truncate">JIRA: {config.jiraProject || 'Not configured'}</span>
+                    <span className="truncate">Confluence: {config.confluenceSpace || 'Not configured'}</span>
                   </div>
                 </div>
                 
@@ -3385,8 +3457,8 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
             {/* Processing Status and Generated Documentation - moved below help section */}
             {(isProcessing || (generatedDocuments && Object.keys(generatedDocuments).length > 0)) && (
               <>
-                {/* Processing Status - Now appears first */}
-                <Card className="mt-6">
+                {/* ✨ ENHANCED: Processing Status with Streaming Windows */}
+                <Card className={`mt-6 ${isProcessing ? 'border-blue-200 bg-blue-50/50' : ''}`}>
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -3404,8 +3476,8 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                           } else if (hasInProgress || isProcessing) {
                             return (
                               <>
-                                <Clock className="h-5 w-5 animate-spin text-blue-500" />
-                                <span>Processing Your Request...</span>
+                                <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+                                <span className="text-blue-800">Generating Documentation</span>
                               </>
                             )
                           } else {
@@ -3447,85 +3519,141 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                       }
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
+                  <CardContent className="space-y-4">
+                    {/* ✨ NEW: Refresh Warning */}
+                    {showRefreshWarning && isProcessing && (
+                      <Alert className="bg-amber-50 border-amber-200 text-amber-800">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                          <strong>Please don't refresh the page</strong> while generation is in progress. 
+                          This will interrupt the process and you'll need to start over.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    
+                    {/* ✨ ENHANCED: Step-by-Step Progress with Streaming Windows */}
+                    <div className="space-y-3">
                       {processingSteps.map((step, index) => (
-                        <div key={step.id} className="flex items-center gap-3">
-                          {getStatusIcon(step.status)}
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between">
-                              <span
-                                className={`font-medium ${step.status === "completed" ? "text-green-700" : step.status === "in_progress" ? "text-blue-700" : "text-gray-500"}`}
-                              >
-                                {step.name}
-                              </span>
-                              {step.status === "in_progress" && (
-                                <span className="text-sm text-blue-600 font-medium">In progress...</span>
-                              )}
+                        <div key={step.id} className="space-y-2">
+                          <div className="flex items-center gap-3">
+                            {getStatusIcon(step.status)}
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between">
+                                <span
+                                  className={`font-medium ${step.status === "completed" ? "text-green-700" : step.status === "in_progress" ? "text-blue-700" : "text-gray-500"}`}
+                                >
+                                  {step.name}
+                                </span>
+                                {step.status === "in_progress" && (
+                                  <span className="text-sm text-blue-600 font-medium">In progress...</span>
+                                )}
+                              </div>
                             </div>
                           </div>
+                          
+                          {/* ✨ NEW: Streaming Text Window for Current Step */}
+                          {stepStreamingWindows[step.id] && streamingContent[step.id] && (
+                            <div className="ml-8 bg-gray-900 text-green-400 p-3 rounded-lg font-mono text-sm border border-gray-700">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs text-gray-400">Live Output:</span>
+                                <div className="flex items-center gap-1">
+                                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                                  <span className="text-xs text-green-400">Streaming</span>
+                                </div>
+                              </div>
+                              <div className="h-16 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
+                                <div className="whitespace-pre-wrap">
+                                  {streamingContent[step.id].split('\n').slice(-6).join('\n')}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* ✨ NEW: Progress Bar */}
+                          {step.status === "in_progress" && (
+                            <div className="ml-8">
+                              <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div 
+                                  className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
+                                  style={{ width: `${step.progress}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ))}
-                      
-                      {/* Completion message */}
-                      {(() => {
-                        const allCompleted = processingSteps.every(step => step.status === 'completed')
-                        return allCompleted && !isProcessing && (
-                          <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                            <div className="flex items-center gap-2 text-green-700">
-                              <CheckCircle className="h-5 w-5" />
-                              <span className="font-medium">Generation Complete!</span>
-                            </div>
-                            <p className="text-sm text-green-600 mt-1 mb-3">
-                              Your SDLC documentation has been successfully generated. You can now create GitHub projects, export to Jira/Confluence, or view the documents below.
-                            </p>
-                            
-                            {/* Action Buttons */}
-                            <div className="flex flex-wrap gap-2 mt-3">
-                              <Button 
-                                onClick={openGitHubProjectDialog}
-                                size="sm"
-                                className="bg-gray-900 hover:bg-gray-800 text-white"
-                              >
-                                <Github className="h-4 w-4 mr-2" />
-                                Create GitHub Project
-                              </Button>
-                              
-                              {config.jiraUrl && (
-                                <Button 
-                                  onClick={() => handleJiraExport({ 
-                                    documents: generatedDocuments, 
-                                    input,
-                                    title: extractProjectName(input)
-                                  })}
-                                  variant="outline"
-                                  size="sm"
-                                >
-                                  <ExternalLink className="h-4 w-4 mr-2" />
-                                  Export to Jira
-                                </Button>
-                              )}
-                              
-                              {config.confluenceUrl && (
-                                <Button 
-                                  onClick={() => handleConfluenceExport({ 
-                                    documents: generatedDocuments, 
-                                    input,
-                                    title: extractProjectName(input)
-                                  })}
-                                  variant="outline"
-                                  size="sm"
-                                >
-                                  <ExternalLink className="h-4 w-4 mr-2" />
-                                  Export to Confluence
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        )
-                      })()
-                      }
                     </div>
+                    
+                    {/* ✨ NEW: Current Step Indicator */}
+                    {currentStreamingStep && (
+                      <div className="mt-4 p-3 bg-blue-100 border border-blue-200 rounded-lg">
+                        <div className="flex items-center gap-2 text-blue-800">
+                          <Sparkles className="h-4 w-4 animate-pulse" />
+                          <span className="font-medium">
+                            Currently generating: {processingSteps.find(s => s.id === currentStreamingStep)?.name}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Completion message */}
+                    {(() => {
+                      const allCompleted = processingSteps.every(step => step.status === 'completed')
+                      return allCompleted && !isProcessing && (
+                        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                          <div className="flex items-center gap-2 text-green-700">
+                            <CheckCircle className="h-5 w-5" />
+                            <span className="font-medium">Generation Complete!</span>
+                          </div>
+                          <p className="text-sm text-green-600 mt-1 mb-3">
+                            Your SDLC documentation has been successfully generated. You can now create GitHub projects, export to Jira/Confluence, or view the documents below.
+                          </p>
+                          
+                          {/* Action Buttons */}
+                          <div className="flex flex-wrap gap-2 mt-3">
+                            <Button 
+                              onClick={openGitHubProjectDialog}
+                              size="sm"
+                              className="bg-gray-900 hover:bg-gray-800 text-white"
+                            >
+                              <Github className="h-4 w-4 mr-2" />
+                              Create GitHub Project
+                            </Button>
+                            
+                            {config.jiraUrl && (
+                              <Button 
+                                onClick={() => handleJiraExport({ 
+                                  documents: generatedDocuments, 
+                                  input,
+                                  title: extractProjectName(input)
+                                })}
+                                variant="outline"
+                                size="sm"
+                              >
+                                <ExternalLink className="h-4 w-4 mr-2" />
+                                Export to Jira
+                              </Button>
+                            )}
+                            
+                            {config.confluenceUrl && (
+                              <Button 
+                                onClick={() => handleConfluenceExport({ 
+                                  documents: generatedDocuments, 
+                                  input,
+                                  title: extractProjectName(input)
+                                })}
+                                variant="outline"
+                                size="sm"
+                              >
+                                <ExternalLink className="h-4 w-4 mr-2" />
+                                Export to Confluence
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })()
+                    }
                   </CardContent>
                 </Card>
                 {/* Generated Documents Display - Now appears below */}

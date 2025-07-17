@@ -169,26 +169,28 @@ function UsageDashboardPage({ user, userRole, onSignOut }: { user: any, userRole
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Usage & Upgrades</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Usage & Upgrades</h1>
               <p className="text-gray-600 mt-1">Monitor your usage, explore upgrade options, and access beta features</p>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
               <Button
                 variant="outline"
                 onClick={() => window.location.href = '/dashboard'}
                 className="flex items-center gap-2"
               >
                 <Home className="h-4 w-4" />
-                Back to SDLC Workspace
+                <span className="hidden sm:inline">Back to SDLC Workspace</span>
+                <span className="sm:hidden">Back to Dashboard</span>
               </Button>
               <Button
                 onClick={() => setActiveTab('early-access')}
                 className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
               >
                 <Rocket className="h-4 w-4 mr-2" />
-                Upgrade Now
+                <span className="hidden sm:inline">Upgrade Now</span>
+                <span className="sm:hidden">Upgrade</span>
               </Button>
             </div>
           </div>
@@ -196,24 +198,30 @@ function UsageDashboardPage({ user, userRole, onSignOut }: { user: any, userRole
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          <TabsList className="grid w-full grid-cols-4 max-w-2xl">
-            <TabsTrigger value="overview" className="flex items-center gap-2">
-              <Activity className="h-4 w-4" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Analytics
-            </TabsTrigger>
-            <TabsTrigger value="early-access" className="flex items-center gap-2">
-              <Rocket className="h-4 w-4" />
-              Early Access
-            </TabsTrigger>
-            <TabsTrigger value="beta-features" className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4" />
-              Beta Features
-            </TabsTrigger>
-          </TabsList>
+          <div className="tabs-mobile-container tabs-scroll-container mb-4">
+            <TabsList className="tabs-mobile-list">
+              <TabsTrigger value="overview" className="tab-trigger-mobile">
+                <Activity className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Overview</span>
+                <span className="sm:hidden">Overview</span>
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="tab-trigger-mobile">
+                <BarChart3 className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Analytics</span>
+                <span className="sm:hidden">Analytics</span>
+              </TabsTrigger>
+              <TabsTrigger value="early-access" className="tab-trigger-mobile">
+                <Rocket className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Early Access</span>
+                <span className="sm:hidden">Early Access</span>
+              </TabsTrigger>
+              <TabsTrigger value="beta-features" className="tab-trigger-mobile">
+                <Sparkles className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Beta Features</span>
+                <span className="sm:hidden">Beta</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
