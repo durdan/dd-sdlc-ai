@@ -8,9 +8,9 @@ export const maxDuration = 60
 
 interface UXSpecRequest {
   input: string
-  businessAnalysis: string
-  functionalSpec: string
-  technicalSpec: string
+  businessAnalysis?: string
+  functionalSpec?: string
+  technicalSpec?: string
   customPrompt?: string
   openaiKey: string
   userId?: string
@@ -18,10 +18,11 @@ interface UXSpecRequest {
 }
 
 // Hardcoded fallback prompt for reliability
-const FALLBACK_PROMPT = `As a Senior UX Designer with expertise in user-centered design, create specific design tasks based on the following requirements:
+const FALLBACK_PROMPT = `As a Senior UX Designer with expertise in user-centered design, create specific design tasks based on the following project requirements:
 
-User Stories: {business_analysis}
-Business Analysis: {business_analysis}
+Project Requirements: {input}
+
+{optional_context}
 
 Generate the following structured output:
 
@@ -101,9 +102,9 @@ async function getAuthenticatedUser() {
 
 async function generateWithDatabasePromptStreaming(
   input: string,
-  businessAnalysis: string,
-  functionalSpec: string,
-  technicalSpec: string,
+  businessAnalysis: string | undefined,
+  functionalSpec: string | undefined,
+  technicalSpec: string | undefined,
   customPrompt: string | undefined,
   openaiKey: string,
   userId: string | undefined,
@@ -113,15 +114,31 @@ async function generateWithDatabasePromptStreaming(
   const startTime = Date.now()
   const openaiClient = createOpenAI({ apiKey: openaiKey })
   
+  // Build optional context from available documents
+  const contextParts = []
+  if (businessAnalysis && businessAnalysis.trim()) {
+    contextParts.push(`Business Analysis: ${businessAnalysis}`)
+  }
+  if (functionalSpec && functionalSpec.trim()) {
+    contextParts.push(`Functional Specification: ${functionalSpec}`)
+  }
+  if (technicalSpec && technicalSpec.trim()) {
+    contextParts.push(`Technical Specification: ${technicalSpec}`)
+  }
+  
+  const optionalContext = contextParts.length > 0 
+    ? `\nAdditional Context:\n${contextParts.join('\n\n')}`
+    : ''
+  
   try {
     // Priority 1: Use custom prompt if provided (legacy support)
     if (customPrompt && customPrompt.trim() !== "") {
       console.log('Using custom prompt from request (streaming)')
       const processedPrompt = customPrompt
         .replace(/{{input}}/g, input)
-        .replace(/{{business_analysis}}/g, businessAnalysis)
-        .replace(/{{functional_spec}}/g, functionalSpec)
-        .replace(/{{technical_spec}}/g, technicalSpec)
+        .replace(/{{business_analysis}}/g, businessAnalysis || '')
+        .replace(/{{functional_spec}}/g, functionalSpec || '')
+        .replace(/{{technical_spec}}/g, technicalSpec || '')
       
       return await streamText({
         model: openaiClient("gpt-4o"),
@@ -134,22 +151,56 @@ async function generateWithDatabasePromptStreaming(
     
     if (promptTemplate) {
       console.log(`Using database prompt for streaming: ${promptTemplate.name} (v${promptTemplate.version})`)
+      console.log('🔍 Input received:', input.substring(0, 200) + '...')
+      console.log('🔍 Input length:', input.length)
       
-      // Prepare the prompt
+      // Prepare the prompt with available parameters
       const { processedContent } = await promptService.preparePrompt(
         promptTemplate.id,
         { 
           input: input,
-          business_analysis: businessAnalysis,
-          functional_spec: functionalSpec,
-          technical_spec: technicalSpec,
+          business_analysis: businessAnalysis || '',
+          functional_spec: functionalSpec || '',
+          technical_spec: technicalSpec || '',
         }
       )
+      
+      // Clean up any unreplaced variables and provide context
+      let cleanedContent = processedContent
+      
+      // Handle both {{variable}} and {variable} syntax formats
+      cleanedContent = cleanedContent
+        .replace(/\{\{input\}\}/g, input)
+        .replace(/\{\{business_analysis\}\}/g, businessAnalysis || '')
+        .replace(/\{\{functional_spec\}\}/g, functionalSpec || '')
+        .replace(/\{\{technical_spec\}\}/g, technicalSpec || '')
+      
+      // Remove any remaining unreplaced variable placeholders
+      cleanedContent = cleanedContent.replace(/\{[^}]+\}/g, '')
+      
+      // Add context about what documents are available
+      if (!businessAnalysis && !functionalSpec && !technicalSpec) {
+        // If no other documents are available, add a note to the prompt
+        const contextNote = `\n\nNote: This UX specification is being generated based on the project requirements only. No additional business analysis, functional specification, or technical specification documents are available. Focus on creating comprehensive UX tasks that can be refined once other specifications are available.`
+        cleanedContent = cleanedContent + contextNote
+      } else {
+        // Add context about what's available
+        const availableDocs = []
+        if (businessAnalysis) availableDocs.push('Business Analysis')
+        if (functionalSpec) availableDocs.push('Functional Specification')
+        if (technicalSpec) availableDocs.push('Technical Specification')
+        
+        const contextNote = `\n\nAvailable Context: ${availableDocs.join(', ')}`
+        cleanedContent = cleanedContent + contextNote
+      }
+      
+      console.log('🔍 Final prompt preview:', cleanedContent.substring(0, 500) + '...')
+      console.log('🔍 Final prompt length:', cleanedContent.length)
       
       // Execute AI streaming call
       const streamResult = await streamText({
         model: openaiClient("gpt-4o"),
-        prompt: processedContent,
+        prompt: cleanedContent,
       })
       
       // Note: We'll log usage after streaming completes in the response handler
@@ -160,9 +211,7 @@ async function generateWithDatabasePromptStreaming(
     console.warn('No database prompt found, using hardcoded fallback for streaming')
     const processedPrompt = FALLBACK_PROMPT
       .replace(/\{input\}/g, input)
-      .replace(/\{business_analysis\}/g, businessAnalysis)
-      .replace(/\{functional_spec\}/g, functionalSpec)
-      .replace(/\{technical_spec\}/g, technicalSpec)
+      .replace(/\{optional_context\}/g, optionalContext)
     
     return await streamText({
       model: openaiClient("gpt-4o"),
@@ -190,6 +239,17 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Validate input
+    if (!input || input.trim() === '') {
+      return new Response(
+        JSON.stringify({ error: "Project input is required" }),
+        { 
+          status: 400, 
+          headers: { 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
     // Get authenticated user if not provided
     const user = await getAuthenticatedUser()
     const effectiveUserId = userId || user?.id
@@ -197,6 +257,12 @@ export async function POST(req: NextRequest) {
     console.log('🚀 Starting streaming UX Specification generation...')
     console.log('User ID:', effectiveUserId)
     console.log('Project ID:', projectId)
+    console.log('Input length:', input.length)
+    console.log('Available context:', {
+      hasBusinessAnalysis: !!(businessAnalysis && businessAnalysis.trim()),
+      hasFunctionalSpec: !!(functionalSpec && functionalSpec.trim()),
+      hasTechnicalSpec: !!(technicalSpec && technicalSpec.trim())
+    })
 
     const streamResult = await generateWithDatabasePromptStreaming(
       input,

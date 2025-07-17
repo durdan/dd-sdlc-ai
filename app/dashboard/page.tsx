@@ -550,7 +550,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
       { id: "functional", name: "Functional Specification", status: "pending" as const, progress: 0 },
       { id: "technical", name: "Technical Specification", status: "pending" as const, progress: 0 },
       { id: "ux", name: "UX Specification", status: "pending" as const, progress: 0 },
-      { id: "mermaid", name: "Mermaid Diagrams", status: "pending" as const, progress: 0 },
+      { id: "mermaid", name: "Architecture", status: "pending" as const, progress: 0 },
     ]
     
     // Add integration steps only if automation is enabled
@@ -1077,10 +1077,28 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
     }
   }
 
+  // Helper function to check if content contains actual diagram content
+  const hasDiagramContent = (content: string): boolean => {
+    if (!content || content.trim() === '') return false
+    
+    // Check for Mermaid diagram syntax
+    const mermaidKeywords = ['graph', 'flowchart', 'erDiagram', 'sequenceDiagram', 'journey', 'pie', 'gantt', 'classDiagram', 'stateDiagram']
+    const hasMermaidSyntax = mermaidKeywords.some(keyword => content.toLowerCase().includes(keyword))
+    
+    // Check for code blocks that might contain diagrams
+    const hasCodeBlocks = /```(?:mermaid)?[\s\S]*?```/g.test(content)
+    
+    return hasMermaidSyntax || hasCodeBlocks
+  }
+
   // Helper function to parse Mermaid content into separate diagrams
   const parseMermaidDiagrams = (mermaidContent: string) => {
     if (!mermaidContent || mermaidContent.trim() === '') {
-      console.log('No mermaid content to parse')
+      return {}
+    }
+
+    // Only parse if content actually contains diagram syntax
+    if (!hasDiagramContent(mermaidContent)) {
       return {}
     }
 
@@ -1092,18 +1110,12 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
       .trim()
     
     if (!cleanedContent || cleanedContent.length < 10) {
-      console.log('Content too short after cleaning:', cleanedContent.length)
       return {}
     }
 
-    // Log the raw content for debugging
-    console.log('Raw mermaid content:', cleanedContent.substring(0, 200) + '...')
-    console.log('Raw mermaid content length:', cleanedContent.length)
-    
     // Check for markdown headers and code blocks
     const hasMarkdownHeaders = /^\s*#+\s+.+$/m.test(cleanedContent)
     const hasMermaidCodeBlocks = /```(?:mermaid)?[\s\S]*?```/g.test(cleanedContent)
-    console.log('Content analysis:', { hasMarkdownHeaders, hasMermaidCodeBlocks })
 
     // Fully generic approach - create an empty diagram object with no hardcoded keys
     const diagrams: Record<string, string> = {}
@@ -1122,7 +1134,6 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         name: sectionName,
         index: match.index + match[0].length
       })
-      console.log(`Found markdown header: ${sectionName} at index ${match.index}`)
     }
     
     // Also try Mermaid section comments like "%% System Architecture Diagram"
@@ -1135,7 +1146,6 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         name: sectionName,
         index: match.index + match[0].length
       })
-      console.log(`Found section comment: ${sectionName} at index ${match.index}`)
     }
     
     // Sort section markers by index to process them in order
@@ -1150,7 +1160,6 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         
         // Extract the diagram content
         const diagramContent = cleanedContent.substring(currentMarker.index, endIndex).trim()
-        console.log(`Processing section: ${currentMarker.name}, content length: ${diagramContent.length}`)
         
         // Store each diagram with its own section name as the key
         // No hardcoded categories - fully generic
@@ -1160,8 +1169,6 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
     
     // If no sections found, try to identify diagram types directly
     if (!foundSections) {
-      console.log('No section comments found, trying to identify diagram types directly')
-      
       // Split by markdown headers or code blocks if present
       let diagramBlocks: string[] = []
       
@@ -1173,7 +1180,6 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
             diagramBlocks.push(codeMatch[1].trim())
           }
         }
-        console.log(`Found ${diagramBlocks.length} code blocks`)
       } else {
         // Try to split by common diagram type declarations
         const diagramTypeRegex = /(graph|flowchart|sequenceDiagram|erDiagram|classDiagram|stateDiagram|gantt|pie|journey|gitGraph)/gi
@@ -1195,15 +1201,10 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
           const lastBlock = cleanedContent.substring(lastTypeIndex).trim()
           if (lastBlock) diagramBlocks.push(lastBlock)
         }
-        
-        console.log(`Split content into ${diagramBlocks.length} diagram blocks`)
       }
       
       // Categorize each diagram block - using a fully generic approach
       diagramBlocks.forEach((block, index) => {
-        console.log(`Analyzing block ${index + 1}, length: ${block.length}`)
-        console.log(`Block ${index + 1} preview:`, block.substring(0, 50) + '...')
-        
         // Determine diagram type from content for naming
         let diagramType = 'diagram'
         
@@ -1227,26 +1228,8 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         // Create a unique key for this diagram
         const diagramKey = `${diagramType}${index + 1}`
         diagrams[diagramKey] = block
-        console.log(`Created diagram category: ${diagramKey}`)
       })
     }
-
-    // Log parsing results for debugging
-    console.log('Parsed Mermaid diagrams:', {
-      ...Object.fromEntries(
-        Object.entries(diagrams).map(([key, value]) => 
-          [key, value ? `Found (${value.length} chars)` : 'Empty']
-        )
-      ),
-      originalLength: cleanedContent.length
-    })
-    
-    // Also log the actual diagram keys and content previews
-    Object.entries(diagrams).forEach(([key, content]) => {
-      if (content) {
-        console.log(`Diagram '${key}' preview:`, content.substring(0, 100) + '...')
-      }
-    })
 
     return diagrams
   }
@@ -1445,7 +1428,10 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                   throw new Error(jsonData.error || 'Streaming failed')
                 }
               } catch (parseError) {
-                console.warn('Skipping invalid JSON line:', line.substring(0, 100) + '...')
+                // Only log if it's not a common streaming artifact
+                if (!line.includes('data: {"type":"chunk"')) {
+                  console.warn('Skipping invalid JSON line:', line.substring(0, 100) + '...')
+                }
                 // Skip invalid JSON lines but continue processing
               }
             }
@@ -1522,7 +1508,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
       { id: "functional", name: "Functional Specification", status: "pending" as const, progress: 0 },
       { id: "technical", name: "Technical Specification", status: "pending" as const, progress: 0 },
       { id: "ux", name: "UX Specification", status: "pending" as const, progress: 0 },
-      { id: "mermaid", name: "Mermaid Diagrams", status: "pending" as const, progress: 0 },
+      { id: "mermaid", name: "Architecture", status: "pending" as const, progress: 0 },
     ]
 
     // Filter steps based on selected documents
@@ -1756,7 +1742,6 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
             businessAnalysis: results.businessAnalysis || "",
             functionalSpec: results.functionalSpec || "",
             technicalSpec: results.technicalSpec || "",
-            uxSpec: results.uxSpec || "",
             openaiKey: config.openaiKey || "",
             userId: user?.id,
           }),
@@ -2568,10 +2553,38 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                       />
                     </TabsContent>
                     <TabsContent value="architecture" className="mt-2">
-                      <MermaidViewer 
-                        diagrams={parseMermaidDiagrams(project.documents.architecture || "")}
-                        title="Architecture Diagrams"
-                      />
+                      {(() => {
+                        const architectureContent = project.documents.architecture || ""
+                        const diagrams = parseMermaidDiagrams(architectureContent)
+                        const hasDiagrams = Object.keys(diagrams).length > 0
+                        
+                        if (hasDiagrams) {
+                          return (
+                            <MermaidViewer 
+                              diagrams={diagrams}
+                              title="Architecture Diagrams"
+                            />
+                          )
+                        } else {
+                          return (
+                            <div className="p-6 text-center">
+                              <div className="text-gray-500 mb-4">
+                                <GitBranch className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                                <h3 className="text-lg font-medium text-gray-700">No Architecture Diagrams</h3>
+                                <p className="text-sm text-gray-600">No architecture diagrams were generated for this project.</p>
+                              </div>
+                              {architectureContent && (
+                                <div className="mt-4 p-4 bg-gray-50 rounded-lg text-left border border-gray-200">
+                                  <h4 className="font-medium mb-2 text-gray-800">Project Documentation:</h4>
+                                  <div className="text-sm text-gray-700 max-h-40 overflow-y-auto bg-white p-3 rounded border">
+                                    <pre className="whitespace-pre-wrap font-mono text-xs text-gray-800">{architectureContent}</pre>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )
+                        }
+                      })()}
                     </TabsContent>
                   </Tabs>
                 </div>
@@ -3865,9 +3878,37 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                         </TabsContent>
 
                         <TabsContent value="diagrams">
-                          <MermaidViewer
-                            diagrams={parseMermaidDiagrams(generatedDocuments.mermaidDiagrams || "")}
-                          />
+                          {(() => {
+                            const mermaidContent = generatedDocuments.mermaidDiagrams || ""
+                            const diagrams = parseMermaidDiagrams(mermaidContent)
+                            const hasDiagrams = Object.keys(diagrams).length > 0
+                            
+                            if (hasDiagrams) {
+                              return (
+                                <MermaidViewer
+                                  diagrams={diagrams}
+                                />
+                              )
+                            } else {
+                              return (
+                                <div className="p-6 text-center">
+                                  <div className="text-gray-500 mb-4">
+                                    <GitBranch className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                                    <h3 className="text-lg font-medium text-gray-700">No Architecture Diagrams</h3>
+                                    <p className="text-sm text-gray-600">No architecture diagrams were generated for this project.</p>
+                                  </div>
+                                  {mermaidContent && (
+                                    <div className="mt-4 p-4 bg-gray-50 rounded-lg text-left border border-gray-200">
+                                      <h4 className="font-medium mb-2 text-gray-800">Generated Content:</h4>
+                                      <div className="text-sm text-gray-700 max-h-40 overflow-y-auto bg-white p-3 rounded border">
+                                        <pre className="whitespace-pre-wrap font-mono text-xs text-gray-800">{mermaidContent}</pre>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )
+                            }
+                          })()}
                         </TabsContent>
                       </Tabs>
 
@@ -4104,3 +4145,4 @@ function AuthenticatedSDLCPlatform() {
 }
 
 export default AuthenticatedSDLCPlatform;
+
