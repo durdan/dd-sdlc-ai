@@ -1,4 +1,4 @@
-# 🚀 SDLC AI - Open Source AI-Powered Documentation Platform
+# 🚀 SDLC Automation Platform
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org/)
@@ -8,7 +8,7 @@
 
 > Transform business requirements into comprehensive project documentation with AI-powered automation and enterprise-grade prompt management.
 
-**SDLC AI** is an open-source platform that automates the creation of software development life cycle documentation using advanced AI models. Generate business analysis, functional specifications, technical documentation, and UX specifications in minutes with a powerful prompt management system.
+**SDLC Automation Platform** is an open-source platform that automates the creation of software development life cycle documentation using advanced AI models. Generate business analysis, functional specifications, technical documentation, and UX specifications in minutes with a powerful prompt management system.
 
 ## ✨ Key Features
 
@@ -53,8 +53,8 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/sdlc-ai.git
-cd sdlc-ai
+git clone https://github.com/your-org/sdlc-automation-platform.git
+cd sdlc-automation-platform
 
 # Install dependencies
 npm install
@@ -103,8 +103,8 @@ npm run setup:database
 1. Create a new Supabase project at [supabase.com](https://supabase.com)
 2. Go to the SQL Editor in your Supabase dashboard
 3. Run the following scripts in order:
-   - `scripts/setup-database.sql` (Core tables)
-   - `scripts/prompt-management-migration.sql` (Prompt management)
+   - `database/schema/setup-database.sql` (Core tables)
+   - `database/schema/prompt-management-migration.sql` (Prompt management)
 
 ### 4. Start Development
 
@@ -127,20 +127,20 @@ On first launch:
 ## 📖 Documentation
 
 ### 📚 User Guides
-- **[Prompt Management Guide](http://localhost:3000/admin/prompts/guide)** - Complete system guide
-- **[Getting Started Tutorial](./docs/getting-started.md)** - Step-by-step walkthrough
-- **[Best Practices](./docs/best-practices.md)** - Prompt engineering tips
+- **[Getting Started](./docs/setup/getting-started.md)** - Step-by-step walkthrough
+- **[Environment Setup](./docs/setup/environment-setup.md)** - Configuration guide
+- **[Database Setup](./docs/setup/database-setup.md)** - Database configuration
 
 ### 🔧 Technical Documentation
-- **[Technical Architecture](./docs/technical-architecture.md)** - System design overview
-- **[Database Schema](./docs/database-setup.md)** - Complete database documentation
-- **[API Reference](./docs/api-reference.md)** - REST API documentation
-- **[Deployment Guide](./docs/deployment.md)** - Production deployment
+- **[Technical Architecture](./docs/architecture/technical-architecture.md)** - System design overview
+- **[API Reference](./docs/api/api-reference.md)** - REST API documentation
+- **[Deployment Guide](./docs/setup/deployment.md)** - Production deployment
+- **[Contributing Guide](./CONTRIBUTING.md)** - How to contribute
 
 ### 🤝 Community
-- **[Contributing Guide](./docs/contributing.md)** - How to contribute
 - **[Code of Conduct](./CODE_OF_CONDUCT.md)** - Community guidelines
 - **[Security Policy](./SECURITY.md)** - Security reporting
+- **[Changelog](./CHANGELOG.md)** - Version history
 
 ## 🏗️ Architecture Overview
 
@@ -198,350 +198,91 @@ graph TB
     style J fill:#f3e5f5
 ```
 
-## 🛠️ Tech Stack
+## 🛠️ Development
 
-### Frontend
-- **Framework**: Next.js 15 with App Router
-- **UI Library**: shadcn/ui + Tailwind CSS
-- **Components**: Radix UI primitives
-- **Language**: TypeScript
-- **State Management**: React Context + Hooks
+### Project Structure
 
-### Backend
-- **Database**: Supabase (PostgreSQL)
-- **Authentication**: Supabase Auth with Google OAuth
-- **API**: Next.js API Routes
-- **ORM**: Supabase Client with TypeScript
-
-### AI & Integrations
-- **AI Models**: OpenAI GPT-4, Anthropic Claude
-- **Diagrams**: Mermaid.js
-- **Integrations**: JIRA, Confluence, Slack APIs
-
-### Deployment
-- **Platform**: Vercel (recommended)
-- **CDN**: Global edge deployment
-- **Database**: Supabase cloud
-- **Monitoring**: Built-in analytics
-
-## 🎯 Usage Examples
-
-### Generate Complete Documentation
-
-```typescript
-// Example: E-commerce platform requirements
-const projectInput = `
-We need to build an e-commerce platform with:
-- User authentication and profiles
-- Product catalog with search and filtering
-- Shopping cart and checkout process
-- Payment integration (Stripe)
-- Order management and tracking
-- Admin dashboard for inventory management
-- Mobile-responsive design
-- SEO optimization
-`;
-
-// System generates:
-// ✅ Business Analysis (market research, stakeholder analysis)
-// ✅ Functional Specifications (user stories, acceptance criteria)
-// ✅ Technical Architecture (system design, API specs)
-// ✅ UX Specifications (user journeys, wireframes)
-// ✅ Implementation Roadmap (milestones, dependencies)
+```
+sdlc-automation-platform/
+├── app/                    # Next.js App Router
+│   ├── api/               # API routes
+│   ├── admin/             # Admin interface
+│   └── dashboard/         # Main dashboard
+├── components/            # React components
+│   ├── ui/               # shadcn/ui components
+│   └── admin/            # Admin-specific components
+├── lib/                  # Utility functions
+├── database/             # Database files
+│   ├── migrations/       # Database migrations
+│   ├── schema/           # Schema definitions
+│   └── sample-data/      # Sample data
+├── docs/                 # Documentation
+│   ├── setup/           # Setup guides
+│   ├── architecture/    # Architecture docs
+│   ├── api/             # API documentation
+│   └── development/     # Development docs
+└── scripts/             # Utility scripts
 ```
 
-### Custom Prompt Creation
-
-```typescript
-// Create organization-specific prompts
-const customBusinessAnalysisPrompt = `
-Analyze the following requirement with emphasis on:
-
-**Business Context:**
-- Market opportunity and competitive landscape
-- Revenue impact and business metrics
-- Stakeholder analysis and communication plan
-
-**Risk Assessment:**
-- Technical risks and mitigation strategies
-- Resource requirements and timeline
-- Compliance and security considerations
-
-**Success Criteria:**
-- Key performance indicators (KPIs)
-- User acceptance criteria
-- Business value measurement
-
-Requirement: {{project_description}}
-Industry: {{industry}}
-Timeline: {{timeline}}
-`;
-```
-
-### Integration Workflow
-
-```typescript
-// Automated JIRA integration
-const jiraWorkflow = {
-  epic: "E-commerce Platform Development",
-  stories: [
-    "As a customer, I want to browse products so I can find items to purchase",
-    "As a customer, I want to add items to cart so I can purchase multiple products",
-    "As an admin, I want to manage inventory so I can track stock levels"
-  ],
-  tasks: [
-    "Set up database schema for products and users",
-    "Implement user authentication with OAuth",
-    "Create responsive product catalog interface"
-  ]
-};
-```
-
-## 🔧 Configuration
-
-### AI Model Configuration
-
-```env
-# Primary AI provider
-OPENAI_API_KEY=sk-...
-OPENAI_MODEL=gpt-4
-
-# Secondary provider (optional)
-ANTHROPIC_API_KEY=sk-ant-...
-ANTHROPIC_MODEL=claude-3-sonnet
-```
-
-### Integration Setup
-
-#### JIRA Integration
-1. Generate API token in JIRA settings
-2. Add to environment variables
-3. Configure project keys in admin panel
-
-#### Confluence Integration
-1. Create API token in Atlassian account
-2. Configure space keys and permissions
-3. Test connection in integration hub
-
-#### Slack Integration
-1. Create Slack app with bot permissions
-2. Install to workspace
-3. Configure notification channels
-
-## 📊 Prompt Management Features
-
-### Role-Based Access Control
-
-| Role | Permissions | Access Level |
-|------|-------------|--------------|
-| **Admin** | Full system access, user management, prompt deployment | 🔴 Full |
-| **Manager** | Prompt viewing, testing, analytics access | 🟡 Limited |
-| **User** | API usage only, no admin interface | 🟢 Basic |
-
-### Analytics & Monitoring
-
-- **📈 Usage Metrics**: Request volume, success rates, response times
-- **💰 Cost Tracking**: Token usage and API costs per prompt
-- **🔍 Error Analysis**: Detailed error logs with resolution suggestions
-- **👥 User Analytics**: Individual and team usage patterns
-
-### A/B Testing Framework
-
-```typescript
-// Example A/B test configuration
-const promptExperiment = {
-  name: "Business Analysis Optimization",
-  variants: {
-    control: "Original business analysis prompt",
-    variant_a: "Enhanced with market research focus",
-    variant_b: "Streamlined for startup use cases"
-  },
-  trafficSplit: { control: 34, variant_a: 33, variant_b: 33 },
-  successMetrics: ["response_time", "user_satisfaction", "completion_rate"]
-};
-```
-
-## 🚀 Deployment
-
-### Vercel Deployment (Recommended)
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/your-org/sdlc-ai)
-
-1. **Connect Repository**: Import from GitHub
-2. **Configure Environment**: Add all required environment variables
-3. **Deploy**: Automatic deployment with optimized settings
-
-### Docker Deployment
+### Available Scripts
 
 ```bash
-# Build the container
-docker build -t sdlc-ai .
+# Development
+npm run dev              # Start development server
+npm run build            # Build for production
+npm run start            # Start production server
+npm run lint             # Run ESLint
+npm run type-check       # Run TypeScript checks
 
-# Run with environment file
-docker run -p 3000:3000 --env-file .env.local sdlc-ai
-```
+# Database
+npm run db:migrate       # Run database migrations
+npm run db:seed          # Seed sample data
+npm run db:reset         # Reset database
 
-### Manual Deployment
-
-```bash
-# Build for production
-npm run build
-
-# Start production server
-npm run start
+# Testing
+npm run test             # Run tests
+npm run test:watch       # Run tests in watch mode
+npm run test:coverage    # Generate coverage report
 ```
 
 ## 🤝 Contributing
 
-We welcome contributions! Here's how to get started:
+We welcome contributions! Please see our [Contributing Guide](./CONTRIBUTING.md) for details.
 
 ### Development Setup
 
-```bash
-# Fork and clone the repository
-git clone https://github.com/your-username/sdlc-ai.git
-cd sdlc-ai
-
-# Create a feature branch
-git checkout -b feature/amazing-feature
-
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
-```
-
-### Contribution Guidelines
-
-1. **🔍 Check existing issues** before creating new ones
-2. **📝 Write clear commit messages** following conventional commits
-3. **🧪 Add tests** for new features when applicable
-4. **📚 Update documentation** for user-facing changes
-5. **🎨 Follow code style** (ESLint + Prettier)
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
 
 ### Code Style
 
-```bash
-# Run linting
-npm run lint
-
-# Fix formatting
-npm run format
-
-# Type checking
-npm run type-check
-```
-
-## 📈 Roadmap
-
-### ✅ Completed (Phase 1-4)
-- **Core SDLC Generation**: All document types with AI-powered content
-- **Prompt Management System**: Full-featured with version control, A/B testing, analytics
-- **Role-Based Access Control**: Admin, Manager, User roles with proper permissions
-- **Integration Hub**: JIRA, Confluence, Slack integrations
-- **Visual Documentation**: Interactive Mermaid diagrams with export capabilities
-
-### 🔄 In Progress (Phase 5)
-- **Advanced AI Models**: Claude 3, Gemini Pro integration
-- **Performance Optimization**: Caching layers and response time improvements
-- **Mobile Experience**: Responsive design and mobile-specific features
-- **API Enhancements**: Rate limiting, webhook support, batch operations
-
-### 📋 Planned (Phase 6+)
-- **Plugin System**: Extensible architecture for custom integrations
-- **Multi-language Support**: Internationalization and localization
-- **Advanced Analytics**: Predictive analytics and trend analysis
-- **Enterprise Features**: SSO, audit logging, compliance reporting
-
-## 💡 Use Cases
-
-### For Startups
-- **Rapid MVP Documentation**: Document features quickly for investor presentations
-- **Technical Specifications**: Clear architecture for development teams
-- **User Stories**: Product requirements for agile development
-
-### For Enterprises
-- **Standardized Documentation**: Consistent templates across all projects
-- **Compliance Documentation**: Audit trails and approval workflows
-- **Cross-team Collaboration**: Shared templates and best practices
-
-### For Consultants
-- **Client Deliverables**: Professional documentation for client projects
-- **Proposal Generation**: Quick technical proposals and estimates
-- **Knowledge Management**: Reusable templates and case studies
-
-## 🔒 Security
-
-### Data Protection
-- **🔐 Encryption**: All data encrypted in transit and at rest
-- **🛡️ API Security**: Rate limiting, authentication, and authorization
-- **🔍 Audit Logging**: Complete activity tracking for compliance
-- **🚨 Vulnerability Scanning**: Regular security assessments
-
-### Privacy
-- **📋 GDPR Compliant**: Right to deletion and data portability
-- **🔒 Data Minimization**: Only collect necessary information
-- **🌍 Data Residency**: Control where your data is stored
-- **📊 Transparency**: Clear data usage policies
-
-## 📞 Support & Community
-
-### 🆘 Getting Help
-- **📖 Documentation**: Comprehensive guides at `/admin/prompts/guide`
-- **💬 GitHub Discussions**: Community Q&A and feature requests
-- **🐛 Issue Tracker**: Bug reports and feature requests
-- **📧 Email Support**: Direct support for urgent issues
-
-### 🌍 Community
-- **🤝 Discord Server**: Real-time community chat
-- **📱 Twitter**: Follow [@SDLCai](https://twitter.com/sdlcai) for updates
-- **📺 YouTube**: Tutorials and feature demonstrations
-- **📝 Blog**: Best practices and case studies
-
-### 💼 Enterprise Support
-- **📞 Priority Support**: Dedicated support channels
-- **🎯 Custom Training**: Team onboarding and training sessions
-- **🔧 Custom Development**: Tailored features and integrations
-- **📊 Success Management**: Dedicated customer success manager
+- Use TypeScript for all new code
+- Follow ESLint configuration
+- Use meaningful variable and function names
+- Add JSDoc comments for complex functions
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
+
+## 🆘 Support
+
+- **Documentation**: Check our [docs](./docs/) directory
+- **Issues**: Report bugs and request features on [GitHub Issues](https://github.com/your-org/sdlc-automation-platform/issues)
+- **Discussions**: Join our [GitHub Discussions](https://github.com/your-org/sdlc-automation-platform/discussions)
+- **Security**: Report security issues to [security@yourdomain.com](mailto:security@yourdomain.com)
 
 ## 🙏 Acknowledgments
 
-- **OpenAI** for GPT-4 API and AI capabilities
-- **Anthropic** for Claude AI integration
-- **Supabase** for database and authentication infrastructure
-- **Vercel** for deployment platform and edge functions
-- **shadcn/ui** for beautiful UI components
-- **Mermaid** for diagram generation capabilities
-
-## ⭐ Star History
-
-If you find this project helpful, please consider giving it a star! ⭐
-
-[![Star History Chart](https://api.star-history.com/svg?repos=your-org/sdlc-ai&type=Date)](https://star-history.com/#your-org/sdlc-ai&Date)
+- [Next.js](https://nextjs.org/) for the amazing React framework
+- [Supabase](https://supabase.com/) for the backend-as-a-service
+- [shadcn/ui](https://ui.shadcn.com/) for the beautiful UI components
+- [OpenAI](https://openai.com/) and [Anthropic](https://anthropic.com/) for AI capabilities
+- All our contributors and the open source community
 
 ---
 
-**Made with ❤️ by the SDLC AI community**
-
-*Transform your documentation workflow today with the power of AI and open source collaboration.*
-
----
-
-### 📊 Project Statistics
-
-- **🏗️ Architecture**: Modern Next.js 15 with TypeScript
-- **🧠 AI Integration**: Multi-model support (GPT-4, Claude)
-- **📦 Database**: PostgreSQL with Supabase
-- **🎨 UI Components**: 25+ custom components
-- **🔌 Integrations**: 5+ platform integrations
-- **👥 Role System**: 3-tier permission model
-- **📈 Analytics**: Real-time usage tracking
-- **🧪 Testing**: A/B testing framework
-- **🔄 Version Control**: Git-like prompt versioning
-
-**Ready to revolutionize your documentation workflow? [Get started now!](#-quick-start)**
+**Made with ❤️ by the SDLC Automation Platform team**
