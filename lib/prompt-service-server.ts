@@ -213,10 +213,15 @@ export class ServerPromptService {
 
     let processedContent = promptTemplate.prompt_content;
     
-    // Replace variables in the content
+    // Replace variables in the content - handle both {{variable}} and {variable} syntax
     for (const [key, value] of Object.entries(variables)) {
-      const regex = new RegExp(`\\{${key}\\}`, 'g');
-      processedContent = processedContent.replace(regex, value);
+      // Handle {{variable}} syntax (double curly braces)
+      const doubleBraceRegex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
+      processedContent = processedContent.replace(doubleBraceRegex, value);
+      
+      // Handle {variable} syntax (single curly braces)
+      const singleBraceRegex = new RegExp(`\\{${key}\\}`, 'g');
+      processedContent = processedContent.replace(singleBraceRegex, value);
     }
 
     return {

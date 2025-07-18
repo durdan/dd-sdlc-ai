@@ -1006,8 +1006,13 @@ export class PromptService {
     let processedContent = content;
     
     for (const [key, value] of Object.entries(variables)) {
-      const regex = new RegExp(`\\{\\{?${key}\\}?\\}`, 'g');
-      processedContent = processedContent.replace(regex, value);
+      // Handle {{variable}} syntax (double curly braces)
+      const doubleBraceRegex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
+      processedContent = processedContent.replace(doubleBraceRegex, value);
+      
+      // Handle {variable} syntax (single curly braces)
+      const singleBraceRegex = new RegExp(`\\{${key}\\}`, 'g');
+      processedContent = processedContent.replace(singleBraceRegex, value);
     }
     
     return processedContent;
