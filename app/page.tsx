@@ -213,8 +213,8 @@ export default function ModernLandingPage() {
               <Link href="#integrations" className="text-gray-400 hover:text-white transition-colors">
                 Integrations
               </Link>
-              <Link href="#pricing" className="text-gray-400 hover:text-white transition-colors">
-                Pricing
+              <Link href="https://github.com/durdan/dd-sdlc-ai" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
+                GitHub
               </Link>
             </nav>
             <div className="flex items-center space-x-3">
@@ -290,9 +290,17 @@ export default function ModernLandingPage() {
                         Live
                       </Badge>
                     </div>
+                    <div className="flex items-center justify-center lg:justify-start">
+                      <p className="text-xs text-gray-500">
+                        Open source on{' '}
+                        <Link href="https://github.com/durdan/dd-sdlc-ai" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline">
+                          GitHub
+                        </Link>
+                      </p>
+                    </div>
                     <h1 className="text-5xl md:text-7xl font-bold tracking-tight">
                       <span className="bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
-                        Introducing AI
+                        Introducing Open Source AI
                       </span>
                       <br />
                       <span className="bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
