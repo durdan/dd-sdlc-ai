@@ -320,15 +320,12 @@ Generate exactly 4 different diagram types with clear sections and proper Mermai
                 referrer
               )
               
-              // Save to anonymous projects
+              // Save to anonymous projects - use architecture type for all diagrams
               await anonymousProjectService.saveAnonymousProject(
                 projectTitle,
                 input,
                 {
-                  architecture: diagrams.architecture || fullContent,
-                  dataflow: diagrams.dataflow || '',
-                  userflow: diagrams.userflow || '',
-                  database: diagrams.database || ''
+                  architecture: fullContent // Save all diagrams as one architecture document
                 },
                 userAgent,
                 ipAddress,
