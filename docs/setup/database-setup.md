@@ -37,14 +37,18 @@ After running the script, you should see a completion message with counts of cre
 
 ## Manual Setup (Advanced)
 
-If you prefer to run individual migration files, you can execute them in this order:
+The initial setup script consolidates all database components into a single file. If you need to understand the structure, the script is organized into sections:
 
-1. `database/schema/setup-database.sql` - Core SDLC tables
-2. `database/schema/prompt-management-migration.sql` - Prompt management system
-3. `database/migrations/20241218_early_access_system.sql` - Early access features
-4. `database/migrations/20241218_gitdigest_schema.sql` - GitDigest functionality
-5. `database/migrations/20241218_slack_integration_schema.sql` - Slack integration
-6. `database/schema/enable-rls-security.sql` - Security policies
+1. **Core SDLC Tables** - Basic project and document management
+2. **User Roles & Permissions** - Role-based access control
+3. **Prompt Management System** - AI prompt templates and analytics
+4. **Early Access & Freemium** - Beta features and usage limits
+5. **Advanced SDLC Tables** - AI tasks, code generation, security
+6. **GitDigest Repository Analysis** - Repository analysis and reporting
+7. **Slack Integration** - Team collaboration features
+8. **Analytics & Usage Tracking** - Comprehensive monitoring
+
+The script is designed to be idempotent - you can run it multiple times safely.
 
 ## Database Schema Overview
 
@@ -170,7 +174,7 @@ WHERE table_schema = 'public';
 
 -- Check default prompts
 SELECT COUNT(*) as prompt_count FROM prompt_templates 
-WHERE is_default = true;
+WHERE is_system_default = true;
 
 -- Check RLS policies
 SELECT COUNT(*) as policy_count FROM pg_policies 
