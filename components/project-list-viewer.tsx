@@ -16,7 +16,10 @@ import {
   ChevronRight,
   Bot,
   Code,
-  Eye
+  Eye,
+  CheckCircle,
+  Circle,
+  AlertCircle
 } from 'lucide-react'
 
 interface ProjectResult {
@@ -73,6 +76,7 @@ export function ProjectListViewer({
   const [expanded, setExpanded] = useState(false)
   const [projectFilter, setProjectFilter] = useState<'all' | 'sdlc' | 'claude_code_assistant'>('all')
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set())
+  const [activeTabs, setActiveTabs] = useState<Record<string, string>>({})
 
   // Filter projects based on selected filter
   const filteredProjects = projects.filter(project => {
@@ -89,27 +93,95 @@ export function ProjectListViewer({
       return ['overview']
     }
     
-    // SDLC projects - check what documents are available
-    if (project.documents.businessAnalysis && project.documents.businessAnalysis.length > 100) {
+    // SDLC projects - check what documents are available with better content validation
+    const hasMeaningfulContent = (content: string) => {
+      if (!content || content.length < 200) return false
+      
+      // Check for placeholder or incomplete content
+      const placeholderPatterns = [
+        /this project appears to be incomplete/i,
+        /please regenerate the documentation/i,
+        /placeholder content/i,
+        /incomplete documentation/i,
+        /no content available/i,
+        /content will be generated/i,
+        /documentation is empty/i
+      ]
+      
+      // If any placeholder pattern is found, consider it incomplete
+      for (const pattern of placeholderPatterns) {
+        if (pattern.test(content)) {
+          return false
+        }
+      }
+      
+      // Check for minimum meaningful content (at least 3 sections or substantial text)
+      const sections = content.split(/#{1,6}\s+/).length
+      const hasSubstantialContent = content.length > 500 || sections > 3
+      
+      return hasSubstantialContent
+    }
+    
+    if (hasMeaningfulContent(project.documents.businessAnalysis)) {
       tabs.push('business')
     }
-    if (project.documents.functionalSpec && project.documents.functionalSpec.length > 100) {
+    if (hasMeaningfulContent(project.documents.functionalSpec)) {
       tabs.push('functional')
     }
-    if (project.documents.technicalSpec && project.documents.technicalSpec.length > 100) {
+    if (hasMeaningfulContent(project.documents.technicalSpec)) {
       tabs.push('technical')
     }
-    if (project.documents.uxSpec && project.documents.uxSpec.length > 100) {
+    if (hasMeaningfulContent(project.documents.uxSpec)) {
       tabs.push('ux')
     }
-    if (project.documents.architecture && project.documents.architecture.length > 100) {
+    if (hasMeaningfulContent(project.documents.architecture)) {
       tabs.push('architecture')
     }
-    if (project.documents.comprehensive && project.documents.comprehensive.length > 100) {
+    if (hasMeaningfulContent(project.documents.comprehensive)) {
       tabs.push('comprehensive')
     }
     
     return tabs
+  }
+
+  // Get document availability status for visual indicators
+  const getDocumentAvailability = (project: ProjectResult) => {
+    const hasMeaningfulContent = (content: string) => {
+      if (!content || content.length < 200) return false
+      
+      // Check for placeholder or incomplete content
+      const placeholderPatterns = [
+        /this project appears to be incomplete/i,
+        /please regenerate the documentation/i,
+        /placeholder content/i,
+        /incomplete documentation/i,
+        /no content available/i,
+        /content will be generated/i,
+        /documentation is empty/i
+      ]
+      
+      // If any placeholder pattern is found, consider it incomplete
+      for (const pattern of placeholderPatterns) {
+        if (pattern.test(content)) {
+          return false
+        }
+      }
+      
+      // Check for minimum meaningful content
+      const sections = content.split(/#{1,6}\s+/).length
+      const hasSubstantialContent = content.length > 500 || sections > 3
+      
+      return hasSubstantialContent
+    }
+    
+    return {
+      business: hasMeaningfulContent(project.documents.businessAnalysis),
+      functional: hasMeaningfulContent(project.documents.functionalSpec),
+      technical: hasMeaningfulContent(project.documents.technicalSpec),
+      ux: hasMeaningfulContent(project.documents.uxSpec),
+      architecture: hasMeaningfulContent(project.documents.architecture),
+      comprehensive: hasMeaningfulContent(project.documents.comprehensive)
+    }
   }
 
   // Handle project click - open appropriate viewer
@@ -124,6 +196,14 @@ export function ProjectListViewer({
         newExpanded.delete(project.id)
       } else {
         newExpanded.add(project.id)
+        // Auto-select the first available tab when expanding
+        const availableTabs = getAvailableTabs(project)
+        if (availableTabs.length > 0) {
+          setActiveTabs(prev => ({
+            ...prev,
+            [project.id]: availableTabs[0]
+          }))
+        }
       }
       setExpandedProjects(newExpanded)
     }
@@ -136,8 +216,27 @@ export function ProjectListViewer({
       newExpanded.delete(projectId)
     } else {
       newExpanded.add(projectId)
+      // Auto-select the first available tab when expanding
+      const project = projects.find(p => p.id === projectId)
+      if (project) {
+        const availableTabs = getAvailableTabs(project)
+        if (availableTabs.length > 0) {
+          setActiveTabs(prev => ({
+            ...prev,
+            [projectId]: availableTabs[0]
+          }))
+        }
+      }
     }
     setExpandedProjects(newExpanded)
+  }
+
+  // Handle tab change
+  const handleTabChange = (projectId: string, value: string) => {
+    setActiveTabs(prev => ({
+      ...prev,
+      [projectId]: value
+    }))
   }
 
   if (projects.length === 0) {
@@ -204,6 +303,8 @@ export function ProjectListViewer({
               const isExpanded = expandedProjects.has(project.id)
               const availableTabs = getAvailableTabs(project)
               const hasContent = availableTabs.length > 0
+              const documentAvailability = getDocumentAvailability(project)
+              const activeTab = activeTabs[project.id] || availableTabs[0] || 'business'
               
               return (
                 <div key={project.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
@@ -225,6 +326,36 @@ export function ProjectListViewer({
                         )}
                       </div>
                       <p className="text-sm text-gray-500">Created on {project.createdAt}</p>
+                      
+                      {/* Document Availability Indicators */}
+                      {project.projectType === 'sdlc' && (
+                        <div className="flex flex-wrap items-center gap-1 mt-2">
+                          <span className="text-xs text-gray-500 mr-1">Documents:</span>
+                          {Object.entries(documentAvailability).map(([docType, isAvailable]) => (
+                            <Badge 
+                              key={docType}
+                              variant={isAvailable ? "default" : "outline"}
+                              className={`text-xs h-5 px-1.5 ${
+                                isAvailable 
+                                  ? 'bg-green-100 text-green-700 border-green-200' 
+                                  : 'bg-gray-50 text-gray-400 border-gray-200'
+                              }`}
+                            >
+                              {isAvailable ? (
+                                <CheckCircle className="h-3 w-3 mr-0.5" />
+                              ) : (
+                                <Circle className="h-3 w-3 mr-0.5" />
+                              )}
+                              {docType === 'business' ? 'Biz' : 
+                               docType === 'functional' ? 'Func' : 
+                               docType === 'technical' ? 'Tech' : 
+                               docType === 'comprehensive' ? 'Comp' : 
+                               docType}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                      
                       <div className="flex items-center gap-2 mt-2">
                         <Badge variant="outline" className="text-green-700 border-green-200">
                           {project.status}
@@ -297,7 +428,7 @@ export function ProjectListViewer({
                           disabled
                           className="text-gray-400 border-gray-200"
                         >
-                          <FileText className="h-4 w-4 mr-1" />
+                          <AlertCircle className="h-4 w-4 mr-1" />
                           <span className="hidden sm:inline">No Content</span>
                           <span className="sm:hidden">Empty</span>
                         </Button>
@@ -363,7 +494,7 @@ export function ProjectListViewer({
                   {/* Expanded Content - Only for SDLC projects with content */}
                   {isExpanded && project.projectType === 'sdlc' && hasContent && (
                     <div className="mt-4 pt-4 border-t border-gray-200">
-                      <Tabs defaultValue={availableTabs[0]} className="w-full">
+                      <Tabs value={activeTab} onValueChange={(value) => handleTabChange(project.id, value)} className="w-full">
                         <div className="w-full overflow-x-auto whitespace-nowrap -mx-2 px-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                           <TabsList className="inline-flex w-max">
                             {availableTabs.includes('business') && (

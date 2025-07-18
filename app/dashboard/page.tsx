@@ -89,7 +89,10 @@ import {
   Gift,
   Target,
   Building,
-  Bot
+  Bot,
+  Brain,
+  Palette,
+  Circle
 } from "lucide-react"
 import { HowItWorksVisualization } from "@/components/how-it-works-visualization"
 import { PromptEngineering } from "@/components/prompt-engineering"
@@ -468,6 +471,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
   const [recentProjects, setRecentProjects] = useState<RecentProject[]>([])
 
   const [toolkitExpanded, setToolkitExpanded] = useState(false)
+  const [toolsExpanded, setToolsExpanded] = useState(false)
   const [activeTab, setActiveTab] = useState('sdlc')
   const [gitHubRepositories, setGitHubRepositories] = useState<GitHubRepository[]>([])
   const [gitHubProjectConfig, setGitHubProjectConfig] = useState<GitHubProjectConfig>({
@@ -524,6 +528,10 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
   const [pendingCachedResults, setPendingCachedResults] = useState<any>(null)
   const [showDocumentSelectionModal, setShowDocumentSelectionModal] = useState(false)
 
+  // Add new state for generation summary
+  const [showGenerationSummary, setShowGenerationSummary] = useState(false)
+  const [generatedDocumentsSummary, setGeneratedDocumentsSummary] = useState<Record<string, boolean>>({})
+
   // Function to update step progress - moved to component level for global access
   const updateStepProgress = (stepId: string, progress: number, status: "pending" | "in_progress" | "completed" | "error" = "in_progress") => {
     setProcessingSteps(prevSteps => 
@@ -544,7 +552,13 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
       [promptType]: promptContent
     }))
   }
-  
+
+  // Handle document selection from DocumentSelectionModal
+  const handleDocumentSelection = (selectedDocuments: string[]) => {
+    setShowDocumentSelectionModal(false)
+    generateFreshDocuments(selectedDocuments)
+  }
+
 
 
   // Initialize processing steps - conditionally include Jira/Confluence based on automation settings
@@ -1294,117 +1308,33 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
     return diagrams
   }
 
-  // Cache management
-  const getCachedResults = (input: string) => {
-    try {
-      const cached = localStorage.getItem(`sdlc-cache-${btoa(input).slice(0, 20)}`)
-      if (!cached || cached.trim() === '') {
-        return null
-      }
-      return JSON.parse(cached)
-    } catch (error) {
-      console.warn('Failed to parse cached results:', error)
-      // Clear corrupted cache entry
-      try {
-        localStorage.removeItem(`sdlc-cache-${btoa(input).slice(0, 20)}`)
-      } catch (removeError) {
-        console.warn('Failed to remove corrupted cache:', removeError)
-      }
-      return null
-    }
-  }
-
-  const setCachedResults = async (input: string, results: any) => {
-    try {
-      const projectTitle = extractProjectName(input)
-      const projectDescription = extractProjectDescription(input)
-      
-      // Handle authenticated users
-      if (user?.id) {
-        const { project, success } = await dbService.saveCompleteSDLCResult(
-          user.id,
-          input,
-          projectTitle,
-          {
-            businessAnalysis: results.businessAnalysis || '',
-            functionalSpec: results.functionalSpec || '',
-            technicalSpec: results.technicalSpec || '',
-            uxSpec: results.uxSpec || '',
-            architecture: results.mermaidDiagrams || ''
-          }
-        )
-        
-        if (success && project) {
-          console.log('✅ Successfully saved authenticated SDLC project to database:', project.id)
-          
-          // Refresh the recent projects list
-          const updatedProjects = await getCachedProjects()
-          setRecentProjects(updatedProjects)
-        } else {
-          console.error('❌ Failed to save authenticated SDLC project to database')
-          // Fallback to localStorage for backward compatibility
-          localStorage.setItem(`sdlc-cache-${btoa(input).slice(0, 20)}`, JSON.stringify({
-            ...results,
-            timestamp: Date.now()
-          }))
-        }
-      } else {
-        // Handle anonymous users - only save to localStorage for now
-        console.log('👤 Anonymous user - saving to localStorage only')
-        localStorage.setItem(`sdlc-cache-${btoa(input).slice(0, 20)}`, JSON.stringify({
-          ...results,
-          timestamp: Date.now()
-        }))
-      }
-    } catch (error) {
-      console.error('Error saving SDLC results:', error)
-      // Fallback to localStorage
-      try {
-        localStorage.setItem(`sdlc-cache-${btoa(input).slice(0, 20)}`, JSON.stringify({
-          ...results,
-          timestamp: Date.now()
-        }))
-      } catch (localStorageError) {
-        console.warn('Failed to cache results:', localStorageError)
-      }
-    }
-  }
-
-  const handleGenerate = async () => {
-    if (!input.trim()) {
-      setErrorMessage("Please enter your requirements")
-      return
-    }
-
-    // Check for cached results first
-    const cached = getCachedResults(input.trim())
-    if (cached && Date.now() - cached.timestamp < 24 * 60 * 60 * 1000) { // 24 hour cache
-      // Show dialog to let user choose between cached and fresh generation
-      setPendingCachedResults(cached)
-      setShowCacheDialog(true)
-      return
-    }
-
-    // ✨ NEW: Show document selection modal instead of direct generation
-    setShowDocumentSelectionModal(true)
-  }
-
-  // ✨ NEW: Handle document selection and generation
-  const handleDocumentSelection = async (selectedDocuments: string[]) => {
-    setShowDocumentSelectionModal(false)
+  // Helper function to check for meaningful content
+  const hasMeaningfulContent = (content: string) => {
+    if (!content || content.length < 200) return false
     
-    // ✨ NEW: Scroll to status window when generation starts
-    setTimeout(() => {
-      const statusWindow = document.getElementById('status-window')
-      if (statusWindow) {
-        statusWindow.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'start' 
-        })
-      }
-    }, 100) // Small delay to ensure UI updates first
+    // Check for placeholder or incomplete content
+    const placeholderPatterns = [
+      /this project appears to be incomplete/i,
+      /please regenerate the documentation/i,
+      /placeholder content/i,
+      /incomplete documentation/i,
+      /no content available/i,
+      /content will be generated/i,
+      /documentation is empty/i
+    ]
     
-    await generateFreshDocuments(selectedDocuments)
+    // If any placeholder pattern is found, consider it incomplete
+    for (const pattern of placeholderPatterns) {
+      if (pattern.test(content)) {
+        return false
+      }
+    }
+    
+    // Check for minimum meaningful content (at least 3 sections or substantial text)
+    const sections = content.split(/#{1,6}\s+/).length
+    const hasSubstantialContent = content.length > 500 || sections > 3
+    
+    return hasSubstantialContent
   }
 
   const loadCachedResults = (cached: any) => {
@@ -1434,6 +1364,18 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
     }
     
     setProcessingSteps(cachedSteps)
+    
+    // Show generation summary with improved content detection
+    const summary = {
+      business: hasMeaningfulContent(cached.businessAnalysis),
+      functional: hasMeaningfulContent(cached.functionalSpec),
+      technical: hasMeaningfulContent(cached.technicalSpec),
+      ux: hasMeaningfulContent(cached.uxSpec),
+      mermaid: hasMeaningfulContent(cached.mermaidDiagrams)
+    }
+    setGeneratedDocumentsSummary(summary)
+    setShowGenerationSummary(true)
+    
     console.log('✅ Loaded from cache with', cachedSteps.length, 'steps')
     } catch (error) {
       console.error('Error loading cached results:', error)
@@ -1565,6 +1507,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
     setIsProcessing(true)
     setErrorMessage("")
     setGeneratedDocuments({})
+    setShowGenerationSummary(false)
     
     // ✨ NEW: Show refresh warning
     setShowRefreshWarning(true)
@@ -1853,7 +1796,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
       await cacheResults(input.trim(), results)
       
       // Save to database
-      await setCachedResults(input.trim(), results)
+      await cacheResults(input.trim(), results)
 
       // Handle optional integrations (JIRA, Confluence) if enabled
       await handleIntegrations(results, input)
@@ -1868,6 +1811,17 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
       // Update usage count after successful generation
       incrementUsage()
       
+      // After generation completes, show summary with improved content detection
+      const summary = {
+        business: hasMeaningfulContent(generatedDocuments.businessAnalysis || ''),
+        functional: hasMeaningfulContent(generatedDocuments.functionalSpec || ''),
+        technical: hasMeaningfulContent(generatedDocuments.technicalSpec || ''),
+        ux: hasMeaningfulContent(generatedDocuments.uxSpec || ''),
+        mermaid: hasMeaningfulContent(generatedDocuments.mermaidDiagrams || '')
+      }
+      setGeneratedDocumentsSummary(summary)
+      setShowGenerationSummary(true)
+
     } catch (error) {
       console.error("Error generating SDLC documentation:", error)
       
@@ -2387,6 +2341,81 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
     }
   }
 
+  // Add Generation Summary Component
+  const GenerationSummary = () => {
+    if (!showGenerationSummary) return null
+
+    const documentTypes = [
+      { id: 'business', name: 'Business Analysis', icon: Brain },
+      { id: 'functional', name: 'Functional Spec', icon: FileText },
+      { id: 'technical', name: 'Technical Spec', icon: Code },
+      { id: 'ux', name: 'UX Specification', icon: Palette },
+      { id: 'mermaid', name: 'Architecture', icon: GitBranch }
+    ]
+
+    const generatedCount = Object.values(generatedDocumentsSummary).filter(Boolean).length
+    const totalCount = Object.keys(generatedDocumentsSummary).length
+
+    return (
+      <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-lg font-semibold text-green-800 flex items-center gap-2">
+            <CheckCircle className="h-5 w-5" />
+            Generation Complete!
+          </h3>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowGenerationSummary(false)}
+            className="text-green-600 hover:text-green-800"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+        
+        <p className="text-sm text-green-700 mb-3">
+          Successfully generated <strong>{generatedCount} of {totalCount}</strong> documents for your project.
+        </p>
+        
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+          {documentTypes.map((doc) => {
+            const Icon = doc.icon
+            const isGenerated = generatedDocumentsSummary[doc.id]
+            
+            return (
+              <div
+                key={doc.id}
+                className={`flex items-center gap-2 p-2 rounded border text-sm ${
+                  isGenerated
+                    ? 'bg-green-100 border-green-300 text-green-800'
+                    : 'bg-gray-100 border-gray-300 text-gray-500'
+                }`}
+              >
+                {isGenerated ? (
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                ) : (
+                  <Circle className="h-4 w-4 text-gray-400" />
+                )}
+                <Icon className="h-4 w-4" />
+                <span className="hidden sm:inline">{doc.name}</span>
+                <span className="sm:hidden">
+                  {doc.id === 'business' ? 'Biz' :
+                   doc.id === 'functional' ? 'Func' :
+                   doc.id === 'technical' ? 'Tech' :
+                   doc.id === 'mermaid' ? 'Arch' : doc.id}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+        
+        <div className="mt-3 text-xs text-green-600">
+          💡 Tip: You can view your generated documents in the "Recent Projects" section below.
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-2 sm:p-4">
       {/* User Header */}
@@ -2406,13 +2435,8 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
           </div> */}
         </div>
 
-
-
-
-
-
-
-
+        {/* Generation Summary */}
+        <GenerationSummary />
 
         {/* Recent Projects - Only show if there are cached projects */}
         {recentProjects.length > 0 && (
@@ -3108,44 +3132,6 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
           </div>
 
           <TabsContent value="sdlc" className="space-y-6">
-            {/* Compact Usage & Features Bar */}
-            <div className="bg-white rounded-lg border p-4">
-              <div className="flex items-center justify-between flex-wrap gap-4">
-                <div className="flex items-center space-x-4">
-                  <UsageIndicatorCompact 
-                    onViewDashboard={() => window.location.href = '/usage-dashboard'}
-                  />
-                  <BetaFeaturesIndicator 
-                    user={user}
-                    compact={true}
-                    showEnrollment={true}
-                  />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.location.href = '/usage-dashboard'}
-                    className="flex items-center gap-2"
-                  >
-                    <BarChart3 className="h-4 w-4" />
-                    <span className="hidden sm:inline">Usage Dashboard</span>
-                    <span className="sm:hidden">Usage</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setActiveTab('early-access')}
-                    className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 text-blue-700 hover:from-blue-100 hover:to-purple-100"
-                  >
-                    <Rocket className="h-4 w-4" />
-                    <span className="hidden sm:inline">Join Waitlist</span>
-                    <span className="sm:hidden">Waitlist</span>
-                  </Button>
-                </div>
-              </div>
-            </div>
-
             {/* Main Input Section */}
             <Card>
               <CardHeader>
@@ -3166,21 +3152,119 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                   />
                 </div>
                 
-                <div className="flex items-center justify-between gap-4">
-                  {/* Collapsible Horizontal Toolkit */}
-                  <div className="relative">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  {/* Tools Section - Left Side */}
+                  <div className="relative w-full sm:w-auto">
+                    {/* Collapsed Tools Tab */}
+                    {!toolsExpanded && (
+                      <button
+                        onClick={() => setToolsExpanded(true)}
+                        className="bg-blue-100 hover:bg-blue-200 rounded-lg px-3 py-2 border border-blue-200 transition-colors flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-start"
+                      >
+                        <span className="text-xs text-blue-700 font-medium">Tools</span>
+                        <ChevronLeft className="h-4 w-4 text-blue-600 rotate-180" />
+                      </button>
+                    )}
+
+                    {/* Expanded Tools - Left-aligned Overlay */}
+                    {toolsExpanded && (
+                      <>
+                        {/* Backdrop */}
+                        <div 
+                          className="fixed inset-0 z-40" 
+                          onClick={() => setToolsExpanded(false)}
+                        />
+                        <div className="absolute left-0 top-0 z-50 bg-white rounded-lg shadow-lg border p-3 min-w-[280px] sm:min-w-[320px] w-[calc(100vw-2rem)] max-w-[400px]">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-sm font-medium text-gray-700">Tools</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setToolsExpanded(false)}
+                            className="h-6 w-6 p-0 hover:bg-gray-200"
+                            title="Collapse"
+                          >
+                            <X className="h-4 w-4 text-gray-600" />
+                          </Button>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-3">
+                          {/* SDLC */}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setActiveTab('sdlc')
+                              setToolsExpanded(false)
+                            }}
+                            className="h-12 min-w-[80px] p-0 hover:bg-gray-50 flex flex-col items-center justify-center gap-1 border-gray-300"
+                            title="SDLC Documentation"
+                          >
+                            <FileText className="h-4 w-4" />
+                            <span className="text-xs font-medium">SDLC</span>
+                          </Button>
+                          {/* CodeYodha */}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setActiveTab('codeyodha')
+                              setToolsExpanded(false)
+                            }}
+                            className="h-12 min-w-[80px] p-0 hover:bg-purple-50 flex flex-col items-center justify-center gap-1 border-purple-300"
+                            title="CodeYodha"
+                          >
+                            <Sparkles className="h-4 w-4 text-purple-600" />
+                            <span className="text-xs font-medium text-purple-700">CodeYodha</span>
+                          </Button>
+                          {/* GitDigest */}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setActiveTab('gitdigest')
+                              setToolsExpanded(false)
+                            }}
+                            className="h-12 min-w-[80px] p-0 hover:bg-gray-50 flex flex-col items-center justify-center gap-1 border-gray-300"
+                            title="GitDigest"
+                          >
+                            <GitBranch className="h-4 w-4" />
+                            <span className="text-xs font-medium">GitDigest</span>
+                          </Button>
+                          {/* Early Access */}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setActiveTab('early-access')
+                              setToolsExpanded(false)
+                            }}
+                            className="h-12 min-w-[80px] p-0 hover:bg-blue-50 flex flex-col items-center justify-center gap-1 border-blue-300"
+                            title="Early Access"
+                          >
+                            <Rocket className="h-4 w-4 text-blue-600" />
+                            <span className="text-xs font-medium text-blue-700">Early Access</span>
+                          </Button>
+                        </div>
+                      </div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Collapsible Horizontal Toolkit - Settings */}
+                  <div className="relative w-full sm:w-auto">
                     {/* Collapsed Tab */}
                     {!toolkitExpanded && (
                       <button
                         onClick={() => setToolkitExpanded(true)}
-                        className="bg-gray-100 hover:bg-gray-200 rounded-lg px-3 py-2 border transition-colors flex items-center gap-2"
+                        className="bg-gray-100 hover:bg-gray-200 rounded-lg px-3 py-2 border transition-colors flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-start"
                       >
-                        <span className="text-xs text-gray-600 font-medium">Tools</span>
+                        <span className="text-xs text-gray-600 font-medium">Settings</span>
                         <ChevronLeft className="h-4 w-4 text-gray-600 rotate-180" />
                       </button>
                     )}
 
-                    {/* Expanded Toolkit - Horizontal Overlay */}
+                    {/* Expanded Toolkit - Right-aligned Overlay */}
                     {toolkitExpanded && (
                       <>
                         {/* Backdrop */}
@@ -3188,9 +3272,9 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                           className="fixed inset-0 z-40" 
                           onClick={() => setToolkitExpanded(false)}
                         />
-                        <div className="absolute left-0 top-0 z-50 bg-white rounded-lg shadow-lg border p-3 min-w-[400px] sm:min-w-[400px] w-[calc(100vw-2rem)] max-w-[400px]">
+                        <div className="absolute right-0 top-0 z-50 bg-white rounded-lg shadow-lg border p-3 min-w-[280px] sm:min-w-[400px] w-[calc(100vw-2rem)] max-w-[400px]">
                         <div className="flex items-center justify-between mb-3">
-                          <span className="text-sm font-medium text-gray-700">Tools</span>
+                          <span className="text-sm font-medium text-gray-700">Settings</span>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -3230,20 +3314,6 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                           >
                             <Plug className="h-4 w-4" />
                             <span className="text-xs truncate w-full">Integration</span>
-                          </Button>
-                          {/* Presentation */}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setShowVisualization(true)
-                              setToolkitExpanded(false)
-                            }}
-                            className="h-10 min-w-[72px] max-w-[110px] p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
-                            title="Visualize"
-                          >
-                            <Presentation className="h-4 w-4" />
-                            <span className="text-xs truncate w-full">Visualization</span>
                           </Button>
                           {/* Workflow */}
                           <Button
@@ -3318,48 +3388,15 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                               T
                             </Badge>
                           </Button>
-                          {/* Claude AI - Special styling */}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setActiveTab('codeyodha')
-                              setToolkitExpanded(false)
-                            }}
-                            className="h-10 min-w-[72px] max-w-[110px] p-0 hover:bg-indigo-100 bg-indigo-50 flex flex-col items-center justify-center gap-1"
-                            title="Claude AI"
-                          >
-                            <Sparkles className="h-4 w-4 text-indigo-600" />
-                            <span className="text-xs truncate w-full text-indigo-600">Claude</span>
-                          </Button>
-                          {/* Slack UI Assistant */}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setShowSlackUICodeAssistant(true)
-                              setToolkitExpanded(false)
-                            }}
-                            className="h-10 min-w-[72px] max-w-[110px] p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
-                            title="Slack UI Assistant"
-                          >
-                            <Code className="h-4 w-4" />
-                            <span className="text-xs truncate w-full">Slack</span>
-                          </Button>
                         </div>
                       </div>
                       </>
                     )}
                   </div>
-                  
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
-                    <span className="truncate">JIRA: {config.jiraProject || 'Not configured'}</span>
-                    <span className="truncate">Confluence: {config.confluenceSpace || 'Not configured'}</span>
-                  </div>
                 </div>
                 
                 <Button 
-                  onClick={handleGenerate} 
+                  onClick={() => generateFreshDocuments()} 
                   disabled={!input.trim() || isProcessing}
                   className="w-full"
                   size="lg"

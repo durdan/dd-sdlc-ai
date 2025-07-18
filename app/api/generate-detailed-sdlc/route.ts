@@ -3,6 +3,7 @@ import { streamText } from "ai"
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerPromptService } from '@/lib/prompt-service-server'
 import { createClient } from "@/lib/supabase/server"
+import { generateWithDatabasePrompt } from '@/lib/prompt-template-manager'
 
 export const maxDuration = 300 // 5 minutes for detailed generation
 
@@ -655,14 +656,33 @@ Create 3-5 detailed personas representing different user types.`)
     console.log(`✅ [${requestId}] Technical Specification completed`)
     console.log(`🎨 [${requestId}] Starting UX Specification generation...`)
 
+    // Generate UX specification using database prompt system
+    console.log('Generating UX specification using database prompt...')
+    const uxResult = await generateWithDatabasePrompt(
+      'ux',
+      { 
+        input, 
+        business_analysis: businessAnalysis,
+        functional_spec: functionalSpec,
+        technical_spec: technicalSpec
+      },
+      null, // No custom prompt - use database default
+      openaiKey,
+      effectiveUserId,
+      projectId
+    )
+    
     const uxSpec = {
       userPersonas: businessAnalysis.personas,
-      userJourneys: await generateSection(`Create detailed user journey maps for: {input}`),
-      wireframes: await generateSection(`Create detailed wireframe specifications for: {input}`),
-      designSystem: await generateSection(`Create detailed design system specifications for: {input}`),
-      accessibilityRequirements: await generateSection(`Create detailed accessibility requirements for: {input}`),
-      usabilityTesting: await generateSection(`Create detailed usability testing plan for: {input}`),
-      interactionDesign: await generateSection(`Create detailed interaction design specifications for: {input}`)
+      userJourneys: await generateSection(`Based on the UX specification, create detailed user journey maps for: {input}`, { businessAnalysis, functionalSpec, technicalSpec }),
+      wireframes: await generateSection(`Based on the UX specification, create detailed wireframe specifications for: {input}`, { businessAnalysis, functionalSpec, technicalSpec }),
+      designSystem: await generateSection(`Based on the UX specification, create detailed design system specifications for: {input}`, { businessAnalysis, functionalSpec, technicalSpec }),
+      accessibilityRequirements: await generateSection(`Based on the UX specification, create detailed accessibility requirements for: {input}`, { businessAnalysis, functionalSpec, technicalSpec }),
+      usabilityTesting: await generateSection(`Based on the UX specification, create detailed usability testing plan for: {input}`, { businessAnalysis, functionalSpec, technicalSpec }),
+      interactionDesign: await generateSection(`Based on the UX specification, create detailed interaction design specifications for: {input}`, { businessAnalysis, functionalSpec, technicalSpec }),
+      informationArchitecture: await generateSection(`Based on the UX specification, create detailed information architecture for: {input}`, { businessAnalysis, functionalSpec, technicalSpec }),
+      visualDesign: await generateSection(`Based on the UX specification, create detailed visual design guidelines for: {input}`, { businessAnalysis, functionalSpec, technicalSpec }),
+      prototypingPlan: await generateSection(`Based on the UX specification, create detailed prototyping plan for: {input}`, { businessAnalysis, functionalSpec, technicalSpec })
     }
     
     console.log(`✅ [${requestId}] UX Specification completed`)

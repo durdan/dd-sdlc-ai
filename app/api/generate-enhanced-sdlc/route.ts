@@ -2,6 +2,7 @@ import { createOpenAI } from "@ai-sdk/openai"
 import { generateText } from "ai"
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { generateWithDatabasePrompt } from '@/lib/prompt-template-manager'
 
 export const maxDuration = 300 // 5 minutes for detailed generation
 
@@ -915,12 +916,23 @@ Create production-ready technical specifications with detailed implementation gu
 
 Create a detailed implementation plan that project managers can execute directly.`, { businessAnalysis, functionalSpec, technicalSpec })
 
-    // Generate UX specification for completeness
-    console.log('Generating UX specification...')
-    const uxSpec = await generateSection(ENHANCED_PROMPTS.uxSpec || `Create a comprehensive UX specification for: {input}
+    // Generate UX specification using database prompt system
+    console.log('Generating UX specification using database prompt...')
+    const uxResult = await generateWithDatabasePrompt(
+      'ux',
+      { 
+        input, 
+        business_analysis: businessAnalysis,
+        functional_spec: functionalSpec,
+        technical_spec: technicalSpec
+      },
+      null, // No custom prompt - use database default
+      openaiKey,
+      effectiveUserId,
+      projectId
+    )
     
-    Include user personas, user journeys, wireframes description, design system requirements, accessibility standards, usability testing plans, interaction design principles, information architecture, visual design guidelines, and prototyping approach.`, 
-    { businessAnalysis, functionalSpec, technicalSpec })
+    const uxSpec = uxResult.content
 
     // Generate architecture/diagrams for completeness  
     console.log('Generating architecture diagrams...')
