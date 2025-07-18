@@ -136,9 +136,13 @@ async function generateWithDatabasePromptStreaming(
       console.log('Using custom prompt from request (streaming)')
       const processedPrompt = customPrompt
         .replace(/{{input}}/g, input)
+        .replace(/\{input\}/g, input)
         .replace(/{{business_analysis}}/g, businessAnalysis || '')
+        .replace(/\{business_analysis\}/g, businessAnalysis || '')
         .replace(/{{functional_spec}}/g, functionalSpec || '')
+        .replace(/\{functional_spec\}/g, functionalSpec || '')
         .replace(/{{technical_spec}}/g, technicalSpec || '')
+        .replace(/\{technical_spec\}/g, technicalSpec || '')
       
       return await streamText({
         model: openaiClient("gpt-4o"),
@@ -149,48 +153,121 @@ async function generateWithDatabasePromptStreaming(
     // Priority 2: Load prompt from database
     const promptTemplate = await promptService.getPromptForExecution('ux', userId || 'anonymous')
     
-    if (promptTemplate) {
-      console.log(`Using database prompt for streaming: ${promptTemplate.name} (v${promptTemplate.version})`)
-      console.log('🔍 Input received:', input.substring(0, 200) + '...')
-      console.log('🔍 Input length:', input.length)
+    console.log('🔍 Prompt template retrieved:', {
+      found: !!promptTemplate,
+      name: promptTemplate?.name,
+      id: promptTemplate?.id,
+      contentLength: promptTemplate?.prompt_content?.length,
+      contentPreview: promptTemplate?.prompt_content?.substring(0, 200)
+    })
+    
+    if (promptTemplate?.prompt_content) {
+      console.log('✅ Using database prompt for streaming:', promptTemplate.name)
       
-      // Prepare the prompt with available parameters
-      const { processedContent } = await promptService.preparePrompt(
-        promptTemplate.id,
-        { 
-          input: input,
-          business_analysis: businessAnalysis || '',
-          functional_spec: functionalSpec || '',
-          technical_spec: technicalSpec || '',
-        }
-      )
+      // Debug: Check the exact content of the prompt
+      console.log('🔍 Full prompt content length:', promptTemplate.prompt_content.length)
+      console.log('🔍 First 500 chars of prompt:', promptTemplate.prompt_content.substring(0, 500))
+      console.log('🔍 Last 500 chars of prompt:', promptTemplate.prompt_content.substring(promptTemplate.prompt_content.length - 500))
+      console.log('🔍 All occurrences of "input" in prompt:', (promptTemplate.prompt_content.match(/input/gi) || []).length)
+      console.log('🔍 All occurrences of "{{input}}" in prompt:', (promptTemplate.prompt_content.match(/\{\{input\}\}/g) || []).length)
+      console.log('🔍 All occurrences of "{input}" in prompt:', (promptTemplate.prompt_content.match(/\{input\}/g) || []).length)
       
-      // Clean up any unreplaced variables and provide context
+      // Build optional context from available documents
+      const contextParts = []
+      const hasBusinessAnalysis = businessAnalysis && businessAnalysis.trim()
+      const hasFunctionalSpec = functionalSpec && functionalSpec.trim()
+      const hasTechnicalSpec = technicalSpec && technicalSpec.trim()
+      
+      if (hasBusinessAnalysis) {
+        contextParts.push(`Business Analysis: ${businessAnalysis}`)
+      }
+      if (hasFunctionalSpec) {
+        contextParts.push(`Functional Specification: ${functionalSpec}`)
+      }
+      if (hasTechnicalSpec) {
+        contextParts.push(`Technical Specification: ${technicalSpec}`)
+      }
+      
+      let processedContent = promptTemplate.prompt_content
+      
+      // Check if the prompt contains the input placeholder, if not add it
+      if (!processedContent.includes('{{input}}') && !processedContent.includes('{input}')) {
+        console.log('⚠️ Prompt template missing input placeholder, adding it...')
+        processedContent = `## Original Project Requirements:
+{{input}}
+
+${processedContent}`
+      }
+      
       let cleanedContent = processedContent
+      
+      console.log('🔍 Input value received:', input)
+      console.log('🔍 Input type:', typeof input)
+      console.log('🔍 Input length:', input?.length)
+      console.log('🔍 Original prompt content preview:', processedContent.substring(0, 200))
+      console.log('🔍 Does prompt contain {{input}}?', processedContent.includes('{{input}}'))
+      console.log('🔍 Does prompt contain {input}?', processedContent.includes('{input}'))
       
       // Handle both {{variable}} and {variable} syntax formats
       cleanedContent = cleanedContent
         .replace(/\{\{input\}\}/g, input)
+        .replace(/\{input\}/g, input)
         .replace(/\{\{business_analysis\}\}/g, businessAnalysis || '')
+        .replace(/\{business_analysis\}/g, businessAnalysis || '')
         .replace(/\{\{functional_spec\}\}/g, functionalSpec || '')
+        .replace(/\{functional_spec\}/g, functionalSpec || '')
         .replace(/\{\{technical_spec\}\}/g, technicalSpec || '')
+        .replace(/\{technical_spec\}/g, technicalSpec || '')
       
-      // Remove any remaining unreplaced variable placeholders
-      cleanedContent = cleanedContent.replace(/\{[^}]+\}/g, '')
+      console.log('🔍 After replacement preview:', cleanedContent.substring(0, 200))
       
-      // Add context about what documents are available
-      if (!businessAnalysis && !functionalSpec && !technicalSpec) {
-        // If no other documents are available, add a note to the prompt
-        const contextNote = `\n\nNote: This UX specification is being generated based on the project requirements only. No additional business analysis, functional specification, or technical specification documents are available. Focus on creating comprehensive UX tasks that can be refined once other specifications are available.`
+      // Remove any remaining unreplaced variables
+      cleanedContent = cleanedContent
+        .replace(/\{\{[^}]+\}\}/g, '')
+        .replace(/\{[^}]+\}/g, '')
+      
+      console.log('🔍 Does cleaned content still contain {{input}}?', cleanedContent.includes('{{input}}'))
+      
+      // Add intelligent context based on what's available
+      if (!hasBusinessAnalysis && !hasFunctionalSpec && !hasTechnicalSpec) {
+        // If no other documents are available, add a comprehensive note
+        const contextNote = `\n\n## IMPORTANT CONTEXT NOTE:
+This UX specification is being generated based on the project requirements only. No business analysis, functional specification, or technical specification documents are available.
+
+**UX Specification Approach:**
+- Focus on creating comprehensive user experience design that can be refined once other specifications are available
+- Infer user needs and workflows from the project requirements
+- Design for common UX patterns and best practices in the domain
+- Include user research and testing tasks to understand user context
+- Emphasize usability, accessibility, and user-centered design principles
+- Consider modern design systems and interaction patterns
+
+**Next Steps After UX Specification:**
+- Generate business analysis to refine business context and user needs
+- Create functional specification to detail system functionality and user workflows
+- Develop technical specification to align UX design with technical architecture
+- Iterate on UX design based on additional context
+
+Please proceed with creating a comprehensive UX specification that establishes a solid foundation for user experience design.`
         cleanedContent = cleanedContent + contextNote
       } else {
         // Add context about what's available
         const availableDocs = []
-        if (businessAnalysis) availableDocs.push('Business Analysis')
-        if (functionalSpec) availableDocs.push('Functional Specification')
-        if (technicalSpec) availableDocs.push('Technical Specification')
+        if (hasBusinessAnalysis) availableDocs.push('Business Analysis')
+        if (hasFunctionalSpec) availableDocs.push('Functional Specification')
+        if (hasTechnicalSpec) availableDocs.push('Technical Specification')
         
-        const contextNote = `\n\nAvailable Context: ${availableDocs.join(', ')}`
+        const contextNote = `\n\n## AVAILABLE CONTEXT:
+The following documents are available to inform this UX specification: ${availableDocs.join(', ')}
+
+**UX Specification Approach:**
+- Leverage the provided documents to create informed user experience design
+- Align UX design with business objectives, functional requirements, and technical architecture
+- Ensure consistency with business processes, system functionality, and technical constraints
+- Build upon existing context to create comprehensive UX specifications
+- Validate UX decisions against available business, functional, and technical context
+
+Please create a comprehensive UX specification that integrates seamlessly with the provided documents.`
         cleanedContent = cleanedContent + contextNote
       }
       
@@ -211,7 +288,9 @@ async function generateWithDatabasePromptStreaming(
     console.warn('No database prompt found, using hardcoded fallback for streaming')
     const processedPrompt = FALLBACK_PROMPT
       .replace(/\{input\}/g, input)
+      .replace(/\{\{input\}\}/g, input)
       .replace(/\{optional_context\}/g, optionalContext)
+      .replace(/\{\{optional_context\}\}/g, optionalContext)
     
     return await streamText({
       model: openaiClient("gpt-4o"),
@@ -227,6 +306,10 @@ async function generateWithDatabasePromptStreaming(
 export async function POST(req: NextRequest) {
   try {
     const { input, businessAnalysis, functionalSpec, technicalSpec, customPrompt, openaiKey, userId, projectId }: UXSpecRequest = await req.json()
+    
+    console.log('🔍 POST handler - Raw input received:', input)
+    console.log('🔍 POST handler - Input type:', typeof input)
+    console.log('🔍 POST handler - Input length:', input?.length)
     
     // Validate OpenAI API key
     if (!openaiKey || openaiKey.trim() === '') {

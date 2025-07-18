@@ -63,7 +63,7 @@ export function MarkdownRenderer({ content, title, type = 'general' }: MarkdownR
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0 flex-1">
               <div className={`w-3 h-3 rounded-full ${typeColors[type]} flex-shrink-0`} />
-              <CardTitle className="text-lg sm:text-xl font-semibold text-gray-800 truncate">
+              <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900 truncate">
                 {title}
               </CardTitle>
               <Badge variant="outline" className="text-xs capitalize flex-shrink-0">
@@ -95,7 +95,7 @@ export function MarkdownRenderer({ content, title, type = 'general' }: MarkdownR
           </div>
         </CardHeader>
       )}
-      <CardContent className="prose prose-gray max-w-none prose-sm sm:prose-base">
+      <CardContent className="prose prose-gray max-w-none prose-sm sm:prose-base bg-white rounded-lg border border-gray-200 p-4">
         <div className="overflow-hidden">
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
@@ -107,15 +107,15 @@ export function MarkdownRenderer({ content, title, type = 'general' }: MarkdownR
               h4: ({node, ...props}) => <h4 className="text-base sm:text-lg font-medium text-gray-700 mb-2 mt-3" {...props} />,
               h5: ({node, ...props}) => <h5 className="text-sm sm:text-base font-medium text-gray-700 mb-1 mt-2" {...props} />,
               h6: ({node, ...props}) => <h6 className="text-xs sm:text-sm font-medium text-gray-600 mb-1 mt-2" {...props} />,
-              p: ({node, ...props}) => <p className="text-gray-700 mb-3 leading-relaxed text-sm sm:text-base" {...props} />,
-              ul: ({node, ...props}) => <ul className="list-disc list-inside mb-4 space-y-1 text-gray-700 text-sm sm:text-base" {...props} />,
-              ol: ({node, ...props}) => <ol className="list-decimal list-inside mb-4 space-y-1 text-gray-700 text-sm sm:text-base" {...props} />,
-              li: ({node, ...props}) => <li className="text-gray-700 mb-1 text-sm sm:text-base" {...props} />,
-              blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-blue-500 pl-4 py-2 bg-blue-50 rounded-r-lg mb-4 italic text-gray-700 text-sm sm:text-base" {...props} />,
+              p: ({node, ...props}) => <p className="text-gray-800 mb-3 leading-relaxed text-sm sm:text-base" {...props} />,
+              ul: ({node, ...props}) => <ul className="list-disc list-inside mb-4 space-y-1 text-gray-800 text-sm sm:text-base" {...props} />,
+              ol: ({node, ...props}) => <ol className="list-decimal list-inside mb-4 space-y-1 text-gray-800 text-sm sm:text-base" {...props} />,
+              li: ({node, ...props}) => <li className="text-gray-800 mb-1 text-sm sm:text-base" {...props} />,
+              blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-blue-500 pl-4 py-2 bg-blue-50 rounded-r-lg mb-4 italic text-gray-800 text-sm sm:text-base" {...props} />,
               code: ({node, inline, ...props}) => 
                 inline 
-                  ? <code className="bg-gray-100 text-red-600 px-1 py-0.5 rounded text-xs sm:text-sm font-mono break-words" {...props} />
-                  : <code className="block bg-gray-100 p-3 sm:p-4 rounded-lg text-xs sm:text-sm font-mono mb-4 whitespace-pre overflow-x-auto" {...props} />,
+                  ? <code className="bg-gray-100 text-gray-900 px-1 py-0.5 rounded text-xs sm:text-sm font-mono break-words" {...props} />
+                  : <code className="block bg-gray-100 p-3 sm:p-4 rounded-lg text-xs sm:text-sm font-mono mb-4 whitespace-pre overflow-x-auto text-gray-900" {...props} />,
               pre: ({node, ...props}) => <pre className="bg-gray-900 text-gray-100 p-3 sm:p-4 rounded-lg text-xs sm:text-sm min-w-0 overflow-x-auto mb-4" {...props} />,
               table: ({node, ...props}) => (
                 <div className="overflow-x-auto mb-4 -mx-2 sm:mx-0">
@@ -125,11 +125,11 @@ export function MarkdownRenderer({ content, title, type = 'general' }: MarkdownR
               thead: ({node, ...props}) => <thead className="bg-gray-50" {...props} />,
               tbody: ({node, ...props}) => <tbody className="bg-white divide-y divide-gray-200" {...props} />,
               tr: ({node, ...props}) => <tr {...props} />,
-              th: ({node, ...props}) => <th className="px-2 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap" {...props} />,
+              th: ({node, ...props}) => <th className="px-2 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider whitespace-nowrap" {...props} />,
               td: ({node, ...props}) => <td className="px-2 py-2 sm:px-6 sm:py-4 text-xs sm:text-sm text-gray-900 break-words" {...props} />,
               a: ({node, ...props}) => <a className="text-blue-600 hover:text-blue-800 underline break-words" target="_blank" rel="noopener noreferrer" {...props} />,
               strong: ({node, ...props}) => <strong className="font-semibold text-gray-900" {...props} />,
-              em: ({node, ...props}) => <em className="italic text-gray-700" {...props} />,
+              em: ({node, ...props}) => <em className="italic text-gray-800" {...props} />,
               hr: ({node, ...props}) => <hr className="border-gray-200 my-6" {...props} />,
             }}
           >

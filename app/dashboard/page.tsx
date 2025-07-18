@@ -412,6 +412,7 @@ interface ProjectResult {
   }
   hasComprehensiveContent: boolean
   totalDocuments: number
+  projectType?: 'sdlc' | 'claude_code_assistant'
 }
 
 interface WorkflowVisualizationProps {
@@ -572,15 +573,21 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
     if (!user?.id) return []
     
     try {
-      const projects = await dbService.getProjectsByUser(user.id)
-      console.log('🔍 Raw projects from database:', projects.length, projects)
+      // Fetch SDLC projects from sdlc_projects table
+      const sdlcProjects = await dbService.getProjectsByUser(user.id)
+      console.log('🔍 Raw SDLC projects from database:', sdlcProjects.length, sdlcProjects)
+      
+      // Fetch project generations from project_generations table
+      const projectGenerations = await dbService.getProjectGenerations(user.id, 100, 0)
+      console.log('🔍 Raw project generations from database:', projectGenerations.length, projectGenerations)
       
       // Convert database projects to ProjectResult format
       const projectResults: ProjectResult[] = []
       
-      for (const project of projects) {
+      // Process SDLC projects
+      for (const project of sdlcProjects) {
         try {
-          console.log('🔄 Processing project:', project.id, project.title)
+          console.log('🔄 Processing SDLC project:', project.id, project.title)
           
           const documents = await dbService.getDocumentsByProject(project.id)
           const integrations = await dbService.getIntegrationsByProject(project.id)
@@ -708,19 +715,60 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
             } : undefined,
             documents: documentsObj,
             hasComprehensiveContent: !!comprehensiveDoc?.content,
-            totalDocuments: documents.length
+            totalDocuments: documents.length,
+            projectType: 'sdlc' as const
           }
           
           projectResults.push(projectResult)
-          console.log('✅ Successfully processed project:', project.id, 'with', documents.length, 'documents')
+          console.log('✅ Successfully processed SDLC project:', project.id, 'with', documents.length, 'documents')
           
         } catch (projectError) {
-          console.error('❌ Error processing individual project:', project.id, projectError)
+          console.error('❌ Error processing individual SDLC project:', project.id, projectError)
           // Continue processing other projects even if one fails
         }
       }
       
-      console.log('🎯 Final project results:', projectResults.length, 'out of', projects.length, 'original projects')
+      // Process project generations (Claude Code Assistant projects)
+      for (const generation of projectGenerations) {
+        try {
+          console.log('🔄 Processing project generation:', generation.id, generation.project_type)
+          
+          // Create a project result for Claude Code Assistant generations
+          const projectResult = {
+            id: generation.id,
+            title: `Claude Code Assistant - ${generation.project_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`,
+            status: generation.success ? 'completed' : 'failed',
+            createdAt: generation.created_at,
+            jiraEpic: '',
+            confluencePage: '',
+            githubProject: undefined,
+            documents: {
+              businessAnalysis: `# Claude Code Assistant Project\n\n**Project Type:** ${generation.project_type}\n**AI Provider:** ${generation.ai_provider}\n**Generation Method:** ${generation.generation_method}\n**Tokens Used:** ${generation.tokens_used}\n**Cost Estimate:** $${generation.cost_estimate || 0}\n**Generation Time:** ${generation.generation_time_ms || 0}ms\n\nThis is a Claude Code Assistant project generation. The actual code and documentation would be available in the Claude Code Assistant interface.`,
+              functionalSpec: `# Claude Code Assistant Project\n\n**Project Type:** ${generation.project_type}\n**AI Provider:** ${generation.ai_provider}\n**Generation Method:** ${generation.generation_method}\n**Tokens Used:** ${generation.tokens_used}\n**Cost Estimate:** $${generation.cost_estimate || 0}\n**Generation Time:** ${generation.generation_time_ms || 0}ms\n\nThis is a Claude Code Assistant project generation. The actual code and documentation would be available in the Claude Code Assistant interface.`,
+              technicalSpec: `# Claude Code Assistant Project\n\n**Project Type:** ${generation.project_type}\n**AI Provider:** ${generation.ai_provider}\n**Generation Method:** ${generation.generation_method}\n**Tokens Used:** ${generation.tokens_used}\n**Cost Estimate:** $${generation.cost_estimate || 0}\n**Generation Time:** ${generation.generation_time_ms || 0}ms\n\nThis is a Claude Code Assistant project generation. The actual code and documentation would be available in the Claude Code Assistant interface.`,
+              uxSpec: `# Claude Code Assistant Project\n\n**Project Type:** ${generation.project_type}\n**AI Provider:** ${generation.ai_provider}\n**Generation Method:** ${generation.generation_method}\n**Tokens Used:** ${generation.tokens_used}\n**Cost Estimate:** $${generation.cost_estimate || 0}\n**Generation Time:** ${generation.generation_time_ms || 0}ms\n\nThis is a Claude Code Assistant project generation. The actual code and documentation would be available in the Claude Code Assistant interface.`,
+              architecture: `# Claude Code Assistant Project\n\n**Project Type:** ${generation.project_type}\n**AI Provider:** ${generation.ai_provider}\n**Generation Method:** ${generation.generation_method}\n**Tokens Used:** ${generation.tokens_used}\n**Cost Estimate:** $${generation.cost_estimate || 0}\n**Generation Time:** ${generation.generation_time_ms || 0}ms\n\nThis is a Claude Code Assistant project generation. The actual code and documentation would be available in the Claude Code Assistant interface.`,
+              comprehensive: `# Claude Code Assistant Project\n\n**Project Type:** ${generation.project_type}\n**AI Provider:** ${generation.ai_provider}\n**Generation Method:** ${generation.generation_method}\n**Tokens Used:** ${generation.tokens_used}\n**Cost Estimate:** $${generation.cost_estimate || 0}\n**Generation Time:** ${generation.generation_time_ms || 0}ms\n\nThis is a Claude Code Assistant project generation. The actual code and documentation would be available in the Claude Code Assistant interface.`,
+              mermaidDiagrams: ''
+            },
+            hasComprehensiveContent: true,
+            totalDocuments: 1,
+            projectType: 'claude_code_assistant' as const
+          }
+          
+          projectResults.push(projectResult)
+          console.log('✅ Successfully processed Claude Code Assistant project:', generation.id)
+          
+        } catch (generationError) {
+          console.error('❌ Error processing individual project generation:', generation.id, generationError)
+          // Continue processing other generations even if one fails
+        }
+      }
+      
+      // Sort all projects by creation date (newest first)
+      projectResults.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      
+      console.log('🎯 Final project results:', projectResults.length, 'total projects (', sdlcProjects.length, 'SDLC +', projectGenerations.length, 'Claude Code Assistant)')
       return projectResults
       
     } catch (error) {
@@ -1784,6 +1832,9 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
 
       // Cache the complete results
       await cacheResults(input.trim(), results)
+      
+      // Save to database
+      await setCachedResults(input.trim(), results)
 
       // Handle optional integrations (JIRA, Confluence) if enabled
       await handleIntegrations(results, input)

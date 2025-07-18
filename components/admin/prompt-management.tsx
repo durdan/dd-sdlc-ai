@@ -387,7 +387,7 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
       functional: 'Functional Specification',
       technical: 'Technical Specification',
       ux: 'UX Specification',
-      mermaid: 'Mermaid Diagrams'
+      mermaid: 'Architecture'
     };
     return labels[type];
   };
@@ -478,8 +478,8 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
               <span className="sm:hidden">UX</span>
             </TabsTrigger>
             <TabsTrigger value="mermaid" className="tab-trigger-mobile">
-              <span className="hidden sm:inline">Mermaid</span>
-              <span className="sm:hidden">Mermaid</span>
+              <span className="hidden sm:inline">Architecture</span>
+              <span className="sm:hidden">Arch</span>
             </TabsTrigger>
             {userRole === 'admin' && (
               <>

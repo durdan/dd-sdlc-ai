@@ -8,9 +8,10 @@ export const maxDuration = 60
 
 interface MermaidDiagramsRequest {
   input: string
-  businessAnalysis: string
-  functionalSpec: string
-  technicalSpec: string
+  businessAnalysis?: string
+  functionalSpec?: string
+  technicalSpec?: string
+  uxSpec?: string
   customPrompt?: string
   openaiKey: string
   userId?: string
@@ -18,11 +19,11 @@ interface MermaidDiagramsRequest {
 }
 
 // Hardcoded fallback prompt for reliability
-const FALLBACK_PROMPT = `As a Senior System Architect with expertise in technical documentation, create comprehensive Mermaid diagrams based on the following specifications:
+const FALLBACK_PROMPT = `As a Senior System Architect with expertise in technical documentation, create comprehensive Mermaid diagrams based on the following project requirements:
 
-Technical Specification: {technical_spec}
-Functional Specification: {functional_spec}
-Business Analysis: {business_analysis}
+Project Requirements: {input}
+
+{optional_context}
 
 Generate the following structured Mermaid diagrams:
 
@@ -140,9 +141,9 @@ async function getAuthenticatedUser() {
 
 async function generateWithDatabasePromptStreaming(
   input: string,
-  businessAnalysis: string,
-  functionalSpec: string,
-  technicalSpec: string,
+  businessAnalysis: string | undefined,
+  functionalSpec: string | undefined,
+  technicalSpec: string | undefined,
   customPrompt: string | undefined,
   openaiKey: string,
   userId: string | undefined,
@@ -158,14 +159,17 @@ async function generateWithDatabasePromptStreaming(
       console.log('Using custom prompt from request (streaming)')
       const processedPrompt = customPrompt
         .replace(/{{input}}/g, input)
-        .replace(/{{business_analysis}}/g, businessAnalysis)
-        .replace(/{{functional_spec}}/g, functionalSpec)
-        .replace(/{{technical_spec}}/g, technicalSpec)
+        .replace(/\{input\}/g, input)
+        .replace(/{{business_analysis}}/g, businessAnalysis || '')
+        .replace(/\{business_analysis\}/g, businessAnalysis || '')
+        .replace(/{{functional_spec}}/g, functionalSpec || '')
+        .replace(/\{functional_spec\}/g, functionalSpec || '')
+        .replace(/{{technical_spec}}/g, technicalSpec || '')
+        .replace(/\{technical_spec\}/g, technicalSpec || '')
       
       return await streamText({
         model: openaiClient("gpt-4o"),
         prompt: processedPrompt,
-        maxTokens: 8000,
       })
     }
 
@@ -173,24 +177,111 @@ async function generateWithDatabasePromptStreaming(
     const promptTemplate = await promptService.getPromptForExecution('mermaid', userId || 'anonymous')
     
     if (promptTemplate) {
-      console.log('Using database prompt for streaming:', promptTemplate.name, 'version:', promptTemplate.version)
+      console.log(`Using database prompt for streaming: ${promptTemplate.name} (v${promptTemplate.version})`)
+      console.log('🔍 Input received:', input.substring(0, 200) + '...')
+      console.log('🔍 Input length:', input.length)
       
-      // Prepare the prompt
+      // Check what context is available
+      const hasBusinessAnalysis = !!(businessAnalysis && businessAnalysis.trim())
+      const hasFunctionalSpec = !!(functionalSpec && functionalSpec.trim())
+      const hasTechnicalSpec = !!(technicalSpec && technicalSpec.trim())
+      
+      console.log('🔍 Available context:', {
+        hasBusinessAnalysis,
+        hasFunctionalSpec,
+        hasTechnicalSpec
+      })
+      
+      // Prepare the prompt with available parameters
       const { processedContent } = await promptService.preparePrompt(
         promptTemplate.id,
         { 
           input: input,
-          business_analysis: businessAnalysis,
-          functional_spec: functionalSpec,
-          technical_spec: technicalSpec,
+          business_analysis: businessAnalysis || '',
+          functional_spec: functionalSpec || '',
+          technical_spec: technicalSpec || '',
         }
       )
+      
+      // Check if the prompt contains the input placeholder, if not add it
+      let processedContentWithInput = processedContent
+      if (!processedContent.includes('{{input}}') && !processedContent.includes('{input}')) {
+        console.log('⚠️ Prompt template missing input placeholder, adding it...')
+        processedContentWithInput = `## Original Project Requirements:
+{{input}}
+
+${processedContent}`
+      }
+      
+      // Clean up any unreplaced variables and provide context
+      let cleanedContent = processedContentWithInput
+      
+      // Handle both {{variable}} and {variable} syntax formats
+      cleanedContent = cleanedContent
+        .replace(/\{\{input\}\}/g, input)
+        .replace(/\{input\}/g, input)
+        .replace(/\{\{business_analysis\}\}/g, businessAnalysis || '')
+        .replace(/\{business_analysis\}/g, businessAnalysis || '')
+        .replace(/\{\{functional_spec\}\}/g, functionalSpec || '')
+        .replace(/\{functional_spec\}/g, functionalSpec || '')
+        .replace(/\{\{technical_spec\}\}/g, technicalSpec || '')
+        .replace(/\{technical_spec\}/g, technicalSpec || '')
+      
+      // Remove any remaining unreplaced variable placeholders
+      cleanedContent = cleanedContent
+        .replace(/\{\{[^}]+\}\}/g, '')
+        .replace(/\{[^}]+\}/g, '')
+      
+      // Add intelligent context based on what's available
+      if (!hasBusinessAnalysis && !hasFunctionalSpec && !hasTechnicalSpec) {
+        // If no other documents are available, add a comprehensive note
+        const contextNote = `\n\n## IMPORTANT CONTEXT NOTE:
+This Mermaid diagram generation is being performed based on the project requirements only. No business analysis, functional specification, or technical specification documents are available.
+
+**Diagram Generation Approach:**
+- Focus on creating comprehensive architectural diagrams that can be refined once other specifications are available
+- Infer system architecture and relationships from the project requirements
+- Design for common architectural patterns and best practices in the domain
+- Include system analysis and modeling tasks to understand technical requirements
+- Emphasize scalability, security, and performance considerations in diagrams
+- Consider modern architectural patterns and technology stacks
+
+**Next Steps After Diagram Generation:**
+- Generate business analysis to refine business context and requirements
+- Create functional specification to detail system functionality and user workflows
+- Develop technical specification to align diagrams with technical architecture
+- Iterate on diagrams based on additional context
+
+Please proceed with creating comprehensive Mermaid diagrams that establish a solid foundation for system visualization.`
+        cleanedContent = cleanedContent + contextNote
+      } else {
+        // Add context about what's available
+        const availableDocs = []
+        if (hasBusinessAnalysis) availableDocs.push('Business Analysis')
+        if (hasFunctionalSpec) availableDocs.push('Functional Specification')
+        if (hasTechnicalSpec) availableDocs.push('Technical Specification')
+        
+        const contextNote = `\n\n## AVAILABLE CONTEXT:
+The following documents are available to inform this diagram generation: ${availableDocs.join(', ')}
+
+**Diagram Generation Approach:**
+- Leverage the provided documents to create informed architectural diagrams
+- Align diagrams with business objectives, functional requirements, and technical architecture
+- Ensure consistency with business processes, system functionality, and technical constraints
+- Build upon existing context to create comprehensive visual representations
+- Validate diagram decisions against available business, functional, and technical context
+
+Please create comprehensive Mermaid diagrams that integrate seamlessly with the provided documents.`
+        cleanedContent = cleanedContent + contextNote
+      }
+      
+      console.log('🔍 Final prompt preview:', cleanedContent.substring(0, 500) + '...')
+      console.log('🔍 Final prompt length:', cleanedContent.length)
       
       // Execute AI streaming call
       const streamResult = await streamText({
         model: openaiClient("gpt-4o"),
-        prompt: processedContent,
-        maxTokens: 8000,
+        prompt: cleanedContent,
       })
       
       // Note: We'll log usage after streaming completes in the response handler
@@ -199,16 +290,32 @@ async function generateWithDatabasePromptStreaming(
 
     // Priority 3: Fallback to hardcoded prompt
     console.warn('No database prompt found, using hardcoded fallback for streaming')
+    
+    // Build optional context from available documents
+    const contextParts = []
+    if (businessAnalysis && businessAnalysis.trim()) {
+      contextParts.push(`Business Analysis: ${businessAnalysis}`)
+    }
+    if (functionalSpec && functionalSpec.trim()) {
+      contextParts.push(`Functional Specification: ${functionalSpec}`)
+    }
+    if (technicalSpec && technicalSpec.trim()) {
+      contextParts.push(`Technical Specification: ${technicalSpec}`)
+    }
+    
+    const optionalContext = contextParts.length > 0 
+      ? `\nAdditional Context:\n${contextParts.join('\n\n')}`
+      : ''
+    
     const processedPrompt = FALLBACK_PROMPT
       .replace(/\{input\}/g, input)
-      .replace(/\{business_analysis\}/g, businessAnalysis)
-      .replace(/\{functional_spec\}/g, functionalSpec)
-      .replace(/\{technical_spec\}/g, technicalSpec)
+      .replace(/\{\{input\}\}/g, input)
+      .replace(/\{optional_context\}/g, optionalContext)
+      .replace(/\{\{optional_context\}\}/g, optionalContext)
     
     return await streamText({
       model: openaiClient("gpt-4o"),
       prompt: processedPrompt,
-      maxTokens: 8000,
     })
     
   } catch (error) {
@@ -219,12 +326,23 @@ async function generateWithDatabasePromptStreaming(
 
 export async function POST(req: NextRequest) {
   try {
-    const { input, businessAnalysis, functionalSpec, technicalSpec, customPrompt, openaiKey, userId, projectId }: MermaidDiagramsRequest = await req.json()
+    const { input, businessAnalysis, functionalSpec, technicalSpec, uxSpec, customPrompt, openaiKey, userId, projectId }: MermaidDiagramsRequest = await req.json()
     
     // Validate OpenAI API key
     if (!openaiKey || openaiKey.trim() === '') {
       return new Response(
         JSON.stringify({ error: "OpenAI API key is required" }),
+        { 
+          status: 400, 
+          headers: { 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
+    // Validate input
+    if (!input || input.trim() === '') {
+      return new Response(
+        JSON.stringify({ error: "Project input is required" }),
         { 
           status: 400, 
           headers: { 'Content-Type': 'application/json' }
@@ -239,6 +357,12 @@ export async function POST(req: NextRequest) {
     console.log('🚀 Starting streaming Mermaid Diagrams generation...')
     console.log('User ID:', effectiveUserId)
     console.log('Project ID:', projectId)
+    console.log('Input length:', input.length)
+    console.log('Available context:', {
+      hasBusinessAnalysis: !!(businessAnalysis && businessAnalysis.trim()),
+      hasFunctionalSpec: !!(functionalSpec && functionalSpec.trim()),
+      hasTechnicalSpec: !!(technicalSpec && technicalSpec.trim())
+    })
 
     const streamResult = await generateWithDatabasePromptStreaming(
       input,

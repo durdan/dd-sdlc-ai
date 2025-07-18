@@ -334,6 +334,26 @@ export class DatabaseService {
     return data
   }
 
+  // Project Generations (for Claude Code Assistant and other AI generations)
+  async getProjectGenerations(
+    userId: string,
+    limit: number = 100,
+    offset: number = 0
+  ): Promise<any[]> {
+    const { data, error } = await this.supabase
+      .from('project_generations')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
+
+    if (error) {
+      console.error('Error fetching project generations:', error)
+      return []
+    }
+    return data || []
+  }
+
   // Utility methods for complex operations
   async getProjectWithDocuments(projectId: string): Promise<{
     project: SDLCProject | null,

@@ -93,24 +93,28 @@ async function getAuthenticatedUser() {
 
 async function generateWithDatabasePromptStreaming(
   input: string,
-  businessAnalysis: string,
-  functionalSpec: string,
+  businessAnalysis: string | undefined,
+  functionalSpec: string | undefined,
   customPrompt: string | undefined,
   openaiKey: string,
   userId: string | undefined,
   projectId: string | undefined
 ) {
   const promptService = createServerPromptService()
+  const startTime = Date.now()
   const openaiClient = createOpenAI({ apiKey: openaiKey })
   
   try {
-    // Priority 1: Use custom prompt if provided
+    // Priority 1: Use custom prompt if provided (legacy support)
     if (customPrompt && customPrompt.trim() !== "") {
       console.log('Using custom prompt from request (streaming)')
       const processedPrompt = customPrompt
         .replace(/{{input}}/g, input)
-        .replace(/{{businessAnalysis}}/g, businessAnalysis)
-        .replace(/{{functionalSpec}}/g, functionalSpec)
+        .replace(/\{input\}/g, input)
+        .replace(/{{business_analysis}}/g, businessAnalysis || '')
+        .replace(/\{business_analysis\}/g, businessAnalysis || '')
+        .replace(/{{functional_spec}}/g, functionalSpec || '')
+        .replace(/\{functional_spec\}/g, functionalSpec || '')
       
       return await streamText({
         model: openaiClient("gpt-4o"),
@@ -123,29 +127,119 @@ async function generateWithDatabasePromptStreaming(
     
     if (promptTemplate) {
       console.log(`Using database prompt for streaming: ${promptTemplate.name} (v${promptTemplate.version})`)
+      console.log('🔍 Input received:', input.substring(0, 200) + '...')
+      console.log('🔍 Input length:', input.length)
       
-      // Prepare the prompt with combined context
-      const context = `Business Analysis:\n${businessAnalysis}\n\nFunctional Specification:\n${functionalSpec}`
+      // Check what context is available
+      const hasBusinessAnalysis = !!(businessAnalysis && businessAnalysis.trim())
+      const hasFunctionalSpec = !!(functionalSpec && functionalSpec.trim())
+      
+      console.log('🔍 Available context:', {
+        hasBusinessAnalysis,
+        hasFunctionalSpec
+      })
+      
+      // Prepare the prompt with available parameters
       const { processedContent } = await promptService.preparePrompt(
         promptTemplate.id,
         { 
           input: input,
-          context: context,
+          business_analysis: businessAnalysis || '',
+          functional_spec: functionalSpec || '',
         }
       )
       
-      return await streamText({
+      // Check if the prompt contains the input placeholder, if not add it
+      let processedContentWithInput = processedContent
+      if (!processedContent.includes('{{input}}') && !processedContent.includes('{input}')) {
+        console.log('⚠️ Prompt template missing input placeholder, adding it...')
+        processedContentWithInput = `## Original Project Requirements:
+{{input}}
+
+${processedContent}`
+      }
+      
+      // Clean up any unreplaced variables and provide context
+      let cleanedContent = processedContentWithInput
+      
+      // Handle both {{variable}} and {variable} syntax formats
+      cleanedContent = cleanedContent
+        .replace(/\{\{input\}\}/g, input)
+        .replace(/\{input\}/g, input)
+        .replace(/\{\{business_analysis\}\}/g, businessAnalysis || '')
+        .replace(/\{business_analysis\}/g, businessAnalysis || '')
+        .replace(/\{\{functional_spec\}\}/g, functionalSpec || '')
+        .replace(/\{functional_spec\}/g, functionalSpec || '')
+      
+      // Remove any remaining unreplaced variable placeholders
+      cleanedContent = cleanedContent
+        .replace(/\{\{[^}]+\}\}/g, '')
+        .replace(/\{[^}]+\}/g, '')
+      
+      // Add intelligent context based on what's available
+      if (!hasBusinessAnalysis && !hasFunctionalSpec) {
+        // If no other documents are available, add a comprehensive note
+        const contextNote = `\n\n## IMPORTANT CONTEXT NOTE:
+This technical specification is being generated based on the project requirements only. No business analysis or functional specification documents are available.
+
+**Technical Specification Approach:**
+- Focus on creating comprehensive technical architecture that can be refined once other specifications are available
+- Infer technical requirements and constraints from the project requirements
+- Design for common architectural patterns and best practices in the domain
+- Include technical research and analysis tasks to understand system requirements
+- Emphasize scalability, security, and performance considerations
+- Consider modern technology stacks and deployment strategies
+
+**Next Steps After Technical Specification:**
+- Generate business analysis to refine business context and requirements
+- Create functional specification to detail system functionality and user workflows
+- Develop UX specification to align technical architecture with user experience
+- Iterate on technical design based on additional context
+
+Please proceed with creating a comprehensive technical specification that establishes a solid foundation for system architecture.`
+        cleanedContent = cleanedContent + contextNote
+      } else {
+        // Add context about what's available
+        const availableDocs = []
+        if (hasBusinessAnalysis) availableDocs.push('Business Analysis')
+        if (hasFunctionalSpec) availableDocs.push('Functional Specification')
+        
+        const contextNote = `\n\n## AVAILABLE CONTEXT:
+The following documents are available to inform this technical specification: ${availableDocs.join(', ')}
+
+**Technical Specification Approach:**
+- Leverage the provided documents to create informed technical architecture
+- Align technical design with business objectives and functional requirements
+- Ensure consistency with business processes and system functionality
+- Build upon existing context to create comprehensive technical specifications
+- Validate technical decisions against available business and functional context
+
+Please create a comprehensive technical specification that integrates seamlessly with the provided documents.`
+        cleanedContent = cleanedContent + contextNote
+      }
+      
+      console.log('🔍 Final prompt preview:', cleanedContent.substring(0, 500) + '...')
+      console.log('🔍 Final prompt length:', cleanedContent.length)
+      
+      // Execute AI streaming call
+      const streamResult = await streamText({
         model: openaiClient("gpt-4o"),
-        prompt: processedContent,
+        prompt: cleanedContent,
       })
+      
+      // Note: We'll log usage after streaming completes in the response handler
+      return streamResult
     }
 
     // Priority 3: Fallback to hardcoded prompt
     console.warn('No database prompt found, using hardcoded fallback for streaming')
     const processedPrompt = FALLBACK_PROMPT
       .replace(/\{input\}/g, input)
-      .replace(/\{businessAnalysis\}/g, businessAnalysis)
-      .replace(/\{functionalSpec\}/g, functionalSpec)
+      .replace(/\{\{input\}\}/g, input)
+      .replace(/\{businessAnalysis\}/g, businessAnalysis || '')
+      .replace(/\{\{business_analysis\}\}/g, businessAnalysis || '')
+      .replace(/\{functionalSpec\}/g, functionalSpec || '')
+      .replace(/\{\{functional_spec\}\}/g, functionalSpec || '')
     
     return await streamText({
       model: openaiClient("gpt-4o"),

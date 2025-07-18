@@ -90,20 +90,25 @@ async function getAuthenticatedUser() {
 
 async function generateWithDatabasePromptStreaming(
   input: string,
-  businessAnalysis: string,
+  businessAnalysis: string | undefined,
   customPrompt: string | undefined,
   openaiKey: string,
   userId: string | undefined,
   projectId: string | undefined
 ) {
   const promptService = createServerPromptService()
+  const startTime = Date.now()
   const openaiClient = createOpenAI({ apiKey: openaiKey })
   
   try {
     // Priority 1: Use custom prompt if provided (legacy support)
     if (customPrompt && customPrompt.trim() !== "") {
       console.log('Using custom prompt from request (streaming)')
-      const processedPrompt = customPrompt.replace(/{{input}}/g, input).replace(/{{businessAnalysis}}/g, businessAnalysis)
+      const processedPrompt = customPrompt
+        .replace(/{{input}}/g, input)
+        .replace(/\{input\}/g, input)
+        .replace(/{{business_analysis}}/g, businessAnalysis || '')
+        .replace(/\{business_analysis\}/g, businessAnalysis || '')
       
       return await streamText({
         model: openaiClient("gpt-4o"),
@@ -116,26 +121,108 @@ async function generateWithDatabasePromptStreaming(
     
     if (promptTemplate) {
       console.log(`Using database prompt for streaming: ${promptTemplate.name} (v${promptTemplate.version})`)
+      console.log('🔍 Input received:', input.substring(0, 200) + '...')
+      console.log('🔍 Input length:', input.length)
       
-      // Prepare the prompt
+      // Check what context is available
+      const hasBusinessAnalysis = !!(businessAnalysis && businessAnalysis.trim())
+      
+      console.log('🔍 Available context:', {
+        hasBusinessAnalysis
+      })
+      
+      // Prepare the prompt with available parameters
       const { processedContent } = await promptService.preparePrompt(
         promptTemplate.id,
         { 
           input: input,
-          context: businessAnalysis, // Use business analysis as context
+          business_analysis: businessAnalysis || '',
         }
       )
       
+      // Check if the prompt contains the input placeholder, if not add it
+      let processedContentWithInput = processedContent
+      if (!processedContent.includes('{{input}}') && !processedContent.includes('{input}')) {
+        console.log('⚠️ Prompt template missing input placeholder, adding it...')
+        processedContentWithInput = `## Original Project Requirements:
+{{input}}
+
+${processedContent}`
+      }
+      
+      // Clean up any unreplaced variables and provide context
+      let cleanedContent = processedContentWithInput
+      
+      // Handle both {{variable}} and {variable} syntax formats
+      cleanedContent = cleanedContent
+        .replace(/\{\{input\}\}/g, input)
+        .replace(/\{input\}/g, input)
+        .replace(/\{\{business_analysis\}\}/g, businessAnalysis || '')
+        .replace(/\{business_analysis\}/g, businessAnalysis || '')
+      
+      // Remove any remaining unreplaced variable placeholders
+      cleanedContent = cleanedContent
+        .replace(/\{\{[^}]+\}\}/g, '')
+        .replace(/\{[^}]+\}/g, '')
+      
+      // Add intelligent context based on what's available
+      if (!hasBusinessAnalysis) {
+        // If no business analysis is available, add a comprehensive note
+        const contextNote = `\n\n## IMPORTANT CONTEXT NOTE:
+This functional specification is being generated based on the project requirements only. No business analysis document is available.
+
+**Functional Specification Approach:**
+- Focus on creating comprehensive functional requirements that can be refined once business analysis is available
+- Infer business processes and user workflows from the project requirements
+- Design for common functional patterns and best practices in the domain
+- Include requirements gathering tasks to understand business context
+- Emphasize user-centric functionality and system behavior
+- Consider scalability and integration requirements
+
+**Next Steps After Functional Specification:**
+- Generate business analysis to refine business context and user needs
+- Create technical specification to align functional requirements with technical architecture
+- Develop UX specification to detail user experience and interface requirements
+- Iterate on functional requirements based on additional context
+
+Please proceed with creating a comprehensive functional specification that establishes a solid foundation for system development.`
+        cleanedContent = cleanedContent + contextNote
+      } else {
+        // Add context about what's available
+        const contextNote = `\n\n## AVAILABLE CONTEXT:
+Business Analysis document is available to inform this functional specification.
+
+**Functional Specification Approach:**
+- Leverage the provided business analysis to create informed functional requirements
+- Align system functionality with business objectives and user needs
+- Ensure consistency with business processes and workflows
+- Build upon existing business context to create comprehensive functional requirements
+- Validate functional requirements against available business context
+
+Please create a comprehensive functional specification that integrates seamlessly with the provided business analysis.`
+        cleanedContent = cleanedContent + contextNote
+      }
+      
+      console.log('🔍 Final prompt preview:', cleanedContent.substring(0, 500) + '...')
+      console.log('🔍 Final prompt length:', cleanedContent.length)
+      
       // Execute AI streaming call
-      return await streamText({
+      const streamResult = await streamText({
         model: openaiClient("gpt-4o"),
-        prompt: processedContent,
+        prompt: cleanedContent,
       })
+      
+      // Note: We'll log usage after streaming completes in the response handler
+      return streamResult
     }
 
     // Priority 3: Fallback to hardcoded prompt
     console.warn('No database prompt found, using hardcoded fallback for streaming')
-    const processedPrompt = FALLBACK_PROMPT.replace(/\{input\}/g, input).replace(/\{businessAnalysis\}/g, businessAnalysis)
+    const processedPrompt = FALLBACK_PROMPT
+      .replace(/\{input\}/g, input)
+      .replace(/\{\{input\}\}/g, input)
+      .replace(/\{businessAnalysis\}/g, businessAnalysis || '')
+      .replace(/\{\{business_analysis\}\}/g, businessAnalysis || '')
     
     return await streamText({
       model: openaiClient("gpt-4o"),

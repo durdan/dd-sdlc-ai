@@ -99,7 +99,9 @@ async function generateWithDatabasePromptStreaming(
     // Priority 1: Use custom prompt if provided (legacy support)
     if (customPrompt && customPrompt.trim() !== "") {
       console.log('Using custom prompt from request (streaming)')
-      const processedPrompt = customPrompt.replace(/{{input}}/g, input)
+      const processedPrompt = customPrompt
+        .replace(/{{input}}/g, input)
+        .replace(/\{input\}/g, input)
       
       return await streamText({
         model: openaiClient("gpt-4o"),
@@ -112,20 +114,62 @@ async function generateWithDatabasePromptStreaming(
     
     if (promptTemplate) {
       console.log(`Using database prompt for streaming: ${promptTemplate.name} (v${promptTemplate.version})`)
+      console.log('🔍 Input received:', input.substring(0, 200) + '...')
+      console.log('🔍 Input length:', input.length)
       
-      // Prepare the prompt
+      // Prepare the prompt with available parameters
       const { processedContent } = await promptService.preparePrompt(
         promptTemplate.id,
         { 
           input: input,
-          context: '', // No additional context for business analysis
         }
       )
+      
+      // Check if the prompt contains the input placeholder, if not add it
+      let processedContentWithInput = processedContent
+      if (!processedContent.includes('{{input}}') && !processedContent.includes('{input}')) {
+        console.log('⚠️ Prompt template missing input placeholder, adding it...')
+        processedContentWithInput = `## Original Project Requirements:
+{{input}}
+
+${processedContent}`
+      }
+      
+      // Clean up any unreplaced variables and provide context
+      let cleanedContent = processedContentWithInput
+      
+      // Handle both {{variable}} and {variable} syntax formats
+      cleanedContent = cleanedContent
+        .replace(/\{\{input\}\}/g, input)
+        .replace(/\{input\}/g, input)
+      
+      // Remove any remaining unreplaced variable placeholders
+      cleanedContent = cleanedContent
+        .replace(/\{\{[^}]+\}\}/g, '')
+        .replace(/\{[^}]+\}/g, '')
+      
+      // Add context note for business analysis
+      const contextNote = `\n\n## BUSINESS ANALYSIS CONTEXT:
+This business analysis is being generated based on the project requirements provided.
+
+**Analysis Approach:**
+- Focus on extracting business objectives and stakeholder needs
+- Identify key business processes and workflows
+- Analyze market context and competitive landscape
+- Define success metrics and KPIs
+- Establish business rules and constraints
+- Consider scalability and growth requirements
+
+Please create a comprehensive business analysis that provides a solid foundation for subsequent functional and technical specifications.`
+      cleanedContent = cleanedContent + contextNote
+      
+      console.log('🔍 Final prompt preview:', cleanedContent.substring(0, 500) + '...')
+      console.log('🔍 Final prompt length:', cleanedContent.length)
       
       // Execute AI streaming call
       const streamResult = await streamText({
         model: openaiClient("gpt-4o"),
-        prompt: processedContent,
+        prompt: cleanedContent,
       })
       
       // Note: We'll log usage after streaming completes in the response handler
@@ -134,7 +178,9 @@ async function generateWithDatabasePromptStreaming(
 
     // Priority 3: Fallback to hardcoded prompt
     console.warn('No database prompt found, using hardcoded fallback for streaming')
-    const processedPrompt = FALLBACK_PROMPT.replace(/\{input\}/g, input)
+    const processedPrompt = FALLBACK_PROMPT
+      .replace(/\{input\}/g, input)
+      .replace(/\{\{input\}\}/g, input)
     
     return await streamText({
       model: openaiClient("gpt-4o"),
