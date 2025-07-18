@@ -93,18 +93,17 @@ SLACK_BOT_TOKEN=your_slack_token
 
 ### 3. Database Setup
 
-#### Option A: Automatic Setup (Recommended)
-```bash
-# Run the setup script
-npm run setup:database
-```
-
-#### Option B: Manual Setup
+#### Quick Setup (Recommended)
 1. Create a new Supabase project at [supabase.com](https://supabase.com)
 2. Go to the SQL Editor in your Supabase dashboard
-3. Run the following scripts in order:
-   - `database/schema/setup-database.sql` (Core tables)
-   - `database/schema/prompt-management-migration.sql` (Prompt management)
+3. Copy and run the complete setup script:
+   ```sql
+   -- Copy the entire contents of database/schema/initial-setup.sql
+   -- This single script creates all tables, functions, and default data
+   ```
+
+#### Manual Setup (Advanced)
+If you prefer to run individual migration files, see the [Database Setup Guide](./docs/setup/database-setup.md) for detailed instructions.
 
 ### 4. Start Development
 
