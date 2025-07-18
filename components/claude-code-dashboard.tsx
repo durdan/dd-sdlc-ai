@@ -83,7 +83,11 @@ interface PRStatus {
   created_at?: string
 }
 
-export default function ClaudeCodeDashboard() {
+interface ClaudeCodeDashboardProps {
+  projectId?: string | null
+}
+
+export default function ClaudeCodeDashboard({ projectId }: ClaudeCodeDashboardProps) {
   const [activeTab, setActiveTab] = useState('overview')
   const [tasks, setTasks] = useState<ClaudeTask[]>([])
   const [repositories, setRepositories] = useState<Repository[]>([])
@@ -160,6 +164,13 @@ export default function ClaudeCodeDashboard() {
     loadTasks()
     loadRepositories()
   }, [])
+
+  // Load specific project when projectId is provided
+  useEffect(() => {
+    if (projectId) {
+      loadSpecificProject(projectId)
+    }
+  }, [projectId])
 
   // REAL-TIME PROGRESS POLLING
   // Poll for task updates when tasks are running
@@ -409,6 +420,77 @@ export default function ClaudeCodeDashboard() {
       }
     } catch (error) {
       console.error('Failed to load tasks:', error)
+    }
+  }
+
+  const loadSpecificProject = async (projectId: string) => {
+    try {
+      console.log('🔍 Loading specific project:', projectId)
+      
+      // Load the specific project generation from the database
+      const response = await fetch(`/api/claude?action=get_project&project_id=${projectId}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('📥 Project data:', data)
+        
+        if (data.project) {
+          const project = data.project
+          
+          // Check if project has content
+          if (project.has_content === false) {
+            setError('This project exists but has no stored content. It may be an analytics-only record.')
+            return
+          }
+          
+          // Handle different data structures
+          let projectTask: ClaudeTask
+          
+          if (project.project_type) {
+            // This is from project_generations (Claude Code Assistant)
+            projectTask = {
+              id: project.id,
+              description: `Claude Code Assistant - ${project.project_type}`,
+              type: project.project_type,
+              status: project.success ? 'completed' : 'failed',
+              priority: 'medium',
+              progress: project.success ? 100 : 0,
+              result: project.metadata || project,
+              created_at: project.created_at,
+              completed_at: project.completed_at
+            }
+          } else {
+            // This is from sdlc_ai_task_executions (AI tasks)
+            projectTask = {
+              id: project.id,
+              description: project.description || 'AI Task',
+              type: project.task_type || 'unknown',
+              status: project.status || 'pending',
+              priority: 'medium',
+              progress: project.progress || 0,
+              result: project.execution_result,
+              created_at: project.created_at,
+              completed_at: project.completed_at
+            }
+          }
+          
+          setSelectedTask(projectTask)
+          setActiveTab('overview')
+          
+          // Show success message
+          const projectType = project.project_type || project.task_type || 'Project'
+          setSuccess(`✅ Loaded project: ${projectType}`)
+        }
+      } else {
+        console.error('Failed to load specific project:', response.status)
+        setError('Failed to load the specific project')
+      }
+    } catch (error) {
+      console.error('Error loading specific project:', error)
+      setError('Error loading the specific project')
     }
   }
 

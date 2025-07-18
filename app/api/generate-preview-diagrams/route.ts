@@ -2,6 +2,8 @@ import { createOpenAI } from "@ai-sdk/openai"
 import { generateText, streamText } from "ai"
 import { type NextRequest, NextResponse } from "next/server"
 import { ServerPromptService } from "@/lib/prompt-service-server"
+import { createClient } from '@supabase/supabase-js'
+import { anonymousProjectService } from '@/lib/anonymous-project-service'
 
 export const maxDuration = 30
 
@@ -141,6 +143,69 @@ const getSystemPrompt = async (): Promise<string> => {
   }
 }
 
+// Parse Mermaid diagrams from content
+function parseMermaidDiagrams(content: string): Record<string, string> {
+  const diagrams: Record<string, string> = {}
+  
+  // Split content into sections
+  const sections = content.split(/(?=## )/g)
+  
+  sections.forEach(section => {
+    const lines = section.split('\n')
+    const title = lines[0].replace('## ', '').toLowerCase()
+    
+    // Extract mermaid code blocks
+    const mermaidMatch = section.match(/```(?:mermaid)?\s*([\s\S]*?)```/)
+    if (mermaidMatch && mermaidMatch[1]) {
+      const diagramContent = mermaidMatch[1].trim()
+      
+      // Map section titles to diagram types
+      if (title.includes('architecture') || title.includes('system')) {
+        diagrams.architecture = diagramContent
+      } else if (title.includes('data flow') || title.includes('flow')) {
+        diagrams.dataflow = diagramContent
+      } else if (title.includes('user journey') || title.includes('journey')) {
+        diagrams.userflow = diagramContent
+      } else if (title.includes('database') || title.includes('schema')) {
+        diagrams.database = diagramContent
+      } else {
+        // Default to architecture if no specific type found
+        diagrams.architecture = diagramContent
+      }
+    }
+  })
+  
+  return diagrams
+}
+
+// Track anonymous analytics
+async function trackAnonymousAnalytics(
+  actionType: string,
+  actionData: any,
+  userAgent?: string,
+  ipAddress?: string,
+  referrer?: string
+) {
+  try {
+    // Use service role client to bypass RLS for anonymous analytics
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+    
+    await supabase.from('anonymous_analytics').insert({
+      action_type: actionType,
+      action_data: actionData,
+      user_agent: userAgent,
+      ip_address: ipAddress,
+      referrer: referrer,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Error tracking anonymous analytics:', error)
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { input, stream = true }: PreviewDiagramsRequest = await request.json()
@@ -155,6 +220,8 @@ export async function POST(request: NextRequest) {
         error: "Input too long. Please limit to 2000 characters for preview." 
       }, { status: 400 })
     }
+
+
 
     // Get system prompt
     const systemPrompt = await getSystemPrompt()
@@ -222,6 +289,57 @@ Generate exactly 4 different diagram types with clear sections and proper Mermai
               )
             }
 
+            // Save anonymous project if no authenticated user
+            try {
+              const userAgent = request.headers.get('user-agent') || undefined
+              const ipAddress = request.headers.get('x-forwarded-for') || 
+                               request.headers.get('x-real-ip') || undefined
+              const referrer = request.headers.get('referer') || undefined
+
+              // Extract project title from input
+              const projectTitle = input.length > 50 ? 
+                input.substring(0, 50) + '...' : input
+
+              // Parse diagrams from content
+              const diagrams = parseMermaidDiagrams(fullContent)
+              
+              // Update analytics with Mermaid content
+              await trackAnonymousAnalytics(
+                'diagram_generation',
+                {
+                  input: input.substring(0, 500),
+                  ai_provider: 'openai',
+                  model: 'gpt-4o',
+                  route: 'generate-preview-diagrams',
+                  stream: stream,
+                  mermaidDiagrams: diagrams,
+                  fullContent: fullContent.substring(0, 2000) // Limit content length
+                },
+                userAgent,
+                ipAddress,
+                referrer
+              )
+              
+              // Save to anonymous projects
+              await anonymousProjectService.saveAnonymousProject(
+                projectTitle,
+                input,
+                {
+                  architecture: diagrams.architecture || fullContent,
+                  dataflow: diagrams.dataflow || '',
+                  userflow: diagrams.userflow || '',
+                  database: diagrams.database || ''
+                },
+                userAgent,
+                ipAddress,
+                referrer
+              )
+              
+              console.log('✅ Anonymous diagram project saved successfully')
+            } catch (saveError) {
+              console.error('❌ Error saving anonymous diagram project:', saveError)
+            }
+
             // Send completion
             controller.enqueue(
               new TextEncoder().encode(
@@ -245,7 +363,7 @@ Generate exactly 4 different diagram types with clear sections and proper Mermai
           }
 
           controller.close()
-        },
+        }
       })
 
       return new Response(stream, {
@@ -268,6 +386,30 @@ Generate exactly 4 different diagram types with clear sections and proper Mermai
         temperature: 0.7,
         maxTokens: 8000,
       })
+
+      // Track analytics with Mermaid content for non-streaming
+      const userAgent = request.headers.get('user-agent') || undefined
+      const ipAddress = request.headers.get('x-forwarded-for') || 
+                       request.headers.get('x-real-ip') || undefined
+      const referrer = request.headers.get('referer') || undefined
+
+      const diagrams = parseMermaidDiagrams(result.text)
+      
+      await trackAnonymousAnalytics(
+        'diagram_generation',
+        {
+          input: input.substring(0, 500),
+          ai_provider: 'openai',
+          model: 'gpt-4-turbo-preview',
+          route: 'generate-preview-diagrams',
+          stream: false,
+          mermaidDiagrams: diagrams,
+          fullContent: result.text.substring(0, 2000)
+        },
+        userAgent,
+        ipAddress,
+        referrer
+      )
 
       return NextResponse.json({
         diagrams: result.text,

@@ -57,6 +57,8 @@ export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
   const [diagramStats, setDiagramStats] = useState<any>(null)
+  const [showMermaidViewer, setShowMermaidViewer] = useState(false)
+  const [mermaidContent, setMermaidContent] = useState<any>(null)
 
   useEffect(() => {
     loadData()
@@ -97,6 +99,14 @@ export default function AdminDashboard() {
     } catch (err) {
       setDiagramStats({ error: err instanceof Error ? err.message : 'Failed to load diagram stats' })
     }
+  }
+
+  const openMermaidViewer = (mermaidDiagrams: any, fullContent: string) => {
+    setMermaidContent({
+      diagrams: mermaidDiagrams,
+      fullContent: fullContent
+    })
+    setShowMermaidViewer(true)
   }
 
   const updateUser = async (userId: string, updates: { role?: string; daily_limit?: number }) => {
@@ -292,6 +302,7 @@ export default function AdminDashboard() {
                         <TableHead>User ID</TableHead>
                         <TableHead>User Input</TableHead>
                         <TableHead>Generated Specs</TableHead>
+                        <TableHead>Mermaid</TableHead>
                         <TableHead>User Agent</TableHead>
                         <TableHead>Time</TableHead>
                       </TableRow>
@@ -321,23 +332,47 @@ export default function AdminDashboard() {
                             <div className="text-xs space-y-1">
                               {row.metadata?.businessAnalysis && (
                                 <div>
-                                  <div className="font-medium text-blue-600">Business:</div>
-                                  <div className="text-gray-600 truncate">{row.metadata.businessAnalysis}</div>
+                                  <div className="font-medium text-gray-900">Business:</div>
+                                  <div className="bg-blue-50 p-1 rounded text-xs border">
+                                    {row.metadata.businessAnalysis.substring(0, 100)}...
+                                  </div>
                                 </div>
                               )}
                               {row.metadata?.functionalSpec && (
                                 <div>
-                                  <div className="font-medium text-green-600">Functional:</div>
-                                  <div className="text-gray-600 truncate">{row.metadata.functionalSpec}</div>
+                                  <div className="font-medium text-gray-900">Functional:</div>
+                                  <div className="bg-green-50 p-1 rounded text-xs border">
+                                    {row.metadata.functionalSpec.substring(0, 100)}...
+                                  </div>
                                 </div>
                               )}
                               {row.metadata?.technicalSpec && (
                                 <div>
-                                  <div className="font-medium text-purple-600">Technical:</div>
-                                  <div className="text-gray-600 truncate">{row.metadata.technicalSpec}</div>
+                                  <div className="font-medium text-gray-900">Technical:</div>
+                                  <div className="bg-purple-50 p-1 rounded text-xs border">
+                                    {row.metadata.technicalSpec.substring(0, 100)}...
+                                  </div>
                                 </div>
                               )}
+                              {!row.metadata?.businessAnalysis && !row.metadata?.functionalSpec && !row.metadata?.technicalSpec && (
+                                <div className="text-gray-500">No specs generated</div>
+                              )}
                             </div>
+                          </TableCell>
+                          <TableCell>
+                            {row.mermaid_diagrams ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-xs"
+                                onClick={() => openMermaidViewer(row.mermaid_diagrams, row.full_content)}
+                              >
+                                <BarChart3 className="h-3 w-3 mr-1" />
+                                View Diagrams
+                              </Button>
+                            ) : (
+                              <span className="text-gray-400 text-xs">No diagrams</span>
+                            )}
                           </TableCell>
                           <TableCell className="max-w-xs truncate text-xs">{row.user_agent?.substring(0, 30) + '...' || 'N/A'}</TableCell>
                           <TableCell className="text-xs">{new Date(row.created_at).toLocaleString()}</TableCell>
@@ -607,6 +642,63 @@ export default function AdminDashboard() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Mermaid Viewer Modal */}
+      <Dialog open={showMermaidViewer} onOpenChange={setShowMermaidViewer}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>Mermaid Diagrams</DialogTitle>
+          </DialogHeader>
+          {mermaidContent && (
+            <div className="space-y-4">
+              {mermaidContent.diagrams && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {mermaidContent.diagrams.architecture && (
+                    <div className="border rounded-lg p-4">
+                      <h3 className="font-semibold mb-2">System Architecture</h3>
+                      <div className="bg-gray-50 p-3 rounded text-sm font-mono overflow-x-auto">
+                        {mermaidContent.diagrams.architecture}
+                      </div>
+                    </div>
+                  )}
+                  {mermaidContent.diagrams.dataflow && (
+                    <div className="border rounded-lg p-4">
+                      <h3 className="font-semibold mb-2">Data Flow</h3>
+                      <div className="bg-gray-50 p-3 rounded text-sm font-mono overflow-x-auto">
+                        {mermaidContent.diagrams.dataflow}
+                      </div>
+                    </div>
+                  )}
+                  {mermaidContent.diagrams.userflow && (
+                    <div className="border rounded-lg p-4">
+                      <h3 className="font-semibold mb-2">User Journey</h3>
+                      <div className="bg-gray-50 p-3 rounded text-sm font-mono overflow-x-auto">
+                        {mermaidContent.diagrams.userflow}
+                      </div>
+                    </div>
+                  )}
+                  {mermaidContent.diagrams.database && (
+                    <div className="border rounded-lg p-4">
+                      <h3 className="font-semibold mb-2">Database Schema</h3>
+                      <div className="bg-gray-50 p-3 rounded text-sm font-mono overflow-x-auto">
+                        {mermaidContent.diagrams.database}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              {mermaidContent.fullContent && (
+                <div className="border rounded-lg p-4">
+                  <h3 className="font-semibold mb-2">Full Content</h3>
+                  <div className="bg-gray-50 p-3 rounded text-sm font-mono overflow-x-auto max-h-96">
+                    <pre className="whitespace-pre-wrap">{mermaidContent.fullContent}</pre>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 } 

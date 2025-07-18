@@ -72,6 +72,8 @@ export async function GET() {
       metadata: gen.metadata,
       user_agent: gen.metadata?.userAgent,
       input_preview: gen.metadata?.input?.substring(0, 100) || 'N/A',
+      mermaid_diagrams: gen.metadata?.mermaidDiagrams || null,
+      full_content: gen.metadata?.fullContent || null,
       created_at: gen.created_at
     })),
     ...(recentAnonymous || []).map(gen => ({
@@ -81,6 +83,8 @@ export async function GET() {
       metadata: gen.action_data,
       user_agent: gen.user_agent,
       input_preview: gen.action_data?.input?.substring(0, 100) || 'N/A',
+      mermaid_diagrams: gen.action_data?.mermaidDiagrams || null,
+      full_content: gen.action_data?.fullContent || null,
       created_at: gen.timestamp
     }))
   ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())

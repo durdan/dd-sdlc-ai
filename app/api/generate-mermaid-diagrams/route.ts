@@ -3,6 +3,8 @@ import { streamText } from "ai"
 import { type NextRequest } from "next/server"
 import { createServerPromptService } from '@/lib/prompt-service-server'
 import { createClient } from "@/lib/supabase/server"
+import { createClient as createServiceClient } from '@supabase/supabase-js'
+import { anonymousProjectService } from '@/lib/anonymous-project-service'
 
 export const maxDuration = 60
 
@@ -121,6 +123,71 @@ VALIDATION CHECKLIST:
 ✓ Diagrams are complete and rendereable
 ✓ Professional labeling and structure
 `;
+
+// Parse Mermaid diagrams from content
+function parseMermaidDiagrams(content: string): Record<string, string> {
+  const diagrams: Record<string, string> = {}
+  
+  // Split content into sections
+  const sections = content.split(/(?=## )/g)
+  
+  sections.forEach(section => {
+    const lines = section.split('\n')
+    const title = lines[0].replace('## ', '').toLowerCase()
+    
+    // Extract mermaid code blocks
+    const mermaidMatch = section.match(/```(?:mermaid)?\s*([\s\S]*?)```/)
+    if (mermaidMatch && mermaidMatch[1]) {
+      const diagramContent = mermaidMatch[1].trim()
+      
+      // Map section titles to diagram types
+      if (title.includes('architecture') || title.includes('system')) {
+        diagrams.architecture = diagramContent
+      } else if (title.includes('data flow') || title.includes('flow')) {
+        diagrams.dataflow = diagramContent
+      } else if (title.includes('user journey') || title.includes('journey')) {
+        diagrams.userflow = diagramContent
+      } else if (title.includes('database') || title.includes('schema')) {
+        diagrams.database = diagramContent
+      } else if (title.includes('sequence') || title.includes('api')) {
+        diagrams.sequence = diagramContent
+      } else {
+        // Default to architecture if no specific type found
+        diagrams.architecture = diagramContent
+      }
+    }
+  })
+  
+  return diagrams
+}
+
+// Track anonymous analytics
+async function trackAnonymousAnalytics(
+  actionType: string,
+  actionData: any,
+  userAgent?: string,
+  ipAddress?: string,
+  referrer?: string
+) {
+  try {
+    // Use service role client to bypass RLS for anonymous analytics
+    const supabase = createServiceClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+    
+    await supabase.from('anonymous_analytics').insert({
+      action_type: actionType,
+      action_data: actionData,
+      user_agent: userAgent,
+      ip_address: ipAddress,
+      referrer: referrer,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Error tracking anonymous analytics:', error)
+  }
+}
 
 async function getAuthenticatedUser() {
   try {
@@ -354,6 +421,30 @@ export async function POST(req: NextRequest) {
     const user = await getAuthenticatedUser()
     const effectiveUserId = userId || user?.id
 
+    // Track anonymous analytics for diagram generation
+    if (!effectiveUserId) {
+      const userAgent = req.headers.get('user-agent') || undefined
+      const ipAddress = req.headers.get('x-forwarded-for') || 
+                       req.headers.get('x-real-ip') || undefined
+      const referrer = req.headers.get('referer') || undefined
+
+      await trackAnonymousAnalytics(
+        'diagram_generation',
+        {
+          input: input.substring(0, 500), // Limit input length for analytics
+          ai_provider: 'openai',
+          model: 'gpt-4o',
+          route: 'generate-mermaid-diagrams',
+          hasBusinessAnalysis: !!(businessAnalysis && businessAnalysis.trim()),
+          hasFunctionalSpec: !!(functionalSpec && functionalSpec.trim()),
+          hasTechnicalSpec: !!(technicalSpec && technicalSpec.trim())
+        },
+        userAgent,
+        ipAddress,
+        referrer
+      )
+    }
+
     console.log('🚀 Starting streaming Mermaid Diagrams generation...')
     console.log('User ID:', effectiveUserId)
     console.log('Project ID:', projectId)
@@ -396,6 +487,43 @@ export async function POST(req: NextRequest) {
             controller.enqueue(encoder.encode(`data: ${chunkData}\n\n`))
           }
           
+          // Save anonymous project if no authenticated user
+          if (!effectiveUserId) {
+            try {
+              const userAgent = req.headers.get('user-agent') || undefined
+              const ipAddress = req.headers.get('x-forwarded-for') || 
+                               req.headers.get('x-real-ip') || undefined
+              const referrer = req.headers.get('referer') || undefined
+
+              // Extract project title from input
+              const projectTitle = input.length > 50 ? 
+                input.substring(0, 50) + '...' : input
+
+              // Parse diagrams from content
+              const diagrams = parseMermaidDiagrams(fullContent)
+              
+              // Save to anonymous projects
+              await anonymousProjectService.saveAnonymousProject(
+                projectTitle,
+                input,
+                {
+                  architecture: diagrams.architecture || fullContent,
+                  dataflow: diagrams.dataflow || '',
+                  userflow: diagrams.userflow || '',
+                  database: diagrams.database || '',
+                  sequence: diagrams.sequence || ''
+                },
+                userAgent,
+                ipAddress,
+                referrer
+              )
+              
+              console.log('✅ Anonymous mermaid project saved successfully')
+            } catch (saveError) {
+              console.error('❌ Error saving anonymous mermaid project:', saveError)
+            }
+          }
+
           // Send completion signal
           const completionData = JSON.stringify({
             type: 'complete',

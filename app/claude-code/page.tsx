@@ -173,6 +173,7 @@ function ClaudeCodePage() {
   const [user, setUser] = useState<any>(null)
   const [userRole, setUserRole] = useState<string>('user')
   const [loading, setLoading] = useState(true)
+  const [projectId, setProjectId] = useState<string | null>(null)
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -215,6 +216,17 @@ function ClaudeCodePage() {
     checkAuth()
   }, [])
 
+  // Get project ID from URL parameters
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search)
+      const project = urlParams.get('project')
+      if (project) {
+        setProjectId(project)
+      }
+    }
+  }, [])
+
   const handleSignOut = async () => {
     const supabase = createClient()
     await supabase.auth.signOut()
@@ -242,7 +254,7 @@ function ClaudeCodePage() {
       <UserHeader user={user} userRole={userRole} onSignOut={handleSignOut} />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <ClaudeCodeDashboard />
+        <ClaudeCodeDashboard projectId={projectId} />
       </main>
     </div>
   )

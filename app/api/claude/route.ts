@@ -9,6 +9,67 @@ import { cookies } from 'next/headers'
 import { withClaudeFreemium, ClaudeFreemiumResult } from '@/lib/claude-freemium-middleware'
 import { UsageTrackingService } from '@/lib/usage-tracking-service'
 
+// GET handler for retrieving specific projects
+export const GET = async (request: NextRequest) => {
+  try {
+    const { searchParams } = new URL(request.url)
+    const action = searchParams.get('action')
+    const projectId = searchParams.get('project_id')
+    
+    if (action === 'get_project' && projectId) {
+      const supabase = await createClient()
+      
+      // First try to find the project in project_generations (Claude Code Assistant projects)
+      let { data: project, error } = await supabase
+        .from('project_generations')
+        .select('*')
+        .eq('id', projectId)
+        .single()
+      
+      // If not found there, try sdlc_ai_task_executions (AI task executions)
+      if (error || !project) {
+        console.log('Project not found in project_generations, trying sdlc_ai_task_executions...')
+        const { data: taskProject, error: taskError } = await supabase
+          .from('sdlc_ai_task_executions')
+          .select('*')
+          .eq('id', projectId)
+          .single()
+        
+        if (taskError || !taskProject) {
+          return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+        }
+        
+        project = taskProject
+      }
+      
+      // Check if project has content
+      const hasContent = project.metadata && Object.keys(project.metadata).length > 0
+      const hasResultData = project.execution_result && Object.keys(project.execution_result).length > 0
+      
+      if (!hasContent && !hasResultData) {
+        // Project exists but has no content - return project info with empty content flag
+        return NextResponse.json({ 
+          project: {
+            ...project,
+            has_content: false,
+            message: 'Project exists but no content was stored. This may be an analytics-only record.'
+          }
+        })
+      }
+      
+      return NextResponse.json({ project })
+    }
+    
+    return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
+  } catch (error) {
+    console.error('Error in Claude API GET:', error)
+    return NextResponse.json({
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
+  }
+}
+
 // Main Claude API handler with freemium support
 export const POST = (request: NextRequest) => withClaudeFreemium(
   request,

@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { dbService } from '@/lib/database-service';
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
@@ -88,7 +88,8 @@ import {
   Sparkles,
   Gift,
   Target,
-  Building
+  Building,
+  Bot
 } from "lucide-react"
 import { HowItWorksVisualization } from "@/components/how-it-works-visualization"
 import { PromptEngineering } from "@/components/prompt-engineering"
@@ -122,6 +123,7 @@ import UsageIndicatorCompact from '@/components/usage-indicator-compact'
 import EarlyAccessWaitingList from '@/components/early-access-waiting-list'
 import ClaudeCodeDashboard from '@/components/claude-code-dashboard'
 import { DocumentSelectionModal } from '@/components/document-selection-modal'
+import { ProjectListViewer } from "@/components/project-list-viewer"
 
 // Type definitions for dashboard state
 interface GeneratedDocuments {
@@ -193,6 +195,7 @@ interface RecentProject {
   jiraEpicUrl?: string
   jiraSummary?: any
   confluencePageUrl?: string
+  projectType?: 'sdlc' | 'claude_code_assistant'
 }
 
 interface GitHubProjectConfig {
@@ -463,7 +466,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
   const [isSavingConfig, setIsSavingConfig] = useState(false)
   const [isLoadingGitHubRepos, setIsLoadingGitHubRepos] = useState(false)
   const [recentProjects, setRecentProjects] = useState<RecentProject[]>([])
-  const [recentProjectsExpanded, setRecentProjectsExpanded] = useState(false)
+
   const [toolkitExpanded, setToolkitExpanded] = useState(false)
   const [activeTab, setActiveTab] = useState('sdlc')
   const [gitHubRepositories, setGitHubRepositories] = useState<GitHubRepository[]>([])
@@ -570,7 +573,10 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
 
   // Get all cached results from database for Recent Projects display
   const getCachedProjects = async (): Promise<ProjectResult[]> => {
-    if (!user?.id) return []
+    const projectResults: ProjectResult[] = []
+    
+    // Get authenticated user projects
+    if (user?.id) {
     
     try {
       // Fetch SDLC projects from sdlc_projects table
@@ -582,7 +588,6 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
       console.log('🔍 Raw project generations from database:', projectGenerations.length, projectGenerations)
       
       // Convert database projects to ProjectResult format
-      const projectResults: ProjectResult[] = []
       
       // Process SDLC projects
       for (const project of sdlcProjects) {
@@ -736,19 +741,19 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
           // Create a project result for Claude Code Assistant generations
           const projectResult = {
             id: generation.id,
-            title: `Claude Code Assistant - ${generation.project_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`,
+            title: `Claude Code Assistant - ${generation.project_type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}`,
             status: generation.success ? 'completed' : 'failed',
             createdAt: generation.created_at,
             jiraEpic: '',
             confluencePage: '',
             githubProject: undefined,
             documents: {
-              businessAnalysis: `# Claude Code Assistant Project\n\n**Project Type:** ${generation.project_type}\n**AI Provider:** ${generation.ai_provider}\n**Generation Method:** ${generation.generation_method}\n**Tokens Used:** ${generation.tokens_used}\n**Cost Estimate:** $${generation.cost_estimate || 0}\n**Generation Time:** ${generation.generation_time_ms || 0}ms\n\nThis is a Claude Code Assistant project generation. The actual code and documentation would be available in the Claude Code Assistant interface.`,
-              functionalSpec: `# Claude Code Assistant Project\n\n**Project Type:** ${generation.project_type}\n**AI Provider:** ${generation.ai_provider}\n**Generation Method:** ${generation.generation_method}\n**Tokens Used:** ${generation.tokens_used}\n**Cost Estimate:** $${generation.cost_estimate || 0}\n**Generation Time:** ${generation.generation_time_ms || 0}ms\n\nThis is a Claude Code Assistant project generation. The actual code and documentation would be available in the Claude Code Assistant interface.`,
-              technicalSpec: `# Claude Code Assistant Project\n\n**Project Type:** ${generation.project_type}\n**AI Provider:** ${generation.ai_provider}\n**Generation Method:** ${generation.generation_method}\n**Tokens Used:** ${generation.tokens_used}\n**Cost Estimate:** $${generation.cost_estimate || 0}\n**Generation Time:** ${generation.generation_time_ms || 0}ms\n\nThis is a Claude Code Assistant project generation. The actual code and documentation would be available in the Claude Code Assistant interface.`,
-              uxSpec: `# Claude Code Assistant Project\n\n**Project Type:** ${generation.project_type}\n**AI Provider:** ${generation.ai_provider}\n**Generation Method:** ${generation.generation_method}\n**Tokens Used:** ${generation.tokens_used}\n**Cost Estimate:** $${generation.cost_estimate || 0}\n**Generation Time:** ${generation.generation_time_ms || 0}ms\n\nThis is a Claude Code Assistant project generation. The actual code and documentation would be available in the Claude Code Assistant interface.`,
-              architecture: `# Claude Code Assistant Project\n\n**Project Type:** ${generation.project_type}\n**AI Provider:** ${generation.ai_provider}\n**Generation Method:** ${generation.generation_method}\n**Tokens Used:** ${generation.tokens_used}\n**Cost Estimate:** $${generation.cost_estimate || 0}\n**Generation Time:** ${generation.generation_time_ms || 0}ms\n\nThis is a Claude Code Assistant project generation. The actual code and documentation would be available in the Claude Code Assistant interface.`,
-              comprehensive: `# Claude Code Assistant Project\n\n**Project Type:** ${generation.project_type}\n**AI Provider:** ${generation.ai_provider}\n**Generation Method:** ${generation.generation_method}\n**Tokens Used:** ${generation.tokens_used}\n**Cost Estimate:** $${generation.cost_estimate || 0}\n**Generation Time:** ${generation.generation_time_ms || 0}ms\n\nThis is a Claude Code Assistant project generation. The actual code and documentation would be available in the Claude Code Assistant interface.`,
+              businessAnalysis: '',
+              functionalSpec: '',
+              technicalSpec: '',
+              uxSpec: '',
+              architecture: '',
+              comprehensive: '',
               mermaidDiagrams: ''
             },
             hasComprehensiveContent: true,
@@ -768,13 +773,20 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
       // Sort all projects by creation date (newest first)
       projectResults.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       
-      console.log('🎯 Final project results:', projectResults.length, 'total projects (', sdlcProjects.length, 'SDLC +', projectGenerations.length, 'Claude Code Assistant)')
-      return projectResults
-      
+      console.log('🎯 Final authenticated project results:', projectResults.length, 'total projects (', sdlcProjects.length, 'SDLC +', projectGenerations.length, 'Claude Code Assistant)')
     } catch (error) {
-      console.error('Error fetching cached projects:', error)
-      return []
+      console.error('Error fetching authenticated cached projects:', error)
     }
+    }
+    
+
+
+    // Sort all projects by creation date (newest first)
+    projectResults.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    
+    console.log('🎯 Final project results:', projectResults.length, 'total projects')
+    console.log('🔍 Debug: Returning projects to dashboard:', projectResults.map(p => ({ id: p.id, title: p.title, type: p.projectType })))
+    return projectResults
   }
 
   // Clear potentially corrupted cache on component mount
@@ -807,27 +819,27 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
   // Load user configuration and recent projects on component mount
   useEffect(() => {
     const loadUserData = async () => {
-      if (!user?.id) return
-      
       try {
-        const supabase = createClient()
-        
-        // Load user configuration (enhanced - merges old and new systems)
-        const userConfig = await dbService.getEnhancedUserConfiguration(user.id)
-        if (userConfig) {
-          setConfig(prev => ({
-            ...prev,
-            openaiKey: userConfig.openai_api_key || '',
-            jiraUrl: userConfig.jira_base_url || '',
-            jiraEmail: userConfig.jira_email || '',
-            jiraToken: userConfig.jira_api_token || '',
-            confluenceUrl: userConfig.confluence_base_url || '',
-            confluenceEmail: userConfig.confluence_email || '',
-            confluenceToken: userConfig.confluence_api_token || '',
-          }))
+        // Load user configuration for authenticated users
+        if (user?.id) {
+          const supabase = createClient()
+          
+          const userConfig = await dbService.getEnhancedUserConfiguration(user.id)
+          if (userConfig) {
+            setConfig(prev => ({
+              ...prev,
+              openaiKey: userConfig.openai_api_key || '',
+              jiraUrl: userConfig.jira_base_url || '',
+              jiraEmail: userConfig.jira_email || '',
+              jiraToken: userConfig.jira_api_token || '',
+              confluenceUrl: userConfig.confluence_base_url || '',
+              confluenceEmail: userConfig.confluence_email || '',
+              confluenceToken: userConfig.confluence_api_token || '',
+            }))
+          }
         }
         
-        // Load recent projects
+        // Load recent projects (both authenticated and anonymous)
         const projects = await getCachedProjects()
         setRecentProjects(projects)
       } catch (error) {
@@ -1303,35 +1315,42 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
   }
 
   const setCachedResults = async (input: string, results: any) => {
-    if (!user?.id) return
-    
     try {
-      // Save to database using the database service
       const projectTitle = extractProjectName(input)
       const projectDescription = extractProjectDescription(input)
       
-      const { project, success } = await dbService.saveCompleteSDLCResult(
-        user.id,
-        input,
-        projectTitle,
-        {
-          businessAnalysis: results.businessAnalysis || '',
-          functionalSpec: results.functionalSpec || '',
-          technicalSpec: results.technicalSpec || '',
-          uxSpec: results.uxSpec || '',
-          architecture: results.mermaidDiagrams || ''
-        }
-      )
-      
-      if (success && project) {
-        console.log('✅ Successfully saved SDLC project to database:', project.id)
+      // Handle authenticated users
+      if (user?.id) {
+        const { project, success } = await dbService.saveCompleteSDLCResult(
+          user.id,
+          input,
+          projectTitle,
+          {
+            businessAnalysis: results.businessAnalysis || '',
+            functionalSpec: results.functionalSpec || '',
+            technicalSpec: results.technicalSpec || '',
+            uxSpec: results.uxSpec || '',
+            architecture: results.mermaidDiagrams || ''
+          }
+        )
         
-        // Refresh the recent projects list
-        const updatedProjects = await getCachedProjects()
-        setRecentProjects(updatedProjects)
+        if (success && project) {
+          console.log('✅ Successfully saved authenticated SDLC project to database:', project.id)
+          
+          // Refresh the recent projects list
+          const updatedProjects = await getCachedProjects()
+          setRecentProjects(updatedProjects)
+        } else {
+          console.error('❌ Failed to save authenticated SDLC project to database')
+          // Fallback to localStorage for backward compatibility
+          localStorage.setItem(`sdlc-cache-${btoa(input).slice(0, 20)}`, JSON.stringify({
+            ...results,
+            timestamp: Date.now()
+          }))
+        }
       } else {
-        console.error('❌ Failed to save SDLC project to database')
-        // Fallback to localStorage for backward compatibility
+        // Handle anonymous users - only save to localStorage for now
+        console.log('👤 Anonymous user - saving to localStorage only')
         localStorage.setItem(`sdlc-cache-${btoa(input).slice(0, 20)}`, JSON.stringify({
           ...results,
           timestamp: Date.now()
@@ -2350,6 +2369,24 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
     }
   }
 
+  // Add state for project viewing
+  const [selectedProject, setSelectedProject] = useState<ProjectResult | null>(null)
+  const [showProjectViewer, setShowProjectViewer] = useState(false)
+
+
+
+  // Handle project click - open appropriate viewer
+  const handleProjectClick = (project: ProjectResult) => {
+    if (project.projectType === 'claude_code_assistant') {
+      // Navigate to Claude Code Assistant viewer
+      window.location.href = '/claude-code'
+    } else {
+      // Open SDLC project in modal viewer
+      setSelectedProject(project)
+      setShowProjectViewer(true)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-2 sm:p-4">
       {/* User Header */}
@@ -2375,275 +2412,21 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
 
 
 
+
+
         {/* Recent Projects - Only show if there are cached projects */}
         {recentProjects.length > 0 && (
-        <Card>
-          <CardHeader 
-            className="cursor-pointer hover:bg-gray-50 transition-colors" 
-            onClick={() => setRecentProjectsExpanded(!recentProjectsExpanded)}
-          >
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <GitBranch className="h-5 w-5" />
-                Recent Projects
-                <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 flex items-center justify-center text-xs">
-                  {recentProjects.length}
-                </Badge>
-              </div>
-              <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${
-                recentProjectsExpanded ? 'rotate-180' : ''
-              }`} />
-            </CardTitle>
-          </CardHeader>
-          {recentProjectsExpanded && (
-          <CardContent>
-            <div className="space-y-4">
-              {recentProjects.map((project) => (
-                <div key={project.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900">{project.title}</h3>
-                      <p className="text-sm text-gray-500">Created on {project.createdAt}</p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <Badge variant="outline" className="text-green-700 border-green-200">
-                          {project.status}
-                        </Badge>
-                        {project.jiraEpic && (
-                          <Badge variant="outline" className="text-blue-700 border-blue-200">
-                            <ExternalLink className="h-3 w-3 mr-1" />
-                            JIRA: {project.jiraEpic}
-                          </Badge>
-                        )}
-                        {project.confluencePage && (
-                          <Badge variant="outline" className="text-green-700 border-green-200">
-                            <ExternalLink className="h-3 w-3 mr-1" />
-                            Confluence
-                          </Badge>
-                        )}
-                        {project.githubProject && (
-                          <Badge variant="outline" className="text-gray-700 border-gray-200">
-                            <Github className="h-3 w-3 mr-1" />
-                            GitHub: #{project.githubProject.number}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex gap-2 flex-wrap sm:flex-nowrap">
-                      {/* JIRA Integration Buttons */}
-                      {project.jiraEpic ? (
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="text-blue-700 border-blue-200 hover:bg-blue-50"
-                          onClick={() => {
-                            const url = project.jiraEpicUrl || `${config.jiraUrl}/browse/${project.jiraEpic}`
-                            window.open(url, '_blank')
-                          }}
-                          title={
-                            project.jiraSummary ? 
-                            `Epic: ${project.jiraEpic}\nTotal Issues: ${project.jiraSummary.totalIssues}\nUser Stories: ${project.jiraSummary.userStoriesCount}\nDev Tasks: ${project.jiraSummary.developmentTasksCount}\nDesign Tasks: ${project.jiraSummary.designTasksCount}` : 
-                            `View JIRA Epic: ${project.jiraEpic}`
-                          }
-                        >
-                          <ExternalLink className="h-4 w-4 mr-1" />
-                          <span className="hidden sm:inline">View JIRA Epic ({project.jiraEpic})</span>
-                          <span className="sm:hidden">View JIRA</span>
-                        </Button>
-                      ) : (
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => {
-                            console.log('🔵 Jira export button clicked, current loading state:', isExportingToJira)
-                            handleJiraExport(project)
-                          }}
-                          disabled={isExportingToJira}
-                          className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                          title="Export SDLC content to Jira as Epics, Stories, and Tasks"
-                        >
-                          {isExportingToJira ? (
-                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                          ) : (
-                            <ExternalLink className="h-4 w-4 mr-1" />
-                          )}
-                          {isExportingToJira ? (
-                            <>
-                              <span className="hidden sm:inline">Exporting...</span>
-                              <span className="sm:hidden">Exporting</span>
-                            </>
-                          ) : (
-                            <>
-                              <span className="hidden sm:inline">Export to Jira</span>
-                              <span className="sm:hidden">Export Jira</span>
-                            </>
-                          )}
-                        </Button>
-                      )}
-                      
-                      {/* Confluence Integration Buttons */}
-                      {project.confluencePage ? (
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="text-green-700 border-green-200 hover:bg-green-50"
-                          onClick={() => {
-                            if (project.confluencePageUrl) {
-                              window.open(project.confluencePageUrl, '_blank')
-                            }
-                          }}
-                        >
-                          <ExternalLink className="h-4 w-4 mr-1" />
-                          <span className="hidden sm:inline">View Confluence</span>
-                          <span className="sm:hidden">Confluence</span>
-                        </Button>
-                      ) : (
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => handleConfluenceExport(project)}
-                          disabled={isExportingToConfluence}
-                          className="text-green-600 border-green-200 hover:bg-green-50"
-                          title="Export SDLC documentation to Confluence as structured pages"
-                        >
-                          {isExportingToConfluence ? (
-                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                          ) : (
-                            <FileText className="h-4 w-4 mr-1" />
-                          )}
-                          {isExportingToConfluence ? (
-                            <>
-                              <span className="hidden sm:inline">Exporting...</span>
-                              <span className="sm:hidden">Exporting</span>
-                            </>
-                          ) : (
-                            <>
-                              <span className="hidden sm:inline">Export to Confluence</span>
-                              <span className="sm:hidden">Export Conf</span>
-                            </>
-                          )}
-                        </Button>
-                      )}
-                      
-                      {/* GitHub Projects Integration Button */}
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => openGitHubProjectDialogForProject(project)}
-                        disabled={isCreatingGitHubProject}
-                        className="text-gray-800 border-gray-300 hover:bg-gray-50"
-                        title="Create GitHub project with issues and milestones based on SDLC documentation"
-                      >
-                        {isCreatingGitHubProject && selectedProjectForGitHub?.id === project.id ? (
-                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                        ) : (
-                          <Github className="h-4 w-4 mr-1" />
-                        )}
-                        {isCreatingGitHubProject && selectedProjectForGitHub?.id === project.id ? (
-                          <>
-                            <span className="hidden sm:inline">Creating...</span>
-                            <span className="sm:hidden">Creating</span>
-                          </>
-                        ) : (
-                          <>
-                            <span className="hidden sm:inline">Create GitHub Project</span>
-                            <span className="sm:hidden">GitHub</span>
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-
-                  <Tabs defaultValue="business" className="mt-4">
-                    <div className="w-full overflow-x-auto whitespace-nowrap -mx-2 px-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                      <TabsList className="inline-flex w-max">
-                        <TabsTrigger value="business" className="text-xs sm:text-sm min-w-[120px]">
-                          <span className="hidden sm:inline">Business</span>
-                          <span className="sm:hidden">Biz</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="functional" className="text-xs sm:text-sm min-w-[120px]">
-                          <span className="hidden sm:inline">Functional</span>
-                          <span className="sm:hidden">Func</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="technical" className="text-xs sm:text-sm min-w-[120px]">
-                          <span className="hidden sm:inline">Technical</span>
-                          <span className="sm:hidden">Tech</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="ux" className="text-xs sm:text-sm min-w-[120px]">UX</TabsTrigger>
-                        <TabsTrigger value="architecture" className="text-xs sm:text-sm min-w-[120px]">
-                          <span className="hidden sm:inline">Architecture</span>
-                          <span className="sm:hidden">Arch</span>
-                        </TabsTrigger>
-                      </TabsList>
-                    </div>
-                    <TabsContent value="business" className="mt-2">
-                      <MarkdownRenderer 
-                        content={project.documents.businessAnalysis}
-                        title="Business Analysis"
-                        type="business"
-                      />
-                    </TabsContent>
-                    <TabsContent value="functional" className="mt-2">
-                      <MarkdownRenderer 
-                        content={project.documents.functionalSpec}
-                        title="Functional Specification"
-                        type="functional"
-                      />
-                    </TabsContent>
-                    <TabsContent value="technical" className="mt-2">
-                      <MarkdownRenderer 
-                        content={project.documents.technicalSpec}
-                        title="Technical Specification"
-                        type="technical"
-                      />
-                    </TabsContent>
-                    <TabsContent value="ux" className="mt-2">
-                      <MarkdownRenderer 
-                        content={project.documents.uxSpec}
-                        title="UX Specification"
-                        type="ux"
-                      />
-                    </TabsContent>
-                    <TabsContent value="architecture" className="mt-2">
-                      {(() => {
-                        const architectureContent = project.documents.architecture || ""
-                        const diagrams = parseMermaidDiagrams(architectureContent)
-                        const hasDiagrams = Object.keys(diagrams).length > 0
-                        
-                        if (hasDiagrams) {
-                          return (
-                            <MermaidViewer 
-                              diagrams={diagrams}
-                              title="Architecture Diagrams"
-                            />
-                          )
-                        } else {
-                          return (
-                            <div className="p-6 text-center">
-                              <div className="text-gray-500 mb-4">
-                                <GitBranch className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                                <h3 className="text-lg font-medium text-gray-700">No Architecture Diagrams</h3>
-                                <p className="text-sm text-gray-600">No architecture diagrams were generated for this project.</p>
-                              </div>
-                              {architectureContent && (
-                                <div className="mt-4 p-4 bg-gray-50 rounded-lg text-left border border-gray-200">
-                                  <h4 className="font-medium mb-2 text-gray-800">Project Documentation:</h4>
-                                  <div className="text-sm text-gray-700 max-h-40 overflow-y-auto bg-white p-3 rounded border">
-                                    <pre className="whitespace-pre-wrap font-mono text-xs text-gray-800">{architectureContent}</pre>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )
-                        }
-                      })()}
-                    </TabsContent>
-                  </Tabs>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-          )}
-        </Card>
+          <ProjectListViewer
+            projects={recentProjects}
+            onJiraExport={handleJiraExport}
+            onConfluenceExport={handleConfluenceExport}
+            onGitHubProjectCreate={openGitHubProjectDialogForProject}
+            isExportingToJira={isExportingToJira}
+            isExportingToConfluence={isExportingToConfluence}
+            isCreatingGitHubProject={isCreatingGitHubProject}
+            selectedProjectForGitHub={selectedProjectForGitHub}
+            config={config}
+          />
         )}
 
         {/* Configuration Dialog */}
