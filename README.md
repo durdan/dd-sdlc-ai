@@ -106,7 +106,7 @@ SLACK_BOT_TOKEN=your_slack_token
    ```
 
 #### Manual Setup (Advanced)
-If you prefer to run individual migration files, see the [Database Setup Guide](./docs/setup/database-setup.md) for detailed instructions.
+If you prefer to run individual migration files, see the [Database Setup Guide](./docs/database-setup.md) for detailed instructions.
 
 ### 4. Start Development
 
@@ -129,14 +129,14 @@ On first launch:
 ## 📖 Documentation
 
 ### 📚 User Guides
-- **[Getting Started](./docs/setup/getting-started.md)** - Step-by-step walkthrough
-- **[Environment Setup](./docs/setup/environment-setup.md)** - Configuration guide
-- **[Database Setup](./docs/setup/database-setup.md)** - Database configuration
+- **[Getting Started](./docs/setup/GETTING_STARTED.md)** - Step-by-step walkthrough
+- **[Environment Setup](./docs/environment-setup.md)** - Configuration guide
+- **[Database Setup](./docs/database-setup.md)** - Database configuration
 
 ### 🔧 Technical Documentation
 - **[Technical Architecture](./docs/architecture/technical-architecture.md)** - System design overview
-- **[API Reference](./docs/api/api-reference.md)** - REST API documentation
-- **[Deployment Guide](./docs/setup/deployment.md)** - Production deployment
+- **[API Reference](./docs/api-reference.md)** - REST API documentation
+- **[Deployment Guide](./docs/deployment.md)** - Production deployment
 - **[Contributing Guide](./CONTRIBUTING.md)** - How to contribute
 
 ### 🤝 Community
