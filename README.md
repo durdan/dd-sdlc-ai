@@ -56,7 +56,10 @@
 git clone https://github.com/your-org/sdlc-automation-platform.git
 cd sdlc-automation-platform
 
-# Install dependencies
+# Quick start (recommended)
+./scripts/quick-start.sh
+
+# Or install manually
 npm install
 ```
 
