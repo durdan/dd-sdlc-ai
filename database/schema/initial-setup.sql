@@ -1,17 +1,21 @@
 -- =====================================================
--- SDLC AUTOMATION PLATFORM - INITIAL SETUP SCRIPT
+-- SDLC AUTOMATION PLATFORM - COMPLETE INITIAL SETUP SCRIPT
 -- =====================================================
 -- This script creates a complete database setup for the SDLC Automation Platform
+-- Based on the actual production database structure
 -- Run this in your Supabase SQL editor for a fresh installation
 -- 
 -- Features included:
--- - Core SDLC project management
--- - Prompt management system with A/B testing
+-- - Complete SDLC project management with AI tasks
+-- - Advanced prompt management system with A/B testing
 -- - Early access and freemium system
 -- - GitDigest repository analysis
 -- - Slack integration
 -- - User roles and permissions
--- - Analytics and usage tracking
+-- - Comprehensive analytics and usage tracking
+-- - AI provider management
+-- - Code generation and review system
+-- - Security and safety checks
 -- =====================================================
 
 -- Enable required extensions
@@ -33,6 +37,9 @@ CREATE TABLE IF NOT EXISTS sdlc_projects (
     template_used VARCHAR(100),
     jira_project VARCHAR(50),
     confluence_space VARCHAR(50),
+    document_metadata JSONB DEFAULT '{}',
+    linked_projects JSONB DEFAULT '{}',
+    session_id TEXT,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -139,12 +146,14 @@ CREATE TABLE IF NOT EXISTS prompt_templates (
     variables JSONB DEFAULT '{}', -- Dynamic variables like {input}, {context}
     ai_model VARCHAR(50) DEFAULT 'gpt-4', -- 'gpt-4', 'claude', 'gemini', etc.
     is_active BOOLEAN DEFAULT false,
-    is_default BOOLEAN DEFAULT false,
+    is_system_default BOOLEAN DEFAULT false,
     version INTEGER DEFAULT 1,
     created_by UUID REFERENCES auth.users(id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    CONSTRAINT unique_default_per_type UNIQUE(document_type, is_default) DEFERRABLE INITIALLY DEFERRED
+    prompt_scope VARCHAR(50) NOT NULL DEFAULT 'system',
+    user_id UUID REFERENCES auth.users(id),
+    is_personal_default BOOLEAN DEFAULT false
 );
 
 -- Prompt usage logs table for analytics
@@ -275,7 +284,333 @@ CREATE TABLE IF NOT EXISTS credit_requests (
 );
 
 -- =====================================================
--- 5. GITDIGEST REPOSITORY ANALYSIS
+-- 5. ADVANCED SDLC TABLES
+-- =====================================================
+
+-- AI Providers Management
+CREATE TABLE IF NOT EXISTS sdlc_ai_providers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    type VARCHAR(100) NOT NULL,
+    capabilities JSONB NOT NULL DEFAULT '{}',
+    cost_model JSONB NOT NULL DEFAULT '{}',
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- AI Tasks Management
+CREATE TABLE IF NOT EXISTS sdlc_ai_tasks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    project_id UUID REFERENCES sdlc_projects(id) ON DELETE CASCADE,
+    type VARCHAR(100) NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'pending',
+    priority VARCHAR(50) NOT NULL DEFAULT 'medium',
+    context JSONB NOT NULL DEFAULT '{}',
+    provider_used VARCHAR(100),
+    result JSONB DEFAULT '{}',
+    metadata JSONB DEFAULT '{}',
+    error_details TEXT,
+    estimated_cost NUMERIC,
+    actual_cost NUMERIC,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    started_at TIMESTAMP WITH TIME ZONE,
+    completed_at TIMESTAMP WITH TIME ZONE
+);
+
+-- AI Task Executions
+CREATE TABLE IF NOT EXISTS sdlc_ai_task_executions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    task_id UUID NOT NULL REFERENCES sdlc_ai_tasks(id) ON DELETE CASCADE,
+    execution_status VARCHAR(50) NOT NULL,
+    execution_data JSONB DEFAULT '{}',
+    error_message TEXT,
+    execution_time_ms INTEGER,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- AI Task Dashboard
+CREATE TABLE IF NOT EXISTS sdlc_ai_task_dashboard (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    dashboard_data JSONB NOT NULL DEFAULT '{}',
+    last_updated TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- API Key Rotations
+CREATE TABLE IF NOT EXISTS sdlc_api_key_rotations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    provider_name VARCHAR(100) NOT NULL,
+    old_key_hash TEXT,
+    new_key_hash TEXT,
+    rotation_reason TEXT,
+    rotated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Approval Requests
+CREATE TABLE IF NOT EXISTS sdlc_approval_requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    request_type VARCHAR(100) NOT NULL,
+    request_data JSONB NOT NULL DEFAULT '{}',
+    status VARCHAR(50) NOT NULL DEFAULT 'pending',
+    approved_by UUID REFERENCES auth.users(id),
+    approved_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Automation Rules
+CREATE TABLE IF NOT EXISTS sdlc_automation_rules (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    rule_name VARCHAR(255) NOT NULL,
+    rule_conditions JSONB NOT NULL DEFAULT '{}',
+    rule_actions JSONB NOT NULL DEFAULT '{}',
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Code Generations
+CREATE TABLE IF NOT EXISTS sdlc_code_generations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    project_id UUID REFERENCES sdlc_projects(id) ON DELETE CASCADE,
+    generation_type VARCHAR(100) NOT NULL,
+    input_context JSONB NOT NULL DEFAULT '{}',
+    generated_code TEXT,
+    language VARCHAR(50),
+    framework VARCHAR(100),
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Code Review Feedback
+CREATE TABLE IF NOT EXISTS sdlc_code_review_feedback (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    code_generation_id UUID REFERENCES sdlc_code_generations(id) ON DELETE CASCADE,
+    feedback_type VARCHAR(100) NOT NULL,
+    feedback_content TEXT NOT NULL,
+    severity VARCHAR(50) DEFAULT 'medium',
+    resolved BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- GitHub Integrations
+CREATE TABLE IF NOT EXISTS sdlc_github_integrations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    github_username VARCHAR(255),
+    access_token_hash TEXT,
+    webhook_secret_hash TEXT,
+    repositories JSONB DEFAULT '[]',
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Provider Usage Logs
+CREATE TABLE IF NOT EXISTS sdlc_provider_usage_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    provider_name VARCHAR(100) NOT NULL,
+    usage_type VARCHAR(100) NOT NULL,
+    tokens_used INTEGER,
+    cost NUMERIC,
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Pull Requests
+CREATE TABLE IF NOT EXISTS sdlc_pull_requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    project_id UUID REFERENCES sdlc_projects(id) ON DELETE CASCADE,
+    github_pr_id INTEGER,
+    repository VARCHAR(255),
+    title VARCHAR(255),
+    description TEXT,
+    status VARCHAR(50) DEFAULT 'open',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Repository Context
+CREATE TABLE IF NOT EXISTS sdlc_repository_context (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    repository_url TEXT NOT NULL,
+    context_data JSONB NOT NULL DEFAULT '{}',
+    last_updated TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Safety Checks
+CREATE TABLE IF NOT EXISTS sdlc_safety_checks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    check_type VARCHAR(100) NOT NULL,
+    check_data JSONB NOT NULL DEFAULT '{}',
+    passed BOOLEAN NOT NULL,
+    details TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Security Audit Logs
+CREATE TABLE IF NOT EXISTS sdlc_security_audit_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id),
+    action VARCHAR(100) NOT NULL,
+    resource_type VARCHAR(50),
+    resource_id UUID,
+    security_level VARCHAR(50) DEFAULT 'info',
+    details JSONB DEFAULT '{}',
+    ip_address INET,
+    user_agent TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Task Dependencies
+CREATE TABLE IF NOT EXISTS sdlc_task_dependencies (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    dependent_task_id UUID NOT NULL REFERENCES sdlc_ai_tasks(id) ON DELETE CASCADE,
+    prerequisite_task_id UUID NOT NULL REFERENCES sdlc_ai_tasks(id) ON DELETE CASCADE,
+    dependency_type VARCHAR(50) DEFAULT 'required',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(dependent_task_id, prerequisite_task_id)
+);
+
+-- Test Executions
+CREATE TABLE IF NOT EXISTS sdlc_test_executions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    project_id UUID REFERENCES sdlc_projects(id) ON DELETE CASCADE,
+    test_type VARCHAR(100) NOT NULL,
+    test_data JSONB NOT NULL DEFAULT '{}',
+    result JSONB DEFAULT '{}',
+    passed BOOLEAN,
+    execution_time_ms INTEGER,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Usage Analytics
+CREATE TABLE IF NOT EXISTS sdlc_usage_analytics (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id),
+    analytics_type VARCHAR(100) NOT NULL,
+    analytics_data JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- User AI Configurations
+CREATE TABLE IF NOT EXISTS sdlc_user_ai_configurations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    provider_name VARCHAR(100) NOT NULL,
+    configuration JSONB NOT NULL DEFAULT '{}',
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- User Roles (SDLC specific)
+CREATE TABLE IF NOT EXISTS sdlc_user_roles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    role_name VARCHAR(100) NOT NULL,
+    permissions JSONB DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id, role_name)
+);
+
+-- =====================================================
+-- 6. ADDITIONAL TABLES
+-- =====================================================
+
+-- Anonymous Project Sessions
+CREATE TABLE IF NOT EXISTS anonymous_project_sessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id TEXT NOT NULL UNIQUE,
+    project_data JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    expires_at TIMESTAMP WITH TIME ZONE
+);
+
+-- Content Analytics
+CREATE TABLE IF NOT EXISTS content_analytics (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id),
+    content_type VARCHAR(100) NOT NULL,
+    content_id UUID,
+    analytics_data JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Content Generation Log
+CREATE TABLE IF NOT EXISTS content_generation_log (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id),
+    generation_type VARCHAR(100) NOT NULL,
+    input_data JSONB NOT NULL DEFAULT '{}',
+    output_data JSONB DEFAULT '{}',
+    generation_time_ms INTEGER,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Project Generations
+CREATE TABLE IF NOT EXISTS project_generations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id),
+    project_id UUID REFERENCES sdlc_projects(id) ON DELETE CASCADE,
+    generation_type VARCHAR(100) NOT NULL,
+    generation_data JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- GitDigest Queue
+CREATE TABLE IF NOT EXISTS gitdigest_queue (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id),
+    repo_digest_id UUID REFERENCES repo_digests(id) ON DELETE CASCADE,
+    queue_status VARCHAR(50) DEFAULT 'pending',
+    priority INTEGER DEFAULT 0,
+    scheduled_at TIMESTAMP WITH TIME ZONE,
+    processed_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- System Analytics
+CREATE TABLE IF NOT EXISTS system_analytics (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    analytics_type VARCHAR(100) NOT NULL,
+    analytics_data JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- User Profiles
+CREATE TABLE IF NOT EXISTS user_profiles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
+    display_name VARCHAR(255),
+    bio TEXT,
+    avatar_url TEXT,
+    preferences JSONB DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- User Ratings
+CREATE TABLE IF NOT EXISTS user_ratings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    rating_type VARCHAR(100) NOT NULL,
+    rating_value INTEGER NOT NULL CHECK (rating_value >= 1 AND rating_value <= 5),
+    feedback TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- =====================================================
+-- 7. GITDIGEST REPOSITORY ANALYSIS
 -- =====================================================
 
 -- Repository digests
@@ -487,6 +822,63 @@ CREATE INDEX IF NOT EXISTS idx_daily_usage_date ON daily_usage(usage_date);
 CREATE INDEX IF NOT EXISTS idx_anonymous_analytics_session_id ON anonymous_analytics(session_id);
 CREATE INDEX IF NOT EXISTS idx_anonymous_analytics_event_type ON anonymous_analytics(event_type);
 CREATE INDEX IF NOT EXISTS idx_anonymous_analytics_created_at ON anonymous_analytics(created_at);
+
+-- Advanced SDLC indexes
+CREATE INDEX IF NOT EXISTS idx_sdlc_ai_providers_active ON sdlc_ai_providers(is_active) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_sdlc_ai_tasks_user_id ON sdlc_ai_tasks(user_id);
+CREATE INDEX IF NOT EXISTS idx_sdlc_ai_tasks_status ON sdlc_ai_tasks(status);
+CREATE INDEX IF NOT EXISTS idx_sdlc_ai_tasks_project_id ON sdlc_ai_tasks(project_id);
+CREATE INDEX IF NOT EXISTS idx_sdlc_ai_task_executions_task_id ON sdlc_ai_task_executions(task_id);
+CREATE INDEX IF NOT EXISTS idx_sdlc_ai_task_executions_status ON sdlc_ai_task_executions(execution_status);
+CREATE INDEX IF NOT EXISTS idx_sdlc_ai_task_dashboard_user_id ON sdlc_ai_task_dashboard(user_id);
+CREATE INDEX IF NOT EXISTS idx_sdlc_api_key_rotations_user_id ON sdlc_api_key_rotations(user_id);
+CREATE INDEX IF NOT EXISTS idx_sdlc_approval_requests_user_id ON sdlc_approval_requests(user_id);
+CREATE INDEX IF NOT EXISTS idx_sdlc_approval_requests_status ON sdlc_approval_requests(status);
+CREATE INDEX IF NOT EXISTS idx_sdlc_automation_rules_user_id ON sdlc_automation_rules(user_id);
+CREATE INDEX IF NOT EXISTS idx_sdlc_automation_rules_active ON sdlc_automation_rules(is_active) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_sdlc_code_generations_user_id ON sdlc_code_generations(user_id);
+CREATE INDEX IF NOT EXISTS idx_sdlc_code_generations_project_id ON sdlc_code_generations(project_id);
+CREATE INDEX IF NOT EXISTS idx_sdlc_code_generations_type ON sdlc_code_generations(generation_type);
+CREATE INDEX IF NOT EXISTS idx_sdlc_code_review_feedback_user_id ON sdlc_code_review_feedback(user_id);
+CREATE INDEX IF NOT EXISTS idx_sdlc_code_review_feedback_generation_id ON sdlc_code_review_feedback(code_generation_id);
+CREATE INDEX IF NOT EXISTS idx_sdlc_github_integrations_user_id ON sdlc_github_integrations(user_id);
+CREATE INDEX IF NOT EXISTS idx_sdlc_github_integrations_active ON sdlc_github_integrations(is_active) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_sdlc_provider_usage_logs_user_id ON sdlc_provider_usage_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_sdlc_provider_usage_logs_provider ON sdlc_provider_usage_logs(provider_name);
+CREATE INDEX IF NOT EXISTS idx_sdlc_pull_requests_user_id ON sdlc_pull_requests(user_id);
+CREATE INDEX IF NOT EXISTS idx_sdlc_pull_requests_project_id ON sdlc_pull_requests(project_id);
+CREATE INDEX IF NOT EXISTS idx_sdlc_pull_requests_status ON sdlc_pull_requests(status);
+CREATE INDEX IF NOT EXISTS idx_sdlc_repository_context_user_id ON sdlc_repository_context(user_id);
+CREATE INDEX IF NOT EXISTS idx_sdlc_safety_checks_user_id ON sdlc_safety_checks(user_id);
+CREATE INDEX IF NOT EXISTS idx_sdlc_safety_checks_type ON sdlc_safety_checks(check_type);
+CREATE INDEX IF NOT EXISTS idx_sdlc_security_audit_logs_user_id ON sdlc_security_audit_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_sdlc_security_audit_logs_action ON sdlc_security_audit_logs(action);
+CREATE INDEX IF NOT EXISTS idx_sdlc_task_dependencies_dependent ON sdlc_task_dependencies(dependent_task_id);
+CREATE INDEX IF NOT EXISTS idx_sdlc_task_dependencies_prerequisite ON sdlc_task_dependencies(prerequisite_task_id);
+CREATE INDEX IF NOT EXISTS idx_sdlc_test_executions_user_id ON sdlc_test_executions(user_id);
+CREATE INDEX IF NOT EXISTS idx_sdlc_test_executions_project_id ON sdlc_test_executions(project_id);
+CREATE INDEX IF NOT EXISTS idx_sdlc_usage_analytics_user_id ON sdlc_usage_analytics(user_id);
+CREATE INDEX IF NOT EXISTS idx_sdlc_usage_analytics_type ON sdlc_usage_analytics(analytics_type);
+CREATE INDEX IF NOT EXISTS idx_sdlc_user_ai_configurations_user_id ON sdlc_user_ai_configurations(user_id);
+CREATE INDEX IF NOT EXISTS idx_sdlc_user_ai_configurations_active ON sdlc_user_ai_configurations(is_active) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_sdlc_user_roles_user_id ON sdlc_user_roles(user_id);
+
+-- Additional table indexes
+CREATE INDEX IF NOT EXISTS idx_anonymous_project_sessions_session_id ON anonymous_project_sessions(session_id);
+CREATE INDEX IF NOT EXISTS idx_anonymous_project_sessions_expires_at ON anonymous_project_sessions(expires_at);
+CREATE INDEX IF NOT EXISTS idx_content_analytics_user_id ON content_analytics(user_id);
+CREATE INDEX IF NOT EXISTS idx_content_analytics_type ON content_analytics(content_type);
+CREATE INDEX IF NOT EXISTS idx_content_generation_log_user_id ON content_generation_log(user_id);
+CREATE INDEX IF NOT EXISTS idx_content_generation_log_type ON content_generation_log(generation_type);
+CREATE INDEX IF NOT EXISTS idx_project_generations_user_id ON project_generations(user_id);
+CREATE INDEX IF NOT EXISTS idx_project_generations_project_id ON project_generations(project_id);
+CREATE INDEX IF NOT EXISTS idx_gitdigest_queue_user_id ON gitdigest_queue(user_id);
+CREATE INDEX IF NOT EXISTS idx_gitdigest_queue_status ON gitdigest_queue(queue_status);
+CREATE INDEX IF NOT EXISTS idx_gitdigest_queue_scheduled ON gitdigest_queue(scheduled_at);
+CREATE INDEX IF NOT EXISTS idx_system_analytics_type ON system_analytics(analytics_type);
+CREATE INDEX IF NOT EXISTS idx_user_profiles_user_id ON user_profiles(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_ratings_user_id ON user_ratings(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_ratings_type ON user_ratings(rating_type);
 
 -- =====================================================
 -- 9. ROW LEVEL SECURITY (RLS)
@@ -756,6 +1148,179 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Function to get prompt for execution
+CREATE OR REPLACE FUNCTION get_prompt_for_execution(doc_type VARCHAR(50), user_uuid UUID DEFAULT NULL)
+RETURNS TABLE (
+    id UUID,
+    name VARCHAR(255),
+    prompt_content TEXT,
+    variables JSONB,
+    ai_model VARCHAR(50)
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        pt.id,
+        pt.name,
+        pt.prompt_content,
+        pt.variables,
+        pt.ai_model
+    FROM prompt_templates pt
+    WHERE pt.document_type = doc_type
+    AND pt.is_active = true
+    AND (
+        pt.is_system_default = true 
+        OR (user_uuid IS NOT NULL AND pt.user_id = user_uuid AND pt.is_personal_default = true)
+    )
+    ORDER BY pt.is_system_default DESC, pt.is_personal_default DESC
+    LIMIT 1;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to get prompt usage timeseries
+CREATE OR REPLACE FUNCTION get_prompt_usage_timeseries(
+    p_user_id UUID DEFAULT NULL,
+    p_days INTEGER DEFAULT 30
+)
+RETURNS TABLE (
+    date DATE,
+    usage_count BIGINT,
+    total_tokens BIGINT,
+    avg_response_time NUMERIC
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        DATE(pul.created_at) as date,
+        COUNT(*) as usage_count,
+        COALESCE(SUM(pul.input_tokens + pul.output_tokens), 0) as total_tokens,
+        COALESCE(AVG(pul.response_time_ms), 0) as avg_response_time
+    FROM prompt_usage_logs pul
+    WHERE (p_user_id IS NULL OR pul.user_id = p_user_id)
+    AND pul.created_at >= NOW() - INTERVAL '1 day' * p_days
+    GROUP BY DATE(pul.created_at)
+    ORDER BY date;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to get SDLC user task stats
+CREATE OR REPLACE FUNCTION get_sdlc_user_task_stats(p_user_id UUID)
+RETURNS JSONB AS $$
+DECLARE
+    stats JSONB;
+BEGIN
+    SELECT jsonb_build_object(
+        'total_tasks', COUNT(*),
+        'completed_tasks', COUNT(*) FILTER (WHERE status = 'completed'),
+        'pending_tasks', COUNT(*) FILTER (WHERE status = 'pending'),
+        'failed_tasks', COUNT(*) FILTER (WHERE status = 'failed'),
+        'total_cost', COALESCE(SUM(actual_cost), 0),
+        'avg_execution_time', COALESCE(AVG(EXTRACT(EPOCH FROM (completed_at - started_at))), 0)
+    ) INTO stats
+    FROM sdlc_ai_tasks
+    WHERE user_id = p_user_id;
+    
+    RETURN stats;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to get user prompt stats
+CREATE OR REPLACE FUNCTION get_user_prompt_stats(p_user_id UUID)
+RETURNS JSONB AS $$
+DECLARE
+    stats JSONB;
+BEGIN
+    SELECT jsonb_build_object(
+        'total_usage', COUNT(*),
+        'successful_usage', COUNT(*) FILTER (WHERE success = true),
+        'failed_usage', COUNT(*) FILTER (WHERE success = false),
+        'total_tokens', COALESCE(SUM(input_tokens + output_tokens), 0),
+        'avg_response_time', COALESCE(AVG(response_time_ms), 0),
+        'most_used_prompt', (
+            SELECT pt.name 
+            FROM prompt_templates pt 
+            WHERE pt.id = pul.prompt_template_id 
+            ORDER BY COUNT(*) DESC 
+            LIMIT 1
+        )
+    ) INTO stats
+    FROM prompt_usage_logs pul
+    WHERE user_id = p_user_id;
+    
+    RETURN stats;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to get user SDLC documents
+CREATE OR REPLACE FUNCTION get_user_sdlc_documents(p_user_id UUID)
+RETURNS TABLE (
+    project_id UUID,
+    project_title VARCHAR(255),
+    document_type VARCHAR(50),
+    document_count BIGINT,
+    last_updated TIMESTAMP
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        sp.id as project_id,
+        sp.title as project_title,
+        d.document_type,
+        COUNT(*) as document_count,
+        MAX(d.created_at) as last_updated
+    FROM sdlc_projects sp
+    LEFT JOIN documents d ON sp.id = d.project_id
+    WHERE sp.user_id = p_user_id
+    GROUP BY sp.id, sp.title, d.document_type
+    ORDER BY last_updated DESC;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to save anonymous SDLC project
+CREATE OR REPLACE FUNCTION save_anonymous_sdlc_project(
+    p_session_id TEXT,
+    p_project_data JSONB
+)
+RETURNS UUID AS $$
+DECLARE
+    project_id UUID;
+BEGIN
+    INSERT INTO anonymous_project_sessions (session_id, project_data, expires_at)
+    VALUES (p_session_id, p_project_data, NOW() + INTERVAL '24 hours')
+    ON CONFLICT (session_id) 
+    DO UPDATE SET 
+        project_data = p_project_data,
+        expires_at = NOW() + INTERVAL '24 hours';
+    
+    RETURN project_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to save comprehensive SDLC document
+CREATE OR REPLACE FUNCTION save_comprehensive_sdlc_document(
+    p_user_id UUID,
+    p_project_id UUID,
+    p_document_type VARCHAR(50),
+    p_content TEXT,
+    p_metadata JSONB DEFAULT '{}'
+)
+RETURNS UUID AS $$
+DECLARE
+    document_id UUID;
+BEGIN
+    INSERT INTO documents (project_id, document_type, content)
+    VALUES (p_project_id, p_document_type, p_content)
+    RETURNING id INTO document_id;
+    
+    -- Update project metadata
+    UPDATE sdlc_projects 
+    SET document_metadata = document_metadata || p_metadata
+    WHERE id = p_project_id;
+    
+    RETURN document_id;
+END;
+$$ LANGUAGE plpgsql;
+
 -- Create triggers for automatic timestamp updates
 CREATE TRIGGER update_prompt_templates_updated_at 
     BEFORE UPDATE ON prompt_templates 
@@ -797,7 +1362,7 @@ INSERT INTO templates (name, description, category, configuration, is_public) VA
 ON CONFLICT DO NOTHING;
 
 -- Insert default prompt templates
-INSERT INTO prompt_templates (name, description, document_type, prompt_content, variables, is_active, is_default, version) VALUES
+INSERT INTO prompt_templates (name, description, document_type, prompt_content, variables, is_active, is_system_default, version) VALUES
 (
     'Default Business Analysis Prompt',
     'Standard business analysis prompt for requirement analysis',
@@ -1033,7 +1598,10 @@ DO $$
 BEGIN
     RAISE NOTICE 'SDLC Automation Platform database setup completed successfully!';
     RAISE NOTICE 'Tables created: %', (SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public');
-    RAISE NOTICE 'Default prompts inserted: %', (SELECT COUNT(*) FROM prompt_templates WHERE is_default = true);
+    RAISE NOTICE 'Default prompts inserted: %', (SELECT COUNT(*) FROM prompt_templates WHERE is_system_default = true);
     RAISE NOTICE 'Default templates inserted: %', (SELECT COUNT(*) FROM templates WHERE is_public = true);
     RAISE NOTICE 'Beta features configured: %', (SELECT COUNT(*) FROM beta_features WHERE is_active = true);
+    RAISE NOTICE 'SDLC tables: %', (SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name LIKE 'sdlc_%');
+    RAISE NOTICE 'Functions created: %', (SELECT COUNT(*) FROM information_schema.routines WHERE routine_schema = 'public');
+    RAISE NOTICE 'Indexes created: %', (SELECT COUNT(*) FROM pg_indexes WHERE schemaname = 'public');
 END $$; 
