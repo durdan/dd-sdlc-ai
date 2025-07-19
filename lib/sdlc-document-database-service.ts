@@ -1,6 +1,6 @@
-import { createClient } from '@/lib/supabase/client'
-import { Database } from '@/database.types'
-import { SupabaseClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
+import type { Database } from '@/database.types'
 
 type Tables = Database['public']['Tables']
 type SDLCProject = Tables['sdlc_projects']['Row']
@@ -38,6 +38,7 @@ export interface CreateSDLCDocumentData {
   content: string
   description?: string
   document_type?: string
+  userId?: string
 }
 
 export interface UpdateSDLCDocumentData {
@@ -48,21 +49,28 @@ export interface UpdateSDLCDocumentData {
 }
 
 export class SDLCDocumentDatabaseService {
-  private supabase: SupabaseClient
+  private supabase: any
 
   constructor() {
-    this.supabase = createClient()
+    this.supabase = createServiceClient()
   }
 
   /**
-   * Get current user from session
+   * Get the current authenticated user
    */
   private async getCurrentUser() {
-    const { data: { user }, error } = await this.supabase.auth.getUser()
-    if (error || !user) {
-      throw new Error('User not authenticated')
+    try {
+      const supabase = await createClient()
+      const { data: { user }, error } = await supabase.auth.getUser()
+      if (error || !user) {
+        console.log('No authenticated user found')
+        return null
+      }
+      return user
+    } catch (error) {
+      console.log('Error getting current user:', error)
+      return null
     }
-    return user
   }
 
   /**
@@ -71,6 +79,11 @@ export class SDLCDocumentDatabaseService {
   async getUserSDLCDocuments(): Promise<SDLCDocumentData[]> {
     try {
       const user = await this.getCurrentUser()
+      
+      if (!user) {
+        console.log('No authenticated user, returning empty documents list')
+        return []
+      }
       
       // Use the custom function to get documents with project info
       const { data, error } = await this.supabase
@@ -103,6 +116,11 @@ export class SDLCDocumentDatabaseService {
   async getSDLCDocumentById(documentId: string): Promise<SDLCDocumentData | null> {
     try {
       const user = await this.getCurrentUser()
+      
+      if (!user) {
+        console.log('No authenticated user, cannot fetch document')
+        return null
+      }
       
       // Get project with associated document
       const { data: project, error: projectError } = await this.supabase
@@ -149,12 +167,22 @@ export class SDLCDocumentDatabaseService {
    */
   async createSDLCDocument(documentData: CreateSDLCDocumentData): Promise<SDLCDocumentData | null> {
     try {
-      const user = await this.getCurrentUser()
+      let userId = documentData.userId
+      if (!userId) {
+        try {
+          userId = (await this.getCurrentUser())?.id
+        } catch (error) {
+          console.error('No user ID provided and no authenticated user found:', error)
+          return null
+        }
+      }
+      
+      console.log('🔍 Creating SDLC document with userId:', userId)
       
       // Use the custom function to save comprehensive SDLC document
       const { data: projectId, error } = await this.supabase
         .rpc('save_comprehensive_sdlc_document', {
-          user_uuid: user.id,
+          user_uuid: userId,
           doc_title: documentData.title,
           doc_description: documentData.description || '',
           doc_content: documentData.content,
@@ -169,7 +197,6 @@ export class SDLCDocumentDatabaseService {
         return null
       }
 
-      // Return the created document
       return await this.getSDLCDocumentById(projectId)
     } catch (error) {
       console.error('Error in createSDLCDocument:', error)
@@ -183,6 +210,11 @@ export class SDLCDocumentDatabaseService {
   async updateSDLCDocument(documentId: string, updates: UpdateSDLCDocumentData): Promise<SDLCDocumentData | null> {
     try {
       const user = await this.getCurrentUser()
+      
+      if (!user) {
+        console.log('No authenticated user, cannot update document')
+        return null
+      }
       
       // Update project information
       const projectUpdates: any = {}
@@ -207,7 +239,6 @@ export class SDLCDocumentDatabaseService {
 
       // Update document content if provided
       if (updates.content !== undefined) {
-        // Get the primary document to update
         const { data: documents, error: docsError } = await this.supabase
           .from('documents')
           .select('*')
@@ -232,11 +263,111 @@ export class SDLCDocumentDatabaseService {
         }
       }
 
-      // Return the updated document
       return await this.getSDLCDocumentById(documentId)
     } catch (error) {
       console.error('Error in updateSDLCDocument:', error)
       return null
+    }
+  }
+
+  /**
+   * Add or update individual document for a project
+   */
+  async addOrUpdateIndividualDocument(projectId: string, documentType: string, content: string): Promise<boolean> {
+    try {
+      const user = await this.getCurrentUser()
+      
+      if (!user) {
+        console.log('No authenticated user, cannot update individual document')
+        return false
+      }
+      
+      // Check if document already exists
+      const { data: existingDoc, error: fetchError } = await this.supabase
+        .from('documents')
+        .select('*')
+        .eq('project_id', projectId)
+        .eq('document_type', documentType)
+        .single()
+
+      if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 = no rows returned
+        console.error('Error checking existing document:', fetchError)
+        return false
+      }
+
+      if (existingDoc) {
+        // Update existing document
+        const { error: updateError } = await this.supabase
+          .from('documents')
+          .update({ content })
+          .eq('id', existingDoc.id)
+
+        if (updateError) {
+          console.error('Error updating individual document:', updateError)
+          return false
+        }
+      } else {
+        // Create new document
+        const { error: insertError } = await this.supabase
+          .from('documents')
+          .insert({
+            project_id: projectId,
+            document_type: documentType,
+            content,
+            version: 1
+          })
+
+        if (insertError) {
+          console.error('Error creating individual document:', insertError)
+          return false
+        }
+      }
+
+      // Update project timestamp
+      await this.supabase
+        .from('sdlc_projects')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', projectId)
+
+      console.log(`✅ Individual document ${documentType} ${existingDoc ? 'updated' : 'created'} for project ${projectId}`)
+      return true
+    } catch (error) {
+      console.error('Error in addOrUpdateIndividualDocument:', error)
+      return false
+    }
+  }
+
+  /**
+   * Get all documents for a project
+   */
+  async getProjectDocuments(projectId: string): Promise<{ [key: string]: string }> {
+    try {
+      const user = await this.getCurrentUser()
+      
+      if (!user) {
+        console.log('No authenticated user, cannot fetch project documents')
+        return {}
+      }
+      
+      const { data: documents, error } = await this.supabase
+        .from('documents')
+        .select('document_type, content')
+        .eq('project_id', projectId)
+
+      if (error) {
+        console.error('Error fetching project documents:', error)
+        return {}
+      }
+
+      const result: { [key: string]: string } = {}
+      documents?.forEach((doc: any) => {
+        result[doc.document_type] = doc.content
+      })
+
+      return result
+    } catch (error) {
+      console.error('Error in getProjectDocuments:', error)
+      return {}
     }
   }
 
@@ -247,7 +378,11 @@ export class SDLCDocumentDatabaseService {
     try {
       const user = await this.getCurrentUser()
       
-      // Delete the project (cascades to documents and integrations)
+      if (!user) {
+        console.log('No authenticated user, cannot delete document')
+        return false
+      }
+      
       const { error } = await this.supabase
         .from('sdlc_projects')
         .delete()
@@ -273,8 +408,12 @@ export class SDLCDocumentDatabaseService {
     try {
       const user = await this.getCurrentUser()
       
-      // Use the custom function to update linked projects
-      const { data, error } = await this.supabase
+      if (!user) {
+        console.log('No authenticated user, cannot update linked projects')
+        return false
+      }
+      
+      const { error } = await this.supabase
         .rpc('update_project_linked_projects', {
           project_uuid: documentId,
           user_uuid: user.id,
@@ -286,7 +425,7 @@ export class SDLCDocumentDatabaseService {
         return false
       }
 
-      return data === true
+      return true
     } catch (error) {
       console.error('Error in updateLinkedProjects:', error)
       return false
@@ -294,13 +433,17 @@ export class SDLCDocumentDatabaseService {
   }
 
   /**
-   * Search SDLC documents by title or content
+   * Search SDLC documents by title or description
    */
   async searchSDLCDocuments(query: string): Promise<SDLCDocumentData[]> {
     try {
       const user = await this.getCurrentUser()
       
-      // Search in both title and content
+      if (!user) {
+        console.log('No authenticated user, cannot search documents')
+        return []
+      }
+      
       const { data, error } = await this.supabase
         .from('sdlc_projects')
         .select(`
@@ -316,23 +459,21 @@ export class SDLCDocumentDatabaseService {
         return []
       }
 
-      return (data || []).map(project => {
-        const documents = (project as any).documents as Document[]
+      return (data || []).map((project: any) => {
+        const documents = project.documents as Document[]
         const primaryDoc = documents.find(d => d.document_type === 'comprehensive_sdlc') || documents[0]
-        
-        if (!primaryDoc) return null
 
         return {
           id: project.id,
           title: project.title,
-          content: primaryDoc.content,
-          document_type: primaryDoc.document_type,
-          created_at: primaryDoc.created_at,
+          content: primaryDoc?.content || '',
+          document_type: primaryDoc?.document_type || 'comprehensive_sdlc',
+          created_at: primaryDoc?.created_at || project.created_at,
           updated_at: project.updated_at,
           description: project.description || undefined,
-          linked_projects: (project as any).linked_projects || {}
+          linked_projects: project.linked_projects || {}
         }
-      }).filter(Boolean) as SDLCDocumentData[]
+      })
     } catch (error) {
       console.error('Error in searchSDLCDocuments:', error)
       return []

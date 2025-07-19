@@ -312,22 +312,29 @@ export class ServerPromptService {
     try {
       const supabase = this.getServerClient();
       
+      // Only include project_id if it's a valid UUID and not the dummy value
+      const insertData: any = {
+        prompt_template_id: promptId,
+        user_id: userId,
+        input_text: JSON.stringify(variables),
+        generated_content: aiResponse.content,
+        input_tokens: aiResponse.input_tokens,
+        output_tokens: aiResponse.output_tokens,
+        response_time_ms: responseTime,
+        success: success,
+        error_message: errorMessage,
+        ai_model_used: aiModel || 'gpt-4o',
+        created_at: new Date().toISOString()
+      };
+
+      // Only add project_id if it's a valid UUID and not the dummy value
+      if (projectId && projectId !== '00000000-0000-0000-0000-000000000000') {
+        insertData.project_id = projectId;
+      }
+
       const { data, error } = await supabase
         .from('prompt_usage_logs')
-        .insert({
-          prompt_template_id: promptId,
-          user_id: userId,
-          project_id: projectId,
-          input_text: JSON.stringify(variables),
-          generated_content: aiResponse.content,
-          input_tokens: aiResponse.input_tokens,
-          output_tokens: aiResponse.output_tokens,
-          response_time_ms: responseTime,
-          success: success,
-          error_message: errorMessage,
-          ai_model_used: aiModel || 'gpt-4o',
-          created_at: new Date().toISOString()
-        })
+        .insert(insertData)
         .select('id')
         .single();
 

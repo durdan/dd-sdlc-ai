@@ -37,7 +37,6 @@ export default function TestPromptPage() {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [testInput, setTestInput] = useState('')
-  const [openaiKey, setOpenaiKey] = useState('')
   const [testing, setTesting] = useState(false)
   const [testResults, setTestResults] = useState<TestResult[]>([])
   const router = useRouter()
@@ -108,11 +107,6 @@ export default function TestPromptPage() {
       return
     }
 
-    if (!openaiKey.trim()) {
-      toast.error('Please enter your OpenAI API key')
-      return
-    }
-
     if (!prompt) return
 
     try {
@@ -122,17 +116,23 @@ export default function TestPromptPage() {
       // Call the appropriate API endpoint based on document type
       const apiEndpoint = getApiEndpoint(prompt.document_type)
       
+      const requestBody: any = {
+        input: testInput,
+        userId: user.id,
+        customPrompt: prompt.prompt_content // Use the prompt as custom prompt for testing
+      }
+
+      // Add documentType for the new consolidated endpoint
+      if (apiEndpoint === '/api/generate-document') {
+        requestBody.documentType = prompt.document_type
+      }
+      
       const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          input: testInput,
-          openaiKey: openaiKey,
-          userId: user.id,
-          customPrompt: prompt.prompt_content // Use the prompt as custom prompt for testing
-        })
+        body: JSON.stringify(requestBody)
       })
 
       const responseTime = Date.now() - startTime
@@ -170,11 +170,11 @@ export default function TestPromptPage() {
 
   const getApiEndpoint = (documentType: string) => {
     const endpoints = {
-      business: '/api/generate-business-analysis',
-      functional: '/api/generate-functional-spec',
-      technical: '/api/generate-technical-spec',
-      ux: '/api/generate-ux-spec',
-      mermaid: '/api/generate-mermaid-diagrams',
+      business: '/api/generate-document',
+      functional: '/api/generate-document',
+      technical: '/api/generate-document',
+      ux: '/api/generate-document',
+      mermaid: '/api/generate-document',
       sdlc: '/api/generate-sdlc'
     }
     return endpoints[documentType as keyof typeof endpoints] || endpoints.business
@@ -264,20 +264,6 @@ export default function TestPromptPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="openai_key">OpenAI API Key *</Label>
-                <Input
-                  id="openai_key"
-                  type="password"
-                  placeholder="sk-..."
-                  value={openaiKey}
-                  onChange={(e) => setOpenaiKey(e.target.value)}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Your API key is not stored and only used for this test
-                </p>
-              </div>
-
-              <div>
                 <Label htmlFor="test_input">Test Input</Label>
                 <Textarea
                   id="test_input"
@@ -290,7 +276,7 @@ export default function TestPromptPage() {
 
               <Button
                 onClick={handleTest}
-                disabled={testing || !testInput.trim() || !openaiKey.trim()}
+                disabled={testing || !testInput.trim()}
                 className="w-full flex items-center gap-2"
               >
                 <TestTube size={16} />

@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { SDLCDocumentDatabaseService } from '@/lib/sdlc-document-database-service'
 
-interface RouteParams {
-  params: {
-    id: string
-  }
-}
-
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     const { id } = params
+    
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Document ID is required' }, 
+        { status: 400 }
+      )
+    }
     
     const dbService = new SDLCDocumentDatabaseService()
     const document = await dbService.getSDLCDocumentById(id)

@@ -532,6 +532,15 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
   const [showGenerationSummary, setShowGenerationSummary] = useState(false)
   const [generatedDocumentsSummary, setGeneratedDocumentsSummary] = useState<Record<string, boolean>>({})
 
+  // Add ref to track current project ID for immediate access
+  const currentProjectIdRef = useRef<string | null>(null)
+
+  // Reset project ID when starting new generation
+  const resetProjectId = () => {
+    currentProjectIdRef.current = null
+    console.log('🔄 Reset project ID for new generation')
+  }
+
   // Function to update step progress - moved to component level for global access
   const updateStepProgress = (stepId: string, progress: number, status: "pending" | "in_progress" | "completed" | "error" = "in_progress") => {
     setProcessingSteps(prevSteps => 
@@ -626,18 +635,98 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
           // Handle multiple comprehensive_sdlc documents (enhanced generation pattern)
           const comprehensiveDocs = documents.filter(d => d.document_type === 'comprehensive_sdlc')
           
-          // Smart content mapping for different generation patterns
+          // Initialize content variables
           let businessContent = businessDoc?.content || ''
           let functionalContent = functionalDoc?.content || ''
           let technicalContent = technicalDoc?.content || ''
           let uxContent = uxDoc?.content || ''
+          let mermaidContent = mermaidDoc?.content || ''
+          
+          // If we have a comprehensive document, parse it to extract individual documents
+          if (comprehensiveDoc?.content) {
+            try {
+              const parsedComprehensive = JSON.parse(comprehensiveDoc.content)
+              console.log('🔍 Parsing comprehensive document for individual content extraction')
+              
+              if (typeof parsedComprehensive === 'object' && parsedComprehensive !== null) {
+                // Extract individual documents from the comprehensive JSON
+                businessContent = parsedComprehensive.businessAnalysis || businessContent
+                functionalContent = parsedComprehensive.functionalSpec || functionalContent
+                technicalContent = parsedComprehensive.technicalSpec || technicalContent
+                uxContent = parsedComprehensive.uxSpec || uxContent
+                
+                // Extract architecture content from mermaidDiagrams
+                mermaidContent = parsedComprehensive.mermaidDiagrams || mermaidContent
+                
+                console.log('📋 Extracted individual documents from comprehensive:', {
+                  hasBusiness: !!parsedComprehensive.businessAnalysis,
+                  hasFunctional: !!parsedComprehensive.functionalSpec,
+                  hasTechnical: !!parsedComprehensive.technicalSpec,
+                  hasUx: !!parsedComprehensive.uxSpec,
+                  hasMermaid: !!parsedComprehensive.mermaidDiagrams
+                })
+              }
+            } catch (error) {
+              console.warn('Failed to parse comprehensive document as JSON:', error)
+            }
+          }
+          
+          // Parse JSON content if it's stored as JSON string - make it specific to document type
+          const parseContent = (content: string, documentType?: string): string => {
+            if (!content) return ''
+            try {
+              // Try to parse as JSON first
+              const parsed = JSON.parse(content)
+              console.log('🔍 Parsed JSON content for', documentType, ':', {
+                isObject: typeof parsed === 'object',
+                keys: typeof parsed === 'object' ? Object.keys(parsed) : [],
+                hasBusinessAnalysis: typeof parsed === 'object' && parsed.businessAnalysis,
+                hasFunctionalSpec: typeof parsed === 'object' && parsed.functionalSpec,
+                hasTechnicalSpec: typeof parsed === 'object' && parsed.technicalSpec,
+                hasUxSpec: typeof parsed === 'object' && parsed.uxSpec,
+                hasMermaidDiagrams: typeof parsed === 'object' && parsed.mermaidDiagrams
+              })
+              
+              // If it's an object with document properties, extract the specific content
+              if (typeof parsed === 'object' && parsed !== null) {
+                // If we know the document type, extract that specific content
+                if (documentType && parsed[documentType]) {
+                  console.log(`🔍 Extracting ${documentType} content from JSON`)
+                  return parsed[documentType]
+                }
+                
+                // Fallback: check for individual document types in order
+                if (parsed.businessAnalysis) return parsed.businessAnalysis
+                if (parsed.functionalSpec) return parsed.functionalSpec
+                if (parsed.technicalSpec) return parsed.technicalSpec
+                if (parsed.uxSpec) return parsed.uxSpec
+                if (parsed.mermaidDiagrams) return parsed.mermaidDiagrams
+                
+                // If it's a comprehensive object, return the first available content
+                const firstContent = Object.values(parsed).find(val => typeof val === 'string' && val.length > 0)
+                if (firstContent) return firstContent as string
+              }
+              // If parsing succeeded but no content found, return original
+              return content
+            } catch (error) {
+              // If it's not JSON, return as-is (plain markdown)
+              console.log('🔍 Content is not JSON, treating as plain markdown')
+              return content
+            }
+          }
+          
+          // Parse content from individual documents if they exist
+          businessContent = parseContent(businessContent, 'businessAnalysis')
+          functionalContent = parseContent(functionalContent, 'functionalSpec')
+          technicalContent = parseContent(technicalContent, 'technicalSpec')
+          uxContent = parseContent(uxContent, 'uxSpec')
           
           // If we have multiple comprehensive_sdlc documents, try to match content by keywords
           if (comprehensiveDocs.length > 1) {
             console.log(`📊 Found ${comprehensiveDocs.length} comprehensive documents, attempting smart content mapping`)
             
             comprehensiveDocs.forEach((doc, index) => {
-              const content = doc.content || ''
+              const content = parseContent(doc.content || '', 'comprehensive') || doc.content || ''
               const contentLower = content.toLowerCase()
               
               // Business Analysis keywords
@@ -684,21 +773,23 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
             })
           }
           
-          // Create fallback content for incomplete projects
-          const hasAnyContent = businessContent || functionalContent || technicalContent || uxContent || comprehensiveDoc?.content || architectureDoc?.content
-          const fallbackContent = comprehensiveDoc?.content || 
-            (architectureDoc?.content ? `# Project Documentation\n\nThis project contains architecture documentation. Please check the **Architecture** tab for detailed diagrams and system design.\n\n${architectureDoc.content}` : '') ||
-            (mermaidDoc?.content ? `# Project Documentation\n\nThis project contains Mermaid diagrams. Please check the **Architecture** tab for visual documentation.\n\n${mermaidDoc.content}` : '') ||
+          // Create documents object with individual content, only use fallback if no individual content exists
+          const hasIndividualContent = businessContent || functionalContent || technicalContent || uxContent
+          const fallbackContent = !hasIndividualContent ? (
+            parseContent(comprehensiveDoc?.content || '', 'comprehensive') || 
+            (architectureDoc?.content ? `# Project Documentation\n\nThis project contains architecture documentation. Please check the **Architecture** tab for detailed diagrams and system design.\n\n${parseContent(architectureDoc.content, 'architecture')}` : '') ||
+            (mermaidDoc?.content ? `# Project Documentation\n\nThis project contains Mermaid diagrams. Please check the **Architecture** tab for visual documentation.\n\n${parseContent(mermaidDoc.content, 'mermaidDiagrams')}` : '') ||
             '# Project Documentation\n\nThis project appears to be incomplete. Please regenerate the documentation to get full content.'
+          ) : ''
           
           const documentsObj = {
-            businessAnalysis: businessContent || fallbackContent,
-            functionalSpec: functionalContent || fallbackContent,
-            technicalSpec: technicalContent || fallbackContent,
-            uxSpec: uxContent || fallbackContent,
-            architecture: architectureDoc?.content || mermaidDoc?.content || fallbackContent,
-            comprehensive: comprehensiveDoc?.content || fallbackContent,
-            mermaidDiagrams: mermaidDoc?.content || architectureDoc?.content || ''
+            businessAnalysis: businessContent || (hasIndividualContent ? '' : fallbackContent),
+            functionalSpec: functionalContent || (hasIndividualContent ? '' : fallbackContent),
+            technicalSpec: technicalContent || (hasIndividualContent ? '' : fallbackContent),
+            uxSpec: uxContent || (hasIndividualContent ? '' : fallbackContent),
+            architecture: mermaidContent || parseContent(architectureDoc?.content || '', 'architecture') || parseContent(mermaidDoc?.content || '', 'mermaidDiagrams') || (hasIndividualContent ? '' : fallbackContent),
+            comprehensive: parseContent(comprehensiveDoc?.content || '', 'comprehensive') || (hasIndividualContent ? '' : fallbackContent),
+            mermaidDiagrams: mermaidContent || parseContent(mermaidDoc?.content || '', 'mermaidDiagrams') || parseContent(architectureDoc?.content || '', 'architecture') || ''
           }
           
           console.log('📋 Content summary for project', project.id, ':', {
@@ -1138,8 +1229,8 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         setSelectedProjectForGitHub(null)
         
         // Optionally reload recent projects to show the new integration
-        const projects = await getCachedProjects()
-        setRecentProjects(projects)
+        const updatedProjects = await getCachedProjects()
+        setRecentProjects(updatedProjects)
       } else {
         throw new Error(result.error || 'GitHub project creation failed')
       }
@@ -1419,7 +1510,13 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                 
                 const jsonData = JSON.parse(jsonString)
                 if (jsonData.type === 'chunk') {
-                  fullContent = jsonData.fullContent
+                  // Accumulate chunks to build full content
+                  const chunkContent = jsonData.content || ''
+                  fullContent += chunkContent
+                  
+                  console.log(`🔍 ${stepId} - Chunk received: "${chunkContent}"`)
+                  console.log(`🔍 ${stepId} - Full content length: ${fullContent.length}`)
+                  
                   // Update progress based on content length (rough estimate)
                   const progress = Math.min(90, Math.floor(fullContent.length / 50))
                   updateStepProgress(stepId, progress, "in_progress")
@@ -1500,6 +1597,9 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
       throw new Error(`No content received from ${stepId} - streaming response was malformed or empty`)
     }
     
+    console.log(`🔍 ${stepId} - Final content length: ${fullContent.length}`)
+    console.log(`🔍 ${stepId} - Final content preview: ${fullContent.substring(0, 200)}`)
+    
     return fullContent
   }
 
@@ -1508,6 +1608,9 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
     setErrorMessage("")
     setGeneratedDocuments({})
     setShowGenerationSummary(false)
+    
+    // Reset project ID for new generation
+    resetProjectId()
     
     // ✨ NEW: Show refresh warning
     setShowRefreshWarning(true)
@@ -1546,12 +1649,12 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
       // Step 1: Business Analysis - Let backend handle freemium limits
       if (!selectedDocuments || selectedDocuments.includes("analysis")) {
         updateStepProgress("analysis", 0, "in_progress")
-        const businessResponse = await fetch("/api/generate-business-analysis", {
+        const businessResponse = await fetch("/api/generate-document", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            documentType: "business",
             input,
-            openaiKey: config.openaiKey || "", // Send empty string if not configured
             userId: user?.id,
           }),
         })
@@ -1584,8 +1687,16 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
           (content) => setGeneratedDocuments((prev: any) => ({ ...prev, businessAnalysis: content }))
         )
         
+        console.log('🔍 Business Analysis Content Length:', businessAnalysisContent?.length || 0)
+        console.log('🔍 Business Analysis Content Preview:', businessAnalysisContent?.substring(0, 200) || 'No content')
+        console.log('🔍 Business Analysis Content Type:', typeof businessAnalysisContent)
+        console.log('🔍 Business Analysis Content is Undefined:', businessAnalysisContent === undefined)
+        
         results.businessAnalysis = businessAnalysisContent
         updateStepProgress("analysis", 100, "completed")
+        
+        // 💾 Save individual document to preserve progress
+        await saveIndividualDocument(input, "business_analysis", businessAnalysisContent)
         
         // ✨ NEW: Smooth transition delay between steps
         await new Promise(resolve => setTimeout(resolve, 500))
@@ -1594,13 +1705,21 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
       // Step 2: Functional Specification
       if (!selectedDocuments || selectedDocuments.includes("functional")) {
         updateStepProgress("functional", 0, "in_progress")
-        const functionalResponse = await fetch("/api/generate-functional-spec", {
+        console.log('🔍 Passing business analysis to functional spec:', {
+          length: results.businessAnalysis?.length || 0,
+          preview: results.businessAnalysis?.substring(0, 100) || 'No content',
+          isUndefined: results.businessAnalysis === undefined,
+          isNull: results.businessAnalysis === null,
+          type: typeof results.businessAnalysis
+        })
+        
+        const functionalResponse = await fetch("/api/generate-document", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            documentType: "functional",
             input,
             businessAnalysis: results.businessAnalysis || "",
-            openaiKey: config.openaiKey || "", // Send whatever we have (could be empty)
             userId: user?.id,
           }),
         })
@@ -1636,6 +1755,9 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         results.functionalSpec = functionalSpecContent
         updateStepProgress("functional", 100, "completed")
         
+        // 💾 Save individual document to preserve progress
+        await saveIndividualDocument(input, "functional_spec", functionalSpecContent)
+        
         // ✨ NEW: Smooth transition delay between steps
         await new Promise(resolve => setTimeout(resolve, 500))
       }
@@ -1643,14 +1765,14 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
       // Step 3: Technical Specification
       if (!selectedDocuments || selectedDocuments.includes("technical")) {
         updateStepProgress("technical", 0, "in_progress")
-        const technicalResponse = await fetch("/api/generate-technical-spec", {
+        const technicalResponse = await fetch("/api/generate-document", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            documentType: "technical",
             input,
             businessAnalysis: results.businessAnalysis || "",
             functionalSpec: results.functionalSpec || "",
-            openaiKey: config.openaiKey || "",
             userId: user?.id,
           }),
         })
@@ -1686,6 +1808,9 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         results.technicalSpec = technicalSpecContent
         updateStepProgress("technical", 100, "completed")
         
+        // 💾 Save individual document to preserve progress
+        await saveIndividualDocument(input, "technical_spec", technicalSpecContent)
+        
         // ✨ NEW: Smooth transition delay between steps
         await new Promise(resolve => setTimeout(resolve, 500))
       }
@@ -1693,15 +1818,15 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
       // Step 4: UX Specification
       if (!selectedDocuments || selectedDocuments.includes("ux")) {
         updateStepProgress("ux", 0, "in_progress")
-        const uxResponse = await fetch("/api/generate-ux-spec", {
+        const uxResponse = await fetch("/api/generate-document", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            documentType: "ux",
             input,
             businessAnalysis: results.businessAnalysis || "",
             functionalSpec: results.functionalSpec || "",
             technicalSpec: results.technicalSpec || "",
-            openaiKey: config.openaiKey || "",
             userId: user?.id,
           }),
         })
@@ -1737,6 +1862,9 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         results.uxSpec = uxContent
         updateStepProgress("ux", 100, "completed")
         
+        // 💾 Save individual document to preserve progress
+        await saveIndividualDocument(input, "ux_spec", uxContent)
+        
         // ✨ NEW: Smooth transition delay between steps
         await new Promise(resolve => setTimeout(resolve, 500))
       }
@@ -1744,15 +1872,15 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
       // Step 5: Mermaid Diagrams
       if (!selectedDocuments || selectedDocuments.includes("mermaid")) {
         updateStepProgress("mermaid", 0, "in_progress")
-        const mermaidResponse = await fetch("/api/generate-mermaid-diagrams", {
+        const mermaidResponse = await fetch("/api/generate-document", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            input,
-            businessAnalysis: results.businessAnalysis || "",
+            documentType: "mermaid",
+            input: "Generate architecture diagrams",
             functionalSpec: results.functionalSpec || "",
             technicalSpec: results.technicalSpec || "",
-            openaiKey: config.openaiKey || "",
+            businessAnalysis: results.businessAnalysis || "",
             userId: user?.id,
           }),
         })
@@ -1788,15 +1916,18 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         results.mermaidDiagrams = mermaidContent
         updateStepProgress("mermaid", 100, "completed")
         
+        // 💾 Save individual document to preserve progress
+        await saveIndividualDocument(input, "architecture", mermaidContent)
+        
         // ✨ NEW: Smooth transition delay between steps
         await new Promise(resolve => setTimeout(resolve, 500))
       }
 
-      // Cache the complete results
-      await cacheResults(input.trim(), results)
-      
-      // Save to database
-      await cacheResults(input.trim(), results)
+      // Documents are already saved through individual API endpoints
+      console.log('✅ Documents saved through individual API endpoints')
+
+      // ✅ Save all results to database once at the end (prevents duplicate storage)
+      await saveResultsToDatabase(input, results, true) // Use update flag since we may have saved earlier
 
       // Handle optional integrations (JIRA, Confluence) if enabled
       await handleIntegrations(results, input)
@@ -1872,6 +2003,14 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         if (jiraResult.success) {
           console.log('✅ Jira integration successful:', jiraResult)
           updateStepProgress("jira", 100, "completed")
+          
+          // Update the project with JIRA info in database instead of localStorage
+          // The project data will be updated when we refresh from database
+          console.log('✅ JIRA integration completed, project data will be refreshed from database')
+          
+          // Refresh the recent projects display
+          const updatedProjects = await getCachedProjects()
+          setRecentProjects(updatedProjects)
         } else {
           console.error('❌ Jira integration failed:', jiraResult.error)
           updateStepProgress("jira", 0, "error")
@@ -2058,16 +2197,13 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         console.log('✅ Manual Confluence integration successful:', confluenceResult)
         alert(`Successfully created ${confluenceResult.pages?.length || 0} Confluence pages!\n\nSpace: ${confluenceResult.confluenceSpaceUrl}`)
         
-        // Update the cached project with Confluence info
-        const cachedResults = JSON.parse(localStorage.getItem('sdlc-cached-results') || '{}')
-        if (cachedResults[project.id]) {
-          cachedResults[project.id].confluencePage = confluenceResult.pages?.[0]?.id || 'Created'
-          localStorage.setItem('sdlc-cached-results', JSON.stringify(cachedResults))
-          
-          // Refresh the recent projects display
-          const updatedProjects = await getCachedProjects()
-          setRecentProjects(updatedProjects)
-        }
+        // Update the project with Confluence info in database instead of localStorage
+        // The project data will be updated when we refresh from database
+        console.log('✅ Confluence integration completed, project data will be refreshed from database')
+        
+        // Refresh the recent projects display
+        const updatedProjects = await getCachedProjects()
+        setRecentProjects(updatedProjects)
       } else {
         console.error('❌ Manual Confluence integration failed:', confluenceResult.error)
         alert(`Confluence integration failed: ${confluenceResult.error}`)
@@ -2270,14 +2406,16 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
   // Generate Mermaid diagrams
   const generateMermaidDiagrams = async (documents: any) => {
     try {
-      const response = await fetch("/api/generate-mermaid-diagrams", {
+      const response = await fetch("/api/generate-document", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          documentType: "mermaid",
+          input: "Generate architecture diagrams",
           functionalSpec: documents.functionalSpec || {},
           technicalSpec: documents.technicalSpec || {},
           businessAnalysis: documents.businessAnalysis || {},
-          openaiKey: config.openaiKey,
+          userId: user?.id,
         }),
       })
       
@@ -2299,17 +2437,182 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
     }
   }
 
-  // Cache results in localStorage
-  const cacheResults = (inputKey: string, data: any) => {
+  // Save results to database with proper project ID tracking
+  const saveResultsToDatabase = async (inputKey: string, data: any, isUpdate = false) => {
     try {
-      const cacheKey = `sdlc_cache_${btoa(inputKey)}`
-      localStorage.setItem(cacheKey, JSON.stringify(data))
+      const projectName = extractProjectName(inputKey)
+      
+      // Create project first (without documents)
+      const projectRequestBody = {
+        title: projectName,
+        userId: user?.id,
+        metadata: {
+          input: inputKey,
+          generated_at: new Date().toISOString(),
+          user_id: user?.id
+        }
+      }
+
+      let projectResponse
+      if (isUpdate && currentProjectIdRef.current) {
+        // Update existing project
+        console.log('🔄 UPDATE project:', currentProjectIdRef.current)
+        projectResponse = await fetch(`/api/sdlc-documents`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...projectRequestBody,
+            projectId: currentProjectIdRef.current
+          })
+        })
+      } else {
+        // Create new project
+        console.log('🆕 CREATE new project')
+        projectResponse = await fetch('/api/sdlc-documents', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(projectRequestBody)
+        })
+      }
+      
+      if (!projectResponse.ok) {
+        console.warn('Failed to create/update project:', await projectResponse.text())
+        return
+      }
+
+      const projectResult = await projectResponse.json()
+      
+      if (projectResult.success && projectResult.document?.id) {
+        currentProjectIdRef.current = projectResult.document.id
+        console.log('✅ Project created/updated:', projectResult.document.id, projectResult.action)
+        
+        // Now save individual documents
+        const documentTypeMapping = {
+          businessAnalysis: 'business_analysis',
+          functionalSpec: 'functional_spec', 
+          technicalSpec: 'technical_spec',
+          uxSpec: 'ux_spec',
+          mermaidDiagrams: 'architecture'
+        }
+        
+        for (const [key, content] of Object.entries(data)) {
+          if (content && typeof content === 'string' && content.trim()) {
+            const documentType = documentTypeMapping[key as keyof typeof documentTypeMapping] || key
+            console.log(`💾 Saving individual document: ${documentType}`)
+            
+            const documentResponse = await fetch('/api/sdlc-documents', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                projectId: currentProjectIdRef.current,
+                documentType: documentType,
+                content: content,
+                userId: user?.id
+              })
+            })
+            
+            if (documentResponse.ok) {
+              console.log(`✅ ${documentType} document saved`)
+            } else {
+              console.warn(`Failed to save ${documentType} document:`, await documentResponse.text())
+            }
+          }
+        }
+      }
     } catch (error) {
-      console.warn('Failed to cache results:', error)
+      console.warn('Failed to save results to database:', error)
     }
   }
 
-
+  // Save individual document step to database
+  const saveIndividualDocument = async (inputKey: string, documentType: string, content: string) => {
+    try {
+      const projectName = extractProjectName(inputKey)
+      
+      // Map frontend document types to database types
+      const documentTypeMapping = {
+        business: 'business_analysis',
+        functional: 'functional_spec',
+        technical: 'technical_spec',
+        ux: 'ux_spec',
+        mermaid: 'architecture'
+      }
+      
+      const dbDocumentType = documentTypeMapping[documentType as keyof typeof documentTypeMapping] || documentType
+      
+      console.log(`💾 Saving ${documentType} document (${dbDocumentType}) - Project ID:`, currentProjectIdRef.current || 'NEW')
+      console.log(`📄 Content length:`, content?.length || 0)
+      
+      if (currentProjectIdRef.current) {
+        // Update existing project with individual document
+        const response = await fetch('/api/sdlc-documents', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            projectId: currentProjectIdRef.current,
+            documentType: dbDocumentType,
+            content: content,
+            userId: user?.id
+          })
+        })
+        
+        if (!response.ok) {
+          throw new Error(`Failed to save ${documentType} document`)
+        }
+        
+        console.log(`✅ ${documentType} document saved to existing project`)
+      } else {
+        // Create new project first, then save the document
+        const projectRequestBody = {
+          title: projectName,
+          userId: user?.id,
+          metadata: {
+            input: inputKey,
+            generated_at: new Date().toISOString(),
+            user_id: user?.id
+          }
+        }
+        
+        console.log('🆕 CREATE new project for individual document')
+        const projectResponse = await fetch('/api/sdlc-documents', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(projectRequestBody)
+        })
+        
+        if (!projectResponse.ok) {
+          throw new Error('Failed to create project')
+        }
+        
+        const projectResult = await projectResponse.json()
+        
+        if (projectResult.success && projectResult.document?.id) {
+          currentProjectIdRef.current = projectResult.document.id
+          console.log('✅ Project created:', projectResult.document.id)
+          
+          // Now save the individual document
+          const documentResponse = await fetch('/api/sdlc-documents', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              projectId: currentProjectIdRef.current,
+              documentType: dbDocumentType,
+              content: content,
+              userId: user?.id
+            })
+          })
+          
+          if (!documentResponse.ok) {
+            throw new Error(`Failed to save ${documentType} document`)
+          }
+          
+          console.log(`✅ ${documentType} document saved to new project`)
+        }
+      }
+    } catch (error) {
+      console.warn(`Failed to save ${documentType} document:`, error)
+    }
+  }
 
   // Update processing status and enable tabs progressively
   const updateProcessingStatus = () => {
@@ -3396,7 +3699,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                 </div>
                 
                 <Button 
-                  onClick={() => generateFreshDocuments()} 
+                  onClick={() => setShowDocumentSelectionModal(true)}
                   disabled={!input.trim() || isProcessing}
                   className="w-full"
                   size="lg"
@@ -3544,6 +3847,14 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                                   {streamingContent[step.id].split('\n').slice(-6).join('\n')}
                                 </div>
                               </div>
+                            </div>
+                          )}
+                          
+                          {/* Debug streaming window state */}
+                          {step.status === "in_progress" && (
+                            <div className="ml-8 text-xs text-gray-500">
+                              Debug: stepStreamingWindows[{step.id}] = {stepStreamingWindows[step.id] ? 'true' : 'false'}, 
+                              streamingContent[{step.id}] = {streamingContent[step.id] ? `"${streamingContent[step.id].substring(0, 50)}..."` : 'undefined'}
                             </div>
                           )}
                           
