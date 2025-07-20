@@ -5,7 +5,7 @@ import { ServerPromptService } from "@/lib/prompt-service-server"
 import { createClient } from '@supabase/supabase-js'
 import { anonymousProjectService } from '@/lib/anonymous-project-service'
 
-export const maxDuration = 30
+export const maxDuration = 60
 
 interface PreviewDiagramsRequest {
   input: string
