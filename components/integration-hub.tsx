@@ -214,6 +214,21 @@ export function IntegrationHub() {
       localStorage.removeItem('integrationConfigs')
     }
     
+    // SECURITY FIX: Clear any existing global GitHub cookies to ensure user isolation
+    const clearGlobalGitHubCookies = async () => {
+      try {
+        await fetch('/api/auth/github/clear-cookies', {
+          method: 'POST',
+          credentials: 'include'
+        })
+        console.log('🧹 Cleared any existing global GitHub cookies for user isolation')
+      } catch (error) {
+        console.warn('Could not clear GitHub cookies:', error)
+      }
+    }
+    
+    clearGlobalGitHubCookies()
+    
     // Load all configurations from secure database APIs
     loadGitHubConfigFromDatabase()
     loadClaudeConfigFromDatabase()
@@ -828,14 +843,24 @@ export function IntegrationHub() {
           updateIntegrationSetting('github-projects', 'ownerId', userData.login)
           updateIntegrationSetting('github-projects', 'connected', true)
           
-          // Store token securely (in httpOnly cookie via backend)
-          await fetch('/api/auth/github/store-token', {
+          // Clear any existing global GitHub cookies to ensure user isolation
+          if (typeof window !== 'undefined') {
+            document.cookie = 'github_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+            console.log('🧹 Cleared any existing global GitHub cookies for user isolation')
+          }
+          
+          // Store token securely in database (user-specific)
+          const storeResponse = await fetch('/api/auth/github/store-token', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({ access_token: data.access_token }),
           })
+          
+          if (!storeResponse.ok) {
+            throw new Error('Failed to store GitHub token')
+          }
 
           // Save configuration to database
           await fetch('/api/auth/github/config', {

@@ -1,5 +1,4 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { GitHubProjectsService } from '@/lib/github-projects-service'
 import { SDLCGitHubProjectsMapping } from '@/lib/github-projects-sdlc-mapping'
@@ -18,11 +17,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
 
-    // Get GitHub token from cookie
-    const cookieStore = await cookies()
-    const githubToken = cookieStore.get('github_token')
+    // Get user's GitHub integration from database
+    const { data: gitHubConfig, error: configError } = await supabase
+      .from('sdlc_github_integrations')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
     
-    if (!githubToken) {
+    if (configError || !gitHubConfig || !gitHubConfig.access_token_hash) {
       return NextResponse.json({ 
         error: 'GitHub not connected. Please connect your GitHub account first.',
         connected: false 
@@ -31,8 +36,8 @@ export async function POST(req: NextRequest) {
 
     const { action, ...params } = await req.json()
 
-    // Initialize GitHub Projects service
-    const githubService = new GitHubProjectsService(githubToken.value)
+    // Initialize GitHub Projects service with user's token
+    const githubService = new GitHubProjectsService(gitHubConfig.access_token_hash)
     const mappingService = new SDLCGitHubProjectsMapping(githubService)
 
     switch (action) {
@@ -103,11 +108,17 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
 
-    // Get GitHub token from cookie
-    const cookieStore = await cookies()
-    const githubToken = cookieStore.get('github_token')
+    // Get user's GitHub integration from database
+    const { data: gitHubConfig, error: configError } = await supabase
+      .from('sdlc_github_integrations')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
     
-    if (!githubToken) {
+    if (configError || !gitHubConfig || !gitHubConfig.access_token_hash) {
       return NextResponse.json({ 
         error: 'GitHub not connected. Please connect your GitHub account first.',
         connected: false 
@@ -117,8 +128,8 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const action = searchParams.get('action')
 
-    // Initialize GitHub Projects service
-    const githubService = new GitHubProjectsService(githubToken.value)
+    // Initialize GitHub Projects service with user's token
+    const githubService = new GitHubProjectsService(gitHubConfig.access_token_hash)
 
     switch (action) {
       case 'status':
@@ -131,7 +142,7 @@ export async function GET(req: NextRequest) {
         return await handleGetUserOrganizations(githubService)
       
       case 'repositories':
-        return await handleGetUserRepositories(githubService, searchParams, githubToken.value)
+        return await handleGetUserRepositories(githubService, searchParams, gitHubConfig.access_token_hash)
       
       default:
         return NextResponse.json({ error: 'Unknown action' }, { status: 400 })

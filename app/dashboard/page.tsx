@@ -602,13 +602,31 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
     if (user?.id) {
     
     try {
+      console.log('🔍 Fetching projects for user:', user.id, user.email)
+      
       // Fetch SDLC projects from sdlc_projects table
       const sdlcProjects = await dbService.getProjectsByUser(user.id)
       console.log('🔍 Raw SDLC projects from database:', sdlcProjects.length, sdlcProjects)
       
-      // Fetch project generations from project_generations table
+      // Fetch project generations from project_generations table with explicit user filtering
       const projectGenerations = await dbService.getProjectGenerations(user.id, 100, 0)
       console.log('🔍 Raw project generations from database:', projectGenerations.length, projectGenerations)
+      
+      // Additional safety check: filter out any projects that don't belong to current user
+      const filteredProjectGenerations = projectGenerations.filter(gen => {
+        const belongsToUser = gen.user_id === user.id
+        if (!belongsToUser) {
+          console.warn('⚠️ Found project generation not belonging to current user:', {
+            generationId: gen.id,
+            generationUserId: gen.user_id,
+            currentUserId: user.id,
+            generationType: gen.generation_type
+          })
+        }
+        return belongsToUser
+      })
+      
+      console.log('🔍 Filtered project generations (user-specific):', filteredProjectGenerations.length)
       
       // Convert database projects to ProjectResult format
       
@@ -635,27 +653,25 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
           // Handle multiple comprehensive_sdlc documents (enhanced generation pattern)
           const comprehensiveDocs = documents.filter(d => d.document_type === 'comprehensive_sdlc')
           
-          // Initialize content variables
+          // Initialize content variables - use individual documents directly
           let businessContent = businessDoc?.content || ''
           let functionalContent = functionalDoc?.content || ''
           let technicalContent = technicalDoc?.content || ''
           let uxContent = uxDoc?.content || ''
           let mermaidContent = mermaidDoc?.content || ''
           
-          // If we have a comprehensive document, parse it to extract individual documents
-          if (comprehensiveDoc?.content) {
+          // Only parse comprehensive documents if individual documents don't exist
+          if (comprehensiveDoc?.content && !businessContent && !functionalContent && !technicalContent && !uxContent) {
             try {
               const parsedComprehensive = JSON.parse(comprehensiveDoc.content)
               console.log('🔍 Parsing comprehensive document for individual content extraction')
               
               if (typeof parsedComprehensive === 'object' && parsedComprehensive !== null) {
-                // Extract individual documents from the comprehensive JSON
+                // Extract individual documents from the comprehensive JSON only if individual docs don't exist
                 businessContent = parsedComprehensive.businessAnalysis || businessContent
                 functionalContent = parsedComprehensive.functionalSpec || functionalContent
                 technicalContent = parsedComprehensive.technicalSpec || technicalContent
                 uxContent = parsedComprehensive.uxSpec || uxContent
-                
-                // Extract architecture content from mermaidDiagrams
                 mermaidContent = parsedComprehensive.mermaidDiagrams || mermaidContent
                 
                 console.log('📋 Extracted individual documents from comprehensive:', {
@@ -715,11 +731,8 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
             }
           }
           
-          // Parse content from individual documents if they exist
-          businessContent = parseContent(businessContent, 'businessAnalysis')
-          functionalContent = parseContent(functionalContent, 'functionalSpec')
-          technicalContent = parseContent(technicalContent, 'technicalSpec')
-          uxContent = parseContent(uxContent, 'uxSpec')
+          // Individual documents are now stored as plain markdown, no JSON parsing needed
+          // businessContent, functionalContent, technicalContent, uxContent are already set from individual docs
           
           // If we have multiple comprehensive_sdlc documents, try to match content by keywords
           if (comprehensiveDocs.length > 1) {
@@ -787,9 +800,9 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
             functionalSpec: functionalContent || (hasIndividualContent ? '' : fallbackContent),
             technicalSpec: technicalContent || (hasIndividualContent ? '' : fallbackContent),
             uxSpec: uxContent || (hasIndividualContent ? '' : fallbackContent),
-            architecture: mermaidContent || parseContent(architectureDoc?.content || '', 'architecture') || parseContent(mermaidDoc?.content || '', 'mermaidDiagrams') || (hasIndividualContent ? '' : fallbackContent),
-            comprehensive: parseContent(comprehensiveDoc?.content || '', 'comprehensive') || (hasIndividualContent ? '' : fallbackContent),
-            mermaidDiagrams: mermaidContent || parseContent(mermaidDoc?.content || '', 'mermaidDiagrams') || parseContent(architectureDoc?.content || '', 'architecture') || ''
+            architecture: mermaidContent || architectureDoc?.content || mermaidDoc?.content || (hasIndividualContent ? '' : fallbackContent),
+            comprehensive: comprehensiveDoc?.content || (hasIndividualContent ? '' : fallbackContent),
+            mermaidDiagrams: mermaidContent || mermaidDoc?.content || architectureDoc?.content || ''
           }
           
           console.log('📋 Content summary for project', project.id, ':', {
@@ -929,24 +942,34 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         if (user?.id) {
           const supabase = createClient()
           
-          const userConfig = await dbService.getEnhancedUserConfiguration(user.id)
-          if (userConfig) {
-            setConfig(prev => ({
-              ...prev,
-              openaiKey: userConfig.openai_api_key || '',
-              jiraUrl: userConfig.jira_base_url || '',
-              jiraEmail: userConfig.jira_email || '',
-              jiraToken: userConfig.jira_api_token || '',
-              confluenceUrl: userConfig.confluence_base_url || '',
-              confluenceEmail: userConfig.confluence_email || '',
-              confluenceToken: userConfig.confluence_api_token || '',
-            }))
+          try {
+            const userConfig = await dbService.getEnhancedUserConfiguration(user.id)
+            if (userConfig) {
+              setConfig(prev => ({
+                ...prev,
+                openaiKey: userConfig.openai_api_key || '',
+                jiraUrl: userConfig.jira_base_url || '',
+                jiraEmail: userConfig.jira_email || '',
+                jiraToken: userConfig.jira_api_token || '',
+                confluenceUrl: userConfig.confluence_base_url || '',
+                confluenceEmail: userConfig.confluence_email || '',
+                confluenceToken: userConfig.confluence_api_token || '',
+              }))
+            }
+          } catch (configError) {
+            console.warn('Could not load user configuration (this is normal for new users):', configError)
+            // Continue without user config - user can set it up later
           }
         }
         
         // Load recent projects (both authenticated and anonymous)
-        const projects = await getCachedProjects()
-        setRecentProjects(projects)
+        try {
+          const projects = await getCachedProjects()
+          setRecentProjects(projects)
+        } catch (projectsError) {
+          console.warn('Could not load recent projects:', projectsError)
+          setRecentProjects([])
+        }
       } catch (error) {
         console.error('Error loading user data:', error)
       }
@@ -1696,7 +1719,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         updateStepProgress("analysis", 100, "completed")
         
         // 💾 Save individual document to preserve progress
-        await saveIndividualDocument(input, "business_analysis", businessAnalysisContent)
+        await saveIndividualDocument(input, "business", businessAnalysisContent)
         
         // ✨ NEW: Smooth transition delay between steps
         await new Promise(resolve => setTimeout(resolve, 500))
@@ -1756,7 +1779,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         updateStepProgress("functional", 100, "completed")
         
         // 💾 Save individual document to preserve progress
-        await saveIndividualDocument(input, "functional_spec", functionalSpecContent)
+        await saveIndividualDocument(input, "functional", functionalSpecContent)
         
         // ✨ NEW: Smooth transition delay between steps
         await new Promise(resolve => setTimeout(resolve, 500))
@@ -1809,7 +1832,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         updateStepProgress("technical", 100, "completed")
         
         // 💾 Save individual document to preserve progress
-        await saveIndividualDocument(input, "technical_spec", technicalSpecContent)
+        await saveIndividualDocument(input, "technical", technicalSpecContent)
         
         // ✨ NEW: Smooth transition delay between steps
         await new Promise(resolve => setTimeout(resolve, 500))
@@ -1863,7 +1886,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         updateStepProgress("ux", 100, "completed")
         
         // 💾 Save individual document to preserve progress
-        await saveIndividualDocument(input, "ux_spec", uxContent)
+        await saveIndividualDocument(input, "ux", uxContent)
         
         // ✨ NEW: Smooth transition delay between steps
         await new Promise(resolve => setTimeout(resolve, 500))
@@ -2442,9 +2465,15 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
     try {
       const projectName = extractProjectName(inputKey)
       
-      // Create project first (without documents)
+      // Find the first available document content to use as initial project content
+      const firstAvailableContent = Object.values(data).find(content => 
+        content && typeof content === 'string' && content.trim()
+      ) || `# ${projectName}\n\nProject created for: ${inputKey}\n\nGenerated on: ${new Date().toISOString()}`
+      
+      // Create project with initial content
       const projectRequestBody = {
         title: projectName,
+        content: firstAvailableContent,
         userId: user?.id,
         metadata: {
           input: inputKey,
@@ -2506,6 +2535,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
               body: JSON.stringify({
                 projectId: currentProjectIdRef.current,
                 documentType: documentType,
+                title: `${projectName} - ${documentType.charAt(0).toUpperCase() + documentType.slice(1)} Document`,
                 content: content,
                 userId: user?.id
               })
@@ -2551,6 +2581,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
           body: JSON.stringify({
             projectId: currentProjectIdRef.current,
             documentType: dbDocumentType,
+            title: `${projectName} - ${documentType.charAt(0).toUpperCase() + documentType.slice(1)} Document`,
             content: content,
             userId: user?.id
           })
@@ -2565,6 +2596,8 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         // Create new project first, then save the document
         const projectRequestBody = {
           title: projectName,
+          content: content, // Include the document content
+          documentType: dbDocumentType, // Include the document type
           userId: user?.id,
           metadata: {
             input: inputKey,
@@ -2588,25 +2621,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         
         if (projectResult.success && projectResult.document?.id) {
           currentProjectIdRef.current = projectResult.document.id
-          console.log('✅ Project created:', projectResult.document.id)
-          
-          // Now save the individual document
-          const documentResponse = await fetch('/api/sdlc-documents', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              projectId: currentProjectIdRef.current,
-              documentType: dbDocumentType,
-              content: content,
-              userId: user?.id
-            })
-          })
-          
-          if (!documentResponse.ok) {
-            throw new Error(`Failed to save ${documentType} document`)
-          }
-          
-          console.log(`✅ ${documentType} document saved to new project`)
+          console.log('✅ Project created with document:', projectResult.document.id)
         }
       }
     } catch (error) {

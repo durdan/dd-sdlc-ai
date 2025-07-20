@@ -34,6 +34,8 @@ export class DatabaseService {
   }
 
   async getProjectsByUser(userId: string): Promise<SDLCProject[]> {
+    console.log('🔍 DatabaseService: Fetching SDLC projects for user:', userId)
+    
     const { data, error } = await this.supabase
       .from('sdlc_projects')
       .select('*')
@@ -44,7 +46,29 @@ export class DatabaseService {
       console.error('Error fetching projects:', error)
       return []
     }
-    return data || []
+    
+    const results = data || []
+    console.log('🔍 DatabaseService: Found', results.length, 'SDLC projects for user', userId)
+    
+    // Additional safety check: verify all results belong to the user
+    const verifiedResults = results.filter(project => {
+      const belongsToUser = project.user_id === userId
+      if (!belongsToUser) {
+        console.error('🚨 CRITICAL: Found SDLC project with wrong user_id:', {
+          projectId: project.id,
+          projectUserId: project.user_id,
+          expectedUserId: userId,
+          projectTitle: project.title
+        })
+      }
+      return belongsToUser
+    })
+    
+    if (verifiedResults.length !== results.length) {
+      console.warn('⚠️ Filtered out', results.length - verifiedResults.length, 'SDLC projects with wrong user_id')
+    }
+    
+    return verifiedResults
   }
 
   async getProjectById(projectId: string): Promise<SDLCProject | null> {
@@ -340,6 +364,8 @@ export class DatabaseService {
     limit: number = 100,
     offset: number = 0
   ): Promise<any[]> {
+    console.log('🔍 DatabaseService: Fetching project generations for user:', userId)
+    
     const { data, error } = await this.supabase
       .from('project_generations')
       .select('*')
@@ -351,7 +377,29 @@ export class DatabaseService {
       console.error('Error fetching project generations:', error)
       return []
     }
-    return data || []
+    
+    const results = data || []
+    console.log('🔍 DatabaseService: Found', results.length, 'project generations for user', userId)
+    
+    // Additional safety check: verify all results belong to the user
+    const verifiedResults = results.filter(gen => {
+      const belongsToUser = gen.user_id === userId
+      if (!belongsToUser) {
+        console.error('🚨 CRITICAL: Found project generation with wrong user_id:', {
+          generationId: gen.id,
+          generationUserId: gen.user_id,
+          expectedUserId: userId,
+          generationType: gen.generation_type
+        })
+      }
+      return belongsToUser
+    })
+    
+    if (verifiedResults.length !== results.length) {
+      console.warn('⚠️ Filtered out', results.length - verifiedResults.length, 'project generations with wrong user_id')
+    }
+    
+    return verifiedResults
   }
 
   // Utility methods for complex operations

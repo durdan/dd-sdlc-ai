@@ -91,6 +91,23 @@ export const POST = (request: NextRequest) => withClaudeFreemium(
       console.log('🔑 Using system key:', freemiumResult.useSystemKey)
       console.log('📝 Request params:', JSON.stringify(body, null, 2))
 
+      // SECURITY CHECK: Prevent SDLC document creation from using Claude API
+      if (body.action === 'create_sdlc_document' || 
+          body.action === 'generate_sdlc' || 
+          body.action === 'generate_document' ||
+          body.documentType === 'business' ||
+          body.documentType === 'functional' ||
+          body.documentType === 'technical' ||
+          body.documentType === 'ux' ||
+          body.documentType === 'mermaid') {
+        console.error('🚨 BLOCKED: SDLC document creation attempt via Claude API')
+        console.error('🚨 This should use /api/generate-document or /api/sdlc-documents instead')
+        return NextResponse.json({
+          error: 'SDLC document creation should use the dedicated SDLC endpoints, not the Claude API',
+          suggestion: 'Use /api/generate-document or /api/sdlc-documents for SDLC document creation'
+        }, { status: 400 })
+      }
+
       const { action, ...params } = body
       
       // Use the Claude service from freemium middleware

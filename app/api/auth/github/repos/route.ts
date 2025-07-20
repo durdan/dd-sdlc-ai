@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 
 export async function GET(request: NextRequest) {
@@ -12,11 +11,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
 
-    // Get GitHub token from httpOnly cookie (user-specific)
-    const cookieStore = await cookies()
-    const githubToken = cookieStore.get('github_token')
+    // Get user's GitHub integration from database
+    const { data: gitHubConfig, error: configError } = await supabase
+      .from('sdlc_github_integrations')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
 
-    if (!githubToken) {
+    if (configError || !gitHubConfig || !gitHubConfig.access_token_hash) {
       return NextResponse.json({ 
         error: 'GitHub not connected. Please connect your GitHub account first.',
         connected: false 
@@ -38,7 +43,7 @@ export async function GET(request: NextRequest) {
       `page=${page}&per_page=${perPage}&sort=${sort}&affiliation=${affiliation}&visibility=${visibility}`,
       {
       headers: {
-          Authorization: `Bearer ${githubToken.value}`,
+          Authorization: `Bearer ${gitHubConfig.access_token_hash}`,
           'User-Agent': 'SDLC-AI-Platform',
         'Accept': 'application/vnd.github.v3+json',
         },
@@ -46,71 +51,75 @@ export async function GET(request: NextRequest) {
     )
 
     if (!reposResponse.ok) {
-      const errorData = await reposResponse.json().catch(() => ({}))
+      console.error('GitHub API error:', reposResponse.status, reposResponse.statusText)
       return NextResponse.json({ 
         error: 'Failed to fetch repositories from GitHub',
-        details: errorData.message || 'GitHub API error',
-        connected: false
+        connected: false 
       }, { status: reposResponse.status })
     }
 
     const reposData = await reposResponse.json()
     
-    // Process and filter repositories
-    const repositories = reposData
-      .filter((repo: any) => !repo.fork || searchParams.get('include_forks') === 'true')
-      .map((repo: any) => ({
-        id: repo.id,
-        name: repo.name,
-        fullName: repo.full_name,
-        private: repo.private,
-        description: repo.description,
-        language: repo.language,
-        url: repo.html_url,
-        cloneUrl: repo.clone_url,
-        sshUrl: repo.ssh_url,
-        defaultBranch: repo.default_branch,
-        createdAt: repo.created_at,
-        updatedAt: repo.updated_at,
-        pushedAt: repo.pushed_at,
-        size: repo.size,
-        stargazersCount: repo.stargazers_count,
-        watchersCount: repo.watchers_count,
-        forksCount: repo.forks_count,
-        openIssuesCount: repo.open_issues_count,
-        hasIssues: repo.has_issues,
-        hasProjects: repo.has_projects,
-        hasWiki: repo.has_wiki,
-        hasPages: repo.has_pages,
-        archived: repo.archived,
-        disabled: repo.disabled,
-        permissions: repo.permissions,
-        topics: repo.topics || [],
-        visibility: repo.visibility
-      }))
+    // Transform repositories to consistent format
+    const repositories = reposData.map((repo: any) => ({
+      id: repo.id,
+      name: repo.name,
+      fullName: repo.full_name,
+      full_name: repo.full_name,
+      private: repo.private,
+      description: repo.description,
+      language: repo.language,
+      url: repo.html_url,
+      html_url: repo.html_url,
+      updated_at: repo.updated_at,
+      permissions: repo.permissions,
+      owner: {
+        login: repo.owner.login,
+        type: repo.owner.type,
+        avatar_url: repo.owner.avatar_url
+      }
+    }))
 
-    // Get Link header for pagination info
+    // Extract pagination info from headers
     const linkHeader = reposResponse.headers.get('Link')
-    const pagination = parseLinkHeader(linkHeader)
+    const pagination = {
+      page,
+      perPage,
+      hasNext: false,
+      hasPrev: false,
+      nextPage: null,
+      prevPage: null
+    }
+
+    if (linkHeader) {
+      const links = linkHeader.split(',').map(link => {
+        const [url, rel] = link.split(';')
+        const pageMatch = url.match(/[?&]page=(\d+)/)
+        const pageNum = pageMatch ? parseInt(pageMatch[1]) : null
+        const relType = rel.includes('next') ? 'next' : rel.includes('prev') ? 'prev' : null
+        return { rel: relType, page: pageNum }
+      })
+
+      links.forEach(link => {
+        if (link.rel === 'next') {
+          pagination.hasNext = true
+          pagination.nextPage = link.page
+        } else if (link.rel === 'prev') {
+          pagination.hasPrev = true
+          pagination.prevPage = link.page
+        }
+      })
+    }
 
     // Update user's GitHub integration record with fresh repository data
     try {
       const { error: dbError } = await supabase
         .from('sdlc_github_integrations')
-        .upsert({
-          user_id: user.id,
-          repository_url: `https://github.com/repos`, // General endpoint
-          repository_id: 'user_repos', // Identifier for user repos
-          permissions: {
-            "issues": "write",
-            "pull_requests": "write",
-            "contents": "write"
-          },
-          is_active: true,
+        .update({
+          repositories: repositories,
           last_sync: new Date().toISOString()
-        }, {
-          onConflict: 'user_id,repository_id'
         })
+        .eq('id', gitHubConfig.id)
 
       if (dbError) {
         console.error('Error updating GitHub integration:', dbError)
@@ -143,30 +152,4 @@ export async function GET(request: NextRequest) {
       connected: false 
     }, { status: 500 })
   }
-}
-
-// Helper function to parse GitHub's Link header for pagination
-function parseLinkHeader(linkHeader: string | null): any {
-  if (!linkHeader) return {}
-  
-  const links: any = {}
-  const parts = linkHeader.split(',')
-  
-  parts.forEach(part => {
-    const section = part.split(';')
-    if (section.length !== 2) return
-    
-    const url = section[0].replace(/<(.*)>/, '$1').trim()
-    const name = section[1].replace(/rel="(.*)"/, '$1').trim()
-    
-    const urlObj = new URL(url)
-    const page = urlObj.searchParams.get('page')
-    
-    links[name] = {
-      url,
-      page: page ? parseInt(page) : null
-    }
-  })
-  
-  return links
 } 
