@@ -23,6 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Input } from '@/components/ui/input'
 
 interface EarlyAccessOptInProps {
   user: any
@@ -38,6 +39,7 @@ export default function EarlyAccessOptIn({ user, onSuccess, showFullFeatures = t
   const [enrollmentStatus, setEnrollmentStatus] = useState<string | null>(null)
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [error, setError] = useState('')
+  const [email, setEmail] = useState('')
 
   // Check if user is already enrolled or on waitlist
   useEffect(() => {
@@ -77,13 +79,20 @@ export default function EarlyAccessOptIn({ user, onSuccess, showFullFeatures = t
     setIsOptingIn(true)
     setError('')
 
+    // Basic email validation if not logged in
+    if (!user && (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))) {
+      setError('Please enter a valid email address')
+      setIsOptingIn(false)
+      return
+    }
+
     try {
       const response = await fetch('/api/early-access/waitlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userEmail: user.email,
-          userName: user.user_metadata?.full_name || user.email?.split('@')[0],
+          userEmail: user?.email || email,
+          userName: user?.user_metadata?.full_name || (user?.email || email)?.split('@')[0] || 'Anonymous',
           useCase: 'One-click early access opt-in from landing page',
           priority: 'medium'
         })
@@ -179,10 +188,25 @@ export default function EarlyAccessOptIn({ user, onSuccess, showFullFeatures = t
               </div>
             </div>
           )}
-          
+
+          {/* Email input for anonymous users */}
+          {!user && (
+            <div>
+              <label htmlFor="early-access-email" className="block text-xs font-medium text-gray-700 mb-1">Email address</label>
+              <Input
+                id="early-access-email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
+                className="mb-2"
+              />
+            </div>
+          )}
           <Button 
             onClick={handleOptIn}
-            disabled={isOptingIn}
+            disabled={isOptingIn || (!user && !email)}
             className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
             size="lg"
           >
@@ -198,13 +222,11 @@ export default function EarlyAccessOptIn({ user, onSuccess, showFullFeatures = t
               </>
             )}
           </Button>
-          
           {error && (
             <div className="text-red-600 text-sm text-center">
               {error}
             </div>
           )}
-          
           <div className="text-center text-xs text-gray-500">
             One-click signup • Already logged in • Free forever
           </div>

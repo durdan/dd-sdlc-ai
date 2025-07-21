@@ -224,19 +224,22 @@ export default function ModernLandingPage() {
                   className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0"
                   onClick={() => window.location.href = '/dashboard'}
                 >
-                  Dashboard
+                  <span className="hidden sm:inline">Dashboard</span>
+                  <span className="sm:hidden">Dashboard</span>
                 </Button>
               ) : (
                 <>
                   <Button variant="ghost" size="sm" className="text-gray-400 hover:text-blue-400" onClick={() => window.location.href = '/signin'}>
-                    Sign In
+                    <span className="hidden sm:inline">Sign In</span>
+                    <span className="sm:hidden">Sign In</span>
                   </Button>
                   <Button
                     size="sm"
                     className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0"
                     onClick={() => setShowEarlyAccessDialog(true)}
                   >
-                    Get Early Access
+                    <span className="hidden sm:inline">Get Early Access</span>
+                    <span className="sm:hidden">Start</span>
                   </Button>
                 </>
               )}
@@ -245,6 +248,179 @@ export default function ModernLandingPage() {
         </header>
 
         <main className="flex-1">
+          {/* Mobile-Optimized Hero Section */}
+          <section className="block lg:hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8">
+              {/* Mobile Hero Section - Left Side */}
+              <div className="flex-1 w-full text-center md:text-left space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-center md:justify-start space-x-2">
+                    <Badge className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 text-blue-400 border-blue-500/20">
+                      <Sparkles className="mr-1 h-3 w-3" />
+                      AI-Powered
+                    </Badge>
+                    <Badge className="bg-green-500/10 text-green-400 border-green-500/20 text-xs">
+                      <div className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse" />
+                      Live
+                    </Badge>
+                  </div>
+                  
+                  <div className="flex items-center justify-center md:justify-start">
+                    <p className="text-xs text-gray-500">
+                      Open source on{' '}
+                      <Link href="https://github.com/durdan/dd-sdlc-ai" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline">
+                        GitHub
+                      </Link>
+                    </p>
+                  </div>
+                  
+                  <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+                    <span className="bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
+                      Prompt to
+                    </span>
+                    <br />
+                    <span className="bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+                      Spec Coding
+                    </span>
+                  </h1>
+                  
+                  <p className="text-sm text-gray-400 max-w-sm mx-auto md:mx-0 leading-relaxed">
+                    Transform single prompts into structured specifications, technical designs, and implementation plans.
+                  </p>
+                  
+                  {/* Mobile Tagline */}
+                  <div className="flex items-center justify-center md:justify-start space-x-2 text-base font-semibold">
+                    <span className="text-blue-400">Vibe</span>
+                    <ArrowRight className="h-4 w-4 text-gray-400" />
+                    <span className="text-purple-400">Spec</span>
+                    <span className="text-white">Coding</span>
+                    <Rocket className="inline-block h-4 w-4 text-pink-400 ml-1" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Mobile Chat Section - Right Side */}
+              <div className="flex-1 w-full max-w-sm mx-auto md:mx-0">
+                <div className="relative">
+                  <Card className="relative bg-gradient-to-br from-blue-900 via-purple-900 to-black border-2 border-blue-500 shadow-xl shadow-blue-700/60 backdrop-blur-lg rounded-xl transition-all duration-300 ring-2 ring-blue-400/40">
+                    <CardContent className="p-4 md:p-6">
+                      {/* Chat Header */}
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                            <Brain className="h-4 w-4 text-white" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-white text-sm">Try AI Assistant</h3>
+                            <p className="text-xs text-gray-400">Ready to help</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                          <span className="text-green-400 text-xs">Online</span>
+                        </div>
+                      </div>
+                      
+                      {/* Chat Input */}
+                      <div className="relative mb-4">
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Search className="h-3 w-3 text-gray-400" />
+                            <span className="text-xs text-gray-400">Describe your project:</span>
+                          </div>
+                          <Textarea
+                            placeholder="Example: Build a user authentication system with social login..."
+                            value={chatInput}
+                            onChange={(e) => setChatInput(e.target.value)}
+                            className="min-h-[80px] bg-gray-800 border-gray-700 text-white placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500 rounded-lg shadow-inner text-sm"
+                          />
+                          <Button
+                            onClick={handleGenerate}
+                            disabled={!chatInput.trim()}
+                            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium py-2 text-sm shadow-lg shadow-blue-900/30"
+                            size="sm"
+                          >
+                            <Sparkles className="w-4 h-4 mr-2" />
+                            Generate Specs
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      {/* Error Display */}
+                      {error && (
+                        <div className="mb-4">
+                          <Alert className="bg-red-900/20 border-red-800/30 text-red-300 text-xs">
+                            <AlertCircle className="h-3 w-3" />
+                            <AlertDescription>{error}</AlertDescription>
+                          </Alert>
+                        </div>
+                      )}
+                      
+                      {/* Suggested Prompts - Mobile Optimized */}
+                      <div className="space-y-2">
+                        <p className="text-xs text-gray-400 mb-3">Try these examples:</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            onClick={() => setChatInput("Generate specs for a chat app")}
+                            className="text-left p-3 bg-gray-800/50 rounded-lg border border-gray-700 hover:border-blue-500/50 transition-colors group"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <FileText className="h-4 w-4 text-blue-400" />
+                              <div>
+                                <p className="text-white font-medium text-xs group-hover:text-blue-400 transition-colors">
+                                  Chat app specs
+                                </p>
+                              </div>
+                            </div>
+                          </button>
+                          <button
+                            onClick={() => setChatInput("Architecture for e-commerce platform")}
+                            className="text-left p-3 bg-gray-800/50 rounded-lg border border-gray-700 hover:border-green-500/50 transition-colors group"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <GitBranch className="h-4 w-4 text-green-400" />
+                              <div>
+                                <p className="text-white font-medium text-xs group-hover:text-green-400 transition-colors">
+                                  E-commerce
+                                </p>
+                              </div>
+                            </div>
+                          </button>
+                          <button
+                            onClick={() => setChatInput("Design a task management system")}
+                            className="text-left p-3 bg-gray-800/50 rounded-lg border border-gray-700 hover:border-purple-500/50 transition-colors group"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <Workflow className="h-4 w-4 text-purple-400" />
+                              <div>
+                                <p className="text-white font-medium text-xs group-hover:text-purple-400 transition-colors">
+                                  Task system
+                                </p>
+                              </div>
+                            </div>
+                          </button>
+                          <button
+                            onClick={() => setChatInput("Review code for improvements")}
+                            className="text-left p-3 bg-gray-800/50 rounded-lg border border-gray-700 hover:border-orange-500/50 transition-colors group"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <Bot className="h-4 w-4 text-orange-400" />
+                              <div>
+                                <p className="text-white font-medium text-xs group-hover:text-orange-400 transition-colors">
+                                  Code review
+                                </p>
+                              </div>
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </div>
+          </section>
+
           {/* Free Trial Banner */}
           {/* <section className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 border-b border-gray-800">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
@@ -274,7 +450,7 @@ export default function ModernLandingPage() {
           </section> */}
 
           {/* Hero + Chat Section Side by Side */}
-          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-4">
+          <section className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-4">
             <div className="mx-auto max-w-7xl">
               <div className="flex flex-col lg:flex-row items-center lg:items-start gap-12 lg:gap-20">
                 {/* Hero Section */}
@@ -508,6 +684,52 @@ export default function ModernLandingPage() {
          
          
 
+          {/* Mobile Core Features */}
+          <section className="block lg:hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div className="space-y-8">
+              <div className="text-center">
+                <h2 className="text-2xl font-bold text-white mb-4">
+                  Core Innovation
+                </h2>
+                <p className="text-gray-300 text-sm leading-relaxed">
+                  SDLC two-tier architecture: specifications that provide structured development guidance and hooks that automate quality assurance tasks.
+                </p>
+              </div>
+
+              <div className="space-y-6">
+                <div className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 border border-blue-500/30 rounded-xl p-6">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                      <Brain className="h-5 w-5 text-blue-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-white">Smart Spec Generation</h3>
+                      <p className="text-sm text-gray-400">From prompt to complete specs</p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-300">
+                    When developers input a prompt like "Add a review system for products," SDLC.DEV generates detailed user stories with acceptance criteria, technical design documents including data flow diagrams and API endpoints, and sequenced implementation tasks with testing requirements.
+                  </p>
+                </div>
+
+                <div className="bg-gradient-to-r from-purple-900/20 to-pink-900/20 border border-purple-500/30 rounded-xl p-6">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                      <Workflow className="h-5 w-5 text-purple-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-white">Automated Quality Assurance</h3>
+                      <p className="text-sm text-gray-400">Built-in testing & validation</p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-300">
+                    Comprehensive testing requirements and quality assurance hooks are automatically integrated into every specification, ensuring robust and reliable implementations.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
           {/* Live Demo Preview */}
           <section id="demo" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
             <div className="mx-auto max-w-7xl">
@@ -568,8 +790,45 @@ export default function ModernLandingPage() {
             </div>
           </section>
 
-          {/* Stats Section */}
-          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 border-y border-gray-800">
+          {/* Mobile Stats Section */}
+          <section className="block lg:hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 border-y border-gray-800">
+            <div className="space-y-8">
+              <div className="text-center">
+                <h2 className="text-2xl font-bold text-white mb-4">
+                  Why Choose SDLC.dev?
+                </h2>
+              </div>
+              <div className="grid grid-cols-2 gap-6">
+                <div className="text-center space-y-2">
+                  <div className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+                    10x
+                  </div>
+                  <p className="text-xs text-gray-400">Faster Development</p>
+                </div>
+                <div className="text-center space-y-2">
+                  <div className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
+                    5min
+                  </div>
+                  <p className="text-xs text-gray-400">Idea to Specs</p>
+                </div>
+                <div className="text-center space-y-2">
+                  <div className="text-3xl font-bold bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
+                    100%
+                  </div>
+                  <p className="text-xs text-gray-400">Autonomous</p>
+                </div>
+                <div className="text-center space-y-2">
+                  <div className="text-3xl font-bold bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
+                    24/7
+                  </div>
+                  <p className="text-xs text-gray-400">AI Available</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Desktop Stats Section */}
+          <section className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 border-y border-gray-800">
             <div className="mx-auto max-w-6xl">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
                 <div className="text-center space-y-2">
@@ -600,8 +859,84 @@ export default function ModernLandingPage() {
             </div>
           </section>
 
+          {/* Mobile AI Capabilities Section */}
+          <section id="features" className="block lg:hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div className="space-y-8">
+              <div className="text-center">
+                <h2 className="text-2xl font-bold text-white mb-4">
+                  What our AI Agent can do
+                </h2>
+                <p className="text-sm text-gray-400">
+                  A complete AI software engineer that handles every aspect of your development lifecycle
+                </p>
+              </div>
+
+              <div className="space-y-6">
+                <div className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 border border-blue-500/30 rounded-xl p-6">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                      <Brain className="h-5 w-5 text-blue-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-white">Intelligent Spec Generation</h3>
+                      <p className="text-sm text-gray-400">Natural language to technical specs</p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-300">
+                    Transforms natural language into comprehensive technical specifications with architecture patterns, database schemas, and API designs.
+                  </p>
+                </div>
+
+                <div className="bg-gradient-to-r from-purple-900/20 to-pink-900/20 border border-purple-500/30 rounded-xl p-6">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                      <Workflow className="h-5 w-5 text-purple-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-white">Autonomous Project Setup</h3>
+                      <p className="text-sm text-gray-400">Complete infrastructure creation</p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-300">
+                    Creates complete project infrastructure across GitHub, Jira, Confluence, and other tools with automated repository creation and sprint planning.
+                  </p>
+                </div>
+
+                <div className="bg-gradient-to-r from-green-900/20 to-blue-900/20 border border-green-500/30 rounded-xl p-6">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
+                      <GitBranch className="h-5 w-5 text-green-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-white">GitDigest Intelligence</h3>
+                      <p className="text-sm text-gray-400">Automated repository analysis</p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-300">
+                    Real-time repository monitoring with natural language progress reports and predictive issue detection.
+                  </p>
+                </div>
+
+                <div className="bg-gradient-to-r from-orange-900/20 to-red-900/20 border border-orange-500/30 rounded-xl p-6">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-10 h-10 bg-orange-500/20 rounded-lg flex items-center justify-center">
+                      <Bot className="h-5 w-5 text-orange-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-white">AI Code Assistant</h3>
+                      <p className="text-sm text-gray-400">Context-aware coding companion</p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-300">
+                    Smart code suggestions, autonomous bug detection & fixes, and performance optimization insights.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
           {/* AI Capabilities Section */}
-          <section id="features" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+          <section id="features" className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
             <div className="mx-auto max-w-6xl">
               <div className="text-center mb-16">
                 <h2 className="text-4xl font-bold mb-4">
@@ -792,8 +1127,50 @@ export default function ModernLandingPage() {
             </div>
           </section>
 
+          {/* Mobile Integrations Section */}
+          <section id="integrations" className="block lg:hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div className="space-y-8">
+              <div className="text-center">
+                <h2 className="text-2xl font-bold text-white mb-4">
+                  Native Integrations
+                </h2>
+                <p className="text-sm text-gray-400">
+                  Seamlessly connects with your existing development ecosystem
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  { icon: Github, name: "GitHub", color: "text-gray-400" },
+                  { icon: Users, name: "Jira", color: "text-blue-400" },
+                  { icon: FileText, name: "Confluence", color: "text-green-400" },
+                  { icon: MessageSquare, name: "Slack", color: "text-purple-400" },
+                  { icon: Database, name: "AWS", color: "text-orange-400" },
+                  { icon: Terminal, name: "Docker", color: "text-blue-400" },
+                  { icon: GitBranch, name: "GitLab", color: "text-orange-400" },
+                  { icon: Workflow, name: "Jenkins", color: "text-red-400" },
+                ].map((integration, index) => (
+                  <div
+                    key={index}
+                    className="bg-gray-900/50 border border-gray-800 rounded-lg p-4 text-center"
+                  >
+                    <integration.icon className={`h-8 w-8 mx-auto mb-2 ${integration.color}`} />
+                    <h3 className="font-semibold text-white text-sm">{integration.name}</h3>
+                  </div>
+                ))}
+              </div>
+
+              <div className="text-center">
+                <Badge className="bg-gray-800 text-gray-300 border-gray-700">
+                  <Puzzle className="mr-1 h-3 w-3" />
+                  8+ integrations
+                </Badge>
+              </div>
+            </div>
+          </section>
+
           {/* Integrations */}
-          <section id="integrations" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+          <section id="integrations" className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
             <div className="mx-auto max-w-6xl">
               <div className="text-center mb-16">
                 <h2 className="text-4xl font-bold mb-4">
@@ -837,8 +1214,88 @@ export default function ModernLandingPage() {
             </div>
           </section>
 
+          {/* Mobile Free Trial Section */}
+          <section className="block lg:hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-pink-900/20">
+            <div className="space-y-8">
+              <div className="text-center">
+                <Badge className="bg-green-500/10 text-green-400 border-green-500/20 mb-4">
+                  <CheckCircle className="mr-1 h-3 w-3" />
+                  No Credit Card Required
+                </Badge>
+                <h2 className="text-2xl font-bold text-white mb-4">
+                  Start Building with AI
+                  <br />
+                  <span className="bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
+                    Completely Free
+                  </span>
+                </h2>
+                <p className="text-sm text-gray-400">
+                  Experience the full power of AI-driven development. No commitments, no hidden costs.
+                </p>
+              </div>
+
+              <div className="space-y-6">
+                <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                        <Brain className="h-4 w-4 text-blue-400" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-white text-sm">AI Spec Generation</h4>
+                        <p className="text-xs text-gray-400">10 generations/month</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                        <Workflow className="h-4 w-4 text-purple-400" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-white text-sm">Project Setup</h4>
+                        <p className="text-xs text-gray-400">5 projects/month</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
+                        <GitBranch className="h-4 w-4 text-green-400" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-white text-sm">GitDigest Analysis</h4>
+                        <p className="text-xs text-gray-400">1 repository monitoring</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <Button
+                  size="lg"
+                  className="w-full h-14 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 text-lg font-medium"
+                  onClick={handleStartBuilding}
+                >
+                  <Brain className="mr-2 h-5 w-5" />
+                  Start Free Trial
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+
+                <div className="text-center space-y-2">
+                  <div className="flex items-center justify-center space-x-4 text-xs text-gray-400">
+                    <div className="flex items-center">
+                      <CheckCircle className="mr-1 h-3 w-3 text-green-400" />
+                      No Credit Card
+                    </div>
+                    <div className="flex items-center">
+                      <CheckCircle className="mr-1 h-3 w-3 text-green-400" />
+                      Instant Access
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500">Join 12,000+ developers already building with AI</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
           {/* Free Trial Section */}
-          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-pink-900/20">
+          <section className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-pink-900/20">
             <div className="mx-auto max-w-6xl">
               <div className="text-center mb-16">
                 <Badge className="bg-green-500/10 text-green-400 border-green-500/20 mb-4">
@@ -970,8 +1427,82 @@ export default function ModernLandingPage() {
             </div>
           </section>
 
+          {/* Mobile Early Access Section */}
+          <section className="block lg:hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 bg-gray-900/50">
+            <div className="space-y-8">
+              <div className="text-center">
+                <Badge className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 text-yellow-400 border-yellow-500/20 mb-4">
+                  <Sparkles className="mr-1 h-3 w-3" />
+                  Coming Soon • Advanced Features
+                </Badge>
+
+                <h2 className="text-2xl font-bold text-white mb-4">
+                  Get Early Access to
+                  <br />
+                  <span className="bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 bg-clip-text text-transparent">
+                    Advanced AI Features
+                  </span>
+                </h2>
+
+                <p className="text-sm text-gray-400">
+                  Be among the first to experience our most powerful AI capabilities. Limited early access available.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-lg flex items-center justify-center">
+                      <Brain className="h-4 w-4 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-white text-sm">Autonomous Coding</h3>
+                      <p className="text-xs text-gray-400">AI writes complete features end-to-end</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center">
+                      <Workflow className="h-4 w-4 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-white text-sm">Multi-Repo Management</h3>
+                      <p className="text-xs text-gray-400">Coordinate changes across multiple repositories</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-pink-600 rounded-lg flex items-center justify-center">
+                      <Zap className="h-4 w-4 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-white text-sm">Real-time Collaboration</h3>
+                      <p className="text-xs text-gray-400">AI pairs with your team in real-time</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <Button
+                  size="lg"
+                  className="w-full h-12 bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white border-0"
+                  onClick={() => setShowEarlyAccessDialog(true)}
+                >
+                  <Sparkles className="mr-2 h-5 w-5" />
+                  Join Early Access Waitlist
+                </Button>
+                <p className="text-xs text-gray-500 text-center">Priority access • Advanced features • Direct feedback channel</p>
+              </div>
+            </div>
+          </section>
+
           {/* Early Access Section */}
-          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 bg-gray-900/50">
+          <section className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 bg-gray-900/50">
             <div className="mx-auto max-w-4xl text-center">
               <Badge className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 text-yellow-400 border-yellow-500/20 mb-6">
                 <Sparkles className="mr-1 h-3 w-3" />
@@ -1086,7 +1617,7 @@ export default function ModernLandingPage() {
                   </div>
                 </div>
                 <p className="text-sm text-gray-400 text-center">
-                  We'll notify you as soon as advanced features are available. Expected: Q2 2024
+                  We'll notify you as soon as advanced features are available. Expected: Q3 2025
                 </p>
                 <div className="flex space-x-3">
                   <Button

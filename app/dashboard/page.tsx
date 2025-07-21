@@ -2743,8 +2743,8 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">SDLC Automation Platform</h1>
-            <p className="text-sm sm:text-base text-gray-600">Transform ideas into complete project documentation with AI</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Prompt to System Design</h1>
+            <p className="text-sm sm:text-base text-gray-600">Transform ideas into Specs with AI</p>
           </div>
           
           {/* <div className="flex items-center gap-4 text-sm text-muted-foreground">
