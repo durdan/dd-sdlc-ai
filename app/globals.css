@@ -47,6 +47,56 @@ body {
   }
 }
 
+/* UX Content Specific Styling */
+.ux-content {
+  /* Better handling of color definitions */
+  strong {
+    font-weight: 600;
+  }
+  
+  /* Tables for spacing and color definitions */
+  table {
+    @apply w-full my-4 border-collapse;
+  }
+  
+  table th {
+    @apply bg-gray-100 px-4 py-2 text-left font-semibold border border-gray-300;
+  }
+  
+  table td {
+    @apply px-4 py-2 border border-gray-300;
+  }
+  
+  /* Lists with better spacing */
+  ul, ol {
+    @apply my-4 space-y-2;
+  }
+  
+  li {
+    @apply leading-relaxed;
+  }
+  
+  /* Nested lists */
+  li ul, li ol {
+    @apply mt-2 ml-4;
+  }
+  
+  /* Code blocks for color codes */
+  code {
+    @apply bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono;
+  }
+  
+  /* Headers with better spacing */
+  h3 {
+    @apply mt-6 mb-3 font-semibold;
+  }
+  
+  /* Prevent box drawing characters from breaking layout */
+  pre {
+    @apply overflow-x-auto;
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

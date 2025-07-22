@@ -4,6 +4,8 @@ import { streamText } from 'ai'
 import { createServerPromptService } from '@/lib/prompt-service-server'
 import { DocumentType } from '@/lib/prompt-service'
 import { createClient } from '@/lib/supabase/server'
+import { getDocumentContextOptimizer } from '@/lib/document-context-optimizer'
+import { cleanupDocumentFormatting } from '@/lib/format-cleanup'
 
 interface GenerateDocumentRequest {
   input: string
@@ -14,6 +16,7 @@ interface GenerateDocumentRequest {
   customPrompt?: string
   userId?: string
   projectId?: string
+  useContextOptimization?: boolean
 }
 
 async function getAuthenticatedUser() {
@@ -41,22 +44,60 @@ async function generateWithDatabasePromptStreaming(
   technicalSpec: string | undefined,
   customPrompt: string | undefined,
   userId: string | undefined,
-  projectId: string | undefined
+  projectId: string | undefined,
+  useContextOptimization: boolean = true
 ) {
   const promptService = createServerPromptService()
   const startTime = Date.now()
   const openaiClient = createOpenAI({ apiKey: process.env.OPENAI_API_KEY || '' })
   
-  // Build optional context from available documents
+  // Initialize context optimizer
+  const contextOptimizer = getDocumentContextOptimizer({
+    enableSmartSummarization: useContextOptimization
+  })
+  
+  // Optimize context for non-business and non-mermaid document types
+  let optimizedContext = {
+    businessAnalysis,
+    functionalSpec,
+    technicalSpec
+  }
+  
+  if (useContextOptimization && documentType !== 'business' && documentType !== 'mermaid') {
+    console.log(`🧠 Optimizing context for ${documentType} generation (streaming)...`)
+    
+    // Send optimization status to client (we'll implement this UI update later)
+    optimizedContext = await contextOptimizer.optimizeContext(
+      documentType as 'functional' | 'technical' | 'ux',
+      {
+        businessAnalysis,
+        functionalSpec,
+        technicalSpec
+      }
+    )
+    
+    // Log optimization results
+    if (businessAnalysis && optimizedContext.businessAnalysis) {
+      console.log(`   📉 Business: ${businessAnalysis.length} → ${optimizedContext.businessAnalysis.length} chars`)
+    }
+    if (functionalSpec && optimizedContext.functionalSpec) {
+      console.log(`   📉 Functional: ${functionalSpec.length} → ${optimizedContext.functionalSpec.length} chars`)
+    }
+    if (technicalSpec && optimizedContext.technicalSpec) {
+      console.log(`   📉 Technical: ${technicalSpec.length} → ${optimizedContext.technicalSpec.length} chars`)
+    }
+  }
+  
+  // Build optional context from optimized documents
   const contextParts = []
-  if (businessAnalysis && businessAnalysis.trim()) {
-    contextParts.push(`Business Analysis: ${businessAnalysis}`)
+  if (optimizedContext.businessAnalysis && optimizedContext.businessAnalysis.trim()) {
+    contextParts.push(`Business Analysis: ${optimizedContext.businessAnalysis}`)
   }
-  if (functionalSpec && functionalSpec.trim()) {
-    contextParts.push(`Functional Specification: ${functionalSpec}`)
+  if (optimizedContext.functionalSpec && optimizedContext.functionalSpec.trim()) {
+    contextParts.push(`Functional Specification: ${optimizedContext.functionalSpec}`)
   }
-  if (technicalSpec && technicalSpec.trim()) {
-    contextParts.push(`Technical Specification: ${technicalSpec}`)
+  if (optimizedContext.technicalSpec && optimizedContext.technicalSpec.trim()) {
+    contextParts.push(`Technical Specification: ${optimizedContext.technicalSpec}`)
   }
   
   const optionalContext = contextParts.length > 0 
@@ -75,12 +116,12 @@ async function generateWithDatabasePromptStreaming(
       const processedPrompt = customPrompt
         .replace(/{{input}}/g, input)
         .replace(/\{input\}/g, input)
-        .replace(/{{business_analysis}}/g, businessAnalysis || '')
-        .replace(/\{business_analysis\}/g, businessAnalysis || '')
-        .replace(/{{functional_spec}}/g, functionalSpec || '')
-        .replace(/\{functional_spec\}/g, functionalSpec || '')
-        .replace(/{{technical_spec}}/g, technicalSpec || '')
-        .replace(/\{technical_spec\}/g, technicalSpec || '')
+        .replace(/{{business_analysis}}/g, optimizedContext.businessAnalysis || '')
+        .replace(/\{business_analysis\}/g, optimizedContext.businessAnalysis || '')
+        .replace(/{{functional_spec}}/g, optimizedContext.functionalSpec || '')
+        .replace(/\{functional_spec\}/g, optimizedContext.functionalSpec || '')
+        .replace(/{{technical_spec}}/g, optimizedContext.technicalSpec || '')
+        .replace(/\{technical_spec\}/g, optimizedContext.technicalSpec || '')
       
       console.log('🚀 Processed Custom Prompt:')
       console.log(processedPrompt)
@@ -100,20 +141,20 @@ async function generateWithDatabasePromptStreaming(
     if (promptTemplate?.prompt_content) {
       console.log('✅ Using database prompt for streaming:', promptTemplate.name)
       
-      // Build optional context from available documents
+      // Build optional context from optimized documents
       const contextParts = []
-      const hasBusinessAnalysis = businessAnalysis && businessAnalysis.trim()
-      const hasFunctionalSpec = functionalSpec && functionalSpec.trim()
-      const hasTechnicalSpec = technicalSpec && technicalSpec.trim()
+      const hasBusinessAnalysis = optimizedContext.businessAnalysis && optimizedContext.businessAnalysis.trim()
+      const hasFunctionalSpec = optimizedContext.functionalSpec && optimizedContext.functionalSpec.trim()
+      const hasTechnicalSpec = optimizedContext.technicalSpec && optimizedContext.technicalSpec.trim()
       
       if (hasBusinessAnalysis) {
-        contextParts.push(`Business Analysis: ${businessAnalysis}`)
+        contextParts.push(`Business Analysis: ${optimizedContext.businessAnalysis}`)
       }
       if (hasFunctionalSpec) {
-        contextParts.push(`Functional Specification: ${functionalSpec}`)
+        contextParts.push(`Functional Specification: ${optimizedContext.functionalSpec}`)
       }
       if (hasTechnicalSpec) {
-        contextParts.push(`Technical Specification: ${technicalSpec}`)
+        contextParts.push(`Technical Specification: ${optimizedContext.technicalSpec}`)
       }
       
       let processedContent = promptTemplate.prompt_content
@@ -136,26 +177,26 @@ ${processedContent}`
         '{input}': input,
         
         // Business analysis variables (all possible formats)
-        '{{business_analysis}}': businessAnalysis || '',
-        '{business_analysis}': businessAnalysis || '',
-        '{{businessAnalysis}}': businessAnalysis || '',
-        '{businessAnalysis}': businessAnalysis || '',
-        '{{business_analysis_context}}': businessAnalysis || '',
-        '{business_analysis_context}': businessAnalysis || '',
-        '{{businessAnalysisContext}}': businessAnalysis || '',
-        '{businessAnalysisContext}': businessAnalysis || '',
+        '{{business_analysis}}': optimizedContext.businessAnalysis || '',
+        '{business_analysis}': optimizedContext.businessAnalysis || '',
+        '{{businessAnalysis}}': optimizedContext.businessAnalysis || '',
+        '{businessAnalysis}': optimizedContext.businessAnalysis || '',
+        '{{business_analysis_context}}': optimizedContext.businessAnalysis || '',
+        '{business_analysis_context}': optimizedContext.businessAnalysis || '',
+        '{{businessAnalysisContext}}': optimizedContext.businessAnalysis || '',
+        '{businessAnalysisContext}': optimizedContext.businessAnalysis || '',
         
         // Functional spec variables
-        '{{functional_spec}}': functionalSpec || '',
-        '{functional_spec}': functionalSpec || '',
-        '{{functionalSpec}}': functionalSpec || '',
-        '{functionalSpec}': functionalSpec || '',
+        '{{functional_spec}}': optimizedContext.functionalSpec || '',
+        '{functional_spec}': optimizedContext.functionalSpec || '',
+        '{{functionalSpec}}': optimizedContext.functionalSpec || '',
+        '{functionalSpec}': optimizedContext.functionalSpec || '',
         
         // Technical spec variables
-        '{{technical_spec}}': technicalSpec || '',
-        '{technical_spec}': technicalSpec || '',
-        '{{technicalSpec}}': technicalSpec || '',
-        '{technicalSpec}': technicalSpec || '',
+        '{{technical_spec}}': optimizedContext.technicalSpec || '',
+        '{technical_spec}': optimizedContext.technicalSpec || '',
+        '{{technicalSpec}}': optimizedContext.technicalSpec || '',
+        '{technicalSpec}': optimizedContext.technicalSpec || '',
       }
       
       // Apply all variable replacements
@@ -165,9 +206,9 @@ ${processedContent}`
       })
       
       // Handle specific patterns that might be in the prompt template
-      if (businessAnalysis && businessAnalysis.trim()) {
-        cleanedContent = cleanedContent.replace(/Business Analysis Context:\s*\n```\s*\nundefinedundefinedundefined[^\n]*\n```/g, `Business Analysis Context:\n\`\`\`\n${businessAnalysis}\n\`\`\``)
-        cleanedContent = cleanedContent.replace(/Business Analysis Context:\s*\nundefinedundefinedundefined[^\n]*/g, `Business Analysis Context:\n${businessAnalysis}`)
+      if (optimizedContext.businessAnalysis && optimizedContext.businessAnalysis.trim()) {
+        cleanedContent = cleanedContent.replace(/Business Analysis Context:\s*\n```\s*\nundefinedundefinedundefined[^\n]*\n```/g, `Business Analysis Context:\n\`\`\`\n${optimizedContext.businessAnalysis}\n\`\`\``)
+        cleanedContent = cleanedContent.replace(/Business Analysis Context:\s*\nundefinedundefinedundefined[^\n]*/g, `Business Analysis Context:\n${optimizedContext.businessAnalysis}`)
       }
       
       // Remove any remaining unreplaced variables
@@ -348,7 +389,8 @@ export async function POST(req: NextRequest) {
       technicalSpec, 
       customPrompt, 
       userId, 
-      projectId 
+      projectId,
+      useContextOptimization = true
     }: GenerateDocumentRequest = await req.json()
     
     console.log('🔍 POST handler - Document type:', documentType)
@@ -412,7 +454,8 @@ export async function POST(req: NextRequest) {
       technicalSpec,
       customPrompt,
       effectiveUserId,
-      projectId
+      projectId,
+      useContextOptimization
     )
 
     // Convert the AI stream to a web-compatible ReadableStream
@@ -438,14 +481,18 @@ export async function POST(req: NextRequest) {
             controller.enqueue(encoder.encode(sseLine))
           }
           
-          // Send completion signal
+          // Apply formatting cleanup for better display (especially for UX specs)
+          const cleanedContent = cleanupDocumentFormatting(fullContent, documentType);
+          
+          // Send completion signal with cleaned content
           const completionData = {
             type: 'complete',
-            fullContent: fullContent,
+            fullContent: cleanedContent,
             success: true,
             metadata: {
               responseTime: Date.now() - Date.now(),
-              contentLength: fullContent.length
+              contentLength: cleanedContent.length,
+              documentType: documentType
             }
           }
           

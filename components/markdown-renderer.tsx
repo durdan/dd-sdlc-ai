@@ -96,7 +96,7 @@ export function MarkdownRenderer({ content, title, type = 'general' }: MarkdownR
         </CardHeader>
       )}
       <CardContent className="prose prose-gray max-w-none prose-sm sm:prose-base bg-white rounded-lg border border-gray-200 p-4">
-        <div className="overflow-hidden">
+        <div className={`overflow-hidden ${type === 'ux' ? 'ux-content' : ''}`}>
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             rehypePlugins={[rehypeHighlight]}

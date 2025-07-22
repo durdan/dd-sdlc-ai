@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createOpenAI } from '@ai-sdk/openai'
 import { generateText } from 'ai'
 import { createServerPromptService } from '@/lib/prompt-service-server'
+import { getDocumentContextOptimizer } from '@/lib/document-context-optimizer'
 
 interface SDLCRequest {
   input: string
@@ -11,11 +12,11 @@ interface SDLCRequest {
   userId?: string
   projectId?: string
   customPrompts?: {
-    business: string
-    functional: string
-    technical: string
-    ux: string
-    mermaid: string
+    business?: string
+    functional?: string
+    technical?: string
+    ux?: string
+    mermaid?: string
   }
 }
 
@@ -54,26 +55,66 @@ async function generateDocumentWithDatabasePrompt(
   technicalSpec?: string,
   customPrompt?: string,
   userId?: string,
-  projectId?: string
+  projectId?: string,
+  useContextOptimization: boolean = true
 ) {
   const promptService = createServerPromptService()
   const startTime = Date.now()
   const openaiClient = createOpenAI({ apiKey: process.env.OPENAI_API_KEY || '' })
   
+  // Initialize context optimizer - it will use config values by default
+  const contextOptimizer = getDocumentContextOptimizer({
+    enableSmartSummarization: useContextOptimization
+  })
+  
+  // Optimize context for non-business document types
+  let optimizedContext: {
+    businessAnalysis?: string
+    functionalSpec?: string
+    technicalSpec?: string
+  } = {
+    businessAnalysis,
+    functionalSpec,
+    technicalSpec
+  }
+  
+  if (useContextOptimization && documentType !== 'business' && documentType !== 'mermaid') {
+    console.log(`🧠 Optimizing context for ${documentType} generation...`)
+    optimizedContext = await contextOptimizer.optimizeContext(
+      documentType as 'functional' | 'technical' | 'ux',
+      {
+        businessAnalysis,
+        functionalSpec,
+        technicalSpec
+      }
+    )
+    
+    // Log optimization results
+    if (businessAnalysis && optimizedContext.businessAnalysis) {
+      console.log(`   📉 Business: ${businessAnalysis.length} → ${optimizedContext.businessAnalysis.length} chars`)
+    }
+    if (functionalSpec && optimizedContext.functionalSpec) {
+      console.log(`   📉 Functional: ${functionalSpec.length} → ${optimizedContext.functionalSpec.length} chars`)
+    }
+    if (technicalSpec && optimizedContext.technicalSpec) {
+      console.log(`   📉 Technical: ${technicalSpec.length} → ${optimizedContext.technicalSpec.length} chars`)
+    }
+  }
+  
   try {
     // Priority 1: Use custom prompt if provided (legacy support)
     if (customPrompt && customPrompt.trim() !== "") {
-      console.log(`Using custom ${documentType} prompt from request`)
+      console.log(`🎯 [${documentType.toUpperCase()}] Using custom prompt from request`)
       
       let processedPrompt = customPrompt
         .replace(/{{input}}/g, input)
         .replace(/\{input\}/g, input)
-        .replace(/{{business_analysis}}/g, businessAnalysis || '')
-        .replace(/\{business_analysis\}/g, businessAnalysis || '')
-        .replace(/{{functional_spec}}/g, functionalSpec || '')
-        .replace(/\{functional_spec\}/g, functionalSpec || '')
-        .replace(/{{technical_spec}}/g, technicalSpec || '')
-        .replace(/\{technical_spec\}/g, technicalSpec || '')
+        .replace(/{{business_analysis}}/g, optimizedContext.businessAnalysis || '')
+        .replace(/\{business_analysis\}/g, optimizedContext.businessAnalysis || '')
+        .replace(/{{functional_spec}}/g, optimizedContext.functionalSpec || '')
+        .replace(/\{functional_spec\}/g, optimizedContext.functionalSpec || '')
+        .replace(/{{technical_spec}}/g, optimizedContext.technicalSpec || '')
+        .replace(/\{technical_spec\}/g, optimizedContext.technicalSpec || '')
       
       const result = await generateText({
         model: openaiClient("gpt-4o"),
@@ -91,14 +132,15 @@ async function generateDocumentWithDatabasePrompt(
     const promptTemplate = await promptService.getPromptForExecution(documentType, userId || 'anonymous')
     
     if (promptTemplate) {
-      console.log(`Using database ${documentType} prompt: ${promptTemplate.name} (v${promptTemplate.version})`)
+      console.log(`✅ [${documentType.toUpperCase()}] Using database prompt: ${promptTemplate.name} (v${promptTemplate.version})`)
+      console.log(`   📋 ID: ${promptTemplate.id}, Active: ${promptTemplate.is_active}, Scope: ${promptTemplate.prompt_scope}, Default: ${promptTemplate.is_system_default || promptTemplate.is_personal_default}`)
       
       try {
-        // Build variables for the prompt
+        // Build variables for the prompt with optimized context
         const variables: Record<string, string> = { input }
-        if (businessAnalysis) variables.business_analysis = businessAnalysis
-        if (functionalSpec) variables.functional_spec = functionalSpec
-        if (technicalSpec) variables.technical_spec = technicalSpec
+        if (optimizedContext.businessAnalysis) variables.business_analysis = optimizedContext.businessAnalysis
+        if (optimizedContext.functionalSpec) variables.functional_spec = optimizedContext.functionalSpec
+        if (optimizedContext.technicalSpec) variables.technical_spec = optimizedContext.technicalSpec
         
         // Prepare the prompt
         const { processedContent } = await promptService.preparePrompt(
@@ -158,7 +200,7 @@ async function generateDocumentWithDatabasePrompt(
     }
 
     // Priority 3: Fallback to hardcoded prompt
-    console.warn(`No database ${documentType} prompt found, using hardcoded fallback`)
+    console.warn(`⚠️  [${documentType.toUpperCase()}] No database prompt found, using hardcoded fallback`)
     
     const fallbackPrompts = {
       business: `As a senior business analyst, analyze the following business case and provide a comprehensive business analysis:
@@ -178,7 +220,7 @@ Format the response in markdown with clear headings and structure.`,
 
       functional: `Based on the following business analysis, create a detailed functional specification:
 
-Business Analysis: ${businessAnalysis || ''}
+Business Analysis: ${optimizedContext.businessAnalysis || ''}
 
 Please provide:
 1. Functional Requirements (numbered list)
@@ -193,7 +235,7 @@ Format as a markdown technical specification document.`,
 
       technical: `Based on the functional specification, create a comprehensive technical specification:
 
-Functional Specification: ${functionalSpec || ''}
+Functional Specification: ${optimizedContext.functionalSpec || ''}
 
 Please provide:
 1. System Architecture Overview
@@ -209,8 +251,8 @@ Include specific technical details and implementation approaches in markdown for
 
       ux: `Create a UX specification based on the business and functional requirements:
 
-Business Analysis: ${businessAnalysis || ''}
-Functional Specification: ${functionalSpec || ''}
+Business Analysis: ${optimizedContext.businessAnalysis || ''}
+Functional Specification: ${optimizedContext.functionalSpec || ''}
 
 Please provide:
 1. User Personas
@@ -225,7 +267,7 @@ Focus on user experience and interface design principles in markdown format.`,
 
       mermaid: `Create Mermaid diagrams for the system architecture based on the technical specification:
 
-Technical Specification: ${technicalSpec || ''}
+Technical Specification: ${optimizedContext.technicalSpec || ''}
 
 Please provide Mermaid code for a comprehensive system architecture diagram.
 Return only valid Mermaid syntax without any additional text or formatting.`
@@ -262,7 +304,8 @@ export async function POST(req: NextRequest) {
       customPrompts = {},
       userId,
       projectId,
-    }: SDLCRequest & { jiraEnabled?: boolean; confluenceEnabled?: boolean; openaiKey?: string } = await req.json()
+      useContextOptimization = true,
+    }: SDLCRequest & { jiraEnabled?: boolean; confluenceEnabled?: boolean; openaiKey?: string; useContextOptimization?: boolean } = await req.json()
 
     // Validate OpenAI API key
     if (!openaiKey || openaiKey.trim() === '') {
@@ -285,7 +328,7 @@ export async function POST(req: NextRequest) {
     const usageLogIds: string[] = []
 
     // Generate business analysis
-    console.log('🔍 Generating business analysis...')
+    console.log('\n🔍 [BUSINESS] Starting generation...')
     const businessResult = await generateDocumentWithDatabasePrompt(
       'business',
       input,
@@ -297,10 +340,10 @@ export async function POST(req: NextRequest) {
       projectId
     )
     promptSources.business = businessResult.promptSource
-   // console.log('✅ Business analysis completed, prompt source:', businessResult.promptSource)
+    if (businessResult.usageLogId) usageLogIds.push(businessResult.usageLogId)
 
     // Generate functional specification
-    console.log('🔍 Generating functional specification...')
+    console.log('\n🔍 [FUNCTIONAL] Starting generation...')
     const functionalResult = await generateDocumentWithDatabasePrompt(
       'functional',
       input,
@@ -309,13 +352,14 @@ export async function POST(req: NextRequest) {
       undefined,
       customPrompts?.functional,
       effectiveUserId,
-      projectId
+      projectId,
+      useContextOptimization
     )
     promptSources.functional = functionalResult.promptSource
-    console.log('✅ Functional specification completed, prompt source:', functionalResult.promptSource)
+    if (functionalResult.usageLogId) usageLogIds.push(functionalResult.usageLogId)
 
     // Generate technical specification
-    console.log('🔍 Generating technical specification...')
+    console.log('\n🔍 [TECHNICAL] Starting generation...')
     const technicalResult = await generateDocumentWithDatabasePrompt(
       'technical',
       input,
@@ -324,13 +368,14 @@ export async function POST(req: NextRequest) {
       undefined,
       customPrompts?.technical,
       effectiveUserId,
-      projectId
+      projectId,
+      useContextOptimization
     )
     promptSources.technical = technicalResult.promptSource
-    //console.log('✅ Technical specification completed, prompt source:', technicalResult.promptSource)
+    if (technicalResult.usageLogId) usageLogIds.push(technicalResult.usageLogId)
 
     // Generate UX specification
-    console.log('🔍 Generating UX specification...')
+    console.log('\n🔍 [UX] Starting generation...')
     const uxResult = await generateDocumentWithDatabasePrompt(
       'ux',
       input,
@@ -339,13 +384,14 @@ export async function POST(req: NextRequest) {
       technicalResult.content, // Pass technical spec
       customPrompts?.ux,
       effectiveUserId,
-      projectId
+      projectId,
+      useContextOptimization
     )
     promptSources.ux = uxResult.promptSource
-    console.log('✅ UX specification completed, prompt source:', uxResult.promptSource)
+    if (uxResult.usageLogId) usageLogIds.push(uxResult.usageLogId)
 
     // Generate Mermaid diagrams
-    console.log('🔍 Generating Mermaid diagrams...')
+    console.log('\n🔍 [MERMAID] Starting generation...')
     const mermaidResult = await generateDocumentWithDatabasePrompt(
       'mermaid',
       input,
@@ -357,7 +403,7 @@ export async function POST(req: NextRequest) {
       projectId
     )
     promptSources.mermaid = mermaidResult.promptSource
-  //  console.log('✅ Mermaid diagrams completed, prompt source:', mermaidResult.promptSource)
+    if (mermaidResult.usageLogId) usageLogIds.push(mermaidResult.usageLogId)
 
     let jiraEpic = null
     let confluencePage = null
@@ -387,9 +433,16 @@ export async function POST(req: NextRequest) {
 
     const totalResponseTime = Date.now() - totalStartTime
 
-    console.log('🎉 SDLC documentation generated successfully with database prompts')
-    console.log('📊 Prompt sources:', promptSources)
-    console.log(`⏱️ Total response time: ${totalResponseTime}ms`)
+    // Summary of generation results
+    console.log('\n🎉 SDLC GENERATION COMPLETE!')
+    console.log('📊 PROMPT SOURCES USED:')
+    console.log(`   • Business: ${promptSources.business} prompt`)
+    console.log(`   • Functional: ${promptSources.functional} prompt`)
+    console.log(`   • Technical: ${promptSources.technical} prompt`)
+    console.log(`   • UX: ${promptSources.ux} prompt`)
+    console.log(`   • Mermaid: ${promptSources.mermaid} prompt`)
+    console.log(`⏱️  Total response time: ${totalResponseTime}ms`)
+    console.log(`📝 Usage logs created: ${usageLogIds.length}`)
 
     const response: SDLCResponse = {
       businessAnalysis: businessResult.content,
