@@ -431,6 +431,88 @@ export class DatabaseService {
   }
 
   // Batch operations for saving complete SDLC results
+  // Optimized methods for lazy loading
+  async getProjectSummariesByUser(userId: string, limit = 20, offset = 0): Promise<Array<{
+    id: string
+    title: string
+    description: string | null
+    status: string
+    created_at: string
+    updated_at: string | null
+    jira_project: string | null
+    confluence_space: string | null
+  }>> {
+    console.log('🔍 DatabaseService: Fetching project summaries for user:', userId)
+    
+    const { data, error } = await this.supabase
+      .from('sdlc_projects')
+      .select('id, title, description, status, created_at, updated_at, jira_project, confluence_space')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
+
+    if (error) {
+      console.error('Error fetching project summaries:', error)
+      return []
+    }
+    
+    return data || []
+  }
+
+  async getProjectGenerationSummaries(userId: string, limit = 100, offset = 0): Promise<Array<{
+    id: string
+    user_id: string
+    project_id: string | null
+    generation_type: string
+    generation_data: any
+    created_at: string
+  }>> {
+    console.log('🔍 DatabaseService: Fetching project generation summaries for user:', userId)
+    
+    const { data, error } = await this.supabase
+      .from('project_generations')
+      .select('id, user_id, project_id, generation_type, generation_data, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
+
+    if (error) {
+      console.error('Error fetching project generation summaries:', error)
+      return []
+    }
+    
+    return data || []
+  }
+
+  async getProjectFullDetails(projectId: string, userId: string): Promise<{
+    project: SDLCProject | null
+    documents: Document[]
+    integrations: any[]
+  }> {
+    console.log('🔍 DatabaseService: Fetching full project details for:', projectId)
+    
+    // Fetch project with user check
+    const { data: project, error: projectError } = await this.supabase
+      .from('sdlc_projects')
+      .select('*')
+      .eq('id', projectId)
+      .eq('user_id', userId)
+      .single()
+
+    if (projectError || !project) {
+      console.error('Error fetching project details:', projectError)
+      return { project: null, documents: [], integrations: [] }
+    }
+
+    // Fetch documents
+    const documents = await this.getDocumentsByProject(projectId)
+    
+    // Fetch integrations
+    const integrations = await this.getIntegrationsByProject(projectId)
+    
+    return { project, documents, integrations }
+  }
+
   async saveCompleteSDLCResult(
     userId: string,
     input: string,

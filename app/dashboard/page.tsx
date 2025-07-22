@@ -127,6 +127,8 @@ import EarlyAccessWaitingList from '@/components/early-access-waiting-list'
 import ClaudeCodeDashboard from '@/components/claude-code-dashboard'
 import { DocumentSelectionModal } from '@/components/document-selection-modal'
 import { ProjectListViewer } from "@/components/project-list-viewer"
+import { ProjectListViewerOptimized } from "@/components/project-list-viewer-optimized"
+import { ProjectListSkeleton } from "@/components/project-list-skeleton"
 
 // Type definitions for dashboard state
 interface GeneratedDocuments {
@@ -173,8 +175,13 @@ interface ConfigState {
 interface RecentProject {
   id: string
   title: string
+  description?: string | null
   status: string
-  createdAt: string
+  created_at: string
+  updated_at?: string | null
+  createdAt?: string // For backward compatibility
+  jira_project?: string | null
+  confluence_space?: string | null
   jiraEpic?: string
   confluencePage?: string
   githubProject?: {
@@ -184,7 +191,7 @@ interface RecentProject {
     issueCount?: number
     repositoryName?: string
   }
-  documents: {
+  documents?: {
     businessAnalysis: string
     functionalSpec: string
     technicalSpec: string
@@ -193,8 +200,8 @@ interface RecentProject {
     comprehensive?: string
     mermaidDiagrams?: string
   }
-  hasComprehensiveContent: boolean
-  totalDocuments: number
+  hasComprehensiveContent?: boolean
+  totalDocuments?: number
   jiraEpicUrl?: string
   jiraSummary?: any
   confluencePageUrl?: string
@@ -469,6 +476,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
   const [isSavingConfig, setIsSavingConfig] = useState(false)
   const [isLoadingGitHubRepos, setIsLoadingGitHubRepos] = useState(false)
   const [recentProjects, setRecentProjects] = useState<RecentProject[]>([])
+  const [isLoadingRecentProjects, setIsLoadingRecentProjects] = useState(true)
 
   const [toolkitExpanded, setToolkitExpanded] = useState(false)
   const [toolsExpanded, setToolsExpanded] = useState(false)
@@ -594,7 +602,86 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
     return coreSteps
   }
 
-  // Get all cached results from database for Recent Projects display
+  // Get optimized project summaries from database for Recent Projects display
+  const getCachedProjectsOptimized = async (): Promise<any[]> => {
+    const projectResults: any[] = []
+    
+    // Get authenticated user projects
+    if (user?.id) {
+      try {
+        console.log('🔍 Fetching project summaries for user:', user.id, user.email)
+        
+        // Fetch SDLC project summaries (minimal data)
+        const sdlcProjectSummaries = await dbService.getProjectSummariesByUser(user.id, 50, 0)
+        console.log('🔍 SDLC project summaries:', sdlcProjectSummaries.length)
+        
+        // Fetch project generation summaries (minimal data)
+        const projectGenerationSummaries = await dbService.getProjectGenerationSummaries(user.id, 50, 0)
+        console.log('🔍 Project generation summaries:', projectGenerationSummaries.length)
+        
+        // Convert to display format with minimal data
+        for (const project of sdlcProjectSummaries) {
+          projectResults.push({
+            ...project,
+            projectType: 'sdlc' as const
+          })
+        }
+        
+        // Add all project generations (Claude Code Assistant, etc.)
+        for (const gen of projectGenerationSummaries) {
+          // Determine project type and title based on generation_type
+          let projectType: 'sdlc' | 'claude_code_assistant' = 'sdlc'
+          let title = ''
+          
+          // Extract project type from generation_data if available
+          const projectTypeFromData = gen.generation_data?.project_type || gen.generation_data?.projectType
+          
+          switch (gen.generation_type) {
+            case 'claude_code_assistant':
+              projectType = 'claude_code_assistant'
+              title = gen.generation_data?.title || `Claude Code Assistant - ${new Date(gen.created_at).toLocaleDateString()}`
+              break
+            case 'sdlc_generation':
+            case 'sdlc_documents':
+              projectType = 'sdlc'
+              title = gen.generation_data?.title || `SDLC Generation - ${new Date(gen.created_at).toLocaleDateString()}`
+              break
+            default:
+              // Check if it's a Claude Code Assistant based on generation_data
+              if (projectTypeFromData === 'claude_code_assistant') {
+                projectType = 'claude_code_assistant'
+                title = gen.generation_data?.title || `Claude Code Assistant - ${new Date(gen.created_at).toLocaleDateString()}`
+              } else {
+                // For any other generation types, use a generic title
+                projectType = 'sdlc'
+                title = gen.generation_data?.title || `${gen.generation_type} - ${new Date(gen.created_at).toLocaleDateString()}`
+              }
+          }
+          
+          projectResults.push({
+            id: gen.id,
+            title,
+            status: 'completed',
+            created_at: gen.created_at,
+            projectType,
+            generation_type: gen.generation_type
+          })
+        }
+        
+        // Sort by creation date
+        projectResults.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        
+        return projectResults
+      } catch (error) {
+        console.error('Error fetching project summaries:', error)
+        return []
+      }
+    }
+    
+    return []
+  }
+
+  // Get all cached results from database for Recent Projects display (original method)
   const getCachedProjects = async (): Promise<ProjectResult[]> => {
     const projectResults: ProjectResult[] = []
     
@@ -962,13 +1049,16 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
           }
         }
         
-        // Load recent projects (both authenticated and anonymous)
+        // Load recent projects (both authenticated and anonymous) - using optimized method
         try {
-          const projects = await getCachedProjects()
+          setIsLoadingRecentProjects(true)
+          const projects = await getCachedProjectsOptimized()
           setRecentProjects(projects)
         } catch (projectsError) {
           console.warn('Could not load recent projects:', projectsError)
           setRecentProjects([])
+        } finally {
+          setIsLoadingRecentProjects(false)
         }
       } catch (error) {
         console.error('Error loading user data:', error)
@@ -1142,7 +1232,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         setShowGitHubProjectDialog(false)
         
         // Optionally reload recent projects to show the new integration
-        const projects = await getCachedProjects()
+        const projects = await getCachedProjectsOptimized()
         setRecentProjects(projects)
       } else {
         throw new Error(result.error || 'GitHub project creation failed')
@@ -1171,7 +1261,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
   // GitHub Project Creation for Existing Projects
   // selectedProjectForGitHub is already declared above
   
-  const openGitHubProjectDialogForProject = (project: ProjectResult) => {
+  const openGitHubProjectDialogForProject = (project: any) => {
     setSelectedProjectForGitHub(project)
     setGitHubProjectConfig(prev => ({
       ...prev,
@@ -1252,7 +1342,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         setSelectedProjectForGitHub(null)
         
         // Optionally reload recent projects to show the new integration
-        const updatedProjects = await getCachedProjects()
+        const updatedProjects = await getCachedProjectsOptimized()
         setRecentProjects(updatedProjects)
       } else {
         throw new Error(result.error || 'GitHub project creation failed')
@@ -2225,7 +2315,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         console.log('✅ Confluence integration completed, project data will be refreshed from database')
         
         // Refresh the recent projects display
-        const updatedProjects = await getCachedProjects()
+        const updatedProjects = await getCachedProjectsOptimized()
         setRecentProjects(updatedProjects)
       } else {
         console.error('❌ Manual Confluence integration failed:', confluenceResult.error)
@@ -2291,6 +2381,39 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
 
   const handleJiraExport = async (project: any) => {
     console.log('🔗 Starting Jira export for project:', project.id)
+    
+    // For optimized projects, we need to fetch full details first
+    if (!project.documents) {
+      try {
+        const { project: fullProject, documents } = await dbService.getProjectFullDetails(project.id, user?.id || '')
+        if (!fullProject || documents.length === 0) {
+          setErrorMessage('Could not load project details. Please try again.')
+          return
+        }
+        // Build documents object from the documents array
+        project.documents = {}
+        documents.forEach(doc => {
+          switch (doc.document_type) {
+            case 'business_analysis':
+              project.documents.businessAnalysis = doc.content
+              break
+            case 'functional_spec':
+              project.documents.functionalSpec = doc.content
+              break
+            case 'technical_spec':
+              project.documents.technicalSpec = doc.content
+              break
+            case 'ux_spec':
+              project.documents.uxSpec = doc.content
+              break
+          }
+        })
+      } catch (error) {
+        console.error('Error loading project details:', error)
+        setErrorMessage('Error loading project details. Please try again.')
+        return
+      }
+    }
     
     // Check if we have SDLC content to export
     const hasContent = project.documents?.businessAnalysis || project.documents?.functionalSpec || project.documents?.technicalSpec || project.documents?.uxSpec
@@ -2361,6 +2484,39 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
 
   const handleConfluenceExport = async (project: any) => {
     console.log('📄 Starting Confluence export for project:', project.id)
+    
+    // For optimized projects, we need to fetch full details first
+    if (!project.documents) {
+      try {
+        const { project: fullProject, documents } = await dbService.getProjectFullDetails(project.id, user?.id || '')
+        if (!fullProject || documents.length === 0) {
+          setErrorMessage('Could not load project details. Please try again.')
+          return
+        }
+        // Build documents object from the documents array
+        project.documents = {}
+        documents.forEach(doc => {
+          switch (doc.document_type) {
+            case 'business_analysis':
+              project.documents.businessAnalysis = doc.content
+              break
+            case 'functional_spec':
+              project.documents.functionalSpec = doc.content
+              break
+            case 'technical_spec':
+              project.documents.technicalSpec = doc.content
+              break
+            case 'ux_spec':
+              project.documents.uxSpec = doc.content
+              break
+          }
+        })
+      } catch (error) {
+        console.error('Error loading project details:', error)
+        setErrorMessage('Error loading project details. Please try again.')
+        return
+      }
+    }
     
     // Check if we have SDLC content to export
     const hasContent = project.documents?.businessAnalysis || project.documents?.functionalSpec || project.documents?.technicalSpec || project.documents?.uxSpec
@@ -2756,10 +2912,22 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         {/* Generation Summary */}
         <GenerationSummary />
 
-        {/* Recent Projects - Only show if there are cached projects */}
-        {recentProjects.length > 0 && (
-          <ProjectListViewer
+        {/* Recent Projects */}
+        {isLoadingRecentProjects ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <GitBranch className="h-5 w-5" />
+                Recent Projects
+                <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                <span className="text-sm font-normal text-gray-500">Loading...</span>
+              </CardTitle>
+            </CardHeader>
+          </Card>
+        ) : recentProjects.length > 0 ? (
+          <ProjectListViewerOptimized
             projects={recentProjects}
+            userId={user?.id || ''}
             onJiraExport={handleJiraExport}
             onConfluenceExport={handleConfluenceExport}
             onGitHubProjectCreate={openGitHubProjectDialogForProject}
@@ -2769,7 +2937,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
             selectedProjectForGitHub={selectedProjectForGitHub}
             config={config}
           />
-        )}
+        ) : null}
 
         {/* Configuration Dialog */}
         <Dialog open={showConfig} onOpenChange={setShowConfig}>
