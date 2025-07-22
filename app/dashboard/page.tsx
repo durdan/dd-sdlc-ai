@@ -477,6 +477,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
   const [isLoadingGitHubRepos, setIsLoadingGitHubRepos] = useState(false)
   const [recentProjects, setRecentProjects] = useState<RecentProject[]>([])
   const [isLoadingRecentProjects, setIsLoadingRecentProjects] = useState(true)
+  const [totalProjectCount, setTotalProjectCount] = useState<number>(0)
 
   const [toolkitExpanded, setToolkitExpanded] = useState(false)
   const [toolsExpanded, setToolsExpanded] = useState(false)
@@ -610,21 +611,32 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
   }
 
   // Get optimized project summaries from database for Recent Projects display
-  const getCachedProjectsOptimized = async (): Promise<any[]> => {
+  const getCachedProjectsOptimized = async (): Promise<{ projects: any[], totalCount: number }> => {
     const projectResults: any[] = []
+    let totalProjectCount = 0
     
     // Get authenticated user projects
     if (user?.id) {
       try {
         console.log('🔍 Fetching project summaries for user:', user.id, user.email)
         
+        // Get total project count
+        totalProjectCount = await dbService.getProjectCount(user.id)
+        console.log('📊 Total project count:', totalProjectCount)
+        
         // Fetch SDLC project summaries (minimal data)
         const sdlcProjectSummaries = await dbService.getProjectSummariesByUser(user.id, 50, 0)
         console.log('🔍 SDLC project summaries:', sdlcProjectSummaries.length)
         
         // Fetch project generation summaries (minimal data)
-        const projectGenerationSummaries = await dbService.getProjectGenerationSummaries(user.id, 50, 0)
-        console.log('🔍 Project generation summaries:', projectGenerationSummaries.length)
+        // TODO: Fix this - table might not exist in some databases
+        let projectGenerationSummaries: any[] = []
+        try {
+          projectGenerationSummaries = await dbService.getProjectGenerationSummaries(user.id, 50, 0)
+          console.log('🔍 Project generation summaries:', projectGenerationSummaries.length)
+        } catch (error) {
+          console.warn('Could not fetch project generation summaries, continuing without them')
+        }
         
         // Convert to display format with minimal data
         for (const project of sdlcProjectSummaries) {
@@ -678,14 +690,14 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         // Sort by creation date
         projectResults.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         
-        return projectResults
+        return { projects: projectResults, totalCount: totalProjectCount }
       } catch (error) {
         console.error('Error fetching project summaries:', error)
-        return []
+        return { projects: [], totalCount: 0 }
       }
     }
     
-    return []
+    return { projects: [], totalCount: 0 }
   }
 
   // Get all cached results from database for Recent Projects display (original method)
@@ -1059,8 +1071,9 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         // Load recent projects (both authenticated and anonymous) - using optimized method
         try {
           setIsLoadingRecentProjects(true)
-          const projects = await getCachedProjectsOptimized()
+          const { projects, totalCount } = await getCachedProjectsOptimized()
           setRecentProjects(projects)
+          setTotalProjectCount(totalCount)
         } catch (projectsError) {
           console.warn('Could not load recent projects:', projectsError)
           setRecentProjects([])
@@ -1239,8 +1252,9 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         setShowGitHubProjectDialog(false)
         
         // Optionally reload recent projects to show the new integration
-        const projects = await getCachedProjectsOptimized()
+        const { projects, totalCount } = await getCachedProjectsOptimized()
         setRecentProjects(projects)
+        setTotalProjectCount(totalCount)
       } else {
         throw new Error(result.error || 'GitHub project creation failed')
       }
@@ -1349,8 +1363,9 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         setSelectedProjectForGitHub(null)
         
         // Optionally reload recent projects to show the new integration
-        const updatedProjects = await getCachedProjectsOptimized()
+        const { projects: updatedProjects, totalCount } = await getCachedProjectsOptimized()
         setRecentProjects(updatedProjects)
+        setTotalProjectCount(totalCount)
       } else {
         throw new Error(result.error || 'GitHub project creation failed')
       }
@@ -2388,8 +2403,9 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         console.log('✅ Confluence integration completed, project data will be refreshed from database')
         
         // Refresh the recent projects display
-        const updatedProjects = await getCachedProjectsOptimized()
+        const { projects: updatedProjects, totalCount } = await getCachedProjectsOptimized()
         setRecentProjects(updatedProjects)
+        setTotalProjectCount(totalCount)
       } else {
         console.error('❌ Manual Confluence integration failed:', confluenceResult.error)
         alert(`Confluence integration failed: ${confluenceResult.error}`)
@@ -3001,6 +3017,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
           <ProjectListViewerOptimized
             projects={recentProjects}
             userId={user?.id || ''}
+            totalProjectCount={totalProjectCount}
             onJiraExport={handleJiraExport}
             onConfluenceExport={handleConfluenceExport}
             onGitHubProjectCreate={openGitHubProjectDialogForProject}

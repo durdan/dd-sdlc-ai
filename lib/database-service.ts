@@ -432,6 +432,20 @@ export class DatabaseService {
 
   // Batch operations for saving complete SDLC results
   // Optimized methods for lazy loading
+  async getProjectCount(userId: string): Promise<number> {
+    const { count, error } = await this.supabase
+      .from('sdlc_projects')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+    
+    if (error) {
+      console.error('Error fetching project count:', error)
+      return 0
+    }
+    
+    return count || 0
+  }
+
   async getProjectSummariesByUser(userId: string, limit = 20, offset = 0): Promise<Array<{
     id: string
     title: string
@@ -477,7 +491,13 @@ export class DatabaseService {
       .range(offset, offset + limit - 1)
 
     if (error) {
-      console.error('Error fetching project generation summaries:', error)
+      console.error('Error fetching project generation summaries:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      })
+      // Return empty array to prevent breaking the UI
       return []
     }
     

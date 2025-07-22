@@ -28,6 +28,7 @@ interface ProjectSummary {
 interface ProjectListViewerOptimizedProps {
   projects: ProjectSummary[]
   userId: string
+  totalProjectCount?: number
   onJiraExport?: (project: any) => void
   onConfluenceExport?: (project: any) => void
   onGitHubProjectCreate?: (project: any) => void
@@ -41,6 +42,7 @@ interface ProjectListViewerOptimizedProps {
 export function ProjectListViewerOptimized({
   projects,
   userId,
+  totalProjectCount = 0,
   onJiraExport,
   onConfluenceExport,
   onGitHubProjectCreate,
@@ -73,8 +75,8 @@ export function ProjectListViewerOptimized({
           <div className="flex items-center gap-2">
             <GitBranch className="h-5 w-5" />
             Recent Projects
-            <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 flex items-center justify-center text-xs">
-              {projects.length}
+            <Badge variant="secondary" className="ml-2 px-1.5 py-0.5 text-xs">
+              {totalProjectCount > 50 ? `50+` : projects.length}
             </Badge>
           </div>
           <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${
