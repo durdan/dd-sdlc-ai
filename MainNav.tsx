@@ -46,9 +46,12 @@ export function MainNav() {
       <div className="flex items-center space-x-4">
         <Link href="/" className="flex items-center space-x-3">
           <img 
-            src="/img/SDLC.dev.logo.svg" 
-            alt="SDLC.dev Logo" 
-            className="h-14 w-auto filter contrast-125 brightness-110 drop-shadow-lg" 
+            src="/img/logo-sdlc.png" 
+            alt="SDLC Logo" 
+            className="h-16 w-auto"
+            style={{ 
+              maxWidth: 'none'  // Override Tailwind's max-width: 100%
+            }}
           />
           <div className="font-bold">
             <span className="hidden sm:inline text-lg">SDLC AI</span>
