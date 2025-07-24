@@ -1,10 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { V0AvailabilityBadge } from "@/components/wireframe/v0-availability-badge"
 import { 
   FileText, 
   Brain, 
@@ -12,7 +14,9 @@ import {
   Palette, 
   GitBranch,
   Sparkles,
-  X
+  X,
+  Layout,
+  Settings
 } from "lucide-react"
 
 interface DocumentType {
@@ -26,15 +30,17 @@ const documentTypes: DocumentType[] = [
   { id: "functional", name: "Functional Spec", icon: FileText },
   { id: "technical", name: "Technical Spec", icon: Code },
   { id: "ux", name: "UX Specification", icon: Palette },
+  { id: "wireframe", name: "Wireframe", icon: Layout },
   { id: "mermaid", name: "Architecture", icon: GitBranch }
 ]
 
 interface DocumentSelectionModalProps {
   isOpen: boolean
   onClose: () => void
-  onGenerate: (selectedDocuments: string[]) => void
+  onGenerate: (selectedDocuments: string[], wireframeModel?: string) => void
   input: string
   isLoading?: boolean
+  userId?: string
 }
 
 export function DocumentSelectionModal({
@@ -42,11 +48,18 @@ export function DocumentSelectionModal({
   onClose,
   onGenerate,
   input,
-  isLoading = false
+  isLoading = false,
+  userId
 }: DocumentSelectionModalProps) {
   const [selectedDocuments, setSelectedDocuments] = useState<string[]>([
     "analysis", "functional", "technical", "ux", "mermaid"
   ])
+  const [wireframeModel, setWireframeModel] = useState<string>("gpt-4")
+  const [showWireframeSettings, setShowWireframeSettings] = useState(false)
+
+  useEffect(() => {
+    setShowWireframeSettings(selectedDocuments.includes("wireframe"))
+  }, [selectedDocuments])
 
   const handleToggleDocument = (documentId: string) => {
     setSelectedDocuments(prev => 
@@ -66,7 +79,7 @@ export function DocumentSelectionModal({
 
   const handleGenerate = () => {
     if (selectedDocuments.length > 0) {
-      onGenerate(selectedDocuments)
+      onGenerate(selectedDocuments, wireframeModel)
     }
   }
 
@@ -141,6 +154,47 @@ export function DocumentSelectionModal({
               )
             })}
           </div>
+
+          {/* Wireframe Settings */}
+          {showWireframeSettings && (
+            <div className="space-y-3 pt-3 border-t border-gray-700">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium text-gray-300">
+                  Wireframe Model
+                </Label>
+                {userId && (
+                  <V0AvailabilityBadge userId={userId} />
+                )}
+              </div>
+              <Select value={wireframeModel} onValueChange={setWireframeModel}>
+                <SelectTrigger className="w-full bg-gray-800 border-gray-700 text-white">
+                  <SelectValue placeholder="Select model" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-700">
+                  <SelectItem value="gpt-4" className="text-white hover:bg-gray-700">
+                    GPT-4 (Traditional Wireframe)
+                  </SelectItem>
+                  <SelectItem value="claude-3-opus" className="text-white hover:bg-gray-700">
+                    Claude 3 Opus
+                  </SelectItem>
+                  <SelectItem value="claude-3-sonnet" className="text-white hover:bg-gray-700">
+                    Claude 3 Sonnet
+                  </SelectItem>
+                  <SelectItem value="v0-dev" className="text-white hover:bg-gray-700">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-purple-400" />
+                      v0.dev (React Components)
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              {wireframeModel === 'v0-dev' && (
+                <p className="text-xs text-gray-400">
+                  v0.dev generates real React components instead of wireframe mockups
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Summary */}
           <div className="pt-2 border-t border-gray-700">

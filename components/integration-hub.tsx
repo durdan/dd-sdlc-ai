@@ -2452,6 +2452,50 @@ export function IntegrationHub() {
                               <option value="urgent">Urgent</option>
                             </select>
                           </div>
+
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm">Create sub-tasks</Label>
+                              <p className="text-xs text-gray-500">Automatically create sub-tasks for each task</p>
+                            </div>
+                            <Switch
+                              checked={integrationConfigs.clickup?.settings?.createSubtasks}
+                              onCheckedChange={(checked) => updateIntegrationSetting("clickup", "createSubtasks", checked)}
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm">Sync status updates</Label>
+                              <p className="text-xs text-gray-500">Automatically update ClickUp task status based on SDLC status</p>
+                            </div>
+                            <Switch
+                              checked={integrationConfigs.clickup?.settings?.syncStatus}
+                              onCheckedChange={(checked) => updateIntegrationSetting("clickup", "syncStatus", checked)}
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm">Enable time tracking</Label>
+                              <p className="text-xs text-gray-500">Track time spent on ClickUp tasks</p>
+                            </div>
+                            <Switch
+                              checked={integrationConfigs.clickup?.settings?.enableTimeTracking}
+                              onCheckedChange={(checked) => updateIntegrationSetting("clickup", "enableTimeTracking", checked)}
+                            />
+                          </div>
+
+                          <div className="flex flex-wrap gap-2">
+                            <Label className="text-sm">Custom Fields (Optional)</Label>
+                            <Input
+                              value={integrationConfigs.clickup?.settings?.customFields?.join(', ') || ''}
+                              onChange={(e) => updateIntegrationSetting("clickup", "customFields", e.target.value.split(',').map(s => s.trim()))}
+                              placeholder="field1:value1,field2:value2"
+                              className="flex-1"
+                            />
+                            <p className="text-xs text-gray-500">Format: field_name:value</p>
+                          </div>
                         </div>
                       )}
 
@@ -2581,28 +2625,6 @@ export function IntegrationHub() {
                               </p>
                             </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Trello Settings */}
-                  {integration.id === "trello" && (
-                    <div className="space-y-4">
-                      {/* Connection Status */}
-                      <div className="p-3 bg-gray-50 rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <Label className="text-sm font-medium">Trello Connection</Label>
-                          {integrationConfigs.trello?.settings?.connected ? (
-                            <Badge variant="default" className="text-xs bg-green-100 text-green-700">
-                              Connected
-                            </Badge>
-                          ) : (
-                            <Badge variant="secondary" className="text-xs">
-                              Not Connected
-                            </Badge>
-                          )}
-                        </div>
 
                           <div className="flex items-center justify-between">
                             <div>
@@ -2616,50 +2638,6 @@ export function IntegrationHub() {
                               className="mt-1"
                               size="sm"
                             />
-                          </div>
-
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <Label className="text-sm">Create sub-tasks</Label>
-                              <p className="text-xs text-gray-500">Automatically create sub-tasks for each task</p>
-                            </div>
-                            <Switch
-                              checked={integrationConfigs.clickup?.settings?.createSubtasks}
-                              onCheckedChange={(checked) => updateIntegrationSetting("clickup", "createSubtasks", checked)}
-                            />
-                          </div>
-
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <Label className="text-sm">Sync status updates</Label>
-                              <p className="text-xs text-gray-500">Automatically update ClickUp task status based on SDLC status</p>
-                            </div>
-                            <Switch
-                              checked={integrationConfigs.clickup?.settings?.syncStatus}
-                              onCheckedChange={(checked) => updateIntegrationSetting("clickup", "syncStatus", checked)}
-                            />
-                          </div>
-
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <Label className="text-sm">Enable time tracking</Label>
-                              <p className="text-xs text-gray-500">Track time spent on ClickUp tasks</p>
-                            </div>
-                            <Switch
-                              checked={integrationConfigs.clickup?.settings?.enableTimeTracking}
-                              onCheckedChange={(checked) => updateIntegrationSetting("clickup", "enableTimeTracking", checked)}
-                            />
-                          </div>
-
-                          <div className="flex flex-wrap gap-2">
-                            <Label className="text-sm">Custom Fields (Optional)</Label>
-                            <Input
-                              value={integrationConfigs.clickup?.settings?.customFields?.join(', ') || ''}
-                              onChange={(e) => updateIntegrationSetting("clickup", "customFields", e.target.value.split(',').map(s => s.trim()))}
-                              placeholder="field1:value1,field2:value2"
-                              className="flex-1"
-                            />
-                            <p className="text-xs text-gray-500">Format: field_name:value</p>
                           </div>
                         </div>
                       )}

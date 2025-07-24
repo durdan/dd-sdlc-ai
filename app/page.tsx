@@ -187,15 +187,7 @@ export default function ModernLandingPage() {
         <header className="sticky top-0 z-50 w-full border-b border-gray-800 bg-black/95 backdrop-blur supports-[backdrop-filter]:bg-black/60">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex h-14 items-center justify-between">
             <div className="flex items-center space-x-2">
-              <div className="relative">
-                <div className="w-7 h-7 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg flex items-center justify-center">
-                  <Cpu className="h-4 w-4 text-white" />
-                </div>
-                <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse" />
-              </div>
-              <span className="text-lg font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                SDLC.dev
-              </span>
+              <img src="/img/logo-sdlc-white.png" alt="SDLC.dev" className="h-16 w-auto" />
               <Badge variant="secondary" className="bg-blue-500/10 text-blue-400 border-blue-500/20 text-xs">
                 AI Agent
               </Badge>
@@ -1659,10 +1651,7 @@ export default function ModernLandingPage() {
             <div className="grid gap-6 md:grid-cols-4">
               <div className="space-y-3">
                 <div className="flex items-center space-x-2">
-                  <div className="w-7 h-7 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg flex items-center justify-center">
-                    <Cpu className="h-4 w-4 text-white" />
-                  </div>
-                  <span className="text-base font-bold text-white">SDLC.dev</span>
+                  <img src="/img/logo-sdlc-white.png" alt="SDLC.dev" className="h-10 w-auto" />
                 </div>
                 <p className="text-sm text-gray-400 max-w-xs">
                 Automate. Architect. Accelerate. With Code Yodha

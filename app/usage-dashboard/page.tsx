@@ -77,10 +77,11 @@ const UserHeader: React.FC<UserHeaderProps> = ({ user, userRole, onSignOut }) =>
             </Button>
             
             <img 
-              src="/img/SDLC.dev.logo.svg" 
+              src="/img/logo-sdlc.png" 
               alt="SDLC.dev Logo" 
-              className="h-8 w-auto filter contrast-125 brightness-110" 
+              className="h-16 w-auto" 
             />
+            </div>
             <div className="ml-3 font-bold text-gray-900">
               <span className="text-lg">Usage & Upgrades</span>
             </div>

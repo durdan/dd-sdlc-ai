@@ -79,6 +79,11 @@ Minimum required:
 - `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`
 - `NEXTAUTH_SECRET`
 
+Optional for v0.dev integration:
+- `V0_SYSTEM_API_KEY` - System v0.dev API key for users without their own key (2 generations/day)
+- `V0_SYSTEM_KEY_ENABLED` - Enable/disable system key usage (default: true)
+- `V0_DAILY_LIMIT` - Daily generation limit per user (default: 2)
+
 See `.env.example` for complete list with descriptions.
 
 ### Component Structure

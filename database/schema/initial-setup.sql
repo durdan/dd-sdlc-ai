@@ -78,8 +78,21 @@ CREATE TABLE IF NOT EXISTS user_configurations (
     confluence_api_token TEXT,
     slack_workspace_id TEXT,
     slack_access_token TEXT,
+    v0_api_key TEXT, -- v0.dev API key for UI component generation
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- v0.dev Usage Tracking (for system API key daily limits)
+CREATE TABLE IF NOT EXISTS v0_usage_tracking (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    usage_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    usage_count INTEGER NOT NULL DEFAULT 1,
+    project_ids TEXT[], -- Array of project IDs generated on this date
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id, usage_date)
 );
 
 -- Progress Tracking
@@ -141,7 +154,12 @@ CREATE TABLE IF NOT EXISTS prompt_templates (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
     description TEXT,
-    document_type VARCHAR(50) NOT NULL CHECK (document_type IN ('business', 'functional', 'technical', 'ux', 'mermaid')),
+    document_type VARCHAR(50) NOT NULL CHECK (document_type IN (
+        'business', 'functional', 'technical', 'ux', 'mermaid',
+        'businessAnalysis', 'functionalSpec', 'technicalSpec', 'uxSpec', 'architecture',
+        'comprehensive_sdlc', 'business_analysis', 'functional_spec', 'technical_spec', 'ux_spec',
+        'backlog_structure', 'mermaid_diagrams', 'database', 'dataflow', 'userflow', 'sequence', 'wireframe'
+    )),
     prompt_content TEXT NOT NULL,
     variables JSONB DEFAULT '{}', -- Dynamic variables like {input}, {context}
     ai_model VARCHAR(50) DEFAULT 'gpt-4', -- 'gpt-4', 'claude', 'gemini', etc.
@@ -189,6 +207,22 @@ CREATE TABLE IF NOT EXISTS prompt_experiments (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     CHECK (end_date IS NULL OR start_date < end_date)
+);
+
+-- Wireframe prompts table for managing wireframe generation prompts
+CREATE TABLE IF NOT EXISTS wireframe_prompts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    prompt_template TEXT NOT NULL,
+    category VARCHAR(100),
+    layout_type VARCHAR(50) DEFAULT 'web',
+    variables JSONB DEFAULT '[]'::jsonb,
+    is_active BOOLEAN DEFAULT true,
+    is_default BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL
 );
 
 -- =====================================================
@@ -777,6 +811,9 @@ CREATE INDEX IF NOT EXISTS idx_user_configurations_user_id ON user_configuration
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at);
 
+-- v0.dev usage tracking indexes
+CREATE INDEX IF NOT EXISTS idx_v0_usage_user_date ON v0_usage_tracking(user_id, usage_date);
+
 -- Prompt management indexes
 CREATE INDEX IF NOT EXISTS idx_prompt_templates_document_type ON prompt_templates(document_type);
 CREATE INDEX IF NOT EXISTS idx_prompt_templates_active ON prompt_templates(is_active) WHERE is_active = true;
@@ -786,6 +823,11 @@ CREATE INDEX IF NOT EXISTS idx_prompt_usage_logs_user_id ON prompt_usage_logs(us
 CREATE INDEX IF NOT EXISTS idx_prompt_usage_logs_prompt_id ON prompt_usage_logs(prompt_template_id);
 CREATE INDEX IF NOT EXISTS idx_prompt_experiments_active ON prompt_experiments(is_active) WHERE is_active = true;
 CREATE INDEX IF NOT EXISTS idx_user_roles_user_id ON user_roles(user_id);
+
+-- Wireframe prompts indexes
+CREATE INDEX IF NOT EXISTS idx_wireframe_prompts_active ON wireframe_prompts(is_active) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_wireframe_prompts_category ON wireframe_prompts(category);
+CREATE INDEX IF NOT EXISTS idx_wireframe_prompts_layout_type ON wireframe_prompts(layout_type);
 
 -- Early access indexes
 CREATE INDEX IF NOT EXISTS idx_early_access_user_id ON early_access_enrollments(user_id);
@@ -889,6 +931,7 @@ ALTER TABLE sdlc_projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE integrations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_configurations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE v0_usage_tracking ENABLE ROW LEVEL SECURITY;
 ALTER TABLE progress_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
@@ -896,6 +939,7 @@ ALTER TABLE user_roles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE prompt_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE prompt_usage_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE prompt_experiments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE wireframe_prompts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE early_access_enrollments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE beta_features ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_feature_access ENABLE ROW LEVEL SECURITY;
@@ -943,6 +987,17 @@ CREATE POLICY "Users can insert documents for own projects" ON documents
         )
     );
 
+-- v0.dev Usage Tracking Policies
+CREATE POLICY "Users can view their own v0 usage" ON v0_usage_tracking
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own v0 usage" ON v0_usage_tracking
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own v0 usage" ON v0_usage_tracking
+    FOR UPDATE USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
+
 -- Prompt Management Policies
 CREATE POLICY "Admins can manage all prompts" ON prompt_templates
     FOR ALL USING (
@@ -973,6 +1028,19 @@ CREATE POLICY "Users can view their own usage logs" ON prompt_usage_logs
 
 CREATE POLICY "System can insert usage logs" ON prompt_usage_logs
     FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
+-- Wireframe Prompts Policies
+CREATE POLICY "Users can view active wireframe prompts" ON wireframe_prompts
+    FOR SELECT USING (is_active = true OR created_by = auth.uid());
+
+CREATE POLICY "Users can create their own wireframe prompts" ON wireframe_prompts
+    FOR INSERT WITH CHECK (auth.uid() = created_by);
+
+CREATE POLICY "Users can update their own wireframe prompts" ON wireframe_prompts
+    FOR UPDATE USING (auth.uid() = created_by);
+
+CREATE POLICY "Users can delete their own wireframe prompts" ON wireframe_prompts
+    FOR DELETE USING (auth.uid() = created_by);
 
 -- GitDigest Policies
 CREATE POLICY "Users can view their own digests" ON repo_digests
@@ -1522,6 +1590,75 @@ Requirements: {input}
 
 Generate only the Mermaid diagram code without any additional text or explanations.',
     '{"input": "Project requirements text"}',
+    true,
+    true,
+    1
+),
+(
+    'Default Wireframe Generator',
+    'System default prompt for generating comprehensive wireframes from user descriptions',
+    'wireframe',
+    'You are an expert UX designer creating detailed wireframes.
+
+User Request: {user_prompt}
+
+Create a comprehensive wireframe specification for a {layout_type} interface with the following requirements:
+
+1. **Layout Structure**:
+   - Define the overall layout with appropriate dimensions for {layout_type}
+   - Use a grid system with proper spacing
+   - Include responsive breakpoints if applicable
+
+2. **Components**:
+   - Create a hierarchical component structure
+   - Each component should have:
+     - Unique ID
+     - Type (from standard UI components)
+     - Position and size
+     - Content or placeholder text
+     - Relevant properties
+   - Use semantic component types
+
+3. **Visual Hierarchy**:
+   - Establish clear visual hierarchy
+   - Group related components
+   - Use appropriate spacing and alignment
+
+4. **Annotations** (if {include_annotations} is true):
+   - Add design annotations explaining key decisions
+   - Include interaction notes
+   - Specify content requirements
+   - Note accessibility considerations
+
+5. **User Flow** (if {include_user_flow} is true):
+   - Document the primary user flow
+   - Include step-by-step actions
+   - Note expected results
+   - Identify alternative paths
+
+Output the wireframe specification as a valid JSON object following this structure:
+{
+  "title": "Page/Screen Title",
+  "description": "Brief description of the interface",
+  "layout": {
+    "type": "{layout_type}",
+    "dimensions": { "width": number, "height": number },
+    "grid": { "columns": number, "gap": number, "padding": number }
+  },
+  "components": [...],
+  "annotations": [...],
+  "userFlow": [...]
+}
+
+Important guidelines:
+- Use realistic dimensions (e.g., 1440x900 for desktop, 375x812 for mobile)
+- Components should not overlap unless intentionally layered
+- Use standard component types: header, nav, button, input, card, etc.
+- Ensure proper parent-child relationships for nested components
+- Make the design accessible and user-friendly
+
+Return ONLY the JSON object without any additional text or markdown formatting.',
+    '{"user_prompt": "User wireframe request", "layout_type": "web", "include_annotations": true, "include_user_flow": true}',
     true,
     true,
     1

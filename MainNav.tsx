@@ -42,7 +42,7 @@ export function MainNav() {
   if (loading) return null
 
   return (
-    <div className="flex h-16 items-center border-b px-4">
+    <div className="flex h-20 items-center border-b px-4">
       <div className="flex items-center space-x-4">
         <Link href="/" className="flex items-center space-x-3">
           <img 
