@@ -280,8 +280,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ user, userRole, onSignOut, onCo
                 src="/img/logo-sdlc.png" 
                 alt="SDLC.dev Logo" 
                 className="h-16 w-auto" 
-                />
-              </div>
+              />
               <div className="flex flex-col">
                 <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 bg-clip-text text-transparent font-black tracking-tight">
                   <span className="hidden lg:inline text-2xl">SDLC AI Dashboard</span>

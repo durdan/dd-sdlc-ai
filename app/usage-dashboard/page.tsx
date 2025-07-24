@@ -81,7 +81,6 @@ const UserHeader: React.FC<UserHeaderProps> = ({ user, userRole, onSignOut }) =>
               alt="SDLC.dev Logo" 
               className="h-16 w-auto" 
             />
-            </div>
             <div className="ml-3 font-bold text-gray-900">
               <span className="text-lg">Usage & Upgrades</span>
             </div>
