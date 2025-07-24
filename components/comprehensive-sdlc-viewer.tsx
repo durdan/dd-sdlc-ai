@@ -33,10 +33,12 @@ import {
   Github,
   ExternalLink,
   BookOpen,
-  Archive
+  Archive,
+  Layout
 } from 'lucide-react'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
 import { GitHubProjectsCreator } from './github-projects-creator'
+import { WireframeViewer } from '@/components/wireframe'
 
 interface ComprehensiveSDLCData {
   businessAnalysis?: {
@@ -154,6 +156,7 @@ interface ComprehensiveSDLCData {
     tokenEstimate: number
     contextContinuity: boolean
   }
+  wireframe?: any
 }
 
 interface ComprehensiveSDLCViewerProps {
@@ -700,6 +703,37 @@ export function ComprehensiveSDLCViewer({ data, onExport, onShare, documentId, o
         {data.functionalSpec && renderSection('Functional Specification', data.functionalSpec, 'functional')}
         {data.technicalSpec && renderSection('Technical Specification', data.technicalSpec, 'technical')}
         {data.uxSpec && renderSection('UX Specification', data.uxSpec, 'ux')}
+        {data.wireframe && (
+          <Card key="wireframe" className={`mb-6 bg-purple-50 border-purple-200`}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Layout className="h-5 w-5" />
+                  Wireframe
+                  <Badge variant="secondary" className="ml-2">
+                    Interactive Design
+                  </Badge>
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => toggleSection('wireframe')}
+                >
+                  {expandedSections.includes('wireframe') ? 'Collapse' : 'Expand'}
+                </Button>
+              </div>
+            </CardHeader>
+            
+            {expandedSections.includes('wireframe') && (
+              <CardContent>
+                <WireframeViewer 
+                  wireframe={data.wireframe}
+                  className="w-full"
+                />
+              </CardContent>
+            )}
+          </Card>
+        )}
         {data.dataSpec && renderSection('Data Specification', data.dataSpec, 'data')}
         {data.serviceSpec && renderSection('Service Specification', data.serviceSpec, 'service')}
         {data.deploymentSpec && renderSection('Deployment Specification', data.deploymentSpec, 'deployment')}

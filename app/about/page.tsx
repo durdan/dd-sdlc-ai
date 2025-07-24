@@ -38,9 +38,9 @@ export default function AboutPage() {
               </Link>
               <div className="flex items-center space-x-3">
                 <img 
-                  src="/img/SDLC.dev.logo.svg" 
+                  src="/img/logo-sdlc-white.png" 
                   alt="SDLC.dev Logo" 
-                  className="h-8 w-auto filter drop-shadow-lg" 
+                  className="h-16 w-auto" 
                 />
                 <div className="bg-gradient-to-r from-blue-400 via-purple-400 to-blue-600 bg-clip-text text-transparent font-black text-xl">
                   SDLC.dev

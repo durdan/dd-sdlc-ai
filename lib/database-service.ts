@@ -483,25 +483,38 @@ export class DatabaseService {
   }>> {
     console.log('🔍 DatabaseService: Fetching project generation summaries for user:', userId)
     
-    const { data, error } = await this.supabase
-      .from('project_generations')
-      .select('id, user_id, project_id, generation_type, generation_data, created_at')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1)
+    try {
+      const { data, error } = await this.supabase
+        .from('project_generations')
+        .select('id, user_id, project_id, generation_type, generation_data, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1)
 
-    if (error) {
-      console.error('Error fetching project generation summaries:', {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code
-      })
-      // Return empty array to prevent breaking the UI
+      if (error) {
+        // Check if it's a table not found error
+        if (error.code === '42P01' || error.message?.includes('relation') || error.message?.includes('does not exist')) {
+          console.log('📊 DatabaseService: project_generations table does not exist yet, returning empty array')
+          return []
+        }
+        
+        console.error('Error fetching project generation summaries:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+          table: 'project_generations',
+          userId: userId
+        })
+        // Return empty array to prevent breaking the UI
+        return []
+      }
+      
+      return data || []
+    } catch (err) {
+      console.log('📊 DatabaseService: Unexpected error fetching project generations, returning empty array', err)
       return []
     }
-    
-    return data || []
   }
 
   async getProjectFullDetails(projectId: string, userId: string): Promise<{

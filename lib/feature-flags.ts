@@ -127,10 +127,10 @@ export function withFeatureFlag<T extends object>(
 ) {
   return function FeatureWrappedComponent(props: T) {
     if (!isFeatureEnabled(feature)) {
-      return FallbackComponent ? <FallbackComponent {...props} /> : null;
+      return FallbackComponent ? React.createElement(FallbackComponent, props) : null;
     }
     
-    return <Component {...props} />;
+    return React.createElement(Component, props);
   };
 }
 

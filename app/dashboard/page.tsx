@@ -92,12 +92,14 @@ import {
   Bot,
   Brain,
   Palette,
-  Circle
+  Circle,
+  Layout
 } from "lucide-react"
 import { HowItWorksVisualization } from "@/components/how-it-works-visualization"
 import { PromptEngineering } from "@/components/prompt-engineering"
 import { MarkdownRenderer } from '@/components/markdown-renderer'
 import { MermaidViewer } from '@/components/mermaid-viewer-fixed'
+import { WireframeViewer } from '@/components/wireframe'
 import { IntegrationHub } from '@/components/integration-hub'
 import { VisualizationHub } from '@/components/visualization-hub'
 import { GitDigestDashboard } from '@/components/gitdigest-dashboard'
@@ -275,10 +277,11 @@ const UserHeader: React.FC<UserHeaderProps> = ({ user, userRole, onSignOut, onCo
           <div className="flex items-center">
             <div className="flex items-center space-x-3">
               <img 
-                src="/img/SDLC.dev.logo.svg" 
+                src="/img/logo-sdlc.png" 
                 alt="SDLC.dev Logo" 
-                className="h-12 w-auto filter drop-shadow-lg" 
-              />
+                className="h-16 w-auto" 
+                />
+              </div>
               <div className="flex flex-col">
                 <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 bg-clip-text text-transparent font-black tracking-tight">
                   <span className="hidden lg:inline text-2xl">SDLC AI Dashboard</span>
@@ -463,6 +466,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
   const [showHowItWorks, setShowHowItWorks] = useState(false)
   const [showPromptEngineering, setShowPromptEngineering] = useState(false)
   const [showDatabaseTest, setShowDatabaseTest] = useState(false)
+  const [wireframeModel, setWireframeModel] = useState<'gpt-4' | 'claude-3-opus' | 'claude-3-sonnet' | 'v0-dev'>('gpt-4')
   const [showApiKeyDialog, setShowApiKeyDialog] = useState(false)
   const [tempApiKey, setTempApiKey] = useState("")
   const [showGitHubProjectDialog, setShowGitHubProjectDialog] = useState(false)
@@ -579,9 +583,19 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
   }
 
   // Handle document selection from DocumentSelectionModal
-  const handleDocumentSelection = (selectedDocuments: string[]) => {
+  const handleDocumentSelection = (selectedDocuments: string[], selectedWireframeModel?: string) => {
+    console.log('🔍 handleDocumentSelection called with:', {
+      selectedDocuments,
+      selectedWireframeModel,
+      currentWireframeModel: wireframeModel
+    });
     setShowDocumentSelectionModal(false)
-    generateFreshDocuments(selectedDocuments)
+    if (selectedWireframeModel) {
+      console.log('📝 Setting wireframe model to:', selectedWireframeModel);
+      setWireframeModel(selectedWireframeModel as any)
+    }
+    // Pass the model directly to avoid state closure issues
+    generateFreshDocuments(selectedDocuments, selectedWireframeModel)
   }
 
 
@@ -593,6 +607,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
       { id: "functional", name: "Functional Specification", status: "pending" as const, progress: 0 },
       { id: "technical", name: "Technical Specification", status: "pending" as const, progress: 0 },
       { id: "ux", name: "UX Specification", status: "pending" as const, progress: 0 },
+      { id: "wireframe", name: "Wireframe", status: "pending" as const, progress: 0 },
       { id: "mermaid", name: "Architecture", status: "pending" as const, progress: 0 },
     ]
     
@@ -1584,6 +1599,11 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
       { id: "ux", name: "UX Specification", status: "completed" as const, progress: 100 },
     ]
     
+    // Add wireframe step if wireframe exists in cache
+    if (cached.wireframe) {
+      cachedSteps.push({ id: "wireframe", name: "Wireframe", status: "completed" as const, progress: 100 })
+    }
+    
     // Add mermaid step if mermaid diagrams exist in cache
     if (cached.mermaidDiagrams) {
       cachedSteps.push({ id: "mermaid", name: "Mermaid Diagrams", status: "completed" as const, progress: 100 })
@@ -1597,6 +1617,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
       functional: hasMeaningfulContent(cached.functionalSpec),
       technical: hasMeaningfulContent(cached.technicalSpec),
       ux: hasMeaningfulContent(cached.uxSpec),
+      wireframe: cached.wireframe ? true : false,
       mermaid: hasMeaningfulContent(cached.mermaidDiagrams)
     }
     setGeneratedDocumentsSummary(summary)
@@ -1738,7 +1759,13 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
     return fullContent
   }
 
-  const generateFreshDocuments = async (selectedDocuments?: string[]) => {
+  const generateFreshDocuments = async (selectedDocuments?: string[], selectedWireframeModel?: string) => {
+    // Validate input before proceeding
+    if (!input || input.trim().length < 10) {
+      setErrorMessage("Please enter a project description with at least 10 characters")
+      return
+    }
+    
     setIsProcessing(true)
     setErrorMessage("")
     setGeneratedDocuments({})
@@ -1757,6 +1784,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
       { id: "functional", name: "Functional Specification", status: "pending" as const, progress: 0 },
       { id: "technical", name: "Technical Specification", status: "pending" as const, progress: 0 },
       { id: "ux", name: "UX Specification", status: "pending" as const, progress: 0 },
+      { id: "wireframe", name: "Wireframe", status: "pending" as const, progress: 0 },
       { id: "mermaid", name: "Architecture", status: "pending" as const, progress: 0 },
     ]
 
@@ -2070,7 +2098,79 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         await new Promise(resolve => setTimeout(resolve, 500))
       }
 
-      // Step 5: Mermaid Diagrams
+      // Step 5: Wireframe
+      if (!selectedDocuments || selectedDocuments.includes("wireframe")) {
+        updateStepProgress("wireframe", 0, "in_progress")
+        
+        // Ensure we have valid input for wireframe generation
+        const wireframePrompt = input && input.trim().length >= 10 ? input : "Generate a wireframe for a web application"
+        
+        // Use the passed model or fall back to state
+        const modelToUse = selectedWireframeModel || wireframeModel;
+        console.log('🎯 Wireframe generation - Using model:', modelToUse, '(passed:', selectedWireframeModel, ', state:', wireframeModel, ')');
+        
+        const wireframePayload = {
+          prompt: wireframePrompt,
+          model: modelToUse,
+          ...(currentProjectIdRef.current && { projectId: currentProjectIdRef.current }),
+          layoutType: "web",
+          includeAnnotations: true,
+          includeUserFlow: true,
+        };
+        
+        console.log('📤 Sending wireframe request with payload:', wireframePayload);
+        
+        const wireframeResponse = await fetch("/api/wireframe/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(wireframePayload),
+        })
+        
+        if (!wireframeResponse.ok) {
+          const errorData = await wireframeResponse.json().catch(() => ({ error: "Unknown API error" }))
+          updateStepProgress("wireframe", 0, "error")
+          
+          // Check for freemium limit error
+          if (errorData?.error && (
+            errorData.error.toLowerCase().includes("freemium limit") ||
+            (errorData.error.toLowerCase().includes("daily limit") && !errorData.error.toLowerCase().includes("v0.dev")) ||
+            errorData.error.toLowerCase().includes("usage limit") ||
+            errorData.error.toLowerCase().includes("upgrade required") ||
+            (errorData.error.toLowerCase().includes("api key required") && !errorData.error.toLowerCase().includes("v0.dev"))
+          )) {
+            console.log("🔑 Backend indicated freemium limit reached during wireframe generation, prompting for API key")
+            setIsProcessing(false)
+            setShowApiKeyDialog(true)
+            return
+          }
+          
+          // Check for v0.dev specific errors - these should NOT trigger the OpenAI dialog
+          if (errorData?.error && errorData.error.toLowerCase().includes("v0.dev")) {
+            console.log("⚠️ v0.dev specific error, not triggering OpenAI API key dialog")
+            // The error will be thrown and displayed to the user
+          }
+          
+          throw new Error(errorData?.error || `API request failed with status ${wireframeResponse.status}`)
+        }
+        
+        const wireframeData = await wireframeResponse.json()
+        
+        if (wireframeData.success && wireframeData.wireframe) {
+          results.wireframe = wireframeData.wireframe
+          setGeneratedDocuments((prev: any) => ({ ...prev, wireframe: wireframeData.wireframe }))
+          updateStepProgress("wireframe", 100, "completed")
+          
+          // 💾 Save wireframe data (already saved by API endpoint)
+          console.log("✅ Wireframe saved through API endpoint")
+        } else {
+          throw new Error(wireframeData.error || "Failed to generate wireframe")
+        }
+        
+        // ✨ NEW: Smooth transition delay between steps
+        await new Promise(resolve => setTimeout(resolve, 500))
+      }
+
+      // Step 6: Mermaid Diagrams
       if (!selectedDocuments || selectedDocuments.includes("mermaid")) {
         updateStepProgress("mermaid", 0, "in_progress")
         const mermaidResponse = await fetch("/api/generate-document", {
@@ -2149,6 +2249,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         functional: hasMeaningfulContent(generatedDocuments.functionalSpec || ''),
         technical: hasMeaningfulContent(generatedDocuments.technicalSpec || ''),
         ux: hasMeaningfulContent(generatedDocuments.uxSpec || ''),
+        wireframe: generatedDocuments.wireframe ? true : false,
         mermaid: hasMeaningfulContent(generatedDocuments.mermaidDiagrams || '')
       }
       setGeneratedDocumentsSummary(summary)
@@ -2913,6 +3014,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
       { id: 'functional', name: 'Functional Spec', icon: FileText },
       { id: 'technical', name: 'Technical Spec', icon: Code },
       { id: 'ux', name: 'UX Specification', icon: Palette },
+      { id: 'wireframe', name: 'Wireframe', icon: Layout },
       { id: 'mermaid', name: 'Architecture', icon: GitBranch }
     ]
 
@@ -2965,6 +3067,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                   {doc.id === 'business' ? 'Biz' :
                    doc.id === 'functional' ? 'Func' :
                    doc.id === 'technical' ? 'Tech' :
+                   doc.id === 'wireframe' ? 'Wire' :
                    doc.id === 'mermaid' ? 'Arch' : doc.id}
                 </span>
               </div>
@@ -4307,6 +4410,18 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                             </TabsTrigger>
                             
                             <TabsTrigger 
+                              value="wireframe" 
+                              disabled={!generatedDocuments.wireframe && !processingSteps.find(s => s.id === 'wireframe')?.status.includes('completed')}
+                              className="text-xs sm:text-sm min-w-[120px]"
+                            >
+                              <span className="hidden sm:inline">Wireframe</span>
+                              <span className="sm:hidden">Wireframe</span>
+                              {processingSteps.find(s => s.id === 'wireframe')?.status === 'completed' && (
+                                <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
+                              )}
+                            </TabsTrigger>
+                            
+                            <TabsTrigger 
                               value="diagrams" 
                               disabled={!generatedDocuments.mermaidDiagrams && !processingSteps.find(s => s.id === 'mermaid')?.status.includes('completed')}
                               className="text-xs sm:text-sm min-w-[120px]"
@@ -4350,6 +4465,19 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                             title="UX Specification"
                             type="ux"
                           />
+                        </TabsContent>
+
+                        <TabsContent value="wireframe">
+                          {generatedDocuments.wireframe ? (
+                            <WireframeViewer 
+                              wireframe={generatedDocuments.wireframe}
+                              projectId={currentProjectIdRef.current}
+                            />
+                          ) : (
+                            <div className="text-center text-muted-foreground p-8">
+                              No wireframe available
+                            </div>
+                          )}
                         </TabsContent>
 
                         <TabsContent value="diagrams">
