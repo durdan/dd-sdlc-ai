@@ -302,8 +302,37 @@ export function GitDigestDashboard({ config }: GitDigestDashboardProps) {
 
   useEffect(() => {
     loadUserDigests()
-    loadConnectedRepositories()
     checkGithubConnection()
+  }, [])
+
+  // Check GitHub connection and load repos when connection status changes
+  useEffect(() => {
+    if (githubConnected) {
+      loadConnectedRepositories()
+    }
+  }, [githubConnected])
+
+  // Re-check GitHub connection when tab becomes active
+  useEffect(() => {
+    const handleFocus = () => {
+      checkGithubConnection()
+    }
+    
+    window.addEventListener('focus', handleFocus)
+    
+    // Also check when the tab becomes visible
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        checkGithubConnection()
+      }
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
   }, [])
 
   // Load daily reports when daily reports tab is accessed and currentDigest is available
@@ -315,25 +344,48 @@ export function GitDigestDashboard({ config }: GitDigestDashboardProps) {
 
   const checkGithubConnection = async () => {
     try {
-      const response = await fetch('/api/auth/github/status')
+      const response = await fetch('/api/auth/github/status', {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
       if (response.ok) {
         const data = await response.json()
+        console.log('GitHub connection status:', data)
         setGithubConnected(data.connected)
+        
+        // If connected, also try to load repositories
+        if (data.connected && connectedRepos.length === 0) {
+          loadConnectedRepositories()
+        }
+      } else {
+        console.error('GitHub status check failed:', response.status)
+        setGithubConnected(false)
       }
     } catch (error) {
       console.error('Error checking GitHub connection:', error)
+      setGithubConnected(false)
     }
   }
 
   const loadConnectedRepositories = async () => {
     setIsLoadingRepos(true)
     try {
-      const response = await fetch('/api/auth/github/repos?per_page=50&sort=updated')
+      const response = await fetch('/api/auth/github/repos?per_page=50&sort=updated', {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.repositories) {
           setConnectedRepos(data.repositories)
+          console.log(`Loaded ${data.repositories.length} repositories`)
         }
+      } else {
+        console.error('Failed to load repositories:', response.status)
       }
     } catch (error) {
       console.error('Error loading repositories:', error)
@@ -683,19 +735,32 @@ export function GitDigestDashboard({ config }: GitDigestDashboardProps) {
               <CardContent className="pt-6">
                 <div className="flex items-start gap-3">
                   <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
-                  <div>
+                  <div className="flex-1">
                     <p className="font-medium text-yellow-800">GitHub Not Connected</p>
                     <p className="text-sm text-yellow-700 mt-1">
                       Connect your GitHub account to see your repositories and get better analysis results.
                     </p>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="mt-2 border-yellow-300 text-yellow-800 hover:bg-yellow-100"
-                      onClick={() => window.location.href = '/dashboard#integrations'}
-                    >
-                      Connect GitHub
-                    </Button>
+                    <div className="flex gap-2 mt-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="border-yellow-300 text-yellow-800 hover:bg-yellow-100"
+                        onClick={() => window.location.href = '/dashboard#integrations'}
+                      >
+                        Connect GitHub
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="border-yellow-300 text-yellow-800 hover:bg-yellow-100"
+                        onClick={() => {
+                          checkGithubConnection()
+                        }}
+                      >
+                        <RefreshCw className="w-4 h-4 mr-1" />
+                        Refresh Status
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </CardContent>
