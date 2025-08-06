@@ -4,6 +4,10 @@ import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
+// Singleton mermaid instance to prevent multiple initializations
+let mermaidInstance: any = null
+let mermaidInitialized = false
+
 interface MermaidViewerProps {
   diagrams: {
     architecture: string
@@ -17,6 +21,7 @@ interface MermaidViewerProps {
 export function MermaidViewer({ diagrams, title = "System Architecture Diagrams" }: MermaidViewerProps) {
   const [activeTab, setActiveTab] = useState("architecture")
   const diagramRef = useRef<HTMLDivElement>(null)
+  const renderTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   
   // Helper to check if a diagram has content
   const hasContent = (key: string) => {
@@ -32,8 +37,13 @@ export function MermaidViewer({ diagrams, title = "System Architecture Diagrams"
     }
   }, [diagrams, activeTab])
 
-  // Render Mermaid diagram
+  // Render Mermaid diagram with debouncing and singleton pattern
   useEffect(() => {
+    // Clear any pending render timeout
+    if (renderTimeoutRef.current) {
+      clearTimeout(renderTimeoutRef.current)
+    }
+
     const renderDiagram = async () => {
       if (!diagramRef.current) return
       
@@ -52,46 +62,70 @@ export function MermaidViewer({ diagrams, title = "System Architecture Diagrams"
       }
 
       try {
-        // Dynamic import of Mermaid
-        const mermaid = (await import("mermaid")).default
+        // Initialize mermaid only once
+        if (!mermaidInstance) {
+          mermaidInstance = (await import("mermaid")).default
+        }
         
-        // Initialize Mermaid with basic config
-        mermaid.initialize({
-          startOnLoad: false,
-          theme: "default",
-          securityLevel: "loose"
-        })
+        // Initialize Mermaid with basic config only once
+        if (!mermaidInitialized) {
+          mermaidInstance.initialize({
+            startOnLoad: false,
+            theme: "default",
+            securityLevel: "loose"
+          })
+          mermaidInitialized = true
+        }
 
         // Clear previous content
         diagramRef.current.innerHTML = ''
         
-        // Create unique ID
+        // Create unique ID with timestamp and random component
         const diagramId = `diagram-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
         
+        // Clear any existing SVG with the same ID (prevent conflicts)
+        const existingSvg = document.getElementById(diagramId)
+        if (existingSvg) {
+          existingSvg.remove()
+        }
+        
         // Render the diagram
-        const { svg } = await mermaid.render(diagramId, diagramContent.trim())
-        diagramRef.current.innerHTML = svg
+        const { svg } = await mermaidInstance.render(diagramId, diagramContent.trim())
         
-        console.log('✅ Mermaid diagram rendered successfully for tab:', activeTab)
+        // Check if component is still mounted before updating DOM
+        if (diagramRef.current) {
+          diagramRef.current.innerHTML = svg
+          console.log('✅ Mermaid diagram rendered successfully for tab:', activeTab)
+        }
         
-      } catch (error) {
+      } catch (error: any) {
         console.error('❌ Mermaid rendering error:', error)
-        diagramRef.current.innerHTML = `
-          <div class="flex items-center justify-center h-64 bg-red-50 rounded-lg border-2 border-dashed border-red-300">
-            <div class="text-center p-6">
-              <h3 class="text-lg font-medium text-red-700 mb-2">Diagram Rendering Error</h3>
-              <p class="text-red-600 text-sm">Unable to render this diagram. Check console for details.</p>
-              <details class="mt-4 text-left">
-                <summary class="cursor-pointer text-sm font-medium text-red-700">Show Raw Content</summary>
-                <pre class="mt-2 p-3 bg-red-100 rounded text-xs overflow-auto max-h-32">${diagramContent}</pre>
-              </details>
+        if (diagramRef.current) {
+          diagramRef.current.innerHTML = `
+            <div class="flex items-center justify-center h-64 bg-red-50 rounded-lg border-2 border-dashed border-red-300">
+              <div class="text-center p-6">
+                <h3 class="text-lg font-medium text-red-700 mb-2">Diagram Rendering Error</h3>
+                <p class="text-red-600 text-sm">Unable to render this diagram. Check console for details.</p>
+                <details class="mt-4 text-left">
+                  <summary class="cursor-pointer text-sm font-medium text-red-700">Show Raw Content</summary>
+                  <pre class="mt-2 p-3 bg-red-100 rounded text-xs overflow-auto max-h-32">${diagramContent}</pre>
+                </details>
+              </div>
             </div>
-          </div>
-        `
+          `
+        }
       }
     }
 
-    renderDiagram()
+    // Debounce the render to prevent rapid re-renders
+    renderTimeoutRef.current = setTimeout(renderDiagram, 100)
+    
+    // Cleanup function
+    return () => {
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current)
+      }
+    }
   }, [activeTab, diagrams])
 
   // Get tabs that have content

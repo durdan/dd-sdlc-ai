@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -15,6 +15,10 @@ interface MermaidViewerProps {
   height?: string
 }
 
+// Singleton mermaid instance to prevent multiple initializations
+let mermaidInstance: any = null
+let mermaidInitialized = false
+
 export function MermaidViewerEnhanced({ 
   content, 
   diagrams: providedDiagrams, 
@@ -27,6 +31,7 @@ export function MermaidViewerEnhanced({
   const [errorMessages, setErrorMessages] = useState<Record<string, string>>({})
   const [copiedTab, setCopiedTab] = useState<string | null>(null)
   const diagramRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  const renderTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Helper function to get icon for diagram type
   const getIconForDiagramType = (key: string): string => {
@@ -46,20 +51,23 @@ export function MermaidViewerEnhanced({
   }
 
   // Parse diagrams from content or use provided diagrams
-  const parsedDiagrams = content ? parseMermaidDiagrams(content) : (providedDiagrams || {})
-  
-  // Apply fixes to all diagrams
-  const fixedDiagrams = Object.entries(parsedDiagrams).reduce((acc, [key, diagram]) => {
-    const fixed = fixMermaidSyntax(diagram)
-    const validation = validateMermaidDiagram(fixed)
+  // Use useMemo to prevent recalculation on every render
+  const fixedDiagrams = React.useMemo(() => {
+    const parsedDiagrams = content ? parseMermaidDiagrams(content) : (providedDiagrams || {})
     
-    if (!validation.isValid) {
-      console.warn(`Diagram ${key} validation warning:`, validation.error)
-    }
-    
-    acc[key] = fixed
-    return acc
-  }, {} as Record<string, string>)
+    // Apply fixes to all diagrams
+    return Object.entries(parsedDiagrams).reduce((acc, [key, diagram]) => {
+      const fixed = fixMermaidSyntax(diagram)
+      const validation = validateMermaidDiagram(fixed)
+      
+      if (!validation.isValid) {
+        console.warn(`Diagram ${key} validation warning:`, validation.error)
+      }
+      
+      acc[key] = fixed
+      return acc
+    }, {} as Record<string, string>)
+  }, [content, providedDiagrams])
 
   // Get tabs with content
   const tabsWithContent = Object.entries(fixedDiagrams)
@@ -77,8 +85,13 @@ export function MermaidViewerEnhanced({
     }
   }, [tabsWithContent, activeTab])
 
-  // Render Mermaid diagram
+  // Render Mermaid diagram with debouncing and singleton pattern
   useEffect(() => {
+    // Clear any pending render timeout
+    if (renderTimeoutRef.current) {
+      clearTimeout(renderTimeoutRef.current)
+    }
+
     const renderDiagram = async () => {
       if (!activeTab || viewMode !== "preview") return
       
@@ -90,53 +103,67 @@ export function MermaidViewerEnhanced({
       setRenderStatus(prev => ({ ...prev, [activeTab]: "loading" }))
       
       try {
-        // Dynamic import of Mermaid
-        const mermaid = (await import("mermaid")).default
+        // Initialize mermaid only once
+        if (!mermaidInstance) {
+          mermaidInstance = (await import("mermaid")).default
+        }
         
-        // Initialize with enhanced error handling
-        mermaid.initialize({
-          startOnLoad: false,
-          theme: "default",
-          securityLevel: "loose",
-          deterministicIds: true,
-          fontFamily: "monospace",
-          flowchart: {
-            htmlLabels: true,
-            curve: 'basis'
-          },
-          sequence: {
-            diagramMarginX: 50,
-            diagramMarginY: 10,
-            actorMargin: 50,
-            width: 150,
-            height: 65,
-            boxMargin: 10,
-            boxTextMargin: 5,
-            noteMargin: 10,
-            messageMargin: 35,
-            mirrorActors: true,
-            bottomMarginAdj: 1,
-            useMaxWidth: true,
-            rightAngles: false,
-            showSequenceNumbers: false,
-          }
-        })
+        // Initialize with enhanced error handling only once
+        if (!mermaidInitialized) {
+          mermaidInstance.initialize({
+            startOnLoad: false,
+            theme: "default",
+            securityLevel: "loose",
+            deterministicIds: true,
+            fontFamily: "monospace",
+            flowchart: {
+              htmlLabels: true,
+              curve: 'basis'
+            },
+            sequence: {
+              diagramMarginX: 50,
+              diagramMarginY: 10,
+              actorMargin: 50,
+              width: 150,
+              height: 65,
+              boxMargin: 10,
+              boxTextMargin: 5,
+              noteMargin: 10,
+              messageMargin: 35,
+              mirrorActors: true,
+              bottomMarginAdj: 1,
+              useMaxWidth: true,
+              rightAngles: false,
+              showSequenceNumbers: false,
+            }
+          })
+          mermaidInitialized = true
+        }
 
         // Clear previous content
         diagramRef.innerHTML = '<div class="text-center text-gray-500">Rendering diagram...</div>'
         
-        // Create unique ID
-        const diagramId = `mermaid-${activeTab}-${Date.now()}`
+        // Create unique ID with timestamp and random component
+        const diagramId = `mermaid-${activeTab}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
         
         // Log the diagram content for debugging
-        console.log(`Rendering ${activeTab} diagram:`, diagramContent)
+        console.log(`Rendering ${activeTab} diagram`)
+        
+        // Clear any existing SVG with the same ID (prevent conflicts)
+        const existingSvg = document.getElementById(diagramId)
+        if (existingSvg) {
+          existingSvg.remove()
+        }
         
         // Render the diagram
-        const { svg } = await mermaid.render(diagramId, diagramContent)
-        diagramRef.innerHTML = svg
+        const { svg } = await mermaidInstance.render(diagramId, diagramContent)
         
-        setRenderStatus(prev => ({ ...prev, [activeTab]: "success" }))
-        setErrorMessages(prev => ({ ...prev, [activeTab]: "" }))
+        // Check if component is still mounted before updating DOM
+        if (diagramRef) {
+          diagramRef.innerHTML = svg
+          setRenderStatus(prev => ({ ...prev, [activeTab]: "success" }))
+          setErrorMessages(prev => ({ ...prev, [activeTab]: "" }))
+        }
         
       } catch (error: any) {
         console.error(`Failed to render ${activeTab} diagram:`, error)
@@ -164,7 +191,15 @@ export function MermaidViewerEnhanced({
       }
     }
 
-    renderDiagram()
+    // Debounce the render to prevent rapid re-renders
+    renderTimeoutRef.current = setTimeout(renderDiagram, 100)
+    
+    // Cleanup function
+    return () => {
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current)
+      }
+    }
   }, [activeTab, fixedDiagrams, viewMode])
 
   const copyToClipboard = async (text: string, tabKey: string) => {

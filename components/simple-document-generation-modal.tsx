@@ -35,6 +35,9 @@ import remarkGfm from "remark-gfm"
 import { MermaidViewerEnhanced } from "@/components/mermaid-viewer-enhanced"
 import { anonymousProjectService } from "@/lib/anonymous-project-service"
 import { parseMermaidDiagrams, extractAndFixMermaidDiagrams } from "@/lib/mermaid-parser"
+import { rateLimitService } from "@/lib/rate-limit-service"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Progress } from "@/components/ui/progress"
 
 interface SimpleDocumentGenerationModalProps {
   isOpen: boolean
@@ -109,9 +112,52 @@ export function SimpleDocumentGenerationModal({
   const [copied, setCopied] = useState(false)
   const streamContainerRef = useRef<HTMLDivElement>(null)
   const [hasGenerated, setHasGenerated] = useState(false)
-  const [previouslyGenerated, setPreviouslyGenerated] = useState(false)
-  const [showPreviousDoc, setShowPreviousDoc] = useState(false)
+  const [previousDocuments, setPreviousDocuments] = useState<Record<string, string>>({})
+  const [viewingPreviousDoc, setViewingPreviousDoc] = useState(false)
+  const [rateLimitStatus, setRateLimitStatus] = useState<{
+    remaining: number
+    total: number
+    resetAt: Date
+  } | null>(null)
+  const [rateLimitError, setRateLimitError] = useState<string | null>(null)
   
+  // Check rate limit when modal opens or after generation
+  const checkRateLimit = async () => {
+    try {
+      const sessionId = anonymousProjectService.getSessionId()
+      const response = await fetch('/api/rate-limit/check', {
+        headers: {
+          'x-session-id': sessionId
+        }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (data.status) {
+          setRateLimitStatus({
+            remaining: data.status.remaining,
+            total: data.status.total,
+            resetAt: new Date(data.resetAt)
+          })
+        }
+        
+        if (!data.allowed) {
+          setRateLimitError(data.reason || 'Rate limit exceeded')
+        } else {
+          setRateLimitError(null)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to check rate limit:', error)
+    }
+  }
+  
+  useEffect(() => {
+    if (isOpen) {
+      checkRateLimit()
+    }
+  }, [isOpen])
+
   // Update selectedType when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -121,13 +167,21 @@ export function SimpleDocumentGenerationModal({
         setSelectedType(storedType)
       }
       
-      // Check if user has already generated a document
-      const hasGeneratedBefore = localStorage.getItem('sdlc_has_generated') === 'true'
-      setPreviouslyGenerated(hasGeneratedBefore)
-      
-      // If they have generated before, offer to show their previous document
-      if (hasGeneratedBefore) {
-        setShowPreviousDoc(true)
+      // Load any previously generated documents for this session
+      const savedDocs = localStorage.getItem('sdlc_generated_docs')
+      if (savedDocs) {
+        try {
+          const docs = JSON.parse(savedDocs)
+          setPreviousDocuments(docs)
+          // If we have a previous document for the selected type, show it
+          if (docs[selectedType]) {
+            setGeneratedContent(docs[selectedType])
+            setHasGenerated(true)
+            setViewingPreviousDoc(true)
+          }
+        } catch (e) {
+          console.error('Error loading previous documents:', e)
+        }
       }
     } else {
       // Clean up after modal closes
@@ -135,9 +189,9 @@ export function SimpleDocumentGenerationModal({
     }
   }, [isOpen])
 
-  // Auto-start generation when modal opens
+  // Auto-start generation when modal opens (only if no previous doc exists)
   useEffect(() => {
-    if (isOpen && !isGenerating && !generatedContent && input.trim() && selectedType && !previouslyGenerated) {
+    if (isOpen && !isGenerating && !generatedContent && input.trim() && selectedType && !previousDocuments[selectedType]) {
       console.log('🚀 Auto-starting generation for type:', selectedType)
       // Auto-start generation
       const timer = setTimeout(() => {
@@ -157,6 +211,12 @@ export function SimpleDocumentGenerationModal({
   const handleGenerate = async () => {
     if (!input.trim()) {
       setError("Please enter project details before generating")
+      return
+    }
+
+    // Check rate limit before generating
+    if (rateLimitStatus && rateLimitStatus.remaining === 0) {
+      setRateLimitError("You've reached your daily limit. Sign in for unlimited access!")
       return
     }
 
@@ -227,10 +287,15 @@ export function SimpleDocumentGenerationModal({
                 setGeneratedContent(data.fullContent)
                 setStreamedContent("")
                 setHasGenerated(true)
-                // Mark that user has generated a document
-                localStorage.setItem('sdlc_has_generated', 'true')
+                setViewingPreviousDoc(false)
+                // Save to local storage for this session
+                const updatedDocs = { ...previousDocuments, [selectedType]: data.fullContent }
+                setPreviousDocuments(updatedDocs)
+                localStorage.setItem('sdlc_generated_docs', JSON.stringify(updatedDocs))
                 // Save anonymous project
                 await saveAnonymousProject(data.fullContent)
+                // Refresh rate limit status after generation
+                await checkRateLimit()
               } else if (data.type === 'error') {
                 throw new Error(data.error)
               }
@@ -448,57 +513,68 @@ export function SimpleDocumentGenerationModal({
         }}
       >
         <DialogHeader className="flex-shrink-0">
-          <DialogTitle>Generate SDLC Documentation</DialogTitle>
-          <DialogDescription>
-            Choose a document type to generate. Non-logged-in users can try one document at a time.
-          </DialogDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle>Generate SDLC Documentation</DialogTitle>
+              <DialogDescription>
+                Choose a document type to generate. Non-logged-in users can generate up to 10 documents.
+              </DialogDescription>
+            </div>
+            {rateLimitStatus && (
+              <div className="text-right">
+                <div className="text-sm font-medium text-gray-700">
+                  {rateLimitStatus.remaining}/{rateLimitStatus.total} documents remaining
+                </div>
+                <Progress 
+                  value={(rateLimitStatus.total - rateLimitStatus.remaining) / rateLimitStatus.total * 100} 
+                  className="w-32 h-2 mt-1"
+                />
+                {rateLimitStatus.remaining === 0 && (
+                  <div className="text-xs text-gray-500 mt-1">
+                    Resets {new Date(rateLimitStatus.resetAt).toLocaleTimeString()}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden flex flex-col space-y-4">
-          {/* Show login prompt if user has previously generated */}
-          {previouslyGenerated && !hasGenerated && (
-            <div className="flex-shrink-0">
-              <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                <div className="flex items-start gap-3">
-                  <Lock className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
-                  <div className="flex-1">
-                    <h3 className="font-medium text-amber-900 mb-1">You've Used Your Free Generation</h3>
-                    <p className="text-sm text-amber-800 mb-3">
-                      As a guest, you can generate one document to try our service. To generate more documents, save your work, and unlock all features, please sign in.
-                    </p>
-                    {showPreviousDoc && (
-                      <p className="text-sm text-amber-700 italic mb-2">
-                        💡 Tip: You can still view and copy your previously generated document from your dashboard.
-                      </p>
-                    )}
-                    <div className="flex gap-3">
-                      <Button
-                        size="sm"
-                        className="bg-amber-600 hover:bg-amber-700 text-white"
-                        onClick={() => window.location.href = '/signin'}
-                      >
-                        Sign in to Continue
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={onClose}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
+          {/* Show rate limit error */}
+          {rateLimitError && (
+            <Alert className="flex-shrink-0 border-red-200 bg-red-50">
+              <Lock className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-red-800">
+                <div className="font-medium mb-1">{rateLimitError}</div>
+                <div className="text-sm">
+                  Sign in for unlimited document generation and to save your work.
                 </div>
-              </div>
-            </div>
+                <Button
+                  size="sm"
+                  className="mt-2 bg-red-600 hover:bg-red-700 text-white"
+                  onClick={() => window.location.href = '/signin'}
+                >
+                  Sign in to Continue
+                </Button>
+              </AlertDescription>
+            </Alert>
           )}
 
           {/* Document Type Selection */}
           <div className="flex-shrink-0">
             <Tabs value={selectedType} onValueChange={(value) => {
-              // Don't allow tab change after generation for non-logged users
-              if (!isGenerating && !hasGenerated && !previouslyGenerated) {
+              if (!isGenerating) {
                 setSelectedType(value)
+                // Check if we have a previous document for this type
+                if (previousDocuments[value]) {
+                  setGeneratedContent(previousDocuments[value])
+                  setHasGenerated(true)
+                  setViewingPreviousDoc(true)
+                } else {
+                  setGeneratedContent('')
+                  setHasGenerated(false)
+                  setViewingPreviousDoc(false)
+                }
               }
             }}>
               <TabsList className="grid grid-cols-5 w-full">
@@ -506,42 +582,48 @@ export function SimpleDocumentGenerationModal({
                   <TabsTrigger 
                     key={doc.id} 
                     value={doc.id}
-                    disabled={isGenerating || (hasGenerated && doc.id !== selectedType) || previouslyGenerated}
+                    disabled={isGenerating}
                     className={`flex flex-col items-center gap-1 h-auto py-2 relative ${
-                      (isGenerating || (hasGenerated && doc.id !== selectedType) || previouslyGenerated)
-                        ? 'opacity-50 cursor-not-allowed' 
-                        : ''
+                      isGenerating ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                   >
                     <doc.icon className={`h-4 w-4 ${doc.color}`} />
                     <span className="text-xs">{doc.name}</span>
-                    {(hasGenerated && doc.id !== selectedType) || previouslyGenerated ? (
-                      <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded">
-                        <Lock className="h-3 w-3 text-gray-500" />
-                      </div>
-                    ) : null}
+                    {previousDocuments[doc.id] && (
+                      <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center bg-green-500">
+                        <Check className="h-3 w-3 text-white" />
+                      </Badge>
+                    )}
                   </TabsTrigger>
                 ))}
               </TabsList>
             </Tabs>
 
-            {/* Login prompt for additional documents */}
-            {hasGenerated && (
+            {/* Show document generation status */}
+            {rateLimitStatus && (
               <div className="mt-3 p-3 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-indigo-600" />
                     <p className="text-sm text-gray-700">
-                      <span className="font-medium">Want to generate more documents?</span> Sign in to unlock all document types and save your work.
+                      <span className="font-medium">
+                        {rateLimitStatus.total - rateLimitStatus.remaining} document{(rateLimitStatus.total - rateLimitStatus.remaining) !== 1 ? 's' : ''} generated.
+                      </span>
+                      {rateLimitStatus.remaining > 0 ? 
+                        ` You can generate ${rateLimitStatus.remaining} more document${rateLimitStatus.remaining !== 1 ? 's' : ''}.` :
+                        ' Daily limit reached. Sign in for unlimited access.'
+                      }
                     </p>
                   </div>
-                  <Button
-                    size="sm"
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white"
-                    onClick={() => window.location.href = '/signin'}
-                  >
-                    Sign in
-                  </Button>
+                  {rateLimitStatus.remaining === 0 && (
+                    <Button
+                      size="sm"
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                      onClick={() => window.location.href = '/signin'}
+                    >
+                      Sign in
+                    </Button>
+                  )}
                 </div>
               </div>
             )}
@@ -555,19 +637,24 @@ export function SimpleDocumentGenerationModal({
                     <h3 className="font-medium text-gray-900">{selectedDoc?.name}</h3>
                     <p className="text-sm text-gray-600 mt-1">{selectedDoc?.description}</p>
                   </div>
-                  {hasGenerated ? (
+                  {previousDocuments[selectedType] ? (
+                    <Badge variant="secondary" className="bg-green-100 text-green-700">
+                      <Check className="h-3 w-3 mr-1" />
+                      Generated
+                    </Badge>
+                  ) : rateLimitStatus && rateLimitStatus.remaining > 0 ? (
+                    <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
+                      Free Preview
+                    </Badge>
+                  ) : (
                     <Button
                       size="sm"
                       variant="outline"
                       className="bg-indigo-600 text-white hover:bg-indigo-700"
                       onClick={() => window.location.href = '/signin'}
                     >
-                      Sign in for more
+                      Sign in to generate
                     </Button>
-                  ) : (
-                    <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
-                      Free Preview
-                    </Badge>
                   )}
                 </div>
               </CardContent>
@@ -618,11 +705,32 @@ export function SimpleDocumentGenerationModal({
           )}
 
           {/* Generated Content */}
-          {!previouslyGenerated && (
-            <div className="flex-1 overflow-y-auto bg-white border border-gray-200 rounded-lg p-6">
-              {renderContent()}
-            </div>
-          )}
+          <div className="flex-1 overflow-y-auto bg-white border border-gray-200 rounded-lg p-6">
+            {viewingPreviousDoc && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm text-blue-800">Viewing previously generated {selectedDoc?.name}</span>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={async () => {
+                    setViewingPreviousDoc(false)
+                    setGeneratedContent('')
+                    setHasGenerated(false)
+                    await checkRateLimit() // Update rate limit before regeneration
+                    handleGenerate()
+                  }}
+                  disabled={isGenerating || rateLimitStatus?.remaining === 0}
+                >
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  Regenerate
+                </Button>
+              </div>
+            )}
+            {renderContent()}
+          </div>
         </div>
 
         {/* Footer Actions */}
@@ -658,6 +766,17 @@ export function SimpleDocumentGenerationModal({
                   Download
                 </Button>
               </>
+            )}
+            {/* Show generate button if no content and has quota */}
+            {!generatedContent && !isGenerating && !viewingPreviousDoc && rateLimitStatus && rateLimitStatus.remaining > 0 && (
+              <Button
+                size="sm"
+                onClick={handleGenerate}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white"
+              >
+                <Sparkles className="h-4 w-4 mr-2" />
+                Generate {selectedDoc?.name}
+              </Button>
             )}
           </div>
 

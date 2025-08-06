@@ -1,6 +1,9 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 
+// Rate limiting map for anonymous users
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+
 // List of suspicious patterns to block
 const BLOCKED_PATTERNS = [
   // PHP files
@@ -20,8 +23,8 @@ const BLOCKED_PATTERNS = [
   /\.(git|svn|htaccess|htpasswd|env|config)$/i,
   /\.(sql|db|sqlite)$/i,
   
-  // Admin paths
-  /^\/(admin|administrator|phpmyadmin|pma|cpanel|panel)/i,
+  // Admin paths (excluding our legitimate /admin route)
+  /^\/(administrator|phpmyadmin|pma|cpanel|panel)/i,
   
   // Common vulnerability scanners
   /\/(shell|eval|exec|system|proc|passwd)/i,
@@ -43,8 +46,69 @@ const SECURITY_HEADERS = {
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
 };
 
+// Simple in-memory rate limiter for DDoS protection
+function checkRateLimit(identifier: string, limit: number = 10, windowMs: number = 60000): boolean {
+  const now = Date.now();
+  const userLimit = rateLimitMap.get(identifier);
+  
+  if (!userLimit || now > userLimit.resetTime) {
+    rateLimitMap.set(identifier, { count: 1, resetTime: now + windowMs });
+    return true;
+  }
+  
+  if (userLimit.count >= limit) {
+    return false;
+  }
+  
+  userLimit.count++;
+  return true;
+}
+
+// Clean up old entries periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, value] of rateLimitMap.entries()) {
+    if (now > value.resetTime) {
+      rateLimitMap.delete(key);
+    }
+  }
+}, 60000); // Clean up every minute
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  
+  // Get client IP for rate limiting
+  const clientIP = request.headers.get('x-forwarded-for')?.split(',')[0] || 
+                   request.headers.get('x-real-ip') || 
+                   'unknown';
+  
+  // Apply rate limiting to API routes
+  if (pathname.startsWith('/api/')) {
+    // Stricter limits for generation endpoints
+    if (pathname.includes('generate') || pathname.includes('claude')) {
+      if (!checkRateLimit(`api-generate-${clientIP}`, 5, 60000)) { // 5 requests per minute
+        return new NextResponse('Too Many Requests', { 
+          status: 429,
+          headers: {
+            'Retry-After': '60',
+            'X-RateLimit-Limit': '5',
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': new Date(Date.now() + 60000).toISOString()
+          }
+        });
+      }
+    } else {
+      // General API rate limit
+      if (!checkRateLimit(`api-${clientIP}`, 60, 60000)) { // 60 requests per minute
+        return new NextResponse('Too Many Requests', { 
+          status: 429,
+          headers: {
+            'Retry-After': '60'
+          }
+        });
+      }
+    }
+  }
   
   // Log suspicious requests for monitoring
   const logSuspiciousRequest = (reason: string) => {

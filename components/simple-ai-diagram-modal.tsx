@@ -6,6 +6,10 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { MermaidViewerEnhanced } from './mermaid-viewer-enhanced'
 import { parseMermaidDiagrams } from '@/lib/mermaid-parser'
+import { rateLimitService } from '@/lib/rate-limit-service'
+import { anonymousProjectService } from '@/lib/anonymous-project-service'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Progress } from '@/components/ui/progress'
 
 interface SimpleAIDiagramModalProps {
   isOpen: boolean
@@ -21,10 +25,46 @@ export function SimpleAIDiagramModal({ isOpen, onClose, input }: SimpleAIDiagram
   const [copied, setCopied] = useState(false)
   const [generatedDiagrams, setGeneratedDiagrams] = useState<Record<string, string>>({})
   const streamContainerRef = useRef<HTMLDivElement>(null)
+  const [rateLimitStatus, setRateLimitStatus] = useState<{
+    remaining: number
+    total: number
+    resetAt: Date
+  } | null>(null)
+  const [rateLimitError, setRateLimitError] = useState<string | null>(null)
 
   React.useEffect(() => {
-    if (isOpen && input) {
-      generateDiagram()
+    const checkRateLimit = async () => {
+      try {
+        const sessionId = anonymousProjectService.getSessionId()
+        const response = await fetch('/api/rate-limit/check', {
+          headers: {
+            'x-session-id': sessionId
+          }
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          if (data.status) {
+            setRateLimitStatus({
+              remaining: data.status.remaining,
+              total: data.status.total,
+              resetAt: new Date(data.resetAt)
+            })
+          }
+          
+          if (!data.allowed) {
+            setRateLimitError(data.reason || 'Rate limit exceeded')
+          } else if (input) {
+            generateDiagram()
+          }
+        }
+      } catch (error) {
+        console.error('Failed to check rate limit:', error)
+      }
+    }
+    
+    if (isOpen) {
+      checkRateLimit()
     }
   }, [isOpen, input])
 
@@ -36,6 +76,12 @@ export function SimpleAIDiagramModal({ isOpen, onClose, input }: SimpleAIDiagram
   }, [streamedContent])
 
   const generateDiagram = async () => {
+    // Check rate limit before generating
+    if (rateLimitStatus && rateLimitStatus.remaining === 0) {
+      setRateLimitError("You've reached your daily limit. Sign in for unlimited access!")
+      return
+    }
+
     setIsStreaming(true)
     setError(null)
     setStreamedContent('')
@@ -134,17 +180,58 @@ export function SimpleAIDiagramModal({ isOpen, onClose, input }: SimpleAIDiagram
               <p className="text-sm text-gray-600">Generating visual representations of your system</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
+          <div className="flex items-center gap-4">
+            {rateLimitStatus && (
+              <div className="text-right">
+                <div className="text-sm font-medium text-gray-700">
+                  {rateLimitStatus.remaining}/{rateLimitStatus.total} remaining
+                </div>
+                <Progress 
+                  value={(rateLimitStatus.total - rateLimitStatus.remaining) / rateLimitStatus.total * 100} 
+                  className="w-24 h-2 mt-1"
+                />
+              </div>
+            )}
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
+          </div>
         </div>
 
         {/* Content */}
         <div className="flex-1 overflow-hidden">
-          {error ? (
+          {rateLimitError ? (
+            <div className="p-8">
+              <Alert className="border-red-200 bg-red-50 max-w-lg mx-auto">
+                <AlertCircle className="h-4 w-4 text-red-600" />
+                <AlertDescription className="text-red-800">
+                  <div className="font-medium text-lg mb-2">{rateLimitError}</div>
+                  <div className="text-sm mb-4">
+                    Sign in for unlimited diagram generation and to save your work.
+                  </div>
+                  <div className="flex gap-3">
+                    <Button
+                      size="sm"
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                      onClick={() => window.location.href = '/signin'}
+                    >
+                      Sign in to Continue
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={onClose}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            </div>
+          ) : error ? (
             <div className="p-8 text-center">
               <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">Generation Failed</h3>

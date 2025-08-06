@@ -27,7 +27,8 @@ import {
   Building,
   LogIn,
   UserPlus,
-  Lock
+  Lock,
+  Check
 } from "lucide-react"
 import { createClient } from '@/lib/supabase/client'
 import { SimpleDocumentGenerationModal } from '@/components/simple-document-generation-modal'
@@ -40,6 +41,8 @@ export default function SimpleLandingPage() {
   const [showDocumentMenu, setShowDocumentMenu] = useState(false)
   const [showDocumentModal, setShowDocumentModal] = useState(false)
   const [showInputAlert, setShowInputAlert] = useState(false)
+  const [previousDocuments, setPreviousDocuments] = useState<Record<string, string>>({})
+  const [showViewDocsHint, setShowViewDocsHint] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -48,6 +51,28 @@ export default function SimpleLandingPage() {
         const supabase = createClient()
         const { data: { user } } = await supabase.auth.getUser()
         setUser(user)
+        
+        // Check for previously generated documents
+        const savedDocs = localStorage.getItem('sdlc_generated_docs')
+        if (savedDocs) {
+          try {
+            const docs = JSON.parse(savedDocs)
+            setPreviousDocuments(docs)
+            // Show hint for 5 seconds if there are documents
+            if (Object.keys(docs).length > 0) {
+              setShowViewDocsHint(true)
+              setTimeout(() => setShowViewDocsHint(false), 5000)
+            }
+          } catch (e) {
+            console.error('Error loading previous documents:', e)
+          }
+        }
+        
+        // Load last input if available
+        const lastInput = localStorage.getItem('sdlc_last_input')
+        if (lastInput && !inputValue) {
+          setInputValue(lastInput)
+        }
       } catch (error) {
         console.error('Error checking auth:', error)
       } finally {
@@ -74,6 +99,9 @@ export default function SimpleLandingPage() {
       setShowInputAlert(true)
       return
     }
+    
+    // Save the input for later
+    localStorage.setItem('sdlc_last_input', inputValue)
     
     // Store the selected document type if provided
     if (docType) {
@@ -343,6 +371,35 @@ export default function SimpleLandingPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
+                  {Object.keys(previousDocuments).length > 0 && (
+                    <div className="relative">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          // Use the last input if available
+                          const savedInput = localStorage.getItem('sdlc_last_input')
+                          if (savedInput && !inputValue.trim()) {
+                            setInputValue(savedInput)
+                          }
+                          setShowDocumentModal(true)
+                        }}
+                        className="relative bg-white border-indigo-200 text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 text-sm"
+                      >
+                        <FileText className="h-4 w-4 mr-1.5" />
+                        View Docs
+                        <span className="absolute -top-1.5 -right-1.5 bg-indigo-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                          {Object.keys(previousDocuments).length}
+                        </span>
+                      </Button>
+                      {showViewDocsHint && (
+                        <div className="absolute bottom-full right-0 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap shadow-lg">
+                          <div className="absolute bottom-0 right-4 transform translate-y-1/2 rotate-45 w-2 h-2 bg-gray-900"></div>
+                          You have {Object.keys(previousDocuments).length} generated document{Object.keys(previousDocuments).length > 1 ? 's' : ''}! Click to view.
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <span className="text-sm text-gray-500">SDLC AI</span>
                   <Button
                     size="icon"
@@ -360,16 +417,28 @@ export default function SimpleLandingPage() {
 
           {/* Quick Actions */}
           <div className="flex items-center justify-center gap-3">
-            {features.map((feature, index) => (
-              <button
-                key={index}
-                onClick={() => handleGetStarted(feature.docType)}
-                className="flex items-center gap-2 px-5 py-2.5 bg-white rounded-full border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all"
-              >
-                <feature.icon className="h-5 w-5 text-gray-600" />
-                <span className="text-gray-700 font-medium">{feature.title}</span>
-              </button>
-            ))}
+            {features.map((feature, index) => {
+              const hasDocument = previousDocuments[feature.docType]
+              return (
+                <button
+                  key={index}
+                  onClick={() => handleGetStarted(feature.docType)}
+                  className={`relative flex items-center gap-2 px-5 py-2.5 bg-white rounded-full border transition-all ${
+                    hasDocument 
+                      ? 'border-indigo-300 hover:border-indigo-400 hover:bg-indigo-50' 
+                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <feature.icon className={`h-5 w-5 ${hasDocument ? 'text-indigo-600' : 'text-gray-600'}`} />
+                  <span className={`font-medium ${hasDocument ? 'text-indigo-700' : 'text-gray-700'}`}>
+                    {feature.title}
+                  </span>
+                  {hasDocument && (
+                    <Check className="h-3.5 w-3.5 text-indigo-600" />
+                  )}
+                </button>
+              )
+            })}
           </div>
 
           {/* Info Message */}

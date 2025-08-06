@@ -31,9 +31,12 @@ export function fixMermaidSyntax(diagramContent: string): string {
     return `${nodeId}[${combined}]`
   })
   
-  // Handle multiple line breaks in labels (recursive fix)
+  // Handle multiple line breaks in labels (with max iterations to prevent infinite loop)
   let prevFixed = ''
-  while (prevFixed !== fixed) {
+  let iterations = 0
+  const maxIterations = 10 // Prevent infinite loops
+  
+  while (prevFixed !== fixed && iterations < maxIterations) {
     prevFixed = fixed
     fixed = fixed.replace(/\[([^\[\]]*)\n([^\[\]]*)\]/gm, (match, part1, part2) => {
       if (part1.includes('<br/>') && part2.includes('<br/>')) {
@@ -41,6 +44,11 @@ export function fixMermaidSyntax(diagramContent: string): string {
       }
       return `[${part1.trim()}<br/>${part2.trim()}]`
     })
+    iterations++
+  }
+  
+  if (iterations >= maxIterations) {
+    console.warn('Maximum iterations reached in fixMermaidSyntax - possible malformed content')
   }
 
   // CRITICAL FIX 0.5: Split compressed single-line diagrams
