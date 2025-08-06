@@ -2987,7 +2987,8 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
           />
         ) : null}
 
-        {/* Configuration Dialog */}
+        {/* Old Configuration Dialog - Removed, now using SimplifiedSettingsDialog */}
+        {false && (
         <Dialog open={showConfig} onOpenChange={setShowConfig}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto w-[95vw] sm:w-full">
             <DialogHeader>
@@ -3313,6 +3314,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
             </div>
           </DialogContent>
         </Dialog>
+        )}
 
         {/* Other Dialogs */}
         <Dialog open={showWorkflow} onOpenChange={setShowWorkflow}>
@@ -3361,15 +3363,6 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
               <DialogTitle>Visualization & Presentation Hub</DialogTitle>
             </DialogHeader>
             <VisualizationHub />
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={showIntegrations} onOpenChange={setShowIntegrations}>
-          <DialogContent className="max-w-5xl max-h-[90vh] overflow-auto w-[95vw] sm:w-full">
-            <DialogHeader>
-              <DialogTitle>Integration Hub</DialogTitle>
-            </DialogHeader>
-            <IntegrationHub />
           </DialogContent>
         </Dialog>
 
@@ -3808,7 +3801,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                             variant="ghost"
                             size="sm"
                             onClick={() => {
-                              setShowConfig(true)
+                              setShowSettingsDialog(true)
                               setToolkitExpanded(false)
                             }}
                             className="h-10 min-w-[72px] max-w-[110px] p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
@@ -3826,10 +3819,10 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                               setToolkitExpanded(false)
                             }}
                             className="h-10 min-w-[72px] max-w-[110px] p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
-                            title="Integrations"
+                            title="Integration Hub"
                           >
                             <Plug className="h-4 w-4" />
-                            <span className="text-xs truncate w-full">Integration</span>
+                            <span className="text-xs truncate w-full">Integrations</span>
                           </Button>
                           {/* Workflow */}
                           <Button
