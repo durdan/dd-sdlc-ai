@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
+import { MermaidViewerEnhanced } from '@/components/mermaid-viewer-enhanced'
 import { Skeleton } from '@/components/ui/skeleton'
 import { dbService } from '@/lib/database-service'
 import { 
@@ -412,10 +413,9 @@ export function LazyProjectCard({
               )}
               {fullData.availableTabs.includes('architecture') && (
                 <TabsContent value="architecture" className="mt-2">
-                  <MarkdownRenderer 
+                  <MermaidViewerEnhanced 
                     content={fullData.documents.architecture || ''}
-                    title="Architecture"
-                    type="architecture"
+                    title="Architecture Diagrams"
                   />
                 </TabsContent>
               )}

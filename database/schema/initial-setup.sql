@@ -566,6 +566,11 @@ CREATE TABLE IF NOT EXISTS anonymous_project_sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     session_id TEXT NOT NULL UNIQUE,
     project_data JSONB NOT NULL DEFAULT '{}',
+    user_agent TEXT,
+    ip_address TEXT,
+    referrer TEXT,
+    project_count INTEGER DEFAULT 0,
+    last_activity TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     expires_at TIMESTAMP WITH TIME ZONE
 );
@@ -1351,16 +1356,76 @@ CREATE OR REPLACE FUNCTION save_anonymous_sdlc_project(
 )
 RETURNS UUID AS $$
 DECLARE
-    project_id UUID;
+    v_project_id UUID;
+    v_title TEXT;
+    v_input_text TEXT;
+    v_documents JSONB;
 BEGIN
-    INSERT INTO anonymous_project_sessions (session_id, project_data, expires_at)
-    VALUES (p_session_id, p_project_data, NOW() + INTERVAL '24 hours')
+    -- Generate a new UUID for the project
+    v_project_id := gen_random_uuid();
+    
+    -- Extract data from the JSONB
+    v_title := p_project_data->>'title';
+    v_input_text := p_project_data->>'input_text';
+    v_documents := p_project_data->'documents';
+    
+    -- First, ensure we have a session record
+    INSERT INTO anonymous_project_sessions (
+        session_id,
+        user_agent,
+        ip_address,
+        referrer,
+        project_count,
+        expires_at
+    )
+    VALUES (
+        p_session_id,
+        p_project_data->>'user_agent',
+        p_project_data->>'ip_address',
+        p_project_data->>'referrer',
+        1,
+        NOW() + INTERVAL '24 hours'
+    )
     ON CONFLICT (session_id) 
     DO UPDATE SET 
-        project_data = p_project_data,
+        last_activity = NOW(),
+        project_count = COALESCE(anonymous_project_sessions.project_count, 0) + 1,
         expires_at = NOW() + INTERVAL '24 hours';
     
-    RETURN project_id;
+    -- Insert the project into sdlc_projects table
+    INSERT INTO sdlc_projects (
+        id,
+        user_id,
+        session_id,
+        title,
+        description,
+        input_text,
+        status,
+        document_metadata,
+        created_at
+    )
+    VALUES (
+        v_project_id,
+        NULL, -- Anonymous users have no user_id
+        p_session_id,
+        v_title,
+        p_project_data->>'description',
+        v_input_text,
+        'completed',
+        v_documents,
+        NOW()
+    );
+    
+    -- Insert documents if provided
+    IF v_documents IS NOT NULL THEN
+        -- Insert architecture document if exists
+        IF v_documents->>'architecture' IS NOT NULL THEN
+            INSERT INTO documents (project_id, document_type, content, created_at)
+            VALUES (v_project_id, 'architecture', v_documents->>'architecture', NOW());
+        END IF;
+    END IF;
+    
+    RETURN v_project_id;
 END;
 $$ LANGUAGE plpgsql;
 

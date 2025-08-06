@@ -61,19 +61,30 @@ export class AnonymousProjectService {
       
       console.log('💾 Saving anonymous project:', { title, sessionId })
 
+      const projectData = {
+        title,
+        input_text: inputText,
+        documents,
+        user_agent: userAgent || navigator?.userAgent,
+        ip_address: ipAddress,
+        referrer: referrer || document?.referrer,
+        created_at: new Date().toISOString()
+      }
+
       const { data, error } = await this.supabase
         .rpc('save_anonymous_sdlc_project', {
           p_session_id: sessionId,
-          p_title: title,
-          p_input_text: inputText,
-          p_documents: documents,
-          p_user_agent: userAgent || navigator?.userAgent,
-          p_ip_address: ipAddress,
-          p_referrer: referrer || document?.referrer
+          p_project_data: projectData
         })
 
       if (error) {
         console.error('Error saving anonymous project:', error)
+        console.error('Error details:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        })
         return null
       }
 

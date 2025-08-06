@@ -4,12 +4,14 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthModal } from "@/components/auth/AuthModal";
+import { SimpleAuthModal } from "@/components/auth/SimpleAuthModal";
 import { Cpu, Badge } from "lucide-react"; // Add your logo/icon and badge if needed
 
 export default function SignInPage() {
   const [open, setOpen] = useState(true);
   const { user, loading } = useAuth();
   const router = useRouter();
+  const isSimpleTheme = process.env.NEXT_PUBLIC_LANDING_PAGE_STYLE === 'simple';
 
   useEffect(() => {
     if (!loading && user) {
@@ -26,10 +28,10 @@ export default function SignInPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black text-white">
+      <div className={`min-h-screen flex items-center justify-center ${isSimpleTheme ? 'bg-[#FAF9F7]' : 'bg-black text-white'}`}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-sm text-gray-400">Loading...</p>
+          <div className={`animate-spin rounded-full h-8 w-8 border-b-2 ${isSimpleTheme ? 'border-orange-500' : 'border-blue-600'} mx-auto`}></div>
+          <p className={`mt-2 text-sm ${isSimpleTheme ? 'text-gray-600' : 'text-gray-400'}`}>Loading...</p>
         </div>
       </div>
     );
@@ -38,29 +40,41 @@ export default function SignInPage() {
   if (user) return null;
 
   return (
-    <div className="min-h-screen flex flex-col bg-black text-white">
+    <div className={`min-h-screen flex flex-col ${isSimpleTheme ? 'bg-[#FAF9F7]' : 'bg-black text-white'}`}>
       {/* Header */}
-      <header className="w-full border-b border-gray-800 bg-black/95">
+      <header className={`w-full border-b ${isSimpleTheme ? 'border-gray-200 bg-white' : 'border-gray-800 bg-black/95'}`}>
         <div className="max-w-7xl mx-auto px-4 flex h-14 items-center space-x-3">
-          <div className="relative">
-            <div className="w-7 h-7 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg flex items-center justify-center">
-              <Cpu className="h-4 w-4 text-white" />
+          {isSimpleTheme ? (
+            <img 
+              src="/img/logo-sdlc.png" 
+              alt="SDLC.dev" 
+              className="h-8 w-auto"
+            />
+          ) : (
+            <div className="relative">
+              <div className="w-7 h-7 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg flex items-center justify-center">
+                <Cpu className="h-4 w-4 text-white" />
+              </div>
+              <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse" />
             </div>
-            <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse" />
-          </div>
-          <span className="text-lg font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+          )}
+          <span className={`text-lg font-bold ${isSimpleTheme ? 'text-gray-900' : 'bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent'}`}>
             SDLC.dev
           </span>
-          <span className="ml-2 bg-blue-500/10 text-blue-400 border-blue-500/20 text-xs px-2 py-1 rounded">
+          <span className={`ml-2 ${isSimpleTheme ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'} text-xs px-2 py-1 rounded`}>
             AI Agent
           </span>
         </div>
       </header>
       {/* Centered Auth Modal */}
       <main className="flex-1 flex items-center justify-center">
-        <div className="w-full max-w-md p-8 rounded-xl bg-gray-900 border border-gray-800 shadow-lg">
-          <AuthModal open={open} onOpenChange={handleOpenChange} />
-        </div>
+        {isSimpleTheme ? (
+          <SimpleAuthModal open={open} onOpenChange={handleOpenChange} />
+        ) : (
+          <div className="w-full max-w-md p-8 rounded-xl bg-gray-900 border border-gray-800 shadow-lg">
+            <AuthModal open={open} onOpenChange={handleOpenChange} />
+          </div>
+        )}
       </main>
     </div>
   );

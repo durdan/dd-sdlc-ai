@@ -63,8 +63,20 @@ import { AIDiagramModal } from '@/components/ai-diagram-modal'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Textarea } from '@/components/ui/textarea'
 import Head from 'next/head'
+import SimpleLandingPage from './simple-landing-page'
 
-export default function ModernLandingPage() {
+export default function Page() {
+  // Check if we should use the simple landing page
+  const landingPageStyle = process.env.NEXT_PUBLIC_LANDING_PAGE_STYLE || 'default'
+  
+  if (landingPageStyle === 'simple') {
+    return <SimpleLandingPage />
+  }
+  
+  return <ModernLandingPage />
+}
+
+function ModernLandingPage() {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [showEarlyAccessDialog, setShowEarlyAccessDialog] = useState(false)
   const [showAIDiagramModal, setShowAIDiagramModal] = useState(false)

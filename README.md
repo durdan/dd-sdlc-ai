@@ -10,6 +10,14 @@
 
 **SDLC Automation Platform** is an open-source platform that automates the creation of software development life cycle documentation using advanced AI models. Generate business analysis, functional specifications, technical documentation, and UX specifications in minutes with a powerful prompt management system.
 
+## 🆕 Recent Updates
+
+- **Anonymous User Support**: Generate architecture diagrams without signing up
+- **Enhanced Mermaid Viewer**: Improved diagram parsing with preview/raw toggle
+- **Simple Landing Page**: Clean, Claude-inspired interface option
+- **Security Hardening**: Middleware protection against malicious requests
+- **Mobile Responsive**: Optimized UI for all device sizes
+
 ## ✨ Key Features
 
 ### 🤖 AI-Powered Document Generation
@@ -56,10 +64,7 @@
 git clone https://github.com/your-org/sdlc-automation-platform.git
 cd sdlc-automation-platform
 
-# Quick start (recommended)
-./scripts/quick-start.sh
-
-# Or install manually
+# Install dependencies
 npm install
 ```
 
@@ -96,13 +101,17 @@ SLACK_BOT_TOKEN=your_slack_token
 
 ### 3. Database Setup
 
-#### Quick Setup (Recommended)
 1. Create a new Supabase project at [supabase.com](https://supabase.com)
 2. Go to the SQL Editor in your Supabase dashboard
-3. Copy and run the complete setup script:
+3. Run the complete setup script:
    ```sql
-   -- Copy the entire contents of database/schema/initial-setup.sql
-   -- This single script creates all tables, functions, and default data
+   -- Copy and run the entire contents of:
+   database/schema/initial-setup.sql
+   ```
+4. (Optional) For anonymous user support, run:
+   ```sql
+   -- Copy and run the entire contents of:
+   database/migrations/consolidated-anonymous-support.sql
    ```
 
 #### Manual Setup (Advanced)
@@ -236,10 +245,9 @@ npm run start            # Start production server
 npm run lint             # Run ESLint
 npm run type-check       # Run TypeScript checks
 
-# Database
-npm run db:migrate       # Run database migrations
-npm run db:seed          # Seed sample data
-npm run db:reset         # Reset database
+# Database (run in Supabase SQL editor)
+# database/schema/initial-setup.sql      # Complete setup
+# database/migrations/*.sql              # Individual migrations
 
 # Testing
 npm run test             # Run tests

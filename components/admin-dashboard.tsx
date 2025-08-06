@@ -12,6 +12,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { AlertCircle, Users, TrendingUp, Activity, Settings, Calendar, BarChart3, Shield, Key } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts'
+import AnonymousDocumentsView from '@/components/admin/anonymous-documents-view'
+import AllProjectsView from '@/components/admin/all-projects-view'
 
 interface AdminUserStats {
   id: string
@@ -236,7 +238,7 @@ export default function AdminDashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{todayStats.total_projects}</div>
             <p className="text-xs text-muted-foreground">
-              {todayStats.system_key_usage} system / {todayStats.user_key_usage} user keys
+              {todayStats.anonymous_projects || 0} anonymous / {todayStats.authenticated_projects || 0} authenticated
             </p>
           </CardContent>
         </Card>
@@ -476,12 +478,18 @@ export default function AdminDashboard() {
       </Card>
 
       {/* Main Content */}
-      <Tabs defaultValue="users" className="space-y-4">
+      <Tabs defaultValue="projects" className="space-y-4">
         <TabsList>
+          <TabsTrigger value="projects">All Projects</TabsTrigger>
           <TabsTrigger value="users">User Management</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="trends">Usage Trends</TabsTrigger>
+          <TabsTrigger value="anonymous">Anonymous Documents</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="projects" className="space-y-4">
+          <AllProjectsView />
+        </TabsContent>
 
         <TabsContent value="users" className="space-y-4">
           {/* User Filters */}
@@ -640,6 +648,10 @@ export default function AdminDashboard() {
               </ResponsiveContainer>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="anonymous" className="space-y-4">
+          <AnonymousDocumentsView />
         </TabsContent>
       </Tabs>
 

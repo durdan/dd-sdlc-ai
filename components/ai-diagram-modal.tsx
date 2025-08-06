@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { MermaidViewer } from "@/components/mermaid-viewer-fixed"
+import { MermaidViewerEnhanced } from "@/components/mermaid-viewer-enhanced"
 import {
   CheckCircle,
   AlertCircle,
@@ -424,7 +424,7 @@ useEffect(() => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <MermaidViewer
+                    <MermaidViewerEnhanced
                       diagrams={generatedDiagrams}
                       title="System Architecture Preview"
                     />

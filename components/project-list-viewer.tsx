@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
+import { MermaidViewerEnhanced } from '@/components/mermaid-viewer-enhanced'
 import { 
   GitBranch, 
   ExternalLink, 
@@ -571,10 +572,9 @@ export function ProjectListViewer({
                         )}
                         {availableTabs.includes('architecture') && (
                           <TabsContent value="architecture" className="mt-2">
-                            <MarkdownRenderer 
-                              content={project.documents.architecture}
-                              title="Architecture"
-                              type="architecture"
+                            <MermaidViewerEnhanced 
+                              content={project.documents.architecture || project.documents.mermaidDiagrams || ''}
+                              title="Architecture Diagrams"
                             />
                           </TabsContent>
                         )}

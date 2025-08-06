@@ -98,10 +98,11 @@ import {
 import { HowItWorksVisualization } from "@/components/how-it-works-visualization"
 import { PromptEngineering } from "@/components/prompt-engineering"
 import { MarkdownRenderer } from '@/components/markdown-renderer'
-import { MermaidViewer } from '@/components/mermaid-viewer-fixed'
+import { MermaidViewerEnhanced } from '@/components/mermaid-viewer-enhanced'
 import { WireframeViewer } from '@/components/wireframe'
 import { IntegrationHub } from '@/components/integration-hub'
 import { VisualizationHub } from '@/components/visualization-hub'
+import { parseMermaidDiagrams } from '@/lib/mermaid-parser'
 import { GitDigestDashboard } from '@/components/gitdigest-dashboard'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -1391,162 +1392,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
     }
   }
 
-  // Helper function to check if content contains actual diagram content
-  const hasDiagramContent = (content: string): boolean => {
-    if (!content || content.trim() === '') return false
-    
-    // Check for Mermaid diagram syntax
-    const mermaidKeywords = ['graph', 'flowchart', 'erDiagram', 'sequenceDiagram', 'journey', 'pie', 'gantt', 'classDiagram', 'stateDiagram']
-    const hasMermaidSyntax = mermaidKeywords.some(keyword => content.toLowerCase().includes(keyword))
-    
-    // Check for code blocks that might contain diagrams
-    const hasCodeBlocks = /```(?:mermaid)?[\s\S]*?```/g.test(content)
-    
-    return hasMermaidSyntax || hasCodeBlocks
-  }
 
-  // Helper function to parse Mermaid content into separate diagrams
-  const parseMermaidDiagrams = (mermaidContent: string) => {
-    if (!mermaidContent || mermaidContent.trim() === '') {
-      return {}
-    }
-
-    // Only parse if content actually contains diagram syntax
-    if (!hasDiagramContent(mermaidContent)) {
-      return {}
-    }
-
-    // Clean the content first - remove any streaming artifacts
-    let cleanedContent = mermaidContent
-      .replace(/data:\s*\{[^}]*\}/g, '') // Remove data: {...} lines
-      .replace(/data:\s*\[DONE\]/g, '') // Remove [DONE] markers
-      .replace(/^\s*[\r\n]+/gm, '') // Remove empty lines
-      .trim()
-    
-    if (!cleanedContent || cleanedContent.length < 10) {
-      return {}
-    }
-
-    // Check for markdown headers and code blocks
-    const hasMarkdownHeaders = /^\s*#+\s+.+$/m.test(cleanedContent)
-    const hasMermaidCodeBlocks = /```(?:mermaid)?[\s\S]*?```/g.test(cleanedContent)
-
-    // Fully generic approach - create an empty diagram object with no hardcoded keys
-    const diagrams: Record<string, string> = {}
-
-    // Try to split by both markdown headers and Mermaid section comments
-    const sectionMarkers: {name: string, index: number}[] = []
-    let foundSections = false
-    
-    // First, try to find markdown headers like "## System Architecture Diagram"
-    const markdownHeaderRegex = /^##\s+([^\n]+?)\s*(?:Diagram)?\s*$/gmi
-    let match
-    while ((match = markdownHeaderRegex.exec(cleanedContent)) !== null) {
-      foundSections = true
-      const sectionName = match[1].trim().toLowerCase().replace(/\s+/g, '')
-      sectionMarkers.push({
-        name: sectionName,
-        index: match.index + match[0].length
-      })
-    }
-    
-    // Also try Mermaid section comments like "%% System Architecture Diagram"
-    const sectionCommentRegex = /%%\s*([A-Za-z\s]+)\s*Diagram/gi
-    sectionCommentRegex.lastIndex = 0 // Reset regex state
-    while ((match = sectionCommentRegex.exec(cleanedContent)) !== null) {
-      foundSections = true
-      const sectionName = match[1].trim().toLowerCase().replace(/\s+/g, '')
-      sectionMarkers.push({
-        name: sectionName,
-        index: match.index + match[0].length
-      })
-    }
-    
-    // Sort section markers by index to process them in order
-    sectionMarkers.sort((a, b) => a.index - b.index)
-    
-    // Now process the sections with known boundaries
-    if (sectionMarkers.length > 0) {
-      for (let i = 0; i < sectionMarkers.length; i++) {
-        const currentMarker = sectionMarkers[i]
-        const nextMarker = sectionMarkers[i + 1]
-        const endIndex = nextMarker ? nextMarker.index : cleanedContent.length
-        
-        // Extract the diagram content
-        const diagramContent = cleanedContent.substring(currentMarker.index, endIndex).trim()
-        
-        // Store each diagram with its own section name as the key
-        // No hardcoded categories - fully generic
-        diagrams[currentMarker.name] = diagramContent
-      }
-    }
-    
-    // If no sections found, try to identify diagram types directly
-    if (!foundSections) {
-      // Split by markdown headers or code blocks if present
-      let diagramBlocks: string[] = []
-      
-      if (hasMermaidCodeBlocks) {
-        const codeBlockRegex = /```(?:mermaid)?\s*([\s\S]*?)```/g
-        let codeMatch
-        while ((codeMatch = codeBlockRegex.exec(cleanedContent)) !== null) {
-          if (codeMatch[1] && codeMatch[1].trim()) {
-            diagramBlocks.push(codeMatch[1].trim())
-          }
-        }
-      } else {
-        // Try to split by common diagram type declarations
-        const diagramTypeRegex = /(graph|flowchart|sequenceDiagram|erDiagram|classDiagram|stateDiagram|gantt|pie|journey|gitGraph)/gi
-        let lastTypeIndex = 0
-        let typeMatch
-        
-        while ((typeMatch = diagramTypeRegex.exec(cleanedContent)) !== null) {
-          if (typeMatch.index > lastTypeIndex) {
-            const previousContent = cleanedContent.substring(lastTypeIndex, typeMatch.index).trim()
-            if (previousContent && /^\w+\s/.test(previousContent)) {
-              diagramBlocks.push(previousContent)
-            }
-          }
-          lastTypeIndex = typeMatch.index
-        }
-        
-        // Add the last block
-        if (lastTypeIndex < cleanedContent.length) {
-          const lastBlock = cleanedContent.substring(lastTypeIndex).trim()
-          if (lastBlock) diagramBlocks.push(lastBlock)
-        }
-      }
-      
-      // Categorize each diagram block - using a fully generic approach
-      diagramBlocks.forEach((block, index) => {
-        // Determine diagram type from content for naming
-        let diagramType = 'diagram'
-        
-        // Try to determine a more specific type based on content
-        if (block.includes('graph ') || block.includes('flowchart ')) {
-          diagramType = 'flowchart'
-        }
-        else if (block.includes('erDiagram')) {
-          diagramType = 'entityrelationship'
-        }
-        else if (block.includes('sequenceDiagram')) {
-          diagramType = 'sequence'
-        }
-        else if (block.includes('classDiagram')) {
-          diagramType = 'class'
-        }
-        else if (block.includes('stateDiagram')) {
-          diagramType = 'state'
-        }
-        
-        // Create a unique key for this diagram
-        const diagramKey = `${diagramType}${index + 1}`
-        diagrams[diagramKey] = block
-      })
-    }
-
-    return diagrams
-  }
 
   // Helper function to check for meaningful content
   const hasMeaningfulContent = (content: string) => {
@@ -4482,13 +4328,13 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                         <TabsContent value="diagrams">
                           {(() => {
                             const mermaidContent = generatedDocuments.mermaidDiagrams || ""
-                            const diagrams = parseMermaidDiagrams(mermaidContent)
-                            const hasDiagrams = Object.keys(diagrams).length > 0
                             
-                            if (hasDiagrams) {
+                            if (mermaidContent) {
+                              // Always use MermaidViewerEnhanced - it handles both valid and invalid diagrams
                               return (
-                                <MermaidViewer
-                                  diagrams={diagrams}
+                                <MermaidViewerEnhanced
+                                  content={mermaidContent}
+                                  title="Architecture Diagrams"
                                 />
                               )
                             } else {
@@ -4499,14 +4345,6 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                                     <h3 className="text-lg font-medium text-gray-700">No Architecture Diagrams</h3>
                                     <p className="text-sm text-gray-600">No architecture diagrams were generated for this project.</p>
                                   </div>
-                                  {mermaidContent && (
-                                    <div className="mt-4 p-4 bg-gray-50 rounded-lg text-left border border-gray-200">
-                                      <h4 className="font-medium mb-2 text-gray-800">Generated Content:</h4>
-                                      <div className="text-sm text-gray-700 max-h-40 overflow-y-auto bg-white p-3 rounded border">
-                                        <pre className="whitespace-pre-wrap font-mono text-xs text-gray-800">{mermaidContent}</pre>
-                                      </div>
-                                    </div>
-                                  )}
                                 </div>
                               )
                             }
