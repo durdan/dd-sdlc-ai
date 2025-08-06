@@ -13,15 +13,15 @@ export async function GET(request: NextRequest) {
   // If there's an error from GitHub
   if (error) {
     const errorDescription = searchParams.get('error_description') || 'Unknown error'
-    return NextResponse.redirect(new URL(`/?github_error=${encodeURIComponent(errorDescription)}`, request.url))
+    return NextResponse.redirect(new URL(`/dashboard?github_error=${encodeURIComponent(errorDescription)}`, request.url))
   }
 
-  // If successful, redirect back to the main page with the code and state
-  // The frontend will handle the token exchange
+  // If successful, redirect to dashboard with the code and state
+  // The Integration Hub component will handle the token exchange
   if (code && state) {
-    return NextResponse.redirect(new URL(`/?code=${code}&state=${state}`, request.url))
+    return NextResponse.redirect(new URL(`/dashboard?code=${code}&state=${state}#integrations`, request.url))
   }
 
-  // If no code or state, redirect back to main page
-  return NextResponse.redirect(new URL('/', request.url))
+  // If no code or state, redirect to dashboard
+  return NextResponse.redirect(new URL('/dashboard#integrations', request.url))
 }

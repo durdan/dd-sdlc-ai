@@ -57,6 +57,7 @@ export function IntegrationHub() {
   const [activeTab, setActiveTab] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
   const [isMounted, setIsMounted] = useState(false)
+  const [isProcessingOAuth, setIsProcessingOAuth] = useState(false)
 
   // Integration configurations
   const [integrationConfigs, setIntegrationConfigs] = useState<IntegrationConfig>({
@@ -772,10 +773,13 @@ export function IntegrationHub() {
     const storedState = sessionStorage.getItem('github_oauth_state')
     
     if (code && state && state === storedState) {
+      // Show processing state
+      setIsProcessingOAuth(true)
+      
       // Exchange code for access token
       handleGitHubOAuthCallback(code)
       
-      // Clean up URL
+      // Clean up URL and state
       window.history.replaceState({}, document.title, window.location.pathname)
       sessionStorage.removeItem('github_oauth_state')
     }
@@ -884,6 +888,7 @@ export function IntegrationHub() {
           // Enable the integration
           toggleIntegration('github')
           
+          setIsProcessingOAuth(false)
           alert(`✅ Successfully connected to GitHub as ${userData.login}! Found ${repositories.length} repositories.`)
         } else {
           throw new Error('Failed to get user info from GitHub')
@@ -893,6 +898,7 @@ export function IntegrationHub() {
       }
     } catch (error) {
       console.error('GitHub OAuth error:', error)
+      setIsProcessingOAuth(false)
       alert('❌ Failed to connect to GitHub. Please try again.')
     }
   }
@@ -1534,6 +1540,18 @@ export function IntegrationHub() {
                   {/* GitHub Settings */}
                   {integration.id === "github" && (
                     <div className="space-y-4">
+                      {/* OAuth Processing Indicator */}
+                      {isProcessingOAuth && (
+                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                            <span className="text-sm text-blue-700 font-medium">
+                              Processing GitHub authentication...
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      
                       {/* Connection Status */}
                       <div className="p-3 bg-gray-50 rounded-lg">
                         <div className="flex items-center justify-between mb-2">
