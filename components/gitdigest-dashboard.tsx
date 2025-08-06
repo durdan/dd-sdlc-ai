@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { GitDigestWorkflowWizard } from './gitdigest-workflow-wizard'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -42,7 +43,10 @@ import {
   Webhook,
   Copy,
   Bell,
-  Github
+  Github,
+  Activity,
+  GitCommit,
+  Sparkles
 } from 'lucide-react'
 
 // ============================================================================
@@ -268,6 +272,8 @@ interface GitDigestDashboardProps {
 export function GitDigestDashboard({ config }: GitDigestDashboardProps) {
   const [repoUrl, setRepoUrl] = useState<string>('')
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [analysisProgress, setAnalysisProgress] = useState(0)
+  const [analysisStatus, setAnalysisStatus] = useState<string>('')
   const [currentDigest, setCurrentDigest] = useState<any>(null)
   const [userDigests, setUserDigests] = useState<any[]>([])
   const [dailyReports, setDailyReports] = useState<any[]>([])
@@ -299,6 +305,8 @@ export function GitDigestDashboard({ config }: GitDigestDashboardProps) {
   const [isLoadingWebhooks, setIsLoadingWebhooks] = useState(false)
   const [webhookToken, setWebhookToken] = useState('')
   const [savingSettings, setSavingSettings] = useState(false)
+  const [showWorkflowWizard, setShowWorkflowWizard] = useState(false)
+  const [selectedRepoForWizard, setSelectedRepoForWizard] = useState<GitHubRepository | null>(null)
 
   useEffect(() => {
     loadUserDigests()
@@ -397,7 +405,10 @@ export function GitDigestDashboard({ config }: GitDigestDashboardProps) {
   const handleRepoSelect = (repo: GitHubRepository) => {
     setRepoUrl(repo.url || '')
     setError(null) // Clear any existing errors
-    // Don't change active tab since we're already on analyze tab
+    
+    // Show workflow wizard for automation setup
+    setSelectedRepoForWizard(repo)
+    setShowWorkflowWizard(true)
   }
 
   // ============================================================================
@@ -433,6 +444,22 @@ export function GitDigestDashboard({ config }: GitDigestDashboardProps) {
     setIsAnalyzing(true)
     setCurrentDigest(null)
     setError(null)
+    setAnalysisProgress(0)
+    setAnalysisStatus('Initializing repository analysis...')
+
+    // Simulate progress updates
+    const progressInterval = setInterval(() => {
+      setAnalysisProgress(prev => {
+        if (prev >= 90) return prev
+        return prev + Math.random() * 15
+      })
+    }, 1500)
+
+    // Update status messages
+    const statusTimeout1 = setTimeout(() => setAnalysisStatus('Fetching repository data...'), 2000)
+    const statusTimeout2 = setTimeout(() => setAnalysisStatus('Analyzing commit history...'), 5000)
+    const statusTimeout3 = setTimeout(() => setAnalysisStatus('Reviewing pull requests and issues...'), 8000)
+    const statusTimeout4 = setTimeout(() => setAnalysisStatus('Generating AI-powered insights...'), 12000)
 
     try {
       const response = await fetch('/api/gitdigest/analyze', {
@@ -445,6 +472,14 @@ export function GitDigestDashboard({ config }: GitDigestDashboardProps) {
           openaiKey: config.openaiKey
         }),
       })
+
+      clearInterval(progressInterval)
+      clearTimeout(statusTimeout1)
+      clearTimeout(statusTimeout2)
+      clearTimeout(statusTimeout3)
+      clearTimeout(statusTimeout4)
+      setAnalysisProgress(100)
+      setAnalysisStatus('Analysis complete!')
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
@@ -460,8 +495,15 @@ export function GitDigestDashboard({ config }: GitDigestDashboardProps) {
     } catch (error) {
       console.error('Error analyzing repository:', error)
       setError(error instanceof Error ? error.message : 'Failed to analyze repository')
+      clearInterval(progressInterval)
+      clearTimeout(statusTimeout1)
+      clearTimeout(statusTimeout2)
+      clearTimeout(statusTimeout3)
+      clearTimeout(statusTimeout4)
     } finally {
       setIsAnalyzing(false)
+      setAnalysisProgress(0)
+      setAnalysisStatus('')
     }
   }
 
@@ -697,10 +739,37 @@ export function GitDigestDashboard({ config }: GitDigestDashboardProps) {
               className={`font-mono ${repoUrl ? 'border-green-500' : ''}`}
             />
             {repoUrl && (
-              <p className="text-sm text-green-600 flex items-center gap-1">
-                <CheckCircle className="w-4 h-4" />
-                Repository URL set: {repoUrl}
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-green-600 flex items-center gap-1">
+                  <CheckCircle className="w-4 h-4" />
+                  Repository URL set: {repoUrl}
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    const repoName = repoUrl.split('/').pop() || ''
+                    const repoOwner = repoUrl.includes('github.com') 
+                      ? repoUrl.split('/')[repoUrl.split('/').length - 2]
+                      : repoUrl.split('/')[0]
+                    setSelectedRepoForWizard({
+                      id: 0,
+                      name: repoName,
+                      fullName: `${repoOwner}/${repoName}`,
+                      url: repoUrl.startsWith('http') ? repoUrl : `https://github.com/${repoUrl}`,
+                      private: false,
+                      description: null,
+                      language: null,
+                      updatedAt: new Date().toISOString(),
+                    } as GitHubRepository)
+                    setShowWorkflowWizard(true)
+                  }}
+                  className="text-xs"
+                >
+                  <Sparkles className="w-3 h-3 mr-1" />
+                  Enable Automation
+                </Button>
+              </div>
             )}
           </div>
 
@@ -729,6 +798,58 @@ export function GitDigestDashboard({ config }: GitDigestDashboardProps) {
               </>
             )}
           </Button>
+
+          {/* Analysis Progress Feedback */}
+          {isAnalyzing && (
+            <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+              <CardContent className="pt-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-blue-400 rounded-full animate-ping opacity-20"></div>
+                        <Activity className="w-5 h-5 text-blue-600 relative z-10" />
+                      </div>
+                      <span className="text-sm font-medium text-blue-900">
+                        {analysisStatus || 'Processing...'}
+                      </span>
+                    </div>
+                    <span className="text-sm font-semibold text-blue-600">
+                      {Math.round(analysisProgress)}%
+                    </span>
+                  </div>
+                  
+                  <div className="relative">
+                    <Progress value={analysisProgress} className="h-2" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-indigo-400 rounded-full opacity-20 blur-sm"></div>
+                  </div>
+                  
+                  <div className="grid grid-cols-4 gap-2 text-xs">
+                    <div className={`flex items-center gap-1 ${analysisProgress >= 10 ? 'text-blue-600' : 'text-gray-400'}`}>
+                      <CheckCircle className="w-3 h-3" />
+                      <span>Repository</span>
+                    </div>
+                    <div className={`flex items-center gap-1 ${analysisProgress >= 35 ? 'text-blue-600' : 'text-gray-400'}`}>
+                      <GitCommit className="w-3 h-3" />
+                      <span>Commits</span>
+                    </div>
+                    <div className={`flex items-center gap-1 ${analysisProgress >= 60 ? 'text-blue-600' : 'text-gray-400'}`}>
+                      <GitPullRequest className="w-3 h-3" />
+                      <span>Pull Requests</span>
+                    </div>
+                    <div className={`flex items-center gap-1 ${analysisProgress >= 85 ? 'text-blue-600' : 'text-gray-400'}`}>
+                      <Sparkles className="w-3 h-3" />
+                      <span>AI Analysis</span>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-gray-600 italic">
+                    This typically takes 30-60 seconds depending on repository size...
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {!githubConnected && (
             <Card className="border-yellow-200 bg-yellow-50">
@@ -1733,6 +1854,32 @@ export function GitDigestDashboard({ config }: GitDigestDashboardProps) {
           {renderSettingsTab()}
         </TabsContent>
       </Tabs>
+
+      {/* Workflow Setup Wizard */}
+      {showWorkflowWizard && selectedRepoForWizard && (
+        <GitDigestWorkflowWizard
+          isOpen={showWorkflowWizard}
+          onClose={() => {
+            setShowWorkflowWizard(false)
+            setSelectedRepoForWizard(null)
+          }}
+          repository={{
+            fullName: selectedRepoForWizard.fullName,
+            name: selectedRepoForWizard.name,
+            owner: selectedRepoForWizard.fullName.split('/')[0],
+            url: selectedRepoForWizard.url,
+            private: selectedRepoForWizard.private,
+          }}
+          onComplete={() => {
+            // Optionally trigger analysis after setup
+            console.log('Workflow setup completed for', selectedRepoForWizard.fullName)
+          }}
+          onSkip={() => {
+            // User skipped automation setup, just continue with manual analysis
+            console.log('Workflow setup skipped for', selectedRepoForWizard.fullName)
+          }}
+        />
+      )}
     </div>
   )
 } 
