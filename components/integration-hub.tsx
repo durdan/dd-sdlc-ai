@@ -907,26 +907,21 @@ export function IntegrationHub() {
       toggleIntegration('github')
     }
 
-    // Remove configuration from database
+    // Clean up invalid GitHub integrations from database
     try {
-      await fetch('/api/auth/github/config', {
+      const cleanupResponse = await fetch('/api/auth/github/cleanup', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         credentials: 'include',
-        body: JSON.stringify({
-          username: '',
-          repositories: [],
-          permissions: {},
-          settings: {},
-        }),
       })
+      
+      if (cleanupResponse.ok) {
+        console.log('GitHub integrations cleaned up successfully')
+      }
     } catch (error) {
-      console.error('Error removing GitHub config from database:', error)
+      console.error('Error cleaning up GitHub integrations:', error)
     }
     
-    alert('GitHub disconnected successfully')
+    alert('GitHub disconnected successfully. Please reconnect to use GitHub features.')
   }
 
   // ClickUp configuration handlers

@@ -45,6 +45,25 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    // Check if we actually have a valid token
+    if (!gitHubConfig.access_token_encrypted) {
+      // No token means not really connected
+      return NextResponse.json({
+        connected: false,
+        username: '',
+        repositories: [],
+        permissions: {},
+        settings: {
+          autoCreateRepo: true,
+          generateReadme: true,
+          defaultBranch: 'main',
+          visibility: 'private',
+          enableCodeGeneration: true,
+          enableIssueSync: true,
+        }
+      })
+    }
+
     // Parse permissions and return configuration
     return NextResponse.json({
       connected: true,
@@ -80,22 +99,20 @@ export async function POST(request: NextRequest) {
 
     const { username, repositories, permissions, settings } = await request.json()
 
-    // Get GitHub token from cookie to verify connection
-    const cookieStore = await cookies()
-    const githubToken = cookieStore.get('github_token')
-
-    if (!githubToken) {
-      return NextResponse.json({ error: 'No GitHub token found' }, { status: 400 })
+    // Only allow updating configuration if username is provided
+    if (!username) {
+      return NextResponse.json({ error: 'Username is required' }, { status: 400 })
     }
 
     // Store/update GitHub integration configuration
-    // For now, create a general account record using username as repository_id
+    // Note: This only updates metadata, not the access token
+    // The access token should be stored via the /api/auth/github/store-token endpoint
     const { data: gitHubConfig, error } = await supabase
       .from('sdlc_github_integrations')
       .upsert({
         user_id: user.id,
         repository_url: `https://github.com/${username}`,
-        repository_id: username, // Store username as repository_id for account-level config
+        repository_id: `${username}_config`, // Use _config suffix for configuration records
         permissions: permissions || {
           "repo": "full",
           "contents": "write",
