@@ -11,9 +11,12 @@ export const metadata: Metadata = {
   description: "Transform ideas into complete project documentation with AI",
   generator: 'v0.dev',
   icons: {
-    icon: '/img/sdlc-faviico.ico.png',
-    shortcut: '/img/sdlc-faviico.ico.png',
-    apple: '/img/sdlc-faviico.ico.png',
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon.png', type: 'image/png' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: '/favicon.png',
   },
 }
 
