@@ -17,12 +17,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
 
-    // Get user's GitHub integration from database
+    // Get user's GitHub integration from database - prioritize records with tokens
     const { data: gitHubConfig, error: configError } = await supabase
       .from('sdlc_github_integrations')
       .select('*')
       .eq('user_id', user.id)
       .eq('is_active', true)
+      .not('access_token_encrypted', 'is', null)
       .order('created_at', { ascending: false })
       .limit(1)
       .single()
@@ -108,12 +109,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
 
-    // Get user's GitHub integration from database
+    // Get user's GitHub integration from database - prioritize records with tokens
     const { data: gitHubConfig, error: configError } = await supabase
       .from('sdlc_github_integrations')
       .select('*')
       .eq('user_id', user.id)
       .eq('is_active', true)
+      .not('access_token_encrypted', 'is', null)
       .order('created_at', { ascending: false })
       .limit(1)
       .single()

@@ -12,12 +12,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
 
-    // Get GitHub integration configuration from database
+    // Get GitHub integration configuration from database - prioritize records with tokens
     const { data: gitHubConfig, error } = await supabase
       .from('sdlc_github_integrations')
       .select('*')
       .eq('user_id', user.id)
       .eq('is_active', true)
+      .not('access_token_encrypted', 'is', null)
       .order('created_at', { ascending: false })
       .limit(1)
       .single()
