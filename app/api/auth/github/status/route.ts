@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
       .limit(1)
       .single()
 
-    if (configError || !gitHubConfig || !gitHubConfig.access_token_hash) {
+    if (configError || !gitHubConfig || !gitHubConfig.access_token_encrypted) {
       return NextResponse.json({ 
         connected: false, 
         message: 'No GitHub integration found for this user' 
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     // Verify token by fetching user info from GitHub API
     const userResponse = await fetch('https://api.github.com/user', {
       headers: {
-        Authorization: `Bearer ${gitHubConfig.access_token_hash}`,
+        Authorization: `Bearer ${gitHubConfig.access_token_encrypted}`,
         'User-Agent': 'SDLC-AI-Platform',
       },
     })

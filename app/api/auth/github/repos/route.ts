@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       .limit(1)
       .single()
 
-    if (configError || !gitHubConfig || !gitHubConfig.access_token_hash) {
+    if (configError || !gitHubConfig || !gitHubConfig.access_token_encrypted) {
       return NextResponse.json({ 
         error: 'GitHub not connected. Please connect your GitHub account first.',
         connected: false 
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
       `page=${page}&per_page=${perPage}&sort=${sort}&affiliation=${affiliation}&visibility=${visibility}`,
       {
       headers: {
-          Authorization: `Bearer ${gitHubConfig.access_token_hash}`,
+          Authorization: `Bearer ${gitHubConfig.access_token_encrypted}`,
           'User-Agent': 'SDLC-AI-Platform',
         'Accept': 'application/vnd.github.v3+json',
         },

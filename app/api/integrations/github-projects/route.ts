@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
       .limit(1)
       .single()
     
-    if (configError || !gitHubConfig || !gitHubConfig.access_token_hash) {
+    if (configError || !gitHubConfig || !gitHubConfig.access_token_encrypted) {
       return NextResponse.json({ 
         error: 'GitHub not connected. Please connect your GitHub account first.',
         connected: false 
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     const { action, ...params } = await req.json()
 
     // Initialize GitHub Projects service with user's token
-    const githubService = new GitHubProjectsService(gitHubConfig.access_token_hash)
+    const githubService = new GitHubProjectsService(gitHubConfig.access_token_encrypted)
     const mappingService = new SDLCGitHubProjectsMapping(githubService)
 
     switch (action) {
@@ -118,7 +118,7 @@ export async function GET(req: NextRequest) {
       .limit(1)
       .single()
     
-    if (configError || !gitHubConfig || !gitHubConfig.access_token_hash) {
+    if (configError || !gitHubConfig || !gitHubConfig.access_token_encrypted) {
       return NextResponse.json({ 
         error: 'GitHub not connected. Please connect your GitHub account first.',
         connected: false 
@@ -129,7 +129,7 @@ export async function GET(req: NextRequest) {
     const action = searchParams.get('action')
 
     // Initialize GitHub Projects service with user's token
-    const githubService = new GitHubProjectsService(gitHubConfig.access_token_hash)
+    const githubService = new GitHubProjectsService(gitHubConfig.access_token_encrypted)
 
     switch (action) {
       case 'status':
@@ -142,7 +142,7 @@ export async function GET(req: NextRequest) {
         return await handleGetUserOrganizations(githubService)
       
       case 'repositories':
-        return await handleGetUserRepositories(githubService, searchParams, gitHubConfig.access_token_hash)
+        return await handleGetUserRepositories(githubService, searchParams, gitHubConfig.access_token_encrypted)
       
       default:
         return NextResponse.json({ error: 'Unknown action' }, { status: 400 })

@@ -35,10 +35,9 @@ export async function POST(request: NextRequest) {
       .from('sdlc_github_integrations')
       .upsert({
         user_id: user.id,
-        github_username: githubUserData.login,
-        access_token_hash: access_token, // In production, this should be encrypted
+        access_token_encrypted: access_token, // In production, this should be encrypted
         repository_url: `https://github.com/${githubUserData.login}`,
-        repository_id: githubUserData.login,
+        repository_id: `${githubUserData.login}_global`, // Use a special identifier for the global GitHub connection
         permissions: {
           "issues": "write",
           "pull_requests": "write", 
