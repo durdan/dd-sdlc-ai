@@ -193,15 +193,25 @@ export function SimpleDocumentGenerationModal({
 
   // Auto-start generation when modal opens (only if no previous doc exists)
   useEffect(() => {
-    if (isOpen && !isGenerating && !generatedContent && input.trim() && selectedType && !previousDocuments[selectedType]) {
+    // Only auto-generate if:
+    // 1. Modal is open
+    // 2. Not currently generating
+    // 3. No content already generated/loaded
+    // 4. Input exists
+    // 5. Selected type is set
+    // 6. No previous document for this type
+    // 7. Not viewing a previous document
+    if (isOpen && !isGenerating && !generatedContent && !viewingPreviousDoc && input.trim() && selectedType && !previousDocuments[selectedType]) {
       console.log('🚀 Auto-starting generation for type:', selectedType)
-      // Auto-start generation
-      const timer = setTimeout(() => {
-        handleGenerate()
-      }, 800) // Increased delay to ensure selectedType is set
-      return () => clearTimeout(timer)
+      // Check rate limit before auto-generating
+      if (rateLimitStatus && rateLimitStatus.remaining > 0 && !rateLimitError) {
+        const timer = setTimeout(() => {
+          handleGenerate()
+        }, 800) // Increased delay to ensure selectedType is set
+        return () => clearTimeout(timer)
+      }
     }
-  }, [isOpen, input, selectedType])
+  }, [isOpen, input, selectedType, viewingPreviousDoc, rateLimitStatus])
   
   // Auto-scroll streaming content
   useEffect(() => {
@@ -529,13 +539,13 @@ export function SimpleDocumentGenerationModal({
             {rateLimitStatus && (
               <div className="text-right">
                 <div className="text-sm font-medium text-gray-700">
-                  {rateLimitStatus.remaining}/{rateLimitStatus.total} documents remaining
+                  {Math.max(0, rateLimitStatus.remaining)}/{rateLimitStatus.total} documents remaining
                 </div>
                 <Progress 
-                  value={(rateLimitStatus.total - rateLimitStatus.remaining) / rateLimitStatus.total * 100} 
+                  value={Math.min(100, (rateLimitStatus.total - Math.max(0, rateLimitStatus.remaining)) / rateLimitStatus.total * 100)} 
                   className="w-32 h-2 mt-1"
                 />
-                {rateLimitStatus.remaining === 0 && (
+                {rateLimitStatus.remaining <= 0 && (
                   <div className="text-xs text-gray-500 mt-1">
                     Resets {new Date(rateLimitStatus.resetAt).toLocaleTimeString()}
                   </div>
@@ -570,16 +580,20 @@ export function SimpleDocumentGenerationModal({
           <div className="flex-shrink-0">
             <Tabs value={selectedType} onValueChange={(value) => {
               if (!isGenerating) {
+                console.log('Tab changed to:', value)
                 setSelectedType(value)
                 // Check if we have a previous document for this type
                 if (previousDocuments[value]) {
+                  console.log('Loading previous document for:', value)
                   setGeneratedContent(previousDocuments[value])
                   setHasGenerated(true)
                   setViewingPreviousDoc(true)
                 } else {
+                  console.log('No previous document for:', value)
                   setGeneratedContent('')
                   setHasGenerated(false)
                   setViewingPreviousDoc(false)
+                  // Don't auto-generate, wait for user action
                 }
               }
             }}>
@@ -712,30 +726,60 @@ export function SimpleDocumentGenerationModal({
 
           {/* Generated Content */}
           <div className="flex-1 overflow-y-auto bg-white border border-gray-200 rounded-lg p-6">
-            {viewingPreviousDoc && (
-              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
+            {viewingPreviousDoc && !isGenerating && (
+              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm text-blue-800">Viewing previously generated {selectedDoc?.name}</span>
+                  <Check className="h-4 w-4 text-green-600" />
+                  <span className="text-sm text-green-800 font-medium">Viewing saved {selectedDoc?.name}</span>
                 </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={async () => {
-                    setViewingPreviousDoc(false)
-                    setGeneratedContent('')
-                    setHasGenerated(false)
-                    await checkRateLimit() // Update rate limit before regeneration
-                    handleGenerate()
-                  }}
-                  disabled={isGenerating || rateLimitStatus?.remaining === 0}
-                >
-                  <Sparkles className="h-3 w-3 mr-1" />
-                  Regenerate
-                </Button>
+                {rateLimitStatus && rateLimitStatus.remaining > 0 && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={async () => {
+                      setViewingPreviousDoc(false)
+                      setGeneratedContent('')
+                      setHasGenerated(false)
+                      await checkRateLimit() // Update rate limit before regeneration
+                      handleGenerate()
+                    }}
+                    disabled={isGenerating || rateLimitStatus?.remaining === 0}
+                    className="text-green-700 border-green-300 hover:bg-green-100"
+                  >
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    Regenerate
+                  </Button>
+                )}
               </div>
             )}
-            {renderContent()}
+            {!generatedContent && !streamedContent && !isGenerating && !viewingPreviousDoc && (
+              <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center">
+                <div className="p-8 space-y-4">
+                  <div className="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
+                    <Icon className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Ready to Generate {selectedDoc?.name}</h3>
+                    <p className="text-sm text-gray-600 mb-4">Click the button below to create your document</p>
+                    {rateLimitStatus && rateLimitStatus.remaining > 0 ? (
+                      <Button
+                        onClick={handleGenerate}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                        disabled={isGenerating || !input.trim()}
+                      >
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Generate {selectedDoc?.name}
+                      </Button>
+                    ) : (
+                      <div className="text-sm text-red-600">
+                        {rateLimitError || 'Rate limit reached. Please sign in for unlimited access.'}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+            {(generatedContent || streamedContent || isGenerating) && renderContent()}
           </div>
         </div>
 
@@ -773,16 +817,11 @@ export function SimpleDocumentGenerationModal({
                 </Button>
               </>
             )}
-            {/* Show generate button if no content and has quota */}
-            {!generatedContent && !isGenerating && !viewingPreviousDoc && rateLimitStatus && rateLimitStatus.remaining > 0 && (
-              <Button
-                size="sm"
-                onClick={handleGenerate}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white"
-              >
-                <Sparkles className="h-4 w-4 mr-2" />
-                Generate {selectedDoc?.name}
-              </Button>
+            {/* Status indicator for what's happening */}
+            {viewingPreviousDoc && (
+              <span className="text-sm text-green-600 font-medium">
+                Viewing saved document
+              </span>
             )}
           </div>
 

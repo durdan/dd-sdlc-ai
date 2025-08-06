@@ -25,23 +25,9 @@ export class RateLimitService {
     reason?: string
   }> {
     try {
-      // Check burst limit first (spam protection)
-      const oneMinuteAgo = new Date(Date.now() - 60 * 1000)
-      const { data: recentRequests, error: burstError } = await this.supabase
-        .from('anonymous_project_sessions')
-        .select('project_count, last_activity')
-        .eq('session_id', sessionId)
-        .gte('last_activity', oneMinuteAgo.toISOString())
-        .single()
-
-      if (!burstError && recentRequests && recentRequests.project_count >= this.config.burstLimit) {
-        return {
-          allowed: false,
-          remaining: 0,
-          resetAt: new Date(Date.now() + 60 * 1000),
-          reason: 'Too many requests. Please wait a minute before trying again.'
-        }
-      }
+      // Skip burst limit check for now - it's incorrectly implemented
+      // TODO: Implement proper burst protection by tracking request timestamps
+      // The current logic incorrectly uses total project_count instead of recent request count
 
       // Check daily limit
       const { data: session, error } = await this.supabase
