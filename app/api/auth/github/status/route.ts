@@ -55,19 +55,21 @@ export async function GET(request: NextRequest) {
 
     const userData = await userResponse.json()
 
-    // Verify the token belongs to the current user
-    if (userData.login !== gitHubConfig.github_username) {
-      console.error('Token mismatch: expected', gitHubConfig.github_username, 'got', userData.login)
-      return NextResponse.json({ 
-        connected: false, 
-        message: 'GitHub token does not belong to this user' 
-      })
+    // Update the repository_id with the actual GitHub username if needed
+    if (gitHubConfig.repository_id !== userData.login && !gitHubConfig.repository_id.endsWith('_global')) {
+      await supabase
+        .from('sdlc_github_integrations')
+        .update({ 
+          repository_id: userData.login,
+          repository_url: `https://github.com/${userData.login}`
+        })
+        .eq('id', gitHubConfig.id)
     }
 
     // Fetch user repositories
     const reposResponse = await fetch('https://api.github.com/user/repos?per_page=100&sort=updated', {
       headers: {
-        Authorization: `Bearer ${gitHubConfig.access_token_hash}`,
+        Authorization: `Bearer ${gitHubConfig.access_token_encrypted}`,
         'User-Agent': 'SDLC-AI-Platform',
       },
     })

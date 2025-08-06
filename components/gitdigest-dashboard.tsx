@@ -753,6 +753,16 @@ export function GitDigestDashboard({ config }: GitDigestDashboardProps) {
                         variant="outline" 
                         size="sm" 
                         className="border-yellow-300 text-yellow-800 hover:bg-yellow-100"
+                        onClick={checkGithubConnection}
+                        title="Refresh connection status"
+                      >
+                        <RefreshCw className="w-3 h-3 mr-1" />
+                        Refresh
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="border-yellow-300 text-yellow-800 hover:bg-yellow-100"
                         onClick={() => {
                           checkGithubConnection()
                         }}
