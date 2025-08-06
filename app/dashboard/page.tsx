@@ -132,6 +132,7 @@ import { DocumentSelectionModal } from '@/components/document-selection-modal'
 import { ProjectListViewer } from "@/components/project-list-viewer"
 import { ProjectListViewerOptimized } from "@/components/project-list-viewer-optimized"
 import { ProjectListSkeleton } from "@/components/project-list-skeleton"
+import { SimplifiedSettingsDialog } from '@/components/simplified-settings-dialog'
 
 // Type definitions for dashboard state
 interface GeneratedDocuments {
@@ -284,36 +285,23 @@ const UserHeader: React.FC<UserHeaderProps> = ({ user, userRole, onSignOut, onCo
                 />
               <div className="flex flex-col">
                 <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 bg-clip-text text-transparent font-black tracking-tight">
-                  <span className="hidden lg:inline text-2xl">SDLC AI Dashboard</span>
-                  <span className="hidden sm:inline lg:hidden text-xl">SDLC Dashboard</span>
+                  <span className="hidden lg:inline text-2xl">SDLC.dev</span>
+                  <span className="hidden sm:inline lg:hidden text-xl">SDLC.dev</span>
                   <span className="sm:hidden text-lg">SDLC</span>
                 </div>
-                <div className="text-xs text-gray-500 font-medium tracking-wide">
-                  <span className="hidden sm:inline">Automate. Architect. Accelerate. With Code Yodha</span>
-                  <span className="sm:hidden">AI-Powered</span>
+                <div className="text-xs text-gray-500 font-medium">
+                  Prompt to System Design
                 </div>
               </div>
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2 text-sm">
-              <span className="text-gray-600">Welcome back,</span>
-              <span className="font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                {user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
-              </span>
+            {/* Simplified welcome message */}
+            <div className="flex items-center space-x-3">
+              <UsageIndicatorCompact 
+                onViewDashboard={() => window.location.href = '/usage-dashboard'}
+              />
             </div>
-            
-            {/* Compact Usage Indicator */}
-            <UsageIndicatorCompact 
-              onViewDashboard={() => window.location.href = '/usage-dashboard'}
-            />
-            
-            {/* Beta Features Indicator */}
-            <BetaFeaturesIndicator 
-              user={user}
-              compact={true}
-              showEnrollment={true}
-            />
             
             {(userRole === 'admin' || userRole === 'manager') && (
               <Button
@@ -364,7 +352,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ user, userRole, onSignOut, onCo
                   <User className="mr-2 h-4 w-4" />
                   <span>Profile</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowSettingsDialog(true)}>
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Settings</span>
                 </DropdownMenuItem>
@@ -461,6 +449,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
   const [successMessage, setSuccessMessage] = useState("")
   const [showConfig, setShowConfig] = useState(false)
   const [showIntegrations, setShowIntegrations] = useState(false)
+  const [showSettingsDialog, setShowSettingsDialog] = useState(false)
   const [showVisualization, setShowVisualization] = useState(false)
   const [showWorkflow, setShowWorkflow] = useState(false)
   const [showHowItWorks, setShowHowItWorks] = useState(false)
@@ -3648,10 +3637,6 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                 <GitBranch className="w-4 h-4 mr-1 sm:mr-2" />
                 <span className="hidden sm:inline">GitDigest</span>
               </TabsTrigger>
-              <TabsTrigger value="early-access" className="flex-shrink-0 min-w-[60px] px-2 sm:px-3">
-                <Rocket className="w-4 h-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Early Access</span>
-              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -3754,20 +3739,6 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                           >
                             <GitBranch className="h-4 w-4" />
                             <span className="text-xs font-medium">GitDigest</span>
-                          </Button>
-                          {/* Early Access */}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setActiveTab('early-access')
-                              setToolsExpanded(false)
-                            }}
-                            className="h-12 min-w-[80px] p-0 hover:bg-blue-50 flex flex-col items-center justify-center gap-1 border-blue-300"
-                            title="Early Access"
-                          >
-                            <Rocket className="h-4 w-4 text-blue-600" />
-                            <span className="text-xs font-medium text-blue-700">Early Access</span>
                           </Button>
                         </div>
                       </div>
@@ -4395,105 +4366,6 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
             }} />
           </TabsContent>
 
-          <TabsContent value="early-access" className="mt-6">
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Rocket className="h-5 w-5 text-blue-500" />
-                    Early Access Program
-                  </CardTitle>
-                  <CardDescription>
-                    Join our early access waiting list to get priority access to beta features and help shape the future of SDLC.dev
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <Card className="border-blue-200 bg-blue-50">
-                      <CardHeader>
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          <Zap className="h-5 w-5 text-blue-500" />
-                          Early Access Benefits
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <ul className="space-y-2 text-sm">
-                          <li className="flex items-center gap-2">
-                            <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
-                            <span>Priority access to beta features</span>
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
-                            <span>Direct feedback channel to development team</span>
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
-                            <span>Influence roadmap and feature prioritization</span>
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
-                            <span>Early access to advanced AI integrations</span>
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
-                            <span>Exclusive community access and networking</span>
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
-                            <span>Get notified first when new features launch</span>
-                          </li>
-                        </ul>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="border-green-200 bg-green-50">
-                      <CardHeader>
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          <Star className="h-5 w-5 text-green-500" />
-                          Coming Soon Features
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <ul className="space-y-2 text-sm">
-                          <li className="flex items-center gap-2">
-                            <Sparkles className="h-4 w-4 text-purple-500 flex-shrink-0" />
-                            <span>Advanced Claude Integration</span>
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <Gift className="h-4 w-4 text-blue-500 flex-shrink-0" />
-                            <span>Premium SDLC Templates</span>
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <Target className="h-4 w-4 text-red-500 flex-shrink-0" />
-                            <span>Advanced Analytics Dashboard</span>
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <Code className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                            <span>Custom API Integrations</span>
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <Zap className="h-4 w-4 text-yellow-500 flex-shrink-0" />
-                            <span>Bulk Project Processing</span>
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <Building className="h-4 w-4 text-gray-700 flex-shrink-0" />
-                            <span>Team Collaboration Tools</span>
-                          </li>
-                        </ul>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <EarlyAccessWaitingList 
-                user={user}
-                onSuccess={(position) => {
-                  console.log(`User joined waitlist at position ${position}`)
-                }}
-              />
-            </div>
-          </TabsContent>
         </Tabs>
       </div>
 
@@ -4504,6 +4376,16 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         onGenerate={handleDocumentSelection}
         input={input}
         isLoading={isProcessing}
+      />
+
+      {/* Simplified Settings Dialog */}
+      <SimplifiedSettingsDialog
+        isOpen={showSettingsDialog}
+        onClose={() => setShowSettingsDialog(false)}
+        onSave={(updatedConfig) => {
+          setConfig(prev => ({ ...prev, ...updatedConfig }))
+          setShowSettingsDialog(false)
+        }}
       />
     </div>
   )
