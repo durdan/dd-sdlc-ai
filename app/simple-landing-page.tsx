@@ -384,7 +384,7 @@ export default function SimpleLandingPage() {
                           }
                           setShowDocumentModal(true)
                         }}
-                        className="relative bg-white border-indigo-200 text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 text-sm"
+                        className={`relative bg-white border-indigo-200 text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 text-sm ${showViewDocsHint ? 'animate-pulse-border' : ''}`}
                       >
                         <FileText className="h-4 w-4 mr-1.5" />
                         View Docs
@@ -458,9 +458,27 @@ export default function SimpleLandingPage() {
         isOpen={showDocumentModal}
         onClose={() => {
           setShowDocumentModal(false)
-          setInputValue("")
+          // Reload documents from localStorage when modal closes
+          const savedDocs = localStorage.getItem('sdlc_generated_docs')
+          if (savedDocs) {
+            try {
+              const docs = JSON.parse(savedDocs)
+              setPreviousDocuments(docs)
+            } catch (e) {
+              console.error('Error loading documents after modal close:', e)
+            }
+          }
         }}
         input={inputValue}
+        onDocumentGenerated={(updatedDocs) => {
+          // Update parent state when document is generated
+          setPreviousDocuments(updatedDocs)
+          // Show hint for newly generated documents
+          if (Object.keys(updatedDocs).length > 0) {
+            setShowViewDocsHint(true)
+            setTimeout(() => setShowViewDocsHint(false), 5000)
+          }
+        }}
       />
 
       <CustomAlert

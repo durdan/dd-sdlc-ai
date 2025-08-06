@@ -43,6 +43,7 @@ interface SimpleDocumentGenerationModalProps {
   isOpen: boolean
   onClose: () => void
   input: string
+  onDocumentGenerated?: (documents: Record<string, string>) => void
 }
 
 interface DocumentType {
@@ -95,6 +96,7 @@ export function SimpleDocumentGenerationModal({
   isOpen,
   onClose,
   input,
+  onDocumentGenerated,
 }: SimpleDocumentGenerationModalProps) {
   // Initialize with stored type or default to business
   const [selectedType, setSelectedType] = useState<string>(() => {
@@ -292,6 +294,10 @@ export function SimpleDocumentGenerationModal({
                 const updatedDocs = { ...previousDocuments, [selectedType]: data.fullContent }
                 setPreviousDocuments(updatedDocs)
                 localStorage.setItem('sdlc_generated_docs', JSON.stringify(updatedDocs))
+                // Notify parent component if callback provided
+                if (onDocumentGenerated) {
+                  onDocumentGenerated(updatedDocs)
+                }
                 // Save anonymous project
                 await saveAnonymousProject(data.fullContent)
                 // Refresh rate limit status after generation
