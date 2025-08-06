@@ -356,9 +356,30 @@ const UserHeader: React.FC<UserHeaderProps> = ({ user, userRole, onSignOut, onCo
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Settings</span>
                 </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setShowWorkflow(true)}>
+                  <GitBranch className="mr-2 h-4 w-4" />
+                  <span>Workflow</span>
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => window.open('/prompts', '_blank')}>
-                  <Database className="mr-2 h-4 w-4" />
+                  <FileText className="mr-2 h-4 w-4" />
                   <span>My Prompts</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowPromptEngineering(true)}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  <span>Prompt Engineering</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowDatabaseTest(true)}>
+                  <Database className="mr-2 h-4 w-4" />
+                  <span>Database Test</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowHowItWorks(true)}>
+                  <Info className="mr-2 h-4 w-4" />
+                  <span>How It Works</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => window.open('/analytics', '_blank')}>
+                  <BarChart3 className="mr-2 h-4 w-4" />
+                  <span>Analytics</span>
                 </DropdownMenuItem>
                 {(userRole === 'admin' || userRole === 'manager') && (
                   <>
