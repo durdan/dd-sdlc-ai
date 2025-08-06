@@ -65,10 +65,40 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    // Fetch actual GitHub username from API
+    let actualUsername = gitHubConfig.repository_id || ''
+    try {
+      const userResponse = await fetch('https://api.github.com/user', {
+        headers: {
+          Authorization: `Bearer ${gitHubConfig.access_token_encrypted}`,
+          'User-Agent': 'SDLC-AI-Platform',
+        },
+      })
+      
+      if (userResponse.ok) {
+        const githubUser = await userResponse.json()
+        actualUsername = githubUser.login
+        
+        // Update the record with correct username if it's different
+        if (gitHubConfig.repository_id !== githubUser.login) {
+          await supabase
+            .from('sdlc_github_integrations')
+            .update({
+              repository_id: githubUser.login,
+              repository_url: `https://github.com/${githubUser.login}`,
+              last_sync: new Date().toISOString()
+            })
+            .eq('id', gitHubConfig.id)
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching GitHub user:', error)
+    }
+
     // Parse permissions and return configuration
     return NextResponse.json({
       connected: true,
-      username: gitHubConfig.repository_id || '', // repository_id is stored as username directly
+      username: actualUsername,
       repositories: [], // Will be populated by separate API call
       permissions: gitHubConfig.permissions || {},
       lastSync: gitHubConfig.last_sync,

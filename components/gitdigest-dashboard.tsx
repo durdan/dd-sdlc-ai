@@ -692,7 +692,7 @@ export function GitDigestDashboard({ config }: GitDigestDashboardProps) {
                       variant="outline" 
                       size="sm" 
                       className="mt-2 border-yellow-300 text-yellow-800 hover:bg-yellow-100"
-                      onClick={() => window.open('/api/auth/github/config', '_blank')}
+                      onClick={() => window.location.href = '/dashboard#integrations'}
                     >
                       Connect GitHub
                     </Button>
@@ -1219,7 +1219,7 @@ export function GitDigestDashboard({ config }: GitDigestDashboardProps) {
               {!githubConnected && (
                 <Button
                   variant="outline"
-                  onClick={() => window.open('/api/auth/github/config', '_blank')}
+                  onClick={() => window.location.href = '/dashboard#integrations'}
                 >
                   <Github className="w-4 h-4 mr-2" />
                   Connect GitHub
