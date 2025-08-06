@@ -1,7 +1,13 @@
 {
   "functions": {
     "app/api/**/*.ts": {
-      "maxDuration": 30
+      "maxDuration": 60
+    },
+    "app/api/generate-sdlc/*.ts": {
+      "maxDuration": 60
+    },
+    "app/api/generate-document/*.ts": {
+      "maxDuration": 60
     }
   },
   "headers": [
