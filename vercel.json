@@ -1,13 +1,22 @@
 {
   "functions": {
     "app/api/**/*.ts": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "app/api/generate-sdlc/*.ts": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "app/api/generate-document/*.ts": {
-      "maxDuration": 60
+      "maxDuration": 300
+    },
+    "app/api/claude/*.ts": {
+      "maxDuration": 300
+    },
+    "app/api/generate-preview-diagrams/*.ts": {
+      "maxDuration": 300
+    },
+    "app/api/gitdigest/analyze/*.ts": {
+      "maxDuration": 300
     }
   },
   "headers": [
