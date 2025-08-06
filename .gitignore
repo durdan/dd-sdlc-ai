@@ -102,7 +102,12 @@ dist
 
 # Gatsby files
 .cache/
-public
+# Public folder - exclude everything except specific images
+public/*
+!public/img/
+!public/img/logo-sdlc-icon.png
+!public/img/logo-sdlc-white.png
+!public/img/logo-sdlc.png
 
 # Storybook build outputs
 .out
