@@ -91,8 +91,8 @@ BEGIN
     SELECT 
       user_id::uuid,
       COUNT(*) as total_projects,
-      COUNT(CASE WHEN created_at > NOW() - INTERVAL '1 day' THEN 1 END) as today_projects
-    FROM public.sdlc_projects
+      COUNT(CASE WHEN sp.created_at > NOW() - INTERVAL '1 day' THEN 1 END) as today_projects
+    FROM public.sdlc_projects sp
     WHERE user_id IS NOT NULL
     GROUP BY user_id
   ),
