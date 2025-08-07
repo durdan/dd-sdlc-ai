@@ -99,14 +99,14 @@ BEGIN
   user_roles AS (
     SELECT 
       user_id::uuid,
-      role
+      role as user_role
     FROM public.user_roles
   )
   SELECT 
     au.id,
     au.email::text,
     COALESCE(au.raw_user_meta_data->>'full_name', au.email)::text as full_name,
-    COALESCE(ur.role, 'user')::text as role,
+    COALESCE(ur.user_role, 'user')::text as role,
     COALESCE(au.raw_user_meta_data->>'subscription_type', 'free')::text as subscription_type,
     COALESCE(up.total_projects, 0)::bigint as total_projects_created,
     COALESCE(up.today_projects, 0)::bigint as projects_today,
