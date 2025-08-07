@@ -417,25 +417,25 @@ export default function SimpleLandingPage() {
           </div>
 
           {/* Quick Actions - Responsive Grid */}
-          <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-center gap-2 sm:gap-3">
+          <div className="grid grid-cols-2 md:flex md:items-center md:justify-center gap-2 md:gap-3">
             {features.map((feature, index) => {
               const hasDocument = previousDocuments[feature.docType]
               return (
                 <button
                   key={index}
                   onClick={() => handleGetStarted(feature.docType)}
-                  className={`relative flex flex-col sm:flex-row items-center gap-1 sm:gap-2 px-3 sm:px-5 py-3 sm:py-2.5 bg-white rounded-xl sm:rounded-full border transition-all ${
+                  className={`relative flex flex-col md:flex-row items-center justify-center gap-1.5 md:gap-2 px-4 py-4 md:px-5 md:py-2.5 bg-white rounded-2xl border transition-all min-h-[80px] md:min-h-0 ${
                     hasDocument 
                       ? 'border-indigo-300 hover:border-indigo-400 hover:bg-indigo-50' 
                       : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                   }`}
                 >
-                  <feature.icon className={`h-5 w-5 ${hasDocument ? 'text-indigo-600' : 'text-gray-600'}`} />
-                  <span className={`text-xs sm:text-base font-medium ${hasDocument ? 'text-indigo-700' : 'text-gray-700'}`}>
+                  <feature.icon className={`h-5 w-5 md:h-4 md:w-4 ${hasDocument ? 'text-indigo-600' : 'text-gray-600'}`} />
+                  <span className={`text-xs md:text-sm font-medium text-center ${hasDocument ? 'text-indigo-700' : 'text-gray-700'}`}>
                     {feature.title}
                   </span>
                   {hasDocument && (
-                    <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-indigo-600 absolute top-1 right-1 sm:static" />
+                    <Check className="h-3 w-3 md:h-3.5 md:w-3.5 text-indigo-600 absolute top-2 right-2 md:static" />
                   )}
                 </button>
               )
