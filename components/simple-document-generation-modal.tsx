@@ -487,13 +487,13 @@ export function SimpleDocumentGenerationModal({
         <ReactMarkdown 
           remarkPlugins={[remarkGfm]}
           components={{
-            h1: ({children}) => <h1 className="text-2xl font-bold mt-6 mb-4">{children}</h1>,
-            h2: ({children}) => <h2 className="text-xl font-semibold mt-5 mb-3">{children}</h2>,
-            h3: ({children}) => <h3 className="text-lg font-medium mt-4 mb-2">{children}</h3>,
-            ul: ({children}) => <ul className="list-disc pl-5 space-y-1">{children}</ul>,
-            ol: ({children}) => <ol className="list-decimal pl-5 space-y-1">{children}</ol>,
+            h1: ({children}) => <h1 className="text-lg sm:text-2xl font-bold mt-4 sm:mt-6 mb-2 sm:mb-4">{children}</h1>,
+            h2: ({children}) => <h2 className="text-base sm:text-xl font-semibold mt-3 sm:mt-5 mb-2 sm:mb-3">{children}</h2>,
+            h3: ({children}) => <h3 className="text-sm sm:text-lg font-medium mt-2 sm:mt-4 mb-1 sm:mb-2">{children}</h3>,
+            ul: ({children}) => <ul className="list-disc pl-4 sm:pl-5 space-y-0.5 sm:space-y-1 text-xs sm:text-base">{children}</ul>,
+            ol: ({children}) => <ol className="list-decimal pl-4 sm:pl-5 space-y-0.5 sm:space-y-1 text-xs sm:text-base">{children}</ol>,
             li: ({children}) => <li className="text-gray-700">{children}</li>,
-            p: ({children}) => <p className="mb-3 leading-relaxed">{children}</p>,
+            p: ({children}) => <p className="mb-2 sm:mb-3 leading-relaxed text-xs sm:text-base">{children}</p>,
             strong: ({children}) => <strong className="font-semibold text-gray-900">{children}</strong>,
           }}
         >
@@ -514,7 +514,7 @@ export function SimpleDocumentGenerationModal({
       }
     }}>
       <DialogContent 
-        className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col"
+        className="w-full sm:max-w-5xl h-screen sm:h-auto sm:max-h-[90vh] overflow-hidden flex flex-col rounded-none sm:rounded-lg m-0 sm:m-4"
         onPointerDownOutside={(e) => {
           // Prevent closing on outside click during generation
           if (isGenerating) {
@@ -528,16 +528,16 @@ export function SimpleDocumentGenerationModal({
           }
         }}
       >
-        <DialogHeader className="flex-shrink-0">
+        <DialogHeader className="flex-shrink-0 px-4 sm:px-6 py-3 sm:py-4 border-b">
           <div className="flex items-center justify-between">
             <div>
-              <DialogTitle>Generate SDLC Documentation</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-base sm:text-lg">SDLC Documentation</DialogTitle>
+              <DialogDescription className="hidden sm:block text-sm">
                 Choose a document type to generate. Non-logged-in users can generate up to 10 documents.
               </DialogDescription>
             </div>
             {rateLimitStatus && (
-              <div className="text-right">
+              <div className="text-right hidden sm:block">
                 <div className="text-sm font-medium text-gray-700">
                   {Math.max(0, rateLimitStatus.remaining)}/{rateLimitStatus.total} documents remaining
                 </div>
@@ -552,10 +552,16 @@ export function SimpleDocumentGenerationModal({
                 )}
               </div>
             )}
+            {/* Mobile rate limit badge */}
+            {rateLimitStatus && (
+              <Badge variant="outline" className="sm:hidden text-xs">
+                {Math.max(0, rateLimitStatus.remaining)}/{rateLimitStatus.total}
+              </Badge>
+            )}
           </div>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden flex flex-col space-y-4">
+        <div className="flex-1 overflow-hidden flex flex-col space-y-2 sm:space-y-4 px-4 sm:px-6 py-2 sm:py-4">
           {/* Show rate limit error */}
           {rateLimitError && (
             <Alert className="flex-shrink-0 border-red-200 bg-red-50">
@@ -597,18 +603,18 @@ export function SimpleDocumentGenerationModal({
                 }
               }
             }}>
-              <TabsList className="grid grid-cols-5 w-full">
+              <TabsList className="grid grid-cols-5 w-full h-auto">
                 {documentTypes.map((doc) => (
                   <TabsTrigger 
                     key={doc.id} 
                     value={doc.id}
                     disabled={isGenerating}
-                    className={`flex flex-col items-center gap-1 h-auto py-2 relative ${
+                    className={`flex flex-col items-center gap-0.5 sm:gap-1 h-auto py-1.5 sm:py-2 px-1 sm:px-2 relative ${
                       isGenerating ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                   >
-                    <doc.icon className={`h-4 w-4 ${doc.color}`} />
-                    <span className="text-xs">{doc.name}</span>
+                    <doc.icon className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${doc.color}`} />
+                    <span className="text-[10px] sm:text-xs leading-tight text-center">{doc.name}</span>
                     {previousDocuments[doc.id] && (
                       <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center bg-green-500">
                         <Check className="h-3 w-3 text-white" />
@@ -619,9 +625,9 @@ export function SimpleDocumentGenerationModal({
               </TabsList>
             </Tabs>
 
-            {/* Show document generation status */}
+            {/* Show document generation status - Desktop only */}
             {rateLimitStatus && (
-              <div className="mt-3 p-3 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg">
+              <div className="hidden sm:block mt-3 p-3 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-indigo-600" />
@@ -648,8 +654,8 @@ export function SimpleDocumentGenerationModal({
               </div>
             )}
 
-            {/* Selected Type Description */}
-            <Card className="mt-4 bg-gray-50">
+            {/* Selected Type Description - Hidden on mobile */}
+            <Card className="hidden sm:block mt-4 bg-gray-50">
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
                   <Icon className={`h-5 w-5 mt-0.5 ${selectedDoc?.color}`} />
@@ -681,18 +687,18 @@ export function SimpleDocumentGenerationModal({
             </Card>
           </div>
 
-          {/* Terminal-like Streaming Preview (if generating) */}
+          {/* Terminal-like Streaming Preview (if generating) - Smaller on mobile */}
           {isGenerating && (
-            <div className="flex-shrink-0 bg-black border border-gray-700 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="flex gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                  <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+            <div className="flex-shrink-0 bg-black border border-gray-700 rounded-lg p-2 sm:p-4">
+              <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                <div className="flex gap-1 sm:gap-1.5">
+                  <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-red-500"></div>
+                  <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-yellow-500"></div>
+                  <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-green-500"></div>
                 </div>
-                <span className="text-xs text-gray-400 font-mono">SDLC.dev AI Generation</span>
+                <span className="text-[10px] sm:text-xs text-gray-400 font-mono">SDLC.dev AI Generation</span>
               </div>
-              <div ref={streamContainerRef} className="h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
+              <div ref={streamContainerRef} className="h-20 sm:h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
                 <div className="text-xs font-mono">
                   <div>
                     <span className="text-gray-500">$ </span>
@@ -724,13 +730,13 @@ export function SimpleDocumentGenerationModal({
             </div>
           )}
 
-          {/* Generated Content */}
-          <div className="flex-1 overflow-y-auto bg-white border border-gray-200 rounded-lg p-6">
+          {/* Generated Content - Full screen on mobile */}
+          <div className="flex-1 overflow-y-auto bg-white border border-gray-200 rounded-lg p-3 sm:p-6">
             {viewingPreviousDoc && !isGenerating && (
-              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-green-600" />
-                  <span className="text-sm text-green-800 font-medium">Viewing saved {selectedDoc?.name}</span>
+              <div className="mb-2 sm:mb-4 p-2 sm:p-3 bg-green-50 border border-green-200 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-600" />
+                  <span className="text-xs sm:text-sm text-green-800 font-medium">Viewing saved {selectedDoc?.name}</span>
                 </div>
                 {rateLimitStatus && rateLimitStatus.remaining > 0 && (
                   <Button
@@ -753,14 +759,14 @@ export function SimpleDocumentGenerationModal({
               </div>
             )}
             {!generatedContent && !streamedContent && !isGenerating && !viewingPreviousDoc && (
-              <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center">
-                <div className="p-8 space-y-4">
-                  <div className="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
-                    <Icon className="h-8 w-8 text-gray-400" />
+              <div className="flex flex-col items-center justify-center h-full min-h-[200px] sm:min-h-[300px] text-center">
+                <div className="p-4 sm:p-8 space-y-3 sm:space-y-4">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
+                    <Icon className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Ready to Generate {selectedDoc?.name}</h3>
-                    <p className="text-sm text-gray-600 mb-4">Click the button below to create your document</p>
+                    <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-1 sm:mb-2">Ready to Generate {selectedDoc?.name}</h3>
+                    <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">Click the button below to create your document</p>
                     {rateLimitStatus && rateLimitStatus.remaining > 0 ? (
                       <Button
                         onClick={handleGenerate}
@@ -783,9 +789,9 @@ export function SimpleDocumentGenerationModal({
           </div>
         </div>
 
-        {/* Footer Actions */}
-        <div className="flex-shrink-0 flex items-center justify-between pt-4 border-t">
-          <div className="flex items-center gap-2">
+        {/* Footer Actions - Compact on mobile */}
+        <div className="flex-shrink-0 flex items-center justify-between px-4 sm:px-6 py-2 sm:py-4 border-t">
+          <div className="flex items-center gap-1 sm:gap-2">
             {(generatedContent || streamedContent) && (
               <>
                 <Button
@@ -793,16 +799,17 @@ export function SimpleDocumentGenerationModal({
                   size="sm"
                   onClick={handleCopy}
                   disabled={isGenerating}
+                  className="text-xs sm:text-sm px-2 sm:px-3"
                 >
                   {copied ? (
                     <>
-                      <Check className="h-4 w-4 mr-2" />
-                      Copied
+                      <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
+                      <span className="hidden sm:inline">Copied</span>
                     </>
                   ) : (
                     <>
-                      <Copy className="h-4 w-4 mr-2" />
-                      Copy
+                      <Copy className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
+                      <span className="hidden sm:inline">Copy</span>
                     </>
                   )}
                 </Button>
@@ -811,15 +818,16 @@ export function SimpleDocumentGenerationModal({
                   size="sm"
                   onClick={handleDownload}
                   disabled={isGenerating}
+                  className="text-xs sm:text-sm px-2 sm:px-3"
                 >
-                  <Download className="h-4 w-4 mr-2" />
-                  Download
+                  <Download className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Download</span>
                 </Button>
               </>
             )}
-            {/* Status indicator for what's happening */}
+            {/* Status indicator for what's happening - Hidden on mobile */}
             {viewingPreviousDoc && (
-              <span className="text-sm text-green-600 font-medium">
+              <span className="hidden sm:inline text-sm text-green-600 font-medium">
                 Viewing saved document
               </span>
             )}
@@ -827,17 +835,20 @@ export function SimpleDocumentGenerationModal({
 
           <div className="flex items-center gap-2">
             {isGenerating && (
-              <span className="text-sm text-gray-600 flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Generating {selectedDoc?.name}...
+              <span className="text-xs sm:text-sm text-gray-600 flex items-center gap-1 sm:gap-2">
+                <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
+                <span className="hidden sm:inline">Generating {selectedDoc?.name}...</span>
+                <span className="sm:hidden">Generating...</span>
               </span>
             )}
             <Button 
               variant="outline" 
               onClick={onClose}
               disabled={isGenerating}
+              size="sm"
+              className="text-xs sm:text-sm px-3 sm:px-4"
             >
-              {isGenerating ? 'Please wait...' : 'Close'}
+              {isGenerating ? 'Wait...' : 'Close'}
             </Button>
           </div>
         </div>
