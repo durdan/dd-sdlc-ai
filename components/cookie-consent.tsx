@@ -191,18 +191,18 @@ export default function CookieConsent() {
     <>
       {/* Cookie Consent Banner */}
       {showBanner && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-sm border-t border-gray-800/50 p-4 shadow-2xl">
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-sm border-t border-gray-800/50 p-3 sm:p-4 shadow-2xl">
           <div className="max-w-7xl mx-auto">
-            <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4">
-              <div className="flex items-start gap-3 flex-1">
-                <Cookie className="h-6 w-6 text-blue-400 mt-1 flex-shrink-0" />
+            <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3 sm:gap-4">
+              <div className="flex items-start gap-2 sm:gap-3 flex-1">
+                <Cookie className="h-5 w-5 sm:h-6 sm:w-6 text-blue-400 mt-0.5 sm:mt-1 flex-shrink-0" />
                 <div>
-                  <h3 className="font-semibold text-white text-lg mb-2">Cookie Consent</h3>
-                  <p className="text-gray-300 text-sm leading-relaxed">
-                    We use cookies to enhance your experience, analyze site usage, and improve our experimental platform. 
-                    Essential cookies are required for basic functionality. You can customize your preferences or accept all cookies.
+                  <h3 className="font-semibold text-white text-base sm:text-lg mb-1 sm:mb-2">Cookie Consent</h3>
+                  <p className="text-gray-300 text-xs sm:text-sm leading-relaxed">
+                    We use cookies to enhance your experience. Essential cookies are required for basic functionality.
+                    <span className="hidden sm:inline"> You can customize your preferences or accept all cookies.</span>
                   </p>
-                  <div className="flex items-center gap-4 mt-3 text-xs">
+                  <div className="hidden sm:flex items-center gap-4 mt-3 text-xs">
                     <a href="/privacy" className="text-blue-400 hover:text-blue-300 underline">
                       Privacy Policy
                     </a>
@@ -213,20 +213,21 @@ export default function CookieConsent() {
                 </div>
               </div>
               
-              <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
+              <div className="flex flex-row gap-2 w-full lg:w-auto">
                 <Button 
                   variant="outline" 
                   size="sm" 
                   onClick={acceptEssential}
-                  className="border-gray-600 hover:bg-gray-800 text-gray-300"
+                  className="border-gray-600 hover:bg-gray-800 text-gray-300 text-xs sm:text-sm flex-1 sm:flex-none"
                 >
-                  Essential Only
+                  <span className="hidden sm:inline">Essential Only</span>
+                  <span className="sm:hidden">Essential</span>
                 </Button>
                 <Button 
                   variant="outline" 
                   size="sm" 
                   onClick={() => setShowSettings(true)}
-                  className="border-gray-600 hover:bg-gray-800 text-gray-300"
+                  className="border-gray-600 hover:bg-gray-800 text-gray-300 hidden sm:flex"
                 >
                   <Settings className="h-4 w-4 mr-2" />
                   Customize
@@ -234,9 +235,9 @@ export default function CookieConsent() {
                 <Button 
                   size="sm" 
                   onClick={acceptAll}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm flex-1 sm:flex-none"
                 >
-                  <CheckCircle className="h-4 w-4 mr-2" />
+                  <CheckCircle className="h-4 w-4 mr-1 sm:mr-2" />
                   Accept All
                 </Button>
               </div>
@@ -453,7 +454,7 @@ export default function CookieConsent() {
 
       {/* Cookie Preferences Button (always visible after consent) */}
       {hasResponded && (
-        <div className="fixed bottom-4 left-4 z-40">
+        <div className="fixed bottom-4 left-4 z-40 hidden sm:block">
           <Button
             variant="outline"
             size="sm"

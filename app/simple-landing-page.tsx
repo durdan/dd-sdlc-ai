@@ -187,23 +187,23 @@ export default function SimpleLandingPage() {
   return (
     <div className="min-h-screen bg-[#FAF9F7] flex flex-col">
       {/* Header with Sign In/Sign Up buttons */}
-      <header className="w-full px-4 sm:px-6 lg:px-8 py-4">
+      <header className="w-full px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center">
-            {/* Logo placeholder for mobile */}
+            {/* Logo for desktop only - mobile has it in greeting */}
             <img 
               src="/img/logo-sdlc-icon.png" 
               alt="SDLC.dev" 
-              className="h-12 w-8 md:hidden"
+              className="h-10 w-10 hidden md:block"
             />
           </div>
           
           {/* Sign In / Sign Up buttons */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {user ? (
               <Button
                 onClick={() => window.location.href = '/dashboard'}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm sm:text-base"
                 size="sm"
               >
                 Dashboard
@@ -214,18 +214,19 @@ export default function SimpleLandingPage() {
                   onClick={() => window.location.href = '/signin'}
                   variant="ghost"
                   size="sm"
-                  className="text-gray-600 hover:text-gray-900"
+                  className="text-gray-600 hover:text-gray-900 text-sm sm:text-base"
                 >
-                  <LogIn className="h-4 w-4 mr-2" />
-                  Sign in
+                  <LogIn className="h-4 w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Sign in</span>
+                  <span className="sm:hidden">Sign in</span>
                 </Button>
                 <Button 
                   onClick={() => window.location.href = '/signin'}
                   size="sm"
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm sm:text-base"
                 >
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Sign up
+                  <UserPlus className="h-4 w-4 mr-1 sm:mr-2" />
+                  <span>Sign up</span>
                 </Button>
               </>
             )}
@@ -234,17 +235,17 @@ export default function SimpleLandingPage() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex items-center justify-center px-4 py-8">
+      <main className="flex-1 flex items-center justify-center px-4 py-4 sm:py-8">
         <div className="max-w-3xl mx-auto w-full space-y-8">
           {/* Hero Section */}
           <div className="text-center space-y-2">
-            <h1 className="text-5xl font-normal text-gray-900 flex items-center justify-center gap-3">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-normal text-gray-900 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3">
               <img 
                 src="/img/logo-sdlc-icon.png" 
                 alt="SDLC.dev" 
-                className="h-12 w-12"
+                className="h-10 w-10 sm:h-12 sm:w-12 md:hidden"
               />
-              {getGreeting()}
+              <span className="block sm:inline">{getGreeting()}</span>
             </h1>
           </div>
 
@@ -254,7 +255,7 @@ export default function SimpleLandingPage() {
             <div className="p-6">
               <textarea
                 placeholder="Describe your project idea (e.g., 'Build an Uber for medicine delivery', 'Create a social media app for pet owners', 'Design an e-learning platform')"
-                className="w-full min-h-[120px] text-lg text-gray-900 placeholder-gray-500 resize-none focus:outline-none"
+                className="w-full min-h-[100px] sm:min-h-[120px] text-base sm:text-lg text-gray-900 placeholder-gray-500 resize-none focus:outline-none"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={(e) => {
@@ -415,34 +416,34 @@ export default function SimpleLandingPage() {
 
           </div>
 
-          {/* Quick Actions */}
-          <div className="flex items-center justify-center gap-3">
+          {/* Quick Actions - Responsive Grid */}
+          <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-center gap-2 sm:gap-3">
             {features.map((feature, index) => {
               const hasDocument = previousDocuments[feature.docType]
               return (
                 <button
                   key={index}
                   onClick={() => handleGetStarted(feature.docType)}
-                  className={`relative flex items-center gap-2 px-5 py-2.5 bg-white rounded-full border transition-all ${
+                  className={`relative flex flex-col sm:flex-row items-center gap-1 sm:gap-2 px-3 sm:px-5 py-3 sm:py-2.5 bg-white rounded-xl sm:rounded-full border transition-all ${
                     hasDocument 
                       ? 'border-indigo-300 hover:border-indigo-400 hover:bg-indigo-50' 
                       : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                   }`}
                 >
                   <feature.icon className={`h-5 w-5 ${hasDocument ? 'text-indigo-600' : 'text-gray-600'}`} />
-                  <span className={`font-medium ${hasDocument ? 'text-indigo-700' : 'text-gray-700'}`}>
+                  <span className={`text-xs sm:text-base font-medium ${hasDocument ? 'text-indigo-700' : 'text-gray-700'}`}>
                     {feature.title}
                   </span>
                   {hasDocument && (
-                    <Check className="h-3.5 w-3.5 text-indigo-600" />
+                    <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-indigo-600 absolute top-1 right-1 sm:static" />
                   )}
                 </button>
               )
             })}
           </div>
 
-          {/* Info Message */}
-          <div className="text-center space-y-2">
+          {/* Info Message - Hide on mobile to reduce clutter */}
+          <div className="hidden sm:block text-center space-y-2">
             <p className="text-sm text-gray-600">
               AI-powered SDLC automation platform that helps you write specs, generate code, and manage your development workflow
             </p>
