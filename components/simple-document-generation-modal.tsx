@@ -528,16 +528,29 @@ export function SimpleDocumentGenerationModal({
           }
         }}
       >
-        <DialogHeader className="flex-shrink-0 px-4 sm:px-6 py-3 sm:py-4 border-b">
-          <div className="flex items-center justify-between">
+        {/* Minimal header on mobile, normal on desktop */}
+        <DialogHeader className="flex-shrink-0 px-3 sm:px-6 py-2 sm:py-4 border-b sm:border-b">
+          <div className="sm:hidden flex items-center justify-between">
+            {/* Mobile: Just title and close in header */}
+            <DialogTitle className="text-sm font-medium">SDLC Docs</DialogTitle>
+            <div className="flex items-center gap-2">
+              {rateLimitStatus && (
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">
+                  {Math.max(0, rateLimitStatus.remaining)} left
+                </Badge>
+              )}
+            </div>
+          </div>
+          {/* Desktop: Full header */}
+          <div className="hidden sm:flex items-center justify-between">
             <div>
-              <DialogTitle className="text-base sm:text-lg">SDLC Documentation</DialogTitle>
-              <DialogDescription className="hidden sm:block text-sm">
+              <DialogTitle className="text-lg">SDLC Documentation</DialogTitle>
+              <DialogDescription className="text-sm">
                 Choose a document type to generate. Non-logged-in users can generate up to 10 documents.
               </DialogDescription>
             </div>
             {rateLimitStatus && (
-              <div className="text-right hidden sm:block">
+              <div className="text-right">
                 <div className="text-sm font-medium text-gray-700">
                   {Math.max(0, rateLimitStatus.remaining)}/{rateLimitStatus.total} documents remaining
                 </div>
@@ -552,16 +565,10 @@ export function SimpleDocumentGenerationModal({
                 )}
               </div>
             )}
-            {/* Mobile rate limit badge */}
-            {rateLimitStatus && (
-              <Badge variant="outline" className="sm:hidden text-xs">
-                {Math.max(0, rateLimitStatus.remaining)}/{rateLimitStatus.total}
-              </Badge>
-            )}
           </div>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden flex flex-col space-y-2 sm:space-y-4 px-4 sm:px-6 py-2 sm:py-4">
+        <div className="flex-1 overflow-hidden flex flex-col space-y-1 sm:space-y-4 px-3 sm:px-6 py-1 sm:py-4">
           {/* Show rate limit error */}
           {rateLimitError && (
             <Alert className="flex-shrink-0 border-red-200 bg-red-50">
@@ -582,7 +589,7 @@ export function SimpleDocumentGenerationModal({
             </Alert>
           )}
 
-          {/* Document Type Selection */}
+          {/* Document Type Selection - Horizontal scroll on mobile */}
           <div className="flex-shrink-0">
             <Tabs value={selectedType} onValueChange={(value) => {
               if (!isGenerating) {
@@ -603,18 +610,38 @@ export function SimpleDocumentGenerationModal({
                 }
               }
             }}>
-              <TabsList className="grid grid-cols-5 w-full h-auto">
+              {/* Mobile: Horizontal scrollable tabs */}
+              <TabsList className="sm:hidden flex w-full h-auto overflow-x-auto scrollbar-hide bg-gray-50 p-1 rounded-lg">
                 {documentTypes.map((doc) => (
                   <TabsTrigger 
                     key={doc.id} 
                     value={doc.id}
                     disabled={isGenerating}
-                    className={`flex flex-col items-center gap-0.5 sm:gap-1 h-auto py-1.5 sm:py-2 px-1 sm:px-2 relative ${
+                    className={`flex-shrink-0 flex items-center gap-1 h-auto py-1.5 px-2.5 whitespace-nowrap relative ${
                       isGenerating ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                   >
-                    <doc.icon className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${doc.color}`} />
-                    <span className="text-[10px] sm:text-xs leading-tight text-center">{doc.name}</span>
+                    <doc.icon className={`h-3.5 w-3.5 ${doc.color}`} />
+                    <span className="text-[11px] font-medium">{doc.name}</span>
+                    {previousDocuments[doc.id] && (
+                      <Check className="h-2.5 w-2.5 text-green-600 ml-0.5" />
+                    )}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+              {/* Desktop: Grid tabs */}
+              <TabsList className="hidden sm:grid grid-cols-5 w-full h-auto">
+                {documentTypes.map((doc) => (
+                  <TabsTrigger 
+                    key={doc.id} 
+                    value={doc.id}
+                    disabled={isGenerating}
+                    className={`flex flex-col items-center gap-1 h-auto py-2 px-2 relative ${
+                      isGenerating ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    <doc.icon className={`h-4 w-4 ${doc.color}`} />
+                    <span className="text-xs leading-tight text-center">{doc.name}</span>
                     {previousDocuments[doc.id] && (
                       <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center bg-green-500">
                         <Check className="h-3 w-3 text-white" />
@@ -625,66 +652,7 @@ export function SimpleDocumentGenerationModal({
               </TabsList>
             </Tabs>
 
-            {/* Show document generation status - Desktop only */}
-            {rateLimitStatus && (
-              <div className="hidden sm:block mt-3 p-3 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-indigo-600" />
-                    <p className="text-sm text-gray-700">
-                      <span className="font-medium">
-                        {rateLimitStatus.total - rateLimitStatus.remaining} document{(rateLimitStatus.total - rateLimitStatus.remaining) !== 1 ? 's' : ''} generated.
-                      </span>
-                      {rateLimitStatus.remaining > 0 ? 
-                        ` You can generate ${rateLimitStatus.remaining} more document${rateLimitStatus.remaining !== 1 ? 's' : ''}.` :
-                        ' Daily limit reached. Sign in for unlimited access.'
-                      }
-                    </p>
-                  </div>
-                  {rateLimitStatus.remaining === 0 && (
-                    <Button
-                      size="sm"
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white"
-                      onClick={() => window.location.href = '/signin'}
-                    >
-                      Sign in
-                    </Button>
-                  )}
-                </div>
-              </div>
-            )}
 
-            {/* Selected Type Description - Hidden on mobile */}
-            <Card className="hidden sm:block mt-4 bg-gray-50">
-              <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                  <Icon className={`h-5 w-5 mt-0.5 ${selectedDoc?.color}`} />
-                  <div className="flex-1">
-                    <h3 className="font-medium text-gray-900">{selectedDoc?.name}</h3>
-                    <p className="text-sm text-gray-600 mt-1">{selectedDoc?.description}</p>
-                  </div>
-                  {previousDocuments[selectedType] ? (
-                    <Badge variant="secondary" className="bg-green-100 text-green-700">
-                      <Check className="h-3 w-3 mr-1" />
-                      Generated
-                    </Badge>
-                  ) : rateLimitStatus && rateLimitStatus.remaining > 0 ? (
-                    <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
-                      Free Preview
-                    </Badge>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="bg-indigo-600 text-white hover:bg-indigo-700"
-                      onClick={() => window.location.href = '/signin'}
-                    >
-                      Sign in to generate
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
           {/* Terminal-like Streaming Preview (if generating) - Smaller on mobile */}
@@ -733,10 +701,10 @@ export function SimpleDocumentGenerationModal({
           {/* Generated Content - Full screen on mobile */}
           <div className="flex-1 overflow-y-auto bg-white border border-gray-200 rounded-lg p-3 sm:p-6">
             {viewingPreviousDoc && !isGenerating && (
-              <div className="mb-2 sm:mb-4 p-2 sm:p-3 bg-green-50 border border-green-200 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-600" />
-                  <span className="text-xs sm:text-sm text-green-800 font-medium">Viewing saved {selectedDoc?.name}</span>
+              <div className="mb-2 sm:mb-4 p-1.5 sm:p-3 bg-green-50 border border-green-200 rounded-md sm:rounded-lg flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <Check className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
+                  <span className="text-[10px] sm:text-sm text-green-800 font-medium">Saved</span>
                 </div>
                 {rateLimitStatus && rateLimitStatus.remaining > 0 && (
                   <Button
