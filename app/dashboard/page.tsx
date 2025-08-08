@@ -3795,8 +3795,8 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                           </Button>
                         </div>
                         
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
-                          {/* Settings */}
+                        <div className="grid grid-cols-2 gap-2">
+                          {/* Config */}
                           <Button
                             variant="ghost"
                             size="sm"
@@ -3804,11 +3804,11 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                               setShowSettingsDialog(true)
                               setToolkitExpanded(false)
                             }}
-                            className="h-10 min-w-[72px] max-w-[110px] p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
+                            className="h-10 p-2 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
                             title="Configuration"
                           >
                             <Settings className="h-4 w-4" />
-                            <span className="text-xs truncate w-full">Config</span>
+                            <span className="text-xs">Config</span>
                           </Button>
                           {/* Integrations */}
                           <Button
@@ -3818,84 +3818,11 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                               setShowIntegrations(true)
                               setToolkitExpanded(false)
                             }}
-                            className="h-10 min-w-[72px] max-w-[110px] p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
+                            className="h-10 p-2 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
                             title="Integration Hub"
                           >
                             <Plug className="h-4 w-4" />
-                            <span className="text-xs truncate w-full">Integrations</span>
-                          </Button>
-                          {/* Workflow */}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setShowWorkflow(true)
-                              setToolkitExpanded(false)
-                            }}
-                            className="h-10 min-w-[72px] max-w-[110px] p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
-                            title="View Workflow"
-                          >
-                            <Workflow className="h-4 w-4" />
-                            <span className="text-xs truncate w-full">Workflow</span>
-                          </Button>
-                          {/* Info */}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setShowHowItWorks(true)
-                              setToolkitExpanded(false)
-                            }}
-                            className="h-10 min-w-[72px] max-w-[110px] p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
-                            title="How It Works"
-                          >
-                            <Info className="h-4 w-4" />
-                            <span className="text-xs truncate w-full">Info</span>
-                          </Button>
-                          {/* Prompt Engineering */}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setShowPromptEngineering(true)
-                              setToolkitExpanded(false)
-                            }}
-                            className="h-10 min-w-[72px] max-w-[110px] p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
-                            title="Prompt Engineering"
-                          >
-                            <Settings className="h-4 w-4" />
-                            <span className="text-xs truncate w-full">Prompts</span>
-                          </Button>
-                          {/* Analytics */}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              window.location.href = '/usage-dashboard'
-                              setToolkitExpanded(false)
-                            }}
-                            className="h-10 min-w-[72px] max-w-[110px] p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1"
-                            title="Usage Dashboard"
-                          >
-                            <BarChart3 className="h-4 w-4" />
-                            <span className="text-xs truncate w-full">Analytics</span>
-                          </Button>
-                          {/* Database Test */}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setShowDatabaseTest(true)
-                              setToolkitExpanded(false)
-                            }}
-                            className="h-10 min-w-[72px] max-w-[110px] p-0 hover:bg-gray-100 flex flex-col items-center justify-center gap-1 relative"
-                            title="Test Database"
-                          >
-                            <Database className="h-4 w-4" />
-                            <span className="text-xs truncate w-full">Database</span>
-                            <Badge variant="secondary" className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-xs">
-                              T
-                            </Badge>
+                            <span className="text-xs">Integrations</span>
                           </Button>
                         </div>
                       </div>
