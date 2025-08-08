@@ -278,19 +278,25 @@ const UserHeader: React.FC<UserHeaderProps> = ({ user, userRole, onSignOut, onCo
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <div className="flex items-center space-x-3">
-              <img 
-                src="/img/logo-sdlc.png" 
-                alt="SDLC.dev Logo" 
-                className="h-16 w-auto" 
+              {/* Simplified mobile logo */}
+              <div className="sm:hidden">
+                <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">SDLC</span>
+              </div>
+              {/* Full desktop logo */}
+              <div className="hidden sm:flex items-center space-x-3">
+                <img 
+                  src="/img/logo-sdlc.png" 
+                  alt="SDLC.dev Logo" 
+                  className="h-16 w-auto" 
                 />
-              <div className="flex flex-col">
-                <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 bg-clip-text text-transparent font-black tracking-tight">
-                  <span className="hidden lg:inline text-2xl">SDLC.dev</span>
-                  <span className="hidden sm:inline lg:hidden text-xl">SDLC.dev</span>
-                  <span className="sm:hidden text-lg">SDLC</span>
-                </div>
-                <div className="text-xs text-gray-500 font-medium">
-                  Prompt to System Design
+                <div className="flex flex-col">
+                  <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 bg-clip-text text-transparent font-black tracking-tight">
+                    <span className="hidden lg:inline text-2xl">SDLC.dev</span>
+                    <span className="hidden sm:inline lg:hidden text-xl">SDLC.dev</span>
+                  </div>
+                  <div className="text-xs text-gray-500 font-medium">
+                    Prompt to System Design
+                  </div>
                 </div>
               </div>
             </div>
@@ -2923,8 +2929,8 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
       <UserHeader user={user} userRole={userRole} onSignOut={onSignOut} onConfigureKeys={() => setShowConfig(true)} />
       
       <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
-        {/* Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+        {/* Header - Hidden on mobile for cleaner interface */}
+        <div className="hidden sm:flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Prompt to System Design</h1>
             <p className="text-sm sm:text-base text-gray-600">Transform ideas into Specs with AI</p>
@@ -2936,8 +2942,10 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
           </div> */}
         </div>
 
-        {/* Generation Summary */}
-        <GenerationSummary />
+        {/* Generation Summary - Hidden on mobile for cleaner interface */}
+        <div className="hidden sm:block">
+          <GenerationSummary />
+        </div>
 
         {/* Recent Projects */}
         {isLoadingRecentProjects ? (
@@ -3847,8 +3855,8 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
               </CardContent>
             </Card>
 
-            {/* Help Section */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            {/* Help Section - Hidden on mobile for cleaner interface */}
+            <div className="hidden sm:block bg-blue-50 border border-blue-200 rounded-lg p-4">
               <div className="flex items-start gap-3">
                 <Info className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
                 <div className="space-y-2">
