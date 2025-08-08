@@ -474,6 +474,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
 
   const [toolkitExpanded, setToolkitExpanded] = useState(false)
   const [toolsExpanded, setToolsExpanded] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('sdlc')
   const [gitHubRepositories, setGitHubRepositories] = useState<GitHubRepository[]>([])
   const [gitHubProjectConfig, setGitHubProjectConfig] = useState<GitHubProjectConfig>({
@@ -3616,7 +3617,8 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         </Dialog>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <div className="scrollbar-hide overflow-x-auto">
+          {/* Hide tabs on mobile to focus on core SDLC features */}
+          <div className="scrollbar-hide overflow-x-auto hidden sm:block">
             <TabsList className="flex min-w-max">
               <TabsTrigger value="sdlc" className="flex-shrink-0 min-w-[60px] px-2 sm:px-3">
                 <FileText className="w-4 h-4 mr-1 sm:mr-2" />
@@ -3655,8 +3657,22 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                 </div>
                 
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  {/* Tools Section - Left Side */}
-                  <div className="relative w-full sm:w-auto">
+                  {/* Mobile Menu Button - Only visible on mobile */}
+                  <div className="sm:hidden w-full">
+                    <button
+                      onClick={() => setMobileMenuOpen(true)}
+                      className="w-full bg-gray-50 hover:bg-gray-100 rounded-lg px-4 py-2.5 border border-gray-200 transition-colors flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Settings className="h-4 w-4 text-gray-600" />
+                        <span className="text-sm text-gray-700 font-medium">Tools & Settings</span>
+                      </div>
+                      <ChevronLeft className="h-4 w-4 text-gray-500 rotate-180" />
+                    </button>
+                  </div>
+
+                  {/* Tools Section - Left Side - Hidden on mobile */}
+                  <div className="relative w-full sm:w-auto hidden sm:block">
                     {/* Collapsed Tools Tab */}
                     {!toolsExpanded && (
                       <button
@@ -3739,8 +3755,8 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                     )}
                   </div>
 
-                  {/* Collapsible Horizontal Toolkit - Settings */}
-                  <div className="relative w-full sm:w-auto">
+                  {/* Collapsible Horizontal Toolkit - Settings - Hidden on mobile */}
+                  <div className="relative w-full sm:w-auto hidden sm:block">
                     {/* Collapsed Tab */}
                     {!toolkitExpanded && (
                       <button
@@ -4297,6 +4313,148 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         input={input}
         isLoading={isProcessing}
       />
+
+      {/* Mobile Menu Overlay - ChatGPT style */}
+      {mobileMenuOpen && (
+        <div className="sm:hidden fixed inset-0 z-50 bg-black/50" onClick={() => setMobileMenuOpen(false)}>
+          <div 
+            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-xl shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-gray-100">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
+                <button
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="h-5 w-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-4 space-y-2 max-h-[60vh] overflow-y-auto">
+              {/* Tab Selection */}
+              <div className="pb-2 mb-2 border-b border-gray-100">
+                <p className="text-xs font-medium text-gray-500 uppercase mb-2">Switch Mode</p>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    onClick={() => {
+                      setActiveTab('sdlc')
+                      setMobileMenuOpen(false)
+                    }}
+                    className={`p-3 rounded-lg border transition-colors ${
+                      activeTab === 'sdlc' 
+                        ? 'bg-blue-50 border-blue-300 text-blue-700' 
+                        : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <FileText className="h-5 w-5 mx-auto mb-1" />
+                    <span className="text-xs font-medium">SDLC</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveTab('codeyodha')
+                      setMobileMenuOpen(false)
+                    }}
+                    className={`p-3 rounded-lg border transition-colors ${
+                      activeTab === 'codeyodha' 
+                        ? 'bg-purple-50 border-purple-300 text-purple-700' 
+                        : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <Sparkles className="h-5 w-5 mx-auto mb-1" />
+                    <span className="text-xs font-medium">CodeYodha</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveTab('gitdigest')
+                      setMobileMenuOpen(false)
+                    }}
+                    className={`p-3 rounded-lg border transition-colors ${
+                      activeTab === 'gitdigest' 
+                        ? 'bg-green-50 border-green-300 text-green-700' 
+                        : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <GitBranch className="h-5 w-5 mx-auto mb-1" />
+                    <span className="text-xs font-medium">GitDigest</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Settings Options */}
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-gray-500 uppercase mb-2">Settings</p>
+                
+                <button
+                  onClick={() => {
+                    setShowSettingsDialog(true)
+                    setMobileMenuOpen(false)
+                  }}
+                  className="w-full p-3 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-3 text-left"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                    <Settings className="h-5 w-5 text-gray-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Configuration</p>
+                    <p className="text-xs text-gray-500">API keys and settings</p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setShowIntegrations(true)
+                    setMobileMenuOpen(false)
+                  }}
+                  className="w-full p-3 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-3 text-left"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                    <Plug className="h-5 w-5 text-gray-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Integrations</p>
+                    <p className="text-xs text-gray-500">Connect external services</p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    window.open('/prompts', '_blank')
+                    setMobileMenuOpen(false)
+                  }}
+                  className="w-full p-3 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-3 text-left"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                    <FileText className="h-5 w-5 text-gray-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">My Prompts</p>
+                    <p className="text-xs text-gray-500">Manage your prompts</p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    window.open('/usage-dashboard', '_blank')
+                    setMobileMenuOpen(false)
+                  }}
+                  className="w-full p-3 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-3 text-left"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                    <BarChart3 className="h-5 w-5 text-gray-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Usage Analytics</p>
+                    <p className="text-xs text-gray-500">Track your usage</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Simplified Settings Dialog */}
       <SimplifiedSettingsDialog
