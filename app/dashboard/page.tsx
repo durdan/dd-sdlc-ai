@@ -302,8 +302,8 @@ const UserHeader: React.FC<UserHeaderProps> = ({ user, userRole, onSignOut, onCo
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            {/* Simplified welcome message */}
-            <div className="flex items-center space-x-3">
+            {/* Usage indicator - hidden on mobile for cleaner interface */}
+            <div className="hidden sm:flex items-center space-x-3">
               <UsageIndicatorCompact 
                 onViewDashboard={() => window.location.href = '/usage-dashboard'}
               />
@@ -3643,7 +3643,18 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
             </TabsList>
           </div>
 
-          <TabsContent value="sdlc" className="space-y-6">
+          <TabsContent value="sdlc" className="space-y-6 pb-20 sm:pb-6">
+            {/* Mobile Menu Floating Button - ChatGPT style */}
+            <div className="sm:hidden fixed bottom-6 right-6 z-40">
+              <button
+                onClick={() => setMobileMenuOpen(true)}
+                className="w-14 h-14 bg-white hover:bg-gray-50 rounded-full shadow-lg border border-gray-200 transition-all hover:shadow-xl flex items-center justify-center"
+                aria-label="Open menu"
+              >
+                <Plus className="h-6 w-6 text-gray-700" />
+              </button>
+            </div>
+
             {/* Main Input Section */}
             <Card>
               <CardHeader>
@@ -3660,24 +3671,11 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                     placeholder="Example: We need to implement a user authentication system that supports email/password login, social media login (Google, Facebook), password reset functionality, and role-based access control. The system should be secure, scalable, and integrate with our existing user database..."
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    className="min-h-[120px]"
+                    className="min-h-[180px] sm:min-h-[120px]"
                   />
                 </div>
                 
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  {/* Mobile Menu Button - Only visible on mobile */}
-                  <div className="sm:hidden w-full">
-                    <button
-                      onClick={() => setMobileMenuOpen(true)}
-                      className="w-full bg-gray-50 hover:bg-gray-100 rounded-lg px-4 py-2.5 border border-gray-200 transition-colors flex items-center justify-between"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Settings className="h-4 w-4 text-gray-600" />
-                        <span className="text-sm text-gray-700 font-medium">Tools & Settings</span>
-                      </div>
-                      <ChevronLeft className="h-4 w-4 text-gray-500 rotate-180" />
-                    </button>
-                  </div>
 
                   {/* Tools Section - Left Side - Hidden on mobile */}
                   <div className="relative w-full sm:w-auto hidden sm:block">
