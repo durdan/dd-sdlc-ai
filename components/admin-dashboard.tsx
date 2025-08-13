@@ -14,6 +14,7 @@ import { AlertCircle, Users, TrendingUp, Activity, Settings, Calendar, BarChart3
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts'
 import AnonymousDocumentsView from '@/components/admin/anonymous-documents-view'
 import AllProjectsView from '@/components/admin/all-projects-view'
+import { SubsectionPromptManager } from '@/components/admin/subsection-prompt-manager'
 
 interface AdminUserStats {
   id: string
@@ -607,6 +608,7 @@ export default function AdminDashboard() {
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="trends">Usage Trends</TabsTrigger>
           <TabsTrigger value="anonymous">Anonymous Documents</TabsTrigger>
+          <TabsTrigger value="subsections">Subsection Prompts</TabsTrigger>
         </TabsList>
 
         <TabsContent value="projects" className="space-y-4">
@@ -960,6 +962,10 @@ export default function AdminDashboard() {
 
         <TabsContent value="anonymous" className="space-y-4">
           <AnonymousDocumentsView />
+        </TabsContent>
+
+        <TabsContent value="subsections" className="space-y-4">
+          <SubsectionPromptManager isAdmin={true} />
         </TabsContent>
       </Tabs>
 

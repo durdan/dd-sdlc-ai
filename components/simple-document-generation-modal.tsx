@@ -38,6 +38,14 @@ import { parseMermaidDiagrams, extractAndFixMermaidDiagrams } from "@/lib/mermai
 import { rateLimitService } from "@/lib/rate-limit-service"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
+import { TechSpecTabButton } from "@/components/tech-spec-tab-button"
+import { Settings } from "lucide-react"
+import { SectionGenerationProgress } from "@/components/section-generation-progress"
+import { businessAnalysisSections } from "@/lib/business-analysis-sections"
+import { techSpecSections } from "@/lib/tech-spec-sections"
+import { uxDesignSections } from "@/lib/ux-design-sections"
+import { architectureSections } from "@/lib/architecture-sections"
+import { functionalSpecSections } from "@/lib/functional-spec-sections"
 
 interface SimpleDocumentGenerationModalProps {
   isOpen: boolean
@@ -122,6 +130,93 @@ export function SimpleDocumentGenerationModal({
     resetAt: Date
   } | null>(null)
   const [rateLimitError, setRateLimitError] = useState<string | null>(null)
+  
+  // State for tracking section generation progress
+  const [sectionProgress, setSectionProgress] = useState<{
+    [sectionId: string]: {
+      status: 'pending' | 'generating' | 'completed' | 'error'
+      content?: string
+      error?: string
+    }
+  }>({})
+  const [currentGeneratingSection, setCurrentGeneratingSection] = useState<string | null>(null)
+  
+  const [selectedTechSpecSections, setSelectedTechSpecSections] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      const storedSections = localStorage.getItem('techSpecSections')
+      if (storedSections) {
+        try {
+          return JSON.parse(storedSections)
+        } catch (e) {
+          console.error('Error parsing tech spec sections:', e)
+        }
+      }
+    }
+    return []
+  })
+  
+  // State for other document type sections
+  const [selectedBusinessSections, setSelectedBusinessSections] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('businessSections')
+      return stored ? JSON.parse(stored) : []
+    }
+    return []
+  })
+  
+  const [selectedUXSections, setSelectedUXSections] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('uxSections')
+      return stored ? JSON.parse(stored) : []
+    }
+    return []
+  })
+  
+  const [selectedArchitectureSections, setSelectedArchitectureSections] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('architectureSections')
+      return stored ? JSON.parse(stored) : []
+    }
+    return []
+  })
+  
+  const [selectedFunctionalSections, setSelectedFunctionalSections] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('functionalSections')
+      return stored ? JSON.parse(stored) : []
+    }
+    return []
+  })
+  
+  // Map section details for progress display
+  const sectionDetailsMap = {
+    business: businessAnalysisSections,
+    technical: techSpecSections,
+    ux: uxDesignSections,
+    mermaid: architectureSections,
+    functional: functionalSpecSections
+  }
+  
+  // Get selected sections for current document type
+  const getSelectedSections = () => {
+    switch (selectedType) {
+      case 'business':
+        return selectedBusinessSections
+      case 'technical':
+        return selectedTechSpecSections
+      case 'ux':
+        return selectedUXSections
+      case 'mermaid':
+        return selectedArchitectureSections
+      case 'functional':
+        return selectedFunctionalSections
+      default:
+        return []
+    }
+  }
+  
+  const currentSections = getSelectedSections()
+  const currentSectionDetails = sectionDetailsMap[selectedType as keyof typeof sectionDetailsMap] || {}
   
   // Check rate limit when modal opens or after generation
   const checkRateLimit = async () => {
@@ -242,81 +337,113 @@ export function SimpleDocumentGenerationModal({
     setError(null)
 
     try {
-      console.log('📤 Sending request with documentType:', selectedType)
-      const requestBody = {
-        input,
-        documentType: selectedType,
-        userId: 'anonymous',
-      }
-      console.log('📤 Full request body:', requestBody)
+      // Get selected sections for the current document type
+      let selectedSections: string[] = []
+      let sectionKey = ''
       
-      const response = await fetch('/api/generate-document', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      })
-
-      if (!response.ok) {
-        throw new Error(`Failed to generate document: ${response.statusText}`)
+      if (selectedType === 'technical' && selectedTechSpecSections.length > 0) {
+        selectedSections = selectedTechSpecSections
+        sectionKey = 'techSpecSections'
+        console.log('🔧 Including tech spec sections:', selectedTechSpecSections)
+      } else if (selectedType === 'business' && selectedBusinessSections.length > 0) {
+        selectedSections = selectedBusinessSections
+        sectionKey = 'businessSections'
+        console.log('💼 Including business sections:', selectedBusinessSections)
+      } else if (selectedType === 'ux' && selectedUXSections.length > 0) {
+        selectedSections = selectedUXSections
+        sectionKey = 'uxSections'
+        console.log('🎨 Including UX sections:', selectedUXSections)
+      } else if (selectedType === 'mermaid' && selectedArchitectureSections.length > 0) {
+        selectedSections = selectedArchitectureSections
+        sectionKey = 'architectureSections'
+        console.log('🏗️ Including architecture sections:', selectedArchitectureSections)
+      } else if (selectedType === 'functional' && selectedFunctionalSections.length > 0) {
+        selectedSections = selectedFunctionalSections
+        sectionKey = 'functionalSections'
+        console.log('📋 Including functional sections:', selectedFunctionalSections)
       }
-
-      const reader = response.body?.getReader()
-      const decoder = new TextDecoder()
-
-      if (!reader) {
-        throw new Error('No response body')
-      }
-
-      let buffer = ''
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-
-        buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split('\n')
+      
+      // If sections are selected, generate them one by one
+      if (selectedSections.length > 0) {
+        await generateSectionsSequentially(selectedSections, sectionKey)
+      } else {
+        // No sections selected - use default comprehensive prompt
+        console.log('📝 No sections selected - using default comprehensive prompt')
+        const requestBody: any = {
+          input,
+          documentType: selectedType,
+          userId: 'anonymous',
+        }
+        console.log('📤 Full request body:', requestBody)
         
-        // Keep the last line in the buffer if it's incomplete
-        buffer = lines.pop() || ''
+        const response = await fetch('/api/generate-document', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+        })
 
-        for (const line of lines) {
-          if (line.trim() === '') continue
+        if (!response.ok) {
+          throw new Error(`Failed to generate document: ${response.statusText}`)
+        }
+
+        const reader = response.body?.getReader()
+        const decoder = new TextDecoder()
+
+        if (!reader) {
+          throw new Error('No response body')
+        }
+
+        let buffer = ''
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split('\n')
           
-          if (line.startsWith('data: ')) {
-            const jsonStr = line.slice(6).trim()
+          // Keep the last line in the buffer if it's incomplete
+          buffer = lines.pop() || ''
+
+          for (const line of lines) {
+            if (line.trim() === '') continue
             
-            // Skip empty data or [DONE] messages
-            if (!jsonStr || jsonStr === '[DONE]') continue
-            
-            try {
-              const data = JSON.parse(jsonStr)
+            if (line.startsWith('data: ')) {
+              const jsonStr = line.slice(6).trim()
               
-              if (data.type === 'chunk') {
-                setStreamedContent(prev => prev + data.content)
-              } else if (data.type === 'complete') {
-                setGeneratedContent(data.fullContent)
-                setStreamedContent("")
-                setHasGenerated(true)
-                setViewingPreviousDoc(false)
-                // Save to local storage for this session
-                const updatedDocs = { ...previousDocuments, [selectedType]: data.fullContent }
-                setPreviousDocuments(updatedDocs)
-                localStorage.setItem('sdlc_generated_docs', JSON.stringify(updatedDocs))
-                // Notify parent component if callback provided
-                if (onDocumentGenerated) {
-                  onDocumentGenerated(updatedDocs)
+              // Skip empty data or [DONE] messages
+              if (!jsonStr || jsonStr === '[DONE]') continue
+              
+              try {
+                const data = JSON.parse(jsonStr)
+                
+                if (data.type === 'chunk') {
+                  setStreamedContent(prev => prev + data.content)
+                } else if (data.type === 'complete') {
+                  setGeneratedContent(data.fullContent)
+                  setStreamedContent("")
+                  setHasGenerated(true)
+                  setViewingPreviousDoc(false)
+                  // Save to local storage for this session
+                  const updatedDocs = { ...previousDocuments, [selectedType]: data.fullContent }
+                  setPreviousDocuments(updatedDocs)
+                  localStorage.setItem('sdlc_generated_docs', JSON.stringify(updatedDocs))
+                  // Notify parent component if callback provided
+                  if (onDocumentGenerated) {
+                    onDocumentGenerated(updatedDocs)
+                  }
+                  // Save anonymous project
+                  await saveAnonymousProject(data.fullContent)
+                  // Refresh rate limit status after generation
+                  await checkRateLimit()
+                } else if (data.type === 'error') {
+                  throw new Error(data.error)
                 }
-                // Save anonymous project
-                await saveAnonymousProject(data.fullContent)
-                // Refresh rate limit status after generation
-                await checkRateLimit()
-              } else if (data.type === 'error') {
-                throw new Error(data.error)
+              } catch (e) {
+                console.error('Error parsing SSE data:', e, 'Line:', jsonStr)
               }
-            } catch (e) {
-              console.error('Error parsing SSE data:', e, 'Line:', jsonStr)
             }
           }
         }
@@ -326,6 +453,164 @@ export function SimpleDocumentGenerationModal({
       setError(err instanceof Error ? err.message : 'Failed to generate document')
     } finally {
       setIsGenerating(false)
+    }
+  }
+
+  // New function to generate sections sequentially
+  const generateSectionsSequentially = async (sections: string[], sectionKey: string) => {
+    console.log(`🔄 Starting sequential generation for ${sections.length} sections`)
+    
+    // Clear previous content when starting new generation
+    setGeneratedContent('')
+    setStreamedContent('')
+    
+    // Initialize progress tracking
+    const initialProgress: typeof sectionProgress = {}
+    sections.forEach(sectionId => {
+      initialProgress[sectionId] = { status: 'pending' }
+    })
+    setSectionProgress(initialProgress)
+    console.log('📊 Initial progress state:', initialProgress)
+    
+    let fullContent = ''
+    const sectionContents: string[] = []
+    
+    // Generate each section one by one
+    for (let i = 0; i < sections.length; i++) {
+      const sectionId = sections[i]
+      console.log(`📝 Generating section ${i + 1}/${sections.length}: ${sectionId}`)
+      
+      // Update progress
+      setSectionProgress(prev => {
+        const updated = {
+          ...prev,
+          [sectionId]: { ...prev[sectionId], status: 'generating' }
+        }
+        console.log(`🔄 Starting section ${sectionId}. Progress:`, updated)
+        return updated
+      })
+      setCurrentGeneratingSection(sectionId)
+      
+      try {
+        // Generate this section only
+        const requestBody: any = {
+          input,
+          documentType: selectedType,
+          userId: 'anonymous',
+          [sectionKey]: [sectionId] // Send only one section at a time
+        }
+        
+        const response = await fetch('/api/generate-document', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+        })
+
+        if (!response.ok) {
+          throw new Error(`Failed to generate section ${sectionId}: ${response.statusText}`)
+        }
+
+        const reader = response.body?.getReader()
+        const decoder = new TextDecoder()
+
+        if (!reader) {
+          throw new Error('No response body')
+        }
+
+        let buffer = ''
+        let sectionContent = ''
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split('\n')
+          
+          // Keep the last line in the buffer if it's incomplete
+          buffer = lines.pop() || ''
+
+          for (const line of lines) {
+            if (line.trim() === '') continue
+            
+            if (line.startsWith('data: ')) {
+              const jsonStr = line.slice(6).trim()
+              
+              try {
+                const data = JSON.parse(jsonStr)
+                
+                if (data.type === 'chunk') {
+                  sectionContent += data.content
+                  // Update streamed content to show current section
+                  setStreamedContent(fullContent + sectionContent)
+                } else if (data.type === 'complete') {
+                  // Section generation complete
+                  sectionContent = data.fullContent || sectionContent
+                }
+              } catch (e) {
+                console.error('Error parsing SSE data:', e)
+              }
+            }
+          }
+        }
+        
+        // Mark section as completed
+        setSectionProgress(prev => {
+          const updated = {
+            ...prev,
+            [sectionId]: { status: 'completed', content: sectionContent }
+          }
+          console.log(`✅ Section ${sectionId} completed. Progress:`, updated)
+          return updated
+        })
+        
+        // Add section content to full document
+        if (i > 0) {
+          fullContent += '\n\n---\n\n' // Add separator between sections
+        }
+        fullContent += sectionContent
+        sectionContents.push(sectionContent)
+        
+        // Update the displayed content
+        setStreamedContent(fullContent)
+        setGeneratedContent(fullContent)
+        
+      } catch (err) {
+        console.error(`Error generating section ${sectionId}:`, err)
+        setSectionProgress(prev => ({
+          ...prev,
+          [sectionId]: { 
+            status: 'error', 
+            error: err instanceof Error ? err.message : 'Failed to generate section' 
+          }
+        }))
+        // Continue with next section even if one fails
+      }
+    }
+    
+    setCurrentGeneratingSection(null)
+    
+    // Save the complete document
+    if (fullContent) {
+      await saveAnonymousProject(fullContent)
+      onDocumentGenerated?.(selectedType, fullContent)
+      
+      // Store in local storage
+      const storedDocs = localStorage.getItem('sdlc_generated_docs')
+      const docs = storedDocs ? JSON.parse(storedDocs) : {}
+      docs[selectedType] = fullContent
+      localStorage.setItem('sdlc_generated_docs', JSON.stringify(docs))
+      
+      // Update previous documents
+      setPreviousDocuments(prev => ({
+        ...prev,
+        [selectedType]: fullContent
+      }))
+      
+      // Update rate limit status
+      await checkRateLimit()
     }
   }
 
@@ -397,10 +682,107 @@ export function SimpleDocumentGenerationModal({
     console.log('📄 Content length:', content?.length)
     console.log('✅ Has generated content:', !!generatedContent)
     console.log('📝 Has streamed content:', !!streamedContent)
+    
+    // Show section progress if we're generating sections
+    const sectionIds = Object.keys(sectionProgress)
+    if (isGenerating && sectionIds.length > 0) {
+      const currentSectionDetails = sectionDetailsMap[selectedType as keyof typeof sectionDetailsMap] || {}
+      
+      return (
+        <div className="space-y-4">
+          {/* Section Progress UI */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-medium text-gray-900">
+                Generating {sectionIds.length} Sections
+              </h3>
+              <Badge variant="outline">
+                {Object.values(sectionProgress).filter(s => s.status === 'completed').length} / {sectionIds.length} Complete
+              </Badge>
+            </div>
+            
+            {/* Progress bar with percentage */}
+            <div className="space-y-1">
+              <Progress 
+                value={Math.round((Object.values(sectionProgress).filter(s => s.status === 'completed').length / sectionIds.length) * 100)}
+                className="h-2"
+              />
+              <div className="flex justify-between text-xs text-gray-500">
+                <span>
+                  {currentGeneratingSection ? 
+                    `Processing section ${Object.keys(sectionProgress).indexOf(currentGeneratingSection) + 1} of ${sectionIds.length}...` :
+                    'Preparing sections...'
+                  }
+                </span>
+                <span>
+                  {Math.round((Object.values(sectionProgress).filter(s => s.status === 'completed').length / sectionIds.length) * 100)}%
+                </span>
+              </div>
+            </div>
+            
+            {/* Section list */}
+            <div className="space-y-2">
+              {sectionIds.map(sectionId => {
+                const status = sectionProgress[sectionId]
+                const sectionInfo = currentSectionDetails[sectionId]
+                
+                return (
+                  <div key={sectionId} className={`rounded-lg p-3 border transition-all ${
+                    status.status === 'completed' ? 'bg-green-50 border-green-200' :
+                    status.status === 'generating' ? 'bg-blue-50 border-blue-200 animate-pulse' :
+                    status.status === 'error' ? 'bg-red-50 border-red-200' :
+                    'bg-gray-50 border-gray-200'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {status.status === 'completed' && <Check className="h-4 w-4 text-green-600" />}
+                        {status.status === 'generating' && <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />}
+                        {status.status === 'error' && <span className="text-red-600">✗</span>}
+                        {status.status === 'pending' && <span className="text-gray-400">○</span>}
+                        
+                        <span className="font-medium text-sm">
+                          {sectionInfo?.name || sectionId}
+                        </span>
+                      </div>
+                      
+                      {status.status === 'completed' && status.content && (
+                        <span className="text-xs text-gray-500">
+                          {status.content.length} chars
+                        </span>
+                      )}
+                    </div>
+                    
+                    {status.status === 'generating' && (
+                      <p className="text-xs text-blue-600 mt-1 ml-6">Generating content...</p>
+                    )}
+                    
+                    {status.status === 'error' && (
+                      <p className="text-xs text-red-600 mt-1 ml-6">{status.error}</p>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+          
+          {/* Show current content being generated */}
+          {streamedContent && (
+            <div className="border rounded-lg p-4 bg-white max-h-96 overflow-y-auto">
+              <div className="text-xs text-gray-500 mb-2">Current Progress:</div>
+              <div className="prose prose-sm max-w-none">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {streamedContent}
+                </ReactMarkdown>
+              </div>
+            </div>
+          )}
+        </div>
+      )
+    }
 
     if (selectedType === 'mermaid') {
       // For Mermaid diagrams, only render after generation is complete to avoid syntax errors
-      if (isGenerating) {
+      if (isGenerating && sectionIds.length === 0) {
         return (
           <div className="space-y-4">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -595,6 +977,9 @@ export function SimpleDocumentGenerationModal({
               if (!isGenerating) {
                 console.log('Tab changed to:', value)
                 setSelectedType(value)
+                // Reset section progress when switching tabs
+                setSectionProgress({})
+                setCurrentGeneratingSection(null)
                 // Check if we have a previous document for this type
                 if (previousDocuments[value]) {
                   console.log('Loading previous document for:', value)
@@ -612,46 +997,79 @@ export function SimpleDocumentGenerationModal({
             }}>
               {/* Mobile: Horizontal scrollable tabs */}
               <TabsList className="sm:hidden flex w-full h-auto overflow-x-auto scrollbar-hide bg-gray-50 p-1 rounded-lg">
-                {documentTypes.map((doc) => (
-                  <TabsTrigger 
-                    key={doc.id} 
-                    value={doc.id}
-                    disabled={isGenerating}
-                    className={`flex-shrink-0 flex items-center gap-1 h-auto py-1.5 px-2.5 whitespace-nowrap relative ${
-                      isGenerating ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                  >
-                    <doc.icon className={`h-3.5 w-3.5 ${doc.color}`} />
-                    <span className="text-[11px] font-medium">{doc.name}</span>
-                    {previousDocuments[doc.id] && (
-                      <Check className="h-2.5 w-2.5 text-green-600 ml-0.5" />
-                    )}
-                  </TabsTrigger>
-                ))}
+                {documentTypes.map((doc) => {
+                  // Use custom component for Technical Spec on mobile too
+                  if (doc.id === 'technical') {
+                    return (
+                      <div key={doc.id} className="flex-shrink-0">
+                        <TechSpecTabButton
+                          isSelected={selectedType === 'technical'}
+                          isDisabled={isGenerating}
+                          onClick={() => setSelectedType('technical')}
+                          selectedSections={selectedTechSpecSections}
+                          onSectionsChange={setSelectedTechSpecSections}
+                          hasPreviousDocument={!!previousDocuments[doc.id]}
+                        />
+                      </div>
+                    )
+                  }
+                  
+                  return (
+                    <TabsTrigger 
+                      key={doc.id} 
+                      value={doc.id}
+                      disabled={isGenerating}
+                      className={`flex-shrink-0 flex items-center gap-1 h-auto py-1.5 px-2.5 whitespace-nowrap relative ${
+                        isGenerating ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
+                    >
+                      <doc.icon className={`h-3.5 w-3.5 ${doc.color}`} />
+                      <span className="text-[11px] font-medium">{doc.name}</span>
+                      {previousDocuments[doc.id] && (
+                        <Check className="h-2.5 w-2.5 text-green-600 ml-0.5" />
+                      )}
+                    </TabsTrigger>
+                  )
+                })}
               </TabsList>
               {/* Desktop: Grid tabs */}
-              <TabsList className="hidden sm:grid grid-cols-5 w-full h-auto">
-                {documentTypes.map((doc) => (
-                  <TabsTrigger 
-                    key={doc.id} 
-                    value={doc.id}
-                    disabled={isGenerating}
-                    className={`flex flex-col items-center gap-1 h-auto py-2 px-2 relative ${
-                      isGenerating ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                  >
-                    <doc.icon className={`h-4 w-4 ${doc.color}`} />
-                    <span className="text-xs leading-tight text-center">{doc.name}</span>
-                    {previousDocuments[doc.id] && (
-                      <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center bg-green-500">
-                        <Check className="h-3 w-3 text-white" />
-                      </Badge>
-                    )}
-                  </TabsTrigger>
-                ))}
+              <TabsList className="hidden sm:flex items-center justify-center gap-1 w-full h-auto p-1 bg-gray-100 rounded-lg">
+                {documentTypes.map((doc) => {
+                  // Use custom component for Technical Spec
+                  if (doc.id === 'technical') {
+                    return (
+                      <TechSpecTabButton
+                        key={doc.id}
+                        isSelected={selectedType === 'technical'}
+                        isDisabled={isGenerating}
+                        onClick={() => setSelectedType('technical')}
+                        selectedSections={selectedTechSpecSections}
+                        onSectionsChange={setSelectedTechSpecSections}
+                        hasPreviousDocument={!!previousDocuments[doc.id]}
+                      />
+                    )
+                  }
+                  
+                  // Regular tabs for other document types
+                  return (
+                    <TabsTrigger 
+                      key={doc.id} 
+                      value={doc.id}
+                      disabled={isGenerating}
+                      className={`flex items-center gap-1.5 h-auto py-2 px-3 relative ${
+                        isGenerating ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
+                    >
+                      <doc.icon className={`h-4 w-4 ${doc.color}`} />
+                      <span className="text-sm">{doc.name}</span>
+                      {previousDocuments[doc.id] && (
+                        <Check className="h-3 w-3 text-green-600 ml-1" />
+                      )}
+                    </TabsTrigger>
+                  )
+                })}
               </TabsList>
             </Tabs>
-
 
           </div>
 
@@ -726,6 +1144,33 @@ export function SimpleDocumentGenerationModal({
                 )}
               </div>
             )}
+            {/* Show section progress if sections are selected */}
+            {currentSections.length > 0 && (isGenerating || generatedContent || streamedContent) && (
+              <div className="mb-4">
+                <SectionGenerationProgress
+                  documentType={selectedType}
+                  sections={currentSections}
+                  sectionDetails={currentSectionDetails}
+                  isGenerating={isGenerating}
+                />
+              </div>
+            )}
+            
+            {/* Show default prompt info when no sections selected */}
+            {currentSections.length === 0 && isGenerating && (
+              <Card className="mb-4 p-4 bg-blue-50 border-blue-200">
+                <div className="flex items-start gap-3">
+                  <Sparkles className="h-5 w-5 text-blue-600 mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="font-medium text-blue-900">Using Comprehensive Default Prompt</h4>
+                    <p className="text-sm text-blue-700 mt-1">
+                      Generating complete {selectedDoc?.name} with all standard sections included.
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            )}
+            
             {!generatedContent && !streamedContent && !isGenerating && !viewingPreviousDoc && (
               <div className="flex flex-col items-center justify-center h-full min-h-[200px] sm:min-h-[300px] text-center">
                 <div className="p-4 sm:p-8 space-y-3 sm:space-y-4">

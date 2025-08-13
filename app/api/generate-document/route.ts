@@ -17,6 +17,11 @@ interface GenerateDocumentRequest {
   userId?: string
   projectId?: string
   useContextOptimization?: boolean
+  techSpecSections?: string[]
+  businessSections?: string[]
+  uxSections?: string[]
+  architectureSections?: string[]
+  functionalSections?: string[]
 }
 
 async function getAuthenticatedUser() {
@@ -45,7 +50,12 @@ async function generateWithDatabasePromptStreaming(
   customPrompt: string | undefined,
   userId: string | undefined,
   projectId: string | undefined,
-  useContextOptimization: boolean = true
+  useContextOptimization: boolean = true,
+  techSpecSections?: string[],
+  businessSections?: string[],
+  uxSections?: string[],
+  architectureSections?: string[],
+  functionalSections?: string[]
 ) {
   const promptService = createServerPromptService()
   const startTime = Date.now()
@@ -133,6 +143,72 @@ async function generateWithDatabasePromptStreaming(
       })
     }
 
+    // Special handling for document types with sections
+    const sectionParams = {
+      business: businessSections,
+      technical: techSpecSections,
+      ux: uxSections,
+      mermaid: architectureSections,
+      functional: functionalSections
+    }
+    
+    const selectedSections = sectionParams[documentType as keyof typeof sectionParams]
+    
+    if (selectedSections && selectedSections.length > 0) {
+      console.log(`🔧 Using specialized ${documentType} sections:`, selectedSections)
+      
+      let combinedPrompt = ''
+      const context = {
+        input,
+        business_analysis: optimizedContext.businessAnalysis,
+        functional_spec: optimizedContext.functionalSpec,
+        technical_spec: optimizedContext.technicalSpec
+      }
+      
+      // Import appropriate section functions based on document type
+      switch (documentType) {
+        case 'business':
+          const { generateCombinedBusinessAnalysis } = await import('@/lib/business-analysis-sections')
+          combinedPrompt = generateCombinedBusinessAnalysis(selectedSections, context)
+          break
+          
+        case 'technical':
+          const { generateCombinedTechSpec } = await import('@/lib/tech-spec-sections')
+          combinedPrompt = generateCombinedTechSpec(selectedSections, context)
+          break
+          
+        case 'ux':
+          const { generateCombinedUXDesign } = await import('@/lib/ux-design-sections')
+          combinedPrompt = generateCombinedUXDesign(selectedSections, context)
+          break
+          
+        case 'mermaid':
+          const { generateCombinedArchitecture } = await import('@/lib/architecture-sections')
+          combinedPrompt = generateCombinedArchitecture(selectedSections, context)
+          break
+          
+        case 'functional':
+          const { generateCombinedFunctionalSpec } = await import('@/lib/functional-spec-sections')
+          combinedPrompt = generateCombinedFunctionalSpec(selectedSections, context)
+          break
+      }
+      
+      if (combinedPrompt) {
+        // Replace variables in the combined prompt
+        let processedPrompt = combinedPrompt
+          .replace(/{{input}}/g, input)
+          .replace(/{{business_analysis}}/g, optimizedContext.businessAnalysis || '')
+          .replace(/{{functional_spec}}/g, optimizedContext.functionalSpec || '')
+          .replace(/{{technical_spec}}/g, optimizedContext.technicalSpec || '')
+        
+        // Stream the response
+        return streamText({
+          model: openaiClient('gpt-4o'),
+          prompt: processedPrompt,
+        })
+      }
+    }
+    
     // Priority 2: Load prompt from database
     const promptTemplate = await promptService.getPromptForExecution(documentType, userId || 'anonymous')
     
@@ -390,7 +466,12 @@ export async function POST(req: NextRequest) {
       customPrompt, 
       userId, 
       projectId,
-      useContextOptimization = true
+      useContextOptimization = true,
+      techSpecSections,
+      businessSections,
+      uxSections,
+      architectureSections,
+      functionalSections
     }: GenerateDocumentRequest = await req.json()
     
     console.log('🔍 POST handler - Document type:', documentType)
@@ -455,7 +536,12 @@ export async function POST(req: NextRequest) {
       customPrompt,
       effectiveUserId,
       projectId,
-      useContextOptimization
+      useContextOptimization,
+      techSpecSections,
+      businessSections,
+      uxSections,
+      architectureSections,
+      functionalSections
     )
 
     // Convert the AI stream to a web-compatible ReadableStream

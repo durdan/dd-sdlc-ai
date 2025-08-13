@@ -28,11 +28,14 @@ import {
   LogIn,
   UserPlus,
   Lock,
-  Check
+  Check,
+  ChevronRight
 } from "lucide-react"
 import { createClient } from '@/lib/supabase/client'
 import { SimpleDocumentGenerationModal } from '@/components/simple-document-generation-modal'
 import { CustomAlert } from '@/components/ui/custom-alert'
+import { techSpecSections } from '@/lib/tech-spec-sections'
+import { NavButtonWithMenu } from '@/components/nav-button-with-menu'
 
 export default function SimpleLandingPage() {
   const [user, setUser] = useState<any>(null)
@@ -43,6 +46,8 @@ export default function SimpleLandingPage() {
   const [showInputAlert, setShowInputAlert] = useState(false)
   const [previousDocuments, setPreviousDocuments] = useState<Record<string, string>>({})
   const [showViewDocsHint, setShowViewDocsHint] = useState(false)
+  const [selectedTechSections, setSelectedTechSections] = useState<string[]>(['system-architecture'])
+  const [showTechSectionsMenu, setShowTechSectionsMenu] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -93,7 +98,7 @@ export default function SimpleLandingPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const handleGetStarted = (docType?: string) => {
+  const handleGetStarted = (docType?: string, sections?: string[]) => {
     // Check if input is provided
     if (!inputValue.trim()) {
       setShowInputAlert(true)
@@ -107,6 +112,11 @@ export default function SimpleLandingPage() {
     if (docType) {
       localStorage.setItem('selectedDocType', docType)
       console.log('✅ Set selectedDocType in localStorage:', docType)
+      
+      // Store sections if provided
+      if (sections && docType === 'technical') {
+        localStorage.setItem('techSpecSections', JSON.stringify(sections))
+      }
     }
     
     // For non-logged-in users, show the document generation modal
@@ -126,12 +136,30 @@ export default function SimpleLandingPage() {
       return
     }
     
+    // If technical spec, show sections menu
+    if (doc.docType === 'technical') {
+      setShowTechSectionsMenu(true)
+      return
+    }
+    
     setShowDocumentMenu(false)
     
     // Store the selected document type for the modal
     localStorage.setItem('selectedDocType', doc.docType || 'business')
     
     // Always trigger handleGetStarted after selection
+    setTimeout(() => handleGetStarted(), 100)
+  }
+  
+  const handleTechSpecConfirm = () => {
+    setShowDocumentMenu(false)
+    setShowTechSectionsMenu(false)
+    
+    // Store tech spec sections
+    localStorage.setItem('selectedDocType', 'technical')
+    localStorage.setItem('techSpecSections', JSON.stringify(selectedTechSections))
+    
+    // Trigger handleGetStarted
     setTimeout(() => handleGetStarted(), 100)
   }
 
@@ -145,7 +173,7 @@ export default function SimpleLandingPage() {
     {
       icon: FileCode,
       title: "Technical Specs", 
-      description: "Architecture & API design",
+      description: "Architecture & API design with customizable sections",
       docType: "technical"
     },
     {
@@ -288,18 +316,20 @@ export default function SimpleLandingPage() {
                       ref={menuRef}
                       className="absolute bottom-full left-0 mb-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50"
                     >
-                      <div className="px-3 py-2 text-sm font-medium text-gray-700 border-b border-gray-100">
-                        Choose document type to generate
-                      </div>
-                      <div className="p-2 border-b border-gray-100">
-                        <div className="px-2 py-1.5 bg-indigo-50 border border-indigo-200 rounded-md">
-                          <p className="text-xs text-indigo-700 font-medium flex items-center gap-1">
-                            <Sparkles className="h-3 w-3" />
-                            Try any document type - Free Preview!
-                          </p>
-                        </div>
-                      </div>
-                      <div className="max-h-96 overflow-y-auto">
+                      {!showTechSectionsMenu ? (
+                        <>
+                          <div className="px-3 py-2 text-sm font-medium text-gray-700 border-b border-gray-100">
+                            Choose document type to generate
+                          </div>
+                          <div className="p-2 border-b border-gray-100">
+                            <div className="px-2 py-1.5 bg-indigo-50 border border-indigo-200 rounded-md">
+                              <p className="text-xs text-indigo-700 font-medium flex items-center gap-1">
+                                <Sparkles className="h-3 w-3" />
+                                Try any document type - Free Preview!
+                              </p>
+                            </div>
+                          </div>
+                          <div className="max-h-96 overflow-y-auto">
                         {documentTypes.map((doc, index) => {
                           const isLocked = doc.requiresAuth;
                           const isFree = doc.isFree;
@@ -330,6 +360,9 @@ export default function SimpleLandingPage() {
                                   }`}>
                                     {doc.title}
                                   </span>
+                                  {doc.docType === 'technical' && (
+                                    <ChevronRight className="h-3 w-3 text-gray-400" />
+                                  )}
                                   {isFree && (
                                     <span className="text-xs bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-full font-medium">
                                       Free
@@ -350,15 +383,103 @@ export default function SimpleLandingPage() {
                             </button>
                           );
                         })}
-                      </div>
-                      <div className="p-2 border-t border-gray-100">
-                        <button
-                          onClick={() => window.location.href = '/signin'}
-                          className="w-full text-center text-xs text-indigo-600 hover:text-indigo-700 font-medium py-1"
-                        >
-                          Sign in to unlock all document types →
-                        </button>
-                      </div>
+                          </div>
+                          <div className="p-2 border-t border-gray-100">
+                            <button
+                              onClick={() => window.location.href = '/signin'}
+                              className="w-full text-center text-xs text-indigo-600 hover:text-indigo-700 font-medium py-1"
+                            >
+                              Sign in to unlock all document types →
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          {/* Tech Spec Sections Submenu */}
+                          <div className="px-3 py-2 flex items-center justify-between border-b border-gray-100">
+                            <button
+                              onClick={() => setShowTechSectionsMenu(false)}
+                              className="flex items-center gap-1 text-sm text-gray-700 hover:text-gray-900"
+                            >
+                              <ChevronRight className="h-3 w-3 rotate-180" />
+                              <span className="font-medium">Technical Specification</span>
+                            </button>
+                          </div>
+                          
+                          <div className="p-2 border-b border-gray-100">
+                            <p className="text-xs text-gray-600 px-2 mb-2">Select focus areas to include:</p>
+                            <div className="flex gap-1 flex-wrap px-2">
+                              <button
+                                onClick={() => setSelectedTechSections(['system-architecture'])}
+                                className="px-2 py-1 text-xs rounded-md bg-gray-100 hover:bg-gray-200"
+                              >
+                                Default
+                              </button>
+                              <button
+                                onClick={() => setSelectedTechSections(['system-architecture', 'data-design', 'api-specifications', 'infrastructure-devops'])}
+                                className="px-2 py-1 text-xs rounded-md bg-gray-100 hover:bg-gray-200"
+                              >
+                                Full Stack
+                              </button>
+                              <button
+                                onClick={() => setSelectedTechSections(['api-specifications', 'data-design', 'security-architecture'])}
+                                className="px-2 py-1 text-xs rounded-md bg-gray-100 hover:bg-gray-200"
+                              >
+                                API First
+                              </button>
+                              <button
+                                onClick={() => setSelectedTechSections(Object.keys(techSpecSections))}
+                                className="px-2 py-1 text-xs rounded-md bg-gray-100 hover:bg-gray-200"
+                              >
+                                All
+                              </button>
+                            </div>
+                          </div>
+                          
+                          <div className="max-h-64 overflow-y-auto p-2">
+                            {Object.values(techSpecSections).map((section) => (
+                              <button
+                                key={section.id}
+                                onClick={() => {
+                                  if (selectedTechSections.includes(section.id)) {
+                                    setSelectedTechSections(selectedTechSections.filter(id => id !== section.id))
+                                  } else {
+                                    setSelectedTechSections([...selectedTechSections, section.id])
+                                  }
+                                }}
+                                className="w-full px-3 py-2 flex items-start gap-3 hover:bg-gray-50 rounded-md text-left"
+                              >
+                                <div className="w-5 h-5 mt-0.5">
+                                  {selectedTechSections.includes(section.id) && (
+                                    <Check className="h-5 w-5 text-indigo-600" />
+                                  )}
+                                </div>
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-base">{section.icon}</span>
+                                    <span className="text-sm font-medium text-gray-900">{section.name}</span>
+                                  </div>
+                                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{section.description}</p>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                          
+                          <div className="p-2 border-t border-gray-100 flex items-center justify-between">
+                            <span className="text-xs text-gray-600 px-2">
+                              {selectedTechSections.length} selected
+                            </span>
+                            <Button
+                              size="sm"
+                              onClick={handleTechSpecConfirm}
+                              disabled={selectedTechSections.length === 0}
+                              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                            >
+                              Generate
+                            </Button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
                   
@@ -417,29 +538,62 @@ export default function SimpleLandingPage() {
           </div>
 
           {/* Quick Actions - Responsive Grid */}
-          <div className="grid grid-cols-2 md:flex md:items-center md:justify-center gap-2 md:gap-3">
-            {features.map((feature, index) => {
-              const hasDocument = previousDocuments[feature.docType]
-              return (
-                <button
-                  key={index}
-                  onClick={() => handleGetStarted(feature.docType)}
-                  className={`relative flex flex-col md:flex-row items-center justify-center gap-1.5 md:gap-2 px-4 py-4 md:px-5 md:py-2.5 bg-white rounded-2xl border transition-all min-h-[80px] md:min-h-0 ${
-                    hasDocument 
-                      ? 'border-indigo-300 hover:border-indigo-400 hover:bg-indigo-50' 
-                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  <feature.icon className={`h-5 w-5 md:h-4 md:w-4 ${hasDocument ? 'text-indigo-600' : 'text-gray-600'}`} />
-                  <span className={`text-xs md:text-sm font-medium text-center ${hasDocument ? 'text-indigo-700' : 'text-gray-700'}`}>
-                    {feature.title}
-                  </span>
-                  {hasDocument && (
-                    <Check className="h-3 w-3 md:h-3.5 md:w-3.5 text-indigo-600 absolute top-2 right-2 md:static" />
-                  )}
-                </button>
-              )
-            })}
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <NavButtonWithMenu
+              icon={Brain}
+              label="Business Analysis"
+              color="text-blue-600"
+              documentType="business"
+              onSelect={(type, sections) => {
+                if (sections) {
+                  localStorage.setItem('businessSections', JSON.stringify(sections))
+                }
+                handleGetStarted(type)
+              }}
+              isSelected={!!previousDocuments.business}
+            />
+            
+            <NavButtonWithMenu
+              icon={FileCode}
+              label="Technical Specs"
+              color="text-green-600"
+              documentType="technical"
+              onSelect={(type, sections) => {
+                if (sections) {
+                  localStorage.setItem('techSpecSections', JSON.stringify(sections))
+                }
+                handleGetStarted(type)
+              }}
+              isSelected={!!previousDocuments.technical}
+            />
+            
+            <NavButtonWithMenu
+              icon={Palette}
+              label="UX Design"
+              color="text-pink-600"
+              documentType="ux"
+              onSelect={(type, sections) => {
+                if (sections) {
+                  localStorage.setItem('uxSections', JSON.stringify(sections))
+                }
+                handleGetStarted(type)
+              }}
+              isSelected={!!previousDocuments.ux}
+            />
+            
+            <NavButtonWithMenu
+              icon={Database}
+              label="Architecture"
+              color="text-orange-600"
+              documentType="mermaid"
+              onSelect={(type, sections) => {
+                if (sections) {
+                  localStorage.setItem('architectureSections', JSON.stringify(sections))
+                }
+                handleGetStarted(type)
+              }}
+              isSelected={!!previousDocuments.mermaid}
+            />
           </div>
 
           {/* Info Message - Hide on mobile to reduce clutter */}

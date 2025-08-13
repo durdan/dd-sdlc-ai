@@ -108,6 +108,19 @@ export function cleanupDocumentFormatting(content: string, documentType: string)
       .replace(/^(Primary|Secondary|Semantic|Accessibility|Spacing|Grid|Component)/gm, '### $1');
   }
   
+  // Apply professional formatting for technical specs
+  if (documentType === 'technical') {
+    cleaned = enhanceTechnicalDocumentFormatting(cleaned);
+  }
+  
+  // Apply professional formatting for business analysis
+  if (documentType === 'business') {
+    cleaned = enhanceBusinessDocumentFormatting(cleaned);
+  }
+  
+  // Apply universal professional formatting
+  cleaned = applyUniversalProfessionalFormatting(cleaned);
+  
   return cleaned;
 }
 
@@ -127,6 +140,143 @@ export function formatForBoxDisplay(content: string, maxLength?: number): string
       formatted = formatted.substring(0, maxLength) + '...';
     }
   }
+  
+  return formatted;
+}
+
+/**
+ * Enhance technical document formatting to make it more professional
+ */
+function enhanceTechnicalDocumentFormatting(content: string): string {
+  let formatted = content;
+  
+  // Convert bullet lists with key-value pairs to tables
+  // Pattern: - **Key**: Value
+  const bulletPattern = /^- \*\*([^:]+)\*\*:\s*(.+)$/gm;
+  const bullets: string[] = [];
+  let match;
+  
+  while ((match = bulletPattern.exec(formatted)) !== null) {
+    bullets.push(`| **${match[1]}** | ${match[2]} |`);
+  }
+  
+  // Replace technology stack lists with tables
+  formatted = formatted.replace(
+    /^### (Frontend|Backend|Infrastructure)$\n((?:^- .+$\n?)+)/gm,
+    (match, section, items) => {
+      const lines = items.trim().split('\n');
+      let table = `### ${section}\n\n| Component | Technology | Details |\n|-----------|------------|----------|\n`;
+      lines.forEach(line => {
+        const parts = line.replace(/^- /, '').split(':');
+        if (parts.length >= 2) {
+          table += `| **${parts[0].trim()}** | ${parts[1].trim()} | - |\n`;
+        }
+      });
+      return table;
+    }
+  );
+  
+  // Add visual indicators for important sections
+  formatted = formatted
+    .replace(/^(#{1,3}) (Architecture|Security|Performance|Scalability)/gm, '$1 🏗️ $2')
+    .replace(/^(#{1,3}) (API|Integration)/gm, '$1 🔌 $2')
+    .replace(/^(#{1,3}) (Database|Data)/gm, '$1 💾 $2')
+    .replace(/^(#{1,3}) (Monitoring|Observability)/gm, '$1 📊 $2');
+  
+  return formatted;
+}
+
+/**
+ * Enhance business document formatting
+ */
+function enhanceBusinessDocumentFormatting(content: string): string {
+  let formatted = content;
+  
+  // Convert requirement lists to numbered format
+  formatted = formatted.replace(
+    /^- (Must have|Should have|Could have|Won't have):\s*(.+)$/gm,
+    (match, priority, requirement) => {
+      const emoji = priority === 'Must have' ? '🔴' :
+                    priority === 'Should have' ? '🟡' :
+                    priority === 'Could have' ? '🟢' : '⚪';
+      return `${emoji} **${priority}:** ${requirement}`;
+    }
+  );
+  
+  // Format KPIs and metrics
+  formatted = formatted.replace(
+    /^- ([^:]+):\s*(\d+%?)/gm,
+    '| **$1** | `$2` |'
+  );
+  
+  // Add professional section markers
+  formatted = formatted
+    .replace(/^(#{1,3}) (Executive Summary)/gm, '$1 📋 $2')
+    .replace(/^(#{1,3}) (Requirements|User Stories)/gm, '$1 ✅ $2')
+    .replace(/^(#{1,3}) (Risk|Risks)/gm, '$1 ⚠️ $2')
+    .replace(/^(#{1,3}) (Timeline|Roadmap)/gm, '$1 📅 $2')
+    .replace(/^(#{1,3}) (Budget|Cost)/gm, '$1 💰 $2')
+    .replace(/^(#{1,3}) (Stakeholder)/gm, '$1 👥 $2');
+  
+  return formatted;
+}
+
+/**
+ * Apply universal professional formatting improvements
+ */
+function applyUniversalProfessionalFormatting(content: string): string {
+  let formatted = content;
+  
+  // Convert simple lists to tables where appropriate
+  // Pattern: Multiple lines of "Key: Value" format
+  const keyValuePattern = /^([A-Z][^:]+):\s*(.+)$/gm;
+  const keyValueSections: string[] = [];
+  
+  formatted = formatted.replace(
+    /(^[A-Z][^:]+:\s*.+$\n){3,}/gm,
+    (match) => {
+      const lines = match.trim().split('\n');
+      if (lines.length >= 3) {
+        let table = '| Property | Value |\n|----------|-------|\n';
+        lines.forEach(line => {
+          const [key, ...valueParts] = line.split(':');
+          const value = valueParts.join(':').trim();
+          table += `| **${key.trim()}** | ${value} |\n`;
+        });
+        return table + '\n';
+      }
+      return match;
+    }
+  );
+  
+  // Improve code block formatting
+  formatted = formatted.replace(
+    /```\n([^`]+)\n```/g,
+    (match, code) => {
+      // Try to detect language if not specified
+      if (code.includes('function') || code.includes('const') || code.includes('=>')) {
+        return '```javascript\n' + code + '\n```';
+      } else if (code.includes('SELECT') || code.includes('CREATE TABLE')) {
+        return '```sql\n' + code + '\n```';
+      } else if (code.includes('<!DOCTYPE') || code.includes('<html')) {
+        return '```html\n' + code + '\n```';
+      }
+      return match;
+    }
+  );
+  
+  // Add proper spacing around headers
+  formatted = formatted
+    .replace(/([^\n])\n(#{1,6} )/g, '$1\n\n$2')
+    .replace(/(#{1,6} [^\n]+)\n([^\n])/g, '$1\n\n$2');
+  
+  // Convert emphasis patterns
+  formatted = formatted
+    .replace(/\[([^\]]+)\]/g, '`$1`') // [text] to `text`
+    .replace(/^(\w+):\s+/gm, '**$1:** '); // Key: to **Key:**
+  
+  // Clean up excessive line breaks
+  formatted = formatted.replace(/\n{4,}/g, '\n\n\n');
   
   return formatted;
 }
