@@ -123,6 +123,22 @@ export function SimpleDocumentGenerationModal({
   } | null>(null)
   const [rateLimitError, setRateLimitError] = useState<string | null>(null)
   
+  // Format time remaining until reset
+  const getTimeUntilReset = (resetAt: Date): string => {
+    const now = new Date()
+    const diff = resetAt.getTime() - now.getTime()
+    
+    if (diff <= 0) return 'Resetting...'
+    
+    const hours = Math.floor(diff / (1000 * 60 * 60))
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`
+    }
+    return `${minutes}m`
+  }
+  
   // Check rate limit when modal opens or after generation
   const checkRateLimit = async () => {
     try {
@@ -250,10 +266,12 @@ export function SimpleDocumentGenerationModal({
       }
       console.log('📤 Full request body:', requestBody)
       
+      const sessionId = anonymousProjectService.getSessionId()
       const response = await fetch('/api/generate-document', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-session-id': sessionId,
         },
         body: JSON.stringify(requestBody),
       })
@@ -536,7 +554,7 @@ export function SimpleDocumentGenerationModal({
             <div className="flex items-center gap-2">
               {rateLimitStatus && (
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">
-                  {Math.max(0, rateLimitStatus.remaining)} left
+                  {Math.max(0, rateLimitStatus.remaining)}/10 left
                 </Badge>
               )}
             </div>
@@ -552,17 +570,19 @@ export function SimpleDocumentGenerationModal({
             {rateLimitStatus && (
               <div className="text-right">
                 <div className="text-sm font-medium text-gray-700">
-                  {Math.max(0, rateLimitStatus.remaining)}/{rateLimitStatus.total} documents remaining
+                  {Math.max(0, rateLimitStatus.remaining)}/10 documents remaining
                 </div>
                 <Progress 
-                  value={Math.min(100, (rateLimitStatus.total - Math.max(0, rateLimitStatus.remaining)) / rateLimitStatus.total * 100)} 
+                  value={Math.min(100, (10 - Math.max(0, rateLimitStatus.remaining)) / 10 * 100)} 
                   className="w-32 h-2 mt-1"
                 />
-                {rateLimitStatus.remaining <= 0 && (
-                  <div className="text-xs text-gray-500 mt-1">
-                    Resets {new Date(rateLimitStatus.resetAt).toLocaleTimeString()}
-                  </div>
-                )}
+                <div className="text-xs text-gray-500 mt-1">
+                  {rateLimitStatus.remaining <= 0 ? (
+                    <>Limit reached. Resets in {getTimeUntilReset(rateLimitStatus.resetAt)}</>
+                  ) : (
+                    <>Resets in {getTimeUntilReset(rateLimitStatus.resetAt)}</>
+                  )}
+                </div>
               </div>
             )}
           </div>

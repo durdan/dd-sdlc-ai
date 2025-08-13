@@ -28,11 +28,14 @@ import {
   LogIn,
   UserPlus,
   Lock,
-  Check
+  Check,
+  X
 } from "lucide-react"
 import { createClient } from '@/lib/supabase/client'
 import { SimpleDocumentGenerationModal } from '@/components/simple-document-generation-modal'
 import { CustomAlert } from '@/components/ui/custom-alert'
+import { anonymousProjectService } from '@/lib/anonymous-project-service'
+import { Clock } from "lucide-react"
 
 export default function SimpleLandingPage() {
   const [user, setUser] = useState<any>(null)
@@ -43,7 +46,53 @@ export default function SimpleLandingPage() {
   const [showInputAlert, setShowInputAlert] = useState(false)
   const [previousDocuments, setPreviousDocuments] = useState<Record<string, string>>({})
   const [showViewDocsHint, setShowViewDocsHint] = useState(false)
+  const [rateLimitStatus, setRateLimitStatus] = useState<{
+    remaining: number
+    total: number
+    resetAt: Date
+  } | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
+
+  // Format time remaining until reset
+  const getTimeUntilReset = (resetAt: Date): string => {
+    const now = new Date()
+    const diff = resetAt.getTime() - now.getTime()
+    
+    if (diff <= 0) return 'Resetting...'
+    
+    const hours = Math.floor(diff / (1000 * 60 * 60))
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`
+    }
+    return `${minutes}m`
+  }
+
+  // Check rate limit status
+  const checkRateLimit = async () => {
+    try {
+      const sessionId = anonymousProjectService.getSessionId()
+      const response = await fetch('/api/rate-limit/check', {
+        headers: {
+          'x-session-id': sessionId
+        }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (data.status) {
+          setRateLimitStatus({
+            remaining: data.status.remaining,
+            total: data.status.total,
+            resetAt: new Date(data.resetAt)
+          })
+        }
+      }
+    } catch (error) {
+      console.error('Failed to check rate limit:', error)
+    }
+  }
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -51,6 +100,11 @@ export default function SimpleLandingPage() {
         const supabase = createClient()
         const { data: { user } } = await supabase.auth.getUser()
         setUser(user)
+        
+        // Check rate limit for non-logged in users
+        if (!user) {
+          await checkRateLimit()
+        }
         
         // Check for previously generated documents
         const savedDocs = localStorage.getItem('sdlc_generated_docs')
@@ -92,6 +146,18 @@ export default function SimpleLandingPage() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  // Update rate limit timer every minute
+  useEffect(() => {
+    if (!user && rateLimitStatus) {
+      const interval = setInterval(() => {
+        // Force re-render to update the time display
+        setRateLimitStatus(prev => prev ? { ...prev } : null)
+      }, 60000) // Update every minute
+
+      return () => clearInterval(interval)
+    }
+  }, [user, rateLimitStatus])
 
   const handleGetStarted = (docType?: string) => {
     // Check if input is provided
@@ -198,6 +264,51 @@ export default function SimpleLandingPage() {
             />
           </div>
           
+          {/* Rate Limit Display for Non-logged in users */}
+          {!user && rateLimitStatus && (
+            <div className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-full transition-all ${
+              rateLimitStatus.remaining <= 3 
+                ? 'bg-orange-100 border border-orange-200' 
+                : rateLimitStatus.remaining === 0
+                ? 'bg-red-100 border border-red-200'
+                : 'bg-green-50 border border-green-200'
+            }`}>
+              <div className="flex items-center gap-1.5">
+                <span className={`text-xs sm:text-sm font-semibold ${
+                  rateLimitStatus.remaining <= 3 
+                    ? 'text-orange-700' 
+                    : rateLimitStatus.remaining === 0
+                    ? 'text-red-700'
+                    : 'text-green-700'
+                }`}>
+                  {Math.max(0, rateLimitStatus.remaining)}/10
+                </span>
+                <span className={`hidden sm:inline text-xs ${
+                  rateLimitStatus.remaining <= 3 
+                    ? 'text-orange-600' 
+                    : rateLimitStatus.remaining === 0
+                    ? 'text-red-600'
+                    : 'text-green-600'
+                }`}>docs left</span>
+              </div>
+              <div className="w-px h-4 bg-gray-300 opacity-50" />
+              <div className="flex items-center gap-1">
+                <Clock className={`h-3 w-3 ${
+                  rateLimitStatus.remaining === 0 
+                    ? 'text-red-500' 
+                    : 'text-gray-500'
+                }`} />
+                <span className={`text-xs font-medium ${
+                  rateLimitStatus.remaining === 0 
+                    ? 'text-red-600' 
+                    : 'text-gray-600'
+                }`}>
+                  {rateLimitStatus.remaining === 0 ? 'Resets in ' : ''}{getTimeUntilReset(rateLimitStatus.resetAt)}
+                </span>
+              </div>
+            </div>
+          )}
+          
           {/* Sign In / Sign Up buttons */}
           <div className="flex items-center gap-2 sm:gap-3">
             {user ? (
@@ -252,10 +363,10 @@ export default function SimpleLandingPage() {
           {/* Large Chat Input Area */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200">
             {/* Input Section */}
-            <div className="p-6">
+            <div className="p-6 relative">
               <textarea
                 placeholder="Describe your project idea (e.g., 'Build an Uber for medicine delivery', 'Create a social media app for pet owners', 'Design an e-learning platform')"
-                className="w-full min-h-[100px] sm:min-h-[120px] text-base sm:text-lg text-gray-900 placeholder-gray-500 resize-none focus:outline-none"
+                className="w-full min-h-[100px] sm:min-h-[120px] text-base sm:text-lg text-gray-900 placeholder-gray-500 resize-none focus:outline-none pr-8"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={(e) => {
@@ -267,6 +378,21 @@ export default function SimpleLandingPage() {
                   }
                 }}
               />
+              {inputValue && (
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="absolute right-4 top-4 h-8 w-8 text-gray-400 hover:text-gray-600"
+                  onClick={() => {
+                    setInputValue('')
+                    // Don't clear localStorage - preserve history
+                  }}
+                  title="Clear input"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
             </div>
 
             {/* Tools Bar */}
@@ -469,6 +595,10 @@ export default function SimpleLandingPage() {
               console.error('Error loading documents after modal close:', e)
             }
           }
+          // Refresh rate limit status for non-logged in users
+          if (!user) {
+            checkRateLimit()
+          }
         }}
         input={inputValue}
         onDocumentGenerated={(updatedDocs) => {
@@ -478,6 +608,10 @@ export default function SimpleLandingPage() {
           if (Object.keys(updatedDocs).length > 0) {
             setShowViewDocsHint(true)
             setTimeout(() => setShowViewDocsHint(false), 5000)
+          }
+          // Refresh rate limit status for non-logged in users
+          if (!user) {
+            checkRateLimit()
           }
         }}
       />
