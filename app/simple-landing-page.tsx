@@ -37,6 +37,7 @@ import { CustomAlert } from '@/components/ui/custom-alert'
 import { anonymousProjectService } from '@/lib/anonymous-project-service'
 import { Clock } from "lucide-react"
 import { CodeAssistantMenu } from '@/components/code-assistant-menu'
+import { ViewDocsMenu } from '@/components/view-docs-menu'
 
 export default function SimpleLandingPage() {
   const [user, setUser] = useState<any>(null)
@@ -509,33 +510,19 @@ export default function SimpleLandingPage() {
 
                 <div className="flex items-center gap-2">
                   {Object.keys(previousDocuments).length > 0 && (
-                    <div className="relative">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          // Use the last input if available
-                          const savedInput = localStorage.getItem('sdlc_last_input')
-                          if (savedInput && !inputValue.trim()) {
-                            setInputValue(savedInput)
-                          }
-                          setShowDocumentModal(true)
-                        }}
-                        className={`relative bg-white border-indigo-200 text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 text-sm ${showViewDocsHint ? 'animate-pulse-border' : ''}`}
-                      >
-                        <FileText className="h-4 w-4 mr-1.5" />
-                        View Docs
-                        <span className="absolute -top-1.5 -right-1.5 bg-indigo-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
-                          {Object.keys(previousDocuments).length}
-                        </span>
-                      </Button>
+                    <>
+                      <ViewDocsMenu 
+                        documents={previousDocuments}
+                        lastInput={inputValue || localStorage.getItem('sdlc_last_input') || ''}
+                        className={showViewDocsHint ? 'animate-pulse-border' : ''}
+                      />
                       {showViewDocsHint && (
                         <div className="absolute bottom-full right-0 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap shadow-lg">
                           <div className="absolute bottom-0 right-4 transform translate-y-1/2 rotate-45 w-2 h-2 bg-gray-900"></div>
                           You have {Object.keys(previousDocuments).length} generated document{Object.keys(previousDocuments).length > 1 ? 's' : ''}! Click to view.
                         </div>
                       )}
-                    </div>
+                    </>
                   )}
                   <span className="text-sm text-gray-500">SDLC AI</span>
                   <Button

@@ -12,13 +12,17 @@
 
 ## 🆕 Recent Updates
 
+- **📚 Document History Management**: Advanced document history viewer with search, export, and management features
+- **🔄 Smart Input Detection**: Modal automatically refreshes for new inputs, preserves docs for same input
+- **🎯 Intelligent Document Grouping**: Groups documents by input to reduce redundancy in the UI
 - **🤖 Agentic Coding Spec**: Generate AI-optimized implementation specifications for coding assistants
 - **📥 AI Rules Download**: Download coding rules for Cursor, GitHub Copilot, Windsurf, Claude, and Devin
 - **📝 Enhanced Formatting**: Improved markdown rendering with proper bullet point display
-- **Anonymous User Support**: Generate architecture diagrams without signing up
+- **🔍 Document Search**: Search through generated documents by type, input, or content
+- **💾 Persistent History**: Maintains detailed history of all generated documents with timestamps
+- **Anonymous User Support**: Generate up to 10 documents without signing up
 - **Enhanced Mermaid Viewer**: Improved diagram parsing with preview/raw toggle
 - **Simple Landing Page**: Clean, Claude-inspired interface option
-- **Security Hardening**: Middleware protection against malicious requests
 - **Mobile Responsive**: Optimized UI for all device sizes
 
 ## ✨ Key Features
@@ -45,6 +49,13 @@
 - **Project Management**: JIRA (Epic/Story creation), Linear, Trello
 - **Documentation**: Confluence (hierarchical publishing), Notion
 - **Communication**: Slack, Microsoft Teams with real-time notifications
+
+### 📋 Document Management
+- **History Tracking**: Complete history of all generated documents with inputs and timestamps
+- **Smart Grouping**: Intelligent grouping of documents by input to reduce UI clutter
+- **Search & Filter**: Search documents by type, input text, or content
+- **Bulk Operations**: Export individual documents or clear entire history
+- **Input-Aware Generation**: Automatically detects input changes and refreshes generation options
 
 ### 🎨 Visual Documentation
 - **Interactive Diagrams**: Real-time Mermaid diagram editing and visualization

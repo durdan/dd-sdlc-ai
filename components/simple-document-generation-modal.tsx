@@ -45,6 +45,8 @@ interface SimpleDocumentGenerationModalProps {
   onClose: () => void
   input: string
   onDocumentGenerated?: (documents: Record<string, string>) => void
+  initialDocType?: string
+  initialContent?: string
 }
 
 interface DocumentType {
@@ -105,9 +107,12 @@ export function SimpleDocumentGenerationModal({
   onClose,
   input,
   onDocumentGenerated,
+  initialDocType,
+  initialContent,
 }: SimpleDocumentGenerationModalProps) {
-  // Initialize with stored type or default to business
+  // Initialize with initial type, stored type, or default to business
   const [selectedType, setSelectedType] = useState<string>(() => {
+    if (initialDocType) return initialDocType
     if (typeof window !== 'undefined') {
       const storedType = localStorage.getItem('selectedDocType')
       console.log('📋 Retrieved selectedDocType from localStorage:', storedType)
@@ -184,9 +189,22 @@ export function SimpleDocumentGenerationModal({
     }
   }, [isOpen])
 
+  // Track the last input for which documents were generated
+  const [lastGeneratedInput, setLastGeneratedInput] = useState<string>('')
+
   // Update selectedType when modal opens
   useEffect(() => {
     if (isOpen) {
+      // If we have initial content, show it immediately
+      if (initialContent && initialDocType) {
+        setSelectedType(initialDocType)
+        setGeneratedContent(initialContent)
+        setHasGenerated(true)
+        setViewingPreviousDoc(true)
+        setLastGeneratedInput(input)
+        return
+      }
+      
       const storedType = localStorage.getItem('selectedDocType')
       const typeToUse = storedType || selectedType
       
@@ -195,17 +213,31 @@ export function SimpleDocumentGenerationModal({
         setSelectedType(storedType)
       }
       
+      // Check if input has changed
+      const inputChanged = input !== lastGeneratedInput && lastGeneratedInput !== ''
+      
       // Load any previously generated documents for this session
       const savedDocs = localStorage.getItem('sdlc_generated_docs')
       if (savedDocs) {
         try {
           const docs = JSON.parse(savedDocs)
           setPreviousDocuments(docs)
-          // If we have a previous document for the type we're selecting, show it
-          if (docs[typeToUse]) {
+          
+          // If input has changed, reset the modal for new generation
+          if (inputChanged) {
+            console.log('🔄 Input changed, resetting modal for new generation')
+            setGeneratedContent('')
+            setHasGenerated(false)
+            setViewingPreviousDoc(false)
+            setLastGeneratedInput(input)
+            // Clear previous documents as they're for a different input
+            setPreviousDocuments({})
+          } else if (docs[typeToUse]) {
+            // If same input and we have a previous document for this type, show it
             setGeneratedContent(docs[typeToUse])
             setHasGenerated(true)
             setViewingPreviousDoc(true)
+            setLastGeneratedInput(input)
           } else {
             // Clear any previous content when switching to a new type
             setGeneratedContent('')
@@ -214,6 +246,14 @@ export function SimpleDocumentGenerationModal({
           }
         } catch (e) {
           console.error('Error loading previous documents:', e)
+        }
+      } else {
+        // No saved docs, check if input changed
+        if (inputChanged) {
+          setGeneratedContent('')
+          setHasGenerated(false)
+          setViewingPreviousDoc(false)
+          setLastGeneratedInput(input)
         }
       }
     } else {
@@ -333,10 +373,37 @@ export function SimpleDocumentGenerationModal({
                 setStreamedContent("")
                 setHasGenerated(true)
                 setViewingPreviousDoc(false)
-                // Save to local storage for this session
+                setLastGeneratedInput(input) // Track this input as the one we generated for
+                
+                // Create a more structured storage that includes input
+                const docKey = `${selectedType}_${input.substring(0, 50).replace(/[^a-zA-Z0-9]/g, '_')}`
+                const documentRecord = {
+                  type: selectedType,
+                  content: data.fullContent,
+                  input: input,
+                  timestamp: Date.now()
+                }
+                
+                // Store in a way that tracks the input
                 const updatedDocs = { ...previousDocuments, [selectedType]: data.fullContent }
                 setPreviousDocuments(updatedDocs)
+                
+                // Store both the simple format and detailed format
                 localStorage.setItem('sdlc_generated_docs', JSON.stringify(updatedDocs))
+                localStorage.setItem('sdlc_last_generated_input', input)
+                
+                // Store detailed history
+                const historyKey = 'sdlc_document_history'
+                const existingHistory = localStorage.getItem(historyKey)
+                let history = existingHistory ? JSON.parse(existingHistory) : []
+                
+                // Add new record to history (limit to last 50 records)
+                history = [documentRecord, ...history.filter((h: any) => 
+                  !(h.type === selectedType && h.input === input)
+                )].slice(0, 50)
+                
+                localStorage.setItem(historyKey, JSON.stringify(history))
+                
                 // Notify parent component if callback provided
                 if (onDocumentGenerated) {
                   onDocumentGenerated(updatedDocs)
@@ -729,7 +796,7 @@ export function SimpleDocumentGenerationModal({
 
           {/* Generated Content - Full screen on mobile */}
           <div className="flex-1 overflow-y-auto bg-white border border-gray-200 rounded-lg p-3 sm:p-6">
-            {viewingPreviousDoc && !isGenerating && (
+            {viewingPreviousDoc && !isGenerating && input === lastGeneratedInput && (
               <div className="mb-2 sm:mb-4 p-1.5 sm:p-3 bg-green-50 border border-green-200 rounded-md sm:rounded-lg flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1 sm:gap-2">
                   <Check className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
