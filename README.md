@@ -12,6 +12,9 @@
 
 ## 🆕 Recent Updates
 
+- **🤖 Agentic Coding Spec**: Generate AI-optimized implementation specifications for coding assistants
+- **📥 AI Rules Download**: Download coding rules for Cursor, GitHub Copilot, Windsurf, Claude, and Devin
+- **📝 Enhanced Formatting**: Improved markdown rendering with proper bullet point display
 - **Anonymous User Support**: Generate architecture diagrams without signing up
 - **Enhanced Mermaid Viewer**: Improved diagram parsing with preview/raw toggle
 - **Simple Landing Page**: Clean, Claude-inspired interface option
@@ -26,6 +29,7 @@
 - **Technical Specifications**: System architecture, API design, security implementation
 - **UX Specifications**: User personas, journey maps, wireframe descriptions
 - **Architecture Diagrams**: Interactive Mermaid diagram generation
+- **Agentic Coding Spec**: AI-optimized implementation guide with component specs, data models, and acceptance criteria
 
 ### 🧠 Enterprise Prompt Management
 - **📝 Advanced Editor**: Syntax highlighting, variable management, template inheritance
@@ -47,6 +51,12 @@
 - **Export Capabilities**: PNG, SVG, PDF with high-resolution output
 - **Presentation Mode**: Full-screen viewing and navigation
 - **Template Library**: Pre-built diagrams for common architecture patterns
+
+### 🚀 AI Coding Assistant Tools
+- **Comprehensive Rules**: Download optimized coding rules with SOLID principles, TDD, and best practices
+- **Multi-Tool Support**: Export rules for Cursor, GitHub Copilot, Windsurf, Claude Code, and Devin
+- **Format Compatibility**: Automatic formatting for each tool's configuration format
+- **Best Practices**: Includes testing strategies, security guidelines, and performance considerations
 
 ## 🚀 Quick Start
 
@@ -112,6 +122,11 @@ SLACK_BOT_TOKEN=your_slack_token
    ```sql
    -- Copy and run the entire contents of:
    database/migrations/consolidated-anonymous-support.sql
+   ```
+5. (Optional) For Agentic Coding Spec support, run:
+   ```sql
+   -- Copy and run the entire contents of:
+   database/migrations/add-coding-spec.sql
    ```
 
 #### Manual Setup (Advanced)
@@ -208,6 +223,42 @@ graph TB
     style O fill:#fff3e0
     style J fill:#f3e5f5
 ```
+
+## 📋 Feature Highlights
+
+### Agentic Coding Specification
+Generate comprehensive coding specifications optimized for AI coding assistants:
+
+```markdown
+1. Enter your project description
+2. Click "Coding Spec" button
+3. Receive detailed specification including:
+   - Project overview and technology stack
+   - Component specifications with interfaces
+   - Data models with TypeScript definitions
+   - API endpoints with request/response schemas
+   - Business logic rules and validations
+   - Testing requirements and acceptance criteria
+   - Implementation sequence and milestones
+```
+
+### AI Coding Rules Download
+Download optimized coding rules for your preferred AI assistant:
+
+| Tool | Config File | Features |
+|------|------------|----------|
+| **Cursor** | `.cursorrules` | YOLO mode, native IDE integration |
+| **GitHub Copilot** | `.github/copilot-instructions.md` | Extension-based, per-request context |
+| **Windsurf** | `.windsurf/rules/rules.md` | Cascade Write, auto-memories |
+| **Claude Code** | `CLAUDE.md` | Session-based, slash commands |
+| **Devin** | `.bashrc` | Full autonomy, VM snapshots |
+
+Each download includes:
+- SOLID principles enforcement
+- TDD/BDD methodology
+- Security best practices
+- Performance guidelines
+- Documentation standards
 
 ## 🛠️ Development
 
