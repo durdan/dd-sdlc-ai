@@ -36,6 +36,7 @@ import { SimpleDocumentGenerationModal } from '@/components/simple-document-gene
 import { CustomAlert } from '@/components/ui/custom-alert'
 import { anonymousProjectService } from '@/lib/anonymous-project-service'
 import { Clock } from "lucide-react"
+import { CodeAssistantMenu } from '@/components/code-assistant-menu'
 
 export default function SimpleLandingPage() {
   const [user, setUser] = useState<any>(null)
@@ -225,6 +226,12 @@ export default function SimpleLandingPage() {
       title: "Architecture",
       description: "Interactive diagrams",
       docType: "mermaid"
+    },
+    {
+      icon: Sparkles,
+      title: "Coding Spec",
+      description: "AI-optimized implementation guide",
+      docType: "coding"
     }
   ]
 
@@ -234,6 +241,7 @@ export default function SimpleLandingPage() {
     { icon: Code, title: "Technical Specification", description: "Technical design & architecture", requiresAuth: false, docType: "technical" },
     { icon: Palette, title: "UX Design Specification", description: "UI/UX design requirements", requiresAuth: false, docType: "ux" },
     { icon: Database, title: "Architecture Diagram", description: "System architecture visuals", requiresAuth: false, docType: "mermaid", isFree: true },
+    { icon: Sparkles, title: "Agentic Coding Spec", description: "AI-optimized implementation guide", requiresAuth: false, docType: "coding", isFree: true },
     { icon: TestTube, title: "Test Plan", description: "QA and testing strategy", requiresAuth: true },
     { icon: GitBranch, title: "API Documentation", description: "API specs and docs", requiresAuth: true },
     { icon: BookOpen, title: "User Guide", description: "End-user documentation", requiresAuth: true },
@@ -408,6 +416,8 @@ export default function SimpleLandingPage() {
                     <Plus className="h-4 w-4" />
                   </Button>
                   
+                  <CodeAssistantMenu />
+                  
                   {/* Document Type Dropdown Menu */}
                   {showDocumentMenu && (
                     <div 
@@ -543,25 +553,25 @@ export default function SimpleLandingPage() {
           </div>
 
           {/* Quick Actions - Responsive Grid */}
-          <div className="grid grid-cols-2 md:flex md:items-center md:justify-center gap-2 md:gap-3">
+          <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
             {features.map((feature, index) => {
               const hasDocument = previousDocuments[feature.docType]
               return (
                 <button
                   key={index}
                   onClick={() => handleGetStarted(feature.docType)}
-                  className={`relative flex flex-col md:flex-row items-center justify-center gap-1.5 md:gap-2 px-4 py-4 md:px-5 md:py-2.5 bg-white rounded-2xl border transition-all min-h-[80px] md:min-h-0 ${
+                  className={`relative flex items-center justify-center gap-2 px-4 py-2.5 bg-white rounded-lg border transition-all ${
                     hasDocument 
                       ? 'border-indigo-300 hover:border-indigo-400 hover:bg-indigo-50' 
                       : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                   }`}
                 >
-                  <feature.icon className={`h-5 w-5 md:h-4 md:w-4 ${hasDocument ? 'text-indigo-600' : 'text-gray-600'}`} />
-                  <span className={`text-xs md:text-sm font-medium text-center ${hasDocument ? 'text-indigo-700' : 'text-gray-700'}`}>
+                  <feature.icon className={`h-4 w-4 ${hasDocument ? 'text-indigo-600' : 'text-gray-600'}`} />
+                  <span className={`text-sm font-medium ${hasDocument ? 'text-indigo-700' : 'text-gray-700'}`}>
                     {feature.title}
                   </span>
                   {hasDocument && (
-                    <Check className="h-3 w-3 md:h-3.5 md:w-3.5 text-indigo-600 absolute top-2 right-2 md:static" />
+                    <Check className="h-3.5 w-3.5 text-indigo-600 ml-1" />
                   )}
                 </button>
               )

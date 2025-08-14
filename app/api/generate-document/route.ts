@@ -421,7 +421,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate document type
-    const validDocumentTypes = ['business', 'functional', 'technical', 'ux', 'mermaid']
+    const validDocumentTypes = ['business', 'functional', 'technical', 'ux', 'mermaid', 'wireframe', 'coding']
     if (!validDocumentTypes.includes(documentType)) {
       return new Response(
         JSON.stringify({ error: `Invalid document type. Must be one of: ${validDocumentTypes.join(', ')}` }),

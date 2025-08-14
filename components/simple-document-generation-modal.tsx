@@ -38,6 +38,7 @@ import { parseMermaidDiagrams, extractAndFixMermaidDiagrams } from "@/lib/mermai
 import { rateLimitService } from "@/lib/rate-limit-service"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
+import { preprocessMarkdownContent, mobileMarkdownComponents } from "@/lib/format-utils"
 
 interface SimpleDocumentGenerationModalProps {
   isOpen: boolean
@@ -89,6 +90,13 @@ const documentTypes: DocumentType[] = [
     icon: Database, 
     description: "Visual system architecture and flow diagrams",
     color: "text-orange-600"
+  },
+  { 
+    id: "coding", 
+    name: "Agentic Coding Spec", 
+    icon: Sparkles, 
+    description: "AI-optimized implementation guide for coding assistants",
+    color: "text-indigo-600"
   }
 ]
 
@@ -180,6 +188,8 @@ export function SimpleDocumentGenerationModal({
   useEffect(() => {
     if (isOpen) {
       const storedType = localStorage.getItem('selectedDocType')
+      const typeToUse = storedType || selectedType
+      
       if (storedType && storedType !== selectedType) {
         console.log('🔄 Updating selectedType from localStorage:', storedType)
         setSelectedType(storedType)
@@ -191,11 +201,16 @@ export function SimpleDocumentGenerationModal({
         try {
           const docs = JSON.parse(savedDocs)
           setPreviousDocuments(docs)
-          // If we have a previous document for the selected type, show it
-          if (docs[selectedType]) {
-            setGeneratedContent(docs[selectedType])
+          // If we have a previous document for the type we're selecting, show it
+          if (docs[typeToUse]) {
+            setGeneratedContent(docs[typeToUse])
             setHasGenerated(true)
             setViewingPreviousDoc(true)
+          } else {
+            // Clear any previous content when switching to a new type
+            setGeneratedContent('')
+            setHasGenerated(false)
+            setViewingPreviousDoc(false)
           }
         } catch (e) {
           console.error('Error loading previous documents:', e)
@@ -482,8 +497,8 @@ export function SimpleDocumentGenerationModal({
                   </p>
                 </div>
                 <div className="prose prose-sm max-w-none">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {generatedContent}
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={mobileMarkdownComponents}>
+                    {preprocessMarkdownContent(generatedContent)}
                   </ReactMarkdown>
                 </div>
               </>
@@ -500,22 +515,16 @@ export function SimpleDocumentGenerationModal({
       )
     }
 
+    // Pre-process content to fix formatting issues
+    const processedContent = preprocessMarkdownContent(content || "")
+    
     return (
       <div className="prose prose-sm max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-strong:text-gray-900 prose-ul:text-gray-700 prose-ol:text-gray-700">
         <ReactMarkdown 
           remarkPlugins={[remarkGfm]}
-          components={{
-            h1: ({children}) => <h1 className="text-lg sm:text-2xl font-bold mt-4 sm:mt-6 mb-2 sm:mb-4">{children}</h1>,
-            h2: ({children}) => <h2 className="text-base sm:text-xl font-semibold mt-3 sm:mt-5 mb-2 sm:mb-3">{children}</h2>,
-            h3: ({children}) => <h3 className="text-sm sm:text-lg font-medium mt-2 sm:mt-4 mb-1 sm:mb-2">{children}</h3>,
-            ul: ({children}) => <ul className="list-disc pl-4 sm:pl-5 space-y-0.5 sm:space-y-1 text-xs sm:text-base">{children}</ul>,
-            ol: ({children}) => <ol className="list-decimal pl-4 sm:pl-5 space-y-0.5 sm:space-y-1 text-xs sm:text-base">{children}</ol>,
-            li: ({children}) => <li className="text-gray-700">{children}</li>,
-            p: ({children}) => <p className="mb-2 sm:mb-3 leading-relaxed text-xs sm:text-base">{children}</p>,
-            strong: ({children}) => <strong className="font-semibold text-gray-900">{children}</strong>,
-          }}
+          components={mobileMarkdownComponents}
         >
-          {content || (isGenerating ? "" : "Click generate to create your document")}
+          {processedContent || (isGenerating ? "" : "Click generate to create your document")}
         </ReactMarkdown>
       </div>
     )
