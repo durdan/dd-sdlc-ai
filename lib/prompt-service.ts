@@ -81,7 +81,7 @@ export interface PromptExperiment {
   updated_at: string;
 }
 
-export type DocumentType = 'business' | 'functional' | 'technical' | 'ux' | 'mermaid' | 'wireframe' | 'coding';
+export type DocumentType = 'business' | 'functional' | 'technical' | 'ux' | 'mermaid' | 'wireframe' | 'coding' | 'test';
 
 export interface PromptResult {
   content: string;

@@ -29,7 +29,8 @@ import {
   UserPlus,
   Lock,
   Check,
-  X
+  X,
+  FlaskConical
 } from "lucide-react"
 import { createClient } from '@/lib/supabase/client'
 import { SimpleDocumentGenerationModal } from '@/components/simple-document-generation-modal'
@@ -233,6 +234,12 @@ export default function SimpleLandingPage() {
       title: "AI Coding Prompt",
       description: "AI-optimized implementation guide",
       docType: "coding"
+    },
+    {
+      icon: FlaskConical,
+      title: "Test Spec",
+      description: "TDD/BDD test specifications",
+      docType: "test"
     }
   ]
 
@@ -243,6 +250,7 @@ export default function SimpleLandingPage() {
     { icon: Palette, title: "UX Design Specification", description: "UI/UX design requirements", requiresAuth: false, docType: "ux" },
     { icon: Database, title: "Architecture Diagram", description: "System architecture visuals", requiresAuth: false, docType: "mermaid", isFree: true },
     { icon: Sparkles, title: "AI Coding Prompt", description: "AI-optimized implementation guide", requiresAuth: false, docType: "coding", isFree: true },
+    { icon: FlaskConical, title: "Test Specification (TDD/BDD)", description: "Modern test specs with TDD & BDD", requiresAuth: false, docType: "test", isFree: true },
     { icon: TestTube, title: "Test Plan", description: "QA and testing strategy", requiresAuth: true },
     { icon: GitBranch, title: "API Documentation", description: "API specs and docs", requiresAuth: true },
     { icon: BookOpen, title: "User Guide", description: "End-user documentation", requiresAuth: true },

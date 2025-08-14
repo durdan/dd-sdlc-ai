@@ -12,6 +12,7 @@
 
 ## 🆕 Recent Updates
 
+- **🧪 Test Specification (TDD/BDD)**: Generate comprehensive test specs following modern TDD & BDD practices
 - **📚 Document History Management**: Advanced document history viewer with search, export, and management features
 - **🔄 Smart Input Detection**: Modal automatically refreshes for new inputs, preserves docs for same input
 - **🎯 Intelligent Document Grouping**: Groups documents by input to reduce redundancy in the UI
@@ -34,6 +35,7 @@
 - **UX Specifications**: User personas, journey maps, wireframe descriptions
 - **Architecture Diagrams**: Interactive Mermaid diagram generation
 - **AI Coding Prompt**: AI-optimized implementation prompts with component specs, data models, and acceptance criteria
+- **Test Specification (TDD/BDD)**: Comprehensive test specs with unit tests, BDD scenarios, E2E tests, and performance metrics
 
 ### 🧠 Enterprise Prompt Management
 - **📝 Advanced Editor**: Syntax highlighting, variable management, template inheritance
@@ -141,6 +143,11 @@ SLACK_BOT_TOKEN=your_slack_token
    
    -- Then apply the naming update:
    database/migrations/update-coding-to-ai-prompt.sql
+   ```
+6. (Optional) For Test Specification support, run:
+   ```sql
+   -- Copy and run the entire contents of:
+   database/migrations/add-test-specification.sql
    ```
 
 #### Manual Setup (Advanced)
@@ -255,6 +262,33 @@ Generate comprehensive implementation prompts optimized for AI coding assistants
    - Testing requirements and acceptance criteria
    - Implementation sequence and milestones
 ```
+
+### Test Specification (TDD/BDD)
+Generate modern test specifications following Test-Driven Development and Behavior-Driven Development:
+
+```markdown
+1. Enter your project description
+2. Click "Test Spec" button
+3. Receive comprehensive test specification including:
+   - Unit test specifications with AAA pattern
+   - BDD scenarios in Gherkin syntax
+   - Integration testing (API, Database)
+   - End-to-end test scenarios
+   - Performance testing metrics
+   - Security test cases (OWASP Top 10)
+   - Accessibility testing (WCAG compliance)
+   - Test automation strategy
+   - CI/CD integration approach
+   - Test data management
+   - Risk-based testing priorities
+```
+
+Key features:
+- **TDD Approach**: Red-Green-Refactor cycle with concrete examples
+- **BDD Scenarios**: User stories as executable specifications
+- **Modern Tools**: Recommendations for Jest, Cypress, Playwright, etc.
+- **Coverage Goals**: Defines metrics and KPIs for quality assurance
+- **Automation Ready**: Structured for immediate implementation
 
 ### AI Coding Rules Download
 Download optimized coding rules for your preferred AI assistant:

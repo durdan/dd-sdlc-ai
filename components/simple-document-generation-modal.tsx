@@ -28,7 +28,8 @@ import {
   GitBranch,
   BookOpen,
   Building,
-  Lock
+  Lock,
+  FlaskConical
 } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
@@ -99,6 +100,13 @@ const documentTypes: DocumentType[] = [
     icon: Sparkles, 
     description: "AI-optimized implementation guide for coding assistants",
     color: "text-indigo-600"
+  },
+  { 
+    id: "test", 
+    name: "Test Spec (TDD/BDD)", 
+    icon: FlaskConical, 
+    description: "Comprehensive test specifications with TDD & BDD practices",
+    color: "text-emerald-600"
   }
 ]
 
