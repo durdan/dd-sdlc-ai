@@ -2,6 +2,7 @@
 -- Description: Adds support for generating comprehensive test specifications following TDD and BDD practices
 
 -- First, update the check constraints to allow 'test' document type
+-- Note: We need to include legacy document types that exist in the database
 ALTER TABLE prompt_templates 
 DROP CONSTRAINT IF EXISTS prompt_templates_document_type_check;
 
@@ -12,9 +13,15 @@ CHECK (document_type IN ('business', 'functional', 'technical', 'ux', 'mermaid',
 ALTER TABLE documents 
 DROP CONSTRAINT IF EXISTS documents_document_type_check;
 
+-- Include both new format and legacy format document types
 ALTER TABLE documents 
 ADD CONSTRAINT documents_document_type_check 
-CHECK (document_type IN ('business', 'functional', 'technical', 'ux', 'mermaid', 'wireframe', 'coding', 'test'));
+CHECK (document_type IN (
+  -- New format (single words)
+  'business', 'functional', 'technical', 'ux', 'mermaid', 'wireframe', 'coding', 'test',
+  -- Legacy format (with underscores) - for backward compatibility
+  'business_analysis', 'functional_spec', 'technical_spec', 'ux_spec', 'architecture', 'comprehensive_sdlc'
+));
 
 -- Insert the test specification prompt template
 INSERT INTO prompt_templates (
