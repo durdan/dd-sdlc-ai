@@ -230,7 +230,7 @@ export default function SimpleLandingPage() {
     },
     {
       icon: Sparkles,
-      title: "Coding Spec",
+      title: "AI Coding Prompt",
       description: "AI-optimized implementation guide",
       docType: "coding"
     }
@@ -242,7 +242,7 @@ export default function SimpleLandingPage() {
     { icon: Code, title: "Technical Specification", description: "Technical design & architecture", requiresAuth: false, docType: "technical" },
     { icon: Palette, title: "UX Design Specification", description: "UI/UX design requirements", requiresAuth: false, docType: "ux" },
     { icon: Database, title: "Architecture Diagram", description: "System architecture visuals", requiresAuth: false, docType: "mermaid", isFree: true },
-    { icon: Sparkles, title: "Agentic Coding Spec", description: "AI-optimized implementation guide", requiresAuth: false, docType: "coding", isFree: true },
+    { icon: Sparkles, title: "AI Coding Prompt", description: "AI-optimized implementation guide", requiresAuth: false, docType: "coding", isFree: true },
     { icon: TestTube, title: "Test Plan", description: "QA and testing strategy", requiresAuth: true },
     { icon: GitBranch, title: "API Documentation", description: "API specs and docs", requiresAuth: true },
     { icon: BookOpen, title: "User Guide", description: "End-user documentation", requiresAuth: true },

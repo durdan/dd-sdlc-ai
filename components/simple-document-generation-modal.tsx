@@ -95,7 +95,7 @@ const documentTypes: DocumentType[] = [
   },
   { 
     id: "coding", 
-    name: "Agentic Coding Spec", 
+    name: "AI Coding Prompt", 
     icon: Sparkles, 
     description: "AI-optimized implementation guide for coding assistants",
     color: "text-indigo-600"

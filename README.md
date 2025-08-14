@@ -15,7 +15,7 @@
 - **📚 Document History Management**: Advanced document history viewer with search, export, and management features
 - **🔄 Smart Input Detection**: Modal automatically refreshes for new inputs, preserves docs for same input
 - **🎯 Intelligent Document Grouping**: Groups documents by input to reduce redundancy in the UI
-- **🤖 Agentic Coding Spec**: Generate AI-optimized implementation specifications for coding assistants
+- **🤖 AI Coding Prompt**: Generate AI-optimized implementation prompts for coding assistants
 - **📥 AI Rules Download**: Download coding rules for Cursor, GitHub Copilot, Windsurf, Claude, and Devin
 - **📝 Enhanced Formatting**: Improved markdown rendering with proper bullet point display
 - **🔍 Document Search**: Search through generated documents by type, input, or content
@@ -33,7 +33,7 @@
 - **Technical Specifications**: System architecture, API design, security implementation
 - **UX Specifications**: User personas, journey maps, wireframe descriptions
 - **Architecture Diagrams**: Interactive Mermaid diagram generation
-- **Agentic Coding Spec**: AI-optimized implementation guide with component specs, data models, and acceptance criteria
+- **AI Coding Prompt**: AI-optimized implementation prompts with component specs, data models, and acceptance criteria
 
 ### 🧠 Enterprise Prompt Management
 - **📝 Advanced Editor**: Syntax highlighting, variable management, template inheritance
@@ -138,6 +138,9 @@ SLACK_BOT_TOKEN=your_slack_token
    ```sql
    -- Copy and run the entire contents of:
    database/migrations/add-coding-spec.sql
+   
+   -- Then apply the naming update:
+   database/migrations/update-coding-to-ai-prompt.sql
    ```
 
 #### Manual Setup (Advanced)
@@ -237,13 +240,13 @@ graph TB
 
 ## 📋 Feature Highlights
 
-### Agentic Coding Specification
-Generate comprehensive coding specifications optimized for AI coding assistants:
+### AI Coding Prompt Generation
+Generate comprehensive implementation prompts optimized for AI coding assistants:
 
 ```markdown
 1. Enter your project description
-2. Click "Coding Spec" button
-3. Receive detailed specification including:
+2. Click "AI Coding Prompt" button
+3. Receive detailed prompt including:
    - Project overview and technology stack
    - Component specifications with interfaces
    - Data models with TypeScript definitions

@@ -40,7 +40,7 @@ const documentTypeConfig: Record<string, { icon: any; label: string; color: stri
   technical: { icon: Code, label: "Technical Spec", color: "text-green-600" },
   ux: { icon: Palette, label: "UX Design", color: "text-pink-600" },
   mermaid: { icon: Database, label: "Architecture", color: "text-orange-600" },
-  coding: { icon: Sparkles, label: "Coding Spec", color: "text-indigo-600" }
+  coding: { icon: Sparkles, label: "AI Coding Prompt", color: "text-indigo-600" }
 }
 
 export function ViewDocsMenu({ 
