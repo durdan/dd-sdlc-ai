@@ -70,8 +70,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       console.log('📱 Is Mobile Device:', isMobile);
       
-      // Create redirect URL with proper encoding
-      const redirectUrl = `${window.location.origin}/auth/callback?redirectTo=${encodeURIComponent('/dashboard')}`;
+      // Create redirect URL - use simple format for better mobile compatibility
+      const baseUrl = window.location.origin;
+      const redirectUrl = `${baseUrl}/auth/callback`;
       console.log('🔄 Redirect URL:', redirectUrl);
       
       const { data, error } = await supabase.auth.signInWithOAuth({
@@ -81,8 +82,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           queryParams: {
             // Add mobile-specific parameters
             prompt: 'select_account',
-            access_type: 'offline'
-          }
+            access_type: 'offline',
+            // Force redirect mode for mobile devices
+            display: isMobile ? 'page' : 'popup'
+          },
+          // Skip the built-in URL navigation, let Supabase handle it
+          skipBrowserRedirect: false
         },
       });
       
@@ -93,12 +98,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log('✅ Google OAuth initiated successfully:', data);
       
-      // For mobile, we might need to handle the redirect differently
-      if (isMobile && data.url) {
-        console.log('📱 Mobile device detected, handling redirect...');
-        // On mobile, we might need to use window.location.href instead of the popup
-        window.location.href = data.url;
-      }
+      // Don't manually redirect on mobile - let Supabase handle the OAuth flow
+      // The skipBrowserRedirect: false option ensures proper handling
       
     } catch (error) {
       console.error('💥 Google sign-in failed:', error);
