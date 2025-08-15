@@ -70,60 +70,85 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       const isAndroid = /Android/i.test(navigator.userAgent);
+      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
       
-      console.log('📱 Device Detection:', { isMobile, isIOS, isAndroid });
+      console.log('📱 Device Detection:', { isMobile, isIOS, isAndroid, isTouchDevice });
       
       // Create redirect URL - ensure it works on all environments
       const baseUrl = window.location.origin;
       const redirectUrl = `${baseUrl}/auth/callback`;
       console.log('🔄 Redirect URL:', redirectUrl);
       
-      // Different approach for mobile vs desktop
-      if (isMobile) {
-        // For mobile, use redirect approach
-        const { data, error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: { 
-            redirectTo: redirectUrl,
-            queryParams: {
-              prompt: 'select_account',
-              access_type: 'offline'
+      // Try different approaches based on device
+      console.log('🚀 Attempting OAuth sign-in...');
+      
+      // For mobile, try with skipBrowserRedirect true and manual redirect
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { 
+          redirectTo: redirectUrl,
+          // Try skipping browser redirect on mobile to handle manually
+          skipBrowserRedirect: isMobile || isTouchDevice,
+          queryParams: {
+            prompt: 'select_account',
+            access_type: 'offline',
+          }
+        },
+      });
+      
+      if (error) {
+        console.error('❌ Google OAuth error:', error);
+        alert(`OAuth Error: ${error.message}`); // Show alert on mobile for debugging
+        throw error;
+      }
+      
+      console.log('✅ Google OAuth response:', data);
+      
+      // Check if we got a URL back
+      if (data?.url) {
+        console.log('📍 OAuth URL received:', data.url);
+        
+        // For mobile/touch devices, handle redirect manually
+        if (isMobile || isTouchDevice) {
+          console.log('📱 Mobile/Touch detected - manual redirect');
+          
+          // Try immediate redirect without setTimeout for mobile
+          try {
+            // Method 1: Use location.assign which is more compatible
+            window.location.assign(data.url);
+          } catch (e1) {
+            console.error('Method 1 failed:', e1);
+            try {
+              // Method 2: Direct href assignment
+              window.location.href = data.url;
+            } catch (e2) {
+              console.error('Method 2 failed:', e2);
+              try {
+                // Method 3: window.open as fallback
+                window.open(data.url, '_self');
+              } catch (e3) {
+                console.error('Method 3 failed:', e3);
+                // Last resort: create a link and click it
+                const link = document.createElement('a');
+                link.href = data.url;
+                link.target = '_self';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+              }
             }
-          },
-        });
-        
-        if (error) {
-          console.error('❌ Google OAuth error:', error);
-          throw error;
-        }
-        
-        console.log('✅ Google OAuth initiated for mobile:', data);
-        
-        // For mobile, manually handle the redirect if URL is provided
-        if (data?.url) {
-          console.log('📱 Redirecting mobile to:', data.url);
-          // Use location.replace for better mobile compatibility
-          window.location.replace(data.url);
+          }
+        } else {
+          console.log('💻 Desktop detected - standard flow');
+          // Desktop should handle it automatically since skipBrowserRedirect is false
+          // But ensure redirect happens
+          if (!window.location.href.includes('accounts.google.com')) {
+            window.location.href = data.url;
+          }
         }
       } else {
-        // For desktop, use standard approach
-        const { data, error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: { 
-            redirectTo: redirectUrl,
-            queryParams: {
-              prompt: 'select_account',
-              access_type: 'offline'
-            }
-          },
-        });
-        
-        if (error) {
-          console.error('❌ Google OAuth error:', error);
-          throw error;
-        }
-        
-        console.log('✅ Google OAuth initiated for desktop:', data);
+        console.warn('⚠️ No URL returned from OAuth initiation');
+        console.log('Full data object:', JSON.stringify(data, null, 2));
       }
       
     } catch (error) {
@@ -135,6 +160,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           stack: error.stack,
           name: error.name
         });
+        // Show alert on mobile for debugging
+        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+          alert(`Sign-in Error: ${error.message}`);
+        }
       }
       throw error;
     }
