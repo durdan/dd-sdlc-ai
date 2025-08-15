@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { headers } from 'next/headers';
 import jwt from 'jsonwebtoken';
-import { EnhancedClaudeService } from '@/lib/enhanced-claude-service';
-import { PromptService } from '@/lib/prompt-service-server';
+import { ClaudeService } from '@/lib/claude-service';
+import { getPromptForExecution } from '@/lib/prompt-service-server';
 
 interface DecodedToken {
   userId?: string;
@@ -12,7 +12,7 @@ interface DecodedToken {
 
 export async function POST(request: NextRequest) {
   try {
-    const headersList = headers();
+    const headersList = await headers();
     const deviceId = headersList.get('x-device-id');
     const authorization = headersList.get('authorization');
     
@@ -78,8 +78,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate document
-    const claudeService = new EnhancedClaudeService();
-    const promptService = new PromptService();
+    const claudeService = new ClaudeService();
     
     // Map VS Code document types to our internal types
     const typeMapping: Record<string, string> = {
@@ -96,7 +95,7 @@ export async function POST(request: NextRequest) {
     const mappedType = typeMapping[type] || type;
     
     // Get prompt template
-    const promptTemplate = await promptService.getPromptForExecution(
+    const promptTemplate = await getPromptForExecution(
       mappedType as any,
       userId || 'anonymous',
       false

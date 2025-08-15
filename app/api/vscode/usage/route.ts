@@ -10,7 +10,7 @@ interface DecodedToken {
 
 export async function GET(request: NextRequest) {
   try {
-    const headersList = headers();
+    const headersList = await headers();
     const deviceId = headersList.get('x-device-id');
     const authorization = headersList.get('authorization');
     
