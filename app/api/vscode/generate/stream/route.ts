@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { headers } from 'next/headers';
-import { ClaudeService } from '@/lib/claude-service';
-import { getPromptForExecution } from '@/lib/prompt-service-server';
+import { createOpenAI } from '@ai-sdk/openai';
+import { generateText } from 'ai';
+import { createServerPromptService } from '@/lib/prompt-service-server';
 
 interface DecodedToken {
   userId?: string;
@@ -78,7 +79,7 @@ export async function POST(request: NextRequest) {
 
     // For now, we'll use the same generation as the non-streaming endpoint
     // In the future, this could be enhanced to use Server-Sent Events
-    const claudeService = new ClaudeService();
+    const promptService = createServerPromptService();
     
     // Map VS Code document types to our internal types
     const typeMapping: Record<string, string> = {
@@ -95,7 +96,7 @@ export async function POST(request: NextRequest) {
     const mappedType = typeMapping[type] || type;
     
     // Get prompt template
-    const promptTemplate = await getPromptForExecution(
+    const promptTemplate = await promptService.getPromptForExecution(
       mappedType as any,
       userId || 'anonymous',
       false
@@ -121,16 +122,32 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Generate the document
-    const result = await claudeService.generateDocument(
-      mappedType,
-      enhancedInput,
-      promptTemplate.prompt_content
-    );
+    // Generate the document using OpenAI
+    const openai = createOpenAI({
+      apiKey: process.env.OPENAI_API_KEY!,
+    });
 
-    if (!result.success || !result.content) {
+    let content: string;
+    try {
+      const { text } = await generateText({
+        model: openai('gpt-4-turbo-preview'),
+        prompt: promptTemplate.prompt_content.replace('{{input}}', enhancedInput),
+        temperature: 0.7,
+        maxTokens: 4000,
+      });
+
+      content = text;
+    } catch (genError: any) {
+      console.error('Generation error:', genError);
       return NextResponse.json(
-        { error: result.error || 'Failed to generate document' },
+        { error: genError.message || 'Failed to generate document' },
+        { status: 500 }
+      );
+    }
+
+    if (!content) {
+      return NextResponse.json(
+        { error: 'Failed to generate document' },
         { status: 500 }
       );
     }
@@ -173,7 +190,7 @@ export async function POST(request: NextRequest) {
           user_id: userId,
           project_id: null, // VS Code documents aren't tied to projects
           document_type: mappedType,
-          content: result.content,
+          content: content,
           title: `${type} Document - VS Code`,
           source: 'vscode',
           metadata: { context }
@@ -191,7 +208,7 @@ export async function POST(request: NextRequest) {
       document: {
         id: documentId || `temp-${Date.now()}`,
         type,
-        content: result.content,
+        content: content,
         title: `${type} Document`,
         timestamp: Date.now()
       }
