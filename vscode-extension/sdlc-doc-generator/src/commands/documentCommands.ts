@@ -75,9 +75,7 @@ export class DocumentCommands {
                 const result = await this.documentGenerator.generateDocument({
                     type,
                     input,
-                    onProgress: (chunk) => {
-                        progress.report({ increment: 1, message: 'Generating...' });
-                    },
+                    // Remove onProgress since we're not streaming yet
                     cancellationToken: token
                 });
 
