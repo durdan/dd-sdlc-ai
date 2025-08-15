@@ -8,6 +8,6 @@ vsc-extension-quickstart.md
 **/.eslintrc.json
 **/*.map
 **/*.ts
-node_modules/**
 out/test/**
 *.vsix
+# Don't exclude node_modules - we need dependencies!

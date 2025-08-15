@@ -43,8 +43,8 @@ export class AuthService {
     async signIn(): Promise<void> {
         try {
             // Generate OAuth URL
-            const config = vscode.workspace.getConfiguration('sdlc-doc-generator');
-            const apiEndpoint = config.get<string>('apiEndpoint') || 'http://localhost:3000/api/vscode';
+            // Use localhost for development
+            const apiEndpoint = 'http://localhost:3000/api/vscode';
             
             // Open OAuth flow in browser
             const authUrl = `http://localhost:3000/auth/vscode?device_id=${this.deviceId}`;

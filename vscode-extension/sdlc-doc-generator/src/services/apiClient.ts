@@ -34,7 +34,10 @@ export class ApiClient {
         private authService: AuthService
     ) {
         const config = vscode.workspace.getConfiguration('sdlc-doc-generator');
-        this.apiEndpoint = config.get<string>('apiEndpoint') || 'http://localhost:3000/api/vscode';
+        // Use localhost for development
+        this.apiEndpoint = 'http://localhost:3000/api/vscode';
+        // Uncomment for production:
+        // this.apiEndpoint = config.get<string>('apiEndpoint') || 'https://www.sdlc.dev/api/vscode';
 
         this.client = axios.create({
             baseURL: this.apiEndpoint,
