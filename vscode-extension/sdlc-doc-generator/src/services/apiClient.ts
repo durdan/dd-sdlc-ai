@@ -119,61 +119,9 @@ export class ApiClient {
         request: GenerateDocumentRequest,
         onChunk: (chunk: string) => void
     ): Promise<GenerateDocumentResponse> {
-        try {
-            const response = await this.client.post('/generate/stream', request, {
-                responseType: 'stream'
-            });
-
-            return new Promise((resolve, reject) => {
-                let fullContent = '';
-                let metadata: any = {};
-
-                response.data.on('data', (chunk: Buffer) => {
-                    const text = chunk.toString();
-                    const lines = text.split('\n');
-
-                    for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            const data = line.slice(6);
-                            if (data === '[DONE]') {
-                                resolve({
-                                    success: true,
-                                    document: {
-                                        id: metadata.id || 'generated',
-                                        type: request.type,
-                                        content: fullContent,
-                                        title: metadata.title || 'Generated Document',
-                                        timestamp: Date.now()
-                                    }
-                                });
-                            } else {
-                                try {
-                                    const parsed = JSON.parse(data);
-                                    if (parsed.content) {
-                                        fullContent += parsed.content;
-                                        onChunk(parsed.content);
-                                    }
-                                    if (parsed.metadata) {
-                                        metadata = parsed.metadata;
-                                    }
-                                } catch (e) {
-                                    // Ignore parse errors
-                                }
-                            }
-                        }
-                    }
-                });
-
-                response.data.on('error', (error: Error) => {
-                    reject(error);
-                });
-            });
-        } catch (error: any) {
-            return {
-                success: false,
-                error: error.message || 'Failed to generate document'
-            };
-        }
+        // For now, just use the regular endpoint since streaming doesn't work in browser env
+        // In the future, we could implement Server-Sent Events for real streaming
+        return this.generateDocument(request);
     }
 
     async checkUsage(): Promise<{

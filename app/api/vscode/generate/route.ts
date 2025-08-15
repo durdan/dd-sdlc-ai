@@ -24,7 +24,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { type, input, context } = await request.json();
+    let type, input, context;
+    try {
+      const body = await request.json();
+      type = body.type;
+      input = body.input;
+      context = body.context;
+    } catch (jsonError) {
+      console.error('Invalid JSON in request:', jsonError);
+      return NextResponse.json(
+        { error: 'Invalid request body. Please provide valid JSON.' },
+        { status: 400 }
+      );
+    }
     
     if (!type || !input) {
       return NextResponse.json(
