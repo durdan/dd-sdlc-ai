@@ -1,0 +1,235 @@
+{
+  "name": "sdlc-doc-generator",
+  "displayName": "SDLC Document Generator",
+  "description": "Generate comprehensive SDLC documents including Business Analysis, Technical Specs, UX Specs, and more using AI",
+  "version": "1.0.0",
+  "publisher": "sdlc-dev",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Snippets",
+    "Other"
+  ],
+  "keywords": [
+    "sdlc",
+    "documentation",
+    "ai",
+    "business analysis",
+    "technical specification",
+    "architecture",
+    "testing"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension-minimal.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "sdlc-doc-generator.test",
+        "title": "Test SDLC Extension",
+        "category": "SDLC Docs"
+      },
+      {
+        "command": "sdlc-doc-generator.generateBusinessAnalysis",
+        "title": "Generate Business Analysis",
+        "category": "SDLC Docs"
+      },
+      {
+        "command": "sdlc-doc-generator.generateFunctionalSpec",
+        "title": "Generate Functional Specification",
+        "category": "SDLC Docs"
+      },
+      {
+        "command": "sdlc-doc-generator.generateTechnicalSpec",
+        "title": "Generate Technical Specification",
+        "category": "SDLC Docs"
+      },
+      {
+        "command": "sdlc-doc-generator.generateUXSpec",
+        "title": "Generate UX Specification",
+        "category": "SDLC Docs"
+      },
+      {
+        "command": "sdlc-doc-generator.generateArchitectureDiagram",
+        "title": "Generate Architecture Diagram",
+        "category": "SDLC Docs"
+      },
+      {
+        "command": "sdlc-doc-generator.generateWireframe",
+        "title": "Generate Wireframe",
+        "category": "SDLC Docs"
+      },
+      {
+        "command": "sdlc-doc-generator.generateCodingPrompt",
+        "title": "Generate AI Coding Prompt",
+        "category": "SDLC Docs"
+      },
+      {
+        "command": "sdlc-doc-generator.generateTestSpec",
+        "title": "Generate Test Specification",
+        "category": "SDLC Docs"
+      },
+      {
+        "command": "sdlc-doc-generator.quickGenerate",
+        "title": "Quick Generate Document",
+        "category": "SDLC Docs",
+        "icon": "$(file-text)"
+      },
+      {
+        "command": "sdlc-doc-generator.showHistory",
+        "title": "Show Generation History",
+        "category": "SDLC Docs"
+      },
+      {
+        "command": "sdlc-doc-generator.signIn",
+        "title": "Sign In",
+        "category": "SDLC Docs",
+        "icon": "$(sign-in)"
+      },
+      {
+        "command": "sdlc-doc-generator.signOut",
+        "title": "Sign Out",
+        "category": "SDLC Docs",
+        "icon": "$(sign-out)"
+      },
+      {
+        "command": "sdlc-doc-generator.checkUsage",
+        "title": "Check Usage Limits",
+        "category": "SDLC Docs"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "sdlc-doc-generator",
+          "title": "SDLC Documents",
+          "icon": "resources/icons/sidebar.svg"
+        }
+      ]
+    },
+    "views": {
+      "sdlc-doc-generator": [
+        {
+          "id": "sdlc-doc-generator.quickActions",
+          "name": "Quick Actions",
+          "contextualTitle": "SDLC Quick Actions"
+        },
+        {
+          "id": "sdlc-doc-generator.history",
+          "name": "Recent Documents",
+          "contextualTitle": "Document History"
+        },
+        {
+          "id": "sdlc-doc-generator.account",
+          "name": "Account",
+          "contextualTitle": "Account Status"
+        }
+      ]
+    },
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "sdlc-doc-generator.quickGenerate",
+          "group": "2_workspace",
+          "when": "explorerResourceIsFolder"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "sdlc-doc-generator.quickGenerate",
+          "group": "1_modification",
+          "when": "editorTextFocus"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "sdlc-doc-generator.checkUsage",
+          "when": "view == sdlc-doc-generator.account",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "SDLC Document Generator",
+      "properties": {
+        "sdlc-doc-generator.apiEndpoint": {
+          "type": "string",
+          "default": "https://www.sdlc.dev/api/vscode",
+          "description": "API endpoint for document generation"
+        },
+        "sdlc-doc-generator.anonymousLimit": {
+          "type": "number",
+          "default": 10,
+          "description": "Daily document generation limit for anonymous users"
+        },
+        "sdlc-doc-generator.authenticatedLimit": {
+          "type": "number",
+          "default": 20,
+          "description": "Daily document generation limit for authenticated users"
+        },
+        "sdlc-doc-generator.autoDetectProject": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically detect project context from workspace"
+        },
+        "sdlc-doc-generator.showPreview": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show document preview after generation"
+        },
+        "sdlc-doc-generator.defaultExportFormat": {
+          "type": "string",
+          "enum": ["markdown", "pdf", "html"],
+          "default": "markdown",
+          "description": "Default export format for generated documents"
+        }
+      }
+    },
+    "keybindings": [
+      {
+        "command": "sdlc-doc-generator.quickGenerate",
+        "key": "ctrl+shift+d",
+        "mac": "cmd+shift+d",
+        "when": "editorTextFocus"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@types/node": "^18.x",
+    "@types/uuid": "^9.0.0",
+    "@types/vscode": "^1.74.0",
+    "@typescript-eslint/eslint-plugin": "^5.45.0",
+    "@typescript-eslint/parser": "^5.45.0",
+    "@vscode/test-electron": "^2.2.0",
+    "eslint": "^8.28.0",
+    "typescript": "^4.9.3",
+    "vsce": "^2.15.0"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "uuid": "^9.0.0",
+    "marked": "^9.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/sdlc-doc-generator-vscode"
+  },
+  "homepage": "https://www.sdlc.dev",
+  "bugs": {
+    "url": "https://github.com/yourusername/sdlc-doc-generator-vscode/issues"
+  },
+  "license": "MIT"
+}

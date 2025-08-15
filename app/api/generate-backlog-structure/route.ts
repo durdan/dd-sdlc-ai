@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { BacklogStructureService } from '@/lib/backlog-structure'
-import { ContentParserService } from '@/lib/content-parser'
+import { FlexibleSDLCParser } from '@/lib/content-parser'
 import { ContentIntelligenceService } from '@/lib/content-intelligence'
 
 export async function POST(request: NextRequest) {
@@ -32,13 +32,12 @@ export async function POST(request: NextRequest) {
     console.log('🎯 Starting backlog structure generation...')
 
     // Step 1: Parse content to extract items
-    const contentParser = new ContentParserService(openaiKey)
-    const parsedContent = await contentParser.parseSDLCContent(
+    const contentParser = new FlexibleSDLCParser()
+    const parsedContent = contentParser.parseSDLCContent(
       businessAnalysis,
       functionalSpec,
       technicalSpec,
-      uxSpec,
-      customPrompts
+      uxSpec
     )
 
     // Step 2: Generate content intelligence
