@@ -79,7 +79,10 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
     functional: [],
     technical: [],
     ux: [],
-    mermaid: []
+    mermaid: [],
+    wireframe: [],
+    coding: [],
+    test: []
   });
   const [userPrompts, setUserPrompts] = useState<UserPrompt[]>([]);
   const [systemStats, setSystemStats] = useState<SystemStats | null>(null);
@@ -114,13 +117,16 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
     setError(null);
     
     try {
-      const documentTypes: DocumentType[] = ['business', 'functional', 'technical', 'ux', 'mermaid'];
+      const documentTypes: DocumentType[] = ['business', 'functional', 'technical', 'ux', 'mermaid', 'wireframe', 'coding', 'test'];
       const promptData: Record<DocumentType, PromptTemplate[]> = {
         business: [],
         functional: [],
         technical: [],
         ux: [],
-        mermaid: []
+        mermaid: [],
+        wireframe: [],
+        coding: [],
+        test: []
       };
 
       await Promise.all(
@@ -376,7 +382,10 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
       functional: '⚙️',
       technical: '🔧',
       ux: '🎨',
-      mermaid: '📈'
+      mermaid: '📈',
+      wireframe: '🎯',
+      coding: '💻',
+      test: '🧪'
     };
     return icons[type];
   };
@@ -387,7 +396,10 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
       functional: 'Functional Specification',
       technical: 'Technical Specification',
       ux: 'UX Specification',
-      mermaid: 'Architecture'
+      mermaid: 'Architecture',
+      wireframe: 'Wireframe',
+      coding: 'AI Coding Prompt',
+      test: 'Test Specification'
     };
     return labels[type];
   };
@@ -480,6 +492,18 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
             <TabsTrigger value="mermaid" className="tab-trigger-mobile">
               <span className="hidden sm:inline">Architecture</span>
               <span className="sm:hidden">Arch</span>
+            </TabsTrigger>
+            <TabsTrigger value="wireframe" className="tab-trigger-mobile">
+              <span className="hidden sm:inline">Wireframe</span>
+              <span className="sm:hidden">Wire</span>
+            </TabsTrigger>
+            <TabsTrigger value="coding" className="tab-trigger-mobile">
+              <span className="hidden sm:inline">Coding</span>
+              <span className="sm:hidden">Code</span>
+            </TabsTrigger>
+            <TabsTrigger value="test" className="tab-trigger-mobile">
+              <span className="hidden sm:inline">Test</span>
+              <span className="sm:hidden">Test</span>
             </TabsTrigger>
             {userRole === 'admin' && (
               <>
