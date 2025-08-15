@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 
 export default function TestOAuthPage() {
   const [logs, setLogs] = useState<string[]>([])
+  const [deviceInfo, setDeviceInfo] = useState<{ userAgent: string; hasTouch: boolean; maxTouchPoints: number } | null>(null)
   
   const addLog = (message: string) => {
     setLogs(prev => [...prev, `${new Date().toISOString().split('T')[1].split('.')[0]} - ${message}`])
@@ -113,6 +114,17 @@ export default function TestOAuthPage() {
 
   const clearLogs = () => setLogs([])
 
+  useEffect(() => {
+    // Only access browser APIs on client side
+    if (typeof window !== 'undefined') {
+      setDeviceInfo({
+        userAgent: navigator.userAgent,
+        hasTouch: 'ontouchstart' in window,
+        maxTouchPoints: navigator.maxTouchPoints || 0
+      })
+    }
+  }, [])
+
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-2xl mx-auto">
@@ -120,15 +132,21 @@ export default function TestOAuthPage() {
         
         <div className="bg-white rounded-lg shadow p-4 mb-4">
           <h2 className="font-semibold mb-2">Device Info</h2>
-          <p className="text-sm text-gray-600">
-            User Agent: {navigator.userAgent}
-          </p>
-          <p className="text-sm text-gray-600">
-            Touch: {'ontouchstart' in window ? 'Yes' : 'No'}
-          </p>
-          <p className="text-sm text-gray-600">
-            Max Touch Points: {navigator.maxTouchPoints}
-          </p>
+          {deviceInfo ? (
+            <>
+              <p className="text-sm text-gray-600">
+                User Agent: {deviceInfo.userAgent}
+              </p>
+              <p className="text-sm text-gray-600">
+                Touch: {deviceInfo.hasTouch ? 'Yes' : 'No'}
+              </p>
+              <p className="text-sm text-gray-600">
+                Max Touch Points: {deviceInfo.maxTouchPoints}
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-gray-600">Loading device info...</p>
+          )}
         </div>
 
         <div className="space-y-2 mb-4">

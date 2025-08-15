@@ -1,5 +1,5 @@
 import taskStore, { StoredTask } from './task-store';
-import { getUserSlackConfig } from '@/app/api/user-integrations/slack/route';
+import { getUserSlackConfig } from './slack-service-oauth';
 import { createClient } from '@/lib/supabase/server';
 
 // Type compatibility mappings for legacy Slack service
