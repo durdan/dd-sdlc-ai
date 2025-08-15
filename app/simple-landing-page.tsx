@@ -413,14 +413,15 @@ export default function SimpleLandingPage() {
             </div>
 
             {/* Tools Bar */}
-            <div className="px-6 pb-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 relative">
+            <div className="px-3 sm:px-6 pb-3 sm:pb-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1 sm:gap-2 relative">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-9 px-3 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                    className="h-8 sm:h-9 px-2 sm:px-3 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                     onClick={() => setShowDocumentMenu(!showDocumentMenu)}
+                    title="Add document"
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
@@ -510,13 +511,14 @@ export default function SimpleLandingPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-9 px-3 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                    className="hidden sm:block h-8 sm:h-9 px-2 sm:px-3 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                    title="Settings"
                   >
                     <Settings2 className="h-4 w-4" />
                   </Button>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 sm:gap-2">
                   {Object.keys(previousDocuments).length > 0 && (
                     <>
                       <ViewDocsMenu 
@@ -525,19 +527,20 @@ export default function SimpleLandingPage() {
                         className={showViewDocsHint ? 'animate-pulse-border' : ''}
                       />
                       {showViewDocsHint && (
-                        <div className="absolute bottom-full right-0 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap shadow-lg">
+                        <div className="absolute bottom-full right-0 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap shadow-lg z-50">
                           <div className="absolute bottom-0 right-4 transform translate-y-1/2 rotate-45 w-2 h-2 bg-gray-900"></div>
                           You have {Object.keys(previousDocuments).length} generated document{Object.keys(previousDocuments).length > 1 ? 's' : ''}! Click to view.
                         </div>
                       )}
                     </>
                   )}
-                  <span className="text-sm text-gray-500">SDLC AI</span>
+                  <span className="hidden sm:inline text-sm text-gray-500">SDLC AI</span>
                   <Button
                     size="icon"
-                    className="h-9 w-9 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg"
+                    className="h-8 w-8 sm:h-9 sm:w-9 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg"
                     onClick={() => handleGetStarted()}
                     disabled={!inputValue.trim()}
+                    title="Generate"
                   >
                     <ArrowUp className="h-4 w-4" />
                   </Button>
@@ -548,25 +551,26 @@ export default function SimpleLandingPage() {
           </div>
 
           {/* Quick Actions - Responsive Grid */}
-          <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
+          <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 md:gap-3">
             {features.map((feature, index) => {
               const hasDocument = previousDocuments[feature.docType]
               return (
                 <button
                   key={index}
                   onClick={() => handleGetStarted(feature.docType)}
-                  className={`relative flex items-center justify-center gap-2 px-4 py-2.5 bg-white rounded-lg border transition-all ${
+                  className={`relative flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 sm:py-2.5 bg-white rounded-lg border transition-all ${
                     hasDocument 
                       ? 'border-indigo-300 hover:border-indigo-400 hover:bg-indigo-50' 
                       : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                   }`}
+                  title={feature.description}
                 >
-                  <feature.icon className={`h-4 w-4 ${hasDocument ? 'text-indigo-600' : 'text-gray-600'}`} />
-                  <span className={`text-sm font-medium ${hasDocument ? 'text-indigo-700' : 'text-gray-700'}`}>
+                  <feature.icon className={`h-3.5 sm:h-4 w-3.5 sm:w-4 ${hasDocument ? 'text-indigo-600' : 'text-gray-600'}`} />
+                  <span className={`text-xs sm:text-sm font-medium ${hasDocument ? 'text-indigo-700' : 'text-gray-700'}`}>
                     {feature.title}
                   </span>
                   {hasDocument && (
-                    <Check className="h-3.5 w-3.5 text-indigo-600 ml-1" />
+                    <Check className="h-3 sm:h-3.5 w-3 sm:w-3.5 text-indigo-600 ml-0.5 sm:ml-1" />
                   )}
                 </button>
               )

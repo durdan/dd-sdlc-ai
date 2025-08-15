@@ -486,17 +486,17 @@ Remember: You are crafting software, not just writing code. Every line should be
       <Button
         variant="ghost"
         size="sm"
-        className="h-9 px-3 text-purple-600 hover:text-purple-700 hover:bg-purple-50 border border-purple-200"
+        className="h-8 sm:h-9 px-2 sm:px-3 text-purple-600 hover:text-purple-700 hover:bg-purple-50 border border-purple-200"
         onClick={() => setShowMenu(!showMenu)}
         title="Download AI Coding Rules"
       >
-        <Download className="h-4 w-4 mr-1.5" />
+        <Download className="h-4 w-4 sm:mr-1.5" />
         <span className="hidden sm:inline">AI Rules</span>
-        <ChevronRight className={`h-3 w-3 ml-1 transition-transform ${showMenu ? 'rotate-90' : ''}`} />
+        <ChevronRight className={`hidden sm:inline h-3 w-3 ml-1 transition-transform ${showMenu ? 'rotate-90' : ''}`} />
       </Button>
 
       {showMenu && (
-        <div className="absolute left-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+        <div className="absolute left-0 mt-2 w-72 sm:w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
           <div className="px-3 py-2 border-b border-gray-100">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-gray-700">AI Coding Assistant Tools</h3>

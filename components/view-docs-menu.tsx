@@ -212,18 +212,19 @@ export function ViewDocsMenu({
           variant="outline"
           size="sm"
           onClick={() => setShowMenu(!showMenu)}
-          className={`relative bg-white border-indigo-200 text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 text-sm ${className}`}
+          className={`relative bg-white border-indigo-200 text-indigo-600 hover:bg-indigo-50 px-2 sm:px-3 py-1.5 text-xs sm:text-sm ${className}`}
+          title={`View ${documentCount} document${documentCount > 1 ? 's' : ''}`}
         >
-          <FileText className="h-4 w-4 mr-1.5" />
-          View Docs
-          <span className="absolute -top-1.5 -right-1.5 bg-indigo-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+          <FileText className="h-3.5 sm:h-4 w-3.5 sm:w-4 sm:mr-1.5" />
+          <span className="hidden sm:inline">View Docs</span>
+          <span className="absolute -top-1.5 -right-1.5 bg-indigo-600 text-white text-[10px] sm:text-xs rounded-full h-4 sm:h-5 w-4 sm:w-5 flex items-center justify-center font-medium">
             {documentCount}
           </span>
-          <ChevronRight className={`h-3 w-3 ml-1 transition-transform ${showMenu ? 'rotate-90' : ''}`} />
+          <ChevronRight className={`hidden sm:inline h-3 w-3 ml-1 transition-transform ${showMenu ? 'rotate-90' : ''}`} />
         </Button>
 
         {showMenu && (
-          <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-lg border border-gray-200 z-50 overflow-hidden">
+          <div className="absolute right-0 mt-2 w-[90vw] sm:w-96 max-w-sm sm:max-w-none bg-white rounded-lg shadow-lg border border-gray-200 z-50 overflow-hidden">
             {/* Header */}
             <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
               <div className="flex items-center justify-between mb-2">
