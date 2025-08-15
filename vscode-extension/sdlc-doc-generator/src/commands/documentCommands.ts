@@ -52,6 +52,13 @@ export class DocumentCommands {
             title: `Generating ${this.getDocumentTypeName(type)}...`,
             cancellable: true
         }, async (progress, token) => {
+            // Show timeout warning after 10 seconds
+            const timeoutWarning = setTimeout(() => {
+                progress.report({ 
+                    message: 'Still generating... This may take up to 30 seconds. You can cancel anytime.' 
+                });
+            }, 10000);
+            
             try {
                 const result = await this.documentGenerator.generateDocument({
                     type,
@@ -61,6 +68,9 @@ export class DocumentCommands {
                     },
                     cancellationToken: token
                 });
+
+                // Clear timeout if successful
+                clearTimeout(timeoutWarning);
 
                 if (result.success && result.document) {
                     // Track usage
@@ -99,6 +109,8 @@ export class DocumentCommands {
                     });
                 }
             } catch (error: any) {
+                // Clear timeout on error
+                clearTimeout(timeoutWarning);
                 console.error('Document generation error:', error);
                 vscode.window.showErrorMessage(
                     `❌ Error: ${error.message || 'Unknown error occurred'}`,

@@ -40,7 +40,7 @@ class ApiClient {
         // this.apiEndpoint = config.get<string>('apiEndpoint') || 'https://www.sdlc.dev/api/vscode';
         this.client = axios_1.default.create({
             baseURL: this.apiEndpoint,
-            timeout: 60000,
+            timeout: 30000,
             headers: {
                 'Content-Type': 'application/json',
                 'X-Extension-Version': this.getExtensionVersion()
@@ -73,6 +73,12 @@ class ApiClient {
         }
         catch (error) {
             console.error('API Error:', error);
+            if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+                return {
+                    success: false,
+                    error: 'Request timed out. The document generation is taking too long. Please try with simpler requirements.'
+                };
+            }
             if (error.response?.status === 429) {
                 return {
                     success: false,
@@ -83,6 +89,12 @@ class ApiClient {
                 return {
                     success: false,
                     error: 'Authentication required. Please sign in.'
+                };
+            }
+            if (error.response?.status === 500) {
+                return {
+                    success: false,
+                    error: 'Server error. Please ensure the main app is running (npm run dev) and try again.'
                 };
             }
             return {

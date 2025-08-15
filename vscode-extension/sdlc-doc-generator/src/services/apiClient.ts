@@ -41,7 +41,7 @@ export class ApiClient {
 
         this.client = axios.create({
             baseURL: this.apiEndpoint,
-            timeout: 60000,
+            timeout: 30000, // 30 second timeout
             headers: {
                 'Content-Type': 'application/json',
                 'X-Extension-Version': this.getExtensionVersion()
@@ -80,6 +80,13 @@ export class ApiClient {
         } catch (error: any) {
             console.error('API Error:', error);
             
+            if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+                return {
+                    success: false,
+                    error: 'Request timed out. The document generation is taking too long. Please try with simpler requirements.'
+                };
+            }
+
             if (error.response?.status === 429) {
                 return {
                     success: false,
@@ -91,6 +98,13 @@ export class ApiClient {
                 return {
                     success: false,
                     error: 'Authentication required. Please sign in.'
+                };
+            }
+
+            if (error.response?.status === 500) {
+                return {
+                    success: false,
+                    error: 'Server error. Please ensure the main app is running (npm run dev) and try again.'
                 };
             }
 
