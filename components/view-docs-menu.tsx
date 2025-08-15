@@ -215,9 +215,12 @@ export function ViewDocsMenu({
           className={`relative bg-white border-indigo-200 text-indigo-600 hover:bg-indigo-50 px-2 sm:px-3 py-1.5 text-xs sm:text-sm ${className}`}
           title={`View ${documentCount} document${documentCount > 1 ? 's' : ''}`}
         >
-          <FileText className="h-3.5 sm:h-4 w-3.5 sm:w-4 sm:mr-1.5" />
-          <span className="hidden sm:inline">View Docs</span>
-          <span className="absolute -top-1.5 -right-1.5 bg-indigo-600 text-white text-[10px] sm:text-xs rounded-full h-4 sm:h-5 w-4 sm:w-5 flex items-center justify-center font-medium">
+          <FileText className="h-3.5 sm:h-4 w-3.5 sm:w-4" />
+          <span className="ml-1 text-[10px] sm:text-sm font-medium bg-indigo-100 text-indigo-700 px-1 rounded sm:hidden">
+            {documentCount}
+          </span>
+          <span className="hidden sm:inline ml-1.5">View Docs</span>
+          <span className="hidden sm:flex absolute -top-1.5 -right-1.5 bg-indigo-600 text-white text-xs rounded-full h-5 w-5 items-center justify-center font-medium">
             {documentCount}
           </span>
           <ChevronRight className={`hidden sm:inline h-3 w-3 ml-1 transition-transform ${showMenu ? 'rotate-90' : ''}`} />

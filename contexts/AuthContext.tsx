@@ -66,43 +66,76 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('📱 User Agent:', navigator.userAgent);
       console.log('🌐 Current Origin:', window.location.origin);
       
-      // Detect mobile device
+      // Detect mobile device - improved detection
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      console.log('📱 Is Mobile Device:', isMobile);
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const isAndroid = /Android/i.test(navigator.userAgent);
       
-      // Create redirect URL - use simple format for better mobile compatibility
+      console.log('📱 Device Detection:', { isMobile, isIOS, isAndroid });
+      
+      // Create redirect URL - ensure it works on all environments
       const baseUrl = window.location.origin;
       const redirectUrl = `${baseUrl}/auth/callback`;
       console.log('🔄 Redirect URL:', redirectUrl);
       
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { 
-          redirectTo: redirectUrl,
-          queryParams: {
-            // Add mobile-specific parameters
-            prompt: 'select_account',
-            access_type: 'offline',
-            // Force redirect mode for mobile devices
-            display: isMobile ? 'page' : 'popup'
+      // Different approach for mobile vs desktop
+      if (isMobile) {
+        // For mobile, use redirect approach
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: { 
+            redirectTo: redirectUrl,
+            queryParams: {
+              prompt: 'select_account',
+              access_type: 'offline'
+            }
           },
-          // Skip the built-in URL navigation, let Supabase handle it
-          skipBrowserRedirect: false
-        },
-      });
-      
-      if (error) {
-        console.error('❌ Google OAuth error:', error);
-        throw error;
+        });
+        
+        if (error) {
+          console.error('❌ Google OAuth error:', error);
+          throw error;
+        }
+        
+        console.log('✅ Google OAuth initiated for mobile:', data);
+        
+        // For mobile, manually handle the redirect if URL is provided
+        if (data?.url) {
+          console.log('📱 Redirecting mobile to:', data.url);
+          // Use location.replace for better mobile compatibility
+          window.location.replace(data.url);
+        }
+      } else {
+        // For desktop, use standard approach
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: { 
+            redirectTo: redirectUrl,
+            queryParams: {
+              prompt: 'select_account',
+              access_type: 'offline'
+            }
+          },
+        });
+        
+        if (error) {
+          console.error('❌ Google OAuth error:', error);
+          throw error;
+        }
+        
+        console.log('✅ Google OAuth initiated for desktop:', data);
       }
-      
-      console.log('✅ Google OAuth initiated successfully:', data);
-      
-      // Don't manually redirect on mobile - let Supabase handle the OAuth flow
-      // The skipBrowserRedirect: false option ensures proper handling
       
     } catch (error) {
       console.error('💥 Google sign-in failed:', error);
+      // Add more detailed error logging
+      if (error instanceof Error) {
+        console.error('Error details:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
+      }
       throw error;
     }
   };
