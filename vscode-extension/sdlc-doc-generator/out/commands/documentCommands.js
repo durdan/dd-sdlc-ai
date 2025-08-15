@@ -67,12 +67,22 @@ class DocumentCommands {
             title: `Generating ${this.getDocumentTypeName(type)}...`,
             cancellable: true
         }, async (progress, token) => {
-            // Show timeout warning after 10 seconds
-            const timeoutWarning = setTimeout(() => {
+            // Show progress messages at intervals
+            const progressTimer1 = setTimeout(() => {
                 progress.report({
-                    message: 'Still generating... This may take up to 30 seconds. You can cancel anytime.'
+                    message: 'Processing your requirements...'
                 });
-            }, 10000);
+            }, 5000);
+            const progressTimer2 = setTimeout(() => {
+                progress.report({
+                    message: 'Generating document with AI... This may take 1-2 minutes.'
+                });
+            }, 15000);
+            const progressTimer3 = setTimeout(() => {
+                progress.report({
+                    message: 'Still working... Complex documents can take up to 3 minutes.'
+                });
+            }, 45000);
             try {
                 const result = await this.documentGenerator.generateDocument({
                     type,
@@ -82,8 +92,10 @@ class DocumentCommands {
                     },
                     cancellationToken: token
                 });
-                // Clear timeout if successful
-                clearTimeout(timeoutWarning);
+                // Clear all timers if successful
+                clearTimeout(progressTimer1);
+                clearTimeout(progressTimer2);
+                clearTimeout(progressTimer3);
                 if (result.success && result.document) {
                     // Track usage
                     await this.usageTracker.trackUsage(type, result.document.title);
@@ -113,8 +125,10 @@ class DocumentCommands {
                 }
             }
             catch (error) {
-                // Clear timeout on error
-                clearTimeout(timeoutWarning);
+                // Clear all timers on error
+                clearTimeout(progressTimer1);
+                clearTimeout(progressTimer2);
+                clearTimeout(progressTimer3);
                 console.error('Document generation error:', error);
                 vscode.window.showErrorMessage(`❌ Error: ${error.message || 'Unknown error occurred'}`, 'View Logs').then(action => {
                     if (action === 'View Logs') {

@@ -41,7 +41,7 @@ export class ApiClient {
 
         this.client = axios.create({
             baseURL: this.apiEndpoint,
-            timeout: 30000, // 30 second timeout
+            timeout: 180000, // 3 minute timeout for LLM responses
             headers: {
                 'Content-Type': 'application/json',
                 'X-Extension-Version': this.getExtensionVersion()
@@ -83,7 +83,7 @@ export class ApiClient {
             if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
                 return {
                     success: false,
-                    error: 'Request timed out. The document generation is taking too long. Please try with simpler requirements.'
+                    error: 'Request timed out after 3 minutes. The document may be too complex. Try breaking it into smaller, more specific requirements.'
                 };
             }
 
