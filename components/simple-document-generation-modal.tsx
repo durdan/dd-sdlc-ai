@@ -29,7 +29,8 @@ import {
   BookOpen,
   Building,
   Lock,
-  FlaskConical
+  FlaskConical,
+  Users
 } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
@@ -107,6 +108,13 @@ const documentTypes: DocumentType[] = [
     icon: FlaskConical, 
     description: "Comprehensive test specifications with TDD & BDD practices",
     color: "text-emerald-600"
+  },
+  { 
+    id: "meeting", 
+    name: "Meeting Transcript", 
+    icon: Users, 
+    description: "Process meeting transcripts into summaries and requirement stories",
+    color: "text-amber-600"
   }
 ]
 
@@ -280,7 +288,8 @@ export function SimpleDocumentGenerationModal({
     // 5. Selected type is set
     // 6. No previous document for this type
     // 7. Not viewing a previous document
-    if (isOpen && !isGenerating && !generatedContent && !viewingPreviousDoc && input.trim() && selectedType && !previousDocuments[selectedType]) {
+    // 8. NOT a meeting transcript (meeting transcripts need specific format)
+    if (isOpen && !isGenerating && !generatedContent && !viewingPreviousDoc && input.trim() && selectedType && !previousDocuments[selectedType] && selectedType !== 'meeting') {
       console.log('🚀 Auto-starting generation for type:', selectedType)
       // Check rate limit before auto-generating
       if (rateLimitStatus && rateLimitStatus.remaining > 0 && !rateLimitError) {
@@ -322,22 +331,44 @@ export function SimpleDocumentGenerationModal({
 
     try {
       console.log('📤 Sending request with documentType:', selectedType)
-      const requestBody = {
-        input,
-        documentType: selectedType,
-        userId: 'anonymous',
-      }
-      console.log('📤 Full request body:', requestBody)
       
       const sessionId = anonymousProjectService.getSessionId()
-      const response = await fetch('/api/generate-document', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-session-id': sessionId,
-        },
-        body: JSON.stringify(requestBody),
-      })
+      let response: Response
+      
+      if (selectedType === 'meeting') {
+        // Use meeting transcript endpoint
+        const requestBody = {
+          transcript: input,
+          userId: 'anonymous',
+        }
+        console.log('📤 Meeting transcript request body:', requestBody)
+        
+        response = await fetch('/api/generate-meeting-transcript', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-session-id': sessionId,
+          },
+          body: JSON.stringify(requestBody),
+        })
+      } else {
+        // Use regular document generation endpoint
+        const requestBody = {
+          input,
+          documentType: selectedType,
+          userId: 'anonymous',
+        }
+        console.log('📤 Document generation request body:', requestBody)
+        
+        response = await fetch('/api/generate-document', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-session-id': sessionId,
+          },
+          body: JSON.stringify(requestBody),
+        })
+      }
 
       if (!response.ok) {
         throw new Error(`Failed to generate document: ${response.statusText}`)
@@ -837,8 +868,16 @@ export function SimpleDocumentGenerationModal({
                     <Icon className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400" />
                   </div>
                   <div>
-                    <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-1 sm:mb-2">Ready to Generate {selectedDoc?.name}</h3>
-                    <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">Click the button below to create your document</p>
+                    <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-1 sm:mb-2">
+                      {selectedType === 'meeting' ? 'Process Meeting Transcript' : `Ready to Generate ${selectedDoc?.name}`}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">
+                      {selectedType === 'meeting' 
+                        ? input.includes('Meeting') || input.includes('Participants') || input.includes('transcript')
+                          ? 'Your meeting transcript is ready. Click generate to create a structured summary and requirement stories.'
+                          : 'Please paste your meeting transcript in the input area above, then click generate.'
+                        : 'Click the button below to create your document'}
+                    </p>
                     {rateLimitStatus && rateLimitStatus.remaining > 0 ? (
                       <Button
                         onClick={handleGenerate}

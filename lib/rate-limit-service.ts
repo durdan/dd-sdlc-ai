@@ -14,17 +14,26 @@ export class RateLimitService {
     windowHours: 24,
     burstLimit: 3 // Max 3 requests per minute to prevent spam
   }
+  
+  private meetingConfig: RateLimitConfig = {
+    maxDocuments: 5, // Lower limit for meeting transcripts due to higher processing cost
+    windowHours: 24,
+    burstLimit: 2 // Max 2 meeting transcript requests per minute
+  }
 
   /**
    * Check if anonymous user can generate a document
    */
-  async checkAnonymousLimit(sessionId: string): Promise<{
+  async checkAnonymousLimit(sessionId: string, documentType?: string): Promise<{
     allowed: boolean
     remaining: number
     resetAt: Date
     reason?: string
   }> {
     try {
+      // Use appropriate config based on document type
+      const activeConfig = documentType === 'meeting' ? this.meetingConfig : this.config
+      
       // Skip burst limit check for now - it's incorrectly implemented
       // TODO: Implement proper burst protection by tracking request timestamps
       // The current logic incorrectly uses total project_count instead of recent request count
@@ -40,8 +49,8 @@ export class RateLimitService {
         console.error('Error checking rate limit:', error)
         return {
           allowed: true,
-          remaining: this.config.maxDocuments,
-          resetAt: new Date(Date.now() + this.config.windowHours * 60 * 60 * 1000)
+          remaining: activeConfig.maxDocuments,
+          resetAt: new Date(Date.now() + activeConfig.windowHours * 60 * 60 * 1000)
         }
       }
 
@@ -49,41 +58,45 @@ export class RateLimitService {
         // New session
         return {
           allowed: true,
-          remaining: this.config.maxDocuments,
-          resetAt: new Date(Date.now() + this.config.windowHours * 60 * 60 * 1000)
+          remaining: activeConfig.maxDocuments,
+          resetAt: new Date(Date.now() + activeConfig.windowHours * 60 * 60 * 1000)
         }
       }
 
       // Check if within 24-hour window
       const sessionAge = Date.now() - new Date(session.created_at).getTime()
-      const windowMs = this.config.windowHours * 60 * 60 * 1000
+      const windowMs = activeConfig.windowHours * 60 * 60 * 1000
 
       if (sessionAge > windowMs) {
         // Session expired, reset count
         await this.resetSessionCount(sessionId)
         return {
           allowed: true,
-          remaining: this.config.maxDocuments,
+          remaining: activeConfig.maxDocuments,
           resetAt: new Date(Date.now() + windowMs)
         }
       }
 
       const projectCount = session.project_count || 0
-      const remaining = Math.max(0, this.config.maxDocuments - projectCount)
+      const remaining = Math.max(0, activeConfig.maxDocuments - projectCount)
+      
+      const limitMessage = documentType === 'meeting' 
+        ? 'Meeting transcript processing limit reached. Sign up for unlimited access!'
+        : 'Daily limit reached. Sign up for unlimited access!'
 
       return {
         allowed: remaining > 0,
         remaining,
         resetAt: new Date(new Date(session.created_at).getTime() + windowMs),
-        reason: remaining === 0 ? 'Daily limit reached. Sign up for unlimited access!' : undefined
+        reason: remaining === 0 ? limitMessage : undefined
       }
     } catch (error) {
       console.error('Rate limit check error:', error)
       // Allow on error to not block users
       return {
         allowed: true,
-        remaining: this.config.maxDocuments,
-        resetAt: new Date(Date.now() + this.config.windowHours * 60 * 60 * 1000)
+        remaining: activeConfig.maxDocuments,
+        resetAt: new Date(Date.now() + activeConfig.windowHours * 60 * 60 * 1000)
       }
     }
   }

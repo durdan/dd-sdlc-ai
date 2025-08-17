@@ -82,7 +82,8 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
     mermaid: [],
     wireframe: [],
     coding: [],
-    test: []
+    test: [],
+    meeting: []
   });
   const [userPrompts, setUserPrompts] = useState<UserPrompt[]>([]);
   const [systemStats, setSystemStats] = useState<SystemStats | null>(null);
@@ -117,7 +118,7 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
     setError(null);
     
     try {
-      const documentTypes: DocumentType[] = ['business', 'functional', 'technical', 'ux', 'mermaid', 'wireframe', 'coding', 'test'];
+      const documentTypes: DocumentType[] = ['business', 'functional', 'technical', 'ux', 'mermaid', 'wireframe', 'coding', 'test', 'meeting'];
       const promptData: Record<DocumentType, PromptTemplate[]> = {
         business: [],
         functional: [],
@@ -126,7 +127,8 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
         mermaid: [],
         wireframe: [],
         coding: [],
-        test: []
+        test: [],
+        meeting: []
       };
 
       await Promise.all(
@@ -385,7 +387,8 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
       mermaid: '📈',
       wireframe: '🎯',
       coding: '💻',
-      test: '🧪'
+      test: '🧪',
+      meeting: '👥'
     };
     return icons[type];
   };
@@ -399,7 +402,8 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
       mermaid: 'Architecture',
       wireframe: 'Wireframe',
       coding: 'AI Coding Prompt',
-      test: 'Test Specification'
+      test: 'Test Specification',
+      meeting: 'Meeting Transcript'
     };
     return labels[type];
   };
@@ -504,6 +508,10 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
             <TabsTrigger value="test" className="tab-trigger-mobile">
               <span className="hidden sm:inline">Test</span>
               <span className="sm:hidden">Test</span>
+            </TabsTrigger>
+            <TabsTrigger value="meeting" className="tab-trigger-mobile">
+              <span className="hidden sm:inline">Meeting</span>
+              <span className="sm:hidden">Meet</span>
             </TabsTrigger>
             {userRole === 'admin' && (
               <>
