@@ -14,16 +14,37 @@ Open source command-line interface for generating comprehensive Software Develop
 
 ## Installation
 
+### From NPM (Recommended)
+
 ```bash
-# Clone and build from source
+# Install globally
+npm install -g sdlc-ai
+
+# Or use with npx (no installation)
+npx sdlc-ai generate "your project description"
+
+# Or install with yarn
+yarn global add sdlc-ai
+
+# Or install with pnpm
+pnpm add -g sdlc-ai
+```
+
+### From Source
+
+```bash
+# Clone the repository
 git clone https://github.com/yourusername/sdlc-ai-platform.git
 cd sdlc-ai-platform/packages/cli
-npm install
-npm run build
-npm link
 
-# Or install from npm (when published)
-npm install -g @sdlc/cli
+# Install dependencies
+npm install
+
+# Build the TypeScript code
+npm run build
+
+# Link for global usage
+npm link
 ```
 
 ## Quick Start

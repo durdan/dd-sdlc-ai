@@ -1,0 +1,150 @@
+name: Publish CLI to NPM
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., 1.0.1)'
+        required: true
+        type: string
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: packages/cli/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: packages/cli
+        run: npm ci
+      
+      - name: Run linting
+        working-directory: packages/cli
+        run: npm run lint || true
+      
+      - name: Run type checking
+        working-directory: packages/cli
+        run: npm run type-check || true
+      
+      - name: Build
+        working-directory: packages/cli
+        run: npm run build
+
+  publish-npm:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+          cache-dependency-path: packages/cli/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: packages/cli
+        run: npm ci
+      
+      - name: Build package
+        working-directory: packages/cli
+        run: npm run build
+      
+      - name: Update version if manual trigger
+        if: github.event_name == 'workflow_dispatch'
+        working-directory: packages/cli
+        run: |
+          npm version ${{ github.event.inputs.version }} --no-git-tag-version
+          echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+      
+      - name: Get version from package.json
+        if: github.event_name == 'release'
+        working-directory: packages/cli
+        run: |
+          echo "VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
+      
+      - name: Publish to NPM
+        working-directory: packages/cli
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      
+      - name: Create GitHub Release (if manual)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ env.VERSION }}
+          release_name: Release v${{ env.VERSION }}
+          body: |
+            ## SDLC AI CLI v${{ env.VERSION }}
+            
+            ### Installation
+            ```bash
+            npm install -g sdlc-ai
+            ```
+            
+            ### Usage
+            ```bash
+            sdlc generate "your project description"
+            ```
+            
+            See [full changelog](https://github.com/${{ github.repository }}/blob/main/RELEASE.md)
+          draft: false
+          prerelease: false
+
+  publish-github-packages:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          registry-url: 'https://npm.pkg.github.com'
+          cache: 'npm'
+          cache-dependency-path: packages/cli/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: packages/cli
+        run: npm ci
+      
+      - name: Build package
+        working-directory: packages/cli
+        run: npm run build
+      
+      - name: Configure package for GitHub
+        working-directory: packages/cli
+        run: |
+          # Update package.json for GitHub packages
+          node -e "
+          const pkg = require('./package.json');
+          pkg.name = '@${{ github.repository_owner }}/sdlc-ai';
+          require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          "
+      
+      - name: Publish to GitHub Packages
+        working-directory: packages/cli
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

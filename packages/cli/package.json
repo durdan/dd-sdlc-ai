@@ -1,11 +1,12 @@
 {
-  "name": "@sdlc/cli",
+  "name": "sdlc-ai",
   "version": "1.0.0",
   "description": "CLI tool for SDLC AI Platform - Generate comprehensive SDLC documentation from the command line",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "sdlc": "./dist/bin/sdlc.js"
+    "sdlc": "./dist/bin/sdlc.js",
+    "sdlc-ai": "./dist/bin/sdlc.js"
   },
   "scripts": {
     "build": "tsc",
@@ -25,13 +26,17 @@
     "automation",
     "agile"
   ],
-  "author": "SDLC AI Team",
+  "author": "SDLC AI Platform Contributors",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/sdlc-dev/cli.git"
+    "url": "https://github.com/yourusername/sdlc-ai-platform.git",
+    "directory": "packages/cli"
   },
-  "homepage": "https://sdlc.dev",
+  "bugs": {
+    "url": "https://github.com/yourusername/sdlc-ai-platform/issues"
+  },
+  "homepage": "https://github.com/yourusername/sdlc-ai-platform#readme",
   "engines": {
     "node": ">=16.0.0"
   },
