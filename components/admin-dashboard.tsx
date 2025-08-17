@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { AlertCircle, Users, TrendingUp, Activity, Settings, Calendar, BarChart3, Shield, Key, Search, Filter, UserPlus, RefreshCw } from 'lucide-react'
+import { AlertCircle, Users, TrendingUp, Activity, Settings, Calendar, BarChart3, Shield, Key, Search, Filter, UserPlus, RefreshCw, FileText } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts'
 import AnonymousDocumentsView from '@/components/admin/anonymous-documents-view'
 import AllProjectsView from '@/components/admin/all-projects-view'
@@ -59,6 +59,7 @@ export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
   const [diagramStats, setDiagramStats] = useState<any>(null)
+  const [documentStats, setDocumentStats] = useState<any>(null)
   const [showMermaidViewer, setShowMermaidViewer] = useState(false)
   const [mermaidContent, setMermaidContent] = useState<any>(null)
   const [autoRefresh, setAutoRefresh] = useState(false)
@@ -67,6 +68,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     loadData()
     loadDiagramStats()
+    loadDocumentStats()
   }, [])
 
   useEffect(() => {
@@ -74,6 +76,7 @@ export default function AdminDashboard() {
       const interval = setInterval(() => {
         loadData()
         loadDiagramStats()
+        loadDocumentStats()
         setLastRefresh(new Date())
       }, 30000) // Refresh every 30 seconds
       return () => clearInterval(interval)
@@ -113,6 +116,17 @@ export default function AdminDashboard() {
       setDiagramStats(data)
     } catch (err) {
       setDiagramStats({ error: err instanceof Error ? err.message : 'Failed to load diagram stats' })
+    }
+  }
+
+  const loadDocumentStats = async () => {
+    try {
+      const res = await fetch('/api/admin/document-stats')
+      if (!res.ok) throw new Error('Failed to load document stats')
+      const data = await res.json()
+      setDocumentStats(data)
+    } catch (err) {
+      setDocumentStats({ error: err instanceof Error ? err.message : 'Failed to load document stats' })
     }
   }
 
@@ -379,7 +393,111 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Diagram Generation Stats */}
+      {/* Comprehensive Document Generation Stats */}
+      <Card className="mb-6">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <FileText className="h-4 w-4 text-indigo-500" />
+            All Document Generation Stats
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {documentStats?.error ? (
+            <div className="text-red-600 text-sm">{documentStats.error}</div>
+          ) : !documentStats ? (
+            <div className="text-gray-500 text-sm">Loading document stats...</div>
+          ) : (
+            <div className="space-y-4">
+              {/* Overview Stats */}
+              <div className="flex flex-wrap gap-8">
+                <div>
+                  <div className="text-lg font-bold">{documentStats.overview?.totalDocuments || 0}</div>
+                  <div className="text-xs text-muted-foreground">Total Documents</div>
+                </div>
+                <div>
+                  <div className="text-lg font-bold">{documentStats.overview?.totalProjects || 0}</div>
+                  <div className="text-xs text-muted-foreground">Total Projects</div>
+                </div>
+                <div>
+                  <div className="text-lg font-bold">{documentStats.overview?.uniqueLoggedInUsers || 0}</div>
+                  <div className="text-xs text-muted-foreground">Unique Users</div>
+                </div>
+                <div>
+                  <div className="text-lg font-bold">{documentStats.overview?.anonymousGenerations || 0}</div>
+                  <div className="text-xs text-muted-foreground">Anonymous Generations</div>
+                </div>
+              </div>
+
+              {/* Documents by Type */}
+              <div className="mt-4">
+                <div className="font-semibold mb-2 text-sm">Documents by Type</div>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                  {documentStats.documentsByType && Object.entries(documentStats.documentsByType).map(([type, count]) => (
+                    <div key={type} className="bg-gray-50 rounded-lg p-3">
+                      <div className="text-xs text-gray-600 mb-1">
+                        {documentStats.documentTypeLabels?.[type] || type}
+                      </div>
+                      <div className="text-lg font-bold text-gray-900">{count as number}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Recent Document Generations */}
+              <div className="mt-4">
+                <div className="font-semibold mb-2 text-sm">Recent Document Generations</div>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>User Type</TableHead>
+                        <TableHead>Document Type</TableHead>
+                        <TableHead>Project/Input</TableHead>
+                        <TableHead>Time</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(documentStats.recentGenerations || []).map((row: any, index: number) => (
+                        <TableRow key={index}>
+                          <TableCell>
+                            <span className={`px-2 py-1 rounded text-xs ${
+                              row.user_type === 'logged_in' 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-purple-100 text-purple-800'
+                            }`}>
+                              {row.user_type === 'logged_in' ? 'Logged In' : 'Anonymous'}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-xs">
+                              {row.document_name}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="max-w-xs truncate text-xs">
+                            {row.project_title}
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            {new Date(row.created_at).toLocaleString()}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {(documentStats.recentGenerations || []).length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center py-8 text-gray-500">
+                            No document generations yet.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Diagram Generation Stats (Legacy) */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium flex items-center gap-2">
