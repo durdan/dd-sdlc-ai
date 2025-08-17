@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import { Users, Loader2, X, FileText, Sparkles, Download } from "lucide-react"
+import { Users, Loader2, X, FileText, Sparkles, Download, CheckCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Progress } from "@/components/ui/progress"
 
 interface MeetingTranscriptModalProps {
   isOpen: boolean
@@ -36,6 +37,8 @@ export function MeetingTranscriptModal({
   const [generatedContent, setGeneratedContent] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [projectId, setProjectId] = useState<string | null>(null)
+  const [progress, setProgress] = useState(0)
+  const [isComplete, setIsComplete] = useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
 
   // Auto-scroll to bottom when content updates during streaming
@@ -210,6 +213,8 @@ export function MeetingTranscriptModal({
     setError(null)
     setGeneratedContent("")
     setProjectId(null)
+    setProgress(0)
+    setIsComplete(false)
 
     try {
       const participantsList = participants
@@ -244,6 +249,7 @@ export function MeetingTranscriptModal({
 
       let buffer = ''
       let fullContent = ''
+      let estimatedLength = transcript.length * 2 // Estimate output length
 
       while (true) {
         const { done, value } = await reader.read()
@@ -266,8 +272,14 @@ export function MeetingTranscriptModal({
               if (data.type === 'chunk') {
                 fullContent += data.content
                 setGeneratedContent(fullContent)
+                // Update progress based on content length
+                const currentProgress = Math.min(95, Math.floor((fullContent.length / estimatedLength) * 100))
+                setProgress(currentProgress)
               } else if (data.type === 'complete') {
                 setGeneratedContent(data.fullContent)
+                setProgress(100)
+                setIsComplete(true)
+                
                 const metadata = {
                   title: meetingTitle,
                   date: meetingDate,
@@ -279,6 +291,11 @@ export function MeetingTranscriptModal({
                 if (onGenerate) {
                   onGenerate(data.fullContent, metadata)
                 }
+                
+                // Show completion animation
+                setTimeout(() => {
+                  setIsGenerating(false)
+                }, 1000)
               } else if (data.type === 'error') {
                 throw new Error(data.error)
               }
@@ -291,7 +308,8 @@ export function MeetingTranscriptModal({
     } catch (err) {
       console.error('Error generating meeting documentation:', err)
       setError(err instanceof Error ? err.message : 'Failed to process meeting transcript')
-    } finally {
+      setProgress(0)
+      setIsComplete(false)
       setIsGenerating(false)
     }
   }
@@ -304,6 +322,8 @@ export function MeetingTranscriptModal({
     setGeneratedContent("")
     setError(null)
     setProjectId(null)
+    setProgress(0)
+    setIsComplete(false)
     onClose()
   }
 
@@ -331,6 +351,17 @@ export function MeetingTranscriptModal({
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto space-y-4 py-4">
+          {/* Progress Bar */}
+          {isGenerating && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Processing transcript...</span>
+                <span className="text-gray-600">{progress}%</span>
+              </div>
+              <Progress value={progress} className="h-2" />
+            </div>
+          )}
+          
           {!generatedContent ? (
             <>
               <div className="space-y-4">
@@ -390,11 +421,20 @@ export function MeetingTranscriptModal({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
+                  {isComplete ? (
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                  ) : (
+                    <FileText className="h-5 w-5" />
+                  )}
                   Generated Documentation
-                  {isGenerating && (
+                  {isGenerating && !isComplete && (
                     <span className="text-sm font-normal text-gray-500 animate-pulse">
                       Generating...
+                    </span>
+                  )}
+                  {isComplete && (
+                    <span className="text-sm font-normal text-green-600">
+                      Complete!
                     </span>
                   )}
                 </h3>
@@ -418,6 +458,8 @@ export function MeetingTranscriptModal({
                       setParticipants("")
                       setError(null)
                       setProjectId(null)
+                      setProgress(0)
+                      setIsComplete(false)
                     }}
                   >
                     Process Another
