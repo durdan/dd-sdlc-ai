@@ -31,7 +31,8 @@ import {
   Check,
   X,
   FlaskConical,
-  Users
+  Users,
+  Info
 } from "lucide-react"
 import { createClient } from '@/lib/supabase/client'
 import { SimpleDocumentGenerationModal } from '@/components/simple-document-generation-modal'
@@ -40,6 +41,13 @@ import { anonymousProjectService } from '@/lib/anonymous-project-service'
 import { Clock } from "lucide-react"
 import { CodeAssistantMenu } from '@/components/code-assistant-menu'
 import { ViewDocsMenu } from '@/components/view-docs-menu'
+import { MobileTooltip } from '@/components/ui/mobile-tooltip'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 export default function SimpleLandingPage() {
   const [user, setUser] = useState<any>(null)
@@ -210,42 +218,56 @@ export default function SimpleLandingPage() {
       icon: Brain,
       title: "Business Analysis",
       description: "Executive summaries & risk assessment",
+      tooltip: "Generate comprehensive business requirements",
+      tooltipDetail: "Creates BRD with executive summary, stakeholder analysis, risk assessment, and ROI calculations",
       docType: "business"
     },
     {
       icon: FileCode,
       title: "Technical Specs", 
       description: "Architecture & API design",
+      tooltip: "Create detailed technical documentation",
+      tooltipDetail: "Generates system architecture, API specifications, database schemas, and security requirements",
       docType: "technical"
     },
     {
       icon: Palette,
       title: "UX Design",
       description: "User personas & wireframes",
+      tooltip: "Design user experience specifications",
+      tooltipDetail: "Produces user personas, journey maps, wireframe descriptions, and interaction patterns",
       docType: "ux"
     },
     {
       icon: Database,
       title: "Architecture",
       description: "Interactive diagrams",
+      tooltip: "Generate visual architecture diagrams",
+      tooltipDetail: "Creates interactive Mermaid diagrams for system architecture, data flow, and component relationships",
       docType: "mermaid"
     },
     {
       icon: Sparkles,
       title: "AI Coding Prompt",
       description: "AI-optimized implementation guide",
+      tooltip: "Create AI assistant prompts",
+      tooltipDetail: "Generates detailed prompts for AI coding assistants with component specs and implementation patterns",
       docType: "coding"
     },
     {
       icon: FlaskConical,
       title: "Test Spec",
       description: "TDD/BDD test specifications",
+      tooltip: "Generate comprehensive test specifications",
+      tooltipDetail: "Creates unit tests, BDD scenarios, E2E tests, and performance test specifications",
       docType: "test"
     },
     {
       icon: Users,
       title: "Meeting Transcript",
       description: "Process meeting transcripts",
+      tooltip: "Transform meetings into documentation",
+      tooltipDetail: "Converts meeting transcripts into structured summaries and Agile requirement stories ready for Jira",
       docType: "meeting"
     }
   ]
@@ -560,38 +582,55 @@ export default function SimpleLandingPage() {
 
           {/* Quick Actions - Responsive Grid */}
           <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 md:gap-3">
-            {features.map((feature, index) => {
-              const hasDocument = previousDocuments[feature.docType]
-              return (
-                <button
-                  key={index}
-                  onClick={() => handleGetStarted(feature.docType)}
-                  className={`relative flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 sm:py-2.5 bg-white rounded-lg border transition-all ${
-                    hasDocument 
-                      ? 'border-indigo-300 hover:border-indigo-400 hover:bg-indigo-50' 
-                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                  }`}
-                  title={feature.description}
-                >
-                  <feature.icon className={`h-3.5 sm:h-4 w-3.5 sm:w-4 ${hasDocument ? 'text-indigo-600' : 'text-gray-600'}`} />
-                  <span className={`text-xs sm:text-sm font-medium ${hasDocument ? 'text-indigo-700' : 'text-gray-700'}`}>
-                    {feature.title}
-                  </span>
-                  {hasDocument && (
-                    <Check className="h-3 sm:h-3.5 w-3 sm:w-3.5 text-indigo-600 ml-0.5 sm:ml-1" />
-                  )}
-                </button>
-              )
-            })}
+            <TooltipProvider delayDuration={300}>
+              {features.map((feature, index) => {
+                const hasDocument = previousDocuments[feature.docType]
+                return (
+                  <Tooltip key={index}>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => handleGetStarted(feature.docType)}
+                        className={`relative flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 sm:py-2.5 bg-white rounded-lg border transition-all ${
+                          hasDocument 
+                            ? 'border-indigo-300 hover:border-indigo-400 hover:bg-indigo-50' 
+                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        <feature.icon className={`h-3.5 sm:h-4 w-3.5 sm:w-4 ${hasDocument ? 'text-indigo-600' : 'text-gray-600'}`} />
+                        <span className={`text-xs sm:text-sm font-medium ${hasDocument ? 'text-indigo-700' : 'text-gray-700'}`}>
+                          {feature.title}
+                        </span>
+                        {hasDocument && (
+                          <Check className="h-3 sm:h-3.5 w-3 sm:w-3.5 text-indigo-600 ml-0.5 sm:ml-1" />
+                        )}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent 
+                      side="top" 
+                      className="max-w-xs bg-gray-900 text-white border-gray-700 p-3"
+                    >
+                      <div className="space-y-1">
+                        <p className="font-semibold text-sm">{feature.tooltip}</p>
+                        <p className="text-xs text-gray-300">{feature.tooltipDetail}</p>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                )
+              })}
+            </TooltipProvider>
           </div>
 
-          {/* Info Message - Hide on mobile to reduce clutter */}
-          <div className="hidden sm:block text-center space-y-2">
-            <p className="text-sm text-gray-600">
+          {/* Info Message with mobile hint */}
+          <div className="text-center space-y-2">
+            <p className="text-sm text-gray-600 hidden sm:block">
               AI-powered SDLC automation platform that helps you write specs, generate code, and manage your development workflow
             </p>
             <p className="text-xs text-gray-500">
-              Start typing or choose an action above to begin
+              <span className="hidden sm:inline">Start typing or choose an action above to begin</span>
+              <span className="sm:hidden flex items-center justify-center gap-1">
+                <Info className="h-3 w-3" />
+                Tap any button to get started • Hover for details
+              </span>
             </p>
           </div>
         </div>
