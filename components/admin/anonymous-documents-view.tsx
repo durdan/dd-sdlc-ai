@@ -247,7 +247,9 @@ export default function AnonymousDocumentsView() {
                         </TableCell>
                         <TableCell>
                           <div className="text-sm space-y-1">
-                            <p className="text-muted-foreground">Session: {doc.session_id.substring(0, 20)}...</p>
+                            <p className="text-muted-foreground">
+                              Session: {doc.session_id ? doc.session_id.substring(0, 20) + '...' : 'N/A'}
+                            </p>
                             {doc.ip_address && (
                               <p className="text-muted-foreground">IP: {doc.ip_address}</p>
                             )}
