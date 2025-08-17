@@ -1,12 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import { Users, Loader2, X, FileText, Sparkles } from "lucide-react"
+import { Users, Loader2, X, FileText, Sparkles, Download } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
 interface MeetingTranscriptModalProps {
@@ -35,6 +35,170 @@ export function MeetingTranscriptModal({
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedContent, setGeneratedContent] = useState("")
   const [error, setError] = useState<string | null>(null)
+  const [projectId, setProjectId] = useState<string | null>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+
+  // Auto-scroll to bottom when content updates during streaming
+  useEffect(() => {
+    if (generatedContent && contentRef.current) {
+      contentRef.current.scrollTop = contentRef.current.scrollHeight
+    }
+  }, [generatedContent])
+
+  // Extract metadata from transcript when it changes
+  useEffect(() => {
+    if (transcript && !meetingTitle && !meetingDate && !participants) {
+      extractMetadataFromTranscript(transcript)
+    }
+  }, [transcript])
+
+  const extractMetadataFromTranscript = (text: string) => {
+    const lines = text.split('\n').slice(0, 10) // Check first 10 lines for metadata
+    
+    // Extract title
+    const titleMatch = lines.find(line => 
+      line.toLowerCase().includes('meeting') || 
+      line.toLowerCase().includes('transcript') ||
+      line.toLowerCase().includes('session')
+    )
+    if (titleMatch && !meetingTitle) {
+      const cleanTitle = titleMatch.replace(/^(meeting transcript:|transcript:|meeting:|session:)/i, '').trim()
+      if (cleanTitle) setMeetingTitle(cleanTitle)
+    }
+
+    // Extract date
+    const datePatterns = [
+      /date:\s*(.+)/i,
+      /\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})\b/,
+      /\b(\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})\b/,
+      /\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2},?\s+\d{4}/i
+    ]
+    
+    for (const line of lines) {
+      for (const pattern of datePatterns) {
+        const match = line.match(pattern)
+        if (match && !meetingDate) {
+          const dateStr = match[1].trim()
+          // Try to parse and format the date
+          try {
+            const date = new Date(dateStr)
+            if (!isNaN(date.getTime())) {
+              setMeetingDate(date.toISOString().split('T')[0])
+            } else {
+              setMeetingDate(dateStr)
+            }
+          } catch {
+            setMeetingDate(dateStr)
+          }
+          break
+        }
+      }
+      if (meetingDate) break
+    }
+
+    // Extract participants
+    const participantPatterns = [
+      /participants?:\s*(.+)/i,
+      /attendees?:\s*(.+)/i,
+      /present:\s*(.+)/i
+    ]
+    
+    for (const line of lines) {
+      for (const pattern of participantPatterns) {
+        const match = line.match(pattern)
+        if (match && !participants) {
+          setParticipants(match[1].trim())
+          break
+        }
+      }
+      if (participants) break
+    }
+  }
+
+  const saveToDatabase = async (content: string, metadata: MeetingMetadata) => {
+    try {
+      // Create or get project
+      const projectTitle = metadata.title || "Meeting Transcript"
+      const projectResponse = await fetch('/api/sdlc-documents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: projectTitle,
+          content: content,
+          userId: userId || 'anonymous',
+          metadata: {
+            meetingDate: metadata.date,
+            participants: metadata.participants,
+            generated_at: new Date().toISOString()
+          }
+        })
+      })
+
+      if (projectResponse.ok) {
+        const projectResult = await projectResponse.json()
+        if (projectResult.success && projectResult.document?.id) {
+          setProjectId(projectResult.document.id)
+          
+          // Save as meeting document type
+          await fetch('/api/sdlc-documents', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              projectId: projectResult.document.id,
+              documentType: 'meeting_transcript',
+              title: `${projectTitle} - Meeting Documentation`,
+              content: content,
+              userId: userId || 'anonymous'
+            })
+          })
+        }
+      }
+    } catch (error) {
+      console.error('Failed to save to database:', error)
+    }
+  }
+
+  const downloadPDF = () => {
+    if (!generatedContent) return
+
+    // Create a blob with the content
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>${meetingTitle || 'Meeting Transcript'}</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }
+          h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; }
+          h2 { color: #555; margin-top: 20px; }
+          pre { white-space: pre-wrap; word-wrap: break-word; }
+          .metadata { background: #f5f5f5; padding: 10px; margin-bottom: 20px; border-radius: 5px; }
+        </style>
+      </head>
+      <body>
+        <h1>${meetingTitle || 'Meeting Transcript Documentation'}</h1>
+        <div class="metadata">
+          ${meetingDate ? `<p><strong>Date:</strong> ${meetingDate}</p>` : ''}
+          ${participants ? `<p><strong>Participants:</strong> ${participants}</p>` : ''}
+          <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
+        </div>
+        <pre>${generatedContent}</pre>
+      </body>
+      </html>
+    `
+
+    // Create and download the file
+    const blob = new Blob([htmlContent], { type: 'text/html' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${meetingTitle || 'meeting-transcript'}-${new Date().toISOString().split('T')[0]}.html`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
 
   const handleGenerate = async () => {
     if (!transcript.trim()) {
@@ -45,6 +209,7 @@ export function MeetingTranscriptModal({
     setIsGenerating(true)
     setError(null)
     setGeneratedContent("")
+    setProjectId(null)
 
     try {
       const participantsList = participants
@@ -103,12 +268,16 @@ export function MeetingTranscriptModal({
                 setGeneratedContent(fullContent)
               } else if (data.type === 'complete') {
                 setGeneratedContent(data.fullContent)
+                const metadata = {
+                  title: meetingTitle,
+                  date: meetingDate,
+                  participants: participantsList
+                }
+                // Save to database
+                await saveToDatabase(data.fullContent, metadata)
+                // Call onGenerate callback if provided
                 if (onGenerate) {
-                  onGenerate(data.fullContent, {
-                    title: meetingTitle,
-                    date: meetingDate,
-                    participants: participantsList
-                  })
+                  onGenerate(data.fullContent, metadata)
                 }
               } else if (data.type === 'error') {
                 throw new Error(data.error)
@@ -134,6 +303,7 @@ export function MeetingTranscriptModal({
     setParticipants("")
     setGeneratedContent("")
     setError(null)
+    setProjectId(null)
     onClose()
   }
 
@@ -222,20 +392,43 @@ export function MeetingTranscriptModal({
                 <h3 className="text-lg font-semibold flex items-center gap-2">
                   <FileText className="h-5 w-5" />
                   Generated Documentation
+                  {isGenerating && (
+                    <span className="text-sm font-normal text-gray-500 animate-pulse">
+                      Generating...
+                    </span>
+                  )}
                 </h3>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setGeneratedContent("")
-                    setTranscript("")
-                  }}
-                >
-                  Process Another
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={downloadPDF}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setGeneratedContent("")
+                      setTranscript("")
+                      setMeetingTitle("")
+                      setMeetingDate("")
+                      setParticipants("")
+                      setError(null)
+                      setProjectId(null)
+                    }}
+                  >
+                    Process Another
+                  </Button>
+                </div>
               </div>
-              <div className="bg-gray-50 rounded-lg p-4 max-h-[500px] overflow-y-auto">
-                <pre className="whitespace-pre-wrap text-sm">{generatedContent}</pre>
+              <div 
+                ref={contentRef}
+                className="bg-gray-50 rounded-lg p-4 max-h-[500px] overflow-y-auto"
+              >
+                <pre className="whitespace-pre-wrap text-sm font-mono">{generatedContent}</pre>
               </div>
             </div>
           )}

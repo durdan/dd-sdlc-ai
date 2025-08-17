@@ -2710,7 +2710,8 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
           functionalSpec: 'functional_spec', 
           technicalSpec: 'technical_spec',
           uxSpec: 'ux_spec',
-          mermaidDiagrams: 'architecture'
+          mermaidDiagrams: 'architecture',
+          meetingTranscript: 'meeting_transcript'
         }
         
         for (const [key, content] of Object.entries(data)) {
@@ -2754,7 +2755,8 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         functional: 'functional_spec',
         technical: 'technical_spec',
         ux: 'ux_spec',
-        mermaid: 'architecture'
+        mermaid: 'architecture',
+        meeting: 'meeting_transcript'
       }
       
       const dbDocumentType = documentTypeMapping[documentType as keyof typeof documentTypeMapping] || documentType
