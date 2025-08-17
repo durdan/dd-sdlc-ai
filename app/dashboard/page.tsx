@@ -129,6 +129,7 @@ import UsageIndicatorCompact from '@/components/usage-indicator-compact'
 import EarlyAccessWaitingList from '@/components/early-access-waiting-list'
 import ClaudeCodeDashboard from '@/components/claude-code-dashboard'
 import { DocumentSelectionModal } from '@/components/document-selection-modal'
+import { MeetingTranscriptModal } from '@/components/meeting-transcript-modal'
 import { ProjectListViewer } from "@/components/project-list-viewer"
 import { ProjectListViewerOptimized } from "@/components/project-list-viewer-optimized"
 import { ProjectListSkeleton } from "@/components/project-list-skeleton"
@@ -536,6 +537,8 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
   // Cache management state
   const [pendingCachedResults, setPendingCachedResults] = useState<any>(null)
   const [showDocumentSelectionModal, setShowDocumentSelectionModal] = useState(false)
+  const [showMeetingTranscriptModal, setShowMeetingTranscriptModal] = useState(false)
+  const [showMeetingTranscriptModal, setShowMeetingTranscriptModal] = useState(false)
 
   // Add new state for generation summary
   const [showGenerationSummary, setShowGenerationSummary] = useState(false)
@@ -3832,24 +3835,45 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                   </div>
                 </div>
                 
-                <Button 
-                  onClick={() => setShowDocumentSelectionModal(true)}
-                  disabled={!input.trim() || isProcessing}
-                  className="w-full"
-                  size="lg"
-                >
-                  {isProcessing ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Generating SDLC Documentation...
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="w-4 h-4 mr-2" />
-                      Generate SDLC Documentation
-                    </>
-                  )}
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => setShowMeetingTranscriptModal(true)}
+                    disabled={isProcessing}
+                    variant="outline"
+                    size="lg"
+                    className="px-4"
+                  >
+                    <Users className="w-4 h-4 mr-2" />
+                    Meeting Transcript
+                  </Button>
+                  <Button 
+                    onClick={() => setShowDocumentSelectionModal(true)}
+                    disabled={!input.trim() || isProcessing}
+                    className="flex-1"
+                    size="lg"
+                  >
+                    {isProcessing ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Generating SDLC Documentation...
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="w-4 h-4 mr-2" />
+                        Generate SDLC Documentation
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    onClick={() => setShowMeetingTranscriptModal(true)}
+                    variant="outline"
+                    size="lg"
+                    className="px-4"
+                    title="Process Meeting Transcript"
+                  >
+                    <Users className="w-4 h-4" />
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
@@ -4318,6 +4342,14 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
         onGenerate={handleDocumentSelection}
         input={input}
         isLoading={isProcessing}
+        userId={user?.id}
+      />
+      
+      {/* Meeting Transcript Modal */}
+      <MeetingTranscriptModal
+        isOpen={showMeetingTranscriptModal}
+        onClose={() => setShowMeetingTranscriptModal(false)}
+        userId={user?.id}
       />
 
       {/* Mobile Menu Overlay - ChatGPT style */}
