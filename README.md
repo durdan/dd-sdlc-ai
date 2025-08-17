@@ -12,6 +12,7 @@
 
 ## 🆕 Recent Updates
 
+- **👥 Meeting Transcript Processing**: Transform meeting transcripts into structured summaries and Agile requirement stories
 - **🧪 Test Specification (TDD/BDD)**: Generate comprehensive test specs following modern TDD & BDD practices
 - **📚 Document History Management**: Advanced document history viewer with search, export, and management features
 - **🔄 Smart Input Detection**: Modal automatically refreshes for new inputs, preserves docs for same input
@@ -36,6 +37,7 @@
 - **Architecture Diagrams**: Interactive Mermaid diagram generation
 - **AI Coding Prompt**: AI-optimized implementation prompts with component specs, data models, and acceptance criteria
 - **Test Specification (TDD/BDD)**: Comprehensive test specs with unit tests, BDD scenarios, E2E tests, and performance metrics
+- **Meeting Transcript Processing**: Convert meeting transcripts into structured summaries with action items and detailed Agile requirement stories
 
 ### 🧠 Enterprise Prompt Management
 - **📝 Advanced Editor**: Syntax highlighting, variable management, template inheritance
@@ -149,6 +151,11 @@ SLACK_BOT_TOKEN=your_slack_token
    -- Copy and run the entire contents of:
    database/migrations/add-test-specification.sql
    ```
+7. (Optional) For Meeting Transcript Processing support, run:
+   ```sql
+   -- Copy and run the entire contents of:
+   database/migrations/add-meeting-transcript.sql
+   ```
 
 #### Manual Setup (Advanced)
 If you prefer to run individual migration files, see the [Database Setup Guide](./docs/database-setup.md) for detailed instructions.
@@ -170,6 +177,51 @@ On first launch:
 2. **First user automatically becomes admin** (if no admin email configured)
 3. **Access admin panel** at `/admin/prompts`
 4. **Create initial prompts** or import templates
+
+## 📝 Meeting Transcript Processing
+
+The Meeting Transcript feature transforms your meeting notes into actionable documentation:
+
+### How to Use
+
+1. **Click "Meeting Transcript"** button on the landing page
+2. **Paste your meeting transcript** in the input area
+3. **Click Generate** to process
+
+### What You Get
+
+#### 📊 Meeting Summary
+- Meeting purpose and context
+- Key participants and roles
+- Main topics discussed
+- Key decisions made
+- Action items with owners
+- Next steps and follow-ups
+
+#### 📋 Requirement Stories
+Each requirement is formatted as an Agile user story with:
+- **User Story Format**: As a [role], I want [feature], so that [benefit]
+- **Acceptance Criteria**: Specific, testable requirements
+- **Technical Considerations**: Implementation notes and constraints
+- **Dependencies**: Related stories and external dependencies
+- **Priority & Effort**: Based on discussion emphasis
+- **Additional Notes**: Risks, alternatives, and context
+
+### Example Input
+```
+Meeting: Product Planning Session
+Participants: PM, Tech Lead, UX Designer
+
+PM: We need a dashboard for analytics...
+Tech Lead: This requires new API endpoints...
+UX: Users want interactive charts...
+```
+
+### Features
+- **Smart Detection**: Automatically detects if valid transcript is present
+- **Large Input Support**: Handles transcripts up to 100,000 characters
+- **Jira-Ready Format**: Stories formatted for direct import to Jira
+- **Rate Limited**: 5 transcripts/day for anonymous users
 
 ## 📖 Documentation
 

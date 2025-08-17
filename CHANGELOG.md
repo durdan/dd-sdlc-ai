@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2025-01-17
+
+### Added
+- **Meeting Transcript Processing**: New document type for converting meeting transcripts into structured documentation
+  - Generates comprehensive meeting summaries with action items and decisions
+  - Creates detailed Agile requirement stories in Jira-ready format
+  - Supports transcripts up to 100,000 characters
+  - Smart contextual UI that detects when transcript is present
+  - Dedicated API endpoint `/api/generate-meeting-transcript`
+  - Custom prompt template for meeting analysis
+  - Rate limiting: 5 transcripts/day for anonymous users
+- Quick action button for Meeting Transcript on landing page
+- Admin panel support for managing meeting transcript prompts
+- Sample meeting transcript for testing in `test-data/`
+
+### Changed
+- Enhanced document optimization configuration to support larger inputs
+- Updated rate limiting service to handle document-type specific limits
+- Improved UX with smart detection of meeting transcript content
+
+### Technical
+- Database migration: `add-meeting-transcript.sql`
+- New document type enum: 'meeting'
+- Higher token limits configured (50k chars for meeting transcripts)
+- Support for both OpenAI and Anthropic AI providers
+
+## [1.1.0] - 2024-12-21
+
 ### Added
 - New Tools section in dashboard with SDLC, CodeYodha, GitDigest, and Early Access
 - Mobile responsive design improvements
