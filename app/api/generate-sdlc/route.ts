@@ -56,11 +56,12 @@ async function generateDocumentWithDatabasePrompt(
   customPrompt?: string,
   userId?: string,
   projectId?: string,
-  useContextOptimization: boolean = true
+  useContextOptimization: boolean = true,
+  openaiApiKey?: string
 ) {
   const promptService = createServerPromptService()
   const startTime = Date.now()
-  const openaiClient = createOpenAI({ apiKey: process.env.OPENAI_API_KEY || '' })
+  const openaiClient = createOpenAI({ apiKey: openaiApiKey || process.env.OPENAI_API_KEY || '' })
   
   // Initialize context optimizer - it will use config values by default
   const contextOptimizer = getDocumentContextOptimizer({
@@ -307,8 +308,19 @@ export async function POST(req: NextRequest) {
       useContextOptimization = true,
     }: SDLCRequest & { jiraEnabled?: boolean; confluenceEnabled?: boolean; openaiKey?: string; useContextOptimization?: boolean } = await req.json()
 
+    // Check if this is an anonymous CLI request
+    const isAnonymousCLI = req.headers.get('X-Client-Type') === 'cli-anonymous'
+    const cliVersion = req.headers.get('X-CLI-Version')
+    
+    // Use platform's OpenAI key for anonymous CLI requests
+    let effectiveOpenAIKey = openaiKey
+    if (isAnonymousCLI && (!openaiKey || openaiKey.trim() === '')) {
+      effectiveOpenAIKey = process.env.OPENAI_API_KEY
+      console.log(`🤖 Anonymous CLI request (v${cliVersion || 'unknown'}) - using platform OpenAI key`)
+    }
+
     // Validate OpenAI API key
-    if (!openaiKey || openaiKey.trim() === '') {
+    if (!effectiveOpenAIKey || effectiveOpenAIKey.trim() === '') {
       return NextResponse.json(
         { error: 'OpenAI API key is required but was not provided in the request' },
         { status: 400 }
@@ -337,7 +349,9 @@ export async function POST(req: NextRequest) {
       undefined,
       customPrompts?.business,
       effectiveUserId,
-      projectId
+      projectId,
+      true, // useContextOptimization
+      effectiveOpenAIKey
     )
     promptSources.business = businessResult.promptSource
     if (businessResult.usageLogId) usageLogIds.push(businessResult.usageLogId)
@@ -353,7 +367,8 @@ export async function POST(req: NextRequest) {
       customPrompts?.functional,
       effectiveUserId,
       projectId,
-      useContextOptimization
+      useContextOptimization,
+      effectiveOpenAIKey
     )
     promptSources.functional = functionalResult.promptSource
     if (functionalResult.usageLogId) usageLogIds.push(functionalResult.usageLogId)
@@ -369,7 +384,8 @@ export async function POST(req: NextRequest) {
       customPrompts?.technical,
       effectiveUserId,
       projectId,
-      useContextOptimization
+      useContextOptimization,
+      effectiveOpenAIKey
     )
     promptSources.technical = technicalResult.promptSource
     if (technicalResult.usageLogId) usageLogIds.push(technicalResult.usageLogId)
@@ -385,7 +401,8 @@ export async function POST(req: NextRequest) {
       customPrompts?.ux,
       effectiveUserId,
       projectId,
-      useContextOptimization
+      useContextOptimization,
+      effectiveOpenAIKey
     )
     promptSources.ux = uxResult.promptSource
     if (uxResult.usageLogId) usageLogIds.push(uxResult.usageLogId)
@@ -400,7 +417,9 @@ export async function POST(req: NextRequest) {
       technicalResult.content, // Pass technical spec
       customPrompts?.mermaid,
       effectiveUserId,
-      projectId
+      projectId,
+      true, // useContextOptimization
+      effectiveOpenAIKey
     )
     promptSources.mermaid = mermaidResult.promptSource
     if (mermaidResult.usageLogId) usageLogIds.push(mermaidResult.usageLogId)

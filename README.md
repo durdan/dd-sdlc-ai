@@ -1,17 +1,19 @@
-# 🚀 SDLC Automation Platform
+# 🚀 SDLC AI Platform
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
+[![CLI](https://img.shields.io/badge/CLI-v1.0.0-brightgreen)](./packages/cli)
 [![Supabase](https://img.shields.io/badge/Supabase-Database-green)](https://supabase.com/)
 [![Vercel](https://img.shields.io/badge/Vercel-Deploy-black)](https://vercel.com)
 
-> Transform business requirements into comprehensive project documentation with AI-powered automation and enterprise-grade prompt management.
+> Open-source platform for AI-powered SDLC documentation generation. Available as both a web application and command-line tool.
 
-**SDLC Automation Platform** is an open-source platform that automates the creation of software development life cycle documentation using advanced AI models. Generate business analysis, functional specifications, technical documentation, and UX specifications in minutes with a powerful prompt management system.
+**SDLC AI Platform** is a comprehensive open-source solution that automates the creation of software development life cycle documentation using advanced AI models (OpenAI GPT-4 and Anthropic Claude). Generate business analysis, functional specifications, technical documentation, and more through our web platform or CLI tool.
 
 ## 🆕 Recent Updates
 
+- **🚀 Command Line Interface (CLI)**: Full-featured CLI for terminal-based document generation - [Learn more](./docs/features/cli-feature.md)
 - **👥 Meeting Transcript Processing**: Transform meeting transcripts into structured summaries and Agile requirement stories
 - **🧪 Test Specification (TDD/BDD)**: Generate comprehensive test specs following modern TDD & BDD practices
 - **📚 Document History Management**: Advanced document history viewer with search, export, and management features
@@ -22,7 +24,7 @@
 - **📝 Enhanced Formatting**: Improved markdown rendering with proper bullet point display
 - **🔍 Document Search**: Search through generated documents by type, input, or content
 - **💾 Persistent History**: Maintains detailed history of all generated documents with timestamps
-- **Anonymous User Support**: Generate up to 10 documents without signing up
+- **Anonymous User Support**: Generate up to 10 documents every 24 hours without signing up
 - **Enhanced Mermaid Viewer**: Improved diagram parsing with preview/raw toggle
 - **Simple Landing Page**: Clean, Claude-inspired interface option
 - **Mobile Responsive**: Optimized UI for all device sizes
@@ -73,16 +75,47 @@
 - **Format Compatibility**: Automatic formatting for each tool's configuration format
 - **Best Practices**: Includes testing strategies, security guidelines, and performance considerations
 
+### 💻 Command Line Interface (CLI)
+- **Terminal-First Workflow**: Generate documents directly from your terminal
+- **Batch Operations**: Process multiple projects with single commands
+- **CI/CD Integration**: Seamlessly integrate with GitHub Actions, GitLab CI, Jenkins
+- **Interactive Mode**: Guided wizard for beginners with step-by-step prompts
+- **Streaming Output**: Real-time document generation with progress indicators
+- **Multiple Export Formats**: Export as Markdown, JSON, HTML, or PDF
+- **Project Management**: Create, list, view, and manage projects from CLI
+- **Configuration Profiles**: Manage multiple configurations for different environments
+
 ## 🚀 Quick Start
 
-### Prerequisites
+### Option 1: CLI Tool (Recommended for Developers)
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/sdlc-ai-platform.git
+cd sdlc-ai-platform/packages/cli
+
+# Install and build
+npm install
+npm run build
+npm link
+
+# Start generating documents
+sdlc generate "your project description"
+
+# Or use specific document types
+sdlc g business "school management system"
+```
+
+### Option 2: Web Platform
+
+#### Prerequisites
 
 - **Node.js** 18+ 
 - **npm/yarn/pnpm**
 - **Supabase Account** (free tier available)
-- **OpenAI API Key** (for AI generation)
+- **OpenAI API Key** or **Anthropic API Key** (for AI generation)
 
-### 1. Clone & Install
+#### 1. Clone & Install
 
 ```bash
 # Clone the repository
@@ -178,6 +211,72 @@ On first launch:
 3. **Access admin panel** at `/admin/prompts`
 4. **Create initial prompts** or import templates
 
+## 🖥️ CLI Installation & Usage
+
+The SDLC platform includes a powerful command-line interface for developers who prefer terminal workflows.
+
+### Install the CLI
+
+```bash
+# Build from source (currently required - npm package coming soon)
+cd packages/cli
+npm install
+npm run build
+npm link
+
+# Now you can use the 'sdlc' command globally
+sdlc --version
+
+# Future: Install from npm (once published)
+# npm install -g @sdlc/cli
+```
+
+### Quick CLI Commands
+
+```bash
+# Initialize and authenticate
+sdlc init
+sdlc auth login
+
+# Generate documentation
+sdlc generate "e-commerce platform with payment integration"
+
+# Generate specific document types
+sdlc generate business "user requirements"
+sdlc generate technical --file specs.md
+sdlc generate meeting --transcript meeting.txt
+
+# Interactive mode for beginners
+sdlc interactive
+
+# Project management
+sdlc project create "My SaaS App"
+sdlc project list
+sdlc export --latest --format pdf
+
+# Use aliases for speed
+sdlc g "quick generation"     # alias for generate
+sdlc p list                   # alias for project
+sdlc i                        # alias for interactive
+
+# View all commands
+sdlc --help
+```
+
+### CI/CD Integration
+
+```yaml
+# GitHub Actions example
+- name: Generate SDLC Docs
+  run: |
+    npm install -g @sdlc/cli
+    sdlc auth login --token ${{ secrets.SDLC_TOKEN }}
+    sdlc generate "${{ github.event.pull_request.title }}"
+    sdlc export --latest --format markdown --output ./docs
+```
+
+For complete CLI documentation, see the **[CLI Feature Guide](./docs/features/cli-feature.md)**.
+
 ## 📝 Meeting Transcript Processing
 
 The Meeting Transcript feature transforms your meeting notes into actionable documentation:
@@ -229,10 +328,12 @@ UX: Users want interactive charts...
 - **[Getting Started](./docs/setup/GETTING_STARTED.md)** - Step-by-step walkthrough
 - **[Environment Setup](./docs/environment-setup.md)** - Configuration guide
 - **[Database Setup](./docs/database-setup.md)** - Database configuration
+- **[CLI Documentation](./docs/features/cli-feature.md)** - Complete CLI reference and examples
 
 ### 🔧 Technical Documentation
 - **[Technical Architecture](./docs/architecture/technical-architecture.md)** - System design overview
 - **[API Reference](./docs/api-reference.md)** - REST API documentation
+- **[CLI Package](./packages/cli/README.md)** - CLI development and contribution
 - **[Deployment Guide](./docs/deployment.md)** - Production deployment
 - **[Contributing Guide](./CONTRIBUTING.md)** - How to contribute
 

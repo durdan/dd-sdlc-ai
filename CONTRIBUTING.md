@@ -1,161 +1,176 @@
-# Contributing to SDLC Automation Platform
+# Contributing to SDLC AI Platform
 
-Thank you for your interest in contributing to the SDLC Automation Platform! This document provides guidelines and information for contributors.
-
-## Table of Contents
-
-- [Getting Started](#getting-started)
-- [Development Setup](#development-setup)
-- [Code Style](#code-style)
-- [Testing](#testing)
-- [Pull Request Process](#pull-request-process)
-- [Reporting Issues](#reporting-issues)
-- [Feature Requests](#feature-requests)
-
-## Getting Started
-
-1. Fork the repository
-2. Clone your fork locally
-3. Create a feature branch
-4. Make your changes
-5. Test your changes
-6. Submit a pull request
-
-## Development Setup
-
-### Prerequisites
-
-- Node.js 18+ 
-- npm or yarn
-- PostgreSQL 14+
-- Supabase account (for development)
-
-### Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/your-username/sdlc-automation-platform.git
-cd sdlc-automation-platform
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Set up environment variables:
-```bash
-cp .env.example .env.local
-```
-
-4. Configure your environment variables (see [Environment Setup](docs/setup/environment-setup.md))
-
-5. Set up the database:
-```bash
-# Run database migrations
-npm run db:migrate
-
-# Seed sample data (optional)
-npm run db:seed
-```
-
-6. Start the development server:
-```bash
-npm run dev
-```
-
-## Code Style
-
-### TypeScript/JavaScript
-- Use TypeScript for all new code
-- Follow ESLint configuration
-- Use meaningful variable and function names
-- Add JSDoc comments for complex functions
-
-### React Components
-- Use functional components with hooks
-- Follow the existing component structure
-- Use TypeScript interfaces for props
-- Implement proper error boundaries
-
-### Database
-- Use Prisma for database operations
-- Follow naming conventions for tables and columns
-- Add proper indexes for performance
-- Document complex queries
-
-## Testing
-
-### Running Tests
-```bash
-# Run all tests
-npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Run specific test file
-npm test -- path/to/test.ts
-```
-
-### Writing Tests
-- Write unit tests for utility functions
-- Write integration tests for API endpoints
-- Test error scenarios
-- Maintain good test coverage
-
-## Pull Request Process
-
-1. **Create a feature branch** from `main`
-2. **Make your changes** following the code style guidelines
-3. **Write tests** for new functionality
-4. **Update documentation** if needed
-5. **Run tests** to ensure everything works
-6. **Submit a pull request** with a clear description
-
-### Pull Request Guidelines
-
-- Use descriptive commit messages
-- Include a summary of changes
-- Reference related issues
-- Add screenshots for UI changes
-- Ensure all tests pass
-
-## Reporting Issues
-
-When reporting issues, please include:
-
-- **Description**: Clear description of the problem
-- **Steps to reproduce**: Detailed steps to reproduce the issue
-- **Expected behavior**: What you expected to happen
-- **Actual behavior**: What actually happened
-- **Environment**: OS, browser, Node.js version
-- **Screenshots**: If applicable
-
-## Feature Requests
-
-For feature requests:
-
-- Check existing issues first
-- Provide a clear description of the feature
-- Explain the use case and benefits
-- Consider implementation complexity
-- Be open to discussion and feedback
+First off, thank you for considering contributing to the SDLC AI Platform! It's people like you that make this platform a great tool for the developer community.
 
 ## Code of Conduct
 
-This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code.
+By participating in this project, you are expected to uphold our Code of Conduct:
+- Be respectful and inclusive
+- Welcome newcomers and help them get started
+- Focus on constructive criticism
+- Show empathy towards other community members
 
-## License
+## How Can I Contribute?
 
-By contributing, you agree that your contributions will be licensed under the same license as the project.
+### Reporting Bugs
+
+Before creating bug reports, please check existing issues to avoid duplicates. When you create a bug report, include as many details as possible:
+
+- **Use a clear and descriptive title**
+- **Describe the exact steps to reproduce the problem**
+- **Provide specific examples**
+- **Describe the behavior you observed and expected**
+- **Include screenshots if relevant**
+- **Include your environment details** (OS, Node.js version, etc.)
+
+### Suggesting Enhancements
+
+Enhancement suggestions are tracked as GitHub issues. When creating an enhancement suggestion:
+
+- **Use a clear and descriptive title**
+- **Provide a detailed description of the proposed enhancement**
+- **Explain why this enhancement would be useful**
+- **List any alternatives you've considered**
+
+### Pull Requests
+
+1. **Fork the repository** and create your branch from `main`
+2. **Make your changes**:
+   - Follow the existing code style
+   - Add tests if applicable
+   - Update documentation as needed
+3. **Test your changes**:
+   ```bash
+   npm run lint
+   npm run type-check
+   npm run build
+   npm test  # when available
+   ```
+4. **Commit your changes**:
+   - Use clear and meaningful commit messages
+   - Follow conventional commits format: `type(scope): description`
+   - Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
+5. **Push to your fork** and submit a pull request
+
+## Development Setup
+
+### Web Platform
+
+```bash
+# Clone your fork
+git clone https://github.com/your-username/sdlc-ai-platform.git
+cd sdlc-ai-platform
+
+# Install dependencies
+npm install
+
+# Set up environment variables
+cp .env.example .env.local
+# Edit .env.local with your API keys
+
+# Run development server
+npm run dev
+
+# Run tests and linting
+npm run lint
+npm run type-check
+```
+
+### CLI Tool
+
+```bash
+cd packages/cli
+
+# Install dependencies
+npm install
+
+# Build the CLI
+npm run build
+
+# Link for local testing
+npm link
+
+# Test the CLI
+sdlc --help
+```
+
+## Project Structure
+
+```
+sdlc-ai-platform/
+├── app/                    # Next.js app directory
+│   ├── api/               # API routes
+│   ├── (auth)/           # Authentication pages
+│   └── (dashboard)/      # Dashboard pages
+├── components/            # React components
+├── lib/                  # Core business logic
+├── packages/
+│   └── cli/             # CLI tool
+│       ├── src/
+│       │   ├── commands/  # CLI commands
+│       │   ├── lib/       # CLI utilities
+│       │   └── types/     # TypeScript types
+│       └── dist/         # Compiled JavaScript
+└── database/            # Database schemas and migrations
+```
+
+## Coding Standards
+
+### TypeScript
+- Use TypeScript for all new code
+- Define interfaces for all data structures
+- Avoid using `any` type
+- Use proper type guards
+
+### React/Next.js
+- Use functional components with hooks
+- Follow React best practices
+- Keep components small and focused
+- Use proper prop types
+
+### General
+- Write clear, self-documenting code
+- Add comments for complex logic
+- Follow DRY (Don't Repeat Yourself) principle
+- Keep functions small and focused
+
+## Testing
+
+- Write tests for new features
+- Ensure all tests pass before submitting PR
+- Include both unit and integration tests where applicable
+- Test edge cases and error conditions
+
+## Documentation
+
+- Update README.md if needed
+- Document new features in appropriate docs
+- Add JSDoc comments for public APIs
+- Update CLI help text for new commands
+
+## Review Process
+
+1. **Automated checks** run on all PRs (linting, type checking, tests)
+2. **Code review** by maintainers
+3. **Testing** in development environment
+4. **Merge** once approved and all checks pass
+
+## Release Process
+
+1. Updates are collected in the `main` branch
+2. Releases are tagged with semantic versioning
+3. Release notes are generated from commit messages
+4. NPM packages are published for CLI tool
 
 ## Questions?
 
-If you have questions about contributing, please:
+Feel free to open an issue with the label `question` or start a discussion in the GitHub Discussions tab.
 
-1. Check the [documentation](docs/)
-2. Search existing issues
-3. Create a new issue with the "question" label
+## Recognition
 
-Thank you for contributing to the SDLC Automation Platform! 
+Contributors will be recognized in:
+- The project README
+- Release notes
+- The contributors page
+
+Thank you for contributing to SDLC AI Platform! 🚀
