@@ -105,7 +105,10 @@ export function LazyProjectCard({
 
       documents.forEach(doc => {
         const content = doc.content || ''
-        const hasContent = content.length > 200 && !content.includes('[Placeholder')
+        // Meeting transcripts have different validation - just check if not empty
+        const hasContent = doc.document_type === 'meeting_transcript' 
+          ? content.length > 10 && !content.includes('[Placeholder')
+          : content.length > 200 && !content.includes('[Placeholder')
 
         switch (doc.document_type) {
           case 'business_analysis':
@@ -159,7 +162,10 @@ export function LazyProjectCard({
 
       documents.forEach(doc => {
         const content = doc.content || ''
-        const hasContent = content.length > 200 && !content.includes('[Placeholder')
+        // Meeting transcripts have different validation - just check if not empty
+        const hasContent = doc.document_type === 'meeting_transcript' 
+          ? content.length > 10 && !content.includes('[Placeholder')
+          : content.length > 200 && !content.includes('[Placeholder')
 
         switch (doc.document_type) {
           case 'business_analysis':
