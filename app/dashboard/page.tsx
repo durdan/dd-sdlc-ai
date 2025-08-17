@@ -538,7 +538,6 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
   const [pendingCachedResults, setPendingCachedResults] = useState<any>(null)
   const [showDocumentSelectionModal, setShowDocumentSelectionModal] = useState(false)
   const [showMeetingTranscriptModal, setShowMeetingTranscriptModal] = useState(false)
-  const [showMeetingTranscriptModal, setShowMeetingTranscriptModal] = useState(false)
 
   // Add new state for generation summary
   const [showGenerationSummary, setShowGenerationSummary] = useState(false)
