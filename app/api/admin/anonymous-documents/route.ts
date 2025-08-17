@@ -53,13 +53,17 @@ export async function GET(request: NextRequest) {
 
     // Transform the data to match expected format
     const documents = anonymousData?.map(item => ({
-      id: item.id,
+      project_id: item.id,
       session_id: item.session_id,
-      action_type: item.action_type,
+      title: item.action_data?.title || item.action_data?.input?.substring(0, 50) || 'Anonymous Document',
+      input_text: item.action_data?.input || '',
+      status: 'completed',
       created_at: item.timestamp,
-      documents: item.action_data?.documents || {},
-      input: item.action_data?.input || '',
-      user_agent: item.user_agent
+      user_agent: item.user_agent,
+      ip_address: item.ip_address || null,
+      referrer: item.referrer || null,
+      document_count: Object.keys(item.action_data?.documents || {}).length,
+      documents: item.action_data?.documents || {}
     })) || []
 
     // Calculate statistics
