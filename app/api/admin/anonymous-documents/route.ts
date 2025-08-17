@@ -38,14 +38,29 @@ export async function GET(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    // Get anonymous documents using the function we created
-    const { data: documents, error: docsError } = await adminSupabase
-      .rpc('get_admin_anonymous_projects')
+    // Get anonymous documents directly from the table
+    const { data: anonymousData, error: docsError } = await adminSupabase
+      .from('anonymous_analytics')
+      .select('*')
+      .in('action_type', ['document_generation', 'diagram_generation', 'meeting_transcript_generation'])
+      .order('timestamp', { ascending: false })
+      .limit(100)
 
     if (docsError) {
       console.error('Error fetching anonymous documents:', docsError)
       return NextResponse.json({ error: 'Failed to fetch documents' }, { status: 500 })
     }
+
+    // Transform the data to match expected format
+    const documents = anonymousData?.map(item => ({
+      id: item.id,
+      session_id: item.session_id,
+      action_type: item.action_type,
+      created_at: item.timestamp,
+      documents: item.action_data?.documents || {},
+      input: item.action_data?.input || '',
+      user_agent: item.user_agent
+    })) || []
 
     // Calculate statistics
     const stats = {
@@ -64,13 +79,13 @@ export async function GET(request: NextRequest) {
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000)
     
     documents?.forEach((doc: any) => {
-      if (doc.documents) {
-        if (doc.documents.business) stats.business_docs++
-        if (doc.documents.functional) stats.functional_docs++
-        if (doc.documents.technical) stats.technical_docs++
-        if (doc.documents.ux) stats.ux_docs++
-        if (doc.documents.mermaid) stats.architecture_docs++
-      }
+      // Check action_data for document types
+      const actionData = doc.documents || {}
+      if (actionData.business || actionData.businessAnalysis) stats.business_docs++
+      if (actionData.functional || actionData.functionalSpec) stats.functional_docs++
+      if (actionData.technical || actionData.technicalSpec) stats.technical_docs++
+      if (actionData.ux || actionData.uxSpec) stats.ux_docs++
+      if (actionData.mermaid || actionData.architecture || actionData.mermaidDiagrams) stats.architecture_docs++
       
       if (new Date(doc.created_at) > twentyFourHoursAgo) {
         stats.recent_activity++
