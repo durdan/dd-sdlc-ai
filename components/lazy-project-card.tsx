@@ -39,12 +39,14 @@ interface ProjectFullData {
     uxSpec?: string
     architecture?: string
     comprehensive?: string
+    meetingTranscript?: string
   }
   documentAvailability: {
     business: boolean
     functional: boolean
     technical: boolean
     comprehensive: boolean
+    meeting: boolean
   }
   availableTabs: string[]
   integrations: any[]
@@ -101,7 +103,8 @@ export function LazyProjectCard({
         business: false,
         functional: false,
         technical: false,
-        comprehensive: false
+        comprehensive: false,
+        meeting: false
       }
       const availableTabs: string[] = []
 
@@ -148,6 +151,13 @@ export function LazyProjectCard({
               projectDocuments.comprehensive = content
               documentAvailability.comprehensive = true
               availableTabs.push('comprehensive')
+            }
+            break
+          case 'meeting_transcript':
+            if (hasContent) {
+              projectDocuments.meetingTranscript = content
+              documentAvailability.meeting = true
+              availableTabs.push('meeting')
             }
             break
         }
@@ -219,6 +229,7 @@ export function LazyProjectCard({
                    docType === 'functional' ? 'Func' : 
                    docType === 'technical' ? 'Tech' : 
                    docType === 'comprehensive' ? 'Comp' : 
+                   docType === 'meeting' ? 'Meet' :
                    docType}
                 </Badge>
               ))
@@ -372,6 +383,12 @@ export function LazyProjectCard({
                       <span className="sm:hidden">Comp</span>
                     </TabsTrigger>
                   )}
+                  {fullData.availableTabs.includes('meeting') && (
+                    <TabsTrigger value="meeting" className="text-xs sm:text-sm min-w-[120px]">
+                      <span className="hidden sm:inline">Meeting</span>
+                      <span className="sm:hidden">Meet</span>
+                    </TabsTrigger>
+                  )}
                 </TabsList>
               </div>
               
@@ -425,6 +442,15 @@ export function LazyProjectCard({
                     content={fullData.documents.comprehensive || ''}
                     title="Comprehensive SDLC"
                     type="comprehensive"
+                  />
+                </TabsContent>
+              )}
+              {fullData.availableTabs.includes('meeting') && (
+                <TabsContent value="meeting" className="mt-2">
+                  <MarkdownRenderer 
+                    content={fullData.documents.meetingTranscript || ''}
+                    title="Meeting Transcript Documentation"
+                    type="meeting"
                   />
                 </TabsContent>
               )}
