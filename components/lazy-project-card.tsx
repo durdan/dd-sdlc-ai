@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -82,6 +82,55 @@ export function LazyProjectCard({
   const [fullData, setFullData] = useState<ProjectFullData | null>(null)
   const [activeTab, setActiveTab] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
+  const [documentSummary, setDocumentSummary] = useState<ProjectFullData['documentAvailability'] | null>(null)
+
+  // Load document summary on mount (for collapsed view)
+  useEffect(() => {
+    loadDocumentSummary()
+  }, [project.id])
+
+  const loadDocumentSummary = async () => {
+    if (documentSummary || fullData) return
+    
+    try {
+      const { documents } = await dbService.getProjectFullDetails(project.id, userId)
+      
+      const availability: ProjectFullData['documentAvailability'] = {
+        business: false,
+        functional: false,
+        technical: false,
+        comprehensive: false,
+        meeting: false
+      }
+
+      documents.forEach(doc => {
+        const content = doc.content || ''
+        const hasContent = content.length > 200 && !content.includes('[Placeholder')
+
+        switch (doc.document_type) {
+          case 'business_analysis':
+            if (hasContent) availability.business = true
+            break
+          case 'functional_spec':
+            if (hasContent) availability.functional = true
+            break
+          case 'technical_spec':
+            if (hasContent) availability.technical = true
+            break
+          case 'comprehensive':
+            if (hasContent) availability.comprehensive = true
+            break
+          case 'meeting_transcript':
+            if (hasContent) availability.meeting = true
+            break
+        }
+      })
+
+      setDocumentSummary(availability)
+    } catch (error) {
+      console.error('Failed to load document summary:', error)
+    }
+  }
 
   const loadProjectDetails = async () => {
     if (fullData || isLoading) return
@@ -207,10 +256,10 @@ export function LazyProjectCard({
           {/* Document Availability Indicators - Show skeleton while loading */}
           <div className="flex flex-wrap items-center gap-1 mt-2">
             <span className="text-xs text-gray-500 mr-1">Documents:</span>
-            {isLoading && !fullData ? (
+            {!documentSummary && !fullData ? (
               <Skeleton className="h-5 w-32" />
-            ) : fullData ? (
-              Object.entries(fullData.documentAvailability).map(([docType, isAvailable]) => (
+            ) : (fullData || documentSummary) ? (
+              Object.entries(fullData?.documentAvailability || documentSummary || {}).map(([docType, isAvailable]) => (
                 <Badge 
                   key={docType}
                   variant={isAvailable ? "default" : "outline"}
