@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "sdlc": {
+      "command": "node",
+      "args": ["./dist/index.js"],
+      "env": {
+        "SDLC_API_URL": "https://sdlc.dev",
+        "LOG_LEVEL": "info"
+      }
+    }
+  }
+}
