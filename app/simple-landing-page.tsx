@@ -42,6 +42,7 @@ import { Clock } from "lucide-react"
 import { CodeAssistantMenu } from '@/components/code-assistant-menu'
 import { ViewDocsMenu } from '@/components/view-docs-menu'
 import { MobileTooltip } from '@/components/ui/mobile-tooltip'
+import { DocumentButtonWithSections } from '@/components/document-button-with-sections'
 import {
   Tooltip,
   TooltipContent,
@@ -221,6 +222,14 @@ export default function SimpleLandingPage() {
       tooltip: "Generate comprehensive business requirements",
       tooltipDetail: "Creates BRD with executive summary, stakeholder analysis, risk assessment, and ROI calculations",
       docType: "business"
+    },
+    {
+      icon: FileText,
+      title: "Functional Spec",
+      description: "User stories & use cases",
+      tooltip: "Create functional specifications",
+      tooltipDetail: "Generates use cases, user stories, data requirements, and business rules",
+      docType: "functional"
     },
     {
       icon: FileCode,
@@ -582,42 +591,39 @@ export default function SimpleLandingPage() {
 
           {/* Quick Actions - Responsive Grid */}
           <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 md:gap-3">
-            <TooltipProvider delayDuration={300}>
-              {features.map((feature, index) => {
-                const hasDocument = previousDocuments[feature.docType]
-                return (
-                  <Tooltip key={index}>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={() => handleGetStarted(feature.docType)}
-                        className={`relative flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 sm:py-2.5 bg-white rounded-lg border transition-all ${
-                          hasDocument 
-                            ? 'border-indigo-300 hover:border-indigo-400 hover:bg-indigo-50' 
-                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                        }`}
-                      >
-                        <feature.icon className={`h-3.5 sm:h-4 w-3.5 sm:w-4 ${hasDocument ? 'text-indigo-600' : 'text-gray-600'}`} />
-                        <span className={`text-xs sm:text-sm font-medium ${hasDocument ? 'text-indigo-700' : 'text-gray-700'}`}>
-                          {feature.title}
-                        </span>
-                        {hasDocument && (
-                          <Check className="h-3 sm:h-3.5 w-3 sm:w-3.5 text-indigo-600 ml-0.5 sm:ml-1" />
-                        )}
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent 
-                      side="top" 
-                      className="max-w-xs bg-gray-900 text-white border-gray-700 p-3"
-                    >
-                      <div className="space-y-1">
-                        <p className="font-semibold text-sm">{feature.tooltip}</p>
-                        <p className="text-xs text-gray-300">{feature.tooltipDetail}</p>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                )
-              })}
-            </TooltipProvider>
+            {features.map((feature, index) => {
+              const hasDocument = previousDocuments[feature.docType]
+              return (
+                <DocumentButtonWithSections
+                  key={index}
+                  icon={feature.icon}
+                  label={feature.title}
+                  color={feature.docType === 'business' ? 'text-blue-600' : 
+                         feature.docType === 'technical' ? 'text-green-600' :
+                         feature.docType === 'ux' ? 'text-pink-600' :
+                         feature.docType === 'mermaid' ? 'text-orange-600' : 'text-purple-600'}
+                  documentType={feature.docType}
+                  onSelect={(type, sections) => {
+                    // Save input if not already saved
+                    if (!inputValue.trim()) {
+                      setShowInputAlert(true)
+                      return
+                    }
+                    
+                    // Store the selected document type and sections
+                    localStorage.setItem('selectedDocType', type)
+                    if (sections && sections.length > 0) {
+                      localStorage.setItem(`${type}Sections`, JSON.stringify(sections))
+                    }
+                    
+                    // Open the modal to generate
+                    handleGetStarted(type)
+                  }}
+                  hasPreviousDocument={!!hasDocument}
+                  className="min-w-[140px] sm:min-w-[160px]"
+                />
+              )
+            })}
           </div>
 
           {/* Info Message with mobile hint */}
