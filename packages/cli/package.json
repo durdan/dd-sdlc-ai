@@ -1,0 +1,85 @@
+{
+  "name": "sdlc-ai",
+  "version": "1.0.0",
+  "description": "CLI tool for SDLC AI Platform - Generate comprehensive SDLC documentation from the command line",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "sdlc": "./dist/bin/sdlc.js",
+    "sdlc-ai": "./dist/bin/sdlc.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/bin/sdlc.js",
+    "test": "jest",
+    "lint": "eslint src --ext .ts",
+    "prepublishOnly": "npm run build",
+    "postinstall": "node scripts/postinstall.js || true"
+  },
+  "keywords": [
+    "sdlc",
+    "ai",
+    "documentation",
+    "cli",
+    "development",
+    "automation",
+    "agile"
+  ],
+  "author": "SDLC AI Platform Contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/sdlc-ai-platform.git",
+    "directory": "packages/cli"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/sdlc-ai-platform/issues"
+  },
+  "homepage": "https://github.com/yourusername/sdlc-ai-platform#readme",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "dependencies": {
+    "axios": "^1.6.5",
+    "chalk": "^4.1.2",
+    "cli-table3": "^0.6.3",
+    "commander": "^11.1.0",
+    "conf": "^12.0.0",
+    "date-fns": "^4.1.0",
+    "dotenv": "^16.3.1",
+    "eventsource": "^2.0.2",
+    "form-data": "^4.0.0",
+    "fs-extra": "^11.2.0",
+    "inquirer": "^8.2.7",
+    "keytar": "^7.9.0",
+    "marked": "^4.3.0",
+    "marked-terminal": "^5.2.0",
+    "open": "^8.4.2",
+    "ora": "^5.4.1"
+  },
+  "devDependencies": {
+    "@types/eventsource": "^1.1.15",
+    "@types/fs-extra": "^11.0.4",
+    "@types/inquirer": "^9.0.7",
+    "@types/marked": "^6.0.0",
+    "@types/marked-terminal": "^3.1.7",
+    "@types/node": "^20.10.6",
+    "@typescript-eslint/eslint-plugin": "^6.17.0",
+    "@typescript-eslint/parser": "^6.17.0",
+    "eslint": "^8.56.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.3.3"
+  },
+  "files": [
+    "dist",
+    "scripts",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

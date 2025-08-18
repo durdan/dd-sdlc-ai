@@ -31,7 +31,6 @@ import { PromptEditor } from './prompt-editor';
 import { PromptTester } from './prompt-tester';
 import { PromptAnalytics } from './prompt-analytics';
 import { PromptGuide } from './prompt-guide';
-import { SubsectionPromptManager } from './subsection-prompt-manager';
 import { createClient } from '@/lib/supabase/client';
 
 interface PromptManagementProps {
@@ -80,7 +79,11 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
     functional: [],
     technical: [],
     ux: [],
-    mermaid: []
+    mermaid: [],
+    wireframe: [],
+    coding: [],
+    test: [],
+    meeting: []
   });
   const [userPrompts, setUserPrompts] = useState<UserPrompt[]>([]);
   const [systemStats, setSystemStats] = useState<SystemStats | null>(null);
@@ -91,7 +94,7 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
   const [showTester, setShowTester] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
-  const [activeTab, setActiveTab] = useState<DocumentType | 'guide' | 'user-prompts' | 'analytics' | 'subsections'>('business');
+  const [activeTab, setActiveTab] = useState<DocumentType | 'guide' | 'user-prompts' | 'analytics'>('business');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   
@@ -115,13 +118,17 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
     setError(null);
     
     try {
-      const documentTypes: DocumentType[] = ['business', 'functional', 'technical', 'ux', 'mermaid'];
+      const documentTypes: DocumentType[] = ['business', 'functional', 'technical', 'ux', 'mermaid', 'wireframe', 'coding', 'test', 'meeting'];
       const promptData: Record<DocumentType, PromptTemplate[]> = {
         business: [],
         functional: [],
         technical: [],
         ux: [],
-        mermaid: []
+        mermaid: [],
+        wireframe: [],
+        coding: [],
+        test: [],
+        meeting: []
       };
 
       await Promise.all(
@@ -377,7 +384,11 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
       functional: '⚙️',
       technical: '🔧',
       ux: '🎨',
-      mermaid: '📈'
+      mermaid: '📈',
+      wireframe: '🎯',
+      coding: '💻',
+      test: '🧪',
+      meeting: '👥'
     };
     return icons[type];
   };
@@ -388,7 +399,11 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
       functional: 'Functional Specification',
       technical: 'Technical Specification',
       ux: 'UX Specification',
-      mermaid: 'Architecture'
+      mermaid: 'Architecture',
+      wireframe: 'Wireframe',
+      coding: 'AI Coding Prompt',
+      test: 'Test Specification',
+      meeting: 'Meeting Transcript'
     };
     return labels[type];
   };
@@ -459,7 +474,7 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
       )}
 
       {/* Tabs for different document types */}
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as DocumentType | 'guide' | 'user-prompts' | 'analytics' | 'subsections')}>
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as DocumentType | 'guide' | 'user-prompts' | 'analytics')}>
         <div className="tabs-mobile-container tabs-scroll-container mb-4">
           <TabsList className="tabs-mobile-list">
             <TabsTrigger value="business" className="tab-trigger-mobile">
@@ -482,9 +497,21 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
               <span className="hidden sm:inline">Architecture</span>
               <span className="sm:hidden">Arch</span>
             </TabsTrigger>
-            <TabsTrigger value="subsections" className="tab-trigger-mobile">
-              <span className="hidden sm:inline">Subsections</span>
-              <span className="sm:hidden">Sub</span>
+            <TabsTrigger value="wireframe" className="tab-trigger-mobile">
+              <span className="hidden sm:inline">Wireframe</span>
+              <span className="sm:hidden">Wire</span>
+            </TabsTrigger>
+            <TabsTrigger value="coding" className="tab-trigger-mobile">
+              <span className="hidden sm:inline">Coding</span>
+              <span className="sm:hidden">Code</span>
+            </TabsTrigger>
+            <TabsTrigger value="test" className="tab-trigger-mobile">
+              <span className="hidden sm:inline">Test</span>
+              <span className="sm:hidden">Test</span>
+            </TabsTrigger>
+            <TabsTrigger value="meeting" className="tab-trigger-mobile">
+              <span className="hidden sm:inline">Meeting</span>
+              <span className="sm:hidden">Meet</span>
             </TabsTrigger>
             {userRole === 'admin' && (
               <>
@@ -657,11 +684,6 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
             )}
           </TabsContent>
         ))}
-
-        {/* Subsections Tab */}
-        <TabsContent value="subsections" className="space-y-4">
-          <SubsectionPromptManager isAdmin={userRole === 'admin' || userRole === 'manager'} />
-        </TabsContent>
 
         {/* New User Prompts Tab */}
         {userRole === 'admin' && (

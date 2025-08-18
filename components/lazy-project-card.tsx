@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -39,12 +39,14 @@ interface ProjectFullData {
     uxSpec?: string
     architecture?: string
     comprehensive?: string
+    meetingTranscript?: string
   }
   documentAvailability: {
     business: boolean
     functional: boolean
     technical: boolean
     comprehensive: boolean
+    meeting: boolean
   }
   availableTabs: string[]
   integrations: any[]
@@ -80,6 +82,58 @@ export function LazyProjectCard({
   const [fullData, setFullData] = useState<ProjectFullData | null>(null)
   const [activeTab, setActiveTab] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
+  const [documentSummary, setDocumentSummary] = useState<ProjectFullData['documentAvailability'] | null>(null)
+
+  // Load document summary on mount (for collapsed view)
+  useEffect(() => {
+    loadDocumentSummary()
+  }, [project.id])
+
+  const loadDocumentSummary = async () => {
+    if (documentSummary || fullData) return
+    
+    try {
+      const { documents } = await dbService.getProjectFullDetails(project.id, userId)
+      
+      const availability: ProjectFullData['documentAvailability'] = {
+        business: false,
+        functional: false,
+        technical: false,
+        comprehensive: false,
+        meeting: false
+      }
+
+      documents.forEach(doc => {
+        const content = doc.content || ''
+        // Meeting transcripts have different validation - just check if not empty
+        const hasContent = doc.document_type === 'meeting_transcript' 
+          ? content.length > 10 && !content.includes('[Placeholder')
+          : content.length > 200 && !content.includes('[Placeholder')
+
+        switch (doc.document_type) {
+          case 'business_analysis':
+            if (hasContent) availability.business = true
+            break
+          case 'functional_spec':
+            if (hasContent) availability.functional = true
+            break
+          case 'technical_spec':
+            if (hasContent) availability.technical = true
+            break
+          case 'comprehensive':
+            if (hasContent) availability.comprehensive = true
+            break
+          case 'meeting_transcript':
+            if (hasContent) availability.meeting = true
+            break
+        }
+      })
+
+      setDocumentSummary(availability)
+    } catch (error) {
+      console.error('Failed to load document summary:', error)
+    }
+  }
 
   const loadProjectDetails = async () => {
     if (fullData || isLoading) return
@@ -101,13 +155,17 @@ export function LazyProjectCard({
         business: false,
         functional: false,
         technical: false,
-        comprehensive: false
+        comprehensive: false,
+        meeting: false
       }
       const availableTabs: string[] = []
 
       documents.forEach(doc => {
         const content = doc.content || ''
-        const hasContent = content.length > 200 && !content.includes('[Placeholder')
+        // Meeting transcripts have different validation - just check if not empty
+        const hasContent = doc.document_type === 'meeting_transcript' 
+          ? content.length > 10 && !content.includes('[Placeholder')
+          : content.length > 200 && !content.includes('[Placeholder')
 
         switch (doc.document_type) {
           case 'business_analysis':
@@ -148,6 +206,13 @@ export function LazyProjectCard({
               projectDocuments.comprehensive = content
               documentAvailability.comprehensive = true
               availableTabs.push('comprehensive')
+            }
+            break
+          case 'meeting_transcript':
+            if (hasContent) {
+              projectDocuments.meetingTranscript = content
+              documentAvailability.meeting = true
+              availableTabs.push('meeting')
             }
             break
         }
@@ -197,10 +262,10 @@ export function LazyProjectCard({
           {/* Document Availability Indicators - Show skeleton while loading */}
           <div className="flex flex-wrap items-center gap-1 mt-2">
             <span className="text-xs text-gray-500 mr-1">Documents:</span>
-            {isLoading && !fullData ? (
+            {!documentSummary && !fullData ? (
               <Skeleton className="h-5 w-32" />
-            ) : fullData ? (
-              Object.entries(fullData.documentAvailability).map(([docType, isAvailable]) => (
+            ) : (fullData || documentSummary) ? (
+              Object.entries(fullData?.documentAvailability || documentSummary || {}).map(([docType, isAvailable]) => (
                 <Badge 
                   key={docType}
                   variant={isAvailable ? "default" : "outline"}
@@ -219,6 +284,7 @@ export function LazyProjectCard({
                    docType === 'functional' ? 'Func' : 
                    docType === 'technical' ? 'Tech' : 
                    docType === 'comprehensive' ? 'Comp' : 
+                   docType === 'meeting' ? 'Meet' :
                    docType}
                 </Badge>
               ))
@@ -372,6 +438,12 @@ export function LazyProjectCard({
                       <span className="sm:hidden">Comp</span>
                     </TabsTrigger>
                   )}
+                  {fullData.availableTabs.includes('meeting') && (
+                    <TabsTrigger value="meeting" className="text-xs sm:text-sm min-w-[120px]">
+                      <span className="hidden sm:inline">Meeting</span>
+                      <span className="sm:hidden">Meet</span>
+                    </TabsTrigger>
+                  )}
                 </TabsList>
               </div>
               
@@ -425,6 +497,15 @@ export function LazyProjectCard({
                     content={fullData.documents.comprehensive || ''}
                     title="Comprehensive SDLC"
                     type="comprehensive"
+                  />
+                </TabsContent>
+              )}
+              {fullData.availableTabs.includes('meeting') && (
+                <TabsContent value="meeting" className="mt-2">
+                  <MarkdownRenderer 
+                    content={fullData.documents.meetingTranscript || ''}
+                    title="Meeting Transcript Documentation"
+                    type="meeting"
                   />
                 </TabsContent>
               )}

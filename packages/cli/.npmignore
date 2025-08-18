@@ -1,0 +1,48 @@
+# Source files
+src/
+*.ts
+
+# Development files
+.gitignore
+.sdlcrc.json
+tsconfig.json
+.eslintrc.*
+jest.config.*
+
+# Test files
+test/
+*.test.*
+*.spec.*
+test-*.js
+debug-*.js
+debug-*.md
+
+# Documentation
+DEVELOPMENT.md
+docs/
+
+# Build artifacts
+*.tsbuildinfo
+
+# Local config
+.env
+.env.*
+
+# Generated output
+sdlc-docs/
+*.log
+
+# Development scripts (keep postinstall.js)
+scripts/test.js
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Keep only dist/, scripts/postinstall.js, README.md, LICENSE, package.json

@@ -29,13 +29,25 @@ import {
   UserPlus,
   Lock,
   Check,
-  ChevronRight
+  X,
+  FlaskConical,
+  Users,
+  Info
 } from "lucide-react"
 import { createClient } from '@/lib/supabase/client'
 import { SimpleDocumentGenerationModal } from '@/components/simple-document-generation-modal'
 import { CustomAlert } from '@/components/ui/custom-alert'
-import { techSpecSections } from '@/lib/tech-spec-sections'
-import { NavButtonWithMenu } from '@/components/nav-button-with-menu'
+import { anonymousProjectService } from '@/lib/anonymous-project-service'
+import { Clock } from "lucide-react"
+import { CodeAssistantMenu } from '@/components/code-assistant-menu'
+import { ViewDocsMenu } from '@/components/view-docs-menu'
+import { MobileTooltip } from '@/components/ui/mobile-tooltip'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 export default function SimpleLandingPage() {
   const [user, setUser] = useState<any>(null)
@@ -46,9 +58,53 @@ export default function SimpleLandingPage() {
   const [showInputAlert, setShowInputAlert] = useState(false)
   const [previousDocuments, setPreviousDocuments] = useState<Record<string, string>>({})
   const [showViewDocsHint, setShowViewDocsHint] = useState(false)
-  const [selectedTechSections, setSelectedTechSections] = useState<string[]>(['system-architecture'])
-  const [showTechSectionsMenu, setShowTechSectionsMenu] = useState(false)
+  const [rateLimitStatus, setRateLimitStatus] = useState<{
+    remaining: number
+    total: number
+    resetAt: Date
+  } | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
+
+  // Format time remaining until reset
+  const getTimeUntilReset = (resetAt: Date): string => {
+    const now = new Date()
+    const diff = resetAt.getTime() - now.getTime()
+    
+    if (diff <= 0) return 'Resetting...'
+    
+    const hours = Math.floor(diff / (1000 * 60 * 60))
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`
+    }
+    return `${minutes}m`
+  }
+
+  // Check rate limit status
+  const checkRateLimit = async () => {
+    try {
+      const sessionId = anonymousProjectService.getSessionId()
+      const response = await fetch('/api/rate-limit/check', {
+        headers: {
+          'x-session-id': sessionId
+        }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (data.status) {
+          setRateLimitStatus({
+            remaining: data.status.remaining,
+            total: data.status.total,
+            resetAt: new Date(data.resetAt)
+          })
+        }
+      }
+    } catch (error) {
+      console.error('Failed to check rate limit:', error)
+    }
+  }
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -56,6 +112,11 @@ export default function SimpleLandingPage() {
         const supabase = createClient()
         const { data: { user } } = await supabase.auth.getUser()
         setUser(user)
+        
+        // Check rate limit for non-logged in users
+        if (!user) {
+          await checkRateLimit()
+        }
         
         // Check for previously generated documents
         const savedDocs = localStorage.getItem('sdlc_generated_docs')
@@ -98,7 +159,19 @@ export default function SimpleLandingPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const handleGetStarted = (docType?: string, sections?: string[]) => {
+  // Update rate limit timer every minute
+  useEffect(() => {
+    if (!user && rateLimitStatus) {
+      const interval = setInterval(() => {
+        // Force re-render to update the time display
+        setRateLimitStatus(prev => prev ? { ...prev } : null)
+      }, 60000) // Update every minute
+
+      return () => clearInterval(interval)
+    }
+  }, [user, rateLimitStatus])
+
+  const handleGetStarted = (docType?: string) => {
     // Check if input is provided
     if (!inputValue.trim()) {
       setShowInputAlert(true)
@@ -112,11 +185,6 @@ export default function SimpleLandingPage() {
     if (docType) {
       localStorage.setItem('selectedDocType', docType)
       console.log('✅ Set selectedDocType in localStorage:', docType)
-      
-      // Store sections if provided
-      if (sections && docType === 'technical') {
-        localStorage.setItem('techSpecSections', JSON.stringify(sections))
-      }
     }
     
     // For non-logged-in users, show the document generation modal
@@ -136,12 +204,6 @@ export default function SimpleLandingPage() {
       return
     }
     
-    // If technical spec, show sections menu
-    if (doc.docType === 'technical') {
-      setShowTechSectionsMenu(true)
-      return
-    }
-    
     setShowDocumentMenu(false)
     
     // Store the selected document type for the modal
@@ -150,43 +212,63 @@ export default function SimpleLandingPage() {
     // Always trigger handleGetStarted after selection
     setTimeout(() => handleGetStarted(), 100)
   }
-  
-  const handleTechSpecConfirm = () => {
-    setShowDocumentMenu(false)
-    setShowTechSectionsMenu(false)
-    
-    // Store tech spec sections
-    localStorage.setItem('selectedDocType', 'technical')
-    localStorage.setItem('techSpecSections', JSON.stringify(selectedTechSections))
-    
-    // Trigger handleGetStarted
-    setTimeout(() => handleGetStarted(), 100)
-  }
 
   const features = [
     {
       icon: Brain,
       title: "Business Analysis",
       description: "Executive summaries & risk assessment",
+      tooltip: "Generate comprehensive business requirements",
+      tooltipDetail: "Creates BRD with executive summary, stakeholder analysis, risk assessment, and ROI calculations",
       docType: "business"
     },
     {
       icon: FileCode,
       title: "Technical Specs", 
-      description: "Architecture & API design with customizable sections",
+      description: "Architecture & API design",
+      tooltip: "Create detailed technical documentation",
+      tooltipDetail: "Generates system architecture, API specifications, database schemas, and security requirements",
       docType: "technical"
     },
     {
       icon: Palette,
       title: "UX Design",
       description: "User personas & wireframes",
+      tooltip: "Design user experience specifications",
+      tooltipDetail: "Produces user personas, journey maps, wireframe descriptions, and interaction patterns",
       docType: "ux"
     },
     {
       icon: Database,
       title: "Architecture",
       description: "Interactive diagrams",
+      tooltip: "Generate visual architecture diagrams",
+      tooltipDetail: "Creates interactive Mermaid diagrams for system architecture, data flow, and component relationships",
       docType: "mermaid"
+    },
+    {
+      icon: Sparkles,
+      title: "AI Coding Prompt",
+      description: "AI-optimized implementation guide",
+      tooltip: "Create AI assistant prompts",
+      tooltipDetail: "Generates detailed prompts for AI coding assistants with component specs and implementation patterns",
+      docType: "coding"
+    },
+    {
+      icon: FlaskConical,
+      title: "Test Spec",
+      description: "TDD/BDD test specifications",
+      tooltip: "Generate comprehensive test specifications",
+      tooltipDetail: "Creates unit tests, BDD scenarios, E2E tests, and performance test specifications",
+      docType: "test"
+    },
+    {
+      icon: Users,
+      title: "Meeting Transcript",
+      description: "Process meeting transcripts",
+      tooltip: "Transform meetings into documentation",
+      tooltipDetail: "Converts meeting transcripts into structured summaries and Agile requirement stories ready for Jira",
+      docType: "meeting"
     }
   ]
 
@@ -196,6 +278,9 @@ export default function SimpleLandingPage() {
     { icon: Code, title: "Technical Specification", description: "Technical design & architecture", requiresAuth: false, docType: "technical" },
     { icon: Palette, title: "UX Design Specification", description: "UI/UX design requirements", requiresAuth: false, docType: "ux" },
     { icon: Database, title: "Architecture Diagram", description: "System architecture visuals", requiresAuth: false, docType: "mermaid", isFree: true },
+    { icon: Sparkles, title: "AI Coding Prompt", description: "AI-optimized implementation guide", requiresAuth: false, docType: "coding", isFree: true },
+    { icon: FlaskConical, title: "Test Specification (TDD/BDD)", description: "Modern test specs with TDD & BDD", requiresAuth: false, docType: "test", isFree: true },
+    { icon: Users, title: "Meeting Transcript", description: "Process meeting transcripts into summaries & stories", requiresAuth: false, docType: "meeting", isFree: true },
     { icon: TestTube, title: "Test Plan", description: "QA and testing strategy", requiresAuth: true },
     { icon: GitBranch, title: "API Documentation", description: "API specs and docs", requiresAuth: true },
     { icon: BookOpen, title: "User Guide", description: "End-user documentation", requiresAuth: true },
@@ -225,6 +310,51 @@ export default function SimpleLandingPage() {
               className="h-10 w-10 hidden md:block"
             />
           </div>
+          
+          {/* Rate Limit Display for Non-logged in users */}
+          {!user && rateLimitStatus && (
+            <div className={`flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-full transition-all ${
+              rateLimitStatus.remaining <= 3 
+                ? 'bg-orange-100 border border-orange-200' 
+                : rateLimitStatus.remaining === 0
+                ? 'bg-red-100 border border-red-200'
+                : 'bg-green-50 border border-green-200'
+            }`}>
+              <div className="flex items-center gap-1.5">
+                <span className={`text-xs sm:text-sm font-semibold ${
+                  rateLimitStatus.remaining <= 3 
+                    ? 'text-orange-700' 
+                    : rateLimitStatus.remaining === 0
+                    ? 'text-red-700'
+                    : 'text-green-700'
+                }`}>
+                  {Math.max(0, rateLimitStatus.remaining)}/10
+                </span>
+                <span className={`hidden sm:inline text-xs ${
+                  rateLimitStatus.remaining <= 3 
+                    ? 'text-orange-600' 
+                    : rateLimitStatus.remaining === 0
+                    ? 'text-red-600'
+                    : 'text-green-600'
+                }`}>docs left</span>
+              </div>
+              <div className="w-px h-4 bg-gray-300 opacity-50" />
+              <div className="flex items-center gap-1">
+                <Clock className={`h-3 w-3 ${
+                  rateLimitStatus.remaining === 0 
+                    ? 'text-red-500' 
+                    : 'text-gray-500'
+                }`} />
+                <span className={`text-xs font-medium ${
+                  rateLimitStatus.remaining === 0 
+                    ? 'text-red-600' 
+                    : 'text-gray-600'
+                }`}>
+                  {rateLimitStatus.remaining === 0 ? 'Resets in ' : ''}{getTimeUntilReset(rateLimitStatus.resetAt)}
+                </span>
+              </div>
+            </div>
+          )}
           
           {/* Sign In / Sign Up buttons */}
           <div className="flex items-center gap-2 sm:gap-3">
@@ -280,10 +410,10 @@ export default function SimpleLandingPage() {
           {/* Large Chat Input Area */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200">
             {/* Input Section */}
-            <div className="p-6">
+            <div className="p-6 relative">
               <textarea
                 placeholder="Describe your project idea (e.g., 'Build an Uber for medicine delivery', 'Create a social media app for pet owners', 'Design an e-learning platform')"
-                className="w-full min-h-[100px] sm:min-h-[120px] text-base sm:text-lg text-gray-900 placeholder-gray-500 resize-none focus:outline-none"
+                className="w-full min-h-[100px] sm:min-h-[120px] text-base sm:text-lg text-gray-900 placeholder-gray-500 resize-none focus:outline-none pr-8"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={(e) => {
@@ -295,20 +425,38 @@ export default function SimpleLandingPage() {
                   }
                 }}
               />
+              {inputValue && (
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="absolute right-4 top-4 h-8 w-8 text-gray-400 hover:text-gray-600"
+                  onClick={() => {
+                    setInputValue('')
+                    // Don't clear localStorage - preserve history
+                  }}
+                  title="Clear input"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
             </div>
 
             {/* Tools Bar */}
-            <div className="px-6 pb-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 relative">
+            <div className="px-3 sm:px-6 pb-3 sm:pb-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1 sm:gap-2 relative">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-9 px-3 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                    className="h-8 sm:h-9 px-2 sm:px-3 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                     onClick={() => setShowDocumentMenu(!showDocumentMenu)}
+                    title="Add document"
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
+                  
+                  <CodeAssistantMenu />
                   
                   {/* Document Type Dropdown Menu */}
                   {showDocumentMenu && (
@@ -316,20 +464,18 @@ export default function SimpleLandingPage() {
                       ref={menuRef}
                       className="absolute bottom-full left-0 mb-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50"
                     >
-                      {!showTechSectionsMenu ? (
-                        <>
-                          <div className="px-3 py-2 text-sm font-medium text-gray-700 border-b border-gray-100">
-                            Choose document type to generate
-                          </div>
-                          <div className="p-2 border-b border-gray-100">
-                            <div className="px-2 py-1.5 bg-indigo-50 border border-indigo-200 rounded-md">
-                              <p className="text-xs text-indigo-700 font-medium flex items-center gap-1">
-                                <Sparkles className="h-3 w-3" />
-                                Try any document type - Free Preview!
-                              </p>
-                            </div>
-                          </div>
-                          <div className="max-h-96 overflow-y-auto">
+                      <div className="px-3 py-2 text-sm font-medium text-gray-700 border-b border-gray-100">
+                        Choose document type to generate
+                      </div>
+                      <div className="p-2 border-b border-gray-100">
+                        <div className="px-2 py-1.5 bg-indigo-50 border border-indigo-200 rounded-md">
+                          <p className="text-xs text-indigo-700 font-medium flex items-center gap-1">
+                            <Sparkles className="h-3 w-3" />
+                            Try any document type - Free Preview!
+                          </p>
+                        </div>
+                      </div>
+                      <div className="max-h-96 overflow-y-auto">
                         {documentTypes.map((doc, index) => {
                           const isLocked = doc.requiresAuth;
                           const isFree = doc.isFree;
@@ -360,9 +506,6 @@ export default function SimpleLandingPage() {
                                   }`}>
                                     {doc.title}
                                   </span>
-                                  {doc.docType === 'technical' && (
-                                    <ChevronRight className="h-3 w-3 text-gray-400" />
-                                  )}
                                   {isFree && (
                                     <span className="text-xs bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-full font-medium">
                                       Free
@@ -383,151 +526,51 @@ export default function SimpleLandingPage() {
                             </button>
                           );
                         })}
-                          </div>
-                          <div className="p-2 border-t border-gray-100">
-                            <button
-                              onClick={() => window.location.href = '/signin'}
-                              className="w-full text-center text-xs text-indigo-600 hover:text-indigo-700 font-medium py-1"
-                            >
-                              Sign in to unlock all document types →
-                            </button>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          {/* Tech Spec Sections Submenu */}
-                          <div className="px-3 py-2 flex items-center justify-between border-b border-gray-100">
-                            <button
-                              onClick={() => setShowTechSectionsMenu(false)}
-                              className="flex items-center gap-1 text-sm text-gray-700 hover:text-gray-900"
-                            >
-                              <ChevronRight className="h-3 w-3 rotate-180" />
-                              <span className="font-medium">Technical Specification</span>
-                            </button>
-                          </div>
-                          
-                          <div className="p-2 border-b border-gray-100">
-                            <p className="text-xs text-gray-600 px-2 mb-2">Select focus areas to include:</p>
-                            <div className="flex gap-1 flex-wrap px-2">
-                              <button
-                                onClick={() => setSelectedTechSections(['system-architecture'])}
-                                className="px-2 py-1 text-xs rounded-md bg-gray-100 hover:bg-gray-200"
-                              >
-                                Default
-                              </button>
-                              <button
-                                onClick={() => setSelectedTechSections(['system-architecture', 'data-design', 'api-specifications', 'infrastructure-devops'])}
-                                className="px-2 py-1 text-xs rounded-md bg-gray-100 hover:bg-gray-200"
-                              >
-                                Full Stack
-                              </button>
-                              <button
-                                onClick={() => setSelectedTechSections(['api-specifications', 'data-design', 'security-architecture'])}
-                                className="px-2 py-1 text-xs rounded-md bg-gray-100 hover:bg-gray-200"
-                              >
-                                API First
-                              </button>
-                              <button
-                                onClick={() => setSelectedTechSections(Object.keys(techSpecSections))}
-                                className="px-2 py-1 text-xs rounded-md bg-gray-100 hover:bg-gray-200"
-                              >
-                                All
-                              </button>
-                            </div>
-                          </div>
-                          
-                          <div className="max-h-64 overflow-y-auto p-2">
-                            {Object.values(techSpecSections).map((section) => (
-                              <button
-                                key={section.id}
-                                onClick={() => {
-                                  if (selectedTechSections.includes(section.id)) {
-                                    setSelectedTechSections(selectedTechSections.filter(id => id !== section.id))
-                                  } else {
-                                    setSelectedTechSections([...selectedTechSections, section.id])
-                                  }
-                                }}
-                                className="w-full px-3 py-2 flex items-start gap-3 hover:bg-gray-50 rounded-md text-left"
-                              >
-                                <div className="w-5 h-5 mt-0.5">
-                                  {selectedTechSections.includes(section.id) && (
-                                    <Check className="h-5 w-5 text-indigo-600" />
-                                  )}
-                                </div>
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-base">{section.icon}</span>
-                                    <span className="text-sm font-medium text-gray-900">{section.name}</span>
-                                  </div>
-                                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{section.description}</p>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                          
-                          <div className="p-2 border-t border-gray-100 flex items-center justify-between">
-                            <span className="text-xs text-gray-600 px-2">
-                              {selectedTechSections.length} selected
-                            </span>
-                            <Button
-                              size="sm"
-                              onClick={handleTechSpecConfirm}
-                              disabled={selectedTechSections.length === 0}
-                              className="bg-indigo-600 hover:bg-indigo-700 text-white"
-                            >
-                              Generate
-                            </Button>
-                          </div>
-                        </>
-                      )}
+                      </div>
+                      <div className="p-2 border-t border-gray-100">
+                        <button
+                          onClick={() => window.location.href = '/signin'}
+                          className="w-full text-center text-xs text-indigo-600 hover:text-indigo-700 font-medium py-1"
+                        >
+                          Sign in to unlock all document types →
+                        </button>
+                      </div>
                     </div>
                   )}
                   
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-9 px-3 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                    className="hidden sm:block h-8 sm:h-9 px-2 sm:px-3 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                    title="Settings"
                   >
                     <Settings2 className="h-4 w-4" />
                   </Button>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 sm:gap-2">
                   {Object.keys(previousDocuments).length > 0 && (
-                    <div className="relative">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          // Use the last input if available
-                          const savedInput = localStorage.getItem('sdlc_last_input')
-                          if (savedInput && !inputValue.trim()) {
-                            setInputValue(savedInput)
-                          }
-                          setShowDocumentModal(true)
-                        }}
-                        className={`relative bg-white border-indigo-200 text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 text-sm ${showViewDocsHint ? 'animate-pulse-border' : ''}`}
-                      >
-                        <FileText className="h-4 w-4 mr-1.5" />
-                        View Docs
-                        <span className="absolute -top-1.5 -right-1.5 bg-indigo-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
-                          {Object.keys(previousDocuments).length}
-                        </span>
-                      </Button>
+                    <>
+                      <ViewDocsMenu 
+                        documents={previousDocuments}
+                        lastInput={inputValue || localStorage.getItem('sdlc_last_input') || ''}
+                        className={showViewDocsHint ? 'animate-pulse-border' : ''}
+                      />
                       {showViewDocsHint && (
-                        <div className="absolute bottom-full right-0 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap shadow-lg">
+                        <div className="absolute bottom-full right-0 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap shadow-lg z-50">
                           <div className="absolute bottom-0 right-4 transform translate-y-1/2 rotate-45 w-2 h-2 bg-gray-900"></div>
                           You have {Object.keys(previousDocuments).length} generated document{Object.keys(previousDocuments).length > 1 ? 's' : ''}! Click to view.
                         </div>
                       )}
-                    </div>
+                    </>
                   )}
-                  <span className="text-sm text-gray-500">SDLC AI</span>
+                  <span className="hidden sm:inline text-sm text-gray-500">SDLC AI</span>
                   <Button
                     size="icon"
-                    className="h-9 w-9 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg"
+                    className="h-8 w-8 sm:h-9 sm:w-9 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg"
                     onClick={() => handleGetStarted()}
                     disabled={!inputValue.trim()}
+                    title="Generate"
                   >
                     <ArrowUp className="h-4 w-4" />
                   </Button>
@@ -538,71 +581,56 @@ export default function SimpleLandingPage() {
           </div>
 
           {/* Quick Actions - Responsive Grid */}
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <NavButtonWithMenu
-              icon={Brain}
-              label="Business Analysis"
-              color="text-blue-600"
-              documentType="business"
-              onSelect={(type, sections) => {
-                if (sections) {
-                  localStorage.setItem('businessSections', JSON.stringify(sections))
-                }
-                handleGetStarted(type)
-              }}
-              isSelected={!!previousDocuments.business}
-            />
-            
-            <NavButtonWithMenu
-              icon={FileCode}
-              label="Technical Specs"
-              color="text-green-600"
-              documentType="technical"
-              onSelect={(type, sections) => {
-                if (sections) {
-                  localStorage.setItem('techSpecSections', JSON.stringify(sections))
-                }
-                handleGetStarted(type)
-              }}
-              isSelected={!!previousDocuments.technical}
-            />
-            
-            <NavButtonWithMenu
-              icon={Palette}
-              label="UX Design"
-              color="text-pink-600"
-              documentType="ux"
-              onSelect={(type, sections) => {
-                if (sections) {
-                  localStorage.setItem('uxSections', JSON.stringify(sections))
-                }
-                handleGetStarted(type)
-              }}
-              isSelected={!!previousDocuments.ux}
-            />
-            
-            <NavButtonWithMenu
-              icon={Database}
-              label="Architecture"
-              color="text-orange-600"
-              documentType="mermaid"
-              onSelect={(type, sections) => {
-                if (sections) {
-                  localStorage.setItem('architectureSections', JSON.stringify(sections))
-                }
-                handleGetStarted(type)
-              }}
-              isSelected={!!previousDocuments.mermaid}
-            />
+          <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 md:gap-3">
+            <TooltipProvider delayDuration={300}>
+              {features.map((feature, index) => {
+                const hasDocument = previousDocuments[feature.docType]
+                return (
+                  <Tooltip key={index}>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => handleGetStarted(feature.docType)}
+                        className={`relative flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 sm:py-2.5 bg-white rounded-lg border transition-all ${
+                          hasDocument 
+                            ? 'border-indigo-300 hover:border-indigo-400 hover:bg-indigo-50' 
+                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        <feature.icon className={`h-3.5 sm:h-4 w-3.5 sm:w-4 ${hasDocument ? 'text-indigo-600' : 'text-gray-600'}`} />
+                        <span className={`text-xs sm:text-sm font-medium ${hasDocument ? 'text-indigo-700' : 'text-gray-700'}`}>
+                          {feature.title}
+                        </span>
+                        {hasDocument && (
+                          <Check className="h-3 sm:h-3.5 w-3 sm:w-3.5 text-indigo-600 ml-0.5 sm:ml-1" />
+                        )}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent 
+                      side="top" 
+                      className="max-w-xs bg-gray-900 text-white border-gray-700 p-3"
+                    >
+                      <div className="space-y-1">
+                        <p className="font-semibold text-sm">{feature.tooltip}</p>
+                        <p className="text-xs text-gray-300">{feature.tooltipDetail}</p>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                )
+              })}
+            </TooltipProvider>
           </div>
 
-          {/* Info Message - Hide on mobile to reduce clutter */}
-          <div className="hidden sm:block text-center space-y-2">
-            <p className="text-sm text-gray-600">
+          {/* Info Message with mobile hint */}
+          <div className="text-center space-y-2">
+            <p className="text-sm text-gray-600 hidden sm:block">
               AI-powered SDLC automation platform that helps you write specs, generate code, and manage your development workflow
             </p>
             <p className="text-xs text-gray-500">
-              Start typing or choose an action above to begin
+              <span className="hidden sm:inline">Start typing or choose an action above to begin</span>
+              <span className="sm:hidden flex items-center justify-center gap-1">
+                <Info className="h-3 w-3" />
+                Tap any button to get started • Hover for details
+              </span>
             </p>
           </div>
         </div>
@@ -623,6 +651,10 @@ export default function SimpleLandingPage() {
               console.error('Error loading documents after modal close:', e)
             }
           }
+          // Refresh rate limit status for non-logged in users
+          if (!user) {
+            checkRateLimit()
+          }
         }}
         input={inputValue}
         onDocumentGenerated={(updatedDocs) => {
@@ -632,6 +664,10 @@ export default function SimpleLandingPage() {
           if (Object.keys(updatedDocs).length > 0) {
             setShowViewDocsHint(true)
             setTimeout(() => setShowViewDocsHint(false), 5000)
+          }
+          // Refresh rate limit status for non-logged in users
+          if (!user) {
+            checkRateLimit()
           }
         }}
       />

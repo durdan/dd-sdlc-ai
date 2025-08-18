@@ -1,0 +1,15 @@
+{
+  "version": "1.0.0",
+  "defaultProvider": "auto",
+  "outputDirectory": "./sdlc-docs",
+  "projectDefaults": {
+    "documentTypes": [
+      "business",
+      "functional",
+      "technical",
+      "ux"
+    ],
+    "exportFormat": "pdf"
+  },
+  "hooks": {}
+}

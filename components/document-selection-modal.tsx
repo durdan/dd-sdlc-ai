@@ -16,7 +16,9 @@ import {
   Sparkles,
   X,
   Layout,
-  Settings
+  Settings,
+  FlaskConical,
+  Users
 } from "lucide-react"
 
 interface DocumentType {
@@ -31,7 +33,9 @@ const documentTypes: DocumentType[] = [
   { id: "technical", name: "Technical Spec", icon: Code },
   { id: "ux", name: "UX Specification", icon: Palette },
   { id: "wireframe", name: "Wireframe", icon: Layout },
-  { id: "mermaid", name: "Architecture", icon: GitBranch }
+  { id: "mermaid", name: "Architecture", icon: GitBranch },
+  { id: "coding", name: "AI Coding Prompt", icon: Sparkles },
+  { id: "test", name: "Test Spec (TDD/BDD)", icon: FlaskConical }
 ]
 
 interface DocumentSelectionModalProps {

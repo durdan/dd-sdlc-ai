@@ -26,25 +26,42 @@ export function AuthModal({ open, onOpenChange }: { open: boolean; onOpenChange:
   const [error, setError] = useState<string | null>(null)
   const { handleGoogleSignIn, signInWithEmail, signUpWithEmail } = useAuth()
 
-  const handleGoogleSignInWrapper = async () => {
+  const handleGoogleSignInWrapper = async (e?: React.MouseEvent | React.TouchEvent) => {
+    // Prevent any default behavior that might interfere
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
     try {
       setIsLoading(true)
       setError(null)
-      console.log('🔍 Google sign-in initiated from modal')
+      console.log('🔍 Google sign-in button clicked in modal')
+      console.log('📱 Event type:', e?.type)
+      console.log('🌐 User Agent:', navigator.userAgent)
       
       // Detect mobile device for better user feedback
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isTouchEvent = e?.type === 'touchend'
       
-      if (isMobile) {
-        console.log('📱 Mobile device detected - providing mobile-specific feedback');
-        // Don't close modal immediately on mobile as redirect might take longer
+      if (isMobile || isTouchEvent) {
+        console.log('📱 Mobile/Touch device detected - attempting sign-in');
+        console.log('📱 Touch event:', isTouchEvent);
+        // Add a small delay for mobile to ensure UI updates
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
       
+      console.log('🔄 Calling handleGoogleSignIn...');
       await handleGoogleSignIn()
       
+      console.log('✅ handleGoogleSignIn completed');
+      
       // Only close modal on desktop, mobile will redirect
-      if (!isMobile) {
+      if (!isMobile && !isTouchEvent) {
+        console.log('💻 Closing modal on desktop');
         onOpenChange(false)
+      } else {
+        console.log('📱 Keeping modal open on mobile for redirect');
       }
     } catch (error: any) {
       console.error('❌ Google sign-in error in modal:', error)
@@ -61,7 +78,8 @@ export function AuthModal({ open, onOpenChange }: { open: boolean; onOpenChange:
       }
       
       setError(errorMessage)
-    } finally {
+      
+      // Don't keep loading state on error
       setIsLoading(false)
     }
   }
@@ -129,8 +147,9 @@ export function AuthModal({ open, onOpenChange }: { open: boolean; onOpenChange:
             type="button"
             variant="outline"
             onClick={handleGoogleSignInWrapper}
+            onTouchEnd={handleGoogleSignInWrapper}
             disabled={isLoading}
-            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0 hover:from-blue-600 hover:to-purple-700"
+            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0 hover:from-blue-600 hover:to-purple-700 touch-none"
           >
             {isLoading ? (
               <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />

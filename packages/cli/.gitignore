@@ -1,0 +1,5 @@
+
+# SDLC CLI
+sdlc-docs/
+*.sdlc.cache
+.sdlc-auth

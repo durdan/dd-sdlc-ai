@@ -1,0 +1,47 @@
+{
+  "name": "@sdlc/mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for SDLC AI Platform - Enable AI assistants to generate SDLC documentation",
+  "main": "dist/index.js",
+  "type": "module",
+  "bin": {
+    "sdlc-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "test": "node test/test-server.js",
+    "lint": "eslint src --ext .ts",
+    "setup": "node scripts/setup.js",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "sdlc",
+    "ai",
+    "documentation",
+    "claude",
+    "model-context-protocol"
+  ],
+  "author": "SDLC AI Platform Contributors",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.6.0",
+    "axios": "^1.7.7",
+    "chalk": "^5.3.0",
+    "dotenv": "^16.4.5",
+    "winston": "^3.13.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.5.5",
+    "@typescript-eslint/eslint-plugin": "^8.5.0",
+    "@typescript-eslint/parser": "^8.5.0",
+    "eslint": "^9.10.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.4"
+  }
+}

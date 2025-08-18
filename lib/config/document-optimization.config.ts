@@ -12,7 +12,8 @@ export const DOCUMENT_OPTIMIZATION_CONFIG = {
     functional: 3000,  // How much context functional specs should receive
     technical: 3000,   // How much context technical specs should receive
     ux: 2500,         // How much context UX specs should receive (less is often better for focused UX)
-    mermaid: 2000     // How much context diagram generation should receive
+    mermaid: 2000,    // How much context diagram generation should receive
+    meeting: 50000    // Much larger context for meeting transcripts
   },
   
   // Model to use for summarization (gpt-4o-mini is faster and cheaper)
@@ -43,6 +44,10 @@ export const DOCUMENT_OPTIMIZATION_CONFIG = {
     ux: {
       prioritize: ['user types', 'user goals', 'workflows', 'pain points'],
       exclude: ['technical implementation', 'database schemas']
+    },
+    meeting: {
+      prioritize: ['decisions', 'action items', 'requirements', 'features', 'technical discussions'],
+      exclude: ['off-topic conversations', 'greetings', 'small talk']
     }
   }
 }

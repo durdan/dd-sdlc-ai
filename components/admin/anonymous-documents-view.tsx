@@ -247,7 +247,9 @@ export default function AnonymousDocumentsView() {
                         </TableCell>
                         <TableCell>
                           <div className="text-sm space-y-1">
-                            <p className="text-muted-foreground">Session: {doc.session_id.substring(0, 20)}...</p>
+                            <p className="text-muted-foreground">
+                              Session: {doc.session_id ? doc.session_id.substring(0, 20) + '...' : 'N/A'}
+                            </p>
                             {doc.ip_address && (
                               <p className="text-muted-foreground">IP: {doc.ip_address}</p>
                             )}
@@ -276,64 +278,66 @@ export default function AnonymousDocumentsView() {
                             </DialogTrigger>
                             <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                               <DialogHeader>
-                                <DialogTitle>{doc.title}</DialogTitle>
+                                <DialogTitle>{selectedDoc?.title || doc.title}</DialogTitle>
                               </DialogHeader>
-                              <div className="space-y-4">
-                                <div>
-                                  <h3 className="font-semibold mb-2">Project Details</h3>
-                                  <dl className="grid grid-cols-2 gap-2 text-sm">
-                                    <div>
-                                      <dt className="font-medium">Session ID:</dt>
-                                      <dd className="text-muted-foreground">{doc.session_id}</dd>
-                                    </div>
-                                    <div>
-                                      <dt className="font-medium">Created:</dt>
-                                      <dd className="text-muted-foreground">
-                                        {format(new Date(doc.created_at), 'PPpp')}
-                                      </dd>
-                                    </div>
-                                    <div>
-                                      <dt className="font-medium">IP Address:</dt>
-                                      <dd className="text-muted-foreground">{doc.ip_address || 'N/A'}</dd>
-                                    </div>
-                                    <div>
-                                      <dt className="font-medium">User Agent:</dt>
-                                      <dd className="text-muted-foreground text-xs">{doc.user_agent || 'N/A'}</dd>
-                                    </div>
-                                  </dl>
-                                </div>
-
-                                <div>
-                                  <h3 className="font-semibold mb-2">Input Text</h3>
-                                  <p className="text-sm bg-muted p-3 rounded-md">{doc.input_text}</p>
-                                </div>
-
-                                {Object.entries(doc.documents || {}).map(([type, content]) => (
-                                  content && (
-                                    <div key={type}>
-                                      <div className="flex justify-between items-center mb-2">
-                                        <h3 className="font-semibold flex items-center gap-2">
-                                          {React.createElement(documentTypeIcons[type as keyof typeof documentTypeIcons] || FileText, {
-                                            className: "h-4 w-4"
-                                          })}
-                                          {documentTypeLabels[type as keyof typeof documentTypeLabels] || type}
-                                        </h3>
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          onClick={() => downloadDocument(doc, type)}
-                                        >
-                                          <Download className="h-4 w-4 mr-2" />
-                                          Download
-                                        </Button>
+                              {selectedDoc && (
+                                <div className="space-y-4">
+                                  <div>
+                                    <h3 className="font-semibold mb-2">Project Details</h3>
+                                    <dl className="grid grid-cols-2 gap-2 text-sm">
+                                      <div>
+                                        <dt className="font-medium">Session ID:</dt>
+                                        <dd className="text-muted-foreground">{selectedDoc.session_id}</dd>
                                       </div>
-                                      <div className="bg-muted p-3 rounded-md max-h-96 overflow-y-auto">
-                                        <pre className="text-sm whitespace-pre-wrap">{content}</pre>
+                                      <div>
+                                        <dt className="font-medium">Created:</dt>
+                                        <dd className="text-muted-foreground">
+                                          {format(new Date(selectedDoc.created_at), 'PPpp')}
+                                        </dd>
                                       </div>
-                                    </div>
-                                  )
-                                ))}
-                              </div>
+                                      <div>
+                                        <dt className="font-medium">IP Address:</dt>
+                                        <dd className="text-muted-foreground">{selectedDoc.ip_address || 'N/A'}</dd>
+                                      </div>
+                                      <div>
+                                        <dt className="font-medium">User Agent:</dt>
+                                        <dd className="text-muted-foreground text-xs">{selectedDoc.user_agent || 'N/A'}</dd>
+                                      </div>
+                                    </dl>
+                                  </div>
+
+                                  <div>
+                                    <h3 className="font-semibold mb-2">Input Text</h3>
+                                    <p className="text-sm bg-muted p-3 rounded-md">{selectedDoc.input_text}</p>
+                                  </div>
+
+                                  {Object.entries(selectedDoc.documents || {}).map(([type, content]) => (
+                                    content && (
+                                      <div key={type}>
+                                        <div className="flex justify-between items-center mb-2">
+                                          <h3 className="font-semibold flex items-center gap-2">
+                                            {React.createElement(documentTypeIcons[type as keyof typeof documentTypeIcons] || FileText, {
+                                              className: "h-4 w-4"
+                                            })}
+                                            {documentTypeLabels[type as keyof typeof documentTypeLabels] || type}
+                                          </h3>
+                                          <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => downloadDocument(selectedDoc, type)}
+                                          >
+                                            <Download className="h-4 w-4 mr-2" />
+                                            Download
+                                          </Button>
+                                        </div>
+                                        <div className="bg-muted p-3 rounded-md max-h-96 overflow-y-auto">
+                                          <pre className="text-sm whitespace-pre-wrap">{content}</pre>
+                                        </div>
+                                      </div>
+                                    )
+                                  ))}
+                                </div>
+                              )}
                             </DialogContent>
                           </Dialog>
                         </TableCell>

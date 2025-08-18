@@ -6,6 +6,8 @@ import { DocumentType } from '@/lib/prompt-service'
 import { createClient } from '@/lib/supabase/server'
 import { getDocumentContextOptimizer } from '@/lib/document-context-optimizer'
 import { cleanupDocumentFormatting } from '@/lib/format-cleanup'
+import { rateLimitService } from '@/lib/rate-limit-service'
+import { anonymousProjectService } from '@/lib/anonymous-project-service'
 
 interface GenerateDocumentRequest {
   input: string
@@ -500,7 +502,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate document type
-    const validDocumentTypes = ['business', 'functional', 'technical', 'ux', 'mermaid']
+    const validDocumentTypes = ['business', 'functional', 'technical', 'ux', 'mermaid', 'wireframe', 'coding', 'test']
     if (!validDocumentTypes.includes(documentType)) {
       return new Response(
         JSON.stringify({ error: `Invalid document type. Must be one of: ${validDocumentTypes.join(', ')}` }),
@@ -514,6 +516,26 @@ export async function POST(req: NextRequest) {
     // Get authenticated user if not provided
     const user = await getAuthenticatedUser()
     const effectiveUserId = userId || user?.id || 'anonymous'
+    
+    // Check rate limit for anonymous users
+    if (!user || effectiveUserId === 'anonymous') {
+      const sessionId = req.headers.get('x-session-id') || anonymousProjectService.generateSessionId()
+      const limitCheck = await rateLimitService.checkAnonymousLimit(sessionId)
+      
+      if (!limitCheck.allowed) {
+        return new Response(
+          JSON.stringify({ 
+            error: limitCheck.reason || "Rate limit exceeded",
+            remaining: limitCheck.remaining,
+            resetAt: limitCheck.resetAt
+          }),
+          { 
+            status: 429, 
+            headers: { 'Content-Type': 'application/json' }
+          }
+        )
+      }
+    }
 
     console.log('🚀 Starting streaming document generation...')
     console.log('Document Type:', documentType)

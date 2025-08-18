@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { AlertCircle, Users, TrendingUp, Activity, Settings, Calendar, BarChart3, Shield, Key, Search, Filter, UserPlus, RefreshCw } from 'lucide-react'
+import { AlertCircle, Users, TrendingUp, Activity, Settings, Calendar, BarChart3, Shield, Key, Search, Filter, UserPlus, RefreshCw, FileText } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts'
 import AnonymousDocumentsView from '@/components/admin/anonymous-documents-view'
 import AllProjectsView from '@/components/admin/all-projects-view'
@@ -59,7 +59,7 @@ export default function AdminDashboard() {
   const [editingUser, setEditingUser] = useState<AdminUserStats | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
-  const [diagramStats, setDiagramStats] = useState<any>(null)
+  const [consolidatedStats, setConsolidatedStats] = useState<any>(null)
   const [showMermaidViewer, setShowMermaidViewer] = useState(false)
   const [mermaidContent, setMermaidContent] = useState<any>(null)
   const [autoRefresh, setAutoRefresh] = useState(false)
@@ -67,14 +67,14 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     loadData()
-    loadDiagramStats()
+    loadConsolidatedStats()
   }, [])
 
   useEffect(() => {
     if (autoRefresh) {
       const interval = setInterval(() => {
         loadData()
-        loadDiagramStats()
+        loadConsolidatedStats()
         setLastRefresh(new Date())
       }, 30000) // Refresh every 30 seconds
       return () => clearInterval(interval)
@@ -106,14 +106,14 @@ export default function AdminDashboard() {
     }
   }
 
-  const loadDiagramStats = async () => {
+  const loadConsolidatedStats = async () => {
     try {
-      const res = await fetch('/api/admin/diagram-stats')
-      if (!res.ok) throw new Error('Failed to load diagram stats')
+      const res = await fetch('/api/admin/consolidated-stats')
+      if (!res.ok) throw new Error('Failed to load stats')
       const data = await res.json()
-      setDiagramStats(data)
+      setConsolidatedStats(data)
     } catch (err) {
-      setDiagramStats({ error: err instanceof Error ? err.message : 'Failed to load diagram stats' })
+      setConsolidatedStats({ error: err instanceof Error ? err.message : 'Failed to load stats' })
     }
   }
 
@@ -244,7 +244,7 @@ export default function AdminDashboard() {
           </Button>
           <Button onClick={() => {
             loadData()
-            loadDiagramStats()
+            loadConsolidatedStats()
             setLastRefresh(new Date())
           }} variant="outline" size="sm">
             <Activity className="h-4 w-4 mr-2" />
@@ -347,18 +347,15 @@ export default function AdminDashboard() {
 
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Projects Today</CardTitle>
+            <CardTitle className="text-sm font-medium">Documents Generated</CardTitle>
             <BarChart3 className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{todayStats.projects_today || 22}</div>
+            <div className="text-2xl font-bold">{consolidatedStats?.overview?.totalDocuments || 0}</div>
             <div className="flex items-center gap-2 mt-1">
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
-                {todayStats.anonymous_projects || 63} anon
-              </span>
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                {todayStats.authenticated_projects || 89} auth
-              </span>
+              <p className="text-xs text-muted-foreground">
+                Today: {consolidatedStats?.overview?.todayDocuments || 0}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -380,221 +377,110 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Diagram Generation Stats */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
-            <BarChart3 className="h-4 w-4 text-blue-500" />
-            Diagram Generation Stats
+      {/* Consolidated Platform Statistics */}
+      <Card className="mb-6">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-indigo-500" />
+            Platform Statistics
           </CardTitle>
+          <Badge variant="outline">All Document Types</Badge>
         </CardHeader>
         <CardContent>
-          {diagramStats?.error ? (
-            <div className="text-red-600 text-sm">{diagramStats.error}</div>
-          ) : !diagramStats ? (
-            <div className="text-gray-500 text-sm">Loading diagram stats...</div>
+          {consolidatedStats?.error ? (
+            <div className="text-red-600 text-sm">{consolidatedStats.error}</div>
+          ) : !consolidatedStats ? (
+            <div className="text-gray-500 text-sm">Loading statistics...</div>
           ) : (
-            <div className="space-y-4">
-              <div className="flex flex-wrap gap-8">
-                <div>
-                  <div className="text-lg font-bold">{diagramStats.totalDiagrams}</div>
-                  <div className="text-xs text-muted-foreground">Total Diagrams Generated</div>
-                </div>
-                <div>
-                  <div className="text-lg font-bold">{diagramStats.loggedInDiagrams}</div>
-                  <div className="text-xs text-muted-foreground">Logged-in Users</div>
-                </div>
-                <div>
-                  <div className="text-lg font-bold">{diagramStats.anonymousDiagrams}</div>
-                  <div className="text-xs text-muted-foreground">Anonymous Users</div>
-                </div>
-                <div>
-                  <div className="text-lg font-bold">{diagramStats.uniqueUsers}</div>
-                  <div className="text-xs text-muted-foreground">Unique Users</div>
-                </div>
-                <div>
-                  <div className="text-lg font-bold">{diagramStats.pageVisits}</div>
-                  <div className="text-xs text-muted-foreground">Page Visits</div>
-                </div>
-              </div>
-              <div className="mt-4">
-                <div className="font-semibold mb-2 text-sm">Recent Diagram Generations</div>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>User Type</TableHead>
-                        <TableHead>User ID</TableHead>
-                        <TableHead>User Input</TableHead>
-                        <TableHead>Generated Specs</TableHead>
-                        <TableHead>Mermaid</TableHead>
-                        <TableHead>User Agent</TableHead>
-                        <TableHead>Time</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {(diagramStats.recentGenerations || []).map((row: any, index: number) => (
-                        <TableRow key={index}>
-                          <TableCell>
-                            <span className={`px-2 py-1 rounded text-xs ${
-                              row.user_type === 'logged_in' 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-purple-100 text-purple-800'
-                            }`}>
-                              {row.user_type === 'logged_in' ? 'Logged In' : 'Anonymous'}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-xs">{row.user_id ? row.user_id.substring(0, 8) + '...' : 'N/A'}</TableCell>
-                          <TableCell className="max-w-xs">
-                            <div className="text-xs">
-                              <div className="font-medium text-gray-900 mb-1">User Input:</div>
-                              <div className="bg-gray-50 p-2 rounded text-xs border">
-                                {row.metadata?.input || row.input_preview || 'No input recorded'}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell className="max-w-xs">
-                            <div className="text-xs space-y-1">
-                              {row.metadata?.businessAnalysis && (
-                                <div>
-                                  <div className="font-medium text-gray-900">Business:</div>
-                                  <div className="bg-blue-50 p-1 rounded text-xs border">
-                                    {row.metadata.businessAnalysis.substring(0, 100)}...
-                                  </div>
-                                </div>
-                              )}
-                              {row.metadata?.functionalSpec && (
-                                <div>
-                                  <div className="font-medium text-gray-900">Functional:</div>
-                                  <div className="bg-green-50 p-1 rounded text-xs border">
-                                    {row.metadata.functionalSpec.substring(0, 100)}...
-                                  </div>
-                                </div>
-                              )}
-                              {row.metadata?.technicalSpec && (
-                                <div>
-                                  <div className="font-medium text-gray-900">Technical:</div>
-                                  <div className="bg-purple-50 p-1 rounded text-xs border">
-                                    {row.metadata.technicalSpec.substring(0, 100)}...
-                                  </div>
-                                </div>
-                              )}
-                              {!row.metadata?.businessAnalysis && !row.metadata?.functionalSpec && !row.metadata?.technicalSpec && (
-                                <div className="text-gray-500">No specs generated</div>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {row.mermaid_diagrams ? (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="text-xs"
-                                onClick={() => openMermaidViewer(row.mermaid_diagrams, row.full_content)}
-                              >
-                                <BarChart3 className="h-3 w-3 mr-1" />
-                                View Diagrams
-                              </Button>
-                            ) : (
-                              <span className="text-gray-400 text-xs">No diagrams</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="max-w-xs truncate text-xs">{row.user_agent?.substring(0, 30) + '...' || 'N/A'}</TableCell>
-                          <TableCell className="text-xs">{new Date(row.created_at).toLocaleString()}</TableCell>
-                        </TableRow>
-                      ))}
-                      {(diagramStats.recentGenerations || []).length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-                            No diagram generations yet. User input will appear here when users generate diagrams.
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-              
-              {/* User Input Analysis Section */}
-              <div className="mt-8">
-                <div className="font-semibold mb-4 text-sm">User Input Analysis</div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Card className="p-4">
-                    <div className="font-medium text-sm mb-2">Common Request Types</div>
-                    <div className="space-y-2 text-xs">
-                      <div className="flex justify-between">
-                        <span>Authentication Systems</span>
-                        <span className="text-blue-600">35%</span>
+            <div className="space-y-6">
+              {/* Documents by Type Grid */}
+              <div>
+                <h3 className="font-semibold mb-3 text-sm text-gray-700">Documents by Type</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                  {consolidatedStats.documentTypes?.map((doc: any) => (
+                    <div key={doc.type} className="bg-gradient-to-br from-white to-gray-50 border rounded-lg p-3 hover:shadow-md transition-shadow">
+                      <div className="text-xs font-medium text-gray-600 mb-1">
+                        {doc.label}
                       </div>
-                      <div className="flex justify-between">
-                        <span>E-commerce Platforms</span>
-                        <span className="text-green-600">25%</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>API Architecture</span>
-                        <span className="text-purple-600">20%</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Database Design</span>
-                        <span className="text-orange-600">20%</span>
+                      <div className="text-2xl font-bold" style={{ color: `var(--${doc.color}-600, #4B5563)` }}>
+                        {doc.count}
                       </div>
                     </div>
-                  </Card>
-                  
-                  <Card className="p-4">
-                    <div className="font-medium text-sm mb-2">Input Complexity</div>
-                    <div className="space-y-2 text-xs">
-                      <div className="flex justify-between">
-                        <span>Simple (&lt; 100 chars)</span>
-                        <span className="text-green-600">40%</span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Weekly Trends Chart */}
+              <div>
+                <h3 className="font-semibold mb-3 text-sm text-gray-700">7-Day Activity Trend</h3>
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={consolidatedStats.weeklyTrends}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                    <XAxis dataKey="day" tick={{ fontSize: 12 }} />
+                    <YAxis tick={{ fontSize: 12 }} />
+                    <Tooltip />
+                    <Line 
+                      type="monotone" 
+                      dataKey="projects" 
+                      stroke="#6366F1" 
+                      strokeWidth={2}
+                      name="Projects" 
+                      dot={{ fill: '#6366F1', r: 4 }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="documents" 
+                      stroke="#10B981" 
+                      strokeWidth={2}
+                      name="Documents"
+                      dot={{ fill: '#10B981', r: 4 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Recent Activity Feed */}
+              <div>
+                <h3 className="font-semibold mb-3 text-sm text-gray-700">Recent Activity</h3>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {consolidatedStats.recentActivity?.map((activity: any, idx: number) => (
+                    <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-2 h-2 rounded-full ${
+                          activity.user_type === 'logged_in' ? 'bg-green-500' : 'bg-purple-500'
+                        }`} />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">
+                            {activity.title}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {activity.user_type === 'logged_in' ? 'Logged-in User' : 'Anonymous'}
+                            {activity.documents && ` • ${activity.documents} docs`}
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex justify-between">
-                        <span>Medium (100-300 chars)</span>
-                        <span className="text-yellow-600">35%</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Complex (&gt; 300 chars)</span>
-                        <span className="text-red-600">25%</span>
-                      </div>
+                      <span className="text-xs text-gray-400">
+                        {new Date(activity.created_at).toLocaleTimeString()}
+                      </span>
                     </div>
-                  </Card>
+                  ))}
                 </div>
               </div>
-              
-              {/* Recent Page Visits */}
-              <div className="mt-6">
-                <div className="font-semibold mb-2 text-sm">Recent Page Visits</div>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Page</TableHead>
-                        <TableHead>Referrer</TableHead>
-                        <TableHead>User Agent</TableHead>
-                        <TableHead>Time</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {(diagramStats.recentPageVisits || []).map((visit: any, index: number) => (
-                        <TableRow key={index}>
-                          <TableCell className="text-xs">
-                            <span className={`px-2 py-1 rounded text-xs ${
-                              visit.page === 'landing' 
-                                ? 'bg-blue-100 text-blue-800' 
-                                : 'bg-gray-100 text-gray-800'
-                            }`}>
-                              {visit.page}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-xs">{visit.referrer === 'direct' ? 'Direct' : visit.referrer}</TableCell>
-                          <TableCell className="max-w-xs truncate text-xs">{visit.user_agent?.substring(0, 30) + '...' || 'N/A'}</TableCell>
-                          <TableCell className="text-xs">{new Date(visit.created_at).toLocaleString()}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+
+              {/* Top Users */}
+              {consolidatedStats.topUsers?.length > 0 && (
+                <div>
+                  <h3 className="font-semibold mb-3 text-sm text-gray-700">Top Users</h3>
+                  <div className="space-y-2">
+                    {consolidatedStats.topUsers.map((user: any, idx: number) => (
+                      <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                        <span className="text-sm font-medium">User {user.userId.substring(0, 8)}...</span>
+                        <Badge variant="secondary">{user.projectCount} projects</Badge>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
         </CardContent>
