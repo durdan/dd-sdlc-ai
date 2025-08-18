@@ -679,49 +679,39 @@ export function SimpleDocumentGenerationModal({
 
   const renderContent = () => {
     const content = generatedContent || streamedContent
-    console.log('🎨 Rendering content for type:', selectedType)
-    console.log('📄 Content length:', content?.length)
-    console.log('✅ Has generated content:', !!generatedContent)
-    console.log('📝 Has streamed content:', !!streamedContent)
     
-    // Show section progress if we're generating sections
+    // For section generation, show the consolidated progress view
     const sectionIds = Object.keys(sectionProgress)
     if (isGenerating && sectionIds.length > 0) {
       const currentSectionDetails = sectionDetailsMap[selectedType as keyof typeof sectionDetailsMap] || {}
       
       return (
         <div className="space-y-4">
-          {/* Section Progress UI */}
+          {/* Unified Section Progress Display */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="font-medium text-gray-900">
+              <h3 className="font-medium text-gray-900 flex items-center gap-2">
+                <Settings className="h-4 w-4 text-gray-600 animate-spin" />
                 Generating {sectionIds.length} Sections
               </h3>
-              <Badge variant="outline">
+              <Badge variant="outline" className="bg-white">
                 {Object.values(sectionProgress).filter(s => s.status === 'completed').length} / {sectionIds.length} Complete
               </Badge>
             </div>
             
-            {/* Progress bar with percentage */}
-            <div className="space-y-1">
-              <Progress 
-                value={Math.round((Object.values(sectionProgress).filter(s => s.status === 'completed').length / sectionIds.length) * 100)}
-                className="h-2"
-              />
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>
-                  {currentGeneratingSection ? 
-                    `Processing section ${Object.keys(sectionProgress).indexOf(currentGeneratingSection) + 1} of ${sectionIds.length}...` :
-                    'Preparing sections...'
-                  }
-                </span>
-                <span>
-                  {Math.round((Object.values(sectionProgress).filter(s => s.status === 'completed').length / sectionIds.length) * 100)}%
-                </span>
-              </div>
+            {/* Overall Progress Bar */}
+            <Progress 
+              value={Math.round((Object.values(sectionProgress).filter(s => s.status === 'completed').length / sectionIds.length) * 100)}
+              className="h-2"
+            />
+            <div className="text-xs text-gray-500 text-center">
+              {currentGeneratingSection ? 
+                `Processing section ${Object.keys(sectionProgress).indexOf(currentGeneratingSection) + 1} of ${sectionIds.length}...` :
+                'Preparing sections...'
+              }
             </div>
             
-            {/* Section list */}
+            {/* Section Status List */}
             <div className="space-y-2">
               {sectionIds.map(sectionId => {
                 const status = sectionProgress[sectionId]
@@ -742,6 +732,7 @@ export function SimpleDocumentGenerationModal({
                         {status.status === 'pending' && <span className="text-gray-400">○</span>}
                         
                         <span className="font-medium text-sm">
+                          {sectionInfo?.icon && <span className="mr-1">{sectionInfo.icon}</span>}
                           {sectionInfo?.name || sectionId}
                         </span>
                       </div>
@@ -765,18 +756,6 @@ export function SimpleDocumentGenerationModal({
               })}
             </div>
           </div>
-          
-          {/* Show current content being generated */}
-          {streamedContent && (
-            <div className="border rounded-lg p-4 bg-white max-h-96 overflow-y-auto">
-              <div className="text-xs text-gray-500 mb-2">Current Progress:</div>
-              <div className="prose prose-sm max-w-none">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {streamedContent}
-                </ReactMarkdown>
-              </div>
-            </div>
-          )}
         </div>
       )
     }
@@ -1110,8 +1089,8 @@ export function SimpleDocumentGenerationModal({
 
           </div>
 
-          {/* Terminal-like Streaming Preview (if generating) - Smaller on mobile */}
-          {isGenerating && (
+          {/* Terminal-like Streaming Preview - Only show when NOT generating sections */}
+          {isGenerating && currentSections.length === 0 && (
             <div className="flex-shrink-0 bg-black border border-gray-700 rounded-lg p-2 sm:p-4">
               <div className="flex items-center gap-2 mb-2 sm:mb-3">
                 <div className="flex gap-1 sm:gap-1.5">
@@ -1179,17 +1158,6 @@ export function SimpleDocumentGenerationModal({
                     Regenerate
                   </Button>
                 )}
-              </div>
-            )}
-            {/* Show section progress if sections are selected */}
-            {currentSections.length > 0 && (isGenerating || generatedContent || streamedContent) && (
-              <div className="mb-4">
-                <SectionGenerationProgress
-                  documentType={selectedType}
-                  sections={currentSections}
-                  sectionDetails={currentSectionDetails}
-                  isGenerating={isGenerating}
-                />
               </div>
             )}
             
