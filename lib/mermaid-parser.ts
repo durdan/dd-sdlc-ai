@@ -20,7 +20,56 @@ export interface ParsedDiagrams {
 export function fixMermaidSyntax(diagramContent: string): string {
   let fixed = diagramContent
 
-  // CRITICAL FIX 0: Fix line breaks in node labels
+  // CRITICAL FIX 0: Fix sequence diagram authentication and response errors
+  // Common patterns that break sequence diagrams:
+  // - "401 Unauthorized" or similar HTTP status codes without quotes
+  // - "Connection error" without proper formatting
+  // - Response formats that break parsing
+  
+  // Fix HTTP status codes and error messages in sequence diagrams
+  if (fixed.includes('sequenceDiagram') || fixed.includes('sequence')) {
+    // Fix unquoted HTTP status codes and error messages
+    fixed = fixed.replace(/(->>?|-->>?)\s*([^:\n]+):\s*(401\s+Unauthorized|403\s+Forbidden|404\s+Not Found|500\s+Internal Server Error|Connection error|Error|Success|OK)(?!["\n])/gm, 
+      (match, arrow, participant, message) => {
+        return `${arrow} ${participant}: "${message}"`
+      })
+    
+    // Fix responses that are missing quotes
+    fixed = fixed.replace(/(->>?|-->>?)\s*([^:\n]+):\s*([^"\n][^:\n]+[^"\n])$/gm, 
+      (match, arrow, participant, message) => {
+        // Only add quotes if message doesn't already have them and looks like it needs them
+        const trimmedMsg = message.trim()
+        if (!trimmedMsg.startsWith('"') && !trimmedMsg.endsWith('"') && 
+            (trimmedMsg.includes(' ') || trimmedMsg.match(/^\d{3}\s/) || 
+             trimmedMsg.includes('error') || trimmedMsg.includes('Error'))) {
+          return `${arrow} ${participant}: "${trimmedMsg}"`
+        }
+        return match
+      })
+    
+    // Fix participant declarations with special characters
+    fixed = fixed.replace(/participant\s+([^\s]+)\s+as\s+"?([^"\n]+)"?/gm, 
+      (match, id, label) => {
+        return `participant ${id} as "${label.replace(/"/g, '')}"`
+      })
+    
+    // Fix broken response patterns
+    fixed = fixed.replace(/Response:\s*{([^}]+)}/gm, (match, content) => {
+      return `"Response: {${content}}"`
+    })
+    
+    // Fix authentication flow patterns
+    fixed = fixed.replace(/Note\s+(over|right of|left of)\s+([^:]+):\s*([^"\n].+[^"\n])$/gm,
+      (match, position, participant, note) => {
+        const trimmedNote = note.trim()
+        if (!trimmedNote.startsWith('"') && !trimmedNote.endsWith('"')) {
+          return `Note ${position} ${participant}: "${trimmedNote}"`
+        }
+        return match
+      })
+  }
+
+  // CRITICAL FIX 0.5: Fix line breaks in node labels
   // Pattern: AUTH[Authentication Service<br/>JWT, OAuth2, RBAC]
   // The <br/> should be preserved, but newlines within labels break the syntax
   
@@ -142,7 +191,72 @@ export function fixMermaidSyntax(diagramContent: string): string {
   // Pattern: EMAIL[Email Service\nSend] should be EMAIL[Email Service<br/>SendGrid]
   fixed = fixed.replace(/EMAIL\[Email Service\s*\n\s*Send\]/g, 'EMAIL[Email Service<br/>SendGrid, AWS SES]')
   
-  // FIX 12: Clean up whitespace
+  // FIX 12: Fix specific sequence diagram patterns that commonly fail
+  if (fixed.includes('sequenceDiagram')) {
+    // Fix broken activation/deactivation patterns
+    fixed = fixed.replace(/activate\s+([^\s\n]+)\s*$/gm, 'activate $1')
+    fixed = fixed.replace(/deactivate\s+([^\s\n]+)\s*$/gm, 'deactivate $1')
+    
+    // Fix loop and alt blocks
+    fixed = fixed.replace(/loop\s+([^\n]+)\s*$/gm, 'loop $1')
+    fixed = fixed.replace(/alt\s+([^\n]+)\s*$/gm, 'alt $1')
+    fixed = fixed.replace(/else\s+([^\n]+)\s*$/gm, 'else $1')
+    
+    // Ensure proper end statements for blocks
+    const loopCount = (fixed.match(/^\s*loop\s+/gm) || []).length
+    const altCount = (fixed.match(/^\s*alt\s+/gm) || []).length
+    const endCount = (fixed.match(/^\s*end\s*$/gm) || []).length
+    const expectedEnds = loopCount + altCount
+    
+    if (endCount < expectedEnds) {
+      // Add missing end statements
+      const missingEnds = expectedEnds - endCount
+      for (let i = 0; i < missingEnds; i++) {
+        fixed += '\n    end'
+      }
+    }
+    
+    // Fix message arrows with special characters
+    fixed = fixed.replace(/(->>?|-->>?)\s*([^:\n]+):\s*([^\n]+)/gm, (match, arrow, participant, message) => {
+      const trimmedMsg = message.trim()
+      // Check if message contains problematic characters
+      if (trimmedMsg.includes('{') || trimmedMsg.includes('}') || 
+          trimmedMsg.includes('[') || trimmedMsg.includes(']') ||
+          trimmedMsg.includes('(') || trimmedMsg.includes(')')) {
+        // Ensure it's properly quoted
+        if (!trimmedMsg.startsWith('"') || !trimmedMsg.endsWith('"')) {
+          return `${arrow} ${participant}: "${trimmedMsg.replace(/"/g, '\\"')}"`
+        }
+      }
+      return match
+    })
+  }
+  
+  // FIX 13: Fix class diagram method signatures
+  if (fixed.includes('classDiagram')) {
+    // Fix method signatures with return types
+    fixed = fixed.replace(/(\+|-|#|~)\s*(\w+)\s*\(\s*([^)]*)\s*\)\s*:\s*(\w+)/gm, 
+      '$1$2($3) $4')
+    
+    // Fix attributes with types
+    fixed = fixed.replace(/(\+|-|#|~)\s*(\w+)\s*:\s*(\w+)/gm, 
+      '$1$2 : $3')
+  }
+  
+  // FIX 14: Fix state diagram syntax
+  if (fixed.includes('stateDiagram')) {
+    // Fix state transitions
+    fixed = fixed.replace(/(\w+)\s*-->\s*(\w+)\s*:\s*([^\n]+)/gm, 
+      (match, from, to, label) => {
+        const trimmedLabel = label.trim()
+        if (trimmedLabel.includes(' ') && !trimmedLabel.startsWith('"')) {
+          return `${from} --> ${to} : "${trimmedLabel}"`
+        }
+        return `${from} --> ${to} : ${trimmedLabel}`
+      })
+  }
+  
+  // FIX 15: Clean up whitespace
   fixed = fixed.split('\n').map(line => line.trimRight()).join('\n')
   fixed = fixed.replace(/\n{3,}/g, '\n\n')
 

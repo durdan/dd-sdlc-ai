@@ -69,33 +69,6 @@ export function ViewDocsMenu({
         if (storedHistory) {
           const history = JSON.parse(storedHistory)
           setDocumentHistory(history)
-        } else {
-          // Fallback to old format
-          const storedDocs = localStorage.getItem('sdlc_generated_docs')
-          const storedInput = localStorage.getItem('sdlc_last_generated_input') || 
-                              localStorage.getItem('sdlc_last_input') || 
-                              lastInput
-          
-          if (storedDocs) {
-            const docs = JSON.parse(storedDocs)
-            const history: DocumentRecord[] = []
-            
-            // Convert to history format
-            Object.entries(docs).forEach(([type, content]) => {
-              if (content) {
-                history.push({
-                  type,
-                  content: content as string,
-                  input: storedInput,
-                  timestamp: Date.now() - Math.random() * 3600000 // Random time in last hour for demo
-                })
-              }
-            })
-            
-            // Sort by timestamp (newest first)
-            history.sort((a, b) => b.timestamp - a.timestamp)
-            setDocumentHistory(history)
-          }
         }
       } catch (error) {
         console.error('Error loading document history:', error)
@@ -199,9 +172,14 @@ export function ViewDocsMenu({
     )
   })
 
-  const documentCount = Object.keys(documents).length
+  // Get the actual count from document history (total documents generated)
+  const historyCount = documentHistory.length
+  const uniqueDocsCount = Object.keys(documents).length
+  
+  // Use the history count if available, otherwise fall back to unique docs count
+  const documentCount = historyCount > 0 ? historyCount : uniqueDocsCount
 
-  if (documentCount === 0) {
+  if (documentCount === 0 && uniqueDocsCount === 0) {
     return null
   }
 
@@ -232,7 +210,9 @@ export function ViewDocsMenu({
             <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-semibold text-gray-700">Generated Documents</h3>
-                <span className="text-xs text-gray-500">{documentCount} document{documentCount > 1 ? 's' : ''}</span>
+                <span className="text-xs text-gray-500">
+                  {historyCount > 0 ? historyCount : documentCount} document{(historyCount > 1 || (historyCount === 0 && documentCount > 1)) ? 's' : ''}
+                </span>
               </div>
               
               {/* Show common input if all documents have the same input */}
@@ -402,6 +382,7 @@ export function ViewDocsMenu({
           input={selectedDoc.input}
           initialDocType={selectedDoc.type}
           initialContent={selectedDoc.content}
+          showPreviousDocs={true}  // Show previous docs when viewing from menu
         />
       )}
     </>

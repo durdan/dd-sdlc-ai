@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Sequence Diagram Fix</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .test-case { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; font-size: 11px; }
+        .diagram-container { min-height: 200px; border: 1px solid #ccc; margin: 10px 0; background: white; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>Test Sequence Diagram Fixing</h1>
+    <div id="output"></div>
+    
+    <script type="module">
+        // Comprehensive sequence diagram fixer
+        function fixSequenceDiagram(content) {
+            let fixed = content;
+            
+            // Remove numbered lists
+            fixed = fixed.replace(/^\s*\d+\.\s+/gm, '');
+            
+            // Remove bullet points
+            fixed = fixed.replace(/^\s*[-*•]\s+/gm, '');
+            
+            const lines = fixed.split('\n');
+            const fixedLines = [];
+            let inSequence = false;
+            
+            for (const line of lines) {
+                const trimmed = line.trim();
+                
+                if (trimmed === 'sequenceDiagram' || trimmed.startsWith('sequenceDiagram')) {
+                    inSequence = true;
+                    fixedLines.push('sequenceDiagram');
+                    continue;
+                }
+                
+                if (!inSequence) {
+                    fixedLines.push(line);
+                    continue;
+                }
+                
+                if (!trimmed) {
+                    fixedLines.push('');
+                    continue;
+                }
+                
+                // Fix participant declarations
+                if (trimmed.startsWith('participant')) {
+                    const match = trimmed.match(/participant\s+(\w+)(?:\s+as\s+(.+))?/);
+                    if (match) {
+                        const [, id, label] = match;
+                        if (label) {
+                            const cleanLabel = label.replace(/^["']|["']$/g, '').trim();
+                            fixedLines.push(`    participant ${id} as "${cleanLabel}"`);
+                        } else {
+                            fixedLines.push(`    participant ${id}`);
+                        }
+                    } else {
+                        fixedLines.push(`    ${trimmed}`);
+                    }
+                    continue;
+                }
+                
+                // Fix messages
+                const arrowMatch = trimmed.match(/^(.+?)\s*(->>?|-->>?|-\)|--\)|->|-->)\s*(.+?)(?:\s*:\s*(.*))?$/);
+                if (arrowMatch) {
+                    const [, from, arrow, to, message] = arrowMatch;
+                    if (message) {
+                        const cleanMsg = message.trim();
+                        if (cleanMsg && !cleanMsg.startsWith('"') && !cleanMsg.endsWith('"')) {
+                            if (cleanMsg.includes(' ') || cleanMsg.includes('{') || cleanMsg.match(/^\d/)) {
+                                fixedLines.push(`    ${from.trim()} ${arrow} ${to.trim()}: "${cleanMsg}"`);
+                            } else {
+                                fixedLines.push(`    ${from.trim()} ${arrow} ${to.trim()}: ${cleanMsg}`);
+                            }
+                        } else {
+                            fixedLines.push(`    ${from.trim()} ${arrow} ${to.trim()}: ${cleanMsg}`);
+                        }
+                    } else {
+                        fixedLines.push(`    ${from.trim()} ${arrow} ${to.trim()}`);
+                    }
+                    continue;
+                }
+                
+                // Control flow and other keywords
+                if (trimmed.match(/^(loop|alt|opt|par|rect|critical|break|else|end|activate|deactivate|Note)/)) {
+                    fixedLines.push(`    ${trimmed}`);
+                    continue;
+                }
+                
+                // Default
+                fixedLines.push(`    ${trimmed}`);
+            }
+            
+            return fixedLines.join('\n');
+        }
+        
+        // Test cases
+        const testCases = [
+            {
+                name: "Basic Sequence Diagram",
+                input: `sequenceDiagram
+participant Client
+participant API
+participant Database
+
+Client->>API: Request data
+API->>Database: Query
+Database-->>API: Results
+API-->>Client: Response`,
+                expected: "Should render correctly"
+            },
+            {
+                name: "Sequence with Numbered Lists",
+                input: `sequenceDiagram
+1. participant Client
+2. participant API
+3. participant Database
+
+Client->>API: Request data
+API->>Database: Query
+Database-->>API: Results
+API-->>Client: Response`,
+                expected: "Should remove numbers and render"
+            },
+            {
+                name: "Sequence with Unquoted Messages",
+                input: `sequenceDiagram
+participant Client
+participant API
+
+Client->>API: Send request with data
+API-->>Client: 401 Unauthorized
+Client->>API: Retry with token
+API-->>Client: Success response`,
+                expected: "Should quote messages with spaces"
+            },
+            {
+                name: "Complex Sequence",
+                input: `sequenceDiagram
+participant User
+participant Frontend
+participant API
+participant Database
+
+User->>Frontend: Click login
+Frontend->>API: POST /auth/login
+API->>Database: Validate credentials
+Database-->>API: User found
+API-->>Frontend: JWT token
+Frontend-->>User: Show dashboard`,
+                expected: "Should handle complex flow"
+            }
+        ];
+        
+        const output = document.getElementById('output');
+        
+        // Wait for page to load
+        async function initializeAndTest() {
+            // Wait a bit for mermaid to load
+            if (typeof mermaid === 'undefined') {
+                setTimeout(initializeAndTest, 100);
+                return;
+            }
+            
+            // Initialize mermaid
+            mermaid.initialize({ 
+            startOnLoad: false,
+            theme: 'default',
+            securityLevel: 'loose'
+        });
+            
+            // Test each case
+            for (const testCase of testCases) {
+            const testDiv = document.createElement('div');
+            testDiv.className = 'test-case';
+            
+            testDiv.innerHTML = `
+                <h3>${testCase.name}</h3>
+                <p><em>${testCase.expected}</em></p>
+                <details>
+                    <summary>Original Input</summary>
+                    <pre>${testCase.input}</pre>
+                </details>
+            `;
+            
+            // Apply fix
+            const fixed = fixSequenceDiagram(testCase.input);
+            
+            // Show fixed code
+            const fixedDetails = document.createElement('details');
+            fixedDetails.innerHTML = '<summary>Fixed Code</summary>';
+            const fixedPre = document.createElement('pre');
+            fixedPre.textContent = fixed;
+            fixedDetails.appendChild(fixedPre);
+            testDiv.appendChild(fixedDetails);
+            
+            // Create diagram container
+            const diagramDiv = document.createElement('div');
+            diagramDiv.className = 'diagram-container';
+            diagramDiv.id = `diagram-${testCase.name.replace(/\s+/g, '-')}`;
+            testDiv.appendChild(diagramDiv);
+            
+            output.appendChild(testDiv);
+            
+            // Try to render
+            try {
+                const { svg } = await mermaid.render(
+                    `mermaid-${Date.now()}-${Math.random()}`,
+                    fixed
+                );
+                document.getElementById(`diagram-${testCase.name.replace(/\s+/g, '-')}`).innerHTML = svg;
+                document.getElementById(`diagram-${testCase.name.replace(/\s+/g, '-')}`).innerHTML += 
+                    '<div class="success">✓ Rendered successfully</div>';
+            } catch (error) {
+                document.getElementById(`diagram-${testCase.name.replace(/\s+/g, '-')}`).innerHTML = 
+                    `<div class="error">Failed: ${error.message}</div>`;
+            }
+            }
+        }
+        
+        // Start initialization
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeAndTest);
+        } else {
+            initializeAndTest();
+        }
+    </script>
+</body>
+</html>

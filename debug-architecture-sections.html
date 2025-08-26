@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Architecture Sections</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #fff; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #444; background: #2a2a2a; }
+        .content { white-space: pre-wrap; background: #000; padding: 10px; margin-top: 10px; overflow-x: auto; }
+        h2 { color: #4CAF50; }
+        .meta { color: #888; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <h1>Debug: Architecture Section Content</h1>
+    <div id="output"></div>
+    
+    <script>
+        // Get document history
+        const history = localStorage.getItem('sdlc_document_history');
+        const output = document.getElementById('output');
+        
+        if (history) {
+            const docs = JSON.parse(history);
+            
+            // Find architecture/mermaid documents
+            const archDocs = docs.filter(d => d.type === 'mermaid' || d.type === 'architecture');
+            
+            output.innerHTML = '<h2>Architecture Documents Found: ' + archDocs.length + '</h2>';
+            
+            archDocs.forEach((doc, index) => {
+                const div = document.createElement('div');
+                div.className = 'section';
+                
+                // Show metadata
+                div.innerHTML = `
+                    <h3>Document ${index + 1}</h3>
+                    <div class="meta">
+                        <p>Type: ${doc.type}</p>
+                        <p>Input: ${doc.input}</p>
+                        <p>Sections: ${JSON.stringify(doc.sections || [])}</p>
+                        <p>Content Length: ${doc.content ? doc.content.length : 0} chars</p>
+                    </div>
+                `;
+                
+                // Show first 2000 chars of content
+                if (doc.content) {
+                    const contentDiv = document.createElement('div');
+                    contentDiv.className = 'content';
+                    contentDiv.textContent = doc.content.substring(0, 2000);
+                    div.appendChild(contentDiv);
+                    
+                    // Check for mermaid blocks
+                    const mermaidMatches = doc.content.match(/```mermaid[\s\S]*?```/g);
+                    if (mermaidMatches) {
+                        const mermaidInfo = document.createElement('div');
+                        mermaidInfo.innerHTML = '<p style="color: yellow;">Found ' + mermaidMatches.length + ' Mermaid diagrams</p>';
+                        div.appendChild(mermaidInfo);
+                        
+                        // Show first mermaid diagram
+                        const firstMermaid = document.createElement('div');
+                        firstMermaid.className = 'content';
+                        firstMermaid.style.background = '#003';
+                        firstMermaid.textContent = mermaidMatches[0];
+                        div.appendChild(firstMermaid);
+                    }
+                }
+                
+                output.appendChild(div);
+            });
+            
+            // Also check section metadata
+            const sectionMeta = localStorage.getItem('sdlc_section_metadata');
+            if (sectionMeta) {
+                const metaDiv = document.createElement('div');
+                metaDiv.className = 'section';
+                metaDiv.innerHTML = '<h2>Section Metadata</h2>';
+                const metaContent = document.createElement('div');
+                metaContent.className = 'content';
+                metaContent.textContent = JSON.stringify(JSON.parse(sectionMeta), null, 2);
+                metaDiv.appendChild(metaContent);
+                output.appendChild(metaDiv);
+            }
+        } else {
+            output.innerHTML = '<p>No document history found</p>';
+        }
+        
+        // Check current selected sections
+        const mermaidSections = localStorage.getItem('mermaidSections');
+        if (mermaidSections) {
+            const sectDiv = document.createElement('div');
+            sectDiv.className = 'section';
+            sectDiv.innerHTML = '<h2>Selected Mermaid Sections</h2>';
+            const sectContent = document.createElement('div');
+            sectContent.className = 'content';
+            sectContent.textContent = mermaidSections;
+            sectDiv.appendChild(sectContent);
+            output.appendChild(sectDiv);
+        }
+    </script>
+</body>
+</html>

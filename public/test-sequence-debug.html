@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Sequence Diagrams</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #fff; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #444; background: #2a2a2a; }
+        .content { white-space: pre-wrap; background: #000; padding: 10px; margin-top: 10px; overflow-x: auto; }
+        h2 { color: #4CAF50; }
+        .error { color: #f44336; }
+        .success { color: #4CAF50; }
+        button { padding: 10px; margin: 5px; background: #4CAF50; border: none; color: white; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Debug: Sequence Diagrams</h1>
+    
+    <div class="section">
+        <button onclick="extractSequenceDiagrams()">Extract Sequence Diagrams from Storage</button>
+        <button onclick="testSequenceDiagram()">Test Sample Sequence Diagram</button>
+    </div>
+    
+    <div id="output"></div>
+    
+    <script>
+        // Wait for Mermaid to load
+        window.addEventListener('DOMContentLoaded', function() {
+            // Initialize mermaid
+            if (typeof mermaid !== 'undefined') {
+                mermaid.initialize({ 
+            startOnLoad: false,
+            theme: 'default',
+            securityLevel: 'loose'
+        });
+            } else {
+                console.error('Mermaid library failed to load');
+                document.getElementById('output').innerHTML = '<div class="section error">Mermaid library failed to load. Please refresh the page.</div>';
+            }
+        });
+        
+        window.extractSequenceDiagrams = function() {
+            if (typeof mermaid === 'undefined') {
+                alert('Mermaid not loaded yet. Please wait and try again.');
+                return;
+            }
+            const output = document.getElementById('output');
+            output.innerHTML = '';
+            
+            const history = localStorage.getItem('sdlc_document_history');
+            if (!history) {
+                output.innerHTML = '<div class="section error">No document history found</div>';
+                return;
+            }
+            
+            const docs = JSON.parse(history);
+            let sequenceFound = false;
+            
+            docs.forEach((doc, docIndex) => {
+                if (doc.content && doc.content.includes('sequenceDiagram')) {
+                    sequenceFound = true;
+                    
+                    // Extract sequence diagrams
+                    const matches = doc.content.match(/sequenceDiagram[\s\S]*?(?=(?:sequenceDiagram|erDiagram|classDiagram|$))/g);
+                    
+                    if (matches) {
+                        matches.forEach((diagram, index) => {
+                            const section = document.createElement('div');
+                            section.className = 'section';
+                            section.innerHTML = `<h2>Sequence Diagram ${index + 1} from Document ${docIndex + 1}</h2>`;
+                            
+                            // Show raw content
+                            const rawDiv = document.createElement('div');
+                            rawDiv.innerHTML = '<h3>Raw Content (first 500 chars):</h3>';
+                            const rawContent = document.createElement('div');
+                            rawContent.className = 'content';
+                            rawContent.textContent = diagram.substring(0, 500);
+                            rawDiv.appendChild(rawContent);
+                            section.appendChild(rawDiv);
+                            
+                            // Try to render
+                            const renderDiv = document.createElement('div');
+                            renderDiv.innerHTML = '<h3>Render Attempt:</h3>';
+                            const renderContainer = document.createElement('div');
+                            renderContainer.id = `render-${docIndex}-${index}`;
+                            renderContainer.style.background = 'white';
+                            renderContainer.style.padding = '10px';
+                            renderContainer.style.minHeight = '100px';
+                            renderDiv.appendChild(renderContainer);
+                            section.appendChild(renderDiv);
+                            
+                            output.appendChild(section);
+                            
+                            // Attempt to render
+                            const cleanDiagram = diagram.trim();
+                            mermaid.render(
+                                `mermaid-${docIndex}-${index}`,
+                                cleanDiagram
+                            ).then(({ svg }) => {
+                                document.getElementById(`render-${docIndex}-${index}`).innerHTML = svg;
+                                document.getElementById(`render-${docIndex}-${index}`).innerHTML += 
+                                    '<div class="success">✓ Rendered successfully</div>';
+                            }).catch(error => {
+                                document.getElementById(`render-${docIndex}-${index}`).innerHTML = 
+                                    `<div class="error">Failed: ${error.message}</div>`;
+                                    
+                                // Show what's wrong
+                                const errorDetails = document.createElement('div');
+                                errorDetails.className = 'content';
+                                errorDetails.style.color = '#ff9800';
+                                errorDetails.innerHTML = '<h4>Potential Issues:</h4>';
+                                
+                                // Check for common issues
+                                if (cleanDiagram.includes('participant')) {
+                                    const participants = cleanDiagram.match(/participant\s+.*/g);
+                                    errorDetails.innerHTML += `Found ${participants ? participants.length : 0} participant declarations<br>`;
+                                }
+                                
+                                if (cleanDiagram.includes('->') || cleanDiagram.includes('--')) {
+                                    const messages = cleanDiagram.match(/.*(?:->|-->|->>|-->>).*/g);
+                                    errorDetails.innerHTML += `Found ${messages ? messages.length : 0} message lines<br>`;
+                                }
+                                
+                                document.getElementById(`render-${docIndex}-${index}`).appendChild(errorDetails);
+                            });
+                        });
+                    }
+                }
+            });
+            
+            if (!sequenceFound) {
+                output.innerHTML = '<div class="section error">No sequence diagrams found in history</div>';
+            }
+        }
+        
+        window.testSequenceDiagram = function() {
+            const output = document.getElementById('output');
+            
+            const testDiagram = `sequenceDiagram
+    participant Client
+    participant API
+    participant Database
+    
+    Client->>API: Request data
+    API->>Database: Query
+    Database-->>API: Results
+    API-->>Client: Response`;
+            
+            const section = document.createElement('div');
+            section.className = 'section';
+            section.innerHTML = '<h2>Test Sequence Diagram</h2>';
+            
+            const codeDiv = document.createElement('div');
+            codeDiv.className = 'content';
+            codeDiv.textContent = testDiagram;
+            section.appendChild(codeDiv);
+            
+            const renderDiv = document.createElement('div');
+            renderDiv.id = 'test-render';
+            renderDiv.style.background = 'white';
+            renderDiv.style.padding = '10px';
+            renderDiv.style.minHeight = '200px';
+            section.appendChild(renderDiv);
+            
+            output.appendChild(section);
+            
+            mermaid.render('test-diagram', testDiagram).then(({ svg }) => {
+                document.getElementById('test-render').innerHTML = svg;
+                document.getElementById('test-render').innerHTML += 
+                    '<div class="success">✓ Test diagram works!</div>';
+            }).catch(error => {
+                document.getElementById('test-render').innerHTML = 
+                    `<div class="error">Test failed: ${error.message}</div>`;
+            });
+        }
+    </script>
+</body>
+</html>

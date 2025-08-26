@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test ER Diagram Fix</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .test-case { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .original { background: #fff5f5; }
+        .fixed { background: #f5fff5; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; font-size: 12px; }
+        h3 { margin-top: 0; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>Test ER Diagram Fix</h1>
+    <div id="output"></div>
+    
+    <script type="module">
+        // Import the fixERDiagram logic (inline for testing)
+        function fixERDiagram(content) {
+            let fixed = content;
+            
+            // Fix double quotes in relationships
+            fixed = fixed.replace(/""([^"]+)""/g, '"$1"');
+            
+            // Remove extra quotes
+            fixed = fixed.replace(/:\s*"+"([^"]+)"+/g, ': "$1"');
+            
+            // Fix concatenated entities
+            fixed = fixed.replace(/}\s*([A-Z_]+)\s*{/g, '}\n\n    $1 {');
+            
+            // Fix concatenated relationships
+            fixed = fixed.replace(/:\s*([^"\n]+?)\s+([A-Z_]+)\s*(\|\|--o\{|\|\|--\|\{)/gm, 
+                (match, label, entity, relationship) => {
+                    const cleanLabel = label.trim().replace(/^["']|["']$/g, '');
+                    return `: "${cleanLabel}"\n\n    ${entity} ${relationship}`;
+                });
+            
+            return fixed;
+        }
+        
+        // Test cases with problematic ER diagrams
+        const testCases = [
+            {
+                name: "Concatenated ER Diagram with Double Quotes",
+                original: `erDiagram  USERS ||--o {
+        ORDERS : ""places""  USERS ||--o{ ADDRESSES : ""has""  USERS ||--o{ REVIEWS : writes  USERS {  uuid id PK  string email UK  string password_hash  string first_name  string last_name  timestamp created_at  timestamp updated_at  boolean is_active  string role""
+    }  PRODUCTS ||--o {
+        ORDER_ITEMS : contains`,
+                expected: "Should fix double quotes and separate entities"
+            },
+            {
+                name: "Simple ER Diagram",
+                original: `erDiagram
+    CUSTOMER ||--o{ ORDER : places
+    ORDER ||--|{ LINE-ITEM : contains
+    CUSTOMER {
+        string name
+        string custNumber
+        string sector
+    }`,
+                expected: "Should work without changes"
+            }
+        ];
+        
+        const output = document.getElementById('output');
+        
+        // Initialize mermaid
+        mermaid.initialize({ 
+            startOnLoad: false,
+            theme: 'default',
+            securityLevel: 'loose'
+        });
+        
+        // Test each case
+        for (const testCase of testCases) {
+            const testDiv = document.createElement('div');
+            testDiv.className = 'test-case';
+            
+            testDiv.innerHTML = `
+                <h3>${testCase.name}</h3>
+                <p><em>${testCase.expected}</em></p>
+                <div class="original">
+                    <h4>Original (may fail):</h4>
+                    <pre>${testCase.original}</pre>
+                    <div id="original-${testCase.name.replace(/\s+/g, '-')}" class="mermaid-container"></div>
+                </div>
+                <div class="fixed">
+                    <h4>Fixed:</h4>
+                    <pre id="fixed-code-${testCase.name.replace(/\s+/g, '-')}"></pre>
+                    <div id="fixed-${testCase.name.replace(/\s+/g, '-')}" class="mermaid-container"></div>
+                </div>
+            `;
+            
+            output.appendChild(testDiv);
+            
+            // Apply fix
+            const fixed = fixERDiagram(testCase.original);
+            document.getElementById(`fixed-code-${testCase.name.replace(/\s+/g, '-')}`).textContent = fixed;
+            
+            // Try to render original (may fail)
+            try {
+                const { svg } = await mermaid.render(
+                    `original-${Date.now()}-${Math.random()}`,
+                    testCase.original
+                );
+                document.getElementById(`original-${testCase.name.replace(/\s+/g, '-')}`).innerHTML = svg;
+            } catch (error) {
+                document.getElementById(`original-${testCase.name.replace(/\s+/g, '-')}`).innerHTML = 
+                    `<div class="error">Failed to render: ${error.message}</div>`;
+            }
+            
+            // Try to render fixed version
+            try {
+                const { svg } = await mermaid.render(
+                    `fixed-${Date.now()}-${Math.random()}`,
+                    fixed
+                );
+                document.getElementById(`fixed-${testCase.name.replace(/\s+/g, '-')}`).innerHTML = svg;
+                document.getElementById(`fixed-${testCase.name.replace(/\s+/g, '-')}`).innerHTML += 
+                    '<div class="success">✓ Rendered successfully</div>';
+            } catch (error) {
+                document.getElementById(`fixed-${testCase.name.replace(/\s+/g, '-')}`).innerHTML = 
+                    `<div class="error">Still failed: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

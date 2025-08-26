@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Mermaid Inline</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .test { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; font-size: 11px; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Mermaid Test (Using npm package)</h1>
+    
+    <div class="test">
+        <h2>Check if Mermaid loads</h2>
+        <div id="status">Loading...</div>
+    </div>
+    
+    <div class="test">
+        <h2>Simple Sequence Test</h2>
+        <div class="mermaid">
+sequenceDiagram
+    participant Client
+    participant Server
+    Client->>Server: Request
+    Server-->>Client: Response
+        </div>
+    </div>
+    
+    <div class="test">
+        <h2>Simple ER Test</h2>
+        <div class="mermaid">
+erDiagram
+    CUSTOMER ||--o{ ORDER : places
+    CUSTOMER {
+        string name
+        string custNumber
+    }
+        </div>
+    </div>
+
+    <!-- Try different CDN -->
+    <script src="https://unpkg.com/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <script>
+        // Check if Mermaid loaded
+        if (typeof mermaid !== 'undefined') {
+            document.getElementById('status').innerHTML = '<span class="success">✓ Mermaid loaded successfully!</span>';
+            
+            // Initialize
+            mermaid.initialize({ 
+                startOnLoad: true,
+                theme: 'default',
+                securityLevel: 'loose'
+            });
+        } else {
+            document.getElementById('status').innerHTML = '<span class="error">✗ Mermaid failed to load</span>';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Section Content</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #fff; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #444; background: #2a2a2a; }
+        .content { white-space: pre-wrap; background: #000; padding: 10px; margin-top: 10px; overflow-x: auto; }
+        h2 { color: #4CAF50; }
+        .warning { color: #ff9800; }
+        .error { color: #f44336; }
+        .success { color: #4CAF50; }
+    </style>
+</head>
+<body>
+    <h1>Test: Architecture Section Content Extraction</h1>
+    <div id="output"></div>
+    
+    <script>
+        const output = document.getElementById('output');
+        
+        // Get document history
+        const history = localStorage.getItem('sdlc_document_history');
+        
+        if (history) {
+            const docs = JSON.parse(history);
+            
+            // Find the most recent architecture document
+            const archDoc = docs.find(d => d.type === 'mermaid' || d.type === 'architecture');
+            
+            if (archDoc) {
+                output.innerHTML += '<div class="section success"><h2>Found Architecture Document</h2>';
+                output.innerHTML += '<p>Input: ' + archDoc.input + '</p>';
+                output.innerHTML += '<p>Sections: ' + JSON.stringify(archDoc.sections || []) + '</p>';
+                output.innerHTML += '<p>Content Length: ' + (archDoc.content ? archDoc.content.length : 0) + ' chars</p>';
+                output.innerHTML += '</div>';
+                
+                if (archDoc.sections && archDoc.sections.length > 0) {
+                    output.innerHTML += '<div class="section"><h2>Testing Section Extraction</h2></div>';
+                    
+                    // Map section IDs to expected names
+                    const sectionNameMap = {
+                        'sequence-diagrams': 'Sequence Diagrams',
+                        'database-schema': 'Database Schema'
+                    };
+                    
+                    archDoc.sections.forEach(sectionId => {
+                        const sectionName = sectionNameMap[sectionId] || sectionId;
+                        const div = document.createElement('div');
+                        div.className = 'section';
+                        div.innerHTML = '<h3>Section: ' + sectionId + ' (' + sectionName + ')</h3>';
+                        
+                        // Try to find this section in the content
+                        const content = archDoc.content || '';
+                        
+                        // Look for different patterns
+                        const patterns = [
+                            sectionName,
+                            '## ' + sectionName,
+                            '## 1. ' + sectionName,
+                            '## 2. ' + sectionName,
+                            '**' + sectionName + '**',
+                            '1. ' + sectionName,
+                            '2. ' + sectionName
+                        ];
+                        
+                        let found = false;
+                        for (const pattern of patterns) {
+                            const index = content.indexOf(pattern);
+                            if (index !== -1) {
+                                div.innerHTML += '<p class="success">✓ Found with pattern: "' + pattern + '" at index ' + index + '</p>';
+                                
+                                // Show content around this position
+                                const start = Math.max(0, index - 50);
+                                const end = Math.min(content.length, index + 200);
+                                const excerpt = content.substring(start, end);
+                                
+                                const excerptDiv = document.createElement('div');
+                                excerptDiv.className = 'content';
+                                excerptDiv.textContent = '...' + excerpt + '...';
+                                div.appendChild(excerptDiv);
+                                
+                                found = true;
+                                break;
+                            }
+                        }
+                        
+                        if (!found) {
+                            div.innerHTML += '<p class="error">✗ Section not found in content</p>';
+                            
+                            // Show what's actually in the content
+                            const headings = content.match(/^##.*$/gm) || [];
+                            if (headings.length > 0) {
+                                div.innerHTML += '<p class="warning">Found these headings instead:</p>';
+                                const headingsList = document.createElement('div');
+                                headingsList.className = 'content';
+                                headingsList.textContent = headings.join('\n');
+                                div.appendChild(headingsList);
+                            }
+                        }
+                        
+                        output.appendChild(div);
+                    });
+                } else {
+                    output.innerHTML += '<div class="section warning"><p>No sections defined for this document</p></div>';
+                }
+                
+                // Show full content
+                const fullContentDiv = document.createElement('div');
+                fullContentDiv.className = 'section';
+                fullContentDiv.innerHTML = '<h2>Full Document Content</h2>';
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'content';
+                contentDiv.textContent = archDoc.content || 'No content';
+                fullContentDiv.appendChild(contentDiv);
+                output.appendChild(fullContentDiv);
+                
+            } else {
+                output.innerHTML = '<div class="section error"><p>No architecture document found in history</p></div>';
+            }
+        } else {
+            output.innerHTML = '<div class="section error"><p>No document history found</p></div>';
+        }
+    </script>
+</body>
+</html>

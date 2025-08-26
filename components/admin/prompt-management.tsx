@@ -31,6 +31,7 @@ import { PromptEditor } from './prompt-editor';
 import { PromptTester } from './prompt-tester';
 import { PromptAnalytics } from './prompt-analytics';
 import { PromptGuide } from './prompt-guide';
+import { SubsectionPromptManager } from './subsection-prompt-manager';
 import { createClient } from '@/lib/supabase/client';
 
 interface PromptManagementProps {
@@ -94,7 +95,7 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
   const [showTester, setShowTester] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
-  const [activeTab, setActiveTab] = useState<DocumentType | 'guide' | 'user-prompts' | 'analytics'>('business');
+  const [activeTab, setActiveTab] = useState<DocumentType | 'guide' | 'user-prompts' | 'analytics' | 'subsections'>('business');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   
@@ -474,7 +475,7 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
       )}
 
       {/* Tabs for different document types */}
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as DocumentType | 'guide' | 'user-prompts' | 'analytics')}>
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as DocumentType | 'guide' | 'user-prompts' | 'analytics' | 'subsections')}>
         <div className="tabs-mobile-container tabs-scroll-container mb-4">
           <TabsList className="tabs-mobile-list">
             <TabsTrigger value="business" className="tab-trigger-mobile">
@@ -528,6 +529,10 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
             <TabsTrigger value="guide" className="tab-trigger-mobile">
               <span className="hidden sm:inline">Guide</span>
               <span className="sm:hidden">Guide</span>
+            </TabsTrigger>
+            <TabsTrigger value="subsections" className="tab-trigger-mobile">
+              <span className="hidden sm:inline">Subsections</span>
+              <span className="sm:hidden">Subsections</span>
             </TabsTrigger>
           </TabsList>
         </div>
@@ -924,6 +929,10 @@ export function PromptManagement({ userId, userRole }: PromptManagementProps) {
         {/* Existing Guide Tab */}
         <TabsContent value="guide">
           <PromptGuide userRole={userRole} />
+        </TabsContent>
+
+        <TabsContent value="subsections">
+          <SubsectionPromptManager isAdmin={userRole === 'admin' || userRole === 'super_admin'} />
         </TabsContent>
       </Tabs>
 

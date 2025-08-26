@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Mermaid Test</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .test { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .diagram { min-height: 200px; border: 1px solid #ccc; margin: 10px 0; background: white; }
+        .error { color: red; }
+        .success { color: green; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Simple Mermaid Test</h1>
+    
+    <div class="test">
+        <h2>Test 1: Basic Sequence Diagram</h2>
+        <div class="mermaid">
+sequenceDiagram
+    participant Client
+    participant Server
+    Client->>Server: Request
+    Server-->>Client: Response
+        </div>
+    </div>
+    
+    <div class="test">
+        <h2>Test 2: Basic ER Diagram</h2>
+        <div class="mermaid">
+erDiagram
+    CUSTOMER ||--o{ ORDER : places
+    ORDER ||--|{ LINE-ITEM : contains
+    CUSTOMER {
+        string name
+        string custNumber
+    }
+    ORDER {
+        int orderNumber
+        string orderDate
+    }
+        </div>
+    </div>
+    
+    <div class="test">
+        <h2>Test 3: Dynamic Diagram</h2>
+        <button onclick="testDynamic()">Load Dynamic Diagram</button>
+        <div id="dynamic-container"></div>
+    </div>
+    
+    <div class="test">
+        <h2>Test 4: From LocalStorage</h2>
+        <button onclick="testStorage()">Load from Storage</button>
+        <div id="storage-container"></div>
+    </div>
+
+    <!-- Load Mermaid from CDN -->
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        
+        // Initialize mermaid
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose'
+        });
+        
+        // Make functions available globally
+        window.testDynamic = async function() {
+            const container = document.getElementById('dynamic-container');
+            
+            const diagram = `sequenceDiagram
+    participant User
+    participant App
+    participant API
+    User->>App: Click button
+    App->>API: Fetch data
+    API-->>App: Return data
+    App-->>User: Display results`;
+            
+            container.innerHTML = '<h3>Dynamic Sequence Diagram</h3>';
+            const diagramDiv = document.createElement('div');
+            diagramDiv.id = 'dynamic-test';
+            container.appendChild(diagramDiv);
+            
+            try {
+                const { svg } = await mermaid.render('dynamic-diagram', diagram);
+                diagramDiv.innerHTML = svg;
+                diagramDiv.innerHTML += '<div class="success">✓ Dynamic rendering works!</div>';
+            } catch (error) {
+                diagramDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+        
+        window.testStorage = async function() {
+            const container = document.getElementById('storage-container');
+            container.innerHTML = '<h3>Diagrams from Storage</h3>';
+            
+            const history = localStorage.getItem('sdlc_document_history');
+            if (!history) {
+                container.innerHTML += '<div class="error">No documents in storage</div>';
+                return;
+            }
+            
+            try {
+                const docs = JSON.parse(history);
+                let found = false;
+                
+                for (const doc of docs) {
+                    if (doc.content && doc.content.includes('sequenceDiagram')) {
+                        found = true;
+                        
+                        // Extract first sequence diagram
+                        const match = doc.content.match(/sequenceDiagram[\s\S]*?(?=(?:erDiagram|classDiagram|graph|$))/);
+                        if (match) {
+                            const diagram = match[0].trim();
+                            
+                            // Show first 200 chars
+                            const preview = document.createElement('pre');
+                            preview.textContent = diagram.substring(0, 200) + '...';
+                            container.appendChild(preview);
+                            
+                            // Try to render
+                            const renderDiv = document.createElement('div');
+                            renderDiv.className = 'diagram';
+                            container.appendChild(renderDiv);
+                            
+                            try {
+                                const { svg } = await mermaid.render(`storage-${Date.now()}`, diagram);
+                                renderDiv.innerHTML = svg;
+                                renderDiv.innerHTML += '<div class="success">✓ Rendered from storage!</div>';
+                            } catch (error) {
+                                renderDiv.innerHTML = `<div class="error">Failed to render: ${error.message}</div>`;
+                                
+                                // Try to fix and render
+                                const fixed = diagram.replace(/^\s*\d+\.\s+/gm, '    ');
+                                try {
+                                    const { svg } = await mermaid.render(`fixed-${Date.now()}`, fixed);
+                                    renderDiv.innerHTML = svg;
+                                    renderDiv.innerHTML += '<div class="success">✓ Fixed and rendered!</div>';
+                                } catch (fixError) {
+                                    renderDiv.innerHTML += `<div class="error">Fix failed: ${fixError.message}</div>`;
+                                }
+                            }
+                            
+                            break; // Just show first one
+                        }
+                    }
+                }
+                
+                if (!found) {
+                    container.innerHTML += '<div class="error">No sequence diagrams found in storage</div>';
+                }
+            } catch (error) {
+                container.innerHTML += `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

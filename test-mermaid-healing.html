@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Mermaid Self-Healing</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .test-case { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .original { background: #fff5f5; }
+        .fixed { background: #f5fff5; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+        h3 { margin-top: 0; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>Test Mermaid Self-Healing</h1>
+    <div id="output"></div>
+    
+    <script type="module">
+        // Import the fixMermaidSyntax function logic (inline for testing)
+        function fixMermaidSyntax(diagramContent) {
+            let fixed = diagramContent;
+            
+            // Fix sequence diagram authentication and response errors
+            if (fixed.includes('sequenceDiagram') || fixed.includes('sequence')) {
+                // Fix unquoted HTTP status codes and error messages
+                fixed = fixed.replace(/(->>?|-->>?)\s*([^:\n]+):\s*(401\s+Unauthorized|403\s+Forbidden|404\s+Not Found|500\s+Internal Server Error|Connection error|Error|Success|OK)(?!["\n])/gm, 
+                    (match, arrow, participant, message) => {
+                        return `${arrow} ${participant}: "${message}"`;
+                    });
+                
+                // Fix responses that are missing quotes
+                fixed = fixed.replace(/(->>?|-->>?)\s*([^:\n]+):\s*([^"\n][^:\n]+[^"\n])$/gm, 
+                    (match, arrow, participant, message) => {
+                        const trimmedMsg = message.trim();
+                        if (!trimmedMsg.startsWith('"') && !trimmedMsg.endsWith('"') && 
+                            (trimmedMsg.includes(' ') || trimmedMsg.match(/^\d{3}\s/) || 
+                             trimmedMsg.includes('error') || trimmedMsg.includes('Error'))) {
+                            return `${arrow} ${participant}: "${trimmedMsg}"`;
+                        }
+                        return match;
+                    });
+                
+                // Fix participant declarations
+                fixed = fixed.replace(/participant\s+([^\s]+)\s+as\s+"?([^"\n]+)"?/gm, 
+                    (match, id, label) => {
+                        return `participant ${id} as "${label.replace(/"/g, '')}"`;
+                    });
+                
+                // Fix response patterns
+                fixed = fixed.replace(/Response:\s*{([^}]+)}/gm, (match, content) => {
+                    return `"Response: {${content}}"`;
+                });
+                
+                // Fix note patterns
+                fixed = fixed.replace(/Note\s+(over|right of|left of)\s+([^:]+):\s*([^"\n].+[^"\n])$/gm,
+                    (match, position, participant, note) => {
+                        const trimmedNote = note.trim();
+                        if (!trimmedNote.startsWith('"') && !trimmedNote.endsWith('"')) {
+                            return `Note ${position} ${participant}: "${trimmedNote}"`;
+                        }
+                        return match;
+                    });
+            }
+            
+            return fixed;
+        }
+        
+        // Test cases with problematic diagrams
+        const testCases = [
+            {
+                name: "Sequence Diagram with 401 Unauthorized",
+                original: `sequenceDiagram
+    participant Client
+    participant API
+    participant Auth
+    
+    Client->>API: Request without token
+    API->>Auth: Validate token
+    Auth-->>API: 401 Unauthorized
+    API-->>Client: 401 Unauthorized`,
+                expected: "Should quote '401 Unauthorized'"
+            },
+            {
+                name: "Sequence Diagram with Connection Error",
+                original: `sequenceDiagram
+    participant User
+    participant Server
+    participant Database
+    
+    User->>Server: Login request
+    Server->>Database: Check credentials
+    Database-->>Server: Connection error
+    Server-->>User: Error: Unable to connect`,
+                expected: "Should quote error messages"
+            },
+            {
+                name: "Sequence Diagram with Response Format",
+                original: `sequenceDiagram
+    participant App
+    participant API
+    
+    App->>API: GET /users
+    API-->>App: Response: {users: [...]}
+    Note right of API: Process completed successfully`,
+                expected: "Should quote response formats"
+            }
+        ];
+        
+        const output = document.getElementById('output');
+        
+        // Initialize mermaid
+        mermaid.initialize({ 
+            startOnLoad: false,
+            theme: 'default',
+            securityLevel: 'loose'
+        });
+        
+        // Test each case
+        for (const testCase of testCases) {
+            const testDiv = document.createElement('div');
+            testDiv.className = 'test-case';
+            
+            testDiv.innerHTML = `
+                <h3>${testCase.name}</h3>
+                <p><em>${testCase.expected}</em></p>
+                <div class="original">
+                    <h4>Original (may fail):</h4>
+                    <pre>${testCase.original}</pre>
+                    <div id="original-${testCase.name.replace(/\s+/g, '-')}" class="mermaid-container"></div>
+                </div>
+                <div class="fixed">
+                    <h4>Fixed:</h4>
+                    <pre id="fixed-code-${testCase.name.replace(/\s+/g, '-')}"></pre>
+                    <div id="fixed-${testCase.name.replace(/\s+/g, '-')}" class="mermaid-container"></div>
+                </div>
+            `;
+            
+            output.appendChild(testDiv);
+            
+            // Apply fix
+            const fixed = fixMermaidSyntax(testCase.original);
+            document.getElementById(`fixed-code-${testCase.name.replace(/\s+/g, '-')}`).textContent = fixed;
+            
+            // Try to render original (may fail)
+            try {
+                const { svg } = await mermaid.render(
+                    `original-${Date.now()}-${Math.random()}`,
+                    testCase.original
+                );
+                document.getElementById(`original-${testCase.name.replace(/\s+/g, '-')}`).innerHTML = svg;
+            } catch (error) {
+                document.getElementById(`original-${testCase.name.replace(/\s+/g, '-')}`).innerHTML = 
+                    `<div class="error">Failed to render: ${error.message}</div>`;
+            }
+            
+            // Try to render fixed version
+            try {
+                const { svg } = await mermaid.render(
+                    `fixed-${Date.now()}-${Math.random()}`,
+                    fixed
+                );
+                document.getElementById(`fixed-${testCase.name.replace(/\s+/g, '-')}`).innerHTML = svg;
+                document.getElementById(`fixed-${testCase.name.replace(/\s+/g, '-')}`).innerHTML += 
+                    '<div class="success">✓ Rendered successfully</div>';
+            } catch (error) {
+                document.getElementById(`fixed-${testCase.name.replace(/\s+/g, '-')}`).innerHTML = 
+                    `<div class="error">Still failed: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

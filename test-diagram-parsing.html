@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Diagram Parsing</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #fff; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #444; background: #2a2a2a; }
+        .content { white-space: pre-wrap; background: #000; padding: 10px; margin-top: 10px; overflow-x: auto; }
+        h2 { color: #4CAF50; }
+        .warning { color: #ff9800; }
+        .error { color: #f44336; }
+        .success { color: #4CAF50; }
+        button { padding: 10px; margin: 5px; background: #4CAF50; border: none; color: white; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Test: Diagram Parsing Debug</h1>
+    
+    <div class="section">
+        <h2>Actions</h2>
+        <button onclick="checkLocalStorage()">Check LocalStorage</button>
+        <button onclick="checkParsing()">Test Parsing</button>
+        <button onclick="clearStorage()">Clear Storage</button>
+    </div>
+    
+    <div id="output"></div>
+    
+    <script type="module">
+        window.checkLocalStorage = function() {
+            const output = document.getElementById('output');
+            output.innerHTML = '';
+            
+            // Check document history
+            const history = localStorage.getItem('sdlc_document_history');
+            if (history) {
+                const docs = JSON.parse(history);
+                
+                const section = document.createElement('div');
+                section.className = 'section';
+                section.innerHTML = '<h2>Documents in History: ' + docs.length + '</h2>';
+                
+                docs.forEach((doc, index) => {
+                    const docDiv = document.createElement('div');
+                    docDiv.className = 'content';
+                    docDiv.innerHTML = `
+Document ${index + 1}:
+- Type: ${doc.type}
+- Input: ${doc.input}
+- Sections: ${JSON.stringify(doc.sections || [])}
+- Has Content: ${doc.content ? 'Yes (' + doc.content.length + ' chars)' : 'No'}
+- Timestamp: ${doc.timestamp || 'N/A'}
+                    `;
+                    
+                    // Check for mermaid diagrams
+                    if (doc.content) {
+                        const hasMermaid = doc.content.includes('```mermaid');
+                        const hasErDiagram = doc.content.includes('erDiagram');
+                        const hasSequence = doc.content.includes('sequenceDiagram');
+                        const hasGraph = doc.content.match(/graph\s+(?:TB|TD|LR|RL|BT)/);
+                        
+                        docDiv.innerHTML += `
+Diagram Types Found:
+- Mermaid blocks: ${hasMermaid ? 'Yes' : 'No'}
+- ER Diagrams: ${hasErDiagram ? 'Yes' : 'No'}
+- Sequence Diagrams: ${hasSequence ? 'Yes' : 'No'}
+- Graphs/Flowcharts: ${hasGraph ? 'Yes' : 'No'}
+                        `;
+                        
+                        // Count diagram occurrences
+                        if (hasErDiagram) {
+                            const count = (doc.content.match(/erDiagram/g) || []).length;
+                            docDiv.innerHTML += `\n- ER Diagram count: ${count}`;
+                        }
+                        if (hasSequence) {
+                            const count = (doc.content.match(/sequenceDiagram/g) || []).length;
+                            docDiv.innerHTML += `\n- Sequence Diagram count: ${count}`;
+                        }
+                    }
+                    
+                    section.appendChild(docDiv);
+                });
+                
+                output.appendChild(section);
+            } else {
+                output.innerHTML = '<div class="section error">No document history found</div>';
+            }
+            
+            // Check generated docs
+            const generatedDocs = localStorage.getItem('sdlc_generated_docs');
+            if (generatedDocs) {
+                const docs = JSON.parse(generatedDocs);
+                const section = document.createElement('div');
+                section.className = 'section';
+                section.innerHTML = '<h2>Generated Docs</h2>';
+                
+                const docDiv = document.createElement('div');
+                docDiv.className = 'content';
+                docDiv.textContent = JSON.stringify(docs, null, 2);
+                section.appendChild(docDiv);
+                
+                output.appendChild(section);
+            }
+        }
+        
+        window.checkParsing = function() {
+            const output = document.getElementById('output');
+            
+            // Sample broken ER diagram
+            const brokenER = `erDiagram  EVENTS ||--o{ EVENT_PROPERTIES : "has  EVENTS ||--|| EVENT_SESSIONS : belongs  EVENTS {"
+    "
+    uuid id PK  string event_name  string event_type  uuid user_id FK  uuid session_id FK  json properties  string source  timestamp occurred_at
+    }`;
+            
+            const section = document.createElement('div');
+            section.className = 'section';
+            section.innerHTML = '<h2>Testing ER Diagram Parsing</h2>';
+            
+            // Show original
+            const origDiv = document.createElement('div');
+            origDiv.innerHTML = '<h3>Original (Broken):</h3>';
+            const origContent = document.createElement('div');
+            origContent.className = 'content';
+            origContent.textContent = brokenER;
+            origDiv.appendChild(origContent);
+            section.appendChild(origDiv);
+            
+            // Try to parse and split
+            const parts = brokenER.split(/(?=erDiagram)/g);
+            const parseDiv = document.createElement('div');
+            parseDiv.innerHTML = '<h3>Split Result: ' + parts.length + ' parts</h3>';
+            parts.forEach((part, i) => {
+                const partContent = document.createElement('div');
+                partContent.className = 'content';
+                partContent.innerHTML = `Part ${i + 1} (${part.length} chars):\n${part.substring(0, 200)}...`;
+                parseDiv.appendChild(partContent);
+            });
+            section.appendChild(parseDiv);
+            
+            output.appendChild(section);
+        }
+        
+        window.clearStorage = function() {
+            if (confirm('Clear all storage?')) {
+                localStorage.removeItem('sdlc_document_history');
+                localStorage.removeItem('sdlc_generated_docs');
+                localStorage.removeItem('mermaidSections');
+                alert('Storage cleared');
+                window.checkLocalStorage();
+            }
+        }
+        
+        // Auto-check on load
+        window.checkLocalStorage();
+    </script>
+</body>
+</html>

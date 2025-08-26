@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge"
 import { Copy, Download, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
+import { MermaidViewerEnhanced } from '@/components/mermaid-viewer-enhanced'
+import { parseMermaidDiagrams } from '@/lib/mermaid-parser-simple-fix'
 
 interface MarkdownRendererProps {
   content: string
@@ -97,10 +99,24 @@ export function MarkdownRenderer({ content, title, type = 'general' }: MarkdownR
       )}
       <CardContent className="prose prose-gray max-w-none prose-sm sm:prose-base bg-white rounded-lg border border-gray-200 p-4">
         <div className={`overflow-hidden ${type === 'ux' ? 'ux-content' : ''}`}>
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            rehypePlugins={[rehypeHighlight]}
-            components={{
+          {(() => {
+            // Check if content contains Mermaid diagrams
+            const mermaidDiagrams = parseMermaidDiagrams(content)
+            if (Object.keys(mermaidDiagrams).length > 0) {
+              return (
+                <MermaidViewerEnhanced 
+                  diagrams={mermaidDiagrams}
+                  title={title || 'Diagram'}
+                />
+              )
+            }
+            
+            // Otherwise render as markdown
+            return (
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeHighlight]}
+                components={{
               h1: ({node, ...props}) => <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 mt-6 border-b border-gray-200 pb-2" {...props} />,
               h2: ({node, ...props}) => <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-3 mt-5" {...props} />,
               h3: ({node, ...props}) => <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2 mt-4" {...props} />,
@@ -131,10 +147,12 @@ export function MarkdownRenderer({ content, title, type = 'general' }: MarkdownR
               strong: ({node, ...props}) => <strong className="font-semibold text-gray-900" {...props} />,
               em: ({node, ...props}) => <em className="italic text-gray-800" {...props} />,
               hr: ({node, ...props}) => <hr className="border-gray-200 my-6" {...props} />,
-            }}
-          >
-            {content}
-          </ReactMarkdown>
+                }}
+              >
+                {content}
+              </ReactMarkdown>
+            )
+          })()}
         </div>
       </CardContent>
     </Card>

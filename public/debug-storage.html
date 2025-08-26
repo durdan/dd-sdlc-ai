@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LocalStorage Debug</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #fff; }
+        .key { color: #4fc3f7; }
+        .value { color: #81c784; }
+        .section { margin: 20px 0; padding: 15px; background: #2a2a2a; border-radius: 5px; }
+        h2 { color: #ffd54f; }
+        button { padding: 10px 20px; margin: 5px; background: #f44336; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #d32f2f; }
+        pre { white-space: pre-wrap; word-wrap: break-word; }
+    </style>
+</head>
+<body>
+    <h1>LocalStorage Debug Tool</h1>
+    
+    <div class="section">
+        <h2>Storage Keys</h2>
+        <div id="keys"></div>
+    </div>
+    
+    <div class="section">
+        <h2>Document History</h2>
+        <pre id="history"></pre>
+    </div>
+    
+    <div class="section">
+        <h2>Generated Docs</h2>
+        <pre id="docs"></pre>
+    </div>
+    
+    <div class="section">
+        <h2>Section Metadata</h2>
+        <pre id="sections"></pre>
+    </div>
+    
+    <div class="section">
+        <h2>Actions</h2>
+        <button onclick="clearHistory()">Clear History</button>
+        <button onclick="clearDocs()">Clear Docs</button>
+        <button onclick="clearAll()">Clear All SDLC Data</button>
+        <button onclick="location.reload()">Refresh</button>
+    </div>
+    
+    <script>
+        function displayStorage() {
+            // Display all keys
+            const keys = Object.keys(localStorage).filter(k => k.includes('sdlc') || k.includes('Sections'));
+            document.getElementById('keys').innerHTML = keys.map(k => 
+                `<div><span class="key">${k}</span>: <span class="value">${localStorage.getItem(k)?.length || 0} chars</span></div>`
+            ).join('');
+            
+            // Display document history
+            const history = localStorage.getItem('sdlc_document_history');
+            if (history) {
+                const parsed = JSON.parse(history);
+                document.getElementById('history').textContent = 
+                    `Count: ${parsed.length}\n` +
+                    parsed.map((doc, i) => 
+                        `${i+1}. ${doc.type} - ${new Date(doc.timestamp).toLocaleString()} - ${doc.input?.substring(0, 50)}... ${doc.sectionCount ? `(${doc.sectionCount} sections)` : ''}`
+                    ).join('\n');
+            } else {
+                document.getElementById('history').textContent = 'No history found';
+            }
+            
+            // Display generated docs
+            const docs = localStorage.getItem('sdlc_generated_docs');
+            if (docs) {
+                const parsed = JSON.parse(docs);
+                document.getElementById('docs').textContent = 
+                    `Types: ${Object.keys(parsed).join(', ')}\n` +
+                    Object.entries(parsed).map(([type, content]) => 
+                        `${type}: ${content.length} chars`
+                    ).join('\n');
+            } else {
+                document.getElementById('docs').textContent = 'No docs found';
+            }
+            
+            // Display section metadata
+            const sections = localStorage.getItem('sdlc_section_metadata');
+            if (sections) {
+                document.getElementById('sections').textContent = JSON.stringify(JSON.parse(sections), null, 2);
+            } else {
+                document.getElementById('sections').textContent = 'No section metadata found';
+            }
+        }
+        
+        function clearHistory() {
+            localStorage.removeItem('sdlc_document_history');
+            displayStorage();
+        }
+        
+        function clearDocs() {
+            localStorage.removeItem('sdlc_generated_docs');
+            displayStorage();
+        }
+        
+        function clearAll() {
+            Object.keys(localStorage).forEach(k => {
+                if (k.includes('sdlc') || k.includes('Sections')) {
+                    localStorage.removeItem(k);
+                }
+            });
+            displayStorage();
+        }
+        
+        // Initial display
+        displayStorage();
+    </script>
+</body>
+</html>

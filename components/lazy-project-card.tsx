@@ -50,6 +50,9 @@ interface ProjectFullData {
   }
   availableTabs: string[]
   integrations: any[]
+  selectedSections?: Record<string, string[]>
+  generationMetadata?: any
+  documentSections?: Record<string, string[]>
 }
 
 interface LazyProjectCardProps {
@@ -159,6 +162,7 @@ export function LazyProjectCard({
         meeting: false
       }
       const availableTabs: string[] = []
+      const documentSections: Record<string, string[]> = {}
 
       documents.forEach(doc => {
         const content = doc.content || ''
@@ -173,6 +177,10 @@ export function LazyProjectCard({
               projectDocuments.businessAnalysis = content
               documentAvailability.business = true
               availableTabs.push('business')
+              // Store section metadata if available
+              if (doc.selected_sections) {
+                documentSections.business = doc.selected_sections
+              }
             }
             break
           case 'functional_spec':
@@ -180,6 +188,9 @@ export function LazyProjectCard({
               projectDocuments.functionalSpec = content
               documentAvailability.functional = true
               availableTabs.push('functional')
+              if (doc.selected_sections) {
+                documentSections.functional = doc.selected_sections
+              }
             }
             break
           case 'technical_spec':
@@ -187,17 +198,26 @@ export function LazyProjectCard({
               projectDocuments.technicalSpec = content
               documentAvailability.technical = true
               availableTabs.push('technical')
+              if (doc.selected_sections) {
+                documentSections.technical = doc.selected_sections
+              }
             }
             break
           case 'ux_spec':
             if (hasContent) {
               projectDocuments.uxSpec = content
               availableTabs.push('ux')
+              if (doc.selected_sections) {
+                documentSections.ux = doc.selected_sections
+              }
             }
             break
           case 'architecture':
             if (hasContent) {
               projectDocuments.architecture = content
+              if (doc.selected_sections) {
+                documentSections.architecture = doc.selected_sections
+              }
               availableTabs.push('architecture')
             }
             break
@@ -222,7 +242,10 @@ export function LazyProjectCard({
         documents: projectDocuments,
         documentAvailability,
         availableTabs,
-        integrations
+        integrations,
+        selectedSections: fullProject.selected_sections || {},
+        generationMetadata: fullProject.generation_metadata || {},
+        documentSections
       })
 
       // Set default active tab
@@ -409,27 +432,54 @@ export function LazyProjectCard({
                     <TabsTrigger value="business" className="text-xs sm:text-sm min-w-[120px]">
                       <span className="hidden sm:inline">Business</span>
                       <span className="sm:hidden">Biz</span>
+                      {fullData.documentSections?.business && fullData.documentSections.business.length > 0 && (
+                        <Badge variant="secondary" className="ml-1 px-1 py-0 text-[10px] h-4">
+                          {fullData.documentSections.business.length}
+                        </Badge>
+                      )}
                     </TabsTrigger>
                   )}
                   {fullData.availableTabs.includes('functional') && (
                     <TabsTrigger value="functional" className="text-xs sm:text-sm min-w-[120px]">
                       <span className="hidden sm:inline">Functional</span>
                       <span className="sm:hidden">Func</span>
+                      {fullData.documentSections?.functional && fullData.documentSections.functional.length > 0 && (
+                        <Badge variant="secondary" className="ml-1 px-1 py-0 text-[10px] h-4">
+                          {fullData.documentSections.functional.length}
+                        </Badge>
+                      )}
                     </TabsTrigger>
                   )}
                   {fullData.availableTabs.includes('technical') && (
                     <TabsTrigger value="technical" className="text-xs sm:text-sm min-w-[120px]">
                       <span className="hidden sm:inline">Technical</span>
                       <span className="sm:hidden">Tech</span>
+                      {fullData.documentSections?.technical && fullData.documentSections.technical.length > 0 && (
+                        <Badge variant="secondary" className="ml-1 px-1 py-0 text-[10px] h-4">
+                          {fullData.documentSections.technical.length}
+                        </Badge>
+                      )}
                     </TabsTrigger>
                   )}
                   {fullData.availableTabs.includes('ux') && (
-                    <TabsTrigger value="ux" className="text-xs sm:text-sm min-w-[120px]">UX</TabsTrigger>
+                    <TabsTrigger value="ux" className="text-xs sm:text-sm min-w-[120px]">
+                      UX
+                      {fullData.documentSections?.ux && fullData.documentSections.ux.length > 0 && (
+                        <Badge variant="secondary" className="ml-1 px-1 py-0 text-[10px] h-4">
+                          {fullData.documentSections.ux.length}
+                        </Badge>
+                      )}
+                    </TabsTrigger>
                   )}
                   {fullData.availableTabs.includes('architecture') && (
                     <TabsTrigger value="architecture" className="text-xs sm:text-sm min-w-[120px]">
                       <span className="hidden sm:inline">Architecture</span>
                       <span className="sm:hidden">Arch</span>
+                      {fullData.documentSections?.architecture && fullData.documentSections.architecture.length > 0 && (
+                        <Badge variant="secondary" className="ml-1 px-1 py-0 text-[10px] h-4">
+                          {fullData.documentSections.architecture.length}
+                        </Badge>
+                      )}
                     </TabsTrigger>
                   )}
                   {fullData.availableTabs.includes('comprehensive') && (

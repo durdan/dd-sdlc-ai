@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Preserve ER Relationships</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .test-case { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; font-size: 12px; }
+        h3 { margin-top: 0; }
+        .error { color: red; }
+        .success { color: green; }
+        .diagram-container { min-height: 200px; border: 1px solid #ccc; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>Test: Preserve ER Diagram Relationships</h1>
+    <div id="output"></div>
+    
+    <script type="module">
+        // Simple fix function that preserves relationships
+        function fixMermaidSyntaxSimple(diagramContent) {
+            let fixed = diagramContent;
+            
+            // Fix double quotes
+            fixed = fixed.replace(/""([^"]+)""/g, '"$1"');
+            
+            // Fix broken relationship labels
+            fixed = fixed.replace(/:\s*"([^"]*?)\s+([A-Z_]+\s+\|\|)/gm, ': "$1"\n    $2');
+            
+            // Remove stray quotes in entity definitions  
+            fixed = fixed.replace(/([A-Z_]+)\s*\{\s*"\s*\n\s*"/gm, '$1 {\n');
+            fixed = fixed.replace(/^\s*"\s*$/gm, '');
+            
+            // Add indentation
+            const lines = fixed.split('\n');
+            const fixedLines = [];
+            let inDiagram = false;
+            
+            for (const line of lines) {
+                const trimmed = line.trim();
+                
+                if (trimmed === 'erDiagram') {
+                    inDiagram = true;
+                    fixedLines.push(trimmed);
+                    continue;
+                }
+                
+                if (!trimmed) {
+                    fixedLines.push('');
+                    continue;
+                }
+                
+                if (inDiagram && !trimmed.startsWith('erDiagram')) {
+                    fixedLines.push('    ' + trimmed);
+                } else {
+                    fixedLines.push(line);
+                }
+            }
+            
+            return fixedLines.join('\n');
+        }
+        
+        // Test with a complete ER diagram
+        const testDiagram = `erDiagram
+    CONTENT ||--o{ CONTENT_VERSIONS : has
+    CONTENT ||--o{ CONTENT_TAGS : has
+    CONTENT ||--o{ CONTENT_MEDIA : includes
+    CONTENT {
+        uuid id PK
+        string slug UK
+        string title
+        string content_type
+        json content_data
+        uuid author_id FK
+        string status
+        timestamp published_at
+        timestamp created_at
+        timestamp updated_at
+    }
+    CONTENT_VERSIONS {
+        uuid id PK
+        uuid content_id FK
+        integer version_number
+        json content_data
+        uuid modified_by FK
+        string change_summary
+        timestamp created_at
+    }
+    TAGS ||--o{ CONTENT_TAGS : categorizes
+    TAGS {
+        uuid id PK
+        string name UK
+        string slug UK
+        string description
+    }
+    MEDIA ||--o{ CONTENT_MEDIA : references
+    MEDIA {
+        uuid id PK
+        string file_name
+        string file_type
+        string mime_type
+        integer file_size
+        string storage_path
+        string cdn_url
+        json metadata
+        timestamp uploaded_at
+    }
+    CONTENT_MEDIA {
+        uuid id PK
+        uuid content_id FK
+        uuid media_id FK
+        string usage_type
+        integer sort_order
+    }`;
+        
+        const output = document.getElementById('output');
+        
+        // Initialize mermaid
+        mermaid.initialize({ 
+            startOnLoad: false,
+            theme: 'default',
+            securityLevel: 'loose'
+        });
+        
+        // Create test case
+        const testDiv = document.createElement('div');
+        testDiv.className = 'test-case';
+        
+        testDiv.innerHTML = `
+            <h3>Complete ER Diagram with Relationships</h3>
+            <p>This should show entities connected with relationships, not separate diagrams</p>
+        `;
+        
+        // Apply fix
+        const fixed = fixMermaidSyntaxSimple(testDiagram);
+        
+        // Show the fixed code
+        const codeDiv = document.createElement('pre');
+        codeDiv.textContent = fixed;
+        testDiv.appendChild(codeDiv);
+        
+        // Create diagram container
+        const diagramDiv = document.createElement('div');
+        diagramDiv.className = 'diagram-container';
+        diagramDiv.id = 'test-diagram';
+        testDiv.appendChild(diagramDiv);
+        
+        output.appendChild(testDiv);
+        
+        // Try to render
+        try {
+            const { svg } = await mermaid.render(
+                `diagram-${Date.now()}`,
+                fixed
+            );
+            document.getElementById('test-diagram').innerHTML = svg;
+            document.getElementById('test-diagram').innerHTML += 
+                '<div class="success">✓ Rendered successfully with relationships preserved</div>';
+        } catch (error) {
+            document.getElementById('test-diagram').innerHTML = 
+                `<div class="error">Failed to render: ${error.message}</div>`;
+        }
+        
+        // Test with broken diagram
+        const brokenDiagram = `erDiagram  EVENTS ||--o{ EVENT_PROPERTIES : "has  EVENTS ||--|| EVENT_SESSIONS : belongs  EVENTS {"
+    "
+    uuid id PK
+    string event_name
+    }`;
+        
+        const brokenDiv = document.createElement('div');
+        brokenDiv.className = 'test-case';
+        brokenDiv.innerHTML = '<h3>Broken ER Diagram</h3>';
+        
+        const fixedBroken = fixMermaidSyntaxSimple(brokenDiagram);
+        
+        const brokenCodeDiv = document.createElement('pre');
+        brokenCodeDiv.textContent = fixedBroken;
+        brokenDiv.appendChild(brokenCodeDiv);
+        
+        const brokenDiagramDiv = document.createElement('div');
+        brokenDiagramDiv.className = 'diagram-container';
+        brokenDiagramDiv.id = 'broken-diagram';
+        brokenDiv.appendChild(brokenDiagramDiv);
+        
+        output.appendChild(brokenDiv);
+        
+        try {
+            const { svg } = await mermaid.render(
+                `broken-${Date.now()}`,
+                fixedBroken
+            );
+            document.getElementById('broken-diagram').innerHTML = svg;
+            document.getElementById('broken-diagram').innerHTML += 
+                '<div class="success">✓ Fixed and rendered</div>';
+        } catch (error) {
+            document.getElementById('broken-diagram').innerHTML = 
+                `<div class="error">Still broken: ${error.message}</div>`;
+        }
+    </script>
+</body>
+</html>
