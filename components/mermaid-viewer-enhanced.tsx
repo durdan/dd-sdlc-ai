@@ -6,7 +6,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Copy, AlertCircle, CheckCircle2, Code, Eye } from "lucide-react"
-import { parseMermaidDiagrams, fixMermaidSyntax, validateMermaidDiagram } from "@/lib/mermaid-parser"
+import { parseMermaidDiagrams, fixMermaidSyntax, hasDiagramContent } from "@/lib/mermaid-parser-simple-fix"
+import { validateMermaidDiagram } from "@/lib/mermaid-parser"
+import { fixSequenceMinimal } from "@/lib/fix-sequence-minimal"
 
 interface MermaidViewerProps {
   content?: string
@@ -57,7 +59,13 @@ export function MermaidViewerEnhanced({
     
     // Apply fixes to all diagrams
     return Object.entries(parsedDiagrams).reduce((acc, [key, diagram]) => {
-      const fixed = fixMermaidSyntax(diagram)
+      // First apply the general fix
+      let fixed = fixMermaidSyntax(diagram)
+      
+      // Then apply the minimal sequence fix for the specific issues
+      // This targets the known problematic patterns without breaking anything
+      fixed = fixSequenceMinimal(fixed)
+      
       const validation = validateMermaidDiagram(fixed)
       
       if (!validation.isValid) {
