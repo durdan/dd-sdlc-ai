@@ -351,6 +351,23 @@ Please create a comprehensive ${documentType} specification that integrates seam
     console.log('🚀 Functional Spec Length:', functionalSpec?.length || 0)
     console.log('🚀 Technical Spec Length:', technicalSpec?.length || 0)
     
+    // For architecture/mermaid, use the comprehensive prompt from architecture-sections
+    if (documentType === 'mermaid') {
+      const { defaultArchitecturePrompt } = await import('@/lib/architecture-sections')
+      const processedPrompt = defaultArchitecturePrompt
+        .replace(/{{input}}/g, input)
+        .replace(/{{business_analysis}}/g, optimizedContext.businessAnalysis || '')
+        .replace(/{{functional_spec}}/g, optimizedContext.functionalSpec || '')
+        .replace(/{{technical_spec}}/g, optimizedContext.technicalSpec || '')
+      
+      console.log('🚀 Using comprehensive architecture prompt')
+      
+      return await streamText({
+        model: openaiClient("gpt-4o"),
+        prompt: processedPrompt,
+      })
+    }
+    
     // Get fallback prompt based on document type
     const fallbackPrompts = {
       business: `As a senior business analyst, analyze the following business case and provide a comprehensive business analysis:
@@ -420,17 +437,37 @@ For each task, provide:
 
 Create 6-10 specific design tasks that are user-focused and experience-driven.`,
 
-      mermaid: `Create Mermaid diagrams for the system architecture based on the project requirements:
+      mermaid: `As a Senior Solution Architect, create comprehensive System Overview diagrams using Mermaid syntax.
 
 Project Requirements: {input}
 
-Please provide Mermaid code for:
-1. System architecture diagram
-2. Database schema diagram
-3. User flow diagram
-4. API sequence diagram
+Generate detailed architecture diagrams including:
 
-Return only valid Mermaid syntax without any additional text or formatting.`
+## 1. System Context Diagram
+Show the high-level system boundaries and external interactions.
+
+## 2. Component Architecture Diagram  
+Illustrate the major components and their relationships across presentation, business, and data layers.
+
+## 3. Layered Architecture
+Display the application layers from client to data persistence.
+
+## 4. Technology Stack Visualization
+Present the technology choices across frontend, backend, infrastructure, and data tiers.
+
+## 5. Deployment Architecture
+Show the deployment topology across environments (dev, staging, production).
+
+## 6. Data Flow Diagram
+Illustrate how data moves through the system, including ingestion, processing, storage, and consumption.
+
+## 7. Security Architecture
+Display security zones, authentication/authorization flow, and security controls.
+
+## 8. Integration Architecture
+Show external system integrations, API gateways, and messaging patterns.
+
+Generate all diagrams with proper Mermaid syntax, clear component relationships, and architectural best practices.`
     }
 
     const fallbackPrompt = fallbackPrompts[documentType as keyof typeof fallbackPrompts] || fallbackPrompts.business

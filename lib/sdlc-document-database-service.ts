@@ -273,7 +273,7 @@ export class SDLCDocumentDatabaseService {
   /**
    * Add or update individual document for a project
    */
-  async addOrUpdateIndividualDocument(projectId: string, documentType: string, content: string): Promise<boolean> {
+  async addOrUpdateIndividualDocument(projectId: string, documentType: string, content: string, selectedSections?: string[], generationType?: string): Promise<boolean> {
     try {
       const user = await this.getCurrentUser()
       
@@ -308,14 +308,22 @@ export class SDLCDocumentDatabaseService {
         }
       } else {
         // Create new document
+        const insertData: any = {
+          project_id: projectId,
+          document_type: documentType,
+          content,
+          version: 1
+        }
+        if (selectedSections !== undefined) {
+          insertData.selected_sections = selectedSections
+        }
+        if (generationType !== undefined) {
+          insertData.generation_type = generationType
+        }
+        
         const { error: insertError } = await this.supabase
           .from('documents')
-          .insert({
-            project_id: projectId,
-            document_type: documentType,
-            content,
-            version: 1
-          })
+          .insert(insertData)
 
         if (insertError) {
           console.error('Error creating individual document:', insertError)

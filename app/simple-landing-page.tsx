@@ -56,6 +56,7 @@ export default function SimpleLandingPage() {
   const [inputValue, setInputValue] = useState("")
   const [showDocumentMenu, setShowDocumentMenu] = useState(false)
   const [showDocumentModal, setShowDocumentModal] = useState(false)
+  const [selectedDocType, setSelectedDocType] = useState<string>('business')
   const [showInputAlert, setShowInputAlert] = useState(false)
   const [previousDocuments, setPreviousDocuments] = useState<Record<string, string>>({})
   const [showViewDocsHint, setShowViewDocsHint] = useState(false)
@@ -119,14 +120,28 @@ export default function SimpleLandingPage() {
           await checkRateLimit()
         }
         
-        // Check for previously generated documents
-        const savedDocs = localStorage.getItem('sdlc_generated_docs')
-        if (savedDocs) {
+        // Check for previously generated documents - but filter by last input
+        const lastInput = localStorage.getItem('sdlc_last_input')
+        const historyKey = 'sdlc_document_history'
+        const storedHistory = localStorage.getItem(historyKey)
+        
+        if (storedHistory && lastInput) {
           try {
-            const docs = JSON.parse(savedDocs)
-            setPreviousDocuments(docs)
+            const history = JSON.parse(storedHistory)
+            const relevantDocs: Record<string, string> = {}
+            
+            // Filter documents by last input
+            history.forEach((doc: any) => {
+              if (doc.input === lastInput && doc.content) {
+                if (!relevantDocs[doc.type]) {
+                  relevantDocs[doc.type] = doc.content
+                }
+              }
+            })
+            
+            setPreviousDocuments(relevantDocs)
             // Show hint for 5 seconds if there are documents
-            if (Object.keys(docs).length > 0) {
+            if (Object.keys(relevantDocs).length > 0) {
               setShowViewDocsHint(true)
               setTimeout(() => setShowViewDocsHint(false), 5000)
             }
@@ -135,8 +150,7 @@ export default function SimpleLandingPage() {
           }
         }
         
-        // Load last input if available
-        const lastInput = localStorage.getItem('sdlc_last_input')
+        // Load last input if available (it's already loaded above)
         if (lastInput && !inputValue) {
           setInputValue(lastInput)
         }
@@ -184,8 +198,9 @@ export default function SimpleLandingPage() {
     
     // Store the selected document type if provided
     if (docType) {
+      setSelectedDocType(docType)  // Set state for passing to modal
       localStorage.setItem('selectedDocType', docType)
-      console.log('✅ Set selectedDocType in localStorage:', docType)
+      console.log('✅ Set selectedDocType:', docType)
     }
     
     // For non-logged-in users, show the document generation modal
@@ -208,10 +223,12 @@ export default function SimpleLandingPage() {
     setShowDocumentMenu(false)
     
     // Store the selected document type for the modal
-    localStorage.setItem('selectedDocType', doc.docType || 'business')
+    const docType = doc.docType || 'business'
+    setSelectedDocType(docType)
+    localStorage.setItem('selectedDocType', docType)
     
     // Always trigger handleGetStarted after selection
-    setTimeout(() => handleGetStarted(), 100)
+    setTimeout(() => handleGetStarted(docType), 100)
   }
 
   const features = [
@@ -663,6 +680,8 @@ export default function SimpleLandingPage() {
           }
         }}
         input={inputValue}
+        initialDocType={selectedDocType}
+        showPreviousDocs={false}  // Don't show previous docs when generating new
         onDocumentGenerated={(updatedDocs) => {
           // Update parent state when document is generated
           setPreviousDocuments(updatedDocs)

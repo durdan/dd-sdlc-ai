@@ -54,7 +54,9 @@ export class AnonymousProjectService {
     documents: Record<string, string>,
     userAgent?: string,
     ipAddress?: string,
-    referrer?: string
+    referrer?: string,
+    selectedSections?: Record<string, string[]>,
+    generationMetadata?: any
   ): Promise<string | null> {
     try {
       const sessionId = this.getSessionId()
@@ -68,7 +70,9 @@ export class AnonymousProjectService {
         user_agent: userAgent || navigator?.userAgent,
         ip_address: ipAddress,
         referrer: referrer || document?.referrer,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        selected_sections: selectedSections || {},
+        generation_metadata: generationMetadata || {}
       }
 
       const { data, error } = await this.supabase

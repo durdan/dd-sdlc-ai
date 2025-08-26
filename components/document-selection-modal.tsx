@@ -18,8 +18,15 @@ import {
   Layout,
   Settings,
   FlaskConical,
-  Users
+  Users,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react"
+import { businessAnalysisSections } from '@/lib/business-analysis-sections'
+import { techSpecSections } from '@/lib/tech-spec-sections'
+import { uxDesignSections } from '@/lib/ux-design-sections'
+import { architectureSections } from '@/lib/architecture-sections'
+import { functionalSpecSections } from '@/lib/functional-spec-sections'
 
 interface DocumentType {
   id: string
@@ -41,7 +48,7 @@ const documentTypes: DocumentType[] = [
 interface DocumentSelectionModalProps {
   isOpen: boolean
   onClose: () => void
-  onGenerate: (selectedDocuments: string[], wireframeModel?: string) => void
+  onGenerate: (selectedDocuments: string[], wireframeModel?: string, selectedSections?: Record<string, string[]>) => void
   input: string
   isLoading?: boolean
   userId?: string
@@ -60,6 +67,8 @@ export function DocumentSelectionModal({
   ])
   const [wireframeModel, setWireframeModel] = useState<string>("gpt-4")
   const [showWireframeSettings, setShowWireframeSettings] = useState(false)
+  const [expandedDocuments, setExpandedDocuments] = useState<Set<string>>(new Set())
+  const [selectedSections, setSelectedSections] = useState<Record<string, string[]>>({})
 
   useEffect(() => {
     setShowWireframeSettings(selectedDocuments.includes("wireframe"))
@@ -73,6 +82,45 @@ export function DocumentSelectionModal({
     )
   }
 
+  const handleToggleExpand = (documentId: string) => {
+    setExpandedDocuments(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(documentId)) {
+        newSet.delete(documentId)
+      } else {
+        newSet.add(documentId)
+      }
+      return newSet
+    })
+  }
+
+  const handleToggleSection = (documentId: string, sectionId: string) => {
+    setSelectedSections(prev => {
+      const currentSections = prev[documentId] || []
+      const newSections = currentSections.includes(sectionId)
+        ? currentSections.filter(id => id !== sectionId)
+        : [...currentSections, sectionId]
+      return { ...prev, [documentId]: newSections }
+    })
+  }
+
+  const getSectionsForDocument = (documentId: string) => {
+    switch (documentId) {
+      case 'analysis':
+        return Object.values(businessAnalysisSections)
+      case 'functional':
+        return Object.values(functionalSpecSections)
+      case 'technical':
+        return Object.values(techSpecSections)
+      case 'ux':
+        return Object.values(uxDesignSections)
+      case 'mermaid':
+        return Object.values(architectureSections)
+      default:
+        return []
+    }
+  }
+
   const handleSelectAll = () => {
     setSelectedDocuments(documentTypes.map(doc => doc.id))
   }
@@ -83,7 +131,7 @@ export function DocumentSelectionModal({
 
   const handleGenerate = () => {
     if (selectedDocuments.length > 0) {
-      onGenerate(selectedDocuments, wireframeModel)
+      onGenerate(selectedDocuments, wireframeModel, selectedSections)
     }
   }
 
@@ -132,28 +180,103 @@ export function DocumentSelectionModal({
             {documentTypes.map((doc) => {
               const Icon = doc.icon
               const isSelected = selectedDocuments.includes(doc.id)
+              const isExpanded = expandedDocuments.has(doc.id)
+              const sections = getSectionsForDocument(doc.id)
+              const docSelectedSections = selectedSections[doc.id] || []
+              const hasSections = sections.length > 0
               
               return (
-                <div
-                  key={doc.id}
-                  className={`flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                    isSelected 
-                      ? 'bg-blue-600/20 border-blue-500/50' 
-                      : 'bg-gray-800/50 border-gray-700 hover:border-gray-600'
-                  }`}
-                  onClick={() => handleToggleDocument(doc.id)}
-                >
-                  <Checkbox
-                    checked={isSelected}
-                    onChange={() => handleToggleDocument(doc.id)}
-                    className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                  />
-                  <Icon className={`h-4 w-4 ${isSelected ? 'text-blue-400' : 'text-gray-400'}`} />
-                  <Label className={`text-sm font-medium cursor-pointer ${
-                    isSelected ? 'text-blue-300' : 'text-gray-300'
-                  }`}>
-                    {doc.name}
-                  </Label>
+                <div key={doc.id} className="space-y-2">
+                  <div
+                    className={`flex items-center space-x-3 p-3 rounded-lg border transition-all ${
+                      isSelected 
+                        ? 'bg-blue-600/20 border-blue-500/50' 
+                        : 'bg-gray-800/50 border-gray-700 hover:border-gray-600'
+                    }`}
+                  >
+                    <Checkbox
+                      checked={isSelected}
+                      onChange={() => handleToggleDocument(doc.id)}
+                      className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 cursor-pointer"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <Icon className={`h-4 w-4 ${isSelected ? 'text-blue-400' : 'text-gray-400'}`} />
+                    <div className="flex-1 flex items-center justify-between">
+                      <Label 
+                        className={`text-sm font-medium cursor-pointer ${
+                          isSelected ? 'text-blue-300' : 'text-gray-300'
+                        }`}
+                        onClick={() => handleToggleDocument(doc.id)}
+                      >
+                        {doc.name}
+                      </Label>
+                      {hasSections && isSelected && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleToggleExpand(doc.id)
+                          }}
+                          className="h-6 px-2 text-gray-400 hover:text-white hover:bg-gray-700"
+                        >
+                          {isExpanded ? (
+                            <ChevronDown className="h-3 w-3" />
+                          ) : (
+                            <ChevronRight className="h-3 w-3" />
+                          )}
+                          <span className="ml-1 text-xs">
+                            {docSelectedSections.length > 0 
+                              ? `${docSelectedSections.length} sections`
+                              : 'All sections'
+                            }
+                          </span>
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  {hasSections && isSelected && isExpanded && (
+                    <div className="ml-8 space-y-1 p-2 bg-gray-800/50 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-gray-400">Select sections to generate:</span>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedSections(prev => ({ ...prev, [doc.id]: sections.map(s => s.id) }))}
+                            className="h-6 px-2 text-xs text-gray-400 hover:text-white hover:bg-gray-700"
+                          >
+                            All
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedSections(prev => ({ ...prev, [doc.id]: [] }))}
+                            className="h-6 px-2 text-xs text-gray-400 hover:text-white hover:bg-gray-700"
+                          >
+                            None
+                          </Button>
+                        </div>
+                      </div>
+                      {sections.map((section) => (
+                        <div
+                          key={section.id}
+                          className="flex items-center space-x-2 p-1.5 rounded hover:bg-gray-700/50 cursor-pointer"
+                          onClick={() => handleToggleSection(doc.id, section.id)}
+                        >
+                          <Checkbox
+                            checked={docSelectedSections.includes(section.id)}
+                            onChange={() => handleToggleSection(doc.id, section.id)}
+                            className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 h-3 w-3"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <Label className="text-xs text-gray-300 cursor-pointer flex-1">
+                            {section.title}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )
             })}
@@ -224,6 +347,7 @@ export function DocumentSelectionModal({
           >
             <Sparkles className="w-4 h-4 mr-2" />
             Generate
+            {Object.values(selectedSections).some(s => s.length > 0) && ' (Custom)'}
           </Button>
         </div>
       </DialogContent>

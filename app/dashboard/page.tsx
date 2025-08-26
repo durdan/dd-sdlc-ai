@@ -98,6 +98,13 @@ import {
 import { HowItWorksVisualization } from "@/components/how-it-works-visualization"
 import { PromptEngineering } from "@/components/prompt-engineering"
 import { MarkdownRenderer } from '@/components/markdown-renderer'
+import { DocumentButtonWithSections } from '@/components/document-button-with-sections'
+import { ExpandableSectionViewer } from '@/components/expandable-section-viewer'
+import { businessAnalysisSections } from '@/lib/business-analysis-sections'
+import { techSpecSections } from '@/lib/tech-spec-sections'
+import { uxDesignSections } from '@/lib/ux-design-sections'
+import { architectureSections } from '@/lib/architecture-sections'
+import { functionalSpecSections } from '@/lib/functional-spec-sections'
 import { MermaidViewerEnhanced } from '@/components/mermaid-viewer-enhanced'
 import { WireframeViewer } from '@/components/wireframe'
 import { IntegrationHub } from '@/components/integration-hub'
@@ -448,6 +455,69 @@ const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({ currentSt
 
 
 function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, userRole: string, onSignOut: () => void }) {
+  // Helper function to extract section content from the full document
+  const extractSectionContent = (fullContent: string, sectionName: string): string => {
+    if (!fullContent) return ''
+    
+    // Special handling for sections that might contain diagrams
+    const diagramKeywords = ['diagram', 'schema', 'architecture', 'flow', 'sequence', 'mermaid']
+    const isDiagramSection = diagramKeywords.some(keyword => 
+      sectionName.toLowerCase().includes(keyword)
+    )
+    
+    // Try to extract section content based on section name
+    // Sections are typically separated by --- or have headers
+    const sections = fullContent.split(/\n---\n|\n\n---\n\n/)
+    
+    for (const section of sections) {
+      // Check if this section contains the section name in its header
+      const lines = section.split('\n')
+      const firstFewLines = lines.slice(0, 5).join('\n').toLowerCase()
+      if (firstFewLines.includes(sectionName.toLowerCase())) {
+        return section.trim()
+      }
+    }
+    
+    // Try to find section by heading - make pattern more flexible
+    const escapedSectionName = sectionName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const headingPattern = new RegExp(`^#+\\s*[0-9.]*\\s*${escapedSectionName}`, 'mi')
+    const match = fullContent.match(headingPattern)
+    if (match) {
+      const startIndex = match.index!
+      // Find the next section or end of document
+      const restOfContent = fullContent.slice(startIndex)
+      
+      // For diagram sections, include more content to capture the full diagram
+      if (isDiagramSection) {
+        // Look for the next major heading or the end of a mermaid block
+        const nextSectionMatch = restOfContent.match(/\n(?=#{1,2}\s[0-9.]*\s*[A-Z])/m)
+        const endOfMermaidMatch = restOfContent.match(/```[\s\S]*?```/g)
+        
+        if (endOfMermaidMatch && endOfMermaidMatch.length > 0) {
+          // Find the last mermaid block in this section
+          const lastMermaidEnd = restOfContent.lastIndexOf('```')
+          if (lastMermaidEnd > 0) {
+            const contentWithMermaid = restOfContent.slice(0, lastMermaidEnd + 3)
+            if (nextSectionMatch && nextSectionMatch.index && nextSectionMatch.index < contentWithMermaid.length) {
+              return restOfContent.slice(0, nextSectionMatch.index).trim()
+            }
+            return contentWithMermaid.trim()
+          }
+        }
+      }
+      
+      // Standard section extraction
+      const nextSectionMatch = restOfContent.match(/\n(?=#{1,3}\s)/m)
+      if (nextSectionMatch) {
+        return restOfContent.slice(0, nextSectionMatch.index).trim()
+      }
+      return restOfContent.trim()
+    }
+    
+    // If no specific section found, return empty
+    return ''
+  }
+
   const [input, setInput] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
   const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>([])
@@ -469,6 +539,14 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
   const [showGitHubProjectDialogForExisting, setShowGitHubProjectDialogForExisting] = useState(false)
   const [showCacheDialog, setShowCacheDialog] = useState(false)
   const [showSlackUICodeAssistant, setShowSlackUICodeAssistant] = useState(false)
+  
+  // Section selection states
+  const [selectedBusinessSections, setSelectedBusinessSections] = useState<string[]>([])
+  const [selectedFunctionalSections, setSelectedFunctionalSections] = useState<string[]>([])
+  const [selectedTechnicalSections, setSelectedTechnicalSections] = useState<string[]>([])
+  const [selectedUXSections, setSelectedUXSections] = useState<string[]>([])
+  const [selectedArchitectureSections, setSelectedArchitectureSections] = useState<string[]>([])
+  const [showSectionSelection, setShowSectionSelection] = useState(false)
   const [selectedProjectForGitHub, setSelectedProjectForGitHub] = useState<ProjectResult | null>(null)
   const [isCreatingGitHubProject, setIsCreatingGitHubProject] = useState(false)
   const [isExportingToJira, setIsExportingToJira] = useState(false)
@@ -581,13 +659,24 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
   }
 
   // Handle document selection from DocumentSelectionModal
-  const handleDocumentSelection = (selectedDocuments: string[], selectedWireframeModel?: string) => {
+  const handleDocumentSelection = (selectedDocuments: string[], selectedWireframeModel?: string, selectedSectionsMap?: Record<string, string[]>) => {
     console.log('🔍 handleDocumentSelection called with:', {
       selectedDocuments,
       selectedWireframeModel,
+      selectedSectionsMap,
       currentWireframeModel: wireframeModel
     });
     setShowDocumentSelectionModal(false)
+    
+    // Update section states
+    if (selectedSectionsMap) {
+      setSelectedBusinessSections(selectedSectionsMap.analysis || [])
+      setSelectedFunctionalSections(selectedSectionsMap.functional || [])
+      setSelectedTechnicalSections(selectedSectionsMap.technical || [])
+      setSelectedUXSections(selectedSectionsMap.ux || [])
+      setSelectedArchitectureSections(selectedSectionsMap.mermaid || [])
+    }
+    
     if (selectedWireframeModel) {
       console.log('📝 Setting wireframe model to:', selectedWireframeModel);
       setWireframeModel(selectedWireframeModel as any)
@@ -1663,6 +1752,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
             documentType: "business",
             input,
             userId: user?.id,
+            businessSections: selectedBusinessSections.length > 0 ? selectedBusinessSections : undefined,
           }),
         })
         
@@ -1734,7 +1824,8 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
             input,
             businessAnalysis: results.businessAnalysis || "",
             userId: user?.id,
-            useContextOptimization: true  // Enable context optimization
+            useContextOptimization: true,  // Enable context optimization
+            functionalSections: selectedFunctionalSections.length > 0 ? selectedFunctionalSections : undefined,
           }),
         })
         
@@ -1807,7 +1898,8 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
             businessAnalysis: results.businessAnalysis || "",
             functionalSpec: results.functionalSpec || "",
             userId: user?.id,
-            useContextOptimization: true
+            useContextOptimization: true,
+            techSpecSections: selectedTechnicalSections.length > 0 ? selectedTechnicalSections : undefined,
           }),
         })
         
@@ -1884,7 +1976,8 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
             functionalSpec: results.functionalSpec || "",
             technicalSpec: results.technicalSpec || "",
             userId: user?.id,
-            useContextOptimization: true  // Enable smart context optimization
+            useContextOptimization: true,  // Enable smart context optimization
+            uxSections: selectedUXSections.length > 0 ? selectedUXSections : undefined,
           }),
         })
         
@@ -2026,6 +2119,7 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
             technicalSpec: results.technicalSpec || "",
             businessAnalysis: results.businessAnalysis || "",
             userId: user?.id,
+            architectureSections: selectedArchitectureSections.length > 0 ? selectedArchitectureSections : undefined,
           }),
         })
         
@@ -2761,8 +2855,23 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
       
       const dbDocumentType = documentTypeMapping[documentType as keyof typeof documentTypeMapping] || documentType
       
+      // Get selected sections for this document type
+      const getSelectedSections = () => {
+        switch (documentType) {
+          case 'business': return selectedBusinessSections
+          case 'functional': return selectedFunctionalSections
+          case 'technical': return selectedTechnicalSections
+          case 'ux': return selectedUXSections
+          case 'mermaid': return selectedArchitectureSections
+          default: return []
+        }
+      }
+      
+      const selectedSections = getSelectedSections()
+      
       console.log(`💾 Saving ${documentType} document (${dbDocumentType}) - Project ID:`, currentProjectIdRef.current || 'NEW')
       console.log(`📄 Content length:`, content?.length || 0)
+      console.log(`📑 Selected sections:`, selectedSections)
       
       if (currentProjectIdRef.current) {
         // Update existing project with individual document
@@ -2774,7 +2883,9 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
             documentType: dbDocumentType,
             title: `${projectName} - ${documentType.charAt(0).toUpperCase() + documentType.slice(1)} Document`,
             content: content,
-            userId: user?.id
+            userId: user?.id,
+            selectedSections: selectedSections,
+            generationType: selectedSections.length > 0 ? 'sections' : 'full'
           })
         })
         
@@ -2790,10 +2901,13 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
           content: content, // Include the document content
           documentType: dbDocumentType, // Include the document type
           userId: user?.id,
+          selectedSections: selectedSections,
+          generationType: selectedSections.length > 0 ? 'sections' : 'full',
           metadata: {
             input: inputKey,
             generated_at: new Date().toISOString(),
-            user_id: user?.id
+            user_id: user?.id,
+            selected_sections: { [documentType]: selectedSections }
           }
         }
         
@@ -4151,7 +4265,12 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                             >
                               <span className="hidden sm:inline">Business Analysis</span>
                               <span className="sm:hidden">Business</span>
-                              {processingSteps.find(s => s.id === 'analysis')?.status === 'completed' && (
+                              {selectedBusinessSections.length > 0 && (
+                                <Badge variant="secondary" className="ml-1 px-1 py-0 text-[10px] h-4">
+                                  {selectedBusinessSections.length}
+                                </Badge>
+                              )}
+                              {processingSteps.find(s => s.id === 'analysis')?.status === 'completed' && !selectedBusinessSections.length && (
                                 <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
                               )}
                             </TabsTrigger>
@@ -4163,7 +4282,12 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                             >
                               <span className="hidden sm:inline">Functional Spec</span>
                               <span className="sm:hidden">Functional</span>
-                              {processingSteps.find(s => s.id === 'functional')?.status === 'completed' && (
+                              {selectedFunctionalSections.length > 0 && (
+                                <Badge variant="secondary" className="ml-1 px-1 py-0 text-[10px] h-4">
+                                  {selectedFunctionalSections.length}
+                                </Badge>
+                              )}
+                              {processingSteps.find(s => s.id === 'functional')?.status === 'completed' && !selectedFunctionalSections.length && (
                                 <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
                               )}
                             </TabsTrigger>
@@ -4175,7 +4299,12 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                             >
                               <span className="hidden sm:inline">Technical Spec</span>
                               <span className="sm:hidden">Technical</span>
-                              {processingSteps.find(s => s.id === 'technical')?.status === 'completed' && (
+                              {selectedTechnicalSections.length > 0 && (
+                                <Badge variant="secondary" className="ml-1 px-1 py-0 text-[10px] h-4">
+                                  {selectedTechnicalSections.length}
+                                </Badge>
+                              )}
+                              {processingSteps.find(s => s.id === 'technical')?.status === 'completed' && !selectedTechnicalSections.length && (
                                 <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
                               )}
                             </TabsTrigger>
@@ -4187,7 +4316,12 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                             >
                               <span className="hidden sm:inline">UX Specification</span>
                               <span className="sm:hidden">UX</span>
-                              {processingSteps.find(s => s.id === 'ux')?.status === 'completed' && (
+                              {selectedUXSections.length > 0 && (
+                                <Badge variant="secondary" className="ml-1 px-1 py-0 text-[10px] h-4">
+                                  {selectedUXSections.length}
+                                </Badge>
+                              )}
+                              {processingSteps.find(s => s.id === 'ux')?.status === 'completed' && !selectedUXSections.length && (
                                 <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
                               )}
                             </TabsTrigger>
@@ -4219,35 +4353,112 @@ function SDLCAutomationPlatform({ user, userRole, onSignOut }: { user: any, user
                         </div>
 
                         <TabsContent value="business">
-                          <MarkdownRenderer 
-                            content={generatedDocuments.businessAnalysis || ''}
-                            title="Business Analysis"
-                            type="business"
-                          />
+                          {selectedBusinessSections.length > 0 ? (
+                            <ExpandableSectionViewer
+                              sections={selectedBusinessSections.map(sectionId => {
+                                const sectionInfo = Object.values(businessAnalysisSections).find(s => s.id === sectionId)
+                                const sectionContent = extractSectionContent(generatedDocuments.businessAnalysis || '', sectionInfo?.title || sectionId)
+                                return {
+                                  id: sectionId,
+                                  name: sectionInfo?.title || sectionId,
+                                  icon: sectionInfo?.icon,
+                                  description: sectionInfo?.description,
+                                  content: sectionContent,
+                                  status: 'completed' as const
+                                }
+                              })}
+                              documentType="Business Analysis"
+                              isGenerating={false}
+                            />
+                          ) : (
+                            <MarkdownRenderer 
+                              content={generatedDocuments.businessAnalysis || ''}
+                              title="Business Analysis"
+                              type="business"
+                            />
+                          )}
                         </TabsContent>
 
                         <TabsContent value="functional">
-                          <MarkdownRenderer 
-                            content={generatedDocuments.functionalSpec || ''}
-                            title="Functional Specification"
-                            type="functional"
-                          />
+                          {selectedFunctionalSections.length > 0 ? (
+                            <ExpandableSectionViewer
+                              sections={selectedFunctionalSections.map(sectionId => {
+                                const sectionInfo = Object.values(functionalSpecSections).find(s => s.id === sectionId)
+                                const sectionContent = extractSectionContent(generatedDocuments.functionalSpec || '', sectionInfo?.title || sectionId)
+                                return {
+                                  id: sectionId,
+                                  name: sectionInfo?.title || sectionId,
+                                  icon: sectionInfo?.icon,
+                                  description: sectionInfo?.description,
+                                  content: sectionContent,
+                                  status: 'completed' as const
+                                }
+                              })}
+                              documentType="Functional Specification"
+                              isGenerating={false}
+                            />
+                          ) : (
+                            <MarkdownRenderer 
+                              content={generatedDocuments.functionalSpec || ''}
+                              title="Functional Specification"
+                              type="functional"
+                            />
+                          )}
                         </TabsContent>
 
                         <TabsContent value="technical">
-                          <MarkdownRenderer 
-                            content={generatedDocuments.technicalSpec || ''}
-                            title="Technical Specification"
-                            type="technical"
-                          />
+                          {selectedTechnicalSections.length > 0 ? (
+                            <ExpandableSectionViewer
+                              sections={selectedTechnicalSections.map(sectionId => {
+                                const sectionInfo = Object.values(techSpecSections).find(s => s.id === sectionId)
+                                // Extract section content from the full document
+                                const sectionContent = extractSectionContent(generatedDocuments.technicalSpec || '', sectionInfo?.title || sectionId)
+                                return {
+                                  id: sectionId,
+                                  name: sectionInfo?.title || sectionId,
+                                  icon: sectionInfo?.icon,
+                                  description: sectionInfo?.description,
+                                  content: sectionContent,
+                                  status: 'completed' as const
+                                }
+                              })}
+                              documentType="Technical Specification"
+                              isGenerating={false}
+                            />
+                          ) : (
+                            <MarkdownRenderer 
+                              content={generatedDocuments.technicalSpec || ''}
+                              title="Technical Specification"
+                              type="technical"
+                            />
+                          )}
                         </TabsContent>
 
                         <TabsContent value="ux">
-                          <MarkdownRenderer 
-                            content={generatedDocuments.uxSpec || ''}
-                            title="UX Specification"
-                            type="ux"
-                          />
+                          {selectedUXSections.length > 0 ? (
+                            <ExpandableSectionViewer
+                              sections={selectedUXSections.map(sectionId => {
+                                const sectionInfo = Object.values(uxDesignSections).find(s => s.id === sectionId)
+                                const sectionContent = extractSectionContent(generatedDocuments.uxSpec || '', sectionInfo?.title || sectionId)
+                                return {
+                                  id: sectionId,
+                                  name: sectionInfo?.title || sectionId,
+                                  icon: sectionInfo?.icon,
+                                  description: sectionInfo?.description,
+                                  content: sectionContent,
+                                  status: 'completed' as const
+                                }
+                              })}
+                              documentType="UX Specification"
+                              isGenerating={false}
+                            />
+                          ) : (
+                            <MarkdownRenderer 
+                              content={generatedDocuments.uxSpec || ''}
+                              title="UX Specification"
+                              type="ux"
+                            />
+                          )}
                         </TabsContent>
 
                         <TabsContent value="wireframe">

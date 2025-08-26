@@ -43,13 +43,15 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { title, content, description, userId, projectId, documentType }: { 
+    const { title, content, description, userId, projectId, documentType, selectedSections, generationType }: { 
       title?: string; 
       content?: string; 
       description?: string; 
       userId?: string; 
       projectId?: string;
       documentType?: string; // Add documentType for individual documents
+      selectedSections?: string[]; // Selected sections for the document
+      generationType?: string; // 'full' or 'sections'
     } = body
     
     console.log('🔍 SDLC Documents POST - Request received:', {
@@ -58,7 +60,9 @@ export async function POST(request: NextRequest) {
       description: description?.substring(0, 50) + '...',
       userId: userId?.substring(0, 8) + '...',
       projectId: projectId || 'new',
-      documentType: documentType || 'comprehensive_sdlc'
+      documentType: documentType || 'comprehensive_sdlc',
+      selectedSections: selectedSections || [],
+      generationType: generationType || 'full'
     })
     
     if (!title || !content) {
@@ -85,7 +89,7 @@ export async function POST(request: NextRequest) {
       
       // If documentType is provided, add/update individual document
       if (documentType && documentType !== 'comprehensive_sdlc') {
-        const success = await dbService.addOrUpdateIndividualDocument(projectId, documentType, content)
+        const success = await dbService.addOrUpdateIndividualDocument(projectId, documentType, content, selectedSections, generationType)
         if (!success) {
           return NextResponse.json(
             { error: 'Failed to update individual document' }, 

@@ -20,9 +20,16 @@ export class DatabaseService {
 
   // SDLC Projects
   async createProject(projectData: SDLCProjectInsert): Promise<SDLCProject | null> {
+    // Include selected_sections and generation_metadata if provided
+    const enrichedData = {
+      ...projectData,
+      selected_sections: projectData.selected_sections || {},
+      generation_metadata: projectData.generation_metadata || {}
+    }
+    
     const { data, error } = await this.supabase
       .from('sdlc_projects')
-      .insert(projectData)
+      .insert(enrichedData)
       .select()
       .single()
 
@@ -102,9 +109,17 @@ export class DatabaseService {
 
   // Documents
   async createDocument(documentData: DocumentInsert): Promise<Document | null> {
+    // Include section-specific metadata if provided
+    const enrichedData = {
+      ...documentData,
+      selected_sections: documentData.selected_sections || null,
+      generation_type: documentData.generation_type || 'full',
+      section_metadata: documentData.section_metadata || {}
+    }
+    
     const { data, error } = await this.supabase
       .from('documents')
-      .insert(documentData)
+      .insert(enrichedData)
       .select()
       .single()
 
@@ -556,7 +571,9 @@ export class DatabaseService {
       technicalSpec: string
       uxSpec: string
       architecture: string
-    }
+    },
+    selectedSections?: Record<string, string[]>,
+    generationMetadata?: any
   ): Promise<{ project: SDLCProject | null, success: boolean }> {
     try {
       // Create project
@@ -564,7 +581,9 @@ export class DatabaseService {
         user_id: userId,
         title,
         input_text: input,
-        status: 'completed'
+        status: 'completed',
+        selected_sections: selectedSections,
+        generation_metadata: generationMetadata
       })
 
       if (!project) {
@@ -600,7 +619,9 @@ export class DatabaseService {
           const result = await this.createDocument({
             project_id: project.id,
             document_type: documentTypeMapping[type] || type,
-            content: content.trim()
+            content: content.trim(),
+            selected_sections: selectedSections?.[type] || null,
+            generation_type: selectedSections?.[type]?.length > 0 ? 'sections' : 'full'
           })
           
           if (result) {

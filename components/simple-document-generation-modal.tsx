@@ -42,6 +42,7 @@ import { DocumentTabButton } from "@/components/document-tab-button"
 import { TechSpecTabButton } from "@/components/tech-spec-tab-button"
 import { Settings } from "lucide-react"
 import { SectionGenerationProgress } from "@/components/section-generation-progress"
+import { ExpandableSectionViewer } from "@/components/expandable-section-viewer"
 import { businessAnalysisSections } from "@/lib/business-analysis-sections"
 import { techSpecSections } from "@/lib/tech-spec-sections"
 import { uxDesignSections } from "@/lib/ux-design-sections"
@@ -53,6 +54,9 @@ interface SimpleDocumentGenerationModalProps {
   onClose: () => void
   input: string
   onDocumentGenerated?: (documents: Record<string, string>) => void
+  initialDocType?: string
+  initialContent?: string
+  showPreviousDocs?: boolean  // New prop to control whether to show previous docs
 }
 
 interface DocumentType {
@@ -106,10 +110,17 @@ export function SimpleDocumentGenerationModal({
   onClose,
   input,
   onDocumentGenerated,
+  initialDocType,
+  initialContent,
+  showPreviousDocs = false,
 }: SimpleDocumentGenerationModalProps) {
-  // Initialize with stored type or default to business
+  // Initialize with initialDocType prop, then stored type, then default to business
   const [selectedType, setSelectedType] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
+    if (initialDocType) {
+      console.log('📋 Using initialDocType prop:', initialDocType)
+      return initialDocType
+    }
+    if (typeof window !== 'undefined' && showPreviousDocs) {
       const storedType = localStorage.getItem('selectedDocType')
       console.log('📋 Retrieved selectedDocType from localStorage:', storedType)
       return storedType || "business"
@@ -175,8 +186,15 @@ export function SimpleDocumentGenerationModal({
   
   const [selectedArchitectureSections, setSelectedArchitectureSections] = useState<string[]>(() => {
     if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('architectureSections')
-      return stored ? JSON.parse(stored) : []
+      // Check both possible keys for backwards compatibility
+      const stored = localStorage.getItem('mermaidSections') || localStorage.getItem('architectureSections')
+      console.log('🔍 Loading architecture sections from localStorage:', stored)
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        console.log('📝 Parsed architecture sections:', parsed)
+        return parsed
+      }
+      return []
     }
     return []
   })
@@ -259,26 +277,132 @@ export function SimpleDocumentGenerationModal({
   // Update selectedType when modal opens
   useEffect(() => {
     if (isOpen) {
-      const storedType = localStorage.getItem('selectedDocType')
-      if (storedType && storedType !== selectedType) {
-        console.log('🔄 Updating selectedType from localStorage:', storedType)
-        setSelectedType(storedType)
+      // Use initialDocType if provided, otherwise check localStorage
+      if (initialDocType && initialDocType !== selectedType) {
+        console.log('🔄 Setting selectedType from prop:', initialDocType)
+        setSelectedType(initialDocType)
+      } else if (!initialDocType && showPreviousDocs) {
+        const storedType = localStorage.getItem('selectedDocType')
+        if (storedType && storedType !== selectedType) {
+          console.log('🔄 Updating selectedType from localStorage:', storedType)
+          setSelectedType(storedType)
+        }
       }
       
-      // Load any previously generated documents for this session
-      const savedDocs = localStorage.getItem('sdlc_generated_docs')
-      if (savedDocs) {
-        try {
-          const docs = JSON.parse(savedDocs)
-          setPreviousDocuments(docs)
-          // If we have a previous document for the selected type, show it
-          if (docs[selectedType]) {
-            setGeneratedContent(docs[selectedType])
-            setHasGenerated(true)
-            setViewingPreviousDoc(true)
+      // Only load previous documents if showPreviousDocs is true
+      if (showPreviousDocs) {
+        // Load from document history and filter by current input
+        const historyKey = 'sdlc_document_history'
+        const storedHistory = localStorage.getItem(historyKey)
+        
+        if (storedHistory) {
+          try {
+            const history = JSON.parse(storedHistory)
+            // Filter documents by current input
+            const relevantDocs: Record<string, any> = {}
+            const relevantSections: Record<string, any> = {}
+            
+            history.forEach((doc: any) => {
+              // Only include documents that match the current input
+              if (doc.input === input && doc.content) {
+                // Only keep the most recent document for each type
+                if (!relevantDocs[doc.type]) {
+                  relevantDocs[doc.type] = doc.content
+                  if (doc.sections) {
+                    relevantSections[doc.type] = doc.sections
+                  }
+                }
+              }
+            })
+            
+            setPreviousDocuments(relevantDocs)
+            console.log('📚 Loaded documents for input:', input, Object.keys(relevantDocs))
+            
+            // If we have a previous document for the selected type, show it
+            if (relevantDocs[selectedType]) {
+              setGeneratedContent(relevantDocs[selectedType])
+              setHasGenerated(true)
+              setViewingPreviousDoc(true)
+              
+              // Restore section progress if available
+              if (relevantSections[selectedType]) {
+                const sections = relevantSections[selectedType]
+                const restoredProgress: Record<string, any> = {}
+                
+                // Get section details to extract content properly
+                const sectionDetails = sectionDetailsMap[selectedType as keyof typeof sectionDetailsMap] || {}
+                
+                sections.forEach((sectionId: string) => {
+                  // Extract the section content from the full document
+                  const sectionInfo = sectionDetails[sectionId]
+                  const sectionName = sectionInfo?.name || sectionId
+                  
+                  console.log(`📦 Processing section: ${sectionId} with name: "${sectionName}"`)
+                  console.log(`📋 Section info:`, sectionInfo)
+                  
+                  const sectionContent = extractSectionContent(
+                    relevantDocs[selectedType], 
+                    sectionName
+                  )
+                  
+                  console.log(`✅ Extracted content length: ${sectionContent?.length || 0}`)
+                  
+                  restoredProgress[sectionId] = { 
+                    status: 'completed', 
+                    content: sectionContent || '' 
+                  }
+                })
+                setSectionProgress(restoredProgress)
+                console.log(`📚 Restored ${sections.length} sections for ${selectedType} with content`)
+              }
+            }
+          } catch (e) {
+            console.error('Error loading previous documents:', e)
           }
+        }
+      } else {
+        // Clear any previous content when not showing previous docs
+        setGeneratedContent("")
+        setHasGenerated(false)
+        setViewingPreviousDoc(false)
+        setSectionProgress({})
+        setPreviousDocuments({})
+      }
+      
+      // Load section metadata if available
+      // This ensures that section selections are preserved when viewing previously generated documents
+      const savedSectionMetadata = localStorage.getItem('sdlc_section_metadata')
+      if (savedSectionMetadata) {
+        try {
+          const metadata = JSON.parse(savedSectionMetadata)
+          console.log('📦 Loading saved section metadata:', metadata)
+          
+          // Update state and localStorage for each document type
+          if (metadata.business) {
+            setSelectedBusinessSections(metadata.business)
+            localStorage.setItem('businessSections', JSON.stringify(metadata.business))
+          }
+          if (metadata.functional) {
+            setSelectedFunctionalSections(metadata.functional)
+            localStorage.setItem('functionalSections', JSON.stringify(metadata.functional))
+          }
+          if (metadata.technical) {
+            setSelectedTechSpecSections(metadata.technical)
+            localStorage.setItem('techSpecSections', JSON.stringify(metadata.technical))
+          }
+          if (metadata.ux) {
+            setSelectedUXSections(metadata.ux)
+            localStorage.setItem('uxSections', JSON.stringify(metadata.ux))
+          }
+          if (metadata.mermaid) {
+            setSelectedArchitectureSections(metadata.mermaid)
+            localStorage.setItem('mermaidSections', JSON.stringify(metadata.mermaid))
+            // Also save with the alternative key for backward compatibility
+            localStorage.setItem('architectureSections', JSON.stringify(metadata.mermaid))
+          }
+          console.log('✅ Section metadata restored successfully')
         } catch (e) {
-          console.error('Error loading previous documents:', e)
+          console.error('Error loading section metadata:', e)
         }
       }
     } else {
@@ -287,27 +411,16 @@ export function SimpleDocumentGenerationModal({
     }
   }, [isOpen])
 
-  // Auto-start generation when modal opens (only if no previous doc exists)
+  // Disable auto-generation - user should explicitly click Generate
+  // This provides better UX by letting users:
+  // 1. Review their input
+  // 2. Select sections if needed
+  // 3. Change document type if needed
+  // 4. Explicitly trigger generation
   useEffect(() => {
-    // Only auto-generate if:
-    // 1. Modal is open
-    // 2. Not currently generating
-    // 3. No content already generated/loaded
-    // 4. Input exists
-    // 5. Selected type is set
-    // 6. No previous document for this type
-    // 7. Not viewing a previous document
-    if (isOpen && !isGenerating && !generatedContent && !viewingPreviousDoc && input.trim() && selectedType && !previousDocuments[selectedType]) {
-      console.log('🚀 Auto-starting generation for type:', selectedType)
-      // Check rate limit before auto-generating
-      if (rateLimitStatus && rateLimitStatus.remaining > 0 && !rateLimitError) {
-        const timer = setTimeout(() => {
-          handleGenerate()
-        }, 800) // Increased delay to ensure selectedType is set
-        return () => clearTimeout(timer)
-      }
-    }
-  }, [isOpen, input, selectedType, viewingPreviousDoc, rateLimitStatus])
+    // Disabled auto-generation for better UX
+    // Users should click Generate button explicitly
+  }, [])
   
   // Auto-scroll streaming content
   useEffect(() => {
@@ -358,6 +471,8 @@ export function SimpleDocumentGenerationModal({
         selectedSections = selectedArchitectureSections
         sectionKey = 'architectureSections'
         console.log('🏗️ Including architecture sections:', selectedArchitectureSections)
+        console.log('🔑 Using section key:', sectionKey)
+        console.log('📦 Selected sections array:', selectedSections)
       } else if (selectedType === 'functional' && selectedFunctionalSections.length > 0) {
         selectedSections = selectedFunctionalSections
         sectionKey = 'functionalSections'
@@ -431,6 +546,27 @@ export function SimpleDocumentGenerationModal({
                   const updatedDocs = { ...previousDocuments, [selectedType]: data.fullContent }
                   setPreviousDocuments(updatedDocs)
                   localStorage.setItem('sdlc_generated_docs', JSON.stringify(updatedDocs))
+                  
+                  // Also save to document history
+                  const historyKey = 'sdlc_document_history'
+                  const storedHistory = localStorage.getItem(historyKey)
+                  const history = storedHistory ? JSON.parse(storedHistory) : []
+                  
+                  const newHistoryEntry = {
+                    type: selectedType,
+                    content: data.fullContent,
+                    input: input,
+                    timestamp: Date.now()
+                  }
+                  
+                  history.unshift(newHistoryEntry)
+                  const trimmedHistory = history.slice(0, 50)
+                  localStorage.setItem(historyKey, JSON.stringify(trimmedHistory))
+                  
+                  console.log('📚 Saved to document history (streaming):', {
+                    type: selectedType,
+                    historyLength: trimmedHistory.length
+                  })
                   // Notify parent component if callback provided
                   if (onDocumentGenerated) {
                     onDocumentGenerated(updatedDocs)
@@ -501,6 +637,9 @@ export function SimpleDocumentGenerationModal({
           [sectionKey]: [sectionId] // Send only one section at a time
         }
         
+        console.log('📤 Sending request for section:', sectionId)
+        console.log('📦 Request body:', requestBody)
+        
         const response = await fetch('/api/generate-document', {
           method: 'POST',
           headers: {
@@ -544,8 +683,13 @@ export function SimpleDocumentGenerationModal({
                 
                 if (data.type === 'chunk') {
                   sectionContent += data.content
-                  // Update streamed content to show current section
-                  setStreamedContent(fullContent + sectionContent)
+                  // Update streamed content to show current section being generated
+                  setStreamedContent(sectionContent)
+                  // Also update the section's content in progress
+                  setSectionProgress(prev => ({
+                    ...prev,
+                    [sectionId]: { ...prev[sectionId], content: sectionContent }
+                  }))
                 } else if (data.type === 'complete') {
                   // Section generation complete
                   sectionContent = data.fullContent || sectionContent
@@ -563,7 +707,7 @@ export function SimpleDocumentGenerationModal({
             ...prev,
             [sectionId]: { status: 'completed', content: sectionContent }
           }
-          console.log(`✅ Section ${sectionId} completed. Progress:`, updated)
+          console.log(`✅ Section ${sectionId} completed with ${sectionContent.length} chars. Progress:`, updated)
           return updated
         })
         
@@ -571,11 +715,26 @@ export function SimpleDocumentGenerationModal({
         if (i > 0) {
           fullContent += '\n\n---\n\n' // Add separator between sections
         }
+        
+        // Add section header if not already present in the content
+        const sectionInfo = sectionDetailsMap[selectedType as keyof typeof sectionDetailsMap]?.[sectionId]
+        const sectionName = sectionInfo?.name || sectionId
+        
+        // Check if the section content already starts with the section name
+        const contentStartsWithName = sectionContent.trim().toLowerCase().startsWith(sectionName.toLowerCase()) ||
+                                     sectionContent.trim().startsWith('#') ||
+                                     sectionContent.trim().startsWith('**')
+        
+        if (!contentStartsWithName) {
+          // Add section header
+          fullContent += `## ${i + 1}. ${sectionName}\n\n`
+        }
+        
         fullContent += sectionContent
         sectionContents.push(sectionContent)
         
         // Update the displayed content
-        setStreamedContent(fullContent)
+        setStreamedContent('')  // Clear streamed content as section is complete
         setGeneratedContent(fullContent)
         
       } catch (err) {
@@ -592,27 +751,163 @@ export function SimpleDocumentGenerationModal({
     }
     
     setCurrentGeneratingSection(null)
+    setIsGenerating(false)  // Ensure generation is marked as complete
     
     // Save the complete document
     if (fullContent) {
-      await saveAnonymousProject(fullContent)
-      onDocumentGenerated?.(selectedType, fullContent)
+      // Final update to ensure content is set
+      setGeneratedContent(fullContent)
+      setHasGenerated(true)
+      setViewingPreviousDoc(false)
       
-      // Store in local storage
+      await saveAnonymousProject(fullContent)
+      
+      // Store in local storage along with section metadata
       const storedDocs = localStorage.getItem('sdlc_generated_docs')
       const docs = storedDocs ? JSON.parse(storedDocs) : {}
       docs[selectedType] = fullContent
       localStorage.setItem('sdlc_generated_docs', JSON.stringify(docs))
       
+      // Also save to document history for persistence
+      const historyKey = 'sdlc_document_history'
+      const storedHistory = localStorage.getItem(historyKey)
+      const history = storedHistory ? JSON.parse(storedHistory) : []
+      
+      // Add new document to history
+      const newHistoryEntry = {
+        type: selectedType,
+        content: fullContent,
+        input: input,
+        timestamp: Date.now(),
+        sections: currentSections.length > 0 ? currentSections : undefined,
+        sectionCount: Object.keys(sectionProgress).length || undefined
+      }
+      
+      // Add to beginning of history
+      history.unshift(newHistoryEntry)
+      
+      // Keep only last 50 documents in history to avoid localStorage limits
+      const trimmedHistory = history.slice(0, 50)
+      localStorage.setItem(historyKey, JSON.stringify(trimmedHistory))
+      
+      console.log('📚 Saved to document history:', {
+        type: selectedType,
+        historyLength: trimmedHistory.length,
+        sectionCount: newHistoryEntry.sectionCount
+      })
+      
+      // Also store section metadata for this document
+      const sectionMetadata = {
+        business: selectedBusinessSections,
+        functional: selectedFunctionalSections,
+        technical: selectedTechSpecSections,
+        ux: selectedUXSections,
+        mermaid: selectedArchitectureSections
+      }
+      localStorage.setItem('sdlc_section_metadata', JSON.stringify(sectionMetadata))
+      
+      // Store sections for this specific document type so they persist when switching tabs
+      if (currentSections.length > 0) {
+        const typeSpecificKey = `sdlc_section_metadata_${selectedType}`
+        localStorage.setItem(typeSpecificKey, JSON.stringify(currentSections))
+        console.log(`💾 Saved ${currentSections.length} sections for ${selectedType}`)
+      }
+      
       // Update previous documents
-      setPreviousDocuments(prev => ({
-        ...prev,
-        [selectedType]: fullContent
-      }))
+      const updatedDocs = { ...previousDocuments, [selectedType]: fullContent }
+      setPreviousDocuments(updatedDocs)
+      
+      // Notify parent component if callback provided
+      if (onDocumentGenerated) {
+        onDocumentGenerated(updatedDocs)
+      }
       
       // Update rate limit status
       await checkRateLimit()
     }
+  }
+
+  // Helper function to extract section content from the full document
+  const extractSectionContent = (fullContent: string, sectionName: string): string => {
+    console.log(`🔍 extractSectionContent called for: "${sectionName}"`)
+    console.log(`📄 Content length: ${fullContent?.length || 0}`)
+    
+    if (!fullContent) {
+      console.log(`⚠️ No content provided for section: ${sectionName}`)
+      return ''
+    }
+    
+    // Show first 500 chars of content for debugging
+    console.log(`📝 First 500 chars of content:\n${fullContent.substring(0, 500)}`)
+    
+    // Try to find the section by looking for markdown headers
+    const patterns = [
+      new RegExp(`^#+\\s*${escapeRegExp(sectionName)}\\s*$`, 'mi'),
+      new RegExp(`^#+\\s*\\d+\\.?\\s*${escapeRegExp(sectionName)}\\s*$`, 'mi'),
+      new RegExp(`^\\*\\*${escapeRegExp(sectionName)}\\*\\*\\s*$`, 'mi'),
+      // Handle "Part X: Section Name" format
+      new RegExp(`^#+\\s*Part\\s+\\d+:\\s*${escapeRegExp(sectionName)}\\s*$`, 'mi'),
+      // Handle variations
+      new RegExp(`^#+.*${escapeRegExp(sectionName)}\\s*$`, 'mi')
+    ]
+    
+    let startIndex = -1
+    for (const pattern of patterns) {
+      const match = fullContent.match(pattern)
+      if (match && match.index !== undefined) {
+        startIndex = match.index
+        console.log(`✅ Found section "${sectionName}" with pattern`)
+        break
+      }
+    }
+    
+    if (startIndex === -1) {
+      // Try to find with numbered format (e.g., "1. Sequence Diagrams", "2. Database Schema")
+      const numberedPattern = new RegExp(`^#+?\\s*\\d+\\.\\s*${escapeRegExp(sectionName)}`, 'mi')
+      const numberedMatch = fullContent.match(numberedPattern)
+      if (numberedMatch && numberedMatch.index !== undefined) {
+        startIndex = numberedMatch.index
+        console.log(`✅ Found section "${sectionName}" with numbered pattern`)
+      }
+    }
+    
+    if (startIndex === -1) {
+      // Section not found, return empty string
+      console.log(`⚠️ Section "${sectionName}" not found in content`)
+      
+      // Log what sections we can find for debugging
+      const foundSections = fullContent.match(/^##.*$/gm) || []
+      console.log(`📋 Found these section headers:`, foundSections)
+      
+      // Also look for the section name anywhere in headers
+      const allHeaders = fullContent.match(/^#+.*$/gm) || []
+      const matchingHeaders = allHeaders.filter(h => h.toLowerCase().includes(sectionName.toLowerCase()))
+      if (matchingHeaders.length > 0) {
+        console.log(`🔍 Headers containing "${sectionName}":`, matchingHeaders)
+      }
+      
+      return ''
+    }
+    
+    // Find the next section header (same or higher level)
+    const remainingContent = fullContent.substring(startIndex)
+    const headerMatch = remainingContent.match(/^(#+)\s*/m)
+    const currentLevel = headerMatch ? headerMatch[1].length : 1
+    
+    // Look for next section of same or higher level
+    const nextSectionPattern = new RegExp(`^#{1,${currentLevel}}\\s+`, 'gm')
+    const matches = [...remainingContent.matchAll(nextSectionPattern)]
+    
+    // Skip the first match (current section header)
+    const nextMatch = matches[1]
+    const endIndex = nextMatch ? startIndex + nextMatch.index! : fullContent.length
+    
+    return fullContent.substring(startIndex, endIndex).trim()
+  }
+  
+  // Helper function to escape special regex characters
+  const escapeRegExp = (str: string): string => {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   }
 
   const saveAnonymousProject = async (content: string) => {
@@ -636,10 +931,41 @@ export function SimpleDocumentGenerationModal({
         [selectedType]: contentToSave
       }
       
+      // Collect selected sections for all document types
+      const selectedSectionsData: Record<string, string[]> = {}
+      if (selectedBusinessSections.length > 0) {
+        selectedSectionsData.business = selectedBusinessSections
+      }
+      if (selectedTechSpecSections.length > 0) {
+        selectedSectionsData.technical = selectedTechSpecSections
+      }
+      if (selectedUXSections.length > 0) {
+        selectedSectionsData.ux = selectedUXSections
+      }
+      if (selectedArchitectureSections.length > 0) {
+        selectedSectionsData.mermaid = selectedArchitectureSections
+      }
+      if (selectedFunctionalSections.length > 0) {
+        selectedSectionsData.functional = selectedFunctionalSections
+      }
+      
+      // Create generation metadata
+      const generationMetadata = {
+        documentType: selectedType,
+        generationType: Object.keys(sectionProgress).length > 0 ? 'sections' : 'full',
+        sectionsGenerated: Object.keys(sectionProgress),
+        timestamp: new Date().toISOString()
+      }
+      
       const projectId = await anonymousProjectService.saveAnonymousProject(
         input.substring(0, 100), // Use first 100 chars as title
         input,
-        documents
+        documents,
+        undefined, // userAgent
+        undefined, // ipAddress
+        undefined, // referrer
+        selectedSectionsData,
+        generationMetadata
       )
       
       if (projectId) {
@@ -649,6 +975,42 @@ export function SimpleDocumentGenerationModal({
       }
     } catch (error) {
       console.error('❌ Error saving anonymous project:', error)
+    }
+  }
+
+  // Helper function to check if sections were selected for a document type
+  const hasSectionsSelected = (docType: string): boolean => {
+    switch (docType) {
+      case 'business':
+        return selectedBusinessSections.length > 0
+      case 'functional':
+        return selectedFunctionalSections.length > 0
+      case 'technical':
+        return selectedTechSpecSections.length > 0
+      case 'ux':
+        return selectedUXSections.length > 0
+      case 'mermaid':
+        return selectedArchitectureSections.length > 0
+      default:
+        return false
+    }
+  }
+
+  // Helper function to get section count for a document type
+  const getSectionCount = (docType: string): number => {
+    switch (docType) {
+      case 'business':
+        return selectedBusinessSections.length
+      case 'functional':
+        return selectedFunctionalSections.length
+      case 'technical':
+        return selectedTechSpecSections.length
+      case 'ux':
+        return selectedUXSections.length
+      case 'mermaid':
+        return selectedArchitectureSections.length
+      default:
+        return 0
     }
   }
 
@@ -676,87 +1038,55 @@ export function SimpleDocumentGenerationModal({
   }
 
 
-
   const renderContent = () => {
     const content = generatedContent || streamedContent
     
-    // For section generation, show the consolidated progress view
+    // For section generation, use the ExpandableSectionViewer component
     const sectionIds = Object.keys(sectionProgress)
-    if (isGenerating && sectionIds.length > 0) {
+    const hasSelectedSections = currentSections.length > 0
+    
+    // Show ExpandableSectionViewer for section-based generation (during and after generation)
+    // Keep showing the expandable viewer even after generation completes if sections were generated
+    if (sectionIds.length > 0 || (isGenerating && hasSelectedSections) || (hasGenerated && sectionIds.length > 0)) {
       const currentSectionDetails = sectionDetailsMap[selectedType as keyof typeof sectionDetailsMap] || {}
       
+      // Transform section progress into the format expected by ExpandableSectionViewer
+      const sections = sectionIds.map(sectionId => {
+        const status = sectionProgress[sectionId]
+        const sectionInfo = currentSectionDetails[sectionId]
+        
+        // For the currently generating section, use the streamed content
+        // For completed sections, use their stored content from sectionProgress
+        let sectionContent = status.content || undefined
+        
+        if (sectionId === currentGeneratingSection && streamedContent) {
+          sectionContent = streamedContent
+        }
+        
+        // If we still don't have content but generation is complete, try to extract it
+        if (!sectionContent && !isGenerating && generatedContent) {
+          sectionContent = extractSectionContent(generatedContent, sectionInfo?.name || sectionId)
+        }
+        
+        return {
+          id: sectionId,
+          name: sectionInfo?.name || sectionId,
+          icon: sectionInfo?.icon,
+          description: sectionInfo?.description,
+          content: sectionContent || '',
+          status: (!isGenerating && status.status === 'completed') ? 'completed' as const : status.status,
+          error: status.error
+        }
+      })
+      
       return (
-        <div className="space-y-4">
-          {/* Unified Section Progress Display */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="font-medium text-gray-900 flex items-center gap-2">
-                <Settings className="h-4 w-4 text-gray-600 animate-spin" />
-                Generating {sectionIds.length} Sections
-              </h3>
-              <Badge variant="outline" className="bg-white">
-                {Object.values(sectionProgress).filter(s => s.status === 'completed').length} / {sectionIds.length} Complete
-              </Badge>
-            </div>
-            
-            {/* Overall Progress Bar */}
-            <Progress 
-              value={Math.round((Object.values(sectionProgress).filter(s => s.status === 'completed').length / sectionIds.length) * 100)}
-              className="h-2"
-            />
-            <div className="text-xs text-gray-500 text-center">
-              {currentGeneratingSection ? 
-                `Processing section ${Object.keys(sectionProgress).indexOf(currentGeneratingSection) + 1} of ${sectionIds.length}...` :
-                'Preparing sections...'
-              }
-            </div>
-            
-            {/* Section Status List */}
-            <div className="space-y-2">
-              {sectionIds.map(sectionId => {
-                const status = sectionProgress[sectionId]
-                const sectionInfo = currentSectionDetails[sectionId]
-                
-                return (
-                  <div key={sectionId} className={`rounded-lg p-3 border transition-all ${
-                    status.status === 'completed' ? 'bg-green-50 border-green-200' :
-                    status.status === 'generating' ? 'bg-blue-50 border-blue-200 animate-pulse' :
-                    status.status === 'error' ? 'bg-red-50 border-red-200' :
-                    'bg-gray-50 border-gray-200'
-                  }`}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        {status.status === 'completed' && <Check className="h-4 w-4 text-green-600" />}
-                        {status.status === 'generating' && <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />}
-                        {status.status === 'error' && <span className="text-red-600">✗</span>}
-                        {status.status === 'pending' && <span className="text-gray-400">○</span>}
-                        
-                        <span className="font-medium text-sm">
-                          {sectionInfo?.icon && <span className="mr-1">{sectionInfo.icon}</span>}
-                          {sectionInfo?.name || sectionId}
-                        </span>
-                      </div>
-                      
-                      {status.status === 'completed' && status.content && (
-                        <span className="text-xs text-gray-500">
-                          {status.content.length} chars
-                        </span>
-                      )}
-                    </div>
-                    
-                    {status.status === 'generating' && (
-                      <p className="text-xs text-blue-600 mt-1 ml-6">Generating content...</p>
-                    )}
-                    
-                    {status.status === 'error' && (
-                      <p className="text-xs text-red-600 mt-1 ml-6">{status.error}</p>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </div>
+        <ExpandableSectionViewer
+          sections={sections}
+          documentType={selectedType}
+          isGenerating={isGenerating}
+          currentGeneratingSection={currentGeneratingSection}
+          streamedContent={streamedContent}
+        />
       )
     }
 
@@ -841,6 +1171,17 @@ export function SimpleDocumentGenerationModal({
         <div className="text-center text-gray-500 py-8">
           No diagrams generated yet
         </div>
+      )
+    }
+
+    // Check if content contains Mermaid diagrams
+    const mermaidDiagrams = parseMermaidDiagrams(content || '')
+    if (Object.keys(mermaidDiagrams).length > 0) {
+      return (
+        <MermaidViewerEnhanced 
+          diagrams={mermaidDiagrams}
+          title={selectedDoc?.name || 'Document'}
+        />
       )
     }
 
@@ -957,8 +1298,23 @@ export function SimpleDocumentGenerationModal({
               if (!isGenerating) {
                 console.log('Tab changed to:', value)
                 setSelectedType(value)
-                // Reset section progress when switching tabs
-                setSectionProgress({})
+                // Only reset section progress if we don't have sections stored for this type
+                // Check if we have section metadata for this document type
+                const sectionMetadataKey = `sdlc_section_metadata_${value}`
+                const storedSectionData = localStorage.getItem(sectionMetadataKey)
+                
+                if (storedSectionData) {
+                  // Restore section progress from stored data
+                  const sections = JSON.parse(storedSectionData)
+                  const restoredProgress: Record<string, any> = {}
+                  sections.forEach((sectionId: string) => {
+                    restoredProgress[sectionId] = { status: 'completed', content: '' }
+                  })
+                  setSectionProgress(restoredProgress)
+                } else {
+                  // Only reset if no sections stored
+                  setSectionProgress({})
+                }
                 setCurrentGeneratingSection(null)
                 // Check if we have a previous document for this type
                 if (previousDocuments[value]) {
@@ -1108,7 +1464,7 @@ export function SimpleDocumentGenerationModal({
                   </div>
                   <div>
                     <span className="text-gray-500">$ </span>
-                    <span className="text-white">Generating {selectedDoc?.name}...</span>
+                    <span className="text-white">Generating {selectedDoc?.name} (Full Document)...</span>
                   </div>
                   <div className="mt-2">
                     <span className="text-gray-500">$ </span>
@@ -1139,6 +1495,11 @@ export function SimpleDocumentGenerationModal({
                 <div className="flex items-center gap-1 sm:gap-2">
                   <Check className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
                   <span className="text-[10px] sm:text-sm text-green-800 font-medium">Saved</span>
+                  {hasSectionsSelected(selectedType) && (
+                    <Badge variant="secondary" className="ml-2 text-[10px] sm:text-xs">
+                      {getSectionCount(selectedType)} sections
+                    </Badge>
+                  )}
                 </div>
                 {rateLimitStatus && rateLimitStatus.remaining > 0 && (
                   <Button
