@@ -16,250 +16,92 @@ export interface ParsedDiagrams {
 
 /**
  * Fix common Mermaid syntax errors
+ * This is now much more conservative to avoid breaking valid diagrams
  */
 export function fixMermaidSyntax(diagramContent: string): string {
   let fixed = diagramContent
-
-  // CRITICAL FIX 0: Fix sequence diagram authentication and response errors
-  // Common patterns that break sequence diagrams:
-  // - "401 Unauthorized" or similar HTTP status codes without quotes
-  // - "Connection error" without proper formatting
-  // - Response formats that break parsing
   
-  // Fix HTTP status codes and error messages in sequence diagrams
-  if (fixed.includes('sequenceDiagram') || fixed.includes('sequence')) {
-    // Fix unquoted HTTP status codes and error messages
-    fixed = fixed.replace(/(->>?|-->>?)\s*([^:\n]+):\s*(401\s+Unauthorized|403\s+Forbidden|404\s+Not Found|500\s+Internal Server Error|Connection error|Error|Success|OK)(?!["\n])/gm, 
-      (match, arrow, participant, message) => {
-        return `${arrow} ${participant}: "${message}"`
-      })
-    
-    // Fix responses that are missing quotes
-    fixed = fixed.replace(/(->>?|-->>?)\s*([^:\n]+):\s*([^"\n][^:\n]+[^"\n])$/gm, 
-      (match, arrow, participant, message) => {
-        // Only add quotes if message doesn't already have them and looks like it needs them
-        const trimmedMsg = message.trim()
-        if (!trimmedMsg.startsWith('"') && !trimmedMsg.endsWith('"') && 
-            (trimmedMsg.includes(' ') || trimmedMsg.match(/^\d{3}\s/) || 
-             trimmedMsg.includes('error') || trimmedMsg.includes('Error'))) {
-          return `${arrow} ${participant}: "${trimmedMsg}"`
-        }
-        return match
-      })
-    
-    // Fix participant declarations with special characters
-    fixed = fixed.replace(/participant\s+([^\s]+)\s+as\s+"?([^"\n]+)"?/gm, 
-      (match, id, label) => {
-        return `participant ${id} as "${label.replace(/"/g, '')}"`
-      })
-    
-    // Fix broken response patterns
-    fixed = fixed.replace(/Response:\s*{([^}]+)}/gm, (match, content) => {
-      return `"Response: {${content}}"`
-    })
-    
-    // Fix authentication flow patterns
-    fixed = fixed.replace(/Note\s+(over|right of|left of)\s+([^:]+):\s*([^"\n].+[^"\n])$/gm,
-      (match, position, participant, note) => {
-        const trimmedNote = note.trim()
-        if (!trimmedNote.startsWith('"') && !trimmedNote.endsWith('"')) {
-          return `Note ${position} ${participant}: "${trimmedNote}"`
-        }
-        return match
-      })
-  }
-
-  // CRITICAL FIX 0.5: Fix line breaks in node labels
-  // Pattern: AUTH[Authentication Service<br/>JWT, OAuth2, RBAC]
-  // The <br/> should be preserved, but newlines within labels break the syntax
+  // Fix backticks in node labels - replace with quotes for proper rendering
+  // Mermaid doesn't handle backticks well in node labels
+  fixed = fixed.replace(/([A-Za-z0-9_]+)`([^`]+)`/g, '$1"$2"')
   
-  // First, fix cases where node labels are split across lines
-  fixed = fixed.replace(/(\w+)\[([^\]]*)\n([^\]]*)\]/gm, (match, nodeId, part1, part2) => {
-    // Combine parts with <br/> if they don't already have it
-    const combined = part1.trim() + '<br/>' + part2.trim()
-    return `${nodeId}[${combined}]`
-  })
+  // Also handle standalone backtick labels like `Code Commit`
+  fixed = fixed.replace(/`([^`]+)`/g, '"$1"')
   
-  // Handle multiple line breaks in labels (with max iterations to prevent infinite loop)
-  let prevFixed = ''
-  let iterations = 0
-  const maxIterations = 10 // Prevent infinite loops
+  // Remove problematic line breaks in the middle of connections
+  // This fixes the "Expecting SPACE, got NEWLINE" error
+  fixed = fixed.replace(/-->\s*\n\s*\|/g, ' -->|')
+  fixed = fixed.replace(/-->\s*\n\s*([A-Za-z0-9_"'`\[\]{}])/g, ' --> $1')
   
-  while (prevFixed !== fixed && iterations < maxIterations) {
-    prevFixed = fixed
-    fixed = fixed.replace(/\[([^\[\]]*)\n([^\[\]]*)\]/gm, (match, part1, part2) => {
-      if (part1.includes('<br/>') && part2.includes('<br/>')) {
-        return `[${part1.trim()} ${part2.trim()}]`
-      }
-      return `[${part1.trim()}<br/>${part2.trim()}]`
-    })
-    iterations++
-  }
+  // Fix decision nodes with improper formatting
+  fixed = fixed.replace(/\{\s*([^}]+)\s*\}/g, '{$1}')
   
-  if (iterations >= maxIterations) {
-    console.warn('Maximum iterations reached in fixMermaidSyntax - possible malformed content')
-  }
-
-  // CRITICAL FIX 0.5: Split compressed single-line diagrams
-  // Pattern: graph LR  subgraph ... end  subgraph ... end  A --> B
-  if (fixed.split('\n').length <= 2) {
-    // Replace multiple spaces with newlines for better structure
-    fixed = fixed.replace(/\s{2,}/g, '\n  ')
-    // Ensure proper formatting around subgraph declarations
-    fixed = fixed.replace(/(\w+)\s+subgraph\s+/g, '$1\n  subgraph ')
-    fixed = fixed.replace(/\s+end\s+/g, '\n  end\n  ')
-    // Format node connections
-    fixed = fixed.replace(/\s+([\w]+\s*-->\s*[\w]+)/g, '\n  $1')
-    // Clean up extra spaces
-    fixed = fixed.replace(/\n\s*\n/g, '\n')
-  }
-
-  // CRITICAL FIX 1: Fix malformed subgraph syntax
-  // Pattern: subgraph subgraph1[Client Layer  WEB][Web App...
-  fixed = fixed.replace(/subgraph\s+(\w+)\[([^\]]+)\s+(\w+)\]\[/g, (match, id, label, nodeId) => {
-    // Separate the subgraph declaration from the node definition
-    return `subgraph ${id}[${label.trim()}]\n    ${nodeId}[`
-  })
-
-  // FIX 2: Fix subgraph declarations with content on the same line
-  fixed = fixed.replace(/subgraph\s+(\w+)\[([^\]]+)\]\s*(\w+\[)/g, (match, id, label, nodeStart) => {
-    return `subgraph ${id}[${label}]\n    ${nodeStart}`
-  })
-
-  // FIX 3: Remove extra 'end' statements
-  const subgraphCount = (fixed.match(/subgraph\s+/g) || []).length
-  const endCount = (fixed.match(/^\s*end\s*$/gm) || []).length
+  // Only apply minimal fixes that are absolutely necessary
   
-  if (endCount > subgraphCount) {
-    const extraEnds = endCount - subgraphCount
-    // Remove extra ends from the bottom
-    const lines = fixed.split('\n')
-    let removedCount = 0
-    for (let i = lines.length - 1; i >= 0 && removedCount < extraEnds; i--) {
-      if (lines[i].trim() === 'end') {
-        lines.splice(i, 1)
-        removedCount++
-      }
-    }
-    fixed = lines.join('\n')
-  }
-
-  // FIX 4: Fix concatenated diagrams (e.g., "enderDiagram")
-  fixed = fixed.replace(/end([A-Z]\w+)/g, 'end\n\n$1')
-
-  // FIX 5: Fix quotes in subgraph names
-  fixed = fixed.replace(/subgraph\s+"([^"]+)"/g, 'subgraph $1')
-
-  // FIX 6: Fix subgraphs with spaces/special chars
-  let subgraphCounter = 0
-  fixed = fixed.replace(/subgraph\s+([^\[\n\s]+)\s*$/gm, (match, name) => {
-    if (name.includes(' ') || name.includes('&') || name.includes('-')) {
-      subgraphCounter++
-      return `subgraph subgraph${subgraphCounter}[${name}]`
-    }
-    return match
-  })
-
-  // FIX 7: Fix node definitions with unbalanced brackets
-  fixed = fixed.replace(/(\w+)\[([^\]]+?)(?:\]|$)/gm, (match, nodeId, label) => {
-    if (!match.endsWith(']')) {
-      return `${nodeId}[${label}]`
-    }
-    return match
-  })
-
-  // FIX 8: Ensure proper spacing around arrows
-  fixed = fixed.replace(/(\w+)(-->|--|->|==>|-.->|\|\|--o\{|\|\|--\|\{)(\w+)/g, '$1 $2 $3')
-
-  // FIX 9: Fix ER diagram entity syntax
-  fixed = fixed.replace(/(\w+)\s+\{([^}]*)\}/gm, (match, entity, attributes) => {
-    const cleanedAttrs = attributes.split('\n').map((attr: string) => attr.trim()).filter((attr: string) => attr)
-    return `${entity} {\n    ${cleanedAttrs.join('\n    ')}\n}`
-  })
-
-  // FIX 10: Fix truncated node labels (e.g., "Send]" instead of "SendGrid")
-  // This happens when content is cut off mid-label
-  fixed = fixed.replace(/\[([^\]]+)\]\s*\n\s*([^\[\n]+)\]/gm, (match, part1, part2) => {
-    // If part2 looks like a continuation (doesn't start with a node ID)
-    if (!part2.match(/^\w+\[/)) {
-      return `[${part1.trim()}<br/>${part2.trim()}]`
-    }
-    return match
-  })
-  
-  // FIX 11: Fix incomplete Email Service node labels
-  // Pattern: EMAIL[Email Service\nSend] should be EMAIL[Email Service<br/>SendGrid]
-  fixed = fixed.replace(/EMAIL\[Email Service\s*\n\s*Send\]/g, 'EMAIL[Email Service<br/>SendGrid, AWS SES]')
-  
-  // FIX 12: Fix specific sequence diagram patterns that commonly fail
+  // Fix malformed sequence diagrams with compressed whitespace
+  // Check if it's a sequence diagram with improper formatting
   if (fixed.includes('sequenceDiagram')) {
-    // Fix broken activation/deactivation patterns
-    fixed = fixed.replace(/activate\s+([^\s\n]+)\s*$/gm, 'activate $1')
-    fixed = fixed.replace(/deactivate\s+([^\s\n]+)\s*$/gm, 'deactivate $1')
+    // Count the number of lines - if it's less than expected for the content, it's compressed
+    const lines = fixed.split('\n').length
+    const hasParticipants = fixed.includes('participant')
+    const hasArrows = fixed.includes('->>') || fixed.includes('-->>')
     
-    // Fix loop and alt blocks
-    fixed = fixed.replace(/loop\s+([^\n]+)\s*$/gm, 'loop $1')
-    fixed = fixed.replace(/alt\s+([^\n]+)\s*$/gm, 'alt $1')
-    fixed = fixed.replace(/else\s+([^\n]+)\s*$/gm, 'else $1')
-    
-    // Ensure proper end statements for blocks
-    const loopCount = (fixed.match(/^\s*loop\s+/gm) || []).length
-    const altCount = (fixed.match(/^\s*alt\s+/gm) || []).length
-    const endCount = (fixed.match(/^\s*end\s*$/gm) || []).length
-    const expectedEnds = loopCount + altCount
-    
-    if (endCount < expectedEnds) {
-      // Add missing end statements
-      const missingEnds = expectedEnds - endCount
-      for (let i = 0; i < missingEnds; i++) {
-        fixed += '\n    end'
-      }
+    // If we have participants and arrows but very few lines, it's likely compressed
+    if (hasParticipants && hasArrows && lines < 5) {
+      // Fix compressed sequence diagrams by adding proper line breaks
+      fixed = fixed.replace(/sequenceDiagram\s*/g, 'sequenceDiagram\n')
+      
+      // Add line breaks before each participant declaration
+      fixed = fixed.replace(/(\s+|^)participant\s+/g, '\n  participant ')
+      
+      // Add line breaks before each message arrow
+      fixed = fixed.replace(/(\s+)([A-Za-z0-9_]+\s*->>?\s*[A-Za-z0-9_]+:)/g, '\n  $2')
+      fixed = fixed.replace(/(\s+)([A-Za-z0-9_]+\s*-->>?\s*[A-Za-z0-9_]+:)/g, '\n  $2')
+      
+      // Add line breaks before Note statements
+      fixed = fixed.replace(/(\s+)Note\s+(over|right of|left of)\s+/g, '\n  Note $2 ')
+      
+      // Add line breaks before and after control flow keywords
+      fixed = fixed.replace(/(\s+)(loop|alt|opt|par|critical|break)\s+/g, '\n  $2 ')
+      fixed = fixed.replace(/(\s+)else\s+/g, '\n  else ')
+      fixed = fixed.replace(/(\s+)and\s+/g, '\n  and ')
+      fixed = fixed.replace(/(\s+)end(?=\s|$)/g, '\n  end')
+      
+      // Clean up any duplicate whitespace or newlines
+      fixed = fixed.replace(/\n\s*\n\s*\n/g, '\n\n')
+      fixed = fixed.trim()
     }
+  }
+  
+  // Fix other diagram types with similar compression issues
+  if (fixed.includes('erDiagram') && fixed.split('\n').length < 3) {
+    fixed = fixed.replace(/erDiagram\s*/g, 'erDiagram\n')
+    fixed = fixed.replace(/(\s+)([A-Z_]+\s*\|\|)/g, '\n  $2')
+    fixed = fixed.replace(/(\s+)([A-Z_]+\s*\{)/g, '\n  $2')
+  }
+  
+  if ((fixed.includes('graph') || fixed.includes('flowchart')) && fixed.split('\n').length < 3) {
+    fixed = fixed.replace(/(graph|flowchart)\s+(TB|TD|LR|RL|BT)\s*/g, '$1 $2\n')
+    fixed = fixed.replace(/(\s+)([A-Za-z0-9_]+\[)/g, '\n  $2')
+    fixed = fixed.replace(/(\s+)([A-Za-z0-9_]+\s*-->)/g, '\n  $2')
+    fixed = fixed.replace(/(\s+)subgraph\s+/g, '\n  subgraph ')
+    fixed = fixed.replace(/(\s+)end(?=\s|$)/g, '\n  end')
+  }
+  
+  // Fix graph/flowchart diagrams with mixed line breaks and inline content
+  if (fixed.includes('graph LR') || fixed.includes('graph TB') || fixed.includes('graph TD') || fixed.includes('flowchart')) {
+    // Normalize spacing around arrows and ensure each connection is on its own line
+    // Handle --> connections with proper line breaks, including quoted labels
+    fixed = fixed.replace(/(\s+)([A-Za-z0-9_"`\[\]{}][^-]*?-->\s*[A-Za-z0-9_"`\[\]{}][^\n]*)/g, '\n  $2')
     
-    // Fix message arrows with special characters
-    fixed = fixed.replace(/(->>?|-->>?)\s*([^:\n]+):\s*([^\n]+)/gm, (match, arrow, participant, message) => {
-      const trimmedMsg = message.trim()
-      // Check if message contains problematic characters
-      if (trimmedMsg.includes('{') || trimmedMsg.includes('}') || 
-          trimmedMsg.includes('[') || trimmedMsg.includes(']') ||
-          trimmedMsg.includes('(') || trimmedMsg.includes(')')) {
-        // Ensure it's properly quoted
-        if (!trimmedMsg.startsWith('"') || !trimmedMsg.endsWith('"')) {
-          return `${arrow} ${participant}: "${trimmedMsg.replace(/"/g, '\\"')}"`
-        }
-      }
-      return match
-    })
-  }
-  
-  // FIX 13: Fix class diagram method signatures
-  if (fixed.includes('classDiagram')) {
-    // Fix method signatures with return types
-    fixed = fixed.replace(/(\+|-|#|~)\s*(\w+)\s*\(\s*([^)]*)\s*\)\s*:\s*(\w+)/gm, 
-      '$1$2($3) $4')
+    // Handle labeled connections like C -->|Yes| D with proper spacing
+    fixed = fixed.replace(/(\s+)([A-Za-z0-9_"`\[\]{}][^-]*?-->\s*\|[^|]*\|\s*[A-Za-z0-9_"`\[\]{}][^\n]*)/g, '\n  $2')
     
-    // Fix attributes with types
-    fixed = fixed.replace(/(\+|-|#|~)\s*(\w+)\s*:\s*(\w+)/gm, 
-      '$1$2 : $3')
+    // Clean up excessive whitespace
+    fixed = fixed.replace(/\n\s*\n\s*\n/g, '\n\n')
+    fixed = fixed.trim()
   }
   
-  // FIX 14: Fix state diagram syntax
-  if (fixed.includes('stateDiagram')) {
-    // Fix state transitions
-    fixed = fixed.replace(/(\w+)\s*-->\s*(\w+)\s*:\s*([^\n]+)/gm, 
-      (match, from, to, label) => {
-        const trimmedLabel = label.trim()
-        if (trimmedLabel.includes(' ') && !trimmedLabel.startsWith('"')) {
-          return `${from} --> ${to} : "${trimmedLabel}"`
-        }
-        return `${from} --> ${to} : ${trimmedLabel}`
-      })
-  }
-  
-  // FIX 15: Clean up whitespace
-  fixed = fixed.split('\n').map(line => line.trimRight()).join('\n')
-  fixed = fixed.replace(/\n{3,}/g, '\n\n')
-
   return fixed
 }
 
@@ -269,15 +111,35 @@ export function fixMermaidSyntax(diagramContent: string): string {
 export function hasDiagramContent(content: string): boolean {
   if (!content || content.trim() === '') return false
   
-  // Check for Mermaid diagram keywords
-  const hasMermaidSyntax = MERMAID_DIAGRAM_TYPES.some(keyword => 
-    new RegExp(`^\\s*${keyword}\\s`, 'im').test(content)
-  )
+  // First check for explicit mermaid code blocks
+  const hasMermaidCodeBlocks = /```mermaid[\s\S]*?```/g.test(content)
+  if (hasMermaidCodeBlocks) return true
   
-  // Check for code blocks that might contain diagrams
-  const hasCodeBlocks = /```(?:mermaid)?[\s\S]*?```/g.test(content)
+  // For raw content, check for Mermaid diagram keywords with more strict patterns
+  // These keywords should be at the start of a line and followed by specific syntax
+  const strictPatterns = [
+    /^\s*graph\s+(TB|TD|LR|RL|BT)/m,  // graph must be followed by direction
+    /^\s*flowchart\s+(TB|TD|LR|RL|BT)/m,  // flowchart must be followed by direction
+    /^\s*sequenceDiagram(?:\s|$)/m,  // sequenceDiagram as standalone
+    /^\s*classDiagram(?:\s|$)/m,  // classDiagram as standalone
+    /^\s*erDiagram(?:\s|$)/m,  // erDiagram as standalone
+    /^\s*gantt(?:\s|$)/m,  // gantt as standalone
+    /^\s*pie\s+title/m,  // pie must be followed by title
+    /^\s*stateDiagram(?:-v2)?(?:\s|$)/m,  // stateDiagram with optional -v2
+    /^\s*journey(?:\s|$)/m,  // journey as standalone
+    /^\s*gitGraph(?:\s|$)/m,  // gitGraph as standalone
+    /^\s*mindmap(?:\s|$)/m,  // mindmap as standalone
+    /^\s*timeline(?:\s|$)/m,  // timeline as standalone
+    /^\s*quadrantChart(?:\s|$)/m,  // quadrantChart as standalone
+    /^\s*sankey(?:\s|$)/m,  // sankey as standalone
+    /^\s*C4Context(?:\s|$)/m,  // C4Context as standalone
+    /^\s*C4Container(?:\s|$)/m,  // C4Container as standalone
+  ]
   
-  return hasMermaidSyntax || hasCodeBlocks
+  // Check if any of the strict patterns match
+  const hasMermaidSyntax = strictPatterns.some(pattern => pattern.test(content))
+  
+  return hasMermaidSyntax
 }
 
 /**
@@ -443,4 +305,226 @@ export function extractAndFixMermaidDiagrams(content: string): {
 
   // For raw content, return as is (diagrams are already fixed in the parsed result)
   return { diagrams, fixedContent: content }
+}
+
+/**
+ * Parse Mermaid diagrams with section awareness
+ * This version respects document structure and sections
+ */
+export function parseMermaidDiagramsWithSections(content: string): ParsedDiagrams {
+  if (!content || !hasDiagramContent(content)) {
+    return {}
+  }
+
+  const diagrams: ParsedDiagrams = {}
+  
+  // First, try to identify major sections (## 1. Sequence Diagrams, ## 2. Database Schema)
+  // But also handle subsections (### 1. User Authentication Flow)
+  const majorSectionRegex = /^##\s+(?:\d+\.\s*)?(.+?)$/gm
+  const subsectionRegex = /^###\s+(?:\d+\.\s*)?(.+?)$/gm
+  
+  // Find major sections first
+  const majorSections: Array<{name: string, start: number, end: number}> = []
+  let match
+  const majorMatches: Array<{name: string, index: number}> = []
+  
+  while ((match = majorSectionRegex.exec(content)) !== null) {
+    const sectionName = match[1].trim()
+    // Only consider it a major section if it contains keywords we care about
+    if (sectionName.match(/Sequence|Database|System|Data Flow|Network|Deployment|Architecture|Component|Entity|Transaction|Content|Analytics/i)) {
+      majorMatches.push({ name: sectionName, index: match.index })
+    }
+  }
+  
+  // Build major section ranges
+  for (let i = 0; i < majorMatches.length; i++) {
+    const current = majorMatches[i]
+    const next = majorMatches[i + 1]
+    majorSections.push({
+      name: current.name,
+      start: current.index,
+      end: next ? next.index : content.length
+    })
+  }
+  
+  // Process each major section
+  if (majorSections.length > 0) {
+    majorSections.forEach((majorSection) => {
+      const sectionContent = content.substring(majorSection.start, majorSection.end)
+      
+      // Find all subsections within this major section
+      const subsectionMatches: Array<{name: string, index: number}> = []
+      subsectionRegex.lastIndex = 0 // Reset regex
+      
+      while ((match = subsectionRegex.exec(sectionContent)) !== null) {
+        const subsectionName = match[1].trim()
+        subsectionMatches.push({ name: subsectionName, index: match.index })
+      }
+      
+      // If we have subsections, parse each subsection's mermaid diagram
+      if (subsectionMatches.length > 0) {
+        for (let i = 0; i < subsectionMatches.length; i++) {
+          const current = subsectionMatches[i]
+          const next = subsectionMatches[i + 1]
+          const subsectionStart = current.index
+          const subsectionEnd = next ? next.index : sectionContent.length
+          const subsectionContent = sectionContent.substring(subsectionStart, subsectionEnd)
+          
+          // Look for mermaid block in this subsection
+          const mermaidRegex = /```mermaid\n([\s\S]*?)```/g
+          const mermaidMatch = mermaidRegex.exec(subsectionContent)
+          
+          if (mermaidMatch) {
+            let diagramContent = mermaidMatch[1].trim()
+            
+            if (diagramContent && diagramContent.length > 10) {
+              // Apply fixes
+              diagramContent = fixMermaidSyntax(diagramContent)
+              
+              // Create key based on major section and subsection names
+              const majorKey = majorSection.name
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '')
+              
+              const subKey = current.name
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '')
+              
+              // Use a combination of major and sub keys, or just sub if it's descriptive enough
+              let key = subKey
+              
+              // For better naming, use subsection name if it's descriptive
+              if (subKey.includes('auth') || subKey.includes('user')) {
+                key = 'user-authentication'
+              } else if (subKey.includes('order')) {
+                key = 'order-processing'
+              } else if (subKey.includes('api')) {
+                key = 'api-integration'
+              } else if (subKey.includes('error')) {
+                key = 'error-handling'
+              } else if (subKey.includes('microservice')) {
+                key = 'microservices'
+              } else if (subKey.includes('webhook')) {
+                key = 'webhook-processing'
+              } else if (subKey.includes('entity') || subKey.includes('erd')) {
+                key = 'entity-relationship'
+              } else if (subKey.includes('user') && subKey.includes('management')) {
+                key = 'user-management'
+              } else if (subKey.includes('product') && subKey.includes('catalog')) {
+                key = 'product-catalog'
+              } else if (subKey.includes('transaction')) {
+                key = 'transactions'
+              } else if (subKey.includes('content')) {
+                key = 'content-management'
+              } else if (subKey.includes('analytics') || subKey.includes('event')) {
+                key = 'analytics-events'
+              } else {
+                // Use major section prefix if subsection name isn't clear
+                if (majorKey.includes('sequence')) {
+                  key = `sequence-${i + 1}`
+                } else if (majorKey.includes('database')) {
+                  key = `database-${i + 1}`
+                } else {
+                  key = `${majorKey}-${i + 1}`
+                }
+              }
+              
+              // Ensure unique keys
+              if (diagrams[key]) {
+                let counter = 2
+                while (diagrams[`${key}-${counter}`]) {
+                  counter++
+                }
+                key = `${key}-${counter}`
+              }
+              
+              diagrams[key] = diagramContent
+            }
+          }
+        }
+      } else {
+        // No subsections, look for mermaid diagrams in the major section directly
+        const mermaidRegex = /```mermaid\n([\s\S]*?)```/g
+        let sectionMatch
+        let diagramCount = 0
+        
+        while ((sectionMatch = mermaidRegex.exec(sectionContent)) !== null) {
+          let diagramContent = sectionMatch[1].trim()
+          
+          if (diagramContent && diagramContent.length > 10) {
+            // Apply fixes
+            diagramContent = fixMermaidSyntax(diagramContent)
+            
+            // Create a meaningful key based on section name
+            const sectionKey = majorSection.name
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, '-')
+              .replace(/^-+|-+$/g, '')
+            
+            // If multiple diagrams in same section, add index
+            const key = diagramCount === 0 ? sectionKey : `${sectionKey}-${diagramCount + 1}`
+            diagrams[key] = diagramContent
+            diagramCount++
+          }
+        }
+      }
+    })
+  }
+  
+  // If no sections were found or no diagrams parsed, fall back to simple parsing
+  if (Object.keys(diagrams).length === 0) {
+    return parseMermaidDiagrams(content)
+  }
+  
+  return diagrams
+}
+
+/**
+ * Enhanced extraction with section awareness
+ */
+export function extractAndFixMermaidDiagramsWithSections(content: string): {
+  diagrams: ParsedDiagrams
+  fixedContent: string
+} {
+  const diagrams = parseMermaidDiagramsWithSections(content)
+  
+  if (Object.keys(diagrams).length === 0) {
+    return { diagrams: {}, fixedContent: content }
+  }
+
+  // Replace diagrams with fixed versions while preserving structure
+  let fixedContent = content
+  
+  if (content.includes('```mermaid')) {
+    // Create a map of original to fixed diagrams
+    const originalToFixed: Map<string, string> = new Map()
+    
+    // First pass: extract originals
+    const mermaidRegex = /```mermaid\n([\s\S]*?)```/g
+    let match
+    const originals: string[] = []
+    
+    while ((match = mermaidRegex.exec(content)) !== null) {
+      originals.push(match[1].trim())
+    }
+    
+    // Map originals to fixed versions
+    const fixedDiagrams = Object.values(diagrams)
+    originals.forEach((original, index) => {
+      if (fixedDiagrams[index]) {
+        originalToFixed.set(original, fixedDiagrams[index])
+      }
+    })
+    
+    // Replace with fixed versions
+    fixedContent = fixedContent.replace(/```mermaid\n([\s\S]*?)```/g, (match, diagramContent) => {
+      const trimmed = diagramContent.trim()
+      const fixed = originalToFixed.get(trimmed) || fixMermaidSyntax(trimmed)
+      return `\`\`\`mermaid\n${fixed}\n\`\`\``
+    })
+  }
+  
+  return { diagrams, fixedContent }
 }

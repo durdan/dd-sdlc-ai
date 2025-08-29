@@ -34,6 +34,12 @@ interface SectionGenerationProgressProps {
   sectionDetails?: Record<string, any>
   onSectionComplete?: (sectionId: string, content: string) => void
   isGenerating: boolean
+  currentSectionIndex?: number
+  sectionProgress?: Record<string, {
+    status: 'pending' | 'generating' | 'completed' | 'error'
+    content?: string
+    error?: string
+  }>
 }
 
 const documentTypeIcons = {
@@ -49,26 +55,23 @@ export function SectionGenerationProgress({
   sections,
   sectionDetails = {},
   onSectionComplete,
-  isGenerating
+  isGenerating,
+  currentSectionIndex = 0,
+  sectionProgress = {}
 }: SectionGenerationProgressProps) {
-  const [sectionStatuses, setSectionStatuses] = useState<SectionInfo[]>([])
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
-  const [currentSectionIndex, setCurrentSectionIndex] = useState(0)
   
   const DocIcon = documentTypeIcons[documentType as keyof typeof documentTypeIcons] || FileText
 
-  useEffect(() => {
-    // Initialize section statuses
-    const initialStatuses = sections.map(sectionId => ({
-      id: sectionId,
-      name: sectionDetails[sectionId]?.name || sectionId,
-      icon: sectionDetails[sectionId]?.icon || '📄',
-      status: 'pending' as const,
-      content: undefined,
-      error: undefined
-    }))
-    setSectionStatuses(initialStatuses)
-  }, [sections, sectionDetails])
+  // Convert sectionProgress to SectionInfo array
+  const sectionStatuses: SectionInfo[] = sections.map(sectionId => ({
+    id: sectionId,
+    name: sectionDetails[sectionId]?.name || sectionId,
+    icon: sectionDetails[sectionId]?.icon || '📄',
+    status: sectionProgress[sectionId]?.status || 'pending',
+    content: sectionProgress[sectionId]?.content,
+    error: sectionProgress[sectionId]?.error
+  }))
 
   // Calculate overall progress
   const completedCount = sectionStatuses.filter(s => s.status === 'completed').length
@@ -88,26 +91,31 @@ export function SectionGenerationProgress({
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
-        return <CheckCircle2 className="h-5 w-5 text-green-500" />
+        return <CheckCircle2 className="h-5 w-5 text-emerald-400" />
       case 'generating':
-        return <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />
+        return (
+          <div className="relative">
+            <div className="absolute inset-0 bg-blue-400 rounded-full blur-md opacity-50 animate-pulse" />
+            <Loader2 className="h-5 w-5 text-blue-400 animate-spin relative" />
+          </div>
+        )
       case 'error':
-        return <Circle className="h-5 w-5 text-red-500" />
+        return <Circle className="h-5 w-5 text-red-400" />
       default:
-        return <Circle className="h-5 w-5 text-gray-400" />
+        return <Circle className="h-5 w-5 text-gray-500" />
     }
   }
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
-        return 'bg-green-50 border-green-200'
+        return 'bg-gray-800/50 border-emerald-500/30'
       case 'generating':
-        return 'bg-blue-50 border-blue-200 animate-pulse'
+        return 'bg-gray-800/70 border-blue-500/50 shadow-lg shadow-blue-500/10'
       case 'error':
-        return 'bg-red-50 border-red-200'
+        return 'bg-gray-800/50 border-red-500/30'
       default:
-        return 'bg-gray-50 border-gray-200'
+        return 'bg-gray-800/30 border-gray-700/50'
     }
   }
 
@@ -130,21 +138,31 @@ export function SectionGenerationProgress({
   return (
     <div className="space-y-4">
       {/* Overall Progress */}
-      <Card className="p-4">
+      <Card className="p-4 bg-gray-900/50 border-gray-700/50 backdrop-blur">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <DocIcon className="h-5 w-5 text-gray-600" />
-            <h3 className="font-medium text-gray-900">
+            <DocIcon className="h-5 w-5 text-gray-400" />
+            <h3 className="font-medium text-gray-200">
               Generating {sections.length} Section{sections.length > 1 ? 's' : ''}
             </h3>
           </div>
-          <Badge variant={isGenerating ? 'default' : 'secondary'}>
+          <Badge 
+            variant={isGenerating ? 'default' : 'secondary'}
+            className={isGenerating ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'}
+          >
             {completedCount} / {totalCount} Complete
           </Badge>
         </div>
-        <Progress value={progressPercentage} className="h-2" />
+        <div className="relative">
+          <Progress value={progressPercentage} className="h-2 bg-gray-800" />
+          {isGenerating && (
+            <div className="absolute inset-0 h-2">
+              <div className="h-full bg-gradient-to-r from-transparent via-blue-400/30 to-transparent animate-shimmer" />
+            </div>
+          )}
+        </div>
         {isGenerating && (
-          <p className="text-sm text-gray-500 mt-2">
+          <p className="text-sm text-gray-400 mt-2 font-mono">
             Processing section {currentSectionIndex + 1} of {totalCount}...
           </p>
         )}
@@ -164,17 +182,20 @@ export function SectionGenerationProgress({
                   <div className="flex items-center gap-2">
                     <span className="text-lg">{section.icon}</span>
                     <div>
-                      <h4 className="font-medium text-gray-900">{section.name}</h4>
+                      <h4 className="font-medium text-gray-200">{section.name}</h4>
                       {section.status === 'generating' && (
-                        <p className="text-xs text-blue-600 mt-0.5">Generating content...</p>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <span className="text-xs text-blue-400 font-mono">Generating</span>
+                          <span className="text-blue-400 animate-pulse">...</span>
+                        </div>
                       )}
                       {section.status === 'completed' && section.content && (
-                        <p className="text-xs text-green-600 mt-0.5">
-                          {section.content.length} characters generated
+                        <p className="text-xs text-emerald-400 mt-0.5 font-mono">
+                          ✓ {(section.content.length / 1000).toFixed(1)}k chars
                         </p>
                       )}
                       {section.status === 'error' && (
-                        <p className="text-xs text-red-600 mt-0.5">{section.error}</p>
+                        <p className="text-xs text-red-400 mt-0.5 font-mono">✗ {section.error}</p>
                       )}
                     </div>
                   </div>
@@ -197,12 +218,27 @@ export function SectionGenerationProgress({
               
               {/* Expanded Content Preview */}
               {expandedSections.has(section.id) && section.content && (
-                <div className="mt-3 pt-3 border-t">
-                  <div className="bg-white rounded-md p-3 max-h-40 overflow-y-auto">
-                    <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono">
+                <div className="mt-3 pt-3 border-t border-gray-700/50">
+                  <div className="bg-gray-950/50 rounded-md p-3 max-h-40 overflow-y-auto border border-gray-800">
+                    <pre className="text-xs text-gray-300 whitespace-pre-wrap font-mono leading-relaxed">
                       {section.content.substring(0, 500)}
-                      {section.content.length > 500 && '...'}
+                      {section.content.length > 500 && (
+                        <span className="text-gray-500">\n\n[... {((section.content.length - 500) / 1000).toFixed(1)}k more chars]</span>
+                      )}
                     </pre>
+                  </div>
+                </div>
+              )}
+              
+              {/* Live streaming preview for generating sections */}
+              {section.status === 'generating' && section.content && (
+                <div className="mt-3 pt-3 border-t border-gray-700/50">
+                  <div className="bg-gray-950/50 rounded-md p-3 max-h-32 overflow-hidden border border-gray-800 relative">
+                    <pre className="text-xs text-emerald-400/90 whitespace-pre-wrap font-mono leading-relaxed animate-fadeIn">
+                      {section.content.substring(Math.max(0, section.content.length - 300))}
+                      <span className="inline-block w-2 h-3 bg-emerald-400 animate-blink ml-0.5" />
+                    </pre>
+                    <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-gray-950/90 to-transparent" />
                   </div>
                 </div>
               )}
@@ -213,13 +249,16 @@ export function SectionGenerationProgress({
 
       {/* Summary */}
       {!isGenerating && completedCount === totalCount && totalCount > 0 && (
-        <Card className="p-4 bg-green-50 border-green-200">
+        <Card className="p-4 bg-emerald-950/30 border-emerald-500/30 backdrop-blur">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-green-600" />
+            <div className="relative">
+              <div className="absolute inset-0 bg-emerald-400 rounded-full blur-md opacity-30" />
+              <CheckCircle2 className="h-5 w-5 text-emerald-400 relative" />
+            </div>
             <div>
-              <h4 className="font-medium text-green-900">Generation Complete!</h4>
-              <p className="text-sm text-green-700 mt-0.5">
-                All {totalCount} sections have been generated successfully.
+              <h4 className="font-medium text-emerald-400">Generation Complete!</h4>
+              <p className="text-sm text-emerald-400/70 mt-0.5 font-mono">
+                All {totalCount} sections generated successfully
               </p>
             </div>
           </div>

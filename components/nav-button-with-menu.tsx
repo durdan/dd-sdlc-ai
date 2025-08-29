@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Check, ChevronDown } from 'lucide-react'
 import { techSpecSections } from '@/lib/tech-spec-sections'
+import { testSpecSections } from '@/lib/test-spec-sections'
 
 interface NavButtonWithMenuProps {
   icon: React.ComponentType<{ className?: string }>
@@ -55,6 +56,9 @@ const architectureSections = [
   { id: 'er-diagram', name: 'ER Diagram', description: 'Entity relationship models' }
 ]
 
+// Test Spec subsections - converting to array format for consistency
+const testSections = Object.values(testSpecSections)
+
 export function NavButtonWithMenu({
   icon: Icon,
   label,
@@ -81,6 +85,8 @@ export function NavButtonWithMenu({
         return uxSections
       case 'mermaid':
         return architectureSections
+      case 'test':
+        return testSections
       default:
         return []
     }

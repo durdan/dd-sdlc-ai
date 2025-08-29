@@ -20,6 +20,7 @@ import {
   FlaskConical
 } from "lucide-react"
 import { SimpleDocumentGenerationModal } from "@/components/simple-document-generation-modal"
+import { EnhancedDocumentRenderer } from "@/components/enhanced-document-renderer"
 
 interface DocumentRecord {
   type: string
@@ -305,7 +306,23 @@ export function ViewDocsMenu({
                           </div>
                           
                           <p className="text-xs text-gray-500 line-clamp-2 mt-2">
-                            {truncateText(doc.content.replace(/[#*`]/g, '').trim(), 100)}
+                            {(() => {
+                              let content = doc.content || ''
+                              
+                              // Handle new section-based format
+                              if (doc.sections && typeof doc.sections === 'object') {
+                                // For section-based documents, show a summary
+                                const sectionCount = Object.keys(doc.sections).length
+                                content = `Generated ${sectionCount} section${sectionCount !== 1 ? 's' : ''}`
+                              } else if (doc.content && typeof doc.content === 'string') {
+                                // For legacy documents, clean the content
+                                content = doc.content.replace(/[#*`]/g, '').trim()
+                              } else {
+                                content = 'No content available'
+                              }
+                              
+                              return truncateText(content, 100)
+                            })()}
                           </p>
                           
                           {/* Action Buttons */}

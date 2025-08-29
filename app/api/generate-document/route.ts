@@ -55,7 +55,10 @@ async function generateWithDatabasePromptStreaming(
   businessSections?: string[],
   uxSections?: string[],
   architectureSections?: string[],
-  functionalSections?: string[]
+  functionalSections?: string[],
+  testSections?: string[],
+  codingSections?: string[],
+  meetingSections?: string[]
 ) {
   const promptService = createServerPromptService()
   const startTime = Date.now()
@@ -149,7 +152,10 @@ async function generateWithDatabasePromptStreaming(
       technical: techSpecSections,
       ux: uxSections,
       mermaid: architectureSections,
-      functional: functionalSections
+      functional: functionalSections,
+      test: testSections,
+      coding: codingSections,
+      meeting: meetingSections
     }
     
     const selectedSections = sectionParams[documentType as keyof typeof sectionParams]
@@ -190,6 +196,21 @@ async function generateWithDatabasePromptStreaming(
         case 'functional':
           const { generateCombinedFunctionalSpec } = await import('@/lib/functional-spec-sections')
           combinedPrompt = generateCombinedFunctionalSpec(selectedSections, context)
+          break
+          
+        case 'test':
+          const { generateCombinedTestSpec } = await import('@/lib/test-spec-sections')
+          combinedPrompt = generateCombinedTestSpec(selectedSections, context)
+          break
+          
+        case 'coding':
+          const { generateCombinedCodingPrompt } = await import('@/lib/coding-prompt-sections')
+          combinedPrompt = generateCombinedCodingPrompt(selectedSections, context)
+          break
+          
+        case 'meeting':
+          const { generateCombinedMeetingTranscript } = await import('@/lib/meeting-transcript-sections')
+          combinedPrompt = generateCombinedMeetingTranscript(selectedSections, context)
           break
       }
       
@@ -508,7 +529,10 @@ export async function POST(req: NextRequest) {
       businessSections,
       uxSections,
       architectureSections,
-      functionalSections
+      functionalSections,
+      testSections,
+      codingSections,
+      meetingSections
     }: GenerateDocumentRequest = await req.json()
     
     console.log('🔍 POST handler - Document type:', documentType)
@@ -537,7 +561,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate document type
-    const validDocumentTypes = ['business', 'functional', 'technical', 'ux', 'mermaid']
+    const validDocumentTypes = ['business', 'functional', 'technical', 'ux', 'mermaid', 'test', 'coding', 'meeting', 'wireframe']
     if (!validDocumentTypes.includes(documentType)) {
       return new Response(
         JSON.stringify({ error: `Invalid document type. Must be one of: ${validDocumentTypes.join(', ')}` }),
@@ -578,7 +602,10 @@ export async function POST(req: NextRequest) {
       businessSections,
       uxSections,
       architectureSections,
-      functionalSections
+      functionalSections,
+      testSections,
+      codingSections,
+      meetingSections
     )
 
     // Convert the AI stream to a web-compatible ReadableStream

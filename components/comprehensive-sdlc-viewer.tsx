@@ -39,6 +39,8 @@ import {
 import { MarkdownRenderer } from '@/components/markdown-renderer'
 import { GitHubProjectsCreator } from './github-projects-creator'
 import { WireframeViewer } from '@/components/wireframe'
+import { MermaidViewerEnhanced } from '@/components/mermaid-viewer-enhanced'
+import { extractAndFixMermaidDiagramsWithSections } from '@/lib/mermaid-parser'
 
 interface ComprehensiveSDLCData {
   businessAnalysis?: {
@@ -148,6 +150,30 @@ interface ComprehensiveSDLCData {
     maintenancePlan: string
     operationalRunbook: string
     postLaunchSupport: string
+  }
+  architectureDiagrams?: {
+    sequenceDiagrams?: string
+    databaseSchema?: string
+    systemOverview?: string
+    componentDiagram?: string
+    deploymentDiagram?: string
+    dataFlow?: string
+    securityArchitecture?: string
+    integrationPoints?: string
+    mermaidDiagrams?: string
+    content?: string
+  }
+  mermaid?: string | {
+    sequenceDiagrams?: string
+    databaseSchema?: string
+    systemOverview?: string
+    componentDiagram?: string
+    deploymentDiagram?: string
+    dataFlow?: string
+    securityArchitecture?: string
+    integrationPoints?: string
+    mermaidDiagrams?: string
+    content?: string
   }
   metadata?: {
     generationTime: number
@@ -391,7 +417,9 @@ export function ComprehensiveSDLCViewer({ data, onExport, onShare, documentId, o
       service: Zap,
       deployment: Shield,
       observability: BarChart3,
-      implementation: CheckCircle
+      implementation: CheckCircle,
+      architecture: GitBranch,
+      mermaid: GitBranch
     }
     return icons[section] || FileText
   }
@@ -406,7 +434,9 @@ export function ComprehensiveSDLCViewer({ data, onExport, onShare, documentId, o
       service: 'bg-yellow-50 border-yellow-200',
       deployment: 'bg-red-50 border-red-200',
       observability: 'bg-teal-50 border-teal-200',
-      implementation: 'bg-indigo-50 border-indigo-200'
+      implementation: 'bg-indigo-50 border-indigo-200',
+      architecture: 'bg-cyan-50 border-cyan-200',
+      mermaid: 'bg-cyan-50 border-cyan-200'
     }
     return colors[section] || 'bg-gray-50 border-gray-200'
   }
@@ -703,6 +733,114 @@ export function ComprehensiveSDLCViewer({ data, onExport, onShare, documentId, o
         {data.functionalSpec && renderSection('Functional Specification', data.functionalSpec, 'functional')}
         {data.technicalSpec && renderSection('Technical Specification', data.technicalSpec, 'technical')}
         {data.uxSpec && renderSection('UX Specification', data.uxSpec, 'ux')}
+        
+        {/* Architecture Diagrams (Mermaid) */}
+        {(data.architectureDiagrams || data.mermaid) && (() => {
+          const archData = data.architectureDiagrams || (typeof data.mermaid === 'object' ? data.mermaid : null)
+          const mermaidContent = typeof data.mermaid === 'string' ? data.mermaid : archData?.content || archData?.mermaidDiagrams
+          
+          // If we have mermaid content, parse and render it with the enhanced viewer
+          if (mermaidContent) {
+            const { diagrams, fixedContent } = extractAndFixMermaidDiagramsWithSections(mermaidContent)
+            const hasDiagrams = Object.keys(diagrams).length > 0
+            
+            return (
+              <Card key="architecture" className="mb-6 bg-cyan-50 border-cyan-200">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <GitBranch className="h-5 w-5" />
+                      Architecture Diagrams
+                      <Badge variant="secondary" className="ml-2">
+                        {hasDiagrams ? `${Object.keys(diagrams).length} Diagrams` : 'Mermaid Diagrams'}
+                      </Badge>
+                    </CardTitle>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => toggleSection('architecture')}
+                    >
+                      {expandedSections.includes('architecture') ? 'Collapse' : 'Expand'}
+                    </Button>
+                  </div>
+                </CardHeader>
+                
+                {expandedSections.includes('architecture') && (
+                  <CardContent>
+                    {hasDiagrams ? (
+                      <MermaidViewerEnhanced 
+                        diagrams={diagrams}
+                        title="Architecture Diagrams"
+                        height="500px"
+                      />
+                    ) : (
+                      <ScrollArea className="h-96 w-full rounded-md border p-4">
+                        <MarkdownRenderer content={mermaidContent} />
+                      </ScrollArea>
+                    )}
+                  </CardContent>
+                )}
+              </Card>
+            )
+          }
+          
+          // If we have structured architecture data without mermaid content
+          if (archData && typeof archData === 'object') {
+            const nonEmptyArchData = Object.entries(archData).reduce((acc, [key, value]) => {
+              if (value && key !== 'content' && key !== 'mermaidDiagrams') {
+                acc[key] = value
+              }
+              return acc
+            }, {} as Record<string, string>)
+            
+            if (Object.keys(nonEmptyArchData).length > 0) {
+              // Check if any of the sections contain mermaid diagrams
+              const allContent = Object.values(nonEmptyArchData).join('\n\n')
+              const { diagrams } = extractAndFixMermaidDiagramsWithSections(allContent)
+              
+              if (Object.keys(diagrams).length > 0) {
+                return (
+                  <Card key="architecture" className="mb-6 bg-cyan-50 border-cyan-200">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="flex items-center gap-2">
+                          <GitBranch className="h-5 w-5" />
+                          Architecture Diagrams
+                          <Badge variant="secondary" className="ml-2">
+                            {Object.keys(diagrams).length} Diagrams
+                          </Badge>
+                        </CardTitle>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => toggleSection('architecture')}
+                        >
+                          {expandedSections.includes('architecture') ? 'Collapse' : 'Expand'}
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    
+                    {expandedSections.includes('architecture') && (
+                      <CardContent>
+                        <MermaidViewerEnhanced 
+                          diagrams={diagrams}
+                          title="Architecture Diagrams"
+                          height="500px"
+                        />
+                      </CardContent>
+                    )}
+                  </Card>
+                )
+              } else {
+                // Fallback to regular section rendering if no mermaid diagrams found
+                return renderSection('Architecture Diagrams', nonEmptyArchData, 'architecture')
+              }
+            }
+          }
+          
+          return null
+        })()}
+        
         {data.wireframe && (
           <Card key="wireframe" className={`mb-6 bg-purple-50 border-purple-200`}>
             <CardHeader className="pb-3">

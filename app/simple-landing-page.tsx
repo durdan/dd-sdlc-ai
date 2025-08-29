@@ -57,6 +57,7 @@ export default function SimpleLandingPage() {
   const [showDocumentMenu, setShowDocumentMenu] = useState(false)
   const [showDocumentModal, setShowDocumentModal] = useState(false)
   const [selectedDocType, setSelectedDocType] = useState<string>('business')
+  const [selectedSections, setSelectedSections] = useState<string[]>([])
   const [showInputAlert, setShowInputAlert] = useState(false)
   const [previousDocuments, setPreviousDocuments] = useState<Record<string, string>>({})
   const [showViewDocsHint, setShowViewDocsHint] = useState(false)
@@ -220,12 +221,21 @@ export default function SimpleLandingPage() {
       return
     }
     
+    console.log('🎯 Document selected:', doc)
+    console.log('📝 Doc type from selection:', doc.docType)
+    
     setShowDocumentMenu(false)
+    
+    // Clear any previously selected sections since we're selecting a new document type
+    setSelectedSections([])
+    console.log('🧹 Cleared previous sections')
     
     // Store the selected document type for the modal
     const docType = doc.docType || 'business'
+    console.log('💾 Setting selectedDocType to:', docType)
     setSelectedDocType(docType)
     localStorage.setItem('selectedDocType', docType)
+    console.log('✅ localStorage updated with:', docType)
     
     // Always trigger handleGetStarted after selection
     setTimeout(() => handleGetStarted(docType), 100)
@@ -629,12 +639,19 @@ export default function SimpleLandingPage() {
                     
                     // Store the selected document type and sections
                     localStorage.setItem('selectedDocType', type)
+                    setSelectedDocType(type)
+                    
                     if (sections && sections.length > 0) {
+                      // Store sections for the modal to use
                       localStorage.setItem(`${type}Sections`, JSON.stringify(sections))
+                      setSelectedSections(sections)
+                    } else {
+                      setSelectedSections([])
                     }
                     
-                    // Open the modal to generate
-                    handleGetStarted(type)
+                    // Save input and open modal
+                    localStorage.setItem('sdlc_last_input', inputValue)
+                    setShowDocumentModal(true)
                   }}
                   hasPreviousDocument={!!hasDocument}
                   className="min-w-[140px] sm:min-w-[160px]"
@@ -660,10 +677,13 @@ export default function SimpleLandingPage() {
       </main>
 
       {/* Document Generation Modal */}
+      {console.log('🚀 Modal props - selectedDocType:', selectedDocType)}
       <SimpleDocumentGenerationModal 
         isOpen={showDocumentModal}
         onClose={() => {
           setShowDocumentModal(false)
+          // Clear selected sections when modal closes
+          setSelectedSections([])
           // Reload documents from localStorage when modal closes
           const savedDocs = localStorage.getItem('sdlc_generated_docs')
           if (savedDocs) {
@@ -681,7 +701,9 @@ export default function SimpleLandingPage() {
         }}
         input={inputValue}
         initialDocType={selectedDocType}
+        initialSelectedSections={selectedSections}
         showPreviousDocs={false}  // Don't show previous docs when generating new
+        autoGenerate={selectedSections.length > 0}  // Auto-generate when sections are pre-selected
         onDocumentGenerated={(updatedDocs) => {
           // Update parent state when document is generated
           setPreviousDocuments(updatedDocs)

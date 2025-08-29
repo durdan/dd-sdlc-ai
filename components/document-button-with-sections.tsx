@@ -9,6 +9,7 @@ import { techSpecSections } from '@/lib/tech-spec-sections'
 import { uxDesignSections } from '@/lib/ux-design-sections'
 import { architectureSections } from '@/lib/architecture-sections'
 import { functionalSpecSections } from '@/lib/functional-spec-sections'
+import { testSpecSections } from '@/lib/test-spec-sections'
 
 interface DocumentButtonWithSectionsProps {
   icon: React.ComponentType<{ className?: string }>
@@ -47,6 +48,8 @@ export function DocumentButtonWithSections({
       case 'mermaid':
       case 'architecture':
         return Object.values(architectureSections)
+      case 'test':
+        return Object.values(testSpecSections)
       default:
         return []
     }

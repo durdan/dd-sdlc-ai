@@ -22,6 +22,7 @@ import { techSpecSections } from '@/lib/tech-spec-sections'
 import { uxDesignSections } from '@/lib/ux-design-sections'
 import { architectureSections } from '@/lib/architecture-sections'
 import { functionalSpecSections } from '@/lib/functional-spec-sections'
+import { testSpecSections } from '@/lib/test-spec-sections'
 
 type GenerationMode = 'quick' | 'custom'
 
@@ -53,9 +54,9 @@ export function DocumentSelectionImproved({
   className = ''
 }: DocumentSelectionImprovedProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const [mode, setMode] = useState<GenerationMode>('quick')
+  const [mode, setMode] = useState<GenerationMode>('quick') // Default to quick for faster flow
   const [selectedSections, setSelectedSections] = useState<string[]>([])
-  const [showReview, setShowReview] = useState(false)
+  const [showReview] = useState(false) // Kept for compatibility but not used
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   // Get sections based on document type
@@ -72,6 +73,8 @@ export function DocumentSelectionImproved({
       case 'mermaid':
       case 'architecture':
         return Object.values(architectureSections)
+      case 'test':
+        return Object.values(testSpecSections)
       case 'wireframe':
         // Wireframe doesn't have sections, return empty
         return []
@@ -90,6 +93,14 @@ export function DocumentSelectionImproved({
       setMode(savedMode)
     }
   }, [])
+  
+  // Auto-select top 3 sections when switching to custom mode for convenience
+  useEffect(() => {
+    if (mode === 'custom' && selectedSections.length === 0 && sections.length > 0) {
+      // Auto-select first 3 sections
+      setSelectedSections(sections.slice(0, 3).map(s => s.id))
+    }
+  }, [mode])
 
   // Save mode to localStorage
   useEffect(() => {
@@ -137,7 +148,9 @@ export function DocumentSelectionImproved({
 
   const handleCustomGenerate = () => {
     if (selectedSections.length === 0) return
-    setShowReview(true)
+    // Skip review dialog and generate directly
+    onSelect(documentType, selectedSections)
+    setIsOpen(false)
   }
 
   const handleConfirmCustom = () => {
@@ -256,22 +269,34 @@ export function DocumentSelectionImproved({
                     <span className="text-sm font-medium text-gray-700">
                       Sections ({selectedSections.length}/{sections.length})
                     </span>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          // Select top 3 essential sections
+                          const essentials = sections.slice(0, 3).map(s => s.id)
+                          setSelectedSections(essentials)
+                        }}
+                        className="text-xs px-2 text-indigo-600 hover:bg-indigo-50"
+                      >
+                        Top 3
+                      </Button>
                       <Button
                         size="sm"
                         variant="ghost"
                         onClick={selectAll}
-                        className="text-xs"
+                        className="text-xs px-2"
                       >
-                        Select all
+                        All
                       </Button>
                       <Button
                         size="sm"
                         variant="ghost"
                         onClick={clearAll}
-                        className="text-xs"
+                        className="text-xs px-2"
                       >
-                        Clear all
+                        Clear
                       </Button>
                     </div>
                   </div>
@@ -340,15 +365,21 @@ export function DocumentSelectionImproved({
                 <Button
                   onClick={handleQuickGenerate}
                   className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                  size="default"
                 >
                   <Sparkles className="h-4 w-4 mr-2" />
-                  Generate quick draft
+                  Generate now
                 </Button>
               ) : (
                 <div className="flex items-center gap-2">
                   {selectedSections.length === 0 && (
-                    <span className="text-xs text-gray-500 mr-2">
-                      Pick at least one section or switch to Quick draft.
+                    <span className="text-xs text-gray-500">
+                      Select sections
+                    </span>
+                  )}
+                  {selectedSections.length > 0 && (
+                    <span className="text-xs text-gray-600">
+                      ~{getEstimatedPages()}
                     </span>
                   )}
                   <Button
@@ -357,7 +388,7 @@ export function DocumentSelectionImproved({
                     className="bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Sparkles className="h-4 w-4 mr-2" />
-                    Generate {selectedSections.length} sections
+                    Generate {selectedSections.length} section{selectedSections.length !== 1 ? 's' : ''}
                   </Button>
                 </div>
               )}
@@ -366,47 +397,7 @@ export function DocumentSelectionImproved({
         </div>
       )}
 
-      {/* Review Modal */}
-      <Dialog open={showReview} onOpenChange={setShowReview}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Review your selection</DialogTitle>
-            <DialogDescription>
-              You've selected {selectedSections.length} sections to generate.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="py-4 space-y-3">
-            <div>
-              <p className="text-sm font-medium text-gray-700 mb-2">Included sections:</p>
-              <ul className="space-y-1">
-                {selectedSections.map(id => {
-                  const section = sections.find(s => s.id === id)
-                  return section ? (
-                    <li key={id} className="flex items-center gap-2 text-sm">
-                      <CheckCircle2 className="h-3 w-3 text-green-600" />
-                      <span>{section.name}</span>
-                    </li>
-                  ) : null
-                })}
-              </ul>
-            </div>
-            
-            <div className="text-sm text-gray-600">
-              <p>Est. length: {getEstimatedPages()}</p>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowReview(false)}>
-              Back
-            </Button>
-            <Button onClick={handleConfirmCustom} className="bg-indigo-600 hover:bg-indigo-700 text-white">
-              Run now
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Review Modal - Removed for simpler flow */}
     </>
   )
 }
