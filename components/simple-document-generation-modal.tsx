@@ -28,13 +28,16 @@ import {
   GitBranch,
   BookOpen,
   Building,
-  Lock
+  Lock,
+  FlaskConical,
+  Users,
+  MessageSquare
 } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { MermaidViewerEnhanced } from "@/components/mermaid-viewer-enhanced"
 import { anonymousProjectService } from "@/lib/anonymous-project-service"
-import { parseMermaidDiagrams, extractAndFixMermaidDiagrams } from "@/lib/mermaid-parser"
+import { parseMermaidDiagramsWithSections, extractAndFixMermaidDiagrams } from "@/lib/mermaid-parser-enhanced"
 import { rateLimitService } from "@/lib/rate-limit-service"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
@@ -43,11 +46,15 @@ import { TechSpecTabButton } from "@/components/tech-spec-tab-button"
 import { Settings } from "lucide-react"
 import { SectionGenerationProgress } from "@/components/section-generation-progress"
 import { ExpandableSectionViewer } from "@/components/expandable-section-viewer"
+import { EnhancedDocumentRenderer } from "@/components/enhanced-document-renderer"
 import { businessAnalysisSections } from "@/lib/business-analysis-sections"
 import { techSpecSections } from "@/lib/tech-spec-sections"
 import { uxDesignSections } from "@/lib/ux-design-sections"
 import { architectureSections } from "@/lib/architecture-sections"
 import { functionalSpecSections } from "@/lib/functional-spec-sections"
+import { testSpecSections } from "@/lib/test-spec-sections"
+import { codingPromptSections } from "@/lib/coding-prompt-sections"
+import { meetingTranscriptSections } from "@/lib/meeting-transcript-sections"
 
 interface SimpleDocumentGenerationModalProps {
   isOpen: boolean
@@ -57,6 +64,8 @@ interface SimpleDocumentGenerationModalProps {
   initialDocType?: string
   initialContent?: string
   showPreviousDocs?: boolean  // New prop to control whether to show previous docs
+  initialSelectedSections?: string[]  // Pre-selected sections from parent
+  autoGenerate?: boolean  // Auto-trigger generation when opened
 }
 
 interface DocumentType {
@@ -102,6 +111,27 @@ const documentTypes: DocumentType[] = [
     icon: Database, 
     description: "Visual system architecture and flow diagrams",
     color: "text-orange-600"
+  },
+  { 
+    id: "coding", 
+    name: "AI Coding Prompt", 
+    icon: Sparkles, 
+    description: "AI-powered coding instructions and implementation guidelines",
+    color: "text-indigo-600"
+  },
+  { 
+    id: "test", 
+    name: "Test Spec", 
+    icon: FlaskConical, 
+    description: "TDD/BDD test specifications and test cases",
+    color: "text-emerald-600"
+  },
+  { 
+    id: "meeting", 
+    name: "Meeting Transcript", 
+    icon: Users, 
+    description: "Meeting summaries, action items, and decisions",
+    color: "text-purple-600"
   }
 ]
 
@@ -113,17 +143,25 @@ export function SimpleDocumentGenerationModal({
   initialDocType,
   initialContent,
   showPreviousDocs = false,
+  initialSelectedSections = [],
+  autoGenerate = false,
 }: SimpleDocumentGenerationModalProps) {
+  console.log('🎨 Modal mounted with initialDocType:', initialDocType)
+  console.log('📝 Modal input:', input?.substring(0, 50))
+  
   // Initialize with initialDocType prop, then stored type, then default to business
   const [selectedType, setSelectedType] = useState<string>(() => {
     if (initialDocType) {
       console.log('📋 Using initialDocType prop:', initialDocType)
       return initialDocType
     }
-    if (typeof window !== 'undefined' && showPreviousDocs) {
+    // Always check localStorage for the selected type, not just when showPreviousDocs is true
+    if (typeof window !== 'undefined') {
       const storedType = localStorage.getItem('selectedDocType')
       console.log('📋 Retrieved selectedDocType from localStorage:', storedType)
-      return storedType || "business"
+      if (storedType) {
+        return storedType
+      }
     }
     return "business"
   })
@@ -154,6 +192,10 @@ export function SimpleDocumentGenerationModal({
   const [currentGeneratingSection, setCurrentGeneratingSection] = useState<string | null>(null)
   
   const [selectedTechSpecSections, setSelectedTechSpecSections] = useState<string[]>(() => {
+    // First check if initial sections are provided and selectedType is technical
+    if (initialSelectedSections.length > 0 && initialDocType === 'technical') {
+      return initialSelectedSections
+    }
     if (typeof window !== 'undefined') {
       const storedSections = localStorage.getItem('techSpecSections')
       if (storedSections) {
@@ -169,6 +211,9 @@ export function SimpleDocumentGenerationModal({
   
   // State for other document type sections
   const [selectedBusinessSections, setSelectedBusinessSections] = useState<string[]>(() => {
+    if (initialSelectedSections.length > 0 && initialDocType === 'business') {
+      return initialSelectedSections
+    }
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('businessSections')
       return stored ? JSON.parse(stored) : []
@@ -177,6 +222,9 @@ export function SimpleDocumentGenerationModal({
   })
   
   const [selectedUXSections, setSelectedUXSections] = useState<string[]>(() => {
+    if (initialSelectedSections.length > 0 && initialDocType === 'ux') {
+      return initialSelectedSections
+    }
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('uxSections')
       return stored ? JSON.parse(stored) : []
@@ -185,6 +233,10 @@ export function SimpleDocumentGenerationModal({
   })
   
   const [selectedArchitectureSections, setSelectedArchitectureSections] = useState<string[]>(() => {
+    if (initialSelectedSections.length > 0 && initialDocType === 'mermaid') {
+      console.log('🏗️ Initializing architecture sections from props:', initialSelectedSections)
+      return initialSelectedSections
+    }
     if (typeof window !== 'undefined') {
       // Check both possible keys for backwards compatibility
       const stored = localStorage.getItem('mermaidSections') || localStorage.getItem('architectureSections')
@@ -200,8 +252,44 @@ export function SimpleDocumentGenerationModal({
   })
   
   const [selectedFunctionalSections, setSelectedFunctionalSections] = useState<string[]>(() => {
+    if (initialSelectedSections.length > 0 && initialDocType === 'functional') {
+      return initialSelectedSections
+    }
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('functionalSections')
+      return stored ? JSON.parse(stored) : []
+    }
+    return []
+  })
+  
+  const [selectedTestSections, setSelectedTestSections] = useState<string[]>(() => {
+    if (initialSelectedSections.length > 0 && initialDocType === 'test') {
+      return initialSelectedSections
+    }
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('testSections')
+      return stored ? JSON.parse(stored) : []
+    }
+    return []
+  })
+  
+  const [selectedCodingSections, setSelectedCodingSections] = useState<string[]>(() => {
+    if (initialSelectedSections.length > 0 && initialDocType === 'coding') {
+      return initialSelectedSections
+    }
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('codingSections')
+      return stored ? JSON.parse(stored) : []
+    }
+    return []
+  })
+  
+  const [selectedMeetingSections, setSelectedMeetingSections] = useState<string[]>(() => {
+    if (initialSelectedSections.length > 0 && initialDocType === 'meeting') {
+      return initialSelectedSections
+    }
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('meetingSections')
       return stored ? JSON.parse(stored) : []
     }
     return []
@@ -213,7 +301,10 @@ export function SimpleDocumentGenerationModal({
     technical: techSpecSections,
     ux: uxDesignSections,
     mermaid: architectureSections,
-    functional: functionalSpecSections
+    functional: functionalSpecSections,
+    test: testSpecSections,
+    coding: codingPromptSections,
+    meeting: meetingTranscriptSections
   }
   
   // Get selected sections for current document type
@@ -229,11 +320,18 @@ export function SimpleDocumentGenerationModal({
         return selectedArchitectureSections
       case 'functional':
         return selectedFunctionalSections
+      case 'test':
+        return selectedTestSections
+      case 'coding':
+        return selectedCodingSections
+      case 'meeting':
+        return selectedMeetingSections
       default:
         return []
     }
   }
   
+  // Get current sections based on selected document type
   const currentSections = getSelectedSections()
   const currentSectionDetails = sectionDetailsMap[selectedType as keyof typeof sectionDetailsMap] || {}
   
@@ -281,12 +379,53 @@ export function SimpleDocumentGenerationModal({
       if (initialDocType && initialDocType !== selectedType) {
         console.log('🔄 Setting selectedType from prop:', initialDocType)
         setSelectedType(initialDocType)
+        
+        // Also update the corresponding sections when document type changes
+        if (initialSelectedSections.length > 0) {
+          console.log('📝 Setting initial sections for', initialDocType, ':', initialSelectedSections)
+          switch(initialDocType) {
+            case 'business':
+              setSelectedBusinessSections(initialSelectedSections)
+              break
+            case 'technical':
+              setSelectedTechSpecSections(initialSelectedSections)
+              break
+            case 'functional':
+              setSelectedFunctionalSections(initialSelectedSections)
+              break
+            case 'ux':
+              setSelectedUXSections(initialSelectedSections)
+              break
+            case 'mermaid':
+              setSelectedArchitectureSections(initialSelectedSections)
+              break
+            case 'test':
+              setSelectedTestSections(initialSelectedSections)
+              break
+            case 'coding':
+              setSelectedCodingSections(initialSelectedSections)
+              break
+            case 'meeting':
+              setSelectedMeetingSections(initialSelectedSections)
+              break
+          }
+        }
       } else if (!initialDocType && showPreviousDocs) {
         const storedType = localStorage.getItem('selectedDocType')
         if (storedType && storedType !== selectedType) {
           console.log('🔄 Updating selectedType from localStorage:', storedType)
           setSelectedType(storedType)
         }
+      }
+      
+      // If initialContent is provided, display it immediately
+      if (initialContent) {
+        console.log('📄 Loading initial content for viewing')
+        setGeneratedContent(initialContent)
+        setHasGenerated(true)
+        setViewingPreviousDoc(true)
+        // Don't load other docs when viewing specific content
+        return
       }
       
       // Only load previous documents if showPreviousDocs is true
@@ -301,6 +440,7 @@ export function SimpleDocumentGenerationModal({
             // Filter documents by current input
             const relevantDocs: Record<string, any> = {}
             const relevantSections: Record<string, any> = {}
+            const relevantSectionData: Record<string, any> = {}
             
             history.forEach((doc: any) => {
               // Only include documents that match the current input
@@ -310,6 +450,10 @@ export function SimpleDocumentGenerationModal({
                   relevantDocs[doc.type] = doc.content
                   if (doc.sections) {
                     relevantSections[doc.type] = doc.sections
+                  }
+                  // Store individual section data if available
+                  if (doc.sectionData) {
+                    relevantSectionData[doc.type] = doc.sectionData
                   }
                 }
               }
@@ -324,8 +468,24 @@ export function SimpleDocumentGenerationModal({
               setHasGenerated(true)
               setViewingPreviousDoc(true)
               
-              // Restore section progress if available
-              if (relevantSections[selectedType]) {
+              // Restore section progress - use stored section data if available, otherwise fallback to extraction
+              if (relevantSectionData[selectedType]) {
+                // Use directly stored section data (new format)
+                const storedSectionData = relevantSectionData[selectedType]
+                const restoredProgress: Record<string, any> = {}
+                
+                Object.keys(storedSectionData).forEach(sectionId => {
+                  const sectionData = storedSectionData[sectionId]
+                  restoredProgress[sectionId] = {
+                    status: 'completed',
+                    content: sectionData.content || ''
+                  }
+                })
+                
+                setSectionProgress(restoredProgress)
+                console.log(`📚 Restored ${Object.keys(restoredProgress).length} sections for ${selectedType} using stored section data`)
+              } else if (relevantSections[selectedType]) {
+                // Fallback to content extraction for legacy documents
                 const sections = relevantSections[selectedType]
                 const restoredProgress: Record<string, any> = {}
                 
@@ -337,8 +497,7 @@ export function SimpleDocumentGenerationModal({
                   const sectionInfo = sectionDetails[sectionId]
                   const sectionName = sectionInfo?.name || sectionId
                   
-                  console.log(`📦 Processing section: ${sectionId} with name: "${sectionName}"`)
-                  console.log(`📋 Section info:`, sectionInfo)
+                  console.log(`📦 Processing section: ${sectionId} with name: "${sectionName}" (legacy extraction)`)
                   
                   const sectionContent = extractSectionContent(
                     relevantDocs[selectedType], 
@@ -353,7 +512,7 @@ export function SimpleDocumentGenerationModal({
                   }
                 })
                 setSectionProgress(restoredProgress)
-                console.log(`📚 Restored ${sections.length} sections for ${selectedType} with content`)
+                console.log(`📚 Restored ${sections.length} sections for ${selectedType} using content extraction (legacy)`)
               }
             }
           } catch (e) {
@@ -370,57 +529,144 @@ export function SimpleDocumentGenerationModal({
       }
       
       // Load section metadata if available
+      // BUT only if we don't have fresh selections from initialSelectedSections
       // This ensures that section selections are preserved when viewing previously generated documents
-      const savedSectionMetadata = localStorage.getItem('sdlc_section_metadata')
-      if (savedSectionMetadata) {
-        try {
-          const metadata = JSON.parse(savedSectionMetadata)
-          console.log('📦 Loading saved section metadata:', metadata)
-          
-          // Update state and localStorage for each document type
-          if (metadata.business) {
-            setSelectedBusinessSections(metadata.business)
-            localStorage.setItem('businessSections', JSON.stringify(metadata.business))
+      // but doesn't override new selections from the parent component
+      const shouldLoadSavedMetadata = initialSelectedSections.length === 0 && showPreviousDocs
+      
+      if (shouldLoadSavedMetadata) {
+        const savedSectionMetadata = localStorage.getItem('sdlc_section_metadata')
+        if (savedSectionMetadata) {
+          try {
+            const metadata = JSON.parse(savedSectionMetadata)
+            console.log('📦 Loading saved section metadata:', metadata)
+            
+            // Update state and localStorage for each document type
+            if (metadata.business) {
+              setSelectedBusinessSections(metadata.business)
+              localStorage.setItem('businessSections', JSON.stringify(metadata.business))
+            }
+            if (metadata.functional) {
+              setSelectedFunctionalSections(metadata.functional)
+              localStorage.setItem('functionalSections', JSON.stringify(metadata.functional))
+            }
+            if (metadata.technical) {
+              setSelectedTechSpecSections(metadata.technical)
+              localStorage.setItem('techSpecSections', JSON.stringify(metadata.technical))
+            }
+            if (metadata.ux) {
+              setSelectedUXSections(metadata.ux)
+              localStorage.setItem('uxSections', JSON.stringify(metadata.ux))
+            }
+            if (metadata.mermaid) {
+              setSelectedArchitectureSections(metadata.mermaid)
+              localStorage.setItem('mermaidSections', JSON.stringify(metadata.mermaid))
+              // Also save with the alternative key for backward compatibility
+              localStorage.setItem('architectureSections', JSON.stringify(metadata.mermaid))
+            }
+            console.log('✅ Section metadata restored successfully')
+          } catch (e) {
+            console.error('Error loading section metadata:', e)
           }
-          if (metadata.functional) {
-            setSelectedFunctionalSections(metadata.functional)
-            localStorage.setItem('functionalSections', JSON.stringify(metadata.functional))
-          }
-          if (metadata.technical) {
-            setSelectedTechSpecSections(metadata.technical)
-            localStorage.setItem('techSpecSections', JSON.stringify(metadata.technical))
-          }
-          if (metadata.ux) {
-            setSelectedUXSections(metadata.ux)
-            localStorage.setItem('uxSections', JSON.stringify(metadata.ux))
-          }
-          if (metadata.mermaid) {
-            setSelectedArchitectureSections(metadata.mermaid)
-            localStorage.setItem('mermaidSections', JSON.stringify(metadata.mermaid))
-            // Also save with the alternative key for backward compatibility
-            localStorage.setItem('architectureSections', JSON.stringify(metadata.mermaid))
-          }
-          console.log('✅ Section metadata restored successfully')
-        } catch (e) {
-          console.error('Error loading section metadata:', e)
         }
+      } else if (initialSelectedSections.length > 0) {
+        console.log('🚫 Skipping saved metadata load - using fresh selections:', initialSelectedSections)
       }
     } else {
       // Clean up after modal closes
       localStorage.removeItem('selectedDocType')
     }
-  }, [isOpen])
-
-  // Disable auto-generation - user should explicitly click Generate
-  // This provides better UX by letting users:
-  // 1. Review their input
-  // 2. Select sections if needed
-  // 3. Change document type if needed
-  // 4. Explicitly trigger generation
+  }, [isOpen, initialContent, initialDocType, showPreviousDocs, input, selectedType])
+  
+  // Ensure sections are properly set when modal opens with initialSelectedSections
   useEffect(() => {
-    // Disabled auto-generation for better UX
-    // Users should click Generate button explicitly
-  }, [])
+    if (isOpen && initialSelectedSections.length > 0) {
+      console.log('🔄 Modal opened with initial sections:', initialSelectedSections, 'for type:', selectedType)
+      
+      // Set sections based on the current selected type
+      switch(selectedType) {
+        case 'business':
+          if (selectedBusinessSections.length === 0) {
+            console.log('💼 Setting business sections:', initialSelectedSections)
+            setSelectedBusinessSections(initialSelectedSections)
+          }
+          break
+        case 'technical':
+          if (selectedTechSpecSections.length === 0) {
+            console.log('🔧 Setting technical sections:', initialSelectedSections)
+            setSelectedTechSpecSections(initialSelectedSections)
+          }
+          break
+        case 'functional':
+          if (selectedFunctionalSections.length === 0) {
+            console.log('📝 Setting functional sections:', initialSelectedSections)
+            setSelectedFunctionalSections(initialSelectedSections)
+          }
+          break
+        case 'ux':
+          if (selectedUXSections.length === 0) {
+            console.log('🎨 Setting UX sections:', initialSelectedSections)
+            setSelectedUXSections(initialSelectedSections)
+          }
+          break
+        case 'mermaid':
+          if (selectedArchitectureSections.length === 0) {
+            console.log('🏗️ Setting architecture/mermaid sections:', initialSelectedSections)
+            setSelectedArchitectureSections(initialSelectedSections)
+          }
+          break
+        case 'test':
+          if (selectedTestSections.length === 0) {
+            console.log('🧪 Setting test sections:', initialSelectedSections)
+            setSelectedTestSections(initialSelectedSections)
+          }
+          break
+        case 'coding':
+          if (selectedCodingSections.length === 0) {
+            console.log('💻 Setting coding sections:', initialSelectedSections)
+            setSelectedCodingSections(initialSelectedSections)
+          }
+          break
+        case 'meeting':
+          if (selectedMeetingSections.length === 0) {
+            console.log('👥 Setting meeting sections:', initialSelectedSections)
+            setSelectedMeetingSections(initialSelectedSections)
+          }
+          break
+      }
+    }
+  }, [isOpen, selectedType, initialSelectedSections])
+
+  // Auto-generate when modal opens with pre-selected sections
+  useEffect(() => {
+    if (isOpen && autoGenerate && initialSelectedSections.length > 0 && !isGenerating && !hasGenerated) {
+      // Only auto-generate if we have sections for the current document type
+      // This prevents auto-generating with wrong sections from a different doc type
+      const hasValidSections = 
+        (selectedType === 'business' && initialSelectedSections.some(s => Object.keys(businessAnalysisSections).includes(s))) ||
+        (selectedType === 'technical' && initialSelectedSections.some(s => Object.keys(techSpecSections).includes(s))) ||
+        (selectedType === 'functional' && initialSelectedSections.some(s => Object.keys(functionalSpecSections).includes(s))) ||
+        (selectedType === 'ux' && initialSelectedSections.some(s => Object.keys(uxDesignSections).includes(s))) ||
+        (selectedType === 'mermaid' && initialSelectedSections.some(s => Object.keys(architectureSections).includes(s))) ||
+        (selectedType === 'test' && initialSelectedSections.some(s => Object.keys(testSpecSections).includes(s))) ||
+        (selectedType === 'coding' && initialSelectedSections.some(s => Object.keys(codingPromptSections).includes(s))) ||
+        (selectedType === 'meeting' && initialSelectedSections.some(s => Object.keys(meetingTranscriptSections).includes(s)))
+      
+      if (!hasValidSections) {
+        console.log('⚠️ Skipping auto-generate: sections do not match document type')
+        console.log('   Document type:', selectedType)
+        console.log('   Initial sections:', initialSelectedSections)
+        return
+      }
+      
+      // Small delay to ensure modal is fully rendered
+      const timer = setTimeout(() => {
+        console.log('🚀 Auto-generating with pre-selected sections:', initialSelectedSections)
+        handleGenerate()
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [isOpen, autoGenerate]) // Only trigger on modal open with autoGenerate flag
   
   // Auto-scroll streaming content
   useEffect(() => {
@@ -477,6 +723,18 @@ export function SimpleDocumentGenerationModal({
         selectedSections = selectedFunctionalSections
         sectionKey = 'functionalSections'
         console.log('📋 Including functional sections:', selectedFunctionalSections)
+      } else if (selectedType === 'test' && selectedTestSections.length > 0) {
+        selectedSections = selectedTestSections
+        sectionKey = 'testSections'
+        console.log('🧪 Including test sections:', selectedTestSections)
+      } else if (selectedType === 'coding' && selectedCodingSections.length > 0) {
+        selectedSections = selectedCodingSections
+        sectionKey = 'codingSections'
+        console.log('💻 Including coding sections:', selectedCodingSections)
+      } else if (selectedType === 'meeting' && selectedMeetingSections.length > 0) {
+        selectedSections = selectedMeetingSections
+        sectionKey = 'meetingSections'
+        console.log('👥 Including meeting sections:', selectedMeetingSections)
       }
       
       // If sections are selected, generate them one by one
@@ -485,12 +743,14 @@ export function SimpleDocumentGenerationModal({
       } else {
         // No sections selected - use default comprehensive prompt
         console.log('📝 No sections selected - using default comprehensive prompt')
+        console.log('🎯 Building request with selectedType:', selectedType)
         const requestBody: any = {
           input,
           documentType: selectedType,
           userId: 'anonymous',
         }
-        console.log('📤 Full request body:', requestBody)
+        console.log('📤 Full request body:', JSON.stringify(requestBody, null, 2))
+        console.log('📤 Document type being sent:', requestBody.documentType)
         
         const response = await fetch('/api/generate-document', {
           method: 'POST',
@@ -552,11 +812,24 @@ export function SimpleDocumentGenerationModal({
                   const storedHistory = localStorage.getItem(historyKey)
                   const history = storedHistory ? JSON.parse(storedHistory) : []
                   
+                  // Collect section data for storage
+                  const sectionData: Record<string, { content: string; status: string }> = {}
+                  Object.keys(sectionProgress).forEach(sectionId => {
+                    const section = sectionProgress[sectionId]
+                    if (section.content) {
+                      sectionData[sectionId] = {
+                        content: section.content,
+                        status: section.status
+                      }
+                    }
+                  })
+
                   const newHistoryEntry = {
                     type: selectedType,
                     content: data.fullContent,
                     input: input,
-                    timestamp: Date.now()
+                    timestamp: Date.now(),
+                    sectionData: Object.keys(sectionData).length > 0 ? sectionData : undefined
                   }
                   
                   history.unshift(newHistoryEntry)
@@ -688,7 +961,11 @@ export function SimpleDocumentGenerationModal({
                   // Also update the section's content in progress
                   setSectionProgress(prev => ({
                     ...prev,
-                    [sectionId]: { ...prev[sectionId], content: sectionContent }
+                    [sectionId]: { 
+                      status: (prev[sectionId]?.status as 'pending' | 'generating' | 'completed' | 'error') || 'generating',
+                      content: sectionContent,
+                      error: prev[sectionId]?.error
+                    }
                   }))
                 } else if (data.type === 'complete') {
                   // Section generation complete
@@ -773,14 +1050,28 @@ export function SimpleDocumentGenerationModal({
       const storedHistory = localStorage.getItem(historyKey)
       const history = storedHistory ? JSON.parse(storedHistory) : []
       
-      // Add new document to history
+      // Add new document to history with individual section content
+      // This approach stores each section separately, making retrieval much more reliable
+      // than trying to extract sections from combined content
+      const sectionData: Record<string, { content: string; status: 'pending' | 'generating' | 'completed' | 'error' }> = {}
+      Object.keys(sectionProgress).forEach(sectionId => {
+        const section = sectionProgress[sectionId]
+        if (section.content) {
+          sectionData[sectionId] = {
+            content: section.content,
+            status: section.status as 'pending' | 'generating' | 'completed' | 'error'
+          }
+        }
+      })
+
       const newHistoryEntry = {
         type: selectedType,
         content: fullContent,
         input: input,
         timestamp: Date.now(),
         sections: currentSections.length > 0 ? currentSections : undefined,
-        sectionCount: Object.keys(sectionProgress).length || undefined
+        sectionCount: Object.keys(sectionProgress).length || undefined,
+        sectionData: Object.keys(sectionData).length > 0 ? sectionData : undefined
       }
       
       // Add to beginning of history
@@ -840,35 +1131,42 @@ export function SimpleDocumentGenerationModal({
     // Show first 500 chars of content for debugging
     console.log(`📝 First 500 chars of content:\n${fullContent.substring(0, 500)}`)
     
+    // Normalize section name for comparison (remove special chars, convert to lowercase)
+    const normalizedSectionName = sectionName.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim()
+    console.log(`🔍 Normalized section name: "${normalizedSectionName}"`)
+    
     // Try to find the section by looking for markdown headers
     const patterns = [
-      new RegExp(`^#+\\s*${escapeRegExp(sectionName)}\\s*$`, 'mi'),
-      new RegExp(`^#+\\s*\\d+\\.?\\s*${escapeRegExp(sectionName)}\\s*$`, 'mi'),
-      new RegExp(`^\\*\\*${escapeRegExp(sectionName)}\\*\\*\\s*$`, 'mi'),
-      // Handle "Part X: Section Name" format
-      new RegExp(`^#+\\s*Part\\s+\\d+:\\s*${escapeRegExp(sectionName)}\\s*$`, 'mi'),
-      // Handle variations
-      new RegExp(`^#+.*${escapeRegExp(sectionName)}\\s*$`, 'mi')
+      // Handle "Part X: Section Name" format (most common for our generated docs)
+      new RegExp(`^#+\\s*Part\\s+\\d+:\\s*([^\\n]+)`, 'gmi'),
+      // Handle standard section headers with numbers
+      new RegExp(`^#+\\s*\\d+\\.\\s*([^\\n]+)`, 'gmi'),
+      // Handle standard section headers without numbers
+      new RegExp(`^#+\\s*([^\\n]+)`, 'gmi'),
+      // Handle variations and flexible matching
+      new RegExp(`^#+.*?([^\\n]+)`, 'gmi')
     ]
     
     let startIndex = -1
-    for (const pattern of patterns) {
-      const match = fullContent.match(pattern)
-      if (match && match.index !== undefined) {
-        startIndex = match.index
-        console.log(`✅ Found section "${sectionName}" with pattern`)
-        break
-      }
-    }
+    let foundSectionName = ''
     
-    if (startIndex === -1) {
-      // Try to find with numbered format (e.g., "1. Sequence Diagrams", "2. Database Schema")
-      const numberedPattern = new RegExp(`^#+?\\s*\\d+\\.\\s*${escapeRegExp(sectionName)}`, 'mi')
-      const numberedMatch = fullContent.match(numberedPattern)
-      if (numberedMatch && numberedMatch.index !== undefined) {
-        startIndex = numberedMatch.index
-        console.log(`✅ Found section "${sectionName}" with numbered pattern`)
+    for (const pattern of patterns) {
+      const matches = fullContent.matchAll(pattern)
+      for (const match of matches) {
+        const headerText = match[1]?.trim() || ''
+        const normalizedHeader = headerText.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim()
+        
+        console.log(`🔍 Checking header: "${headerText}" -> normalized: "${normalizedHeader}"`)
+        
+        // Check if this header contains our section name
+        if (normalizedHeader.includes(normalizedSectionName) || normalizedSectionName.includes(normalizedHeader)) {
+          startIndex = match.index!
+          foundSectionName = headerText
+          console.log(`✅ Found section "${sectionName}" in header: "${foundSectionName}"`)
+          break
+        }
       }
+      if (startIndex !== -1) break
     }
     
     if (startIndex === -1) {
@@ -881,7 +1179,11 @@ export function SimpleDocumentGenerationModal({
       
       // Also look for the section name anywhere in headers
       const allHeaders = fullContent.match(/^#+.*$/gm) || []
-      const matchingHeaders = allHeaders.filter(h => h.toLowerCase().includes(sectionName.toLowerCase()))
+      const matchingHeaders = allHeaders.filter(h => {
+        const headerText = h.replace(/^#+\s*/, '').trim()
+        const normalizedHeader = headerText.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim()
+        return normalizedHeader.includes(normalizedSectionName) || normalizedSectionName.includes(normalizedHeader)
+      })
       if (matchingHeaders.length > 0) {
         console.log(`🔍 Headers containing "${sectionName}":`, matchingHeaders)
       }
@@ -902,7 +1204,10 @@ export function SimpleDocumentGenerationModal({
     const nextMatch = matches[1]
     const endIndex = nextMatch ? startIndex + nextMatch.index! : fullContent.length
     
-    return fullContent.substring(startIndex, endIndex).trim()
+    const extractedContent = fullContent.substring(startIndex, endIndex).trim()
+    console.log(`📄 Extracted ${extractedContent.length} characters for section "${sectionName}"`)
+    
+    return extractedContent
   }
   
   // Helper function to escape special regex characters
@@ -1047,9 +1352,9 @@ export function SimpleDocumentGenerationModal({
     
     // Show ExpandableSectionViewer for section-based generation (during and after generation)
     // Keep showing the expandable viewer even after generation completes if sections were generated
-    if (sectionIds.length > 0 || (isGenerating && hasSelectedSections) || (hasGenerated && sectionIds.length > 0)) {
-      const currentSectionDetails = sectionDetailsMap[selectedType as keyof typeof sectionDetailsMap] || {}
-      
+    // Also show it when viewing previous docs that have sections
+    // But for mermaid documents, always use MermaidViewerEnhanced instead
+    if (selectedType !== 'mermaid' && (sectionIds.length > 0 || (isGenerating && hasSelectedSections) || (hasGenerated && sectionIds.length > 0) || (viewingPreviousDoc && sectionIds.length > 0))) {
       // Transform section progress into the format expected by ExpandableSectionViewer
       const sections = sectionIds.map(sectionId => {
         const status = sectionProgress[sectionId]
@@ -1090,9 +1395,24 @@ export function SimpleDocumentGenerationModal({
       )
     }
 
+    // Handle Mermaid diagrams - both during generation and when viewing saved docs
     if (selectedType === 'mermaid') {
+      // For section-based mermaid generation, combine all section content
+      let combinedMermaidContent = generatedContent || ''
+      
+      // If we have section progress, combine all sections
+      if (sectionIds.length > 0 && !isGenerating) {
+        const sectionsContent = sectionIds
+          .map(id => sectionProgress[id]?.content || '')
+          .filter(c => c.trim())
+          .join('\n\n')
+        if (sectionsContent) {
+          combinedMermaidContent = sectionsContent
+        }
+      }
+      
       // For Mermaid diagrams, only render after generation is complete to avoid syntax errors
-      if (isGenerating && sectionIds.length === 0) {
+      if (isGenerating && !combinedMermaidContent && !viewingPreviousDoc) {
         return (
           <div className="space-y-4">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -1118,9 +1438,11 @@ export function SimpleDocumentGenerationModal({
         )
       }
       
-      // Only parse and render when we have the complete content
-      if (generatedContent) {
-        const diagrams = parseMermaidDiagrams(generatedContent)
+      // Parse and render when we have content (either generated or viewing saved)
+      const mermaidContent = combinedMermaidContent || (viewingPreviousDoc && content) || content
+      if (mermaidContent) {
+        // Extract and fix diagrams properly with section awareness
+        const { diagrams, fixedContent } = extractAndFixMermaidDiagrams(mermaidContent)
         return (
           <div className="space-y-4">
             {Object.keys(diagrams).length > 0 ? (
@@ -1129,22 +1451,15 @@ export function SimpleDocumentGenerationModal({
                   ✅ Found {Object.keys(diagrams).length} diagrams. Rendering...
                 </div>
                 {/* Check if any diagrams were fixed */}
-                {(() => {
-                  const { diagrams: originalParsed, fixedContent: fixed } = extractAndFixMermaidDiagrams(generatedContent)
-                  if (fixed !== generatedContent) {
-                    const fixedCount = Object.keys(originalParsed).length
-                    return (
-                      <div className="mb-4 p-2 bg-blue-50 text-blue-800 rounded text-sm flex items-center gap-2">
-                        <span>🔧</span>
-                        <span>Fixed {fixedCount} diagram{fixedCount > 1 ? 's' : ''} with syntax issues</span>
-                      </div>
-                    )
-                  }
-                  return null
-                })()}
+                {fixedContent !== mermaidContent && (
+                  <div className="mb-4 p-2 bg-blue-50 text-blue-800 rounded text-sm flex items-center gap-2">
+                    <span>🔧</span>
+                    <span>Fixed {Object.keys(diagrams).length} diagram{Object.keys(diagrams).length > 1 ? 's' : ''} with syntax issues</span>
+                  </div>
+                )}
                 <MermaidViewerEnhanced 
                   diagrams={diagrams} 
-                  title="Architecture Diagrams"
+                  title={selectedDoc?.name || "Architecture Diagrams"}
                 />
               </>
             ) : (
@@ -1157,7 +1472,7 @@ export function SimpleDocumentGenerationModal({
                 </div>
                 <div className="prose prose-sm max-w-none">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {generatedContent}
+                    {mermaidContent}
                   </ReactMarkdown>
                 </div>
               </>
@@ -1174,35 +1489,32 @@ export function SimpleDocumentGenerationModal({
       )
     }
 
-    // Check if content contains Mermaid diagrams
-    const mermaidDiagrams = parseMermaidDiagrams(content || '')
-    if (Object.keys(mermaidDiagrams).length > 0) {
-      return (
-        <MermaidViewerEnhanced 
-          diagrams={mermaidDiagrams}
-          title={selectedDoc?.name || 'Document'}
-        />
-      )
+    // Only check for Mermaid diagrams in non-mermaid document types if they have explicit mermaid blocks
+    // This prevents false positives in regular text documents
+    if (selectedType !== 'mermaid') {
+      // Only render as Mermaid if there are explicit ```mermaid blocks
+      if (content && content.includes('```mermaid')) {
+        const mermaidDiagrams = parseMermaidDiagramsWithSections(content)
+        if (Object.keys(mermaidDiagrams).length > 0) {
+          return (
+            <MermaidViewerEnhanced 
+              diagrams={mermaidDiagrams}
+              title={selectedDoc?.name || 'Document'}
+            />
+          )
+        }
+      }
     }
 
     return (
-      <div className="prose prose-sm max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-strong:text-gray-900 prose-ul:text-gray-700 prose-ol:text-gray-700">
-        <ReactMarkdown 
-          remarkPlugins={[remarkGfm]}
-          components={{
-            h1: ({children}) => <h1 className="text-lg sm:text-2xl font-bold mt-4 sm:mt-6 mb-2 sm:mb-4">{children}</h1>,
-            h2: ({children}) => <h2 className="text-base sm:text-xl font-semibold mt-3 sm:mt-5 mb-2 sm:mb-3">{children}</h2>,
-            h3: ({children}) => <h3 className="text-sm sm:text-lg font-medium mt-2 sm:mt-4 mb-1 sm:mb-2">{children}</h3>,
-            ul: ({children}) => <ul className="list-disc pl-4 sm:pl-5 space-y-0.5 sm:space-y-1 text-xs sm:text-base">{children}</ul>,
-            ol: ({children}) => <ol className="list-decimal pl-4 sm:pl-5 space-y-0.5 sm:space-y-1 text-xs sm:text-base">{children}</ol>,
-            li: ({children}) => <li className="text-gray-700">{children}</li>,
-            p: ({children}) => <p className="mb-2 sm:mb-3 leading-relaxed text-xs sm:text-base">{children}</p>,
-            strong: ({children}) => <strong className="font-semibold text-gray-900">{children}</strong>,
-          }}
-        >
-          {content || (isGenerating ? "" : "Click generate to create your document")}
-        </ReactMarkdown>
-      </div>
+      <EnhancedDocumentRenderer
+        content={content || (isGenerating ? "" : "Click generate to create your document")}
+        title={selectedDoc?.name}
+        documentType={selectedType}
+        showActions={false}
+        onCopy={handleCopy}
+        onDownload={handleDownload}
+      />
     )
   }
 
@@ -1235,7 +1547,9 @@ export function SimpleDocumentGenerationModal({
         <DialogHeader className="flex-shrink-0 px-3 sm:px-6 py-2 sm:py-4 border-b sm:border-b">
           <div className="sm:hidden flex items-center justify-between">
             {/* Mobile: Just title and close in header */}
-            <DialogTitle className="text-sm font-medium">SDLC Docs</DialogTitle>
+            <DialogTitle className="text-sm font-medium">
+              {viewingPreviousDoc && selectedDoc ? selectedDoc.name : 'SDLC Docs'}
+            </DialogTitle>
             <div className="flex items-center gap-2">
               {rateLimitStatus && (
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">
@@ -1247,9 +1561,17 @@ export function SimpleDocumentGenerationModal({
           {/* Desktop: Full header */}
           <div className="hidden sm:flex items-center justify-between">
             <div>
-              <DialogTitle className="text-lg">SDLC Documentation</DialogTitle>
+              <DialogTitle className="text-lg">
+                {viewingPreviousDoc && selectedDoc ? 
+                  `${selectedDoc.name} - ${input ? input.substring(0, 50) + (input.length > 50 ? '...' : '') : 'SDLC Document'}` : 
+                  'SDLC Documentation'
+                }
+              </DialogTitle>
               <DialogDescription className="text-sm">
-                Choose a document type to generate. Non-logged-in users can generate up to 10 documents.
+                {viewingPreviousDoc ? 
+                  'Viewing saved document' : 
+                  'Choose a document type to generate. Non-logged-in users can generate up to 10 documents.'
+                }
               </DialogDescription>
             </div>
             {rateLimitStatus && (
@@ -1296,8 +1618,13 @@ export function SimpleDocumentGenerationModal({
           <div className="flex-shrink-0">
             <Tabs value={selectedType} onValueChange={(value) => {
               if (!isGenerating) {
-                console.log('Tab changed to:', value)
+                console.log('🔄 Tab onValueChange called with:', value)
+                console.log('📌 Current selectedType before change:', selectedType)
                 setSelectedType(value)
+                // Save the selected type to localStorage immediately when changed
+                localStorage.setItem('selectedDocType', value)
+                console.log('✅ selectedType set to:', value)
+                console.log('💾 Saved to localStorage:', value)
                 // Only reset section progress if we don't have sections stored for this type
                 // Check if we have section metadata for this document type
                 const sectionMetadataKey = `sdlc_section_metadata_${value}`
@@ -1305,12 +1632,33 @@ export function SimpleDocumentGenerationModal({
                 
                 if (storedSectionData) {
                   // Restore section progress from stored data
-                  const sections = JSON.parse(storedSectionData)
-                  const restoredProgress: Record<string, any> = {}
-                  sections.forEach((sectionId: string) => {
-                    restoredProgress[sectionId] = { status: 'completed', content: '' }
-                  })
-                  setSectionProgress(restoredProgress)
+                  try {
+                    const sections = JSON.parse(storedSectionData)
+                    const restoredProgress: Record<string, any> = {}
+                    
+                    // Check if sections is an array, if not, try to handle it appropriately
+                    if (Array.isArray(sections)) {
+                      sections.forEach((sectionId: string) => {
+                        restoredProgress[sectionId] = { status: 'completed', content: '' }
+                      })
+                    } else if (typeof sections === 'object' && sections !== null) {
+                      // If it's an object, use its keys
+                      Object.keys(sections).forEach((sectionId: string) => {
+                        restoredProgress[sectionId] = { status: 'completed', content: '' }
+                      })
+                    } else {
+                      // If it's neither array nor object, reset progress
+                      console.warn('Unexpected sections data format:', sections)
+                      setSectionProgress({})
+                    }
+                    
+                    if (Object.keys(restoredProgress).length > 0) {
+                      setSectionProgress(restoredProgress)
+                    }
+                  } catch (error) {
+                    console.error('Error parsing stored section data:', error)
+                    setSectionProgress({})
+                  }
                 } else {
                   // Only reset if no sections stored
                   setSectionProgress({})
@@ -1333,7 +1681,11 @@ export function SimpleDocumentGenerationModal({
             }}>
               {/* Mobile: Horizontal scrollable tabs */}
               <TabsList className="sm:hidden flex w-full h-auto overflow-x-auto scrollbar-hide bg-gray-50 p-1 rounded-lg">
-                {documentTypes.map((doc) => {
+                {/* Filter document types - show only those with content when viewing, show all when generating */}
+                {(showPreviousDocs && !isGenerating ? 
+                  documentTypes.filter(doc => previousDocuments[doc.id]) : 
+                  documentTypes
+                ).map((doc) => {
                   // Get the appropriate sections for each document type
                   let sections: any = {}
                   let selectedSections: string[] = []
@@ -1364,6 +1716,21 @@ export function SimpleDocumentGenerationModal({
                       sections = functionalSpecSections
                       selectedSections = selectedFunctionalSections
                       onSectionsChange = setSelectedFunctionalSections
+                      break
+                    case 'test':
+                      sections = testSpecSections
+                      selectedSections = selectedTestSections
+                      onSectionsChange = setSelectedTestSections
+                      break
+                    case 'coding':
+                      sections = codingPromptSections
+                      selectedSections = selectedCodingSections
+                      onSectionsChange = setSelectedCodingSections
+                      break
+                    case 'meeting':
+                      sections = meetingTranscriptSections
+                      selectedSections = selectedMeetingSections
+                      onSectionsChange = setSelectedMeetingSections
                       break
                   }
                   
@@ -1376,7 +1743,11 @@ export function SimpleDocumentGenerationModal({
                         color={doc.color}
                         isSelected={selectedType === doc.id}
                         isDisabled={isGenerating}
-                        onClick={() => setSelectedType(doc.id)}
+                        onClick={() => {
+                          // The TabsTrigger inside DocumentTabButton will handle the tab switching
+                          // through the Tabs component's onValueChange, so we don't need to do anything here
+                          console.log('🖱️ DocumentTabButton onClick for:', doc.id, '(handled by Tabs component)')
+                        }}
                         selectedSections={selectedSections}
                         onSectionsChange={onSectionsChange}
                         hasPreviousDocument={!!previousDocuments[doc.id]}
@@ -1386,9 +1757,13 @@ export function SimpleDocumentGenerationModal({
                   )
                 })}
               </TabsList>
-              {/* Desktop: Grid tabs */}
-              <TabsList className="hidden sm:flex items-center justify-center gap-1 w-full h-auto p-1 bg-gray-100 rounded-lg">
-                {documentTypes.map((doc) => {
+              {/* Desktop: Scrollable tabs */}
+              <TabsList className="hidden sm:flex items-center justify-start gap-1 w-full h-auto p-1 bg-gray-100 rounded-lg overflow-x-auto tabs-scrollbar">
+                {/* Filter document types - show only those with content when viewing, show all when generating */}
+                {(showPreviousDocs && !isGenerating ? 
+                  documentTypes.filter(doc => previousDocuments[doc.id]) : 
+                  documentTypes
+                ).map((doc) => {
                   // Get the appropriate sections for each document type
                   let sections: any = {}
                   let selectedSections: string[] = []
@@ -1420,30 +1795,64 @@ export function SimpleDocumentGenerationModal({
                       selectedSections = selectedFunctionalSections
                       onSectionsChange = setSelectedFunctionalSections
                       break
+                    case 'test':
+                      sections = testSpecSections
+                      selectedSections = selectedTestSections
+                      onSectionsChange = setSelectedTestSections
+                      break
+                    case 'coding':
+                      sections = codingPromptSections
+                      selectedSections = selectedCodingSections
+                      onSectionsChange = setSelectedCodingSections
+                      break
+                    case 'meeting':
+                      sections = meetingTranscriptSections
+                      selectedSections = selectedMeetingSections
+                      onSectionsChange = setSelectedMeetingSections
+                      break
                   }
                   
                   // Use DocumentTabButton for all document types with sections
                   return (
-                    <DocumentTabButton
-                      key={doc.id}
-                      documentType={doc.id}
-                      documentName={doc.name}
-                      icon={doc.icon}
-                      color={doc.color}
-                      isSelected={selectedType === doc.id}
-                      isDisabled={isGenerating}
-                      onClick={() => setSelectedType(doc.id)}
-                      selectedSections={selectedSections}
-                      onSectionsChange={onSectionsChange}
-                      hasPreviousDocument={!!previousDocuments[doc.id]}
-                      sections={sections}
-                    />
+                    <div key={doc.id} className="flex-shrink-0">
+                      <DocumentTabButton
+                        documentType={doc.id}
+                        documentName={doc.name}
+                        icon={doc.icon}
+                        color={doc.color}
+                        isSelected={selectedType === doc.id}
+                        isDisabled={isGenerating}
+                        onClick={() => {
+                          // The TabsTrigger inside DocumentTabButton will handle the tab switching
+                          // through the Tabs component's onValueChange, so we don't need to do anything here
+                          console.log('🖱️ DocumentTabButton onClick for:', doc.id, '(handled by Tabs component)')
+                        }}
+                        selectedSections={selectedSections}
+                        onSectionsChange={onSectionsChange}
+                        hasPreviousDocument={!!previousDocuments[doc.id]}
+                        sections={sections}
+                      />
+                    </div>
                   )
                 })}
               </TabsList>
             </Tabs>
 
           </div>
+
+          {/* Progress Indicator for Section Generation */}
+          {isGenerating && currentSections.length > 0 && (
+            <div className="flex-shrink-0">
+              <SectionGenerationProgress
+                documentType={selectedType}
+                sections={currentSections}
+                sectionDetails={currentSectionDetails}
+                isGenerating={isGenerating}
+                currentSectionIndex={currentSections.findIndex(id => id === currentGeneratingSection)}
+                sectionProgress={sectionProgress}
+              />
+            </div>
+          )}
 
           {/* Terminal-like Streaming Preview - Only show when NOT generating sections */}
           {isGenerating && currentSections.length === 0 && (
@@ -1490,17 +1899,33 @@ export function SimpleDocumentGenerationModal({
 
           {/* Generated Content - Full screen on mobile */}
           <div className="flex-1 overflow-y-auto bg-white border border-gray-200 rounded-lg p-3 sm:p-6">
-            {viewingPreviousDoc && !isGenerating && (
-              <div className="mb-2 sm:mb-4 p-1.5 sm:p-3 bg-green-50 border border-green-200 rounded-md sm:rounded-lg flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1 sm:gap-2">
-                  <Check className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
-                  <span className="text-[10px] sm:text-sm text-green-800 font-medium">Saved</span>
-                  {hasSectionsSelected(selectedType) && (
-                    <Badge variant="secondary" className="ml-2 text-[10px] sm:text-xs">
-                      {getSectionCount(selectedType)} sections
-                    </Badge>
-                  )}
+            {/* Document Header for viewing */}
+            {viewingPreviousDoc && selectedDoc && !isGenerating && (
+              <>
+                {/* Document Type Header */}
+                <div className="mb-4 pb-4 border-b border-gray-200">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg bg-gray-100`}>
+                      <Icon className={`h-5 w-5 ${selectedDoc.color}`} />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-semibold text-gray-900">{selectedDoc.name}</h2>
+                      <p className="text-sm text-gray-500 mt-0.5">{selectedDoc.description}</p>
+                    </div>
+                  </div>
                 </div>
+                
+                {/* Save Status Bar */}
+                <div className="mb-2 sm:mb-4 p-1.5 sm:p-3 bg-green-50 border border-green-200 rounded-md sm:rounded-lg flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <Check className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
+                    <span className="text-[10px] sm:text-sm text-green-800 font-medium">Saved</span>
+                    {hasSectionsSelected(selectedType) && (
+                      <Badge variant="secondary" className="ml-2 text-[10px] sm:text-xs">
+                        {getSectionCount(selectedType)} sections
+                      </Badge>
+                    )}
+                  </div>
                 {rateLimitStatus && rateLimitStatus.remaining > 0 && (
                   <Button
                     size="sm"
@@ -1519,7 +1944,8 @@ export function SimpleDocumentGenerationModal({
                     Regenerate
                   </Button>
                 )}
-              </div>
+                </div>
+              </>
             )}
             
             {/* Show default prompt info when no sections selected */}
@@ -1546,6 +1972,75 @@ export function SimpleDocumentGenerationModal({
                   <div>
                     <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-1 sm:mb-2">Ready to Generate {selectedDoc?.name}</h3>
                     <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">Click the button below to create your document</p>
+                    
+                    {/* Show selected sections if any */}
+                    {(() => {
+                      let currentSections: string[] = []
+                      let sectionDetails: any = {}
+                      
+                      switch(selectedType) {
+                        case 'business':
+                          currentSections = selectedBusinessSections
+                          sectionDetails = businessAnalysisSections
+                          break
+                        case 'technical':
+                          currentSections = selectedTechSpecSections
+                          sectionDetails = techSpecSections
+                          break
+                        case 'functional':
+                          currentSections = selectedFunctionalSections
+                          sectionDetails = functionalSpecSections
+                          break
+                        case 'ux':
+                          currentSections = selectedUXSections
+                          sectionDetails = uxDesignSections
+                          break
+                        case 'mermaid':
+                          currentSections = selectedArchitectureSections
+                          sectionDetails = architectureSections
+                          break
+                        case 'test':
+                          currentSections = selectedTestSections
+                          sectionDetails = testSpecSections
+                          break
+                        case 'coding':
+                          currentSections = selectedCodingSections
+                          sectionDetails = codingPromptSections
+                          break
+                        case 'meeting':
+                          currentSections = selectedMeetingSections
+                          sectionDetails = meetingTranscriptSections
+                          break
+                      }
+                      
+                      // Debug logging
+                      console.log('🔍 Checking sections for display:', {
+                        selectedType,
+                        currentSections,
+                        sectionDetails: Object.keys(sectionDetails),
+                        hasContent: currentSections.length > 0
+                      })
+                      
+                      if (currentSections.length > 0) {
+                        return (
+                          <div className="mt-4 p-3 bg-indigo-50 rounded-lg text-left max-w-md mx-auto">
+                            <p className="text-xs font-semibold text-indigo-900 mb-2">Selected sections ({currentSections.length}):</p>
+                            <div className="space-y-1">
+                              {currentSections.map((sectionId, index) => {
+                                const section = sectionDetails[sectionId]
+                                return section ? (
+                                  <div key={sectionId} className="flex items-center gap-2 text-xs text-indigo-700">
+                                    <span className="text-indigo-500">{section.icon || '•'}</span>
+                                    <span>{section.name}</span>
+                                  </div>
+                                ) : null
+                              })}
+                            </div>
+                          </div>
+                        )
+                      }
+                      return null
+                    })()}
                     {rateLimitStatus && rateLimitStatus.remaining > 0 ? (
                       <Button
                         onClick={handleGenerate}

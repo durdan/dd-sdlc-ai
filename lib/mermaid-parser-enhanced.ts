@@ -35,6 +35,20 @@ export function fixMermaidSyntaxEnhanced(diagramContent: string): string {
   // Remove excessive whitespace at line ends
   fixed = fixed.replace(/[ \t]+$/gm, '')
   
+  // Remove malformed text patterns that break Mermaid parsing
+  // Fix patterns like "requirements.**Rete" -> "requirements"
+  fixed = fixed.replace(/\*\*[A-Za-z]+/g, '')
+  
+  // Remove any lines that start with invalid characters
+  fixed = fixed.replace(/^[^a-zA-Z0-9\s\[\]{}()<>"':;.,=\-\+*\/\\|&%$#@!~`]+.*$/gm, '')
+  
+  // Remove any lines that contain only special characters
+  fixed = fixed.replace(/^[^a-zA-Z0-9\s]+$/gm, '')
+  
+  // Clean up any remaining malformed patterns
+  fixed = fixed.replace(/\*\*[^\s]*/g, '')
+  fixed = fixed.replace(/[^\w\s\[\]{}()<>"':;.,=\-\+*\/\\|&%$#@!~`-]/g, ' ')
+  
   // Step 2: Detect diagram type and apply specific fixes
   const diagramType = detectDiagramType(fixed)
   
@@ -771,18 +785,124 @@ function splitConcatenatedDiagrams(content: string): string[] {
 export function hasDiagramContent(content: string): boolean {
   if (!content || content.trim() === '') return false
   
-  // Check for Mermaid diagram keywords
-  const hasMermaidSyntax = MERMAID_DIAGRAM_TYPES.some(keyword => 
-    new RegExp(`^\\s*${keyword}\\s`, 'im').test(content)
-  )
-  
-  // Check for code blocks that might contain diagrams
+  // Check for code blocks that might contain diagrams (most reliable)
   const hasCodeBlocks = /```(?:mermaid)?[\s\S]*?```/g.test(content)
+  if (hasCodeBlocks) return true
   
-  return hasMermaidSyntax || hasCodeBlocks
+  // Check for Mermaid diagram keywords
+  const hasMermaidSyntax = MERMAID_DIAGRAM_TYPES.some(keyword => {
+    const regex = new RegExp(`\\b${keyword}\\b`, 'im')
+    return regex.test(content)
+  })
+  
+  return hasMermaidSyntax
 }
 
 // Re-export the enhanced function as the main one
 export const fixMermaidSyntax = fixMermaidSyntaxEnhanced
 export const validateMermaidDiagram = validateMermaidDiagramEnhanced
 export const parseMermaidDiagrams = parseAndFixDiagrams
+
+/**
+ * Parse Mermaid diagrams with section awareness
+ * This version respects document structure and sections
+ */
+export function parseMermaidDiagramsWithSections(content: string): ParsedDiagrams {
+  if (!content) return {}
+
+  const diagrams: ParsedDiagrams = {}
+  
+  // First, check for markdown code blocks (most reliable)
+  if (content.includes('```mermaid')) {
+    const mermaidRegex = /```mermaid\n([\s\S]*?)```/g
+    let match
+    let index = 1
+
+    while ((match = mermaidRegex.exec(content)) !== null) {
+      let diagramContent = match[1].trim()
+      
+      if (diagramContent && diagramContent.length > 10) {
+        // Apply fixes
+        diagramContent = fixMermaidSyntaxEnhanced(diagramContent)
+        diagrams[`diagram${index}`] = diagramContent
+        index++
+      }
+    }
+    
+    // If we found diagrams in code blocks, return them
+    if (Object.keys(diagrams).length > 0) {
+      return diagrams
+    }
+  }
+  
+  // Also check for regular code blocks that might contain diagrams
+  if (content.includes('```')) {
+    const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g
+    let match
+    let index = 1
+
+    while ((match = codeBlockRegex.exec(content)) !== null) {
+      const language = match[1] || ''
+      const codeContent = match[2].trim()
+      
+      // Check if this looks like a diagram
+      if (codeContent && codeContent.length > 10 && 
+          (language === 'mermaid' || 
+           codeContent.includes('graph') || 
+           codeContent.includes('flowchart') ||
+           codeContent.includes('-->') ||
+           codeContent.includes('->'))) {
+        
+        let diagramContent = codeContent
+        if (language !== 'mermaid') {
+          // Add mermaid language spec if missing
+          diagramContent = `graph TD\n${codeContent}`
+        }
+        
+        // Apply fixes
+        diagramContent = fixMermaidSyntaxEnhanced(diagramContent)
+        diagrams[`diagram${index}`] = diagramContent
+        index++
+      }
+    }
+  }
+  
+  return diagrams
+}
+
+
+
+/**
+ * Extract and fix all Mermaid diagrams from content
+ * Returns both the parsed diagrams and the content with fixed diagrams
+ */
+export function extractAndFixMermaidDiagrams(content: string): {
+  diagrams: ParsedDiagrams
+  fixedContent: string
+} {
+  const diagrams = parseMermaidDiagramsWithSections(content)
+  
+  if (Object.keys(diagrams).length === 0) {
+    return { diagrams: {}, fixedContent: content }
+  }
+
+  // If content has markdown blocks, replace them with fixed diagrams
+  if (content.includes('```mermaid')) {
+    let fixedContent = content
+    let diagramIndex = 0
+    
+    fixedContent = fixedContent.replace(/```mermaid\n([\s\S]*?)```/g, (match, diagramContent) => {
+      diagramIndex++
+      const fixedDiagram = diagrams[`diagram${diagramIndex}`]
+      if (fixedDiagram) {
+        return `\`\`\`mermaid\n${fixedDiagram}\n\`\`\``
+      }
+      return match
+    })
+    
+    return { diagrams, fixedContent }
+  }
+
+  // For raw content, return as is (diagrams are already fixed in the parsed result)
+  return { diagrams, fixedContent: content }
+}

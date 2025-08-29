@@ -9,7 +9,8 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { cn } from '@/lib/utils'
 import { MermaidViewerEnhanced } from '@/components/mermaid-viewer-enhanced'
-import { parseMermaidDiagrams } from '@/lib/mermaid-parser-simple-fix'
+import { parseMermaidDiagramsWithSections } from '@/lib/mermaid-parser-enhanced'
+import { EnhancedDocumentRenderer } from '@/components/enhanced-document-renderer'
 
 interface SectionData {
   id: string
@@ -376,11 +377,13 @@ export function ExpandableSectionViewer({
                               />
                             ) : (
                               // Render as markdown with light theme
-                              <div className="prose prose-sm max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-strong:text-gray-900 prose-ul:text-gray-700 prose-ol:text-gray-700 prose-code:bg-gray-100 prose-code:text-gray-800 prose-pre:bg-gray-100">
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                  {displayContent}
-                                </ReactMarkdown>
-                              </div>
+                              <EnhancedDocumentRenderer
+                                content={displayContent}
+                                title={section.name}
+                                documentType={documentType}
+                                showActions={false}
+                                className="prose prose-sm max-w-none"
+                              />
                             )}
                           </div>
                         )
@@ -437,37 +440,21 @@ export function ExpandableSectionViewer({
                       </div>
                       
                       {/* Content Display */}
-                      {(() => {
-                        // Check if content contains Mermaid diagrams (only once)
-                        const mermaidDiagrams = parseMermaidDiagrams(displayContent)
-                        const hasDiagrams = Object.keys(mermaidDiagrams).length > 0
-                        
-                        return (
-                          <div 
-                            ref={el => contentRefs.current[section.id] = el}
-                            className={cn(
-                              "rounded-lg border p-4 overflow-y-auto",
-                              // Use dark theme only for diagrams, light theme for text content
-                              hasDiagrams ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200",
-                              isFullScreen ? "max-h-[calc(100vh-200px)]" : "max-h-96"
-                            )}
-                          >
-                            {hasDiagrams ? (
-                              <MermaidViewerEnhanced 
-                                diagrams={mermaidDiagrams}
-                                title={section.name}
-                              />
-                            ) : (
-                              // Render as markdown with light theme
-                              <div className="prose prose-sm max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-strong:text-gray-900 prose-ul:text-gray-700 prose-ol:text-gray-700 prose-code:bg-gray-100 prose-code:text-gray-800 prose-pre:bg-gray-100">
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                  {displayContent}
-                                </ReactMarkdown>
-                              </div>
-                            )}
-                          </div>
-                        )
-                      })()}
+                      <div 
+                        ref={el => contentRefs.current[section.id] = el}
+                        className={cn(
+                          "rounded-lg border p-4 overflow-y-auto bg-white border-gray-200",
+                          isFullScreen ? "max-h-[calc(100vh-200px)]" : "max-h-96"
+                        )}
+                      >
+                        <EnhancedDocumentRenderer
+                          content={displayContent}
+                          title={section.name}
+                          documentType={documentType}
+                          showActions={false}
+                          className="prose prose-sm max-w-none"
+                        />
+                      </div>
                     </div>
                   )}
                   

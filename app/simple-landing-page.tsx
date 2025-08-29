@@ -42,7 +42,7 @@ import { Clock } from "lucide-react"
 import { CodeAssistantMenu } from '@/components/code-assistant-menu'
 import { ViewDocsMenu } from '@/components/view-docs-menu'
 import { MobileTooltip } from '@/components/ui/mobile-tooltip'
-import { DocumentButtonWithSections } from '@/components/document-button-with-sections'
+import { DocumentSelectionImproved } from '@/components/document-selection-improved'
 import {
   Tooltip,
   TooltipContent,
@@ -611,7 +611,7 @@ export default function SimpleLandingPage() {
             {features.map((feature, index) => {
               const hasDocument = previousDocuments[feature.docType]
               return (
-                <DocumentButtonWithSections
+                <DocumentSelectionImproved
                   key={index}
                   icon={feature.icon}
                   label={feature.title}
