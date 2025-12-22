@@ -1,0 +1,18 @@
+# robots.txt for SDLC.dev
+# https://sdlc.dev
+
+User-agent: *
+Allow: /
+
+# Disallow admin and API routes
+Disallow: /api/
+Disallow: /admin/
+Disallow: /auth/
+Disallow: /signin
+Disallow: /project/
+
+# Allow specific public API docs
+Allow: /api/docs
+
+# Sitemap location
+Sitemap: https://sdlc.dev/sitemap.xml
