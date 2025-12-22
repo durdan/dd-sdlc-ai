@@ -824,6 +824,99 @@ export default function SimpleLandingPage() {
           </div>
         </main>
 
+        {/* How It Works Section */}
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/20 border border-cyan-500/30 mb-4">
+              <Zap className="w-3 h-3 text-cyan-400" />
+              <span className="text-cyan-400 text-sm font-medium">Simple Process</span>
+            </div>
+            <h2 className="text-xl md:text-2xl font-bold">
+              <span className="bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">
+                How It Works
+              </span>
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
+            {/* Step 1 */}
+            <div className="relative">
+              <GlassCard className="p-5 text-center h-full">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center mx-auto mb-3 text-lg font-bold">
+                  1
+                </div>
+                <h3 className="font-semibold text-white text-sm mb-1">Describe or Analyze</h3>
+                <p className="text-white/50 text-xs">
+                  Enter your project idea or paste a GitHub repo URL
+                </p>
+              </GlassCard>
+              <div className="hidden md:block absolute top-1/2 -right-2 w-4 h-0.5 bg-gradient-to-r from-white/20 to-transparent" />
+            </div>
+
+            {/* Step 2 */}
+            <div className="relative">
+              <GlassCard className="p-5 text-center h-full">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-3 text-lg font-bold">
+                  2
+                </div>
+                <h3 className="font-semibold text-white text-sm mb-1">AI Generates Specs</h3>
+                <p className="text-white/50 text-xs">
+                  Get technical specs, architecture diagrams, and docs
+                </p>
+              </GlassCard>
+              <div className="hidden md:block absolute top-1/2 -right-2 w-4 h-0.5 bg-gradient-to-r from-white/20 to-transparent" />
+            </div>
+
+            {/* Step 3 */}
+            <div>
+              <GlassCard className="p-5 text-center h-full">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center mx-auto mb-3 text-lg font-bold">
+                  3
+                </div>
+                <h3 className="font-semibold text-white text-sm mb-1">Build & Ship</h3>
+                <p className="text-white/50 text-xs">
+                  Export to JIRA, GitHub, or use specs to guide development
+                </p>
+              </GlassCard>
+            </div>
+          </div>
+        </section>
+
+        {/* What You Get Section */}
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/30 mb-4">
+              <FileText className="w-3 h-3 text-purple-400" />
+              <span className="text-purple-400 text-sm font-medium">Output</span>
+            </div>
+            <h2 className="text-xl md:text-2xl font-bold mb-2">
+              <span className="bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">
+                What You Get
+              </span>
+            </h2>
+            <p className="text-white/50 text-sm max-w-lg mx-auto">
+              Comprehensive documentation generated in seconds, not hours
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+            {[
+              { icon: FileText, title: 'Business Analysis', desc: 'Goals, metrics & stakeholders', gradient: 'from-blue-500 to-cyan-500' },
+              { icon: Code, title: 'Technical Specs', desc: 'API, data models & tech stack', gradient: 'from-purple-500 to-pink-500' },
+              { icon: Layers, title: 'Architecture', desc: 'System diagrams & data flow', gradient: 'from-orange-500 to-amber-500' },
+              { icon: GitBranch, title: 'AI Prompts', desc: 'Ready for Cursor & Copilot', gradient: 'from-green-500 to-emerald-500' },
+            ].map((item, index) => (
+              <GlassCard key={index} className="p-4 text-center">
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${item.gradient} flex items-center justify-center mx-auto mb-3`}>
+                  <item.icon className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="font-semibold text-white text-sm mb-1">{item.title}</h3>
+                <p className="text-white/50 text-xs">{item.desc}</p>
+              </GlassCard>
+            ))}
+          </div>
+        </section>
+
         {/* Tech Stacks Section */}
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center mb-10">

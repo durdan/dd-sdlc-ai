@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { RepoUrlInput, ProgressIndicator, SpecViewer } from '@/components/analyzer';
 import { AnalysisStep, GeneratedSpec, AnalyzeErrorCode, ERROR_MESSAGES } from '@/types/analyzer';
-import { Sparkles, Github, Zap, FileText, Share2, ArrowRight } from 'lucide-react';
+import { Sparkles, Github, Zap, FileText, Share2, ArrowRight, Loader2 } from 'lucide-react';
 
 type AnalysisStatus = 'idle' | 'analyzing' | 'complete' | 'error';
 
@@ -51,7 +51,29 @@ function FloatingOrb({ className, delay = 0 }: { className: string; delay?: numb
   );
 }
 
+// Loading fallback component
+function AnalyzePageLoading() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950">
+      <div className="text-center">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto mb-4" />
+        <p className="text-slate-600 dark:text-slate-400">Loading analyzer...</p>
+      </div>
+    </div>
+  );
+}
+
+// Main page wrapper with Suspense
 export default function AnalyzePage() {
+  return (
+    <Suspense fallback={<AnalyzePageLoading />}>
+      <AnalyzePageContent />
+    </Suspense>
+  );
+}
+
+// Actual page content that uses useSearchParams
+function AnalyzePageContent() {
   const searchParams = useSearchParams();
   const [repoUrl, setRepoUrl] = useState('');
   const [status, setStatus] = useState<AnalysisStatus>('idle');

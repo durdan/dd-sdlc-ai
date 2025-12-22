@@ -28,7 +28,6 @@ import {
   Layers,
   Globe,
   Terminal,
-  Play,
   Building2,
   Users,
   TrendingUp,
@@ -251,7 +250,7 @@ export default function GlassLandingPage() {
                   Tech Stacks
                 </Link>
                 <Link href="#demo" className="text-white/60 hover:text-white transition-colors">
-                  Demo
+                  Output
                 </Link>
                 <Link href="#integrations" className="text-white/60 hover:text-white transition-colors">
                   Integrations
@@ -440,6 +439,63 @@ export default function GlassLandingPage() {
             </div>
           </section>
 
+          {/* How It Works Section */}
+          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div className="text-center mb-12">
+              <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 mb-4">
+                Simple Process
+              </Badge>
+              <h2 className="text-2xl md:text-3xl font-bold mb-4">
+                <span className="bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">
+                  How It Works
+                </span>
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+              {/* Step 1 */}
+              <div className="relative">
+                <GlassCard className="p-6 text-center h-full">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+                    1
+                  </div>
+                  <h3 className="font-semibold text-white mb-2">Describe or Analyze</h3>
+                  <p className="text-white/50 text-sm">
+                    Enter your project idea or paste a GitHub repo URL to get started
+                  </p>
+                </GlassCard>
+                <div className="hidden md:block absolute top-1/2 -right-3 w-6 h-0.5 bg-gradient-to-r from-white/20 to-transparent" />
+              </div>
+
+              {/* Step 2 */}
+              <div className="relative">
+                <GlassCard className="p-6 text-center h-full">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+                    2
+                  </div>
+                  <h3 className="font-semibold text-white mb-2">AI Generates Specs</h3>
+                  <p className="text-white/50 text-sm">
+                    Get comprehensive technical specs, architecture diagrams, and documentation
+                  </p>
+                </GlassCard>
+                <div className="hidden md:block absolute top-1/2 -right-3 w-6 h-0.5 bg-gradient-to-r from-white/20 to-transparent" />
+              </div>
+
+              {/* Step 3 */}
+              <div>
+                <GlassCard className="p-6 text-center h-full">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+                    3
+                  </div>
+                  <h3 className="font-semibold text-white mb-2">Build & Ship</h3>
+                  <p className="text-white/50 text-sm">
+                    Export to JIRA, create GitHub issues, or use specs to guide development
+                  </p>
+                </GlassCard>
+              </div>
+            </div>
+          </section>
+
           {/* Tech Stacks Section */}
           <section id="tech-stacks" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
             <div className="text-center mb-12">
@@ -558,7 +614,7 @@ export default function GlassLandingPage() {
                   className="border-white/20 text-white hover:bg-white/10 h-12 px-8 text-base"
                 >
                   <Database className="mr-2 w-5 h-5" />
-                  Explore All 11 Tech Stacks
+                  Explore All {companies.length} Tech Stacks
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
@@ -594,30 +650,56 @@ export default function GlassLandingPage() {
             </div>
           </section>
 
-          {/* Demo Section */}
+          {/* What You Get Section */}
           <section id="demo" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
             <div className="text-center mb-16">
-              <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 mb-4">Demo</Badge>
+              <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 mb-4">Output</Badge>
               <h2 className="text-3xl md:text-4xl font-bold mb-4">
                 <span className="bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">
-                  See It In Action
+                  What You Get
                 </span>
               </h2>
               <p className="text-white/50 max-w-2xl mx-auto">
-                Watch how SDLC.dev transforms your development workflow.
+                Comprehensive documentation generated in seconds, not hours.
               </p>
             </div>
 
-            <GlassCard className="aspect-video max-w-4xl mx-auto overflow-hidden" hover={false}>
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800">
-                <div className="text-center">
-                  <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-4 cursor-pointer hover:bg-white/20 transition-colors">
-                    <Play className="w-8 h-8 text-white ml-1" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
+              {[
+                {
+                  icon: FileText,
+                  title: 'Business Analysis',
+                  description: 'Problem statement, goals, success metrics, and stakeholder analysis',
+                  gradient: 'from-blue-500 to-cyan-500',
+                },
+                {
+                  icon: Code,
+                  title: 'Technical Specs',
+                  description: 'API design, data models, system requirements, and tech stack',
+                  gradient: 'from-purple-500 to-pink-500',
+                },
+                {
+                  icon: Layers,
+                  title: 'Architecture Diagrams',
+                  description: 'System overview, data flow, deployment, and service interactions',
+                  gradient: 'from-orange-500 to-amber-500',
+                },
+                {
+                  icon: Terminal,
+                  title: 'AI Coding Prompts',
+                  description: 'Ready-to-use prompts for Cursor, Copilot, or Claude',
+                  gradient: 'from-green-500 to-emerald-500',
+                },
+              ].map((item, index) => (
+                <GlassCard key={index} className="p-6">
+                  <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${item.gradient} flex items-center justify-center mb-4`}>
+                    <item.icon className="w-6 h-6 text-white" />
                   </div>
-                  <p className="text-white/50">Demo video coming soon</p>
-                </div>
-              </div>
-            </GlassCard>
+                  <h3 className="font-semibold text-white mb-2">{item.title}</h3>
+                  <p className="text-white/50 text-sm">{item.description}</p>
+                </GlassCard>
+              ))}
+            </div>
           </section>
 
           {/* Integrations Section */}
