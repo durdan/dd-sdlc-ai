@@ -11,6 +11,24 @@ npm run build      # Build for production
 npm run start      # Start production server
 npm run lint       # Run ESLint
 npm run type-check # Run TypeScript type checking
+npm run clean-install  # Remove node_modules and reinstall
+```
+
+### CLI Package (packages/cli)
+```bash
+cd packages/cli
+npm run build      # Build CLI for distribution
+npm run dev        # Watch mode for development
+npm run start      # Run the CLI locally
+npm link           # Link for local testing as `sdlc` command
+```
+
+### MCP Server (packages/mcp-server)
+```bash
+cd packages/mcp-server
+npm run build      # Build MCP server
+npm run dev        # Watch mode with tsx
+npm run setup      # Configure Claude Desktop integration
 ```
 
 ### Database Management
@@ -19,16 +37,21 @@ The project uses Supabase PostgreSQL. Run migrations in Supabase SQL editor:
 - Sample data: Execute files in `database/sample-data/`
 
 ### Testing
-Currently no test framework is configured. `npm test` returns "No tests configured yet".
+No test framework is configured for the main app. CLI and MCP packages have Jest configured but tests are minimal.
 
 ## Architecture Overview
 
-This is an AI-powered SDLC automation platform built with:
-- **Frontend**: Next.js 15 App Router, React 19, shadcn/ui components, Tailwind CSS
+This is an AI-powered SDLC automation platform with three distribution channels:
+- **Web App**: Next.js 15 App Router at [sdlc.dev](https://sdlc.dev)
+- **CLI Tool**: `npm install -g sdlc-ai` (packages/cli)
+- **MCP Server**: For Claude Desktop integration (packages/mcp-server)
+
+### Tech Stack
+- **Frontend**: Next.js 15 App Router, React 19, shadcn/ui, Tailwind CSS
 - **Backend**: Next.js API routes, Supabase (PostgreSQL with RLS)
 - **Authentication**: Supabase Auth with Google OAuth
 - **AI Services**: OpenAI GPT-4 and Anthropic Claude for document generation
-- **Key Integrations**: GitHub, JIRA, Confluence, Slack
+- **Integrations**: GitHub, JIRA, Confluence, Slack, ClickUp, Trello, Notion
 
 ### Core Services Architecture
 
@@ -48,11 +71,12 @@ This is an AI-powered SDLC automation platform built with:
    - User configurations and API key storage
    - Anonymous user support with session tracking
 
-4. **Integration Services**
-   - GitHub: Repository analysis, project creation (`lib/github-projects-service.ts`)
-   - JIRA: Epic/Story creation (`lib/jira-service.ts`)
-   - Slack: OAuth flow, notifications (`lib/slack-service-oauth.ts`)
-   - GitDigest: Repository analysis and reporting (`lib/gitdigest-*.ts`)
+4. **Integration Services** (all in `lib/`)
+   - GitHub: Repository analysis, project creation (`github-projects-service.ts`)
+   - JIRA: Epic/Story creation (`jira-service.ts`)
+   - Slack: OAuth flow, notifications (`slack-service-oauth.ts`)
+   - GitDigest: Repository analysis and reporting (`gitdigest-*.ts`)
+   - ClickUp, Trello, Notion: Additional PM tool integrations
 
 ### Key API Routes Pattern
 All API routes follow similar structure:
@@ -98,8 +122,18 @@ See `.env.example` for complete list with descriptions.
 4. Anonymous users supported with session tracking
 
 ### Key Features Implementation
-- **Freemium System**: Usage tracking, credit system, upgrade prompts
-- **Early Access**: Waitlist management with approval workflow
+- **Freemium System**: Usage tracking, credit system, upgrade prompts (`lib/freemium-middleware.ts`, `lib/usage-tracking-service.ts`)
+- **Early Access**: Waitlist management with approval workflow (`lib/early-access-service.ts`)
 - **Prompt Variables**: Dynamic variable substitution in prompts
-- **Mermaid Diagrams**: Real-time preview and export capabilities
-- **Mobile Responsive**: Optimized UI for mobile devices
+- **Mermaid Diagrams**: Real-time preview and export (`lib/mermaid-parser.ts`, `lib/mermaid-utils.ts`)
+- **Streaming Responses**: Server-Sent Events for real-time document generation
+
+### Monorepo Structure
+```
+/                       # Main Next.js web app
+├── packages/cli/       # NPM package: sdlc-ai (Commander.js CLI)
+└── packages/mcp-server/# NPM package: @sdlc/mcp-server (Model Context Protocol)
+```
+
+### Document Types Generated
+Business Analysis, Functional Specs, Technical Specs, UX/UI Specs, Architecture Diagrams, Test Plans, Meeting Transcripts, AI Coding Prompts

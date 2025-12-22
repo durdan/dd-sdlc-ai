@@ -64,16 +64,23 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Textarea } from '@/components/ui/textarea'
 import Head from 'next/head'
 import SimpleLandingPage from './simple-landing-page'
+import GlassLandingPage from './glass-landing-page'
 
 export default function Page() {
-  // Check if we should use the simple landing page
-  const landingPageStyle = process.env.NEXT_PUBLIC_LANDING_PAGE_STYLE || 'default'
-  
+  // Check which landing page style to use
+  // Options: 'glass' (default), 'simple', 'modern'
+  const landingPageStyle = process.env.NEXT_PUBLIC_LANDING_PAGE_STYLE || 'glass'
+
   if (landingPageStyle === 'simple') {
     return <SimpleLandingPage />
   }
-  
-  return <ModernLandingPage />
+
+  if (landingPageStyle === 'modern') {
+    return <ModernLandingPage />
+  }
+
+  // Default to glass landing page
+  return <GlassLandingPage />
 }
 
 function ModernLandingPage() {
