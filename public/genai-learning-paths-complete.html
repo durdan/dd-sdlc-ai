@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GenAI Learning Paths | SDLC.dev</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Space Grotesk', 'system-ui', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      background: #0a0f1a;
+      min-height: 100vh;
+    }
+    
+    .bg-grid {
+      background-image: 
+        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+    
+    .layer-section {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.7) 100%);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      backdrop-filter: blur(10px);
+      position: relative;
+    }
+    
+    .layer-section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      border-radius: 16px 16px 0 0;
+    }
+    
+    .layer-emerald::before { background: linear-gradient(90deg, #10b981, #34d399); }
+    .layer-blue::before { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+    .layer-orange::before { background: linear-gradient(90deg, #f97316, #fb923c); }
+    .layer-pink::before { background: linear-gradient(90deg, #ec4899, #f472b6); }
+    .layer-purple::before { background: linear-gradient(90deg, #a855f7, #c084fc); }
+    
+    .arrow-connector {
+      position: relative;
+      height: 40px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .arrow-connector::before {
+      content: '';
+      position: absolute;
+      width: 2px;
+      height: 100%;
+      background: linear-gradient(to bottom, rgba(255,255,255,0.3), rgba(255,255,255,0.1));
+    }
+    
+    .arrow-connector::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      width: 0;
+      height: 0;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-top: 10px solid rgba(255,255,255,0.3);
+    }
+    
+    .tool-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-width: 120px;
+    }
+    
+    .tool-card:hover {
+      background: rgba(255,255,255,0.08);
+      border-color: rgba(255,255,255,0.2);
+      transform: translateY(-2px);
+    }
+    
+    .tool-card.completed {
+      border-color: rgba(34, 197, 94, 0.5);
+      background: rgba(34, 197, 94, 0.1);
+    }
+    
+    /* Vendor badges */
+    .vendor-anthropic { border-left: 3px solid #d97706; }
+    .vendor-google { border-left: 3px solid #4285f4; }
+    .vendor-openai { border-left: 3px solid #10a37f; }
+    .vendor-microsoft { border-left: 3px solid #00bcf2; }
+    .vendor-other { border-left: 3px solid #6b7280; }
+    
+    .role-node {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border: 3px solid;
+      border-radius: 50%;
+      width: 80px;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    
+    .target-node {
+      background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+      border: 2px solid #64748b;
+      border-radius: 12px;
+      padding: 16px 24px;
+    }
+    
+    .glass {
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+    
+    .role-btn.active {
+      background: linear-gradient(135deg, #22d3ee 0%, #3b82f6 100%);
+      color: white;
+    }
+    
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .animate-in { animation: fadeInUp 0.4s ease forwards; }
+    
+    .layer-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    
+    .vendor-tag {
+      font-size: 8px;
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-weight: 600;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body class="text-white bg-grid">
+  
+  <!-- Header -->
+  <header class="fixed top-0 left-0 right-0 z-50 glass">
+    <div class="max-w-6xl mx-auto px-4 py-3">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <h1 class="text-xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">SDLC.dev</h1>
+          <span class="text-white/30 hidden sm:inline">|</span>
+          <span class="text-white/50 text-sm hidden sm:inline">GenAI Learning Paths</span>
+        </div>
+        
+        <div class="flex items-center gap-3">
+          <div class="text-right mr-2">
+            <div class="text-[10px] text-white/50">Progress</div>
+            <div class="text-xs font-bold" id="progress-text">0/0</div>
+          </div>
+          <div class="w-20 h-2 bg-white/10 rounded-full overflow-hidden">
+            <div id="progress-bar" class="h-full bg-gradient-to-r from-green-400 to-emerald-400 transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Role selector - 7 columns for 14 roles -->
+      <div class="grid grid-cols-7 gap-1 mt-2" id="role-buttons"></div>
+    </div>
+  </header>
+  
+  <!-- Vendor Legend -->
+  <div class="fixed left-4 top-28 z-30 glass rounded-xl p-3 hidden lg:block">
+    <div class="text-[10px] text-white/50 mb-2 font-semibold">VENDORS</div>
+    <div class="space-y-1 text-[10px]">
+      <div class="flex items-center gap-2"><div class="w-3 h-2 bg-amber-600 rounded-sm"></div><span class="text-white/70">Anthropic</span></div>
+      <div class="flex items-center gap-2"><div class="w-3 h-2 bg-blue-500 rounded-sm"></div><span class="text-white/70">Google</span></div>
+      <div class="flex items-center gap-2"><div class="w-3 h-2 bg-emerald-600 rounded-sm"></div><span class="text-white/70">OpenAI</span></div>
+      <div class="flex items-center gap-2"><div class="w-3 h-2 bg-cyan-500 rounded-sm"></div><span class="text-white/70">Microsoft</span></div>
+      <div class="flex items-center gap-2"><div class="w-3 h-2 bg-gray-500 rounded-sm"></div><span class="text-white/70">Other</span></div>
+    </div>
+  </div>
+  
+  <!-- Main Content -->
+  <main class="pt-28 pb-20 px-4">
+    <div class="max-w-4xl mx-auto">
+      
+      <!-- Role Header -->
+      <div class="text-center mb-6">
+        <div id="role-node" class="role-node mx-auto mb-3" style="border-color: #22d3ee; box-shadow: 0 0 30px rgba(34,211,238,0.3);">
+          <span class="text-4xl" id="role-icon">👨‍💻</span>
+        </div>
+        <h2 id="role-title" class="text-xl font-bold mb-1">Software Developer</h2>
+        <p id="role-subtitle" class="text-white/50 text-sm">Frontend | Backend | Full-Stack</p>
+      </div>
+      
+      <div class="arrow-connector"></div>
+      
+      <!-- Layers Container -->
+      <div id="layers-container" class="space-y-0"></div>
+      
+      <div class="arrow-connector"></div>
+      
+      <!-- Target Node -->
+      <div class="flex justify-center">
+        <div class="target-node text-center" style="box-shadow: 0 0 25px rgba(100,116,139,0.2);">
+          <span class="text-3xl block mb-1" id="target-icon">🎯</span>
+          <div class="font-bold" id="target-label">Production Codebase</div>
+          <div class="text-white/50 text-xs" id="target-subtitle">Ship quality code faster</div>
+        </div>
+      </div>
+      
+    </div>
+  </main>
+  
+  <!-- Sidebar -->
+  <div id="sidebar" class="fixed right-0 top-0 h-full w-80 glass z-50 transform translate-x-full transition-transform duration-300 overflow-y-auto">
+    <div class="p-5">
+      <button onclick="closeSidebar()" class="absolute top-3 right-3 text-white/50 hover:text-white text-xl">×</button>
+      <div class="mt-6 space-y-4">
+        <div class="flex items-center gap-3">
+          <span id="sidebar-icon" class="text-4xl">🤖</span>
+          <div>
+            <h2 id="sidebar-title" class="text-lg font-bold"></h2>
+            <p id="sidebar-subtitle" class="text-xs text-white/50"></p>
+          </div>
+        </div>
+        <div id="sidebar-vendor" class="text-xs"></div>
+        <div class="bg-white/5 rounded-lg p-3">
+          <h3 class="text-[10px] font-semibold text-white/50 uppercase mb-1">Description</h3>
+          <p id="sidebar-desc" class="text-white/90 text-sm"></p>
+        </div>
+        <div class="bg-white/5 rounded-lg p-3">
+          <h3 class="text-[10px] font-semibold text-white/50 uppercase mb-1">Pricing</h3>
+          <p id="sidebar-price" class="text-cyan-400 font-bold"></p>
+        </div>
+        <a id="sidebar-link" href="#" target="_blank" class="block w-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-center py-2.5 rounded-lg font-semibold text-sm hover:from-cyan-400 hover:to-blue-400 transition-all">
+          Visit Website →
+        </a>
+        <button id="sidebar-complete-btn" onclick="toggleComplete()" class="w-full py-2.5 rounded-lg font-semibold text-sm transition-all bg-white/10 border border-white/20 hover:bg-white/20">
+          Mark as Learned
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <div id="overlay" class="fixed inset-0 bg-black/50 z-40 hidden" onclick="closeSidebar()"></div>
+  
+  <!-- Layer Legend -->
+  <div class="fixed left-4 bottom-4 z-30 glass rounded-xl p-3 hidden md:block">
+    <div class="flex items-center gap-4 text-[10px]">
+      <div class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-emerald-500"></div><span class="text-white/60">Thinking</span></div>
+      <div class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-blue-500"></div><span class="text-white/60">Assistants</span></div>
+      <div class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-orange-500"></div><span class="text-white/60">Orchestration</span></div>
+      <div class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-pink-500"></div><span class="text-white/60">Execution</span></div>
+      <div class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-purple-500"></div><span class="text-white/60">Productivity</span></div>
+    </div>
+  </div>
+
+  <script>
+    // ============================================
+    // COMPLETE ROLES DATA WITH ANTHROPIC & GOOGLE
+    // ============================================
+    const rolesData = {
+      developer: {
+        name: 'Software Developer', icon: '👨‍💻', subtitle: 'Frontend | Backend | Full-Stack', color: '#22d3ee',
+        layers: {
+          thinking: { label: 'Thinking & Research', icon: '🧠', color: 'emerald', colorHex: '#10b981', tools: [
+            // OpenAI
+            { id: 'chatgpt', label: 'ChatGPT', subtitle: 'o1/o3/o4-mini', icon: '🤖', desc: 'Architecture planning, complex reasoning, code generation', price: '$20/mo Pro', url: 'https://chat.openai.com', vendor: 'openai' },
+            // Anthropic
+            { id: 'claude', label: 'Claude', subtitle: 'Opus/Sonnet 4.5', icon: '🎭', desc: 'Deep code analysis, 200K context window, superior reasoning', price: '$20/mo Pro', url: 'https://claude.ai', vendor: 'anthropic' },
+            { id: 'workbench', label: 'Anthropic Workbench', subtitle: 'Prompt Testing', icon: '🔬', desc: 'Test and iterate prompts, compare model outputs', price: 'API pricing', url: 'https://console.anthropic.com', vendor: 'anthropic' },
+            // Google
+            { id: 'gemini', label: 'Gemini', subtitle: '3 Pro/Flash', icon: '💎', desc: 'Multimodal reasoning, 1M+ context, Deep Think mode', price: 'Free/$20 Ultra', url: 'https://gemini.google.com', vendor: 'google' },
+            { id: 'aistudio', label: 'Google AI Studio', subtitle: 'Prototyping', icon: '🎨', desc: 'Prompt design, model testing, API key generation', price: 'Free tier', url: 'https://aistudio.google.com', vendor: 'google' },
+            // Others
+            { id: 'perplexity', label: 'Perplexity', subtitle: 'Research', icon: '🔍', desc: 'Real-time research with citations', price: 'Free/$20', url: 'https://perplexity.ai', vendor: 'other' },
+            { id: 'phind', label: 'Phind', subtitle: 'Code Q&A', icon: '💡', desc: 'Technical Q&A optimized for developers', price: 'Free', url: 'https://phind.com', vendor: 'other' },
+          ]},
+          assistants: { label: 'Code Assistants', icon: '🛠️', color: 'blue', colorHex: '#3b82f6', tools: [
+            // Anthropic
+            { id: 'claudecode', label: 'Claude Code', subtitle: 'Terminal Agent', icon: '⌨️', desc: 'Terminal-native agentic coding, MCP support, multi-file edits', price: '$20 Pro/API', url: 'https://claude.ai/code', vendor: 'anthropic' },
+            // Google
+            { id: 'geminicodeassist', label: 'Gemini Code Assist', subtitle: 'IDE Plugin', icon: '💎', desc: 'VS Code/JetBrains AI coding, 2.5x productivity boost', price: 'Free/$19/mo', url: 'https://codeassist.google', vendor: 'google' },
+            { id: 'geminicli', label: 'Gemini CLI', subtitle: 'Open Source', icon: '📟', desc: 'Terminal agent, 1000 req/day free, OSS', price: 'Free', url: 'https://github.com/google-gemini/gemini-cli', vendor: 'google' },
+            // Others
+            { id: 'cursor', label: 'Cursor', subtitle: 'AI-Native IDE', icon: '📝', desc: 'Multi-file Composer, Claude/GPT models', price: '$20/mo', url: 'https://cursor.com', vendor: 'other' },
+            { id: 'windsurf', label: 'Windsurf', subtitle: 'Cascade', icon: '🏄', desc: 'Flow-based context, beginner friendly', price: '$15/mo', url: 'https://codeium.com/windsurf', vendor: 'other' },
+            { id: 'copilot', label: 'GitHub Copilot', subtitle: 'Inline', icon: '🐙', desc: 'Deep GitHub integration, Claude 4 support', price: '$10/mo', url: 'https://github.com/features/copilot', vendor: 'microsoft' },
+            { id: 'aider', label: 'Aider', subtitle: 'OSS', icon: '🔧', desc: 'Best Git integration, pair programming', price: 'Free+API', url: 'https://aider.chat', vendor: 'other' },
+          ]},
+          orchestration: { label: 'Agent Orchestration', icon: '🎯', color: 'orange', colorHex: '#f97316', tools: [
+            // Anthropic
+            { id: 'mcp', label: 'MCP', subtitle: 'Model Context Protocol', icon: '🔌', desc: 'Open standard connecting AI to tools, 1000s of servers', price: 'Free/OSS', url: 'https://modelcontextprotocol.io', vendor: 'anthropic' },
+            { id: 'claudeapi', label: 'Claude API', subtitle: 'Tool Use', icon: '⚡', desc: 'Advanced tool use, parallel execution, code execution', price: 'Pay per token', url: 'https://docs.anthropic.com', vendor: 'anthropic' },
+            // Google
+            { id: 'vertexai', label: 'Vertex AI', subtitle: 'Enterprise', icon: '🏢', desc: 'Production AI platform, model garden, tuning', price: 'Pay per use', url: 'https://cloud.google.com/vertex-ai', vendor: 'google' },
+            { id: 'antigravity', label: 'Google Antigravity', subtitle: 'Agentic Platform', icon: '🚀', desc: 'New agentic development platform for complex workflows', price: 'Preview', url: 'https://cloud.google.com/antigravity', vendor: 'google' },
+            // Others
+            { id: 'langgraph', label: 'LangGraph', subtitle: 'Stateful', icon: '📊', desc: 'Graph-based workflows, production-ready', price: 'OSS', url: 'https://langchain-ai.github.io/langgraph/', vendor: 'other' },
+            { id: 'crewai', label: 'CrewAI', subtitle: 'Teams', icon: '👥', desc: 'Role-based agent teams, easy setup', price: 'OSS', url: 'https://crewai.com', vendor: 'other' },
+            { id: 'openai-sdk', label: 'OpenAI Agents SDK', subtitle: 'Primitives', icon: '⚡', desc: 'Lightweight agent building blocks', price: 'API', url: 'https://platform.openai.com', vendor: 'openai' },
+          ]},
+          execution: { label: 'Execution Layer', icon: '🚀', color: 'pink', colorHex: '#ec4899', tools: [
+            // Anthropic
+            { id: 'computeruse', label: 'Computer Use', subtitle: 'Desktop Agent', icon: '🖥️', desc: 'AI controls mouse/keyboard, browser automation', price: 'API pricing', url: 'https://docs.anthropic.com/en/docs/agents-and-tools/computer-use', vendor: 'anthropic' },
+            // Google
+            { id: 'jules', label: 'Jules', subtitle: 'GitHub Agent', icon: '🤖', desc: 'Automated GitHub PR agent, background tasks', price: 'Preview', url: 'https://labs.google/jules', vendor: 'google' },
+            { id: 'firebasestudio', label: 'Firebase Studio', subtitle: 'Full IDE', icon: '🔥', desc: 'Browser-based dev environment with Gemini', price: 'Free tier', url: 'https://firebase.studio', vendor: 'google' },
+            // Others
+            { id: 'playwright', label: 'Playwright+MCP', subtitle: 'Browser', icon: '🎭', desc: 'Browser automation with AI integration', price: 'OSS', url: 'https://playwright.dev', vendor: 'other' },
+            { id: 'ghactions', label: 'GitHub Actions', subtitle: 'CI/CD', icon: '⚙️', desc: 'Automated workflows with AI steps', price: 'Free tier', url: 'https://github.com/features/actions', vendor: 'microsoft' },
+            { id: 'qodo', label: 'Qodo', subtitle: 'Test Gen', icon: '✅', desc: 'AI test generation and coverage', price: 'Free tier', url: 'https://qodo.ai', vendor: 'other' },
+          ]},
+          productivity: { label: 'Side Productivity', icon: '📐', color: 'purple', colorHex: '#a855f7', tools: [
+            // Anthropic
+            { id: 'claudechrome', label: 'Claude for Chrome', subtitle: 'Browser Agent', icon: '🌐', desc: 'AI browsing assistant, web automation (beta)', price: 'Pro plan', url: 'https://claude.ai', vendor: 'anthropic' },
+            { id: 'claudeexcel', label: 'Claude for Excel', subtitle: 'Spreadsheets', icon: '📊', desc: 'AI spreadsheet agent, data analysis (beta)', price: 'Pro plan', url: 'https://claude.ai', vendor: 'anthropic' },
+            // Google
+            { id: 'notebooklm', label: 'NotebookLM', subtitle: 'Research', icon: '📓', desc: 'AI research assistant, audio summaries', price: 'Free', url: 'https://notebooklm.google.com', vendor: 'google' },
+            { id: 'geminiworkspace', label: 'Gemini for Workspace', subtitle: 'Docs/Sheets', icon: '📄', desc: 'AI in Google Docs, Sheets, Slides', price: '$20/mo', url: 'https://workspace.google.com/solutions/ai/', vendor: 'google' },
+            // Others
+            { id: 'mermaid', label: 'Mermaid', subtitle: 'Diagrams', icon: '🧜‍♀️', desc: 'Diagram-as-code, AI generation', price: 'OSS', url: 'https://mermaid.js.org', vendor: 'other' },
+            { id: 'n8n', label: 'n8n', subtitle: 'Workflows', icon: '🔀', desc: '70+ LangChain nodes, automation', price: 'OSS', url: 'https://n8n.io', vendor: 'other' },
+            { id: 'notion', label: 'Notion AI', subtitle: 'Docs', icon: '📓', desc: 'AI documentation and writing', price: '$10/mo', url: 'https://notion.so', vendor: 'other' },
+          ]}
+        },
+        target: { label: 'Production Codebase', icon: '🎯', subtitle: 'Ship quality code faster' }
+      },
+      
+      tester: {
+        name: 'QA/Tester', icon: '🧪', subtitle: 'Test Automation | Manual | Performance', color: '#a855f7',
+        layers: {
+          thinking: { label: 'Thinking & Research', icon: '🧠', color: 'emerald', colorHex: '#10b981', tools: [
+            { id: 'claude-t', label: 'Claude', subtitle: 'Test Strategy', icon: '🎭', desc: 'Generate test plans, analyze requirements', price: '$20/mo', url: 'https://claude.ai', vendor: 'anthropic' },
+            { id: 'gemini-t', label: 'Gemini', subtitle: 'Test Design', icon: '💎', desc: 'Multimodal test case generation', price: 'Free/$20', url: 'https://gemini.google.com', vendor: 'google' },
+            { id: 'chatgpt-t', label: 'ChatGPT', subtitle: 'Test Cases', icon: '🤖', desc: 'Generate comprehensive test cases', price: '$20/mo', url: 'https://chat.openai.com', vendor: 'openai' },
+            { id: 'perplexity-t', label: 'Perplexity', subtitle: 'Research', icon: '🔍', desc: 'Research testing frameworks', price: 'Free', url: 'https://perplexity.ai', vendor: 'other' },
+          ]},
+          assistants: { label: 'Code Assistants', icon: '🛠️', color: 'blue', colorHex: '#3b82f6', tools: [
+            { id: 'claudecode-t', label: 'Claude Code', subtitle: 'Test Writing', icon: '⌨️', desc: 'Generate and refactor test code', price: 'API', url: 'https://claude.ai/code', vendor: 'anthropic' },
+            { id: 'geminicodeassist-t', label: 'Gemini Code Assist', subtitle: 'Unit Tests', icon: '💎', desc: 'Auto-generate unit tests in IDE', price: 'Free/$19', url: 'https://codeassist.google', vendor: 'google' },
+            { id: 'qodo-t', label: 'Qodo', subtitle: 'Test Gen', icon: '✅', desc: 'AI test generation and coverage', price: 'Free', url: 'https://qodo.ai', vendor: 'other' },
+            { id: 'cursor-t', label: 'Cursor', subtitle: 'Edit', icon: '📝', desc: 'Multi-file test editing', price: '$20/mo', url: 'https://cursor.com', vendor: 'other' },
+            { id: 'testim', label: 'Testim.io', subtitle: 'ML Tests', icon: '🔬', desc: 'ML-powered test authoring', price: 'Contact', url: 'https://testim.io', vendor: 'other' },
+          ]},
+          orchestration: { label: 'Agent Orchestration', icon: '🎯', color: 'orange', colorHex: '#f97316', tools: [
+            { id: 'mcp-t', label: 'MCP', subtitle: 'Test Tools', icon: '🔌', desc: 'Connect test runners via MCP', price: 'Free', url: 'https://modelcontextprotocol.io', vendor: 'anthropic' },
+            { id: 'crewai-t', label: 'CrewAI', subtitle: 'Test Agents', icon: '👥', desc: 'Multi-agent testing workflows', price: 'OSS', url: 'https://crewai.com', vendor: 'other' },
+            { id: 'langgraph-t', label: 'LangGraph', subtitle: 'Workflows', icon: '📊', desc: 'Test orchestration pipelines', price: 'OSS', url: 'https://langchain-ai.github.io/langgraph/', vendor: 'other' },
+          ]},
+          execution: { label: 'Execution Layer', icon: '🚀', color: 'pink', colorHex: '#ec4899', tools: [
+            { id: 'computeruse-t', label: 'Computer Use', subtitle: 'E2E Testing', icon: '🖥️', desc: 'AI-driven end-to-end UI testing', price: 'API', url: 'https://anthropic.com', vendor: 'anthropic' },
+            { id: 'playwright-t', label: 'Playwright', subtitle: 'Browser', icon: '🎭', desc: 'Cross-browser automation', price: 'OSS', url: 'https://playwright.dev', vendor: 'other' },
+            { id: 'testsigma', label: 'Testsigma', subtitle: 'Plain English', icon: '📝', desc: 'Natural language test scripts', price: 'Free', url: 'https://testsigma.com', vendor: 'other' },
+            { id: 'mabl', label: 'mabl', subtitle: 'Auto-heal', icon: '🔧', desc: 'Self-healing tests with ML', price: 'Contact', url: 'https://mabl.com', vendor: 'other' },
+          ]},
+          productivity: { label: 'Side Productivity', icon: '📐', color: 'purple', colorHex: '#a855f7', tools: [
+            { id: 'notebooklm-t', label: 'NotebookLM', subtitle: 'Test Docs', icon: '📓', desc: 'Analyze test documentation', price: 'Free', url: 'https://notebooklm.google.com', vendor: 'google' },
+            { id: 'mermaid-t', label: 'Mermaid', subtitle: 'Test Flows', icon: '🧜‍♀️', desc: 'Visualize test flows', price: 'OSS', url: 'https://mermaid.js.org', vendor: 'other' },
+            { id: 'allure', label: 'Allure', subtitle: 'Reports', icon: '📊', desc: 'Beautiful test reports', price: 'OSS', url: 'https://allurereport.org', vendor: 'other' },
+            { id: 'applitools', label: 'Applitools', subtitle: 'Visual AI', icon: '👁️', desc: 'Visual regression testing', price: 'Free tier', url: 'https://applitools.com', vendor: 'other' },
+          ]}
+        },
+        target: { label: 'Quality Assured Release', icon: '✅', subtitle: 'Zero critical bugs' }
+      },
+      
+      devops: {
+        name: 'DevOps/SRE', icon: '⚙️', subtitle: 'Infrastructure | Reliability', color: '#f97316',
+        layers: {
+          thinking: { label: 'Thinking & Research', icon: '🧠', color: 'emerald', colorHex: '#10b981', tools: [
+            { id: 'claude-d', label: 'Claude', subtitle: 'Incident Analysis', icon: '🎭', desc: 'Root cause analysis, postmortems', price: '$20/mo', url: 'https://claude.ai', vendor: 'anthropic' },
+            { id: 'gemini-d', label: 'Gemini', subtitle: 'Cloud Docs', icon: '💎', desc: 'GCP documentation expert', price: 'Free/$20', url: 'https://gemini.google.com', vendor: 'google' },
+            { id: 'amazonq', label: 'Amazon Q', subtitle: 'AWS Expert', icon: '☁️', desc: 'AWS knowledge and guidance', price: 'Included', url: 'https://aws.amazon.com/q/', vendor: 'other' },
+          ]},
+          assistants: { label: 'IaC Assistants', icon: '🛠️', color: 'blue', colorHex: '#3b82f6', tools: [
+            { id: 'claudecode-d', label: 'Claude Code', subtitle: 'IaC', icon: '⌨️', desc: 'Generate Terraform, Pulumi, CloudFormation', price: 'API', url: 'https://claude.ai/code', vendor: 'anthropic' },
+            { id: 'geminicodeassist-d', label: 'Gemini Code Assist', subtitle: 'GCP', icon: '💎', desc: 'GCP infrastructure code', price: 'Free/$19', url: 'https://codeassist.google', vendor: 'google' },
+            { id: 'qdev', label: 'Amazon Q Dev', subtitle: 'AWS', icon: '☁️', desc: 'Generate AWS IaC', price: 'Free', url: 'https://aws.amazon.com/q/developer/', vendor: 'other' },
+            { id: 'copilot-d', label: 'GitHub Copilot', subtitle: 'IaC', icon: '🐙', desc: 'Infrastructure as Code', price: '$10/mo', url: 'https://github.com/features/copilot', vendor: 'microsoft' },
+            { id: 'ansible', label: 'Ansible Lightspeed', subtitle: 'Playbooks', icon: '🔧', desc: 'AI playbook generation', price: 'Sub', url: 'https://ansible.com', vendor: 'other' },
+          ]},
+          orchestration: { label: 'AIOps Agents', icon: '🎯', color: 'orange', colorHex: '#f97316', tools: [
+            { id: 'vertexai-d', label: 'Vertex AI', subtitle: 'MLOps', icon: '🏢', desc: 'ML pipelines, model serving', price: 'Pay per use', url: 'https://cloud.google.com/vertex-ai', vendor: 'google' },
+            { id: 'hawkeye', label: 'Hawkeye', subtitle: 'NeuBird', icon: '🦅', desc: '90% MTTR reduction', price: 'Contact', url: 'https://neubird.ai', vendor: 'other' },
+            { id: 'pagerduty', label: 'PagerDuty AIOps', subtitle: 'Incidents', icon: '📟', desc: 'AI incident management', price: 'Enterprise', url: 'https://pagerduty.com', vendor: 'other' },
+            { id: 'datadog', label: 'Datadog Bits', subtitle: 'Triage', icon: '🐕', desc: 'AI observability assistant', price: 'Sub', url: 'https://datadoghq.com', vendor: 'other' },
+          ]},
+          execution: { label: 'Infrastructure Execution', icon: '🚀', color: 'pink', colorHex: '#ec4899', tools: [
+            { id: 'jules-d', label: 'Jules', subtitle: 'GitOps', icon: '🤖', desc: 'Automated infrastructure PRs', price: 'Preview', url: 'https://labs.google/jules', vendor: 'google' },
+            { id: 'pulumi', label: 'Pulumi AI', subtitle: 'Multi-cloud', icon: '🌐', desc: 'Natural language to IaC', price: 'Free', url: 'https://pulumi.com', vendor: 'other' },
+            { id: 'k8sgpt', label: 'K8sGPT', subtitle: 'CNCF', icon: '☸️', desc: 'K8s troubleshooting AI', price: 'OSS', url: 'https://k8sgpt.ai', vendor: 'other' },
+            { id: 'terraform', label: 'Terraform', subtitle: 'IaC', icon: '🏗️', desc: 'Industry standard IaC', price: 'Free', url: 'https://terraform.io', vendor: 'other' },
+          ]},
+          productivity: { label: 'Side Productivity', icon: '📐', color: 'purple', colorHex: '#a855f7', tools: [
+            { id: 'geminiworkspace-d', label: 'Gemini Workspace', subtitle: 'Runbooks', icon: '📄', desc: 'AI runbook documentation', price: '$20/mo', url: 'https://workspace.google.com', vendor: 'google' },
+            { id: 'hava', label: 'Hava.io', subtitle: 'Auto-diagrams', icon: '🗺️', desc: 'Auto cloud architecture diagrams', price: 'Sub', url: 'https://hava.io', vendor: 'other' },
+            { id: 'spotio', label: 'Spot.io', subtitle: 'Cost AI', icon: '💰', desc: 'Cloud cost optimization', price: 'Sub', url: 'https://spot.io', vendor: 'other' },
+          ]}
+        },
+        target: { label: 'Cloud Infrastructure', icon: '☁️', subtitle: 'AWS/Azure/GCP/K8s' }
+      },
+      
+      security: {
+        name: 'Security Engineer', icon: '🔒', subtitle: 'AppSec | DevSecOps', color: '#ef4444',
+        layers: {
+          thinking: { label: 'Threat Modeling', icon: '🧠', color: 'emerald', colorHex: '#10b981', tools: [
+            { id: 'claude-s', label: 'Claude', subtitle: 'Threat Analysis', icon: '🎭', desc: 'Security architecture review, threat modeling', price: '$20/mo', url: 'https://claude.ai', vendor: 'anthropic' },
+            { id: 'gemini-s', label: 'Gemini', subtitle: 'Vulnerability Research', icon: '💎', desc: 'CVE analysis, security research', price: 'Free/$20', url: 'https://gemini.google.com', vendor: 'google' },
+            { id: 'iriusrisk', label: 'IriusRisk', subtitle: 'Jeff AI', icon: '🛡️', desc: 'Image-to-threat-model', price: 'Contact', url: 'https://iriusrisk.com', vendor: 'other' },
+          ]},
+          assistants: { label: 'SAST Tools', icon: '🛠️', color: 'blue', colorHex: '#3b82f6', tools: [
+            { id: 'claudecode-s', label: 'Claude Code', subtitle: 'Security Review', icon: '⌨️', desc: 'Code security analysis and fixes', price: 'API', url: 'https://claude.ai/code', vendor: 'anthropic' },
+            { id: 'geminicodeassist-s', label: 'Gemini Code Assist', subtitle: 'Security', icon: '💎', desc: 'Security-aware code suggestions', price: 'Free/$19', url: 'https://codeassist.google', vendor: 'google' },
+            { id: 'snykcode', label: 'Snyk Code', subtitle: '50x faster', icon: '🔍', desc: 'AI-powered auto-fix for vulnerabilities', price: 'Free tier', url: 'https://snyk.io', vendor: 'other' },
+            { id: 'codeql', label: 'GitHub CodeQL', subtitle: 'Semantic', icon: '🔬', desc: 'Semantic code analysis', price: 'Free', url: 'https://github.com/features/security', vendor: 'microsoft' },
+          ]},
+          orchestration: { label: 'Security Agents', icon: '🎯', color: 'orange', colorHex: '#f97316', tools: [
+            { id: 'mcp-s', label: 'MCP Security', subtitle: 'Secure Tools', icon: '🔌', desc: 'Secure MCP server connections', price: 'Free', url: 'https://modelcontextprotocol.io', vendor: 'anthropic' },
+            { id: 'snykagent', label: 'Snyk Agent', subtitle: 'Auto-patch', icon: '🤖', desc: 'Automated vulnerability patching', price: 'Enterprise', url: 'https://snyk.io', vendor: 'other' },
+            { id: 'mscopilot', label: 'Security Copilot', subtitle: 'Microsoft', icon: '🛡️', desc: 'AI security operations', price: 'Enterprise', url: 'https://microsoft.com/security/copilot', vendor: 'microsoft' },
+          ]},
+          execution: { label: 'DAST & Scanning', icon: '🚀', color: 'pink', colorHex: '#ec4899', tools: [
+            { id: 'invicti', label: 'Invicti', subtitle: 'Scanner', icon: '🌐', desc: 'Web application security scanner', price: 'Contact', url: 'https://invicti.com', vendor: 'other' },
+            { id: 'stackhawk', label: 'StackHawk', subtitle: 'CI/CD', icon: '🦅', desc: 'DAST in CI/CD pipelines', price: 'Free tier', url: 'https://stackhawk.com', vendor: 'other' },
+          ]},
+          productivity: { label: 'Side Productivity', icon: '📐', color: 'purple', colorHex: '#a855f7', tools: [
+            { id: 'notebooklm-s', label: 'NotebookLM', subtitle: 'Threat Intel', icon: '📓', desc: 'Analyze threat intelligence reports', price: 'Free', url: 'https://notebooklm.google.com', vendor: 'google' },
+            { id: 'mermaid-s', label: 'Mermaid', subtitle: 'Security Flows', icon: '🧜‍♀️', desc: 'Security architecture diagrams', price: 'OSS', url: 'https://mermaid.js.org', vendor: 'other' },
+          ]}
+        },
+        target: { label: 'Secure Application', icon: '🔐', subtitle: 'Zero critical vulnerabilities' }
+      },
+      
+      pm: {
+        name: 'Product Manager', icon: '📋', subtitle: 'Strategy | Roadmap', color: '#10b981',
+        layers: {
+          thinking: { label: 'Strategy & Research', icon: '🧠', color: 'emerald', colorHex: '#10b981', tools: [
+            { id: 'claude-p', label: 'Claude', subtitle: 'Strategy', icon: '🎭', desc: 'Product strategy, competitive analysis', price: '$20/mo', url: 'https://claude.ai', vendor: 'anthropic' },
+            { id: 'gemini-p', label: 'Gemini', subtitle: 'Research', icon: '💎', desc: 'Market research, trend analysis', price: 'Free/$20', url: 'https://gemini.google.com', vendor: 'google' },
+            { id: 'chatgpt-p', label: 'ChatGPT', subtitle: 'Planning', icon: '🤖', desc: 'Strategic planning assistance', price: '$20/mo', url: 'https://chat.openai.com', vendor: 'openai' },
+            { id: 'perplexity-p', label: 'Perplexity', subtitle: '70% faster', icon: '🔍', desc: 'Competitive research with citations', price: 'Free/$20', url: 'https://perplexity.ai', vendor: 'other' },
+          ]},
+          assistants: { label: 'Document AI', icon: '🛠️', color: 'blue', colorHex: '#3b82f6', tools: [
+            { id: 'chatprd', label: 'ChatPRD', subtitle: '75% faster', icon: '📄', desc: 'AI PRD generation', price: 'Free/$29', url: 'https://chatprd.ai', vendor: 'other' },
+            { id: 'notion-p', label: 'Notion AI', subtitle: 'Docs', icon: '📓', desc: 'AI documentation', price: '$10/mo', url: 'https://notion.so', vendor: 'other' },
+          ]},
+          orchestration: { label: 'Insight Agents', icon: '🎯', color: 'orange', colorHex: '#f97316', tools: [
+            { id: 'buildbetter', label: 'BuildBetter', subtitle: 'Insights', icon: '🔮', desc: 'Customer feedback analysis', price: 'Contact', url: 'https://buildbetter.ai', vendor: 'other' },
+          ]},
+          execution: { label: 'Roadmap Tools', icon: '🚀', color: 'pink', colorHex: '#ec4899', tools: [
+            { id: 'productboard', label: 'Productboard', subtitle: '6x faster', icon: '🎯', desc: 'AI prioritization', price: 'Contact', url: 'https://productboard.com', vendor: 'other' },
+            { id: 'linear', label: 'Linear AI', subtitle: '40% faster', icon: '⚡', desc: 'AI issue management', price: 'Free/$8', url: 'https://linear.app', vendor: 'other' },
+          ]},
+          productivity: { label: 'Side Productivity', icon: '📐', color: 'purple', colorHex: '#a855f7', tools: [
+            { id: 'notebooklm-p', label: 'NotebookLM', subtitle: 'Research', icon: '📓', desc: 'Synthesize user research', price: 'Free', url: 'https://notebooklm.google.com', vendor: 'google' },
+            { id: 'geminiworkspace-p', label: 'Gemini Workspace', subtitle: 'Docs', icon: '📄', desc: 'AI in Slides, Docs', price: '$20/mo', url: 'https://workspace.google.com', vendor: 'google' },
+            { id: 'gamma', label: 'Gamma', subtitle: 'Presentations', icon: '🎨', desc: 'AI presentations', price: 'Free/$10', url: 'https://gamma.app', vendor: 'other' },
+            { id: 'fathom', label: 'Fathom AI', subtitle: 'Meetings', icon: '🎙️', desc: 'AI meeting notes', price: 'Free/$19', url: 'https://fathom.video', vendor: 'other' },
+          ]}
+        },
+        target: { label: 'Product Roadmap', icon: '🗺️', subtitle: 'Feature delivery' }
+      },
+      
+      designer: {
+        name: 'UX/UI Designer', icon: '🎨', subtitle: 'Product Design | Prototyping', color: '#ec4899',
+        layers: {
+          thinking: { label: 'UX Research', icon: '🧠', color: 'emerald', colorHex: '#10b981', tools: [
+            { id: 'claude-u', label: 'Claude', subtitle: 'UX Writing', icon: '🎭', desc: 'UX copy, microcopy generation', price: '$20/mo', url: 'https://claude.ai', vendor: 'anthropic' },
+            { id: 'gemini-u', label: 'Gemini', subtitle: 'Visual Analysis', icon: '💎', desc: 'Analyze UI screenshots, suggest improvements', price: 'Free/$20', url: 'https://gemini.google.com', vendor: 'google' },
+            { id: 'chatgpt-u', label: 'ChatGPT', subtitle: 'UX Research', icon: '🤖', desc: 'User research synthesis', price: '$20/mo', url: 'https://chat.openai.com', vendor: 'openai' },
+            { id: 'uxtweak', label: 'UXtweak', subtitle: 'Testing', icon: '🧪', desc: 'AI usability testing', price: 'Free tier', url: 'https://uxtweak.com', vendor: 'other' },
+          ]},
+          assistants: { label: 'Design AI', icon: '🛠️', color: 'blue', colorHex: '#3b82f6', tools: [
+            { id: 'figmaai', label: 'Figma AI', subtitle: 'First Draft', icon: '🎨', desc: 'Text-to-design, AI prototyping', price: '$15/mo', url: 'https://figma.com', vendor: 'other' },
+            { id: 'uizard', label: 'Uizard', subtitle: 'Sketch→UI', icon: '📱', desc: 'Sketch to mockup conversion', price: 'Free/$19', url: 'https://uizard.io', vendor: 'other' },
+            { id: 'galileo', label: 'Galileo AI', subtitle: 'Generate', icon: '🚀', desc: 'Full UI generation from text', price: 'Waitlist', url: 'https://galileo.ai', vendor: 'other' },
+          ]},
+          orchestration: { label: 'AI Plugins', icon: '🎯', color: 'orange', colorHex: '#f97316', tools: [
+            { id: 'magician', label: 'Magician', subtitle: 'Figma', icon: '🪄', desc: 'AI icon and copy generation', price: '$5/mo', url: 'https://magician.design', vendor: 'other' },
+          ]},
+          execution: { label: 'Design-to-Code', icon: '🚀', color: 'pink', colorHex: '#ec4899', tools: [
+            { id: 'firebasestudio-u', label: 'Firebase Studio', subtitle: 'Vibe Code', icon: '🔥', desc: 'Design to working app', price: 'Free tier', url: 'https://firebase.studio', vendor: 'google' },
+            { id: 'locofy', label: 'Locofy.ai', subtitle: '10x faster', icon: '⚡', desc: 'Figma to React/Vue', price: 'Free tier', url: 'https://locofy.ai', vendor: 'other' },
+            { id: 'anima', label: 'Anima', subtitle: 'Export', icon: '📤', desc: 'Auto Layout to production code', price: 'Free/$39', url: 'https://animaapp.com', vendor: 'other' },
+          ]},
+          productivity: { label: 'Side Productivity', icon: '📐', color: 'purple', colorHex: '#a855f7', tools: [
+            { id: 'geminiworkspace-u', label: 'Gemini Workspace', subtitle: 'Docs', icon: '📄', desc: 'Design documentation', price: '$20/mo', url: 'https://workspace.google.com', vendor: 'google' },
+            { id: 'miro', label: 'Miro AI', subtitle: 'Whiteboard', icon: '🖼️', desc: 'AI whiteboarding and ideation', price: 'Free/$8', url: 'https://miro.com', vendor: 'other' },
+            { id: 'framer', label: 'Framer AI', subtitle: 'Websites', icon: '🌐', desc: 'AI website builder', price: 'Free/$5', url: 'https://framer.com', vendor: 'other' },
+          ]}
+        },
+        target: { label: 'Production UI', icon: '🎯', subtitle: 'Beautiful interfaces' }
+      },
+      
+      writer: {
+        name: 'Technical Writer', icon: '📝', subtitle: 'API Docs | Knowledge Base', color: '#8b5cf6',
+        layers: {
+          thinking: { label: 'Content Strategy', icon: '🧠', color: 'emerald', colorHex: '#10b981', tools: [
+            { id: 'claude-w', label: 'Claude', subtitle: 'Writing', icon: '🎭', desc: 'Technical writing, API documentation', price: '$20/mo', url: 'https://claude.ai', vendor: 'anthropic' },
+            { id: 'gemini-w', label: 'Gemini', subtitle: 'Research', icon: '💎', desc: 'Technical research, fact-checking', price: 'Free/$20', url: 'https://gemini.google.com', vendor: 'google' },
+            { id: 'notebooklm-w', label: 'NotebookLM', subtitle: 'Sources', icon: '📓', desc: 'Analyze source materials, create audio', price: 'Free', url: 'https://notebooklm.google.com', vendor: 'google' },
+          ]},
+          assistants: { label: 'Writing AI', icon: '🛠️', color: 'blue', colorHex: '#3b82f6', tools: [
+            { id: 'grammarly', label: 'Grammarly', subtitle: 'Style', icon: '✍️', desc: 'AI writing assistant', price: 'Free/$12', url: 'https://grammarly.com', vendor: 'other' },
+            { id: 'doc360', label: 'Document360', subtitle: 'Eddy AI', icon: '📚', desc: 'AI knowledge base', price: 'Contact', url: 'https://document360.com', vendor: 'other' },
+          ]},
+          orchestration: { label: 'Doc Agents', icon: '🎯', color: 'orange', colorHex: '#f97316', tools: [
+            { id: 'mintlifyagent', label: 'Mintlify AI', subtitle: 'Self-update', icon: '🤖', desc: 'Auto-updating documentation', price: 'Free tier', url: 'https://mintlify.com', vendor: 'other' },
+          ]},
+          execution: { label: 'Doc Platforms', icon: '🚀', color: 'pink', colorHex: '#ec4899', tools: [
+            { id: 'mintlify', label: 'Mintlify', subtitle: 'LLMs.txt', icon: '📖', desc: 'Used by Anthropic, Cursor', price: 'Free tier', url: 'https://mintlify.com', vendor: 'other' },
+            { id: 'readme', label: 'ReadMe', subtitle: 'Interactive', icon: '📗', desc: 'Interactive API docs', price: 'Free tier', url: 'https://readme.com', vendor: 'other' },
+          ]},
+          productivity: { label: 'Side Productivity', icon: '📐', color: 'purple', colorHex: '#a855f7', tools: [
+            { id: 'geminiworkspace-w', label: 'Gemini Workspace', subtitle: 'Docs', icon: '📄', desc: 'AI in Google Docs', price: '$20/mo', url: 'https://workspace.google.com', vendor: 'google' },
+            { id: 'mermaid-w', label: 'Mermaid', subtitle: 'Flowcharts', icon: '🧜‍♀️', desc: 'Technical diagrams', price: 'OSS', url: 'https://mermaid.js.org', vendor: 'other' },
+          ]}
+        },
+        target: { label: 'Published Docs', icon: '📚', subtitle: 'Clear documentation' }
+      },
+      
+      data: {
+        name: 'Data Engineer', icon: '📊', subtitle: 'ETL | Data Pipelines', color: '#06b6d4',
+        layers: {
+          thinking: { label: 'Data Strategy', icon: '🧠', color: 'emerald', colorHex: '#10b981', tools: [
+            { id: 'claude-da', label: 'Claude', subtitle: 'Analysis', icon: '🎭', desc: 'Data architecture design', price: '$20/mo', url: 'https://claude.ai', vendor: 'anthropic' },
+            { id: 'gemini-da', label: 'Gemini', subtitle: 'BigQuery Expert', icon: '💎', desc: 'GCP data stack expertise', price: 'Free/$20', url: 'https://gemini.google.com', vendor: 'google' },
+            { id: 'chatgpt-da', label: 'ChatGPT', subtitle: 'Design', icon: '🤖', desc: 'Pipeline architecture', price: '$20/mo', url: 'https://chat.openai.com', vendor: 'openai' },
+          ]},
+          assistants: { label: 'Text-to-SQL', icon: '🛠️', color: 'blue', colorHex: '#3b82f6', tools: [
+            { id: 'geminibigquery', label: 'Gemini in BigQuery', subtitle: 'Native', icon: '💎', desc: 'Natural language to SQL in BigQuery', price: 'Included', url: 'https://cloud.google.com/bigquery', vendor: 'google' },
+            { id: 'vanna', label: 'Vanna.ai', subtitle: 'RAG SQL', icon: '🔮', desc: 'OSS RAG-based SQL', price: 'OSS', url: 'https://vanna.ai', vendor: 'other' },
+            { id: 'databricks', label: 'Databricks AI', subtitle: '150K users', icon: '🧱', desc: 'SQL assistant', price: 'Included', url: 'https://databricks.com', vendor: 'other' },
+            { id: 'snowflake', label: 'Snowflake Copilot', subtitle: 'GA', icon: '❄️', desc: 'Native SQL copilot', price: 'Included', url: 'https://snowflake.com', vendor: 'other' },
+          ]},
+          orchestration: { label: 'Pipeline Orchestration', icon: '🎯', color: 'orange', colorHex: '#f97316', tools: [
+            { id: 'vertexai-da', label: 'Vertex AI Pipelines', subtitle: 'GCP', icon: '🏢', desc: 'Managed ML pipelines', price: 'Pay per use', url: 'https://cloud.google.com/vertex-ai', vendor: 'google' },
+            { id: 'dagster', label: 'Dagster', subtitle: 'Components', icon: '📊', desc: 'Modern data orchestration', price: 'OSS', url: 'https://dagster.io', vendor: 'other' },
+            { id: 'prefect', label: 'Prefect', subtitle: 'Workflows', icon: '🔀', desc: 'Python-native workflows', price: 'OSS', url: 'https://prefect.io', vendor: 'other' },
+          ]},
+          execution: { label: 'Data Quality', icon: '🚀', color: 'pink', colorHex: '#ec4899', tools: [
+            { id: 'colabenterprise', label: 'Colab Enterprise', subtitle: 'Notebooks', icon: '📓', desc: 'Managed Jupyter with Gemini', price: 'GCP pricing', url: 'https://cloud.google.com/colab', vendor: 'google' },
+            { id: 'montecarlo', label: 'Monte Carlo', subtitle: 'GenAI', icon: '🎰', desc: 'Data observability platform', price: 'Contact', url: 'https://montecarlodata.com', vendor: 'other' },
+            { id: 'greatexp', label: 'Great Expectations', subtitle: 'Validation', icon: '✅', desc: 'Data validation framework', price: 'OSS', url: 'https://greatexpectations.io', vendor: 'other' },
+          ]},
+          productivity: { label: 'Data Catalogs', icon: '📐', color: 'purple', colorHex: '#a855f7', tools: [
+            { id: 'dataplex', label: 'Dataplex', subtitle: 'GCP', icon: '🗂️', desc: 'Google data catalog and governance', price: 'GCP pricing', url: 'https://cloud.google.com/dataplex', vendor: 'google' },
+            { id: 'atlan', label: 'Atlan', subtitle: 'Gartner Leader', icon: '🏆', desc: 'AI-powered data catalog', price: 'Contact', url: 'https://atlan.com', vendor: 'other' },
+          ]}
+        },
+        target: { label: 'Data Warehouse', icon: '🏢', subtitle: 'BigQuery/Snowflake/Databricks' }
+      },
+      
+      architect: {
+        name: 'Solutions Architect', icon: '🏗️', subtitle: 'Cloud Architecture | FinOps', color: '#f59e0b',
+        layers: {
+          thinking: { label: 'Architecture Design', icon: '🧠', color: 'emerald', colorHex: '#10b981', tools: [
+            { id: 'claude-a', label: 'Claude', subtitle: 'Design', icon: '🎭', desc: 'Architecture design and review', price: '$20/mo', url: 'https://claude.ai', vendor: 'anthropic' },
+            { id: 'gemini-a', label: 'Gemini', subtitle: 'GCP Expert', icon: '💎', desc: 'Google Cloud architecture', price: 'Free/$20', url: 'https://gemini.google.com', vendor: 'google' },
+            { id: 'aistudio-a', label: 'Google AI Studio', subtitle: 'Prototyping', icon: '🎨', desc: 'Prototype AI solutions', price: 'Free', url: 'https://aistudio.google.com', vendor: 'google' },
+            { id: 'perplexity-a', label: 'Perplexity', subtitle: 'Research', icon: '🔍', desc: 'Best practices research', price: 'Free', url: 'https://perplexity.ai', vendor: 'other' },
+          ]},
+          assistants: { label: 'Cloud AI', icon: '🛠️', color: 'blue', colorHex: '#3b82f6', tools: [
+            { id: 'geminicodeassist-a', label: 'Gemini Code Assist', subtitle: 'GCP', icon: '💎', desc: 'GCP infrastructure code', price: 'Free/$19', url: 'https://codeassist.google', vendor: 'google' },
+            { id: 'amazonq-a', label: 'Amazon Q Dev', subtitle: 'AWS', icon: '☁️', desc: 'CloudFormation generation', price: 'Free', url: 'https://aws.amazon.com/q/', vendor: 'other' },
+            { id: 'azurecopilot', label: 'Azure Copilot', subtitle: 'Bicep', icon: '🔷', desc: 'Bicep/ARM generation', price: 'Included', url: 'https://azure.microsoft.com', vendor: 'microsoft' },
+          ]},
+          orchestration: { label: 'Cost Optimization', icon: '🎯', color: 'orange', colorHex: '#f97316', tools: [
+            { id: 'vertexai-a', label: 'Vertex AI', subtitle: 'ML Platform', icon: '🏢', desc: 'Enterprise AI platform', price: 'Pay per use', url: 'https://cloud.google.com/vertex-ai', vendor: 'google' },
+            { id: 'spotio-a', label: 'Spot.io', subtitle: 'ML-driven', icon: '💰', desc: 'Cloud cost optimization', price: 'Sub', url: 'https://spot.io', vendor: 'other' },
+            { id: 'castai', label: 'Cast.ai', subtitle: 'K8s', icon: '📉', desc: 'K8s auto-optimization', price: 'Free tier', url: 'https://cast.ai', vendor: 'other' },
+          ]},
+          execution: { label: 'IaC Generation', icon: '🚀', color: 'pink', colorHex: '#ec4899', tools: [
+            { id: 'pulumi-a', label: 'Pulumi AI', subtitle: 'Multi-cloud', icon: '🌐', desc: 'Natural language to IaC', price: 'Free', url: 'https://pulumi.com', vendor: 'other' },
+          ]},
+          productivity: { label: 'Auto-Diagrams', icon: '📐', color: 'purple', colorHex: '#a855f7', tools: [
+            { id: 'hava-a', label: 'Hava.io', subtitle: 'Live infra', icon: '🗺️', desc: 'Auto diagrams from cloud', price: 'Sub', url: 'https://hava.io', vendor: 'other' },
+            { id: 'eraser', label: 'Eraser', subtitle: 'DiagramGPT', icon: '✏️', desc: 'AI architecture diagrams', price: 'Free tier', url: 'https://eraser.io', vendor: 'other' },
+          ]}
+        },
+        target: { label: 'Cloud Architecture', icon: '☁️', subtitle: 'Multi-cloud design' }
+      },
+      
+      manager: {
+        name: 'Engineering Manager', icon: '👥', subtitle: 'Team Leadership | DevProd', color: '#6366f1',
+        layers: {
+          thinking: { label: 'Strategy & Planning', icon: '🧠', color: 'emerald', colorHex: '#10b981', tools: [
+            { id: 'claude-m', label: 'Claude', subtitle: 'Strategy', icon: '🎭', desc: 'Team planning, 1:1 prep', price: '$20/mo', url: 'https://claude.ai', vendor: 'anthropic' },
+            { id: 'gemini-m', label: 'Gemini', subtitle: 'Analysis', icon: '💎', desc: 'Team performance analysis', price: 'Free/$20', url: 'https://gemini.google.com', vendor: 'google' },
+            { id: 'chatgpt-m', label: 'ChatGPT', subtitle: 'Planning', icon: '🤖', desc: 'Team strategy and planning', price: '$20/mo', url: 'https://chat.openai.com', vendor: 'openai' },
+          ]},
+          assistants: { label: 'Code Review AI', icon: '🛠️', color: 'blue', colorHex: '#3b82f6', tools: [
+            { id: 'copilotent', label: 'Copilot Enterprise', subtitle: '$39/user', icon: '🐙', desc: 'Enterprise code review', price: '$39/user', url: 'https://github.com/features/copilot', vendor: 'microsoft' },
+            { id: 'deepsource', label: 'DeepSource', subtitle: 'Analysis', icon: '🔍', desc: 'AI code quality analysis', price: 'Free tier', url: 'https://deepsource.io', vendor: 'other' },
+          ]},
+          orchestration: { label: 'Eng Intelligence', icon: '🎯', color: 'orange', colorHex: '#f97316', tools: [
+            { id: 'linearb', label: 'LinearB', subtitle: 'DORA Free', icon: '📊', desc: 'Free DORA metrics', price: 'Free tier', url: 'https://linearb.io', vendor: 'other' },
+            { id: 'jellyfish', label: 'Jellyfish', subtitle: 'R&D Cap', icon: '🪼', desc: 'R&D capitalization', price: 'Contact', url: 'https://jellyfish.co', vendor: 'other' },
+          ]},
+          execution: { label: 'Meeting AI', icon: '🚀', color: 'pink', colorHex: '#ec4899', tools: [
+            { id: 'fireflies', label: 'Fireflies.ai', subtitle: '90%+ accuracy', icon: '🔥', desc: '69 languages transcription', price: '$10/mo', url: 'https://fireflies.ai', vendor: 'other' },
+            { id: 'otter', label: 'Otter.ai', subtitle: 'Transcribe', icon: '🦦', desc: 'Meeting transcription', price: '$8/mo', url: 'https://otter.ai', vendor: 'other' },
+          ]},
+          productivity: { label: 'Side Productivity', icon: '📐', color: 'purple', colorHex: '#a855f7', tools: [
+            { id: 'geminiworkspace-m', label: 'Gemini Workspace', subtitle: 'Docs/Slides', icon: '📄', desc: 'AI in team documents', price: '$20/mo', url: 'https://workspace.google.com', vendor: 'google' },
+            { id: 'notion-m', label: 'Notion AI', subtitle: 'Team Docs', icon: '📓', desc: 'Team documentation', price: '$10/mo', url: 'https://notion.so', vendor: 'other' },
+          ]}
+        },
+        target: { label: 'Team Productivity', icon: '📈', subtitle: 'DORA metrics improvement' }
+      },
+      
+      mobile: {
+        name: 'Mobile Developer', icon: '📱', subtitle: 'iOS | Android | Flutter', color: '#14b8a6',
+        layers: {
+          thinking: { label: 'Mobile Strategy', icon: '🧠', color: 'emerald', colorHex: '#10b981', tools: [
+            { id: 'claude-mo', label: 'Claude', subtitle: 'Architecture', icon: '🎭', desc: 'Mobile architecture design', price: '$20/mo', url: 'https://claude.ai', vendor: 'anthropic' },
+            { id: 'gemini-mo', label: 'Gemini', subtitle: 'Android Expert', icon: '💎', desc: 'Android development expertise', price: 'Free/$20', url: 'https://gemini.google.com', vendor: 'google' },
+            { id: 'chatgpt-mo', label: 'ChatGPT', subtitle: 'Cross-platform', icon: '🤖', desc: 'Cross-platform strategies', price: '$20/mo', url: 'https://chat.openai.com', vendor: 'openai' },
+          ]},
+          assistants: { label: 'Mobile Code AI', icon: '🛠️', color: 'blue', colorHex: '#3b82f6', tools: [
+            { id: 'androidstudio', label: 'Gemini in Android Studio', subtitle: 'Native', icon: '🤖', desc: 'AI coding for Android, Agent Mode', price: 'Free/$45', url: 'https://developer.android.com/studio/gemini', vendor: 'google' },
+            { id: 'geminifirebase', label: 'Gemini in Firebase', subtitle: 'Full Stack', icon: '🔥', desc: 'Mobile backend with AI', price: 'Free tier', url: 'https://firebase.google.com', vendor: 'google' },
+            { id: 'cursor-mo', label: 'Cursor', subtitle: 'Flutter/RN', icon: '📝', desc: 'Cross-platform development', price: '$20/mo', url: 'https://cursor.com', vendor: 'other' },
+            { id: 'copilot-mo', label: 'GitHub Copilot', subtitle: 'Swift/Kotlin', icon: '🐙', desc: 'Mobile code completion', price: '$10/mo', url: 'https://github.com/features/copilot', vendor: 'microsoft' },
+          ]},
+          orchestration: { label: 'App Builders', icon: '🎯', color: 'orange', colorHex: '#f97316', tools: [
+            { id: 'firebasestudio-mo', label: 'Firebase Studio', subtitle: 'Full App', icon: '🔥', desc: 'AI-powered app development', price: 'Free tier', url: 'https://firebase.studio', vendor: 'google' },
+            { id: 'flutterflow', label: 'FlutterFlow', subtitle: 'Visual', icon: '🎨', desc: 'Visual Flutter builder', price: 'Free/$30', url: 'https://flutterflow.io', vendor: 'other' },
+            { id: 'expo', label: 'Expo AI', subtitle: 'React Native', icon: '⚡', desc: 'RN development platform', price: 'Free tier', url: 'https://expo.dev', vendor: 'other' },
+          ]},
+          execution: { label: 'Testing & CI/CD', icon: '🚀', color: 'pink', colorHex: '#ec4899', tools: [
+            { id: 'testsigma-mo', label: 'Testsigma', subtitle: 'Mobile', icon: '📱', desc: 'Mobile test automation', price: 'Free tier', url: 'https://testsigma.com', vendor: 'other' },
+            { id: 'browserstack', label: 'BrowserStack', subtitle: 'Devices', icon: '📲', desc: 'Real device cloud', price: 'Contact', url: 'https://browserstack.com', vendor: 'other' },
+          ]},
+          productivity: { label: 'On-Device ML', icon: '📐', color: 'purple', colorHex: '#a855f7', tools: [
+            { id: 'mlkit', label: 'ML Kit', subtitle: 'Google', icon: '🤖', desc: 'On-device ML for Android/iOS', price: 'Free', url: 'https://developers.google.com/ml-kit', vendor: 'google' },
+            { id: 'coreml', label: 'Core ML', subtitle: 'iOS', icon: '🍎', desc: 'Apple on-device ML', price: 'Free', url: 'https://developer.apple.com/machine-learning/', vendor: 'other' },
+          ]}
+        },
+        target: { label: 'App Store', icon: '📱', subtitle: 'iOS App Store / Google Play' }
+      },
+      
+      game: {
+        name: 'Game Developer', icon: '🎮', subtitle: 'Unity | Unreal | NPC AI', color: '#f43f5e',
+        layers: {
+          thinking: { label: 'Game Design', icon: '🧠', color: 'emerald', colorHex: '#10b981', tools: [
+            { id: 'claude-g', label: 'Claude', subtitle: 'Narrative', icon: '🎭', desc: 'Story writing, dialogue trees', price: '$20/mo', url: 'https://claude.ai', vendor: 'anthropic' },
+            { id: 'gemini-g', label: 'Gemini', subtitle: 'Multimodal', icon: '💎', desc: 'Visual asset analysis, concept art review', price: 'Free/$20', url: 'https://gemini.google.com', vendor: 'google' },
+            { id: 'chatgpt-g', label: 'ChatGPT', subtitle: 'Game Design', icon: '🤖', desc: 'Game mechanics design', price: '$20/mo', url: 'https://chat.openai.com', vendor: 'openai' },
+          ]},
+          assistants: { label: 'Code & Assets', icon: '🛠️', color: 'blue', colorHex: '#3b82f6', tools: [
+            { id: 'claudecode-g', label: 'Claude Code', subtitle: 'Game Logic', icon: '⌨️', desc: 'Game programming, shader code', price: 'API', url: 'https://claude.ai/code', vendor: 'anthropic' },
+            { id: 'unityai', label: 'Unity AI', subtitle: 'Beta', icon: '🎮', desc: 'Unity Muse assistant', price: 'Included', url: 'https://unity.com', vendor: 'other' },
+            { id: 'leonardo', label: 'Leonardo.AI', subtitle: 'Assets', icon: '🎨', desc: 'Game asset generation', price: 'Free tier', url: 'https://leonardo.ai', vendor: 'other' },
+            { id: 'scenario', label: 'Scenario', subtitle: 'Consistent', icon: '🖼️', desc: 'Consistent game assets', price: 'Contact', url: 'https://scenario.com', vendor: 'other' },
+          ]},
+          orchestration: { label: 'NPC AI', icon: '🎯', color: 'orange', colorHex: '#f97316', tools: [
+            { id: 'inworld', label: 'Inworld AI', subtitle: 'Ubisoft/Xbox', icon: '🤖', desc: 'AI character engine', price: 'Contact', url: 'https://inworld.ai', vendor: 'other' },
+            { id: 'nvidiaace', label: 'NVIDIA ACE', subtitle: 'NPCs', icon: '🎭', desc: 'AI-powered game characters', price: 'Contact', url: 'https://nvidia.com/ace', vendor: 'other' },
+          ]},
+          execution: { label: 'Audio AI', icon: '🚀', color: 'pink', colorHex: '#ec4899', tools: [
+            { id: 'aiva', label: 'AIVA', subtitle: '250+ styles', icon: '🎵', desc: 'AI game music composition', price: 'Free/$15', url: 'https://aiva.ai', vendor: 'other' },
+            { id: 'elevenlabs', label: 'ElevenLabs', subtitle: 'Voice', icon: '🗣️', desc: 'AI character voices', price: 'Free/$5', url: 'https://elevenlabs.io', vendor: 'other' },
+          ]},
+          productivity: { label: 'Side Productivity', icon: '📐', color: 'purple', colorHex: '#a855f7', tools: [
+            { id: 'notebooklm-g', label: 'NotebookLM', subtitle: 'Lore', icon: '📓', desc: 'Game lore organization', price: 'Free', url: 'https://notebooklm.google.com', vendor: 'google' },
+            { id: 'mermaid-g', label: 'Mermaid', subtitle: 'Game Flows', icon: '🧜‍♀️', desc: 'Game flow diagrams', price: 'OSS', url: 'https://mermaid.js.org', vendor: 'other' },
+          ]}
+        },
+        target: { label: 'Published Game', icon: '🎮', subtitle: 'Steam/Console/Mobile' }
+      },
+      
+      nocode: {
+        name: 'No-Code Builder', icon: '🔧', subtitle: 'Citizen Developer | Automation', color: '#8b5cf6',
+        layers: {
+          thinking: { label: 'Planning & Design', icon: '🧠', color: 'emerald', colorHex: '#10b981', tools: [
+            { id: 'claude-nc', label: 'Claude', subtitle: 'Logic Design', icon: '🎭', desc: 'Plan app logic, workflow design', price: '$20/mo', url: 'https://claude.ai', vendor: 'anthropic' },
+            { id: 'gemini-nc', label: 'Gemini', subtitle: 'App Planning', icon: '💎', desc: 'App architecture without code', price: 'Free/$20', url: 'https://gemini.google.com', vendor: 'google' },
+            { id: 'chatgpt-nc', label: 'ChatGPT', subtitle: 'Requirements', icon: '🤖', desc: 'Define app requirements', price: '$20/mo', url: 'https://chat.openai.com', vendor: 'openai' },
+          ]},
+          assistants: { label: 'App Builders', icon: '🛠️', color: 'blue', colorHex: '#3b82f6', tools: [
+            { id: 'appsheet', label: 'AppSheet', subtitle: 'Google', icon: '📱', desc: 'No-code app builder from Google', price: 'Free/$5/user', url: 'https://appsheet.com', vendor: 'google' },
+            { id: 'firebasestudio-nc', label: 'Firebase Studio', subtitle: 'Vibe Code', icon: '🔥', desc: 'AI-powered full app development', price: 'Free tier', url: 'https://firebase.studio', vendor: 'google' },
+            { id: 'powerapps', label: 'Power Apps', subtitle: 'Microsoft', icon: '⚡', desc: 'Enterprise no-code apps', price: '$20/user/mo', url: 'https://powerapps.microsoft.com', vendor: 'microsoft' },
+            { id: 'bubble', label: 'Bubble', subtitle: 'Full Apps', icon: '🫧', desc: 'Visual web app builder', price: 'Free/$29/mo', url: 'https://bubble.io', vendor: 'other' },
+            { id: 'retool', label: 'Retool', subtitle: 'Internal Tools', icon: '🔨', desc: 'Build internal tools fast', price: 'Free/$10/mo', url: 'https://retool.com', vendor: 'other' },
+            { id: 'glide', label: 'Glide', subtitle: 'Mobile Apps', icon: '📲', desc: 'Spreadsheet to app', price: 'Free/$25/mo', url: 'https://glideapps.com', vendor: 'other' },
+            { id: 'softr', label: 'Softr', subtitle: 'Airtable Apps', icon: '🧱', desc: 'Airtable-powered apps', price: 'Free/$49/mo', url: 'https://softr.io', vendor: 'other' },
+          ]},
+          orchestration: { label: 'Workflow Automation', icon: '🎯', color: 'orange', colorHex: '#f97316', tools: [
+            { id: 'zapier', label: 'Zapier', subtitle: '7000+ Apps', icon: '⚡', desc: 'Connect apps, automate workflows', price: 'Free/$19/mo', url: 'https://zapier.com', vendor: 'other' },
+            { id: 'make', label: 'Make', subtitle: 'Visual', icon: '🔄', desc: 'Advanced visual automation', price: 'Free/$9/mo', url: 'https://make.com', vendor: 'other' },
+            { id: 'n8n-nc', label: 'n8n', subtitle: 'Self-host', icon: '🔀', desc: 'Open-source workflow automation', price: 'OSS/Cloud', url: 'https://n8n.io', vendor: 'other' },
+            { id: 'powerautomate', label: 'Power Automate', subtitle: 'Microsoft', icon: '🌊', desc: 'Microsoft workflow automation', price: '$15/user/mo', url: 'https://powerautomate.microsoft.com', vendor: 'microsoft' },
+            { id: 'workato', label: 'Workato', subtitle: 'Enterprise', icon: '🏢', desc: 'Enterprise integration platform', price: 'Contact', url: 'https://workato.com', vendor: 'other' },
+          ]},
+          execution: { label: 'Data & Databases', icon: '🚀', color: 'pink', colorHex: '#ec4899', tools: [
+            { id: 'airtable', label: 'Airtable', subtitle: 'Spreadsheet DB', icon: '📊', desc: 'Spreadsheet-database hybrid', price: 'Free/$20/mo', url: 'https://airtable.com', vendor: 'other' },
+            { id: 'notion-nc', label: 'Notion', subtitle: 'Workspace', icon: '📓', desc: 'All-in-one workspace with databases', price: 'Free/$10/mo', url: 'https://notion.so', vendor: 'other' },
+            { id: 'coda', label: 'Coda', subtitle: 'Docs + Apps', icon: '📄', desc: 'Docs that work like apps', price: 'Free/$10/mo', url: 'https://coda.io', vendor: 'other' },
+            { id: 'supabase', label: 'Supabase', subtitle: 'Backend', icon: '⚡', desc: 'Open source Firebase alternative', price: 'Free/$25/mo', url: 'https://supabase.com', vendor: 'other' },
+          ]},
+          productivity: { label: 'Analytics & BI', icon: '📐', color: 'purple', colorHex: '#a855f7', tools: [
+            { id: 'lookerstudio', label: 'Looker Studio', subtitle: 'Google', icon: '📈', desc: 'Free BI dashboards from Google', price: 'Free', url: 'https://lookerstudio.google.com', vendor: 'google' },
+            { id: 'powerbi', label: 'Power BI', subtitle: 'Microsoft', icon: '📊', desc: 'Business intelligence platform', price: 'Free/$10/mo', url: 'https://powerbi.microsoft.com', vendor: 'microsoft' },
+            { id: 'metabase', label: 'Metabase', subtitle: 'OSS BI', icon: '📉', desc: 'Open source business intelligence', price: 'OSS/$85/mo', url: 'https://metabase.com', vendor: 'other' },
+          ]}
+        },
+        target: { label: 'Working Application', icon: '🚀', subtitle: 'No code required' }
+      },
+      
+      aiml: {
+        name: 'AI/ML Engineer', icon: '🤖', subtitle: 'Models | Training | MLOps', color: '#ec4899',
+        layers: {
+          thinking: { label: 'Research & Planning', icon: '🧠', color: 'emerald', colorHex: '#10b981', tools: [
+            { id: 'claude-ml', label: 'Claude', subtitle: 'Architecture', icon: '🎭', desc: 'ML system design, paper analysis', price: '$20/mo', url: 'https://claude.ai', vendor: 'anthropic' },
+            { id: 'gemini-ml', label: 'Gemini', subtitle: 'Research', icon: '💎', desc: 'ML research, code explanation', price: 'Free/$20', url: 'https://gemini.google.com', vendor: 'google' },
+            { id: 'notebooklm-ml', label: 'NotebookLM', subtitle: 'Papers', icon: '📓', desc: 'Analyze research papers', price: 'Free', url: 'https://notebooklm.google.com', vendor: 'google' },
+            { id: 'chatgpt-ml', label: 'ChatGPT', subtitle: 'Coding', icon: '🤖', desc: 'ML code generation', price: '$20/mo', url: 'https://chat.openai.com', vendor: 'openai' },
+            { id: 'perplexity-ml', label: 'Perplexity', subtitle: 'Papers', icon: '🔍', desc: 'Research with citations', price: 'Free/$20', url: 'https://perplexity.ai', vendor: 'other' },
+          ]},
+          assistants: { label: 'ML Development', icon: '🛠️', color: 'blue', colorHex: '#3b82f6', tools: [
+            { id: 'claudecode-ml', label: 'Claude Code', subtitle: 'ML Code', icon: '⌨️', desc: 'Generate PyTorch, TensorFlow code', price: 'API', url: 'https://claude.ai/code', vendor: 'anthropic' },
+            { id: 'colabenterprise-ml', label: 'Colab Enterprise', subtitle: 'Notebooks', icon: '📓', desc: 'Managed Jupyter with Gemini + GPUs', price: 'GCP pricing', url: 'https://cloud.google.com/colab', vendor: 'google' },
+            { id: 'cursor-ml', label: 'Cursor', subtitle: 'ML IDE', icon: '📝', desc: 'AI-native IDE for ML', price: '$20/mo', url: 'https://cursor.com', vendor: 'other' },
+            { id: 'copilot-ml', label: 'GitHub Copilot', subtitle: 'Code', icon: '🐙', desc: 'ML code completion', price: '$10/mo', url: 'https://github.com/features/copilot', vendor: 'microsoft' },
+          ]},
+          orchestration: { label: 'ML Frameworks & APIs', icon: '🎯', color: 'orange', colorHex: '#f97316', tools: [
+            { id: 'vertexai-ml', label: 'Vertex AI', subtitle: 'Full Platform', icon: '🏢', desc: 'End-to-end ML platform, Model Garden', price: 'Pay per use', url: 'https://cloud.google.com/vertex-ai', vendor: 'google' },
+            { id: 'claudeapi-ml', label: 'Claude API', subtitle: 'Anthropic', icon: '🎭', desc: 'Build with Claude models', price: 'Pay per token', url: 'https://docs.anthropic.com', vendor: 'anthropic' },
+            { id: 'openaiapi', label: 'OpenAI API', subtitle: 'GPT/DALL-E', icon: '🤖', desc: 'GPT-4, DALL-E, Whisper APIs', price: 'Pay per token', url: 'https://platform.openai.com', vendor: 'openai' },
+            { id: 'huggingface', label: 'Hugging Face', subtitle: 'Hub', icon: '🤗', desc: 'Model hub, Transformers library', price: 'Free/$9/mo', url: 'https://huggingface.co', vendor: 'other' },
+            { id: 'langchain', label: 'LangChain', subtitle: 'Framework', icon: '🔗', desc: 'LLM application framework', price: 'OSS', url: 'https://langchain.com', vendor: 'other' },
+            { id: 'llamaindex', label: 'LlamaIndex', subtitle: 'RAG', icon: '🦙', desc: 'Data framework for LLMs', price: 'OSS', url: 'https://llamaindex.ai', vendor: 'other' },
+          ]},
+          execution: { label: 'MLOps & Deployment', icon: '🚀', color: 'pink', colorHex: '#ec4899', tools: [
+            { id: 'mlflow', label: 'MLflow', subtitle: 'Tracking', icon: '📊', desc: 'Experiment tracking, model registry', price: 'OSS', url: 'https://mlflow.org', vendor: 'other' },
+            { id: 'wandb', label: 'Weights & Biases', subtitle: 'Experiments', icon: '📈', desc: 'ML experiment tracking', price: 'Free/$50/mo', url: 'https://wandb.ai', vendor: 'other' },
+            { id: 'modal', label: 'Modal', subtitle: 'Serverless', icon: '⚡', desc: 'Serverless ML infrastructure', price: 'Pay per use', url: 'https://modal.com', vendor: 'other' },
+            { id: 'replicate', label: 'Replicate', subtitle: 'Deploy', icon: '🔄', desc: 'Run ML models in the cloud', price: 'Pay per use', url: 'https://replicate.com', vendor: 'other' },
+            { id: 'sagemaker', label: 'SageMaker', subtitle: 'AWS', icon: '☁️', desc: 'AWS ML platform', price: 'Pay per use', url: 'https://aws.amazon.com/sagemaker/', vendor: 'other' },
+          ]},
+          productivity: { label: 'Model Fine-tuning', icon: '📐', color: 'purple', colorHex: '#a855f7', tools: [
+            { id: 'vertextuning', label: 'Vertex AI Tuning', subtitle: 'Google', icon: '🎚️', desc: 'Fine-tune Gemini models', price: 'Pay per use', url: 'https://cloud.google.com/vertex-ai', vendor: 'google' },
+            { id: 'openaifinteune', label: 'OpenAI Fine-tuning', subtitle: 'GPT', icon: '🔧', desc: 'Fine-tune GPT models', price: 'Pay per token', url: 'https://platform.openai.com/docs/guides/fine-tuning', vendor: 'openai' },
+            { id: 'together', label: 'Together AI', subtitle: 'Open Models', icon: '🤝', desc: 'Fine-tune open source models', price: 'Pay per use', url: 'https://together.ai', vendor: 'other' },
+            { id: 'axolotl', label: 'Axolotl', subtitle: 'OSS', icon: '🦎', desc: 'Open source fine-tuning tool', price: 'OSS', url: 'https://github.com/OpenAccess-AI-Collective/axolotl', vendor: 'other' },
+          ]}
+        },
+        target: { label: 'Production Model', icon: '🧠', subtitle: 'Deployed AI system' }
+      }
+    };
+
+    // State
+    let currentRole = 'developer';
+    let completedTools = new Set();
+    let currentToolId = null;
+    let currentLayerKey = null;
+
+    // Load from localStorage
+    try {
+      const saved = localStorage.getItem('genai-completed-tools');
+      if (saved) completedTools = new Set(JSON.parse(saved));
+    } catch(e) {}
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      renderRoleButtons();
+      renderLayers();
+    });
+
+    function renderRoleButtons() {
+      const container = document.getElementById('role-buttons');
+      container.innerHTML = Object.entries(rolesData).map(([key, data]) => `
+        <button onclick="switchRole('${key}')" id="btn-${key}" 
+          class="role-btn flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium whitespace-nowrap transition-all ${currentRole === key ? 'active' : 'bg-white/5 text-white/60 hover:bg-white/10'}">
+          <span>${data.icon}</span>
+          <span class="hidden sm:inline">${data.name.split(' ')[0]}</span>
+        </button>
+      `).join('');
+    }
+
+    function getVendorClass(vendor) {
+      const map = {
+        'anthropic': 'vendor-anthropic',
+        'google': 'vendor-google',
+        'openai': 'vendor-openai',
+        'microsoft': 'vendor-microsoft',
+        'other': 'vendor-other'
+      };
+      return map[vendor] || 'vendor-other';
+    }
+    
+    function getVendorLabel(vendor) {
+      const map = {
+        'anthropic': { label: 'Anthropic', color: 'bg-amber-600' },
+        'google': { label: 'Google', color: 'bg-blue-500' },
+        'openai': { label: 'OpenAI', color: 'bg-emerald-600' },
+        'microsoft': { label: 'Microsoft', color: 'bg-cyan-500' },
+        'other': { label: '', color: '' }
+      };
+      return map[vendor] || map['other'];
+    }
+
+    function renderLayers() {
+      const role = rolesData[currentRole];
+      const container = document.getElementById('layers-container');
+      container.innerHTML = '';
+      
+      const layerKeys = Object.keys(role.layers);
+      
+      layerKeys.forEach((layerKey, index) => {
+        const layer = role.layers[layerKey];
+        
+        const layerHtml = `
+          <div class="layer-section layer-${layer.color} p-4 animate-in" style="animation-delay: ${index * 0.1}s">
+            <div class="flex items-center gap-2 mb-3">
+              <div class="layer-badge" style="background: ${layer.colorHex}20; color: ${layer.colorHex};">
+                <span>${layer.icon}</span>
+                <span>${layer.label}</span>
+              </div>
+              <span class="text-[10px] text-white/40">${layer.tools.length} tools</span>
+            </div>
+            <div class="flex flex-wrap gap-2 justify-center">
+              ${layer.tools.map(tool => {
+                const vendorInfo = getVendorLabel(tool.vendor);
+                return `
+                <div onclick="openTool('${tool.id}', '${layerKey}')"
+                  class="tool-card ${getVendorClass(tool.vendor)} ${completedTools.has(tool.id) ? 'completed' : ''}">
+                  <div class="flex items-center gap-2">
+                    <span class="text-lg">${tool.icon}</span>
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center gap-1">
+                        <span class="font-medium text-white text-xs">${tool.label}</span>
+                        ${vendorInfo.label ? `<span class="vendor-tag ${vendorInfo.color} text-white">${vendorInfo.label}</span>` : ''}
+                      </div>
+                      <div class="text-[10px] text-white/50">${tool.subtitle}</div>
+                    </div>
+                    ${completedTools.has(tool.id) ? '<span class="text-green-400 text-xs">✓</span>' : ''}
+                  </div>
+                </div>
+              `}).join('')}
+            </div>
+          </div>
+        `;
+        
+        container.innerHTML += layerHtml;
+        
+        if (index < layerKeys.length - 1) {
+          container.innerHTML += '<div class="arrow-connector"></div>';
+        }
+      });
+
+      const role_data = rolesData[currentRole];
+      document.getElementById('role-node').style.borderColor = role_data.color;
+      document.getElementById('role-node').style.boxShadow = `0 0 30px ${role_data.color}50`;
+      document.getElementById('role-icon').textContent = role_data.icon;
+      document.getElementById('role-title').textContent = role_data.name;
+      document.getElementById('role-subtitle').textContent = role_data.subtitle;
+      
+      document.getElementById('target-icon').textContent = role_data.target.icon;
+      document.getElementById('target-label').textContent = role_data.target.label;
+      document.getElementById('target-subtitle').textContent = role_data.target.subtitle;
+      
+      updateProgress();
+    }
+
+    function updateProgress() {
+      const role = rolesData[currentRole];
+      let total = 0, completed = 0;
+      Object.values(role.layers).forEach(layer => {
+        layer.tools.forEach(tool => {
+          total++;
+          if (completedTools.has(tool.id)) completed++;
+        });
+      });
+      document.getElementById('progress-text').textContent = `${completed}/${total}`;
+      document.getElementById('progress-bar').style.width = `${total > 0 ? (completed / total) * 100 : 0}%`;
+    }
+
+    function switchRole(roleKey) {
+      currentRole = roleKey;
+      document.querySelectorAll('.role-btn').forEach(btn => {
+        btn.classList.remove('active');
+        btn.classList.add('bg-white/5');
+      });
+      document.getElementById(`btn-${roleKey}`).classList.add('active');
+      document.getElementById(`btn-${roleKey}`).classList.remove('bg-white/5');
+      renderLayers();
+      closeSidebar();
+    }
+
+    function openTool(toolId, layerKey) {
+      const role = rolesData[currentRole];
+      const tool = role.layers[layerKey].tools.find(t => t.id === toolId);
+      if (!tool) return;
+      currentToolId = toolId;
+      currentLayerKey = layerKey;
+      
+      const vendorInfo = getVendorLabel(tool.vendor);
+      
+      document.getElementById('sidebar-icon').textContent = tool.icon;
+      document.getElementById('sidebar-title').textContent = tool.label;
+      document.getElementById('sidebar-subtitle').textContent = tool.subtitle;
+      document.getElementById('sidebar-desc').textContent = tool.desc;
+      document.getElementById('sidebar-price').textContent = tool.price;
+      document.getElementById('sidebar-link').href = tool.url;
+      
+      if (vendorInfo.label) {
+        document.getElementById('sidebar-vendor').innerHTML = `<span class="inline-block px-2 py-1 rounded ${vendorInfo.color} text-white text-xs font-medium">${vendorInfo.label}</span>`;
+      } else {
+        document.getElementById('sidebar-vendor').innerHTML = '';
+      }
+      
+      updateCompleteButton();
+      document.getElementById('sidebar').classList.remove('translate-x-full');
+      document.getElementById('overlay').classList.remove('hidden');
+    }
+
+    function closeSidebar() {
+      document.getElementById('sidebar').classList.add('translate-x-full');
+      document.getElementById('overlay').classList.add('hidden');
+      currentToolId = null;
+      currentLayerKey = null;
+    }
+
+    function toggleComplete() {
+      if (!currentToolId) return;
+      if (completedTools.has(currentToolId)) completedTools.delete(currentToolId);
+      else completedTools.add(currentToolId);
+      
+      // Save to localStorage
+      try {
+        localStorage.setItem('genai-completed-tools', JSON.stringify([...completedTools]));
+      } catch(e) {}
+      
+      updateCompleteButton();
+      renderLayers();
+    }
+
+    function updateCompleteButton() {
+      const btn = document.getElementById('sidebar-complete-btn');
+      if (completedTools.has(currentToolId)) {
+        btn.className = 'w-full py-2.5 rounded-lg font-semibold text-sm transition-all bg-green-500/20 text-green-400 border border-green-500/50';
+        btn.textContent = '✓ Completed';
+      } else {
+        btn.className = 'w-full py-2.5 rounded-lg font-semibold text-sm transition-all bg-white/10 border border-white/20 hover:bg-white/20';
+        btn.textContent = 'Mark as Learned';
+      }
+    }
+  </script>
+</body>
+</html>

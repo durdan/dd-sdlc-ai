@@ -459,8 +459,18 @@ export default function SimpleLandingPage() {
         <header className="sticky top-0 z-50 backdrop-blur-2xl bg-white/[0.02] border-b border-white/[0.08]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex h-14 sm:h-16 items-center justify-between">
-              <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex items-center gap-4 sm:gap-6">
                 <img src="/img/logo-sdlc-white.png" alt="SDLC.dev" className="h-8 sm:h-10 w-auto" />
+                {/* Navigation Links */}
+                <nav className="hidden md:flex items-center gap-4">
+                  <Link href="/tech-stacks" className="text-white/60 hover:text-white text-sm font-medium transition-colors">
+                    Tech Stacks
+                  </Link>
+                  <Link href="/learning-paths" className="text-white/60 hover:text-white text-sm font-medium transition-colors flex items-center gap-1">
+                    <GraduationCap className="w-3.5 h-3.5" />
+                    Learning Paths
+                  </Link>
+                </nav>
               </div>
 
               {/* Rate Limit Display */}
@@ -1021,6 +1031,78 @@ export default function SimpleLandingPage() {
           </div>
         </section>
 
+        {/* GenAI Learning Paths Section */}
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500/20 via-cyan-500/10 to-blue-500/20 border border-white/10 p-8 sm:p-12">
+            {/* Background decoration */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-emerald-500/20 to-transparent rounded-full blur-3xl" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-cyan-500/20 to-transparent rounded-full blur-3xl" />
+
+            <div className="relative z-10 flex flex-col lg:flex-row items-center gap-8">
+              {/* Content */}
+              <div className="flex-1 text-center lg:text-left">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 mb-4">
+                  <GraduationCap className="w-3 h-3 text-emerald-400" />
+                  <span className="text-emerald-400 text-sm font-medium">Interactive Guide</span>
+                </div>
+                <h2 className="text-2xl md:text-3xl font-bold mb-3">
+                  <span className="bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent">
+                    GenAI Learning Paths
+                  </span>
+                </h2>
+                <p className="text-white/60 mb-6 max-w-lg">
+                  Explore role-based learning paths for AI tools. From ChatGPT & Claude to Cursor & GitHub Copilot - discover the best tools for developers, designers, PMs, and more.
+                </p>
+
+                {/* Tool icons preview */}
+                <div className="flex flex-wrap justify-center lg:justify-start gap-3 mb-6">
+                  {['🤖 ChatGPT', '🧠 Claude', '⚡ Cursor', '🔧 Copilot', '✨ v0.dev'].map((tool) => (
+                    <span key={tool} className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/70 text-sm">
+                      {tool}
+                    </span>
+                  ))}
+                </div>
+
+                <Link href="/learning-paths">
+                  <Button className="bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white border-0 px-6 py-2 h-auto">
+                    <GraduationCap className="mr-2 w-4 h-4" />
+                    Explore Learning Paths
+                    <ArrowRight className="ml-2 w-4 h-4" />
+                  </Button>
+                </Link>
+              </div>
+
+              {/* Visual preview */}
+              <div className="flex-shrink-0 w-full lg:w-80">
+                <div className="relative bg-slate-900/80 rounded-2xl p-4 border border-white/10">
+                  <div className="text-center mb-4">
+                    <span className="text-4xl">👨‍💻</span>
+                    <p className="text-sm font-semibold text-white mt-2">Software Developer</p>
+                    <p className="text-xs text-white/50">Frontend | Backend | Full-Stack</p>
+                  </div>
+                  <div className="space-y-2">
+                    {[
+                      { label: 'Thinking', color: 'bg-emerald-500', items: 'Claude, ChatGPT' },
+                      { label: 'Assistants', color: 'bg-blue-500', items: 'Cursor, Copilot' },
+                      { label: 'Execution', color: 'bg-pink-500', items: 'v0, Bolt' },
+                    ].map((layer) => (
+                      <div key={layer.label} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10">
+                        <div className={`w-2 h-2 rounded-full ${layer.color}`} />
+                        <span className="text-xs text-white/70 font-medium">{layer.label}</span>
+                        <span className="text-xs text-white/40 ml-auto">{layer.items}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="text-center mt-4">
+                    <span className="text-2xl">🎯</span>
+                    <p className="text-xs text-white/50">Ship Quality Code Faster</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Glass Footer */}
         <footer className="border-t border-white/[0.08] backdrop-blur-xl bg-white/[0.02] py-4">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1029,6 +1111,13 @@ export default function SimpleLandingPage() {
                 <img src="/img/logo-sdlc-white.png" alt="SDLC.dev" className="h-6 w-auto opacity-60" />
               </div>
               <div className="flex items-center gap-4">
+                <Link href="/tech-stacks" className="hover:text-white transition-colors">
+                  Tech Stacks
+                </Link>
+                <Link href="/learning-paths" className="hover:text-white transition-colors flex items-center gap-1">
+                  <GraduationCap className="w-4 h-4" />
+                  Learning Paths
+                </Link>
                 <a href="https://github.com/durdan/dd-sdlc-ai" target="_blank" className="hover:text-white transition-colors flex items-center gap-1">
                   <Github className="w-4 h-4" />
                   GitHub
