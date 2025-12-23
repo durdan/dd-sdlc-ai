@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef, useCallback, useMemo } from "react"
+import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -45,7 +46,9 @@ import {
   ExternalLink,
   Clock,
   Loader2,
-  RotateCcw
+  RotateCcw,
+  ChevronDown,
+  Menu
 } from "lucide-react"
 import { createClient } from '@/lib/supabase/client'
 import { SimpleDocumentGenerationModal } from '@/components/simple-document-generation-modal'
@@ -56,14 +59,9 @@ import { ViewDocsMenu } from '@/components/view-docs-menu'
 import { ProgressIndicator, SpecViewer } from '@/components/analyzer'
 import { AnalysisStep, GeneratedSpec, ERROR_MESSAGES } from '@/types/analyzer'
 import { companies } from '@/data/tech-stacks'
+import { detectInputType, normalizeGitHubUrl, type InputType } from '@/lib/url-detector'
 import { TrendingUp, Building2 } from 'lucide-react'
 import Link from 'next/link'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
 
 type AnalysisStatus = 'idle' | 'analyzing' | 'complete' | 'error'
 
@@ -138,49 +136,65 @@ function GlassCard({
   )
 }
 
-// Tab Button Component
-function TabButton({
-  active,
-  onClick,
-  icon: Icon,
-  label,
-}: {
-  active: boolean
-  onClick: () => void
-  icon: React.ElementType
-  label: string
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`
-        flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-medium transition-all duration-300 text-sm sm:text-base
-        ${
-          active
-            ? 'bg-white/20 text-white shadow-lg shadow-white/10 border border-white/20'
-            : 'text-white/60 hover:text-white hover:bg-white/5'
-        }
-      `}
-    >
-      <Icon className="w-4 h-4" />
-      <span className="hidden sm:inline">{label}</span>
-      <span className="sm:hidden">{label.split(' ')[0]}</span>
-    </button>
-  )
-}
 
 export default function SimpleLandingPage() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [inputValue, setInputValue] = useState("")
-  const [repoUrl, setRepoUrl] = useState("")
-  const [activeTab, setActiveTab] = useState<'describe' | 'analyze'>('describe')
   const [showDocumentMenu, setShowDocumentMenu] = useState(false)
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 })
+  const [mounted, setMounted] = useState(false)
+  const plusButtonRef = useRef<HTMLButtonElement>(null)
+
+  // Auto-detect input type (GitHub URL or description)
+  const inputType = useMemo(() => detectInputType(inputValue), [inputValue])
+
+  // Track if mounted (for portal) and load selectedDocType from localStorage
+  useEffect(() => {
+    setMounted(true)
+    const storedDocType = localStorage.getItem('selectedDocType')
+    if (storedDocType) {
+      setSelectedDocType(storedDocType)
+    }
+  }, [])
+
+  // Map doc type to display label
+  const docTypeLabels: Record<string, string> = {
+    business: 'Business Analysis',
+    functional: 'Functional Spec',
+    technical: 'Technical Spec',
+    ux: 'UX Design',
+    mermaid: 'Architecture',
+    coding: 'AI Coding',
+    test: 'Test Spec',
+    meeting: 'Meeting Notes'
+  }
+
+  // Calculate menu position when opening
+  const updateMenuPosition = useCallback(() => {
+    if (plusButtonRef.current) {
+      const rect = plusButtonRef.current.getBoundingClientRect()
+      setMenuPosition({
+        top: rect.top - 8, // 8px gap above button
+        left: rect.left
+      })
+    }
+  }, [])
+
+  // Handle opening the + menu
+  const handleOpenMenu = useCallback(() => {
+    if (!showDocumentMenu) {
+      updateMenuPosition()
+    }
+    setShowDocumentMenu(!showDocumentMenu)
+  }, [showDocumentMenu, updateMenuPosition])
   const [showDocumentModal, setShowDocumentModal] = useState(false)
   const [showInputAlert, setShowInputAlert] = useState(false)
   const [previousDocuments, setPreviousDocuments] = useState<Record<string, string>>({})
   const [showViewDocsHint, setShowViewDocsHint] = useState(false)
+  const [selectedDocType, setSelectedDocType] = useState<string>('business')
+  const [showMobileMenu, setShowMobileMenu] = useState(false)
   const [rateLimitStatus, setRateLimitStatus] = useState<{
     remaining: number
     total: number
@@ -280,14 +294,27 @@ export default function SimpleLandingPage() {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      const target = event.target as Node
+      if (
+        menuRef.current && !menuRef.current.contains(target) &&
+        plusButtonRef.current && !plusButtonRef.current.contains(target)
+      ) {
         setShowDocumentMenu(false)
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+    if (showDocumentMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+      window.addEventListener('scroll', updateMenuPosition, true)
+      window.addEventListener('resize', updateMenuPosition)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      window.removeEventListener('scroll', updateMenuPosition, true)
+      window.removeEventListener('resize', updateMenuPosition)
+    }
+  }, [showDocumentMenu, updateMenuPosition])
 
   useEffect(() => {
     if (!user && rateLimitStatus) {
@@ -336,7 +363,7 @@ export default function SimpleLandingPage() {
 
   // Analyze GitHub repo using EventSource for reliable SSE
   const handleAnalyzeRepo = useCallback(() => {
-    if (!repoUrl.trim()) {
+    if (!inputValue.trim()) {
       setAnalysisError('Please enter a GitHub repository URL')
       return
     }
@@ -350,8 +377,9 @@ export default function SimpleLandingPage() {
 
     let fullMarkdown = ''
 
-    // Use native EventSource for reliable SSE
-    const encodedUrl = encodeURIComponent(repoUrl)
+    // Normalize and encode the URL
+    const normalizedUrl = normalizeGitHubUrl(inputValue)
+    const encodedUrl = encodeURIComponent(normalizedUrl)
     const eventSource = new EventSource(`/api/analyze/repo/sse?repo=${encodedUrl}`)
     eventSourceRef.current = eventSource
 
@@ -384,7 +412,7 @@ export default function SimpleLandingPage() {
     eventSource.addEventListener('complete', (e) => {
       try {
         const data = JSON.parse(e.data)
-        setSpec({ markdown: data.markdown || fullMarkdown, metadata: data.metadata })
+        setSpec({ markdown: data.markdown || fullMarkdown, metadata: data.metadata } as GeneratedSpec)
         setShareUrl(data.shareUrl)
         setAnalysisStatus('complete')
         setIsStreaming(false)
@@ -412,28 +440,21 @@ export default function SimpleLandingPage() {
       eventSource.close()
     })
 
-  }, [repoUrl, resetAnalysis])
+  }, [inputValue, resetAnalysis])
 
   const handleDocumentSelect = (doc: any) => {
+    const docType = doc.docType || 'business'
+    setSelectedDocType(docType)
+    localStorage.setItem('selectedDocType', docType)
+    setShowDocumentMenu(false)
+
     if (!inputValue.trim()) {
-      setShowInputAlert(true)
+      // Just update selection, don't generate yet
       return
     }
 
-    setShowDocumentMenu(false)
-    localStorage.setItem('selectedDocType', doc.docType || 'business')
-    setTimeout(() => handleGetStarted(), 100)
+    setTimeout(() => handleGetStarted(docType), 100)
   }
-
-  const features = [
-    { icon: Brain, title: "Business Analysis", docType: "business", gradient: "from-blue-500 to-cyan-500" },
-    { icon: FileCode, title: "Technical Specs", docType: "technical", gradient: "from-purple-500 to-pink-500" },
-    { icon: Palette, title: "UX Design", docType: "ux", gradient: "from-green-500 to-emerald-500" },
-    { icon: Database, title: "Architecture", docType: "mermaid", gradient: "from-orange-500 to-amber-500" },
-    { icon: Sparkles, title: "AI Coding", docType: "coding", gradient: "from-indigo-500 to-violet-500" },
-    { icon: FlaskConical, title: "Test Spec", docType: "test", gradient: "from-rose-500 to-red-500" },
-    { icon: Users, title: "Meeting Notes", docType: "meeting", gradient: "from-teal-500 to-cyan-500" },
-  ]
 
   const documentTypes = [
     { icon: FileText, title: "Business Analysis", description: "Create BRD & requirements", requiresAuth: false, docType: "business" },
@@ -465,77 +486,127 @@ export default function SimpleLandingPage() {
 
       <div className="relative min-h-screen text-white flex flex-col">
         {/* Glass Header */}
-        <header className="sticky top-0 z-50 backdrop-blur-2xl bg-white/[0.02] border-b border-white/[0.08]">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex h-14 sm:h-16 items-center justify-between">
-              <div className="flex items-center gap-4 sm:gap-6">
-                <img src="/img/logo-sdlc-white.png" alt="SDLC.dev" className="h-8 sm:h-10 w-auto" />
-                {/* Navigation Links */}
-                <nav className="hidden md:flex items-center gap-4">
-                  <Link href="/tech-stacks" className="text-white/60 hover:text-white text-sm font-medium transition-colors">
-                    Tech Stacks
-                  </Link>
-                  <Link href="/learning-paths" className="text-white/60 hover:text-white text-sm font-medium transition-colors flex items-center gap-1">
-                    <GraduationCap className="w-3.5 h-3.5" />
-                    Learning Paths
-                  </Link>
-                </nav>
+        <header className="sticky top-0 z-50">
+          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-xl border-b border-white/10" />
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex h-16 sm:h-20 items-center justify-between">
+              {/* Left: Logo */}
+              <div className="flex items-center">
+                <Link href="/" className="flex items-center gap-2">
+                  <img src="/img/logo-sdlc-white.png" alt="SDLC.dev" className="h-12 sm:h-16 w-auto" />
+                </Link>
               </div>
 
-              {/* Rate Limit Display */}
-              {!user && rateLimitStatus && (
-                <div className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-xl border ${
-                  rateLimitStatus.remaining <= 3
-                    ? 'bg-orange-500/10 border-orange-500/30'
-                    : rateLimitStatus.remaining === 0
-                    ? 'bg-red-500/10 border-red-500/30'
-                    : 'bg-green-500/10 border-green-500/30'
-                }`}>
-                  <span className={`text-sm font-semibold ${
-                    rateLimitStatus.remaining <= 3 ? 'text-orange-400' : rateLimitStatus.remaining === 0 ? 'text-red-400' : 'text-green-400'
-                  }`}>
-                    {Math.max(0, rateLimitStatus.remaining)}/10 docs
-                  </span>
-                  <div className="w-px h-4 bg-white/20" />
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-3 w-3 text-white/50" />
-                    <span className="text-xs text-white/50">{getTimeUntilReset(rateLimitStatus.resetAt)}</span>
-                  </div>
-                </div>
-              )}
+              {/* Center: Navigation Links - Hidden on mobile */}
+              <nav className="hidden md:flex items-center gap-1">
+                <Link
+                  href="/tech-stacks"
+                  className="px-3 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 text-sm font-medium transition-all flex items-center gap-1.5"
+                >
+                  <Database className="w-4 h-4" />
+                  Tech Stacks
+                </Link>
+                <Link
+                  href="/learning-paths"
+                  className="px-3 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 text-sm font-medium transition-all flex items-center gap-1.5"
+                >
+                  <GraduationCap className="w-4 h-4" />
+                  Learning Paths
+                </Link>
+              </nav>
 
+              {/* Right: Rate Limit + Auth */}
               <div className="flex items-center gap-2 sm:gap-3">
+                {/* Rate Limit Display - Compact */}
+                {!user && rateLimitStatus && (
+                  <div className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium ${
+                    rateLimitStatus.remaining <= 3
+                      ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30'
+                      : rateLimitStatus.remaining === 0
+                      ? 'bg-red-500/20 text-red-300 border border-red-500/30'
+                      : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                  }`}>
+                    <Sparkles className="w-3 h-3" />
+                    <span>{Math.max(0, rateLimitStatus.remaining)}/10</span>
+                  </div>
+                )}
+
+                {/* Auth Buttons */}
                 {user ? (
                   <Button
                     onClick={() => window.location.href = '/dashboard'}
-                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 border-0 text-sm"
+                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 border-0 text-sm h-9"
                     size="sm"
                   >
-                    Dashboard
+                    <span className="hidden sm:inline">Dashboard</span>
+                    <ArrowRight className="w-4 h-4 sm:ml-1" />
                   </Button>
                 ) : (
                   <>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-white/70 hover:text-white hover:bg-white/10 text-sm"
+                      className="hidden sm:flex text-white/70 hover:text-white hover:bg-white/10 text-sm h-9"
                       onClick={() => window.location.href = '/signin'}
                     >
-                      <LogIn className="h-4 w-4 mr-1 sm:mr-2" />
-                      <span className="hidden sm:inline">Sign in</span>
+                      Sign in
                     </Button>
                     <Button
                       size="sm"
-                      className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 border-0 text-sm"
+                      className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 border-0 text-sm h-9"
                       onClick={() => window.location.href = '/signin'}
                     >
-                      <UserPlus className="h-4 w-4 mr-1 sm:mr-2" />
-                      Sign up
+                      <span className="hidden sm:inline">Get Started</span>
+                      <span className="sm:hidden">Sign up</span>
                     </Button>
                   </>
                 )}
+
+                {/* Mobile Menu Button */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="md:hidden text-white/70 hover:text-white hover:bg-white/10 h-9 w-9 p-0"
+                  onClick={() => setShowMobileMenu(!showMobileMenu)}
+                >
+                  {showMobileMenu ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                </Button>
               </div>
             </div>
+
+            {/* Mobile Menu */}
+            {showMobileMenu && (
+              <div className="md:hidden py-3 border-t border-white/10">
+                <nav className="flex flex-col gap-1">
+                  <Link
+                    href="/tech-stacks"
+                    className="px-3 py-2.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10 text-sm font-medium transition-all flex items-center gap-2"
+                    onClick={() => setShowMobileMenu(false)}
+                  >
+                    <Database className="w-4 h-4" />
+                    Tech Stacks
+                  </Link>
+                  <Link
+                    href="/learning-paths"
+                    className="px-3 py-2.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10 text-sm font-medium transition-all flex items-center gap-2"
+                    onClick={() => setShowMobileMenu(false)}
+                  >
+                    <GraduationCap className="w-4 h-4" />
+                    Learning Paths
+                  </Link>
+                  {!user && rateLimitStatus && (
+                    <div className={`mx-3 mt-2 px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2 ${
+                      rateLimitStatus.remaining <= 3
+                        ? 'bg-orange-500/20 text-orange-300'
+                        : 'bg-emerald-500/20 text-emerald-300'
+                    }`}>
+                      <Sparkles className="w-3 h-3" />
+                      <span>{Math.max(0, rateLimitStatus.remaining)}/10 free generations remaining</span>
+                    </div>
+                  )}
+                </nav>
+              </div>
+            )}
           </div>
         </header>
 
@@ -554,42 +625,38 @@ export default function SimpleLandingPage() {
               </p>
             </div>
 
-            {/* Tab Buttons */}
-            <div className="flex items-center justify-center gap-2">
-              <TabButton
-                active={activeTab === 'describe'}
-                onClick={() => setActiveTab('describe')}
-                icon={Brain}
-                label="Describe Project"
-              />
-              <TabButton
-                active={activeTab === 'analyze'}
-                onClick={() => setActiveTab('analyze')}
-                icon={Github}
-                label="Analyze Repo"
-              />
-            </div>
-
-            {/* Main Input Card */}
+            {/* Main Input Card - Unified Smart Input */}
             <GlassCard className="p-4 sm:p-6" hover={false}>
-              {activeTab === 'describe' ? (
+              {/* Show input when idle or when analyzing (show progress) */}
+              {analysisStatus === 'idle' && (
                 <>
-                  {/* Describe Project Tab */}
+                  {/* Smart Input */}
                   <div className="relative">
                     <textarea
-                      placeholder="Describe your project idea (e.g., 'Build an Uber for medicine delivery', 'Create a social media app for pet owners')"
-                      className="w-full min-h-[100px] sm:min-h-[120px] text-base sm:text-lg text-white placeholder-white/30 resize-none focus:outline-none bg-transparent pr-8"
+                      placeholder="Describe your project or paste a GitHub repo URL..."
+                      className="w-full min-h-[100px] sm:min-h-[120px] text-base sm:text-lg text-white placeholder-white/30 resize-none focus:outline-none bg-transparent pr-12"
                       value={inputValue}
                       onChange={(e) => setInputValue(e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
                           e.preventDefault()
                           if (inputValue.trim()) {
-                            handleGetStarted()
+                            if (inputType === 'github') {
+                              handleAnalyzeRepo()
+                            } else {
+                              handleOpenMenu() // Open menu to select spec type
+                            }
                           }
                         }
                       }}
                     />
+                    {/* GitHub indicator when URL detected */}
+                    {inputType === 'github' && (
+                      <div className="absolute right-10 top-2 flex items-center gap-1.5 px-2 py-1 rounded-full bg-green-500/20 border border-green-500/30">
+                        <Github className="h-3 w-3 text-green-400" />
+                        <span className="text-xs text-green-400 font-medium">GitHub</span>
+                      </div>
+                    )}
                     {inputValue && (
                       <Button
                         type="button"
@@ -608,46 +675,38 @@ export default function SimpleLandingPage() {
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1 sm:gap-2 relative">
                         <Button
+                          ref={plusButtonRef}
                           variant="ghost"
                           size="sm"
                           className="h-8 sm:h-9 px-2 sm:px-3 text-white/60 hover:text-white hover:bg-white/10"
-                          onClick={() => setShowDocumentMenu(!showDocumentMenu)}
+                          onClick={handleOpenMenu}
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
 
-                        <CodeAssistantMenu />
-
-                        {/* Document Type Dropdown */}
-                        {showDocumentMenu && (
+                        {/* Unified + Dropdown Menu - via Portal */}
+                        {showDocumentMenu && mounted && createPortal(
                           <div
                             ref={menuRef}
-                            className="absolute bottom-full left-0 mb-2 w-80 bg-slate-900/95 backdrop-blur-xl rounded-xl shadow-2xl border border-white/10 py-2 z-50"
+                            className="fixed w-80 bg-slate-900/95 backdrop-blur-xl rounded-xl shadow-2xl border border-white/10 py-2 z-[9999]"
+                            style={{
+                              top: menuPosition.top,
+                              left: menuPosition.left,
+                              transform: 'translateY(-100%)'
+                            }}
                           >
                             <div className="px-3 py-2 text-sm font-medium text-white/70 border-b border-white/10">
-                              Choose document type
+                              Spec Types
                             </div>
-                            <div className="p-2 border-b border-white/10">
-                              <div className="px-2 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-md">
-                                <p className="text-xs text-blue-300 font-medium flex items-center gap-1">
-                                  <Sparkles className="h-3 w-3" />
-                                  Try any document type - Free Preview!
-                                </p>
-                              </div>
-                            </div>
-                            <div className="max-h-80 overflow-y-auto">
-                              {documentTypes.map((doc, index) => {
-                                const isLocked = doc.requiresAuth
+                            <div className="max-h-60 overflow-y-auto">
+                              {documentTypes.filter(d => !d.requiresAuth).map((doc, index) => {
                                 const isFree = doc.isFree
 
                                 return (
                                   <button
                                     key={index}
                                     onClick={() => handleDocumentSelect(doc)}
-                                    className={`w-full px-3 py-2 flex items-start gap-3 transition-colors ${
-                                      isLocked ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/5'
-                                    }`}
-                                    disabled={isLocked}
+                                    className="w-full px-3 py-2 flex items-start gap-3 transition-colors hover:bg-white/5"
                                   >
                                     <doc.icon className="h-5 w-5 mt-0.5 text-white/60" />
                                     <div className="text-left flex-1">
@@ -656,9 +715,6 @@ export default function SimpleLandingPage() {
                                         {isFree && (
                                           <span className="text-xs bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full">Free</span>
                                         )}
-                                        {isLocked && (
-                                          <Lock className="h-3 w-3 text-white/40" />
-                                        )}
                                       </div>
                                       <div className="text-xs text-white/40">{doc.description}</div>
                                     </div>
@@ -666,7 +722,12 @@ export default function SimpleLandingPage() {
                                 )
                               })}
                             </div>
-                          </div>
+                            <div className="border-t border-white/10 mt-1 pt-1">
+                              <div className="px-3 py-2 text-xs font-medium text-white/50">AI Coding Rules</div>
+                              <CodeAssistantMenu />
+                            </div>
+                          </div>,
+                          document.body
                         )}
                       </div>
 
@@ -678,102 +739,80 @@ export default function SimpleLandingPage() {
                             className={showViewDocsHint ? 'animate-pulse' : ''}
                           />
                         )}
-                        <Button
-                          size="sm"
-                          className="h-8 sm:h-9 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 border-0"
-                          onClick={() => handleGetStarted()}
-                          disabled={!inputValue.trim()}
-                        >
-                          <Sparkles className="h-4 w-4 mr-1 sm:mr-2" />
-                          <span className="hidden sm:inline">Generate</span>
-                          <ArrowUp className="h-4 w-4 sm:hidden" />
-                        </Button>
+                        {/* Dynamic Generate/Analyze Button */}
+                        {inputType === 'github' ? (
+                          <Button
+                            size="sm"
+                            className="h-8 sm:h-9 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 border-0"
+                            onClick={handleAnalyzeRepo}
+                            disabled={!inputValue.trim()}
+                          >
+                            <Search className="h-4 w-4 mr-1 sm:mr-2" />
+                            <span className="hidden sm:inline">Analyze</span>
+                            <ArrowUp className="h-4 w-4 sm:hidden" />
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            className="h-8 sm:h-9 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 border-0"
+                            onClick={() => {
+                              if (!inputValue.trim()) {
+                                setShowInputAlert(true)
+                                return
+                              }
+                              handleOpenMenu()
+                            }}
+                          >
+                            <Sparkles className="h-4 w-4 mr-1 sm:mr-2" />
+                            <span className="hidden sm:inline">Generate</span>
+                            <ArrowUp className="h-4 w-4 sm:hidden" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </div>
-                </>
-              ) : (
-                <>
-                  {/* Analyze Repo Tab */}
-                  {analysisStatus === 'idle' && (
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
-                          <Github className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-white">GitHub Repo Analyzer</h3>
-                          <p className="text-sm text-white/50">Instant specs from any repository</p>
-                        </div>
-                      </div>
 
-                      <div className="relative">
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center">
-                          <Github className="w-4 h-4 text-white" />
-                        </div>
-                        <Input
-                          type="text"
-                          placeholder="github.com/owner/repo or owner/repo"
-                          value={repoUrl}
-                          onChange={(e) => setRepoUrl(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleAnalyzeRepo()}
-                          className="h-12 sm:h-14 pl-16 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-green-500/50 focus:ring-green-500/20 rounded-xl text-base"
-                        />
-                      </div>
-
-                      {analysisError && (
-                        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-                          {analysisError}
-                        </div>
-                      )}
-
-                      <Button
-                        onClick={handleAnalyzeRepo}
-                        disabled={!repoUrl.trim()}
-                        className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 border-0 h-10 sm:h-12 text-base font-medium"
-                      >
-                        <Search className="w-5 h-5 mr-2" />
-                        Analyze Repository
-                      </Button>
-
-                      <p className="text-center text-white/40 text-xs sm:text-sm">
-                        Generates: Tech Stack, Architecture, Directory Structure, Features
-                      </p>
-                    </div>
-                  )}
-
-                  {analysisStatus === 'analyzing' && (
-                    <div className="py-8">
-                      <ProgressIndicator
-                        currentStep={currentStep}
-                        completedSteps={completedSteps}
-                        error={analysisError}
-                      />
-                    </div>
-                  )}
-
-                  {analysisStatus === 'error' && (
-                    <div className="space-y-4 py-4">
-                      <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-center">
-                        <p className="text-red-400 font-medium mb-2">Analysis Failed</p>
-                        <p className="text-red-300/70 text-sm">{analysisError}</p>
-                      </div>
-                      <Button
-                        onClick={resetAnalysis}
-                        variant="outline"
-                        className="w-full border-white/20 text-white hover:bg-white/10"
-                      >
-                        <RotateCcw className="w-4 h-4 mr-2" />
-                        Try Again
-                      </Button>
+                  {/* Error display */}
+                  {analysisError && (
+                    <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                      {analysisError}
                     </div>
                   )}
                 </>
               )}
+
+              {/* Analysis in progress */}
+              {analysisStatus === 'analyzing' && (
+                <div className="py-8">
+                  <ProgressIndicator
+                    currentStep={currentStep}
+                    completedSteps={completedSteps}
+                    error={analysisError}
+                  />
+                </div>
+              )}
+
+              {/* Analysis error state */}
+              {analysisStatus === 'error' && (
+                <div className="space-y-4 py-4">
+                  <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-center">
+                    <p className="text-red-400 font-medium mb-2">Analysis Failed</p>
+                    <p className="text-red-300/70 text-sm">{analysisError}</p>
+                  </div>
+                  <Button
+                    onClick={resetAnalysis}
+                    variant="outline"
+                    className="w-full border-white/20 text-white hover:bg-white/10"
+                  >
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Try Again
+                  </Button>
+                </div>
+              )}
             </GlassCard>
 
             {/* Analysis Complete - Show Spec Viewer */}
-            {activeTab === 'analyze' && analysisStatus === 'complete' && markdown && (
+            {analysisStatus === 'complete' && markdown && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-white">Generated Specification</h3>
@@ -796,44 +835,63 @@ export default function SimpleLandingPage() {
               </div>
             )}
 
-            {/* Quick Actions - Only show for describe tab */}
-            {activeTab === 'describe' && (
+            {/* Feature Pills - 4 main actions */}
+            {analysisStatus === 'idle' && (
               <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-                <TooltipProvider delayDuration={300}>
-                  {features.map((feature, index) => {
-                    const hasDocument = previousDocuments[feature.docType]
-                    return (
-                      <Tooltip key={index}>
-                        <TooltipTrigger asChild>
-                          <button
-                            onClick={() => handleGetStarted(feature.docType)}
-                            className={`
-                              flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5
-                              rounded-xl backdrop-blur-xl transition-all duration-300
-                              ${hasDocument
-                                ? 'bg-white/15 border-white/30 text-white'
-                                : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white'
-                              }
-                              border
-                            `}
-                          >
-                            <feature.icon className="h-3.5 sm:h-4 w-3.5 sm:w-4" />
-                            <span className="text-xs sm:text-sm font-medium">{feature.title}</span>
-                            {hasDocument && <Check className="h-3 w-3 text-green-400" />}
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="bg-slate-900 text-white border-slate-700">
-                          <p className="text-sm">Generate {feature.title}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    )
-                  })}
-                </TooltipProvider>
+                {/* Generate Specs */}
+                <button
+                  onClick={() => {
+                    if (inputValue.trim() && inputType === 'description') {
+                      handleOpenMenu() // Open menu to select spec type
+                    } else if (!inputValue.trim()) {
+                      setShowInputAlert(true)
+                    } else {
+                      handleOpenMenu()
+                    }
+                  }}
+                  className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl backdrop-blur-xl transition-all duration-300 bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 hover:text-white"
+                >
+                  <Sparkles className="h-3.5 sm:h-4 w-3.5 sm:w-4" />
+                  <span className="text-xs sm:text-sm font-medium">Generate Specs</span>
+                </button>
+
+                {/* Analyze Repo */}
+                <button
+                  onClick={() => {
+                    if (inputValue.trim() && inputType === 'github') {
+                      handleAnalyzeRepo()
+                    } else {
+                      setInputValue('github.com/')
+                    }
+                  }}
+                  className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl backdrop-blur-xl transition-all duration-300 bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 hover:text-white"
+                >
+                  <Github className="h-3.5 sm:h-4 w-3.5 sm:w-4" />
+                  <span className="text-xs sm:text-sm font-medium">Analyze Repo</span>
+                </button>
+
+                {/* Tech Stacks - Link */}
+                <Link
+                  href="/tech-stacks"
+                  className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl backdrop-blur-xl transition-all duration-300 bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 hover:text-white"
+                >
+                  <Database className="h-3.5 sm:h-4 w-3.5 sm:w-4" />
+                  <span className="text-xs sm:text-sm font-medium">Tech Stacks</span>
+                </Link>
+
+                {/* Learning Paths - Link */}
+                <Link
+                  href="/learning-paths"
+                  className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl backdrop-blur-xl transition-all duration-300 bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 hover:text-white"
+                >
+                  <GraduationCap className="h-3.5 sm:h-4 w-3.5 sm:w-4" />
+                  <span className="text-xs sm:text-sm font-medium">Learning Paths</span>
+                </Link>
               </div>
             )}
 
             {/* Footer Text - Hide when showing spec */}
-            {!(activeTab === 'analyze' && analysisStatus === 'complete') && (
+            {analysisStatus !== 'complete' && (
               <div className="text-center">
                 <p className="text-xs sm:text-sm text-white/40">
                   AI-powered SDLC automation • Transform ideas into production-ready specs
@@ -898,41 +956,6 @@ export default function SimpleLandingPage() {
                 </p>
               </GlassCard>
             </div>
-          </div>
-        </section>
-
-        {/* What You Get Section */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/30 mb-4">
-              <FileText className="w-3 h-3 text-purple-400" />
-              <span className="text-purple-400 text-sm font-medium">Output</span>
-            </div>
-            <h2 className="text-xl md:text-2xl font-bold mb-2">
-              <span className="bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">
-                What You Get
-              </span>
-            </h2>
-            <p className="text-white/50 text-sm max-w-lg mx-auto">
-              Comprehensive documentation generated in seconds, not hours
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
-            {[
-              { icon: FileText, title: 'Business Analysis', desc: 'Goals, metrics & stakeholders', gradient: 'from-blue-500 to-cyan-500' },
-              { icon: Code, title: 'Technical Specs', desc: 'API, data models & tech stack', gradient: 'from-purple-500 to-pink-500' },
-              { icon: Layers, title: 'Architecture', desc: 'System diagrams & data flow', gradient: 'from-orange-500 to-amber-500' },
-              { icon: GitBranch, title: 'AI Prompts', desc: 'Ready for Cursor & Copilot', gradient: 'from-green-500 to-emerald-500' },
-            ].map((item, index) => (
-              <GlassCard key={index} className="p-4 text-center">
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${item.gradient} flex items-center justify-center mx-auto mb-3`}>
-                  <item.icon className="w-5 h-5 text-white" />
-                </div>
-                <h3 className="font-semibold text-white text-sm mb-1">{item.title}</h3>
-                <p className="text-white/50 text-xs">{item.desc}</p>
-              </GlassCard>
-            ))}
           </div>
         </section>
 
