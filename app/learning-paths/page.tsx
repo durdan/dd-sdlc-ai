@@ -2,8 +2,25 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, ExternalLink, X } from 'lucide-react';
+import { ArrowLeft, ExternalLink, X, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+
+// Custom hook for mobile detection
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  return isMobile;
+}
 
 // Types
 interface Tool {
@@ -522,51 +539,53 @@ const layerGradients: Record<string, string> = {
 };
 
 // Tool Card Component
-function ToolCard({ tool, onClick }: { tool: Tool; onClick: () => void }) {
+function ToolCard({ tool, onClick, isMobile }: { tool: Tool; onClick: () => void; isMobile: boolean }) {
   const vendor = vendorConfig[tool.vendor];
 
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.08] hover:border-white/[0.15] transition-all text-left min-w-[140px]"
+      className={`flex items-center gap-3 px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.08] hover:border-white/[0.15] transition-all text-left ${
+        isMobile ? 'w-full' : ''
+      }`}
     >
-      <span className="text-xl">{tool.icon}</span>
-      <div className="flex-1 min-w-0">
+      <span className="text-xl flex-shrink-0">{tool.icon}</span>
+      <div className="min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-medium text-white text-sm">{tool.label}</span>
+          <span className="font-medium text-white text-sm whitespace-nowrap">{tool.label}</span>
           {tool.vendor !== 'other' && (
             <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${vendor.bg} ${vendor.text}`}>
               {vendor.label}
             </span>
           )}
         </div>
-        <p className="text-white/50 text-xs truncate">{tool.subtitle}</p>
+        <p className="text-white/50 text-xs">{tool.subtitle}</p>
       </div>
     </button>
   );
 }
 
 // Layer Section Component
-function LayerSection({ layer, onSelectTool }: { layer: Layer; onSelectTool: (tool: Tool) => void }) {
+function LayerSection({ layer, onSelectTool, isMobile }: { layer: Layer; onSelectTool: (tool: Tool) => void; isMobile: boolean }) {
   return (
     <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-slate-800/90 to-slate-900/90 border border-white/[0.08]">
       {/* Top gradient bar */}
       <div className={`h-1 bg-gradient-to-r ${layerGradients[layer.color]}`} />
 
-      <div className="p-5">
+      <div className={`${isMobile ? 'p-3' : 'p-6'}`}>
         {/* Header */}
         <div className="flex items-center gap-3 mb-4">
           <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r ${layerGradients[layer.color]} text-white text-sm font-medium`}>
             <span>{layer.icon}</span>
-            <span>{layer.label}</span>
+            <span className={isMobile ? 'text-xs' : ''}>{layer.label}</span>
           </div>
           <span className="text-white/40 text-sm">{layer.tools.length} Tools</span>
         </div>
 
-        {/* Tools Grid */}
-        <div className="flex flex-wrap gap-2">
+        {/* Tools - Flex wrap centered */}
+        <div className={`${isMobile ? 'flex flex-col gap-2' : 'flex flex-wrap justify-center gap-3'}`}>
           {layer.tools.map((tool) => (
-            <ToolCard key={tool.id} tool={tool} onClick={() => onSelectTool(tool)} />
+            <ToolCard key={tool.id} tool={tool} onClick={() => onSelectTool(tool)} isMobile={isMobile} />
           ))}
         </div>
       </div>
@@ -587,15 +606,15 @@ function ArrowConnector() {
 }
 
 // Sidebar
-function Sidebar({ tool, onClose }: { tool: Tool | null; onClose: () => void }) {
+function Sidebar({ tool, onClose, isMobile }: { tool: Tool | null; onClose: () => void; isMobile: boolean }) {
   if (!tool) return null;
   const vendor = vendorConfig[tool.vendor];
 
   return (
     <>
       <div className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm" onClick={onClose} />
-      <div className="fixed right-0 top-0 h-full w-80 bg-slate-900/98 backdrop-blur-xl border-l border-white/10 z-50 overflow-y-auto shadow-2xl">
-        <div className="p-5">
+      <div className={`fixed ${isMobile ? 'inset-x-0 bottom-0 h-[85vh] rounded-t-3xl' : 'right-0 top-0 h-full w-80'} bg-slate-900/98 backdrop-blur-xl border-l border-white/10 z-50 overflow-y-auto shadow-2xl`}>
+        <div className={`${isMobile ? 'p-4' : 'p-5'}`}>
           <button onClick={onClose} className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors">
             <X className="w-5 h-5" />
           </button>
@@ -645,6 +664,8 @@ export default function LearningPathsPage() {
   const [selectedRole, setSelectedRole] = useState<string>('developer');
   const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
   const [completedTools, setCompletedTools] = useState<Set<string>>(new Set());
+  const [showRoleSelector, setShowRoleSelector] = useState(false);
+  const isMobile = useIsMobile();
 
   const role = rolesData[selectedRole];
   const totalTools = Object.values(role.layers).reduce((sum, layer) => sum + layer.tools.length, 0);
@@ -664,23 +685,23 @@ export default function LearningPathsPage() {
       <header className="sticky top-0 z-30 bg-slate-900/95 backdrop-blur-xl border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 md:gap-3">
               <Link href="/" className="flex items-center gap-2">
-                <span className="text-xl font-bold text-white italic">SDLC.dev</span>
+                <span className="text-lg md:text-xl font-bold text-white italic">SDLC.dev</span>
               </Link>
-              <span className="text-white/30">|</span>
-              <span className="text-white/60 text-sm">GenAI Learning Paths</span>
+              <span className="text-white/30 hidden sm:inline">|</span>
+              <span className="text-white/60 text-xs sm:text-sm hidden sm:inline">GenAI Learning Paths</span>
             </div>
 
-            <div className="flex items-center gap-4">
-              <div className="text-sm">
-                <span className="text-white/50">Progress</span>
-                <span className="ml-2 text-cyan-400 font-bold">{completedTools.size}/{totalTools}</span>
+            <div className="flex items-center gap-2 md:gap-4">
+              <div className="text-xs md:text-sm">
+                <span className="text-white/50 hidden sm:inline">Progress </span>
+                <span className="text-cyan-400 font-bold">{completedTools.size}/{totalTools}</span>
               </div>
               <Link href="/">
-                <Button variant="outline" size="sm" className="border-white/20 text-white hover:bg-white/10">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Home
+                <Button variant="outline" size="sm" className="border-white/20 text-white hover:bg-white/10 px-2 md:px-3">
+                  <ArrowLeft className="w-4 h-4 md:mr-2" />
+                  <span className="hidden md:inline">Home</span>
                 </Button>
               </Link>
             </div>
@@ -691,22 +712,62 @@ export default function LearningPathsPage() {
       {/* Role Tabs */}
       <div className="sticky top-[57px] z-20 bg-slate-900/95 backdrop-blur-xl border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 py-3">
-          <div className="flex flex-wrap gap-2">
-            {rolesList.map(({ key, icon, label }) => (
+          {/* Mobile: Dropdown selector */}
+          {isMobile ? (
+            <div className="relative">
               <button
-                key={key}
-                onClick={() => setSelectedRole(key)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                  selectedRole === key
-                    ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/25'
-                    : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10 border border-white/10'
-                }`}
+                onClick={() => setShowRoleSelector(!showRoleSelector)}
+                className="w-full flex items-center justify-between gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-medium"
               >
-                <span>{icon}</span>
-                <span>{label}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">{role.icon}</span>
+                  <span>{role.name}</span>
+                </div>
+                <ChevronDown className={`w-5 h-5 transition-transform ${showRoleSelector ? 'rotate-180' : ''}`} />
               </button>
-            ))}
-          </div>
+              {showRoleSelector && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-slate-800/98 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden z-30 max-h-[60vh] overflow-y-auto">
+                  {rolesList.map(({ key, icon, label }) => (
+                    <button
+                      key={key}
+                      onClick={() => {
+                        setSelectedRole(key);
+                        setShowRoleSelector(false);
+                      }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all ${
+                        selectedRole === key
+                          ? 'bg-cyan-500/20 text-cyan-400'
+                          : 'text-white/70 hover:bg-white/5 hover:text-white'
+                      }`}
+                    >
+                      <span className="text-xl">{icon}</span>
+                      <span className="font-medium">{label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Desktop: Horizontal tabs with scroll */
+            <div className="overflow-x-auto scrollbar-hide">
+              <div className="flex gap-2 min-w-max">
+                {rolesList.map(({ key, icon, label }) => (
+                  <button
+                    key={key}
+                    onClick={() => setSelectedRole(key)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+                      selectedRole === key
+                        ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/25'
+                        : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10 border border-white/10'
+                    }`}
+                  >
+                    <span>{icon}</span>
+                    <span>{label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -728,32 +789,32 @@ export default function LearningPathsPage() {
       </div>
 
       {/* Main Content */}
-      <main className="relative z-10 max-w-4xl mx-auto px-4 py-8">
+      <main className={`relative z-10 max-w-5xl mx-auto ${isMobile ? 'px-4 py-4' : 'px-6 py-8'}`}>
         {/* Role Header */}
-        <div className="text-center mb-8">
+        <div className={`text-center ${isMobile ? 'mb-4' : 'mb-8'}`}>
           <div
-            className="w-24 h-24 rounded-full border-2 flex items-center justify-center mx-auto mb-4 bg-slate-800/50"
+            className={`${isMobile ? 'w-16 h-16' : 'w-24 h-24'} rounded-full border-2 flex items-center justify-center mx-auto mb-3 bg-slate-800/50`}
             style={{ borderColor: role.color, boxShadow: `0 0 40px ${role.color}30` }}
           >
-            <span className="text-5xl">{role.icon}</span>
+            <span className={isMobile ? 'text-3xl' : 'text-5xl'}>{role.icon}</span>
           </div>
-          <h1 className="text-2xl font-bold text-white mb-1">{role.name}</h1>
-          <p className="text-white/50">{role.subtitle}</p>
+          <h1 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-white mb-1`}>{role.name}</h1>
+          <p className="text-white/50 text-sm">{role.subtitle}</p>
         </div>
 
         <ArrowConnector />
 
         {/* Layers */}
-        <div className="space-y-3">
-          <LayerSection layer={role.layers.thinking} onSelectTool={setSelectedTool} />
+        <div className={`${isMobile ? 'space-y-2' : 'space-y-3'}`}>
+          <LayerSection layer={role.layers.thinking} onSelectTool={setSelectedTool} isMobile={isMobile} />
           <ArrowConnector />
-          <LayerSection layer={role.layers.assistants} onSelectTool={setSelectedTool} />
+          <LayerSection layer={role.layers.assistants} onSelectTool={setSelectedTool} isMobile={isMobile} />
           <ArrowConnector />
-          <LayerSection layer={role.layers.orchestration} onSelectTool={setSelectedTool} />
+          <LayerSection layer={role.layers.orchestration} onSelectTool={setSelectedTool} isMobile={isMobile} />
           <ArrowConnector />
-          <LayerSection layer={role.layers.execution} onSelectTool={setSelectedTool} />
+          <LayerSection layer={role.layers.execution} onSelectTool={setSelectedTool} isMobile={isMobile} />
           <ArrowConnector />
-          <LayerSection layer={role.layers.productivity} onSelectTool={setSelectedTool} />
+          <LayerSection layer={role.layers.productivity} onSelectTool={setSelectedTool} isMobile={isMobile} />
         </div>
 
         <ArrowConnector />
@@ -780,7 +841,7 @@ export default function LearningPathsPage() {
       </div>
 
       {/* Sidebar */}
-      <Sidebar tool={selectedTool} onClose={() => setSelectedTool(null)} />
+      <Sidebar tool={selectedTool} onClose={() => setSelectedTool(null)} isMobile={isMobile} />
     </div>
   );
 }
