@@ -169,12 +169,12 @@ export function SpecViewer({ spec, markdown, shareUrl, isStreaming }: SpecViewer
   return (
     <div className="w-full">
       {/* Action Bar */}
-      <div className="flex flex-wrap gap-2 mb-4 p-4 bg-muted/50 rounded-lg">
+      <div className="flex flex-wrap gap-2 mb-4 p-4 bg-slate-100 dark:bg-slate-800 rounded-lg">
         <Button
           variant="outline"
           size="sm"
           onClick={() => copyToClipboard(markdown, 'markdown')}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200"
         >
           {copied === 'markdown' ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
           Copy Markdown
@@ -185,20 +185,30 @@ export function SpecViewer({ spec, markdown, shareUrl, isStreaming }: SpecViewer
             variant="outline"
             size="sm"
             onClick={() => copyToClipboard(shareUrl, 'link')}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200"
           >
             {copied === 'link' ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
             Copy Share Link
           </Button>
         )}
 
-        <Button variant="outline" size="sm" onClick={downloadMarkdown} className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={downloadMarkdown}
+          className="flex items-center gap-2 bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200"
+        >
           <Download className="w-4 h-4" />
           Download
         </Button>
 
         {spec?.metadata?.repoUrl && (
-          <Button variant="outline" size="sm" asChild className="flex items-center gap-2 ml-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            asChild
+            className="flex items-center gap-2 ml-auto bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200"
+          >
             <a href={spec.metadata.repoUrl} target="_blank" rel="noopener noreferrer">
               <ExternalLink className="w-4 h-4" />
               View Repository
@@ -208,8 +218,8 @@ export function SpecViewer({ spec, markdown, shareUrl, isStreaming }: SpecViewer
       </div>
 
       {/* Spec Content */}
-      <Card className="p-6 md:p-8 overflow-hidden">
-        <div ref={mermaidRef} className="prose prose-slate dark:prose-invert max-w-none">
+      <Card className="p-6 md:p-8 overflow-hidden bg-white dark:bg-slate-900">
+        <div ref={mermaidRef} className="prose prose-slate dark:prose-invert max-w-none prose-headings:text-slate-900 dark:prose-headings:text-white prose-p:text-slate-700 dark:prose-p:text-slate-300 prose-li:text-slate-700 dark:prose-li:text-slate-300 prose-strong:text-slate-900 dark:prose-strong:text-white">
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             components={{

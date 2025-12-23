@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
+import { createPortal } from "react-dom"
 import { Button } from "@/components/ui/button"
 import {
   Sparkles,
@@ -83,18 +84,60 @@ interface CodeAssistantMenuProps {
 export function CodeAssistantMenu({}: CodeAssistantMenuProps = {}) {
   const [showMenu, setShowMenu] = useState(false)
   const [downloadedTools, setDownloadedTools] = useState<Set<string>>(new Set())
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 })
+  const [mounted, setMounted] = useState(false)
+  const buttonRef = useRef<HTMLButtonElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
+  // Track if we're mounted (for portal)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Calculate menu position when opening
+  const updateMenuPosition = useCallback(() => {
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect()
+      // Position above the button
+      setMenuPosition({
+        top: rect.top - 8, // 8px gap above button
+        left: rect.left
+      })
+    }
+  }, [])
+
+  // Handle click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      const target = event.target as Node
+      if (
+        menuRef.current && !menuRef.current.contains(target) &&
+        buttonRef.current && !buttonRef.current.contains(target)
+      ) {
         setShowMenu(false)
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+    if (showMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+      // Update position on scroll/resize
+      window.addEventListener('scroll', updateMenuPosition, true)
+      window.addEventListener('resize', updateMenuPosition)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      window.removeEventListener('scroll', updateMenuPosition, true)
+      window.removeEventListener('resize', updateMenuPosition)
+    }
+  }, [showMenu, updateMenuPosition])
+
+  const handleToggleMenu = () => {
+    if (!showMenu) {
+      updateMenuPosition()
+    }
+    setShowMenu(!showMenu)
+  }
 
   const getCodingRules = () => {
     // This is the comprehensive coding rules prompt
@@ -481,13 +524,80 @@ Remember: You are crafting software, not just writing code. Every line should be
     console.log(`Downloaded ${tool.name} rules as ${tool.filename}`)
   }
 
+  // Render the dropdown menu via portal
+  const dropdownMenu = showMenu && mounted ? createPortal(
+    <div
+      ref={menuRef}
+      className="fixed w-72 sm:w-80 bg-white dark:bg-slate-900 rounded-lg shadow-2xl border border-gray-200 dark:border-slate-700 py-2 z-[9999]"
+      style={{
+        top: menuPosition.top,
+        left: menuPosition.left,
+        transform: 'translateY(-100%)'
+      }}
+    >
+      <div className="px-3 py-2 border-b border-gray-100 dark:border-slate-700">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">AI Coding Assistant Tools</h3>
+          <span className="text-xs text-gray-500 dark:text-gray-400">Select to download</span>
+        </div>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          Download optimized coding rules for your preferred tool
+        </p>
+      </div>
+
+      <div className="py-2 max-h-80 overflow-y-auto">
+        {codeAssistantTools.map((tool) => {
+          const isDownloaded = downloadedTools.has(tool.id)
+          const Icon = tool.icon
+
+          return (
+            <button
+              key={tool.id}
+              onClick={() => handleDownload(tool)}
+              className="w-full px-3 py-2 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors group"
+            >
+              <div className={`w-8 h-8 bg-gray-100 dark:bg-slate-800 rounded-lg flex items-center justify-center group-hover:bg-gray-200 dark:group-hover:bg-slate-700 transition-colors`}>
+                <Icon className={`h-4 w-4 ${tool.color}`} />
+              </div>
+              <div className="text-left flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{tool.name}</span>
+                  {tool.popular && (
+                    <span className="text-xs bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.5 rounded-full font-medium">
+                      Popular
+                    </span>
+                  )}
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">{tool.description}</div>
+                <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 font-mono">{tool.configPath}</div>
+              </div>
+              {isDownloaded ? (
+                <Check className="h-4 w-4 text-green-500" />
+              ) : (
+                <Download className="h-4 w-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
+              )}
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="px-3 py-2 border-t border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50 rounded-b-lg">
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          Place downloaded file in your project root or specified config path
+        </p>
+      </div>
+    </div>,
+    document.body
+  ) : null
+
   return (
-    <div className="relative" ref={menuRef}>
+    <div className="relative">
       <Button
+        ref={buttonRef}
         variant="ghost"
         size="sm"
         className="h-8 sm:h-9 px-2 sm:px-3 text-purple-600 hover:text-purple-700 hover:bg-purple-50 border border-purple-200"
-        onClick={() => setShowMenu(!showMenu)}
+        onClick={handleToggleMenu}
         title="Download AI Coding Rules"
       >
         <Download className="h-4 w-4 sm:mr-1.5" />
@@ -495,62 +605,7 @@ Remember: You are crafting software, not just writing code. Every line should be
         <ChevronRight className={`hidden sm:inline h-3 w-3 ml-1 transition-transform ${showMenu ? 'rotate-90' : ''}`} />
       </Button>
 
-      {showMenu && (
-        <div className="absolute left-0 mt-2 w-72 sm:w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-          <div className="px-3 py-2 border-b border-gray-100">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-700">AI Coding Assistant Tools</h3>
-              <span className="text-xs text-gray-500">Select to download rules</span>
-            </div>
-            <p className="text-xs text-gray-500 mt-1">
-              Download optimized coding rules for your preferred tool
-            </p>
-          </div>
-
-          <div className="py-2">
-
-            {codeAssistantTools.map((tool) => {
-              const isDownloaded = downloadedTools.has(tool.id)
-              const Icon = tool.icon
-              
-              return (
-                <button
-                  key={tool.id}
-                  onClick={() => handleDownload(tool)}
-                  className="w-full px-3 py-2 flex items-center gap-3 hover:bg-gray-50 transition-colors group"
-                >
-                  <div className={`w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center group-hover:bg-gray-200 transition-colors`}>
-                    <Icon className={`h-4 w-4 ${tool.color}`} />
-                  </div>
-                  <div className="text-left flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-900">{tool.name}</span>
-                      {tool.popular && (
-                        <span className="text-xs bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-full font-medium">
-                          Popular
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-xs text-gray-500">{tool.description}</div>
-                    <div className="text-xs text-gray-400 mt-0.5 font-mono">{tool.configPath}</div>
-                  </div>
-                  {isDownloaded ? (
-                    <Check className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <Download className="h-4 w-4 text-gray-400 group-hover:text-gray-600" />
-                  )}
-                </button>
-              )
-            })}
-          </div>
-
-          <div className="px-3 py-2 border-t border-gray-100 bg-gray-50">
-            <p className="text-xs text-gray-500">
-              💡 Place downloaded file in your project root or specified config path
-            </p>
-          </div>
-        </div>
-      )}
+      {dropdownMenu}
     </div>
   )
 }

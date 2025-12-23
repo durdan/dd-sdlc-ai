@@ -108,7 +108,9 @@ function AnalyzePageContent() {
     setIsStreaming(false);
   }, []);
 
-  const analyzeRepo = useCallback(async () => {
+  const eventSourceRef = useRef<EventSource | null>(null);
+
+  const analyzeRepo = useCallback(() => {
     if (!repoUrl.trim()) {
       setError('Please enter a GitHub repository URL');
       return;
@@ -117,80 +119,72 @@ function AnalyzePageContent() {
     resetState();
     setStatus('analyzing');
     setIsStreaming(true);
-    abortControllerRef.current = new AbortController();
+    setCurrentStep('fetching_metadata');
 
-    try {
-      const response = await fetch('/api/analyze/repo/stream', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ repoUrl }),
-        signal: abortControllerRef.current.signal,
-      });
+    let fullMarkdown = '';
 
-      if (!response.ok) throw new Error('Failed to start analysis');
+    // Use native EventSource for reliable SSE
+    const encodedUrl = encodeURIComponent(repoUrl);
+    const eventSource = new EventSource(`/api/analyze/repo/sse?repo=${encodedUrl}`);
+    eventSourceRef.current = eventSource;
 
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error('No response body');
-
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let fullMarkdown = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (let i = 0; i < lines.length; i++) {
-          const line = lines[i];
-          if (line.startsWith('event: ')) {
-            const eventType = line.slice(7);
-            const dataLine = lines[++i];
-            if (dataLine?.startsWith('data: ')) {
-              const data = JSON.parse(dataLine.slice(6));
-              switch (eventType) {
-                case 'progress':
-                  setCurrentStep(data.step as AnalysisStep);
-                  if (data.step !== 'complete') {
-                    setCompletedSteps(() => {
-                      const steps: AnalysisStep[] = ['fetching_metadata', 'analyzing_structure', 'reading_files', 'analyzing_architecture', 'generating_spec'];
-                      return steps.slice(0, steps.indexOf(data.step));
-                    });
-                  }
-                  break;
-                case 'content':
-                  fullMarkdown += data.text;
-                  setMarkdown(fullMarkdown);
-                  break;
-                case 'complete':
-                  setSpec({ markdown: data.markdown || fullMarkdown, sections: {} as GeneratedSpec['sections'], metadata: data.metadata, shareId: data.specId });
-                  setShareUrl(data.shareUrl);
-                  setStatus('complete');
-                  setIsStreaming(false);
-                  setCompletedSteps(['fetching_metadata', 'analyzing_structure', 'reading_files', 'analyzing_architecture', 'generating_spec']);
-                  break;
-                case 'error':
-                  setError(data.error || ERROR_MESSAGES[data.errorCode as AnalyzeErrorCode] || 'Analysis failed');
-                  setStatus('error');
-                  setIsStreaming(false);
-                  break;
-              }
-            }
-          }
+    eventSource.addEventListener('progress', (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        setCurrentStep(data.step as AnalysisStep);
+        if (data.step !== 'complete') {
+          const steps: AnalysisStep[] = ['fetching_metadata', 'analyzing_structure', 'reading_files', 'analyzing_architecture', 'generating_spec'];
+          setCompletedSteps(steps.slice(0, steps.indexOf(data.step)));
         }
+      } catch (err) {
+        console.error('Failed to parse progress event:', err);
       }
-    } catch (err) {
-      if (err instanceof Error && err.name === 'AbortError') { resetState(); return; }
-      setError(err instanceof Error ? err.message : 'Analysis failed. Please try again.');
+    });
+
+    eventSource.addEventListener('content', (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        fullMarkdown += data.text;
+        setMarkdown(fullMarkdown);
+      } catch (err) {
+        console.error('Failed to parse content event:', err);
+      }
+    });
+
+    eventSource.addEventListener('complete', (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        setSpec({ markdown: data.markdown || fullMarkdown, sections: {} as GeneratedSpec['sections'], metadata: data.metadata, shareId: data.specId });
+        setShareUrl(data.shareUrl);
+        setStatus('complete');
+        setIsStreaming(false);
+        setCompletedSteps(['fetching_metadata', 'analyzing_structure', 'reading_files', 'analyzing_architecture', 'generating_spec']);
+        eventSource.close();
+      } catch (err) {
+        console.error('Failed to parse complete event:', err);
+      }
+    });
+
+    eventSource.addEventListener('error', (e) => {
+      const messageEvent = e as MessageEvent;
+      if (messageEvent.data) {
+        try {
+          const data = JSON.parse(messageEvent.data);
+          setError(data.error || 'Analysis failed');
+        } catch {
+          setError('Analysis failed');
+        }
+      } else {
+        setError('Connection lost. Please try again.');
+      }
       setStatus('error');
       setIsStreaming(false);
-    }
+      eventSource.close();
+    });
   }, [repoUrl, resetState]);
 
   const cancelAnalysis = useCallback(() => {
+    eventSourceRef.current?.close();
     abortControllerRef.current?.abort();
     resetState();
   }, [resetState]);

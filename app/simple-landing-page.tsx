@@ -331,8 +331,11 @@ export default function SimpleLandingPage() {
     setIsStreaming(false)
   }, [])
 
-  // Analyze GitHub repo
-  const handleAnalyzeRepo = useCallback(async () => {
+  // EventSource ref for cleanup
+  const eventSourceRef = useRef<EventSource | null>(null)
+
+  // Analyze GitHub repo using EventSource for reliable SSE
+  const handleAnalyzeRepo = useCallback(() => {
     if (!repoUrl.trim()) {
       setAnalysisError('Please enter a GitHub repository URL')
       return
@@ -341,68 +344,74 @@ export default function SimpleLandingPage() {
     resetAnalysis()
     setAnalysisStatus('analyzing')
     setIsStreaming(true)
-    abortControllerRef.current = new AbortController()
 
-    try {
-      const response = await fetch('/api/analyze/repo/stream', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ repoUrl }),
-        signal: abortControllerRef.current.signal,
-      })
+    // Immediately show first step
+    setCurrentStep('fetching_metadata')
 
-      if (!response.ok) throw new Error('Failed to start analysis')
+    let fullMarkdown = ''
 
-      const reader = response.body?.getReader()
-      if (!reader) throw new Error('No response body')
+    // Use native EventSource for reliable SSE
+    const encodedUrl = encodeURIComponent(repoUrl)
+    const eventSource = new EventSource(`/api/analyze/repo/sse?repo=${encodedUrl}`)
+    eventSourceRef.current = eventSource
 
-      const decoder = new TextDecoder()
-      let buffer = ''
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-
-        buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split('\n')
-        buffer = lines.pop() || ''
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6))
-
-              switch (data.type) {
-                case 'step':
-                  setCurrentStep(data.step)
-                  break
-                case 'step_complete':
-                  setCompletedSteps((prev) => [...prev, data.step])
-                  break
-                case 'content':
-                  setMarkdown((prev) => prev + data.content)
-                  break
-                case 'complete':
-                  setSpec(data.spec)
-                  setShareUrl(data.shareUrl)
-                  setAnalysisStatus('complete')
-                  setIsStreaming(false)
-                  break
-                case 'error':
-                  throw new Error(data.message || 'Analysis failed')
-              }
-            } catch (parseError) {
-              // Skip invalid JSON
-            }
+    eventSource.addEventListener('progress', (e) => {
+      try {
+        const data = JSON.parse(e.data)
+        setCurrentStep(data.step)
+        if (data.step !== 'complete') {
+          const steps: AnalysisStep[] = ['fetching_metadata', 'analyzing_structure', 'reading_files', 'analyzing_architecture', 'generating_spec']
+          const stepIndex = steps.indexOf(data.step)
+          if (stepIndex > 0) {
+            setCompletedSteps(steps.slice(0, stepIndex))
           }
         }
+      } catch (err) {
+        console.error('[SSE] Failed to parse progress:', err)
       }
-    } catch (error: any) {
-      if (error.name === 'AbortError') return
-      setAnalysisError(error.message || 'An error occurred during analysis')
+    })
+
+    eventSource.addEventListener('content', (e) => {
+      try {
+        const data = JSON.parse(e.data)
+        fullMarkdown += data.text
+        setMarkdown(fullMarkdown)
+      } catch (err) {
+        console.error('[SSE] Failed to parse content:', err)
+      }
+    })
+
+    eventSource.addEventListener('complete', (e) => {
+      try {
+        const data = JSON.parse(e.data)
+        setSpec({ markdown: data.markdown || fullMarkdown, metadata: data.metadata })
+        setShareUrl(data.shareUrl)
+        setAnalysisStatus('complete')
+        setIsStreaming(false)
+        setCompletedSteps(['fetching_metadata', 'analyzing_structure', 'reading_files', 'analyzing_architecture', 'generating_spec'])
+        eventSource.close()
+      } catch (err) {
+        console.error('[SSE] Failed to parse complete:', err)
+      }
+    })
+
+    eventSource.addEventListener('error', (e) => {
+      const messageEvent = e as MessageEvent
+      if (messageEvent.data) {
+        try {
+          const data = JSON.parse(messageEvent.data)
+          setAnalysisError(data.error || 'Analysis failed')
+        } catch {
+          setAnalysisError('Analysis failed')
+        }
+      } else {
+        setAnalysisError('Connection lost. Please try again.')
+      }
       setAnalysisStatus('error')
       setIsStreaming(false)
-    }
+      eventSource.close()
+    })
+
   }, [repoUrl, resetAnalysis])
 
   const handleDocumentSelect = (doc: any) => {
