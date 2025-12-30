@@ -1137,6 +1137,52 @@ function ModernLandingPage() {
                     </ul>
                   </CardContent>
                 </Card>
+
+                {/* System Design Guide */}
+                <Link href="/system-design" className="block">
+                  <Card className="bg-gray-900 border-gray-800 hover:border-cyan-500/50 transition-all duration-300 group h-full cursor-pointer">
+                    <CardHeader className="pb-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-3 bg-cyan-500/10 rounded-lg group-hover:bg-cyan-500/20 transition-colors">
+                          <Layers className="h-6 w-6 text-cyan-400" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-xl text-white">System Design Guide</CardTitle>
+                          <CardDescription className="text-gray-400 text-base mt-1">
+                            Master 113+ architecture patterns with interactive diagrams
+                          </CardDescription>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-5 gap-2">
+                        {['🚀 Caching', '💾 Database', '⚖️ Load Balancing', '📨 Messaging', '🏛️ Architecture'].map((cat, i) => (
+                          <div key={i} className="bg-black/50 p-2 rounded-lg border border-gray-800 text-center">
+                            <div className="text-xs text-gray-400">{cat}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <ul className="space-y-2 text-sm">
+                        <li className="flex items-center text-gray-300">
+                          <CheckCircle className="mr-2 h-4 w-4 text-green-400" />
+                          Interactive SVG diagrams for every pattern
+                        </li>
+                        <li className="flex items-center text-gray-300">
+                          <CheckCircle className="mr-2 h-4 w-4 text-green-400" />
+                          Quiz mode & learning roadmap
+                        </li>
+                        <li className="flex items-center text-gray-300">
+                          <CheckCircle className="mr-2 h-4 w-4 text-green-400" />
+                          Real-world examples from Netflix, Uber, Twitter
+                        </li>
+                      </ul>
+                      <div className="flex items-center text-cyan-400 text-sm font-medium group-hover:translate-x-1 transition-transform">
+                        Explore System Design Guide
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
               </div>
             </div>
           </section>
@@ -1699,7 +1745,16 @@ function ModernLandingPage() {
                       Integrations
                     </Link>
                   </li>
-                  
+                  <li>
+                    <Link href="/system-design" className="hover:text-white transition-colors">
+                      System Design Guide
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/learning-paths" className="hover:text-white transition-colors">
+                      Learning Paths
+                    </Link>
+                  </li>
                 </ul>
               </div>
 
