@@ -221,6 +221,9 @@ function ModernLandingPage() {
               <Link href="#demo" className="text-gray-400 hover:text-white transition-colors">
                 Demo
               </Link>
+              <Link href="/system-design" className="text-gray-400 hover:text-white transition-colors">
+                System Design
+              </Link>
               <Link href="#integrations" className="text-gray-400 hover:text-white transition-colors">
                 Integrations
               </Link>
