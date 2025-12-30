@@ -3213,6 +3213,7 @@ export default function SystemDesignPage() {
   const [activeTab, setActiveTab] = useState('guides');
   const [completed, setCompleted] = useState(new Set());
   const [quizStats, setQuizStats] = useState({ totalAnswered: 0, totalCorrect: 0, bestStreak: 0 });
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
 
   // Load from persistent storage on mount
   useEffect(function() {
@@ -3287,20 +3288,29 @@ export default function SystemDesignPage() {
     <div style={{ minHeight: '100vh', background: '#09090b', color: '#fafafa', fontFamily: "'Outfit', sans-serif" }}>
       <div style={{ position: 'fixed', inset: 0, background: 'radial-gradient(ellipse 80% 50% at 50% -20%, rgba(34, 211, 238, 0.1), transparent)', pointerEvents: 'none' }} />
       
-      <header style={{ position: 'sticky', top: 0, zIndex: 100, background: 'rgba(9,9,11,0.85)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-        <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0.6rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '1rem', fontWeight: 600 }}>
+      <header style={{ position: 'sticky', top: 0, zIndex: 100, background: 'rgba(9,9,11,0.95)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ margin: '0 auto', padding: '0.75rem 2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
+          {/* Mobile menu button */}
+          <button
+            onClick={() => setShowMobileSidebar(!showMobileSidebar)}
+            className="mobile-menu-btn"
+            style={{ display: 'none', padding: '0.5rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fafafa', cursor: 'pointer', fontSize: '1.2rem' }}
+          >
+            {showMobileSidebar ? '✕' : '☰'}
+          </button>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            <a href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '1.1rem', fontWeight: 600, textDecoration: 'none', color: 'inherit' }}>
               <span style={{ color: '#22d3ee' }}>◆</span> SystemDesign<span style={{ color: '#22d3ee' }}>.guide</span>
-            </div>
-            <div style={{ display: 'flex', gap: '0.25rem', background: 'rgba(255,255,255,0.05)', padding: '0.2rem', borderRadius: '8px' }}>
-              <button onClick={() => setActiveTab('guides')} style={{ padding: '0.35rem 0.75rem', borderRadius: '6px', border: 'none', background: activeTab === 'guides' ? '#22d3ee' : 'transparent', color: activeTab === 'guides' ? '#09090b' : '#a1a1aa', fontSize: '0.8rem', fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>📚 Guides</button>
-              <button onClick={() => setActiveTab('roadmap')} style={{ padding: '0.35rem 0.75rem', borderRadius: '6px', border: 'none', background: activeTab === 'roadmap' ? '#22d3ee' : 'transparent', color: activeTab === 'roadmap' ? '#09090b' : '#a1a1aa', fontSize: '0.8rem', fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>🗺️ Roadmap</button>
-              <button onClick={() => setActiveTab('quiz')} style={{ padding: '0.35rem 0.75rem', borderRadius: '6px', border: 'none', background: activeTab === 'quiz' ? '#22d3ee' : 'transparent', color: activeTab === 'quiz' ? '#09090b' : '#a1a1aa', fontSize: '0.8rem', fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>🧠 Quiz</button>
+            </a>
+            <div className="tab-buttons" style={{ display: 'flex', gap: '0.25rem', background: 'rgba(255,255,255,0.05)', padding: '0.25rem', borderRadius: '8px' }}>
+              <button onClick={() => setActiveTab('guides')} style={{ padding: '0.4rem 0.85rem', borderRadius: '6px', border: 'none', background: activeTab === 'guides' ? '#22d3ee' : 'transparent', color: activeTab === 'guides' ? '#09090b' : '#a1a1aa', fontSize: '0.85rem', fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>📚 Guides</button>
+              <button onClick={() => setActiveTab('roadmap')} style={{ padding: '0.4rem 0.85rem', borderRadius: '6px', border: 'none', background: activeTab === 'roadmap' ? '#22d3ee' : 'transparent', color: activeTab === 'roadmap' ? '#09090b' : '#a1a1aa', fontSize: '0.85rem', fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>🗺️ Roadmap</button>
+              <button onClick={() => setActiveTab('quiz')} style={{ padding: '0.4rem 0.85rem', borderRadius: '6px', border: 'none', background: activeTab === 'quiz' ? '#22d3ee' : 'transparent', color: activeTab === 'quiz' ? '#09090b' : '#a1a1aa', fontSize: '0.85rem', fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>🧠 Quiz</button>
             </div>
           </div>
           {activeTab === 'guides' && (
-            <input type="text" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: 180, padding: '0.4rem 0.8rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: '#fafafa', fontSize: '0.85rem', fontFamily: 'inherit', outline: 'none' }} />
+            <input type="text" placeholder="Search guides..." value={search} onChange={(e) => setSearch(e.target.value)} className="search-input" style={{ width: 220, padding: '0.5rem 1rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fafafa', fontSize: '0.9rem', fontFamily: 'inherit', outline: 'none' }} />
           )}
         </div>
       </header>
@@ -3318,46 +3328,51 @@ export default function SystemDesignPage() {
             <p style={{ fontSize: '0.9rem', color: '#a1a1aa' }}>{guides.length} interactive diagrams • {completed.size} completed</p>
           </section>
 
-          <main style={{ maxWidth: 1400, margin: '0 auto', padding: '0 1.5rem 2rem', display: 'grid', gridTemplateColumns: '170px 1fr', gap: '1.5rem', position: 'relative', zIndex: 1 }}>
-            <aside>
-              <h3 style={{ fontSize: '0.65rem', fontWeight: 600, color: '#52525b', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Categories</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                <button onClick={() => setSelectedCategory(null)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.45rem 0.6rem', background: !selectedCategory ? 'rgba(255,255,255,0.05)' : 'transparent', border: !selectedCategory ? '1px solid #22d3ee' : '1px solid transparent', borderRadius: '6px', color: !selectedCategory ? '#fafafa' : '#71717a', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.75rem', textAlign: 'left' }}>
-                  📚 All <span style={{ marginLeft: 'auto', fontSize: '0.6rem', padding: '0.1rem 0.3rem', background: 'rgba(255,255,255,0.08)', borderRadius: '6px' }}>{guides.length}</span>
+          <main className="main-content" style={{ margin: '0 auto', padding: '0 2.5rem 2rem', display: 'grid', gridTemplateColumns: '220px 1fr', gap: '2.5rem', position: 'relative', zIndex: 1 }}>
+            {/* Mobile category overlay */}
+            {showMobileSidebar && (
+              <div className="mobile-sidebar-overlay" onClick={() => setShowMobileSidebar(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 90 }} />
+            )}
+
+            <aside className={`sidebar ${showMobileSidebar ? 'sidebar-open' : ''}`} style={{ position: 'sticky', top: '80px', height: 'fit-content' }}>
+              <h3 style={{ fontSize: '0.75rem', fontWeight: 600, color: '#71717a', textTransform: 'uppercase', marginBottom: '0.75rem', letterSpacing: '0.05em' }}>Categories</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                <button onClick={() => { setSelectedCategory(null); setShowMobileSidebar(false); }} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.6rem 0.75rem', background: !selectedCategory ? 'rgba(34, 211, 238, 0.1)' : 'transparent', border: !selectedCategory ? '1px solid #22d3ee' : '1px solid transparent', borderRadius: '8px', color: !selectedCategory ? '#fafafa' : '#a1a1aa', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.85rem', textAlign: 'left', transition: 'all 0.2s' }}>
+                  📚 All Guides <span style={{ marginLeft: 'auto', fontSize: '0.7rem', padding: '0.15rem 0.4rem', background: 'rgba(255,255,255,0.08)', borderRadius: '6px' }}>{guides.length}</span>
                 </button>
                 {categories.map(cat => (
-                  <button key={cat.id} onClick={() => setSelectedCategory(cat.id)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.45rem 0.6rem', background: selectedCategory === cat.id ? 'rgba(255,255,255,0.05)' : 'transparent', border: selectedCategory === cat.id ? `1px solid ${cat.color}` : '1px solid transparent', borderRadius: '6px', color: selectedCategory === cat.id ? '#fafafa' : '#71717a', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.75rem', textAlign: 'left' }}>
-                    {cat.icon} {cat.name}
-                    <span style={{ marginLeft: 'auto', fontSize: '0.6rem', padding: '0.1rem 0.3rem', background: `${cat.color}25`, color: cat.color, borderRadius: '6px' }}>{guides.filter(g => g.category === cat.id).length}</span>
+                  <button key={cat.id} onClick={() => { setSelectedCategory(cat.id); setShowMobileSidebar(false); }} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.6rem 0.75rem', background: selectedCategory === cat.id ? `${cat.color}15` : 'transparent', border: selectedCategory === cat.id ? `1px solid ${cat.color}` : '1px solid transparent', borderRadius: '8px', color: selectedCategory === cat.id ? '#fafafa' : '#a1a1aa', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.85rem', textAlign: 'left', transition: 'all 0.2s' }}>
+                    <span style={{ fontSize: '1rem' }}>{cat.icon}</span> {cat.name}
+                    <span style={{ marginLeft: 'auto', fontSize: '0.7rem', padding: '0.15rem 0.4rem', background: `${cat.color}20`, color: cat.color, borderRadius: '6px' }}>{guides.filter(g => g.category === cat.id).length}</span>
                   </button>
                 ))}
               </div>
             </aside>
 
             <section>
-              <h2 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span style={{ color: '#22d3ee' }}>◈</span>
                 {selectedCategory ? categories.find(c => c.id === selectedCategory)?.name : 'All Guides'}
-                <span style={{ marginLeft: 'auto', fontSize: '0.7rem', color: '#52525b', fontWeight: 400 }}>{filteredGuides.length}</span>
+                <span style={{ marginLeft: 'auto', fontSize: '0.85rem', color: '#52525b', fontWeight: 400 }}>{filteredGuides.length} guides</span>
               </h2>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.8rem' }}>
+
+              <div className="card-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.75rem' }}>
                 {filteredGuides.map(guide => {
                   const cat = categories.find(c => c.id === guide.category);
                   const isHovered = hoveredCard === guide.id;
                   const isComplete = completed.has(guide.id);
                   return (
-                    <article key={guide.id} onClick={() => setSelectedGuide(guide)} onMouseEnter={() => setHoveredCard(guide.id)} onMouseLeave={() => setHoveredCard(null)} style={{ padding: '0.8rem', background: 'rgba(255,255,255,0.02)', border: `1px solid ${isHovered ? cat?.color : isComplete ? '#4ade8050' : 'rgba(255,255,255,0.06)'}`, borderRadius: '10px', cursor: 'pointer', transition: 'all 0.2s', transform: isHovered ? 'translateY(-2px)' : 'none', position: 'relative' }}>
-                      {isComplete && <span style={{ position: 'absolute', top: 6, right: 6, fontSize: '0.6rem', padding: '0.1rem 0.3rem', background: '#4ade8020', color: '#4ade80', borderRadius: '4px' }}>✓</span>}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                        <span style={{ fontSize: '1.4rem', width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', background: `${cat?.color}20`, borderRadius: '7px' }}>{guide.image}</span>
-                        <span style={{ fontSize: '0.5rem', padding: '0.1rem 0.3rem', borderRadius: '4px', border: `1px solid ${cat?.color}50`, color: cat?.color }}>{cat?.name}</span>
+                    <article key={guide.id} onClick={() => setSelectedGuide(guide)} onMouseEnter={() => setHoveredCard(guide.id)} onMouseLeave={() => setHoveredCard(null)} style={{ padding: '1.5rem', background: isHovered ? 'rgba(255,255,255,0.06)' : 'rgba(24,24,27,0.8)', border: `2px solid ${isHovered ? cat?.color : isComplete ? '#4ade8060' : 'rgba(255,255,255,0.12)'}`, borderRadius: '16px', cursor: 'pointer', transition: 'all 0.25s ease', transform: isHovered ? 'translateY(-4px)' : 'none', boxShadow: isHovered ? `0 12px 40px ${cat?.color}20, 0 4px 16px rgba(0,0,0,0.4)` : '0 4px 12px rgba(0,0,0,0.3)', position: 'relative' }}>
+                      {isComplete && <span style={{ position: 'absolute', top: 12, right: 12, fontSize: '0.75rem', padding: '0.3rem 0.6rem', background: '#4ade8025', color: '#4ade80', borderRadius: '8px', fontWeight: 600, border: '1px solid #4ade8040' }}>✓ Done</span>}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                        <span style={{ fontSize: '2rem', width: 56, height: 56, display: 'flex', alignItems: 'center', justifyContent: 'center', background: `${cat?.color}20`, borderRadius: '14px', border: `1px solid ${cat?.color}30` }}>{guide.image}</span>
+                        <span style={{ fontSize: '0.75rem', padding: '0.35rem 0.7rem', borderRadius: '8px', background: `${cat?.color}20`, color: cat?.color, fontWeight: 600, border: `1px solid ${cat?.color}40` }}>{cat?.name}</span>
                       </div>
-                      <h3 style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.3rem', color: '#fafafa' }}>{guide.title}</h3>
-                      <p style={{ fontSize: '0.7rem', color: '#71717a', lineHeight: 1.4, marginBottom: '0.4rem' }}>{guide.description}</p>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.65rem', color: '#52525b' }}>⏱ {guide.readTime}</span>
-                        <span style={{ fontSize: '0.6rem', color: '#52525b' }}>🏢 {guide.company}</span>
+                      <h3 style={{ fontSize: '1.15rem', fontWeight: 600, marginBottom: '0.6rem', color: '#fafafa' }}>{guide.title}</h3>
+                      <p style={{ fontSize: '0.9rem', color: '#a1a1aa', lineHeight: 1.6, marginBottom: '1rem', minHeight: '3rem' }}>{guide.description}</p>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                        <span style={{ fontSize: '0.85rem', color: '#71717a', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>⏱ {guide.readTime}</span>
+                        <span style={{ fontSize: '0.85rem', color: '#71717a', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>🏢 {guide.company}</span>
                       </div>
                     </article>
                   );
@@ -3372,7 +3387,91 @@ export default function SystemDesignPage() {
         <p style={{ color: '#3f3f46', fontSize: '0.7rem' }}>SystemDesign.guide • {guides.length} patterns • {completed.size} completed</p>
       </footer>
 
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap'); * { margin: 0; padding: 0; box-sizing: border-box; }`}</style>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* Mobile Responsive Styles */
+        @media (max-width: 1024px) {
+          .main-content {
+            grid-template-columns: 1fr !important;
+            padding: 0 1.5rem 2rem !important;
+          }
+          .sidebar {
+            display: none !important;
+          }
+          .sidebar.sidebar-open {
+            display: block !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 300px !important;
+            height: 100vh !important;
+            background: #09090b !important;
+            padding: 1.5rem !important;
+            z-index: 100 !important;
+            overflow-y: auto !important;
+            border-right: 1px solid rgba(255,255,255,0.1) !important;
+          }
+          .mobile-menu-btn {
+            display: flex !important;
+          }
+          .card-grid {
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .main-content {
+            padding: 0 1rem 2rem !important;
+          }
+          .tab-buttons {
+            font-size: 0.75rem !important;
+          }
+          .tab-buttons button {
+            padding: 0.35rem 0.5rem !important;
+            font-size: 0.75rem !important;
+          }
+          .search-input {
+            width: 140px !important;
+            font-size: 0.8rem !important;
+          }
+          .card-grid {
+            grid-template-columns: 1fr !important;
+            gap: 1.25rem !important;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .tab-buttons button span {
+            display: none;
+          }
+          .search-input {
+            display: none !important;
+          }
+        }
+
+        /* Large screens - 3 column layout */
+        @media (min-width: 1200px) {
+          .card-grid {
+            grid-template-columns: repeat(3, 1fr) !important;
+          }
+        }
+
+        /* Extra large screens - 4 column layout */
+        @media (min-width: 1600px) {
+          .card-grid {
+            grid-template-columns: repeat(4, 1fr) !important;
+          }
+        }
+
+        /* Ultra wide screens - 5 column layout */
+        @media (min-width: 2200px) {
+          .card-grid {
+            grid-template-columns: repeat(5, 1fr) !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }
