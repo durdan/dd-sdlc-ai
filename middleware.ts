@@ -26,8 +26,9 @@ const BLOCKED_PATTERNS = [
   // Admin paths (excluding our legitimate /admin route)
   /^\/(administrator|phpmyadmin|pma|cpanel|panel)/i,
   
-  // Common vulnerability scanners
-  /\/(shell|eval|exec|system|proc|passwd)/i,
+  // Common vulnerability scanners (using word boundaries to avoid blocking /system-design)
+  /\/(shell|eval|exec|proc|passwd)(\/|$|\?)/i,
+  /\/system(\/|$|\?)(?!-design)/i,
   /\/(backup|bak|old|temp|tmp|cache|log)/i,
   
   // Malicious file names from your logs

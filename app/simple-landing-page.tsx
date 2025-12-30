@@ -513,6 +513,13 @@ export default function SimpleLandingPage() {
                   <GraduationCap className="w-4 h-4" />
                   Learning Paths
                 </Link>
+                <Link
+                  href="/system-design"
+                  className="px-3 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 text-sm font-medium transition-all flex items-center gap-1.5"
+                >
+                  <Layers className="w-4 h-4" />
+                  System Design
+                </Link>
               </nav>
 
               {/* Right: Rate Limit + Auth */}
@@ -593,6 +600,14 @@ export default function SimpleLandingPage() {
                   >
                     <GraduationCap className="w-4 h-4" />
                     Learning Paths
+                  </Link>
+                  <Link
+                    href="/system-design"
+                    className="px-3 py-2.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10 text-sm font-medium transition-all flex items-center gap-2"
+                    onClick={() => setShowMobileMenu(false)}
+                  >
+                    <Layers className="w-4 h-4" />
+                    System Design
                   </Link>
                   {!user && rateLimitStatus && (
                     <div className={`mx-3 mt-2 px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2 ${
