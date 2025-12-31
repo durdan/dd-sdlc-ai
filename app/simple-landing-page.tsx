@@ -520,6 +520,13 @@ export default function SimpleLandingPage() {
                   <Layers className="w-4 h-4" />
                   System Design
                 </Link>
+                <Link
+                  href="/idea-to-spec"
+                  className="px-3 py-2 rounded-lg text-orange-400/90 hover:text-orange-300 hover:bg-orange-500/10 text-sm font-medium transition-all flex items-center gap-1.5 border border-orange-500/30"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Idea to Spec
+                </Link>
               </nav>
 
               {/* Right: Rate Limit + Auth */}
@@ -608,6 +615,14 @@ export default function SimpleLandingPage() {
                   >
                     <Layers className="w-4 h-4" />
                     System Design
+                  </Link>
+                  <Link
+                    href="/idea-to-spec"
+                    className="px-3 py-2.5 rounded-lg text-orange-400/90 hover:text-orange-300 hover:bg-orange-500/10 text-sm font-medium transition-all flex items-center gap-2 border border-orange-500/30"
+                    onClick={() => setShowMobileMenu(false)}
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    Idea to Spec
                   </Link>
                   {!user && rateLimitStatus && (
                     <div className={`mx-3 mt-2 px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2 ${
