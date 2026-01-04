@@ -418,26 +418,44 @@ export function DiagramViewer({
             </div>
           ) : (
             <>
-              {/* Inline Diagram Render */}
-              <div className="w-full h-[200px] sm:h-[280px] overflow-hidden">
-                <DiagramErrorBoundary onError={setError}>
-                  <UniversalDiagram
-                    type={DDFLOW_TYPE_MAP[type] as DDFlowDiagramType}
-                    source={dsl}
-                    theme="dark"
-                    width={600}
-                    height={260}
-                  />
-                </DiagramErrorBoundary>
-              </div>
-
-              {/* Expand hint overlay */}
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-slate-900 via-slate-900/80 to-transparent flex items-end justify-center pb-3 pt-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-500/90 rounded-lg text-white text-xs font-medium shadow-lg">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+              {/* Placeholder preview - click to view full diagram */}
+              <div className="w-full h-[180px] sm:h-[220px] flex flex-col items-center justify-center gap-4 relative">
+                {/* Abstract diagram visualization */}
+                <div className="relative w-32 h-20">
+                  {/* Animated nodes to represent diagram */}
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-14 h-8 bg-orange-500/20 border border-orange-500/40 rounded-lg flex items-center justify-center">
+                    <div className="w-2 h-2 bg-orange-500 rounded-full" />
+                  </div>
+                  <div className="absolute bottom-0 left-2 w-12 h-7 bg-blue-500/20 border border-blue-500/40 rounded-lg flex items-center justify-center">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                  </div>
+                  <div className="absolute bottom-0 right-2 w-12 h-7 bg-green-500/20 border border-green-500/40 rounded-lg flex items-center justify-center">
+                    <div className="w-2 h-2 bg-green-500 rounded-full" />
+                  </div>
+                  {/* Connection lines */}
+                  <svg className="absolute inset-0 w-full h-full" viewBox="0 0 128 80">
+                    <path d="M 64 32 L 32 56" stroke="rgba(251,146,60,0.4)" strokeWidth="2" fill="none" />
+                    <path d="M 64 32 L 96 56" stroke="rgba(251,146,60,0.4)" strokeWidth="2" fill="none" />
                   </svg>
-                  Click to expand
+                </div>
+
+                {/* Status text */}
+                <div className="text-center">
+                  <p className="text-white/80 text-sm font-medium flex items-center gap-2 justify-center">
+                    <span className="text-green-400">✓</span>
+                    Diagram Ready
+                  </p>
+                  <p className="text-white/40 text-xs mt-1">Click to view and interact</p>
+                </div>
+
+                {/* Hover overlay with expand button */}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <div className="flex items-center gap-2 px-4 py-2 bg-orange-500 rounded-lg text-white text-sm font-medium shadow-lg">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                    </svg>
+                    View Diagram
+                  </div>
                 </div>
               </div>
             </>
