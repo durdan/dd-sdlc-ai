@@ -13,6 +13,8 @@ const categories = [
   { id: 'api', name: 'API Design', icon: '⚡', color: '#f87171' },
   { id: 'devops', name: 'DevOps', icon: '🛠️', color: '#e879f9' },
   { id: 'realworld', name: 'System Designs', icon: '🎯', color: '#2dd4bf' },
+  { id: 'cloud', name: 'Cloud', icon: '☁️', color: '#38bdf8' },
+  { id: 'resources', name: 'Resources', icon: '📚', color: '#94a3b8' },
 ];
 
 const guides = [
@@ -129,6 +131,149 @@ const guides = [
   { id: 111, title: 'Batch Processing', description: 'Scheduled bulk operations', category: 'messaging', readTime: '6 min', image: '📦', company: 'Spark', diagram: 'batch' },
   { id: 112, title: 'Throttling', description: 'Request rate control', category: 'loadbalancing', readTime: '5 min', image: '🚦', company: 'AWS', diagram: 'throttling' },
   { id: 113, title: 'Reverse Proxy', description: 'Server-side proxy patterns', category: 'loadbalancing', readTime: '5 min', image: '↩️', company: 'Nginx', diagram: 'reverseproxy' },
+  { id: 114, title: 'Thunder Herd', description: 'Cache expiration stampede problem', category: 'caching', readTime: '6 min', image: '🐘', company: 'Facebook', diagram: 'thunderherd' },
+  { id: 115, title: 'Cache Penetration', description: 'Non-existent data attacks', category: 'caching', readTime: '5 min', image: '🎯', company: 'Redis', diagram: 'cachepenetration' },
+  { id: 116, title: 'Cache Breakdown', description: 'Hot key expiration handling', category: 'caching', readTime: '5 min', image: '💥', company: 'Redis', diagram: 'cachebreakdown' },
+  { id: 117, title: 'Cache Crash', description: 'Recovery strategies & warmup', category: 'caching', readTime: '6 min', image: '🔄', company: 'Memcached', diagram: 'cachecrash' },
+  { id: 118, title: '8 Caching Levels', description: 'Multi-tier caching architecture', category: 'caching', readTime: '8 min', image: '📊', company: 'Netflix', diagram: 'cachinglevels' },
+  { id: 119, title: 'K8s Architecture', description: 'Control plane & worker nodes', category: 'devops', readTime: '10 min', image: '☸️', company: 'CNCF', diagram: 'k8sarchitecture' },
+  { id: 120, title: 'K8s Patterns', description: 'Top 10 Kubernetes design patterns', category: 'devops', readTime: '12 min', image: '🎨', company: 'Red Hat', diagram: 'k8spatterns' },
+  { id: 121, title: 'K8s Tools Stack', description: 'Kubernetes ecosystem tools', category: 'devops', readTime: '8 min', image: '🛠️', company: 'CNCF', diagram: 'k8stools' },
+  { id: 122, title: 'Container Security', description: 'Image scanning & pod security', category: 'security', readTime: '7 min', image: '🔒', company: 'Aqua', diagram: 'containersecurity' },
+  { id: 123, title: 'OSI Model', description: '7 layers of network communication', category: 'distributed', readTime: '8 min', image: '🌐', company: 'ISO', diagram: 'osimodel' },
+  { id: 124, title: 'HTTP Status Codes', description: 'Complete guide to 1xx-5xx codes', category: 'api', readTime: '6 min', image: '📊', company: 'IETF', diagram: 'httpstatus' },
+  { id: 125, title: 'SSL/TLS Handshake', description: 'HTTPS connection establishment', category: 'security', readTime: '7 min', image: '🔐', company: 'Cloudflare', diagram: 'sslhandshake' },
+  { id: 126, title: 'SSH Protocol', description: 'Secure shell architecture', category: 'security', readTime: '6 min', image: '🔑', company: 'OpenSSH', diagram: 'sshprotocol' },
+  { id: 127, title: 'IPv4 vs IPv6', description: 'Address format comparison', category: 'distributed', readTime: '5 min', image: '🔢', company: 'IANA', diagram: 'ipv4v6' },
+  { id: 128, title: 'TCP vs UDP', description: 'When to use each protocol', category: 'distributed', readTime: '6 min', image: '📡', company: 'Various', diagram: 'tcpudp' },
+  { id: 129, title: 'Network Protocols', description: 'Top 8 protocols explained', category: 'distributed', readTime: '8 min', image: '🌍', company: 'IETF', diagram: 'netprotocols' },
+  { id: 130, title: 'OAuth 2.0 Flows', description: 'Authorization Code, Client Credentials, PKCE', category: 'security', readTime: '10 min', image: '🔐', company: 'Google', diagram: 'oauth2flows' },
+  { id: 131, title: 'Session vs Token', description: 'Session, Cookie, JWT comparison', category: 'security', readTime: '8 min', image: '🎫', company: 'Auth0', diagram: 'sessiontoken' },
+  { id: 132, title: 'Data Protection', description: 'Encoding vs Encryption vs Tokenization', category: 'security', readTime: '7 min', image: '🔒', company: 'Stripe', diagram: 'dataprotection' },
+  { id: 133, title: 'DevSecOps', description: 'SAST, DAST, IaC security pipeline', category: 'security', readTime: '9 min', image: '🛡️', company: 'Snyk', diagram: 'devsecops' },
+  { id: 134, title: 'Security Domains', description: '12 security domains cheat sheet', category: 'security', readTime: '12 min', image: '📋', company: 'OWASP', diagram: 'securitydomains' },
+  { id: 135, title: 'API Security', description: 'OWASP API Top 10, injection prevention', category: 'security', readTime: '8 min', image: '⚠️', company: 'Cloudflare', diagram: 'apisecurity' },
+  { id: 136, title: 'API Auth Methods', description: 'API Keys, OAuth, JWT, Basic Auth', category: 'security', readTime: '7 min', image: '🔑', company: 'AWS', diagram: 'apiauthmethods' },
+  { id: 137, title: 'DB Data Structures', description: 'Skiplist, SSTable, LSM Tree, B-Tree', category: 'database', readTime: '10 min', image: '🌲', company: 'LevelDB', diagram: 'dbdatastructures' },
+  { id: 138, title: 'SQL Optimization', description: 'Execution plans, index strategies', category: 'database', readTime: '8 min', image: '⚡', company: 'PostgreSQL', diagram: 'sqloptimization' },
+  { id: 139, title: 'DB Transactions', description: 'ACID, isolation levels, deadlocks', category: 'database', readTime: '9 min', image: '🔄', company: 'MySQL', diagram: 'dbtransactions' },
+  { id: 140, title: '6 Database Models', description: 'Flat, Hierarchical, Relational, Star, Snowflake', category: 'database', readTime: '8 min', image: '📐', company: 'Various', diagram: 'dbmodels' },
+  { id: 141, title: 'Sharding Guide', description: 'Range, Hash, Consistent Hashing, Virtual Buckets', category: 'database', readTime: '10 min', image: '🔀', company: 'Vitess', diagram: 'shardingguide' },
+  { id: 142, title: 'PostgreSQL Ecosystem', description: 'Extensions: Timescale, pgVector, PostGIS', category: 'database', readTime: '8 min', image: '🐘', company: 'PostgreSQL', diagram: 'pgecosystem' },
+  { id: 143, title: 'Microservices Practices', description: '9 best practices for microservices', category: 'architecture', readTime: '10 min', image: '🧩', company: 'Netflix', diagram: 'micropractices' },
+  { id: 144, title: 'Production Components', description: '9 essential components for production', category: 'architecture', readTime: '9 min', image: '🏭', company: 'Uber', diagram: 'prodcomponents' },
+  { id: 145, title: 'Service Discovery', description: 'Consul, Eureka, DNS-based discovery', category: 'architecture', readTime: '7 min', image: '🔎', company: 'HashiCorp', diagram: 'servicediscovery' },
+  { id: 146, title: 'Distributed Tracing', description: 'Jaeger, Zipkin, OpenTelemetry', category: 'devops', readTime: '8 min', image: '🔍', company: 'Uber', diagram: 'disttracing' },
+  { id: 147, title: 'Heartbeat Detection', description: '6 mechanisms for failure detection', category: 'distributed', readTime: '7 min', image: '💓', company: 'ZooKeeper', diagram: 'heartbeatdetect' },
+  { id: 148, title: 'Communication Patterns', description: 'Sync vs Async, Choreography vs Orchestration', category: 'architecture', readTime: '8 min', image: '📡', company: 'Various', diagram: 'commpatterns' },
+  { id: 149, title: 'Cloud Service Comparison', description: 'AWS vs Azure vs GCP - 25+ services mapped', category: 'cloud', readTime: '12 min', image: '☁️', company: 'Multi-cloud', diagram: 'cloudcompare' },
+  { id: 150, title: 'Disaster Recovery', description: 'Backup, Pilot Light, Warm Standby, Hot Standby', category: 'cloud', readTime: '10 min', image: '🔄', company: 'AWS', diagram: 'disasterrecovery' },
+  { id: 151, title: 'Cloud Cost Reduction', description: '6 strategies for cloud cost optimization', category: 'cloud', readTime: '8 min', image: '💰', company: 'FinOps', diagram: 'cloudcost' },
+  { id: 152, title: 'AWS Learning Roadmap', description: 'Services categorized by domain', category: 'cloud', readTime: '15 min', image: '🗺️', company: 'AWS', diagram: 'awsroadmap' },
+  { id: 153, title: 'Cloud Load Balancers', description: 'AWS vs Azure vs GCP LB selection guide', category: 'cloud', readTime: '8 min', image: '⚖️', company: 'Multi-cloud', diagram: 'cloudlb' },
+  { id: 154, title: 'Netflix Tech Stack', description: 'Complete architecture: Mobile, Web, Spring Boot, Cassandra', category: 'realworld', readTime: '15 min', image: '🎬', company: 'Netflix', diagram: 'netflixstack' },
+  { id: 155, title: 'Netflix API Evolution', description: 'Monolith → Gateway → GraphQL Federation', category: 'realworld', readTime: '12 min', image: '📈', company: 'Netflix', diagram: 'netflixapi' },
+  { id: 156, title: 'Discord Architecture', description: 'MongoDB → Cassandra → ScyllaDB evolution', category: 'realworld', readTime: '12 min', image: '💬', company: 'Discord', diagram: 'discordarch' },
+  { id: 157, title: 'Redis Architecture', description: 'Data structures, persistence, clustering, sentinel', category: 'database', readTime: '10 min', image: '🔴', company: 'Redis', diagram: 'redisarch' },
+  { id: 158, title: 'Uber Tech Stack', description: 'Real-time systems, mapping, dispatch architecture', category: 'realworld', readTime: '14 min', image: '🚗', company: 'Uber', diagram: 'uberstack' },
+  { id: 159, title: '12-Factor App', description: 'Cloud-native application principles', category: 'architecture', readTime: '12 min', image: '📋', company: 'Heroku', diagram: 'twelvefactor' },
+  { id: 160, title: 'SDLC Models', description: '8 software development lifecycle models', category: 'architecture', readTime: '10 min', image: '🔄', company: 'Various', diagram: 'sdlcmodels' },
+  { id: 161, title: 'Design Patterns', description: 'GoF patterns cheat sheet', category: 'architecture', readTime: '15 min', image: '🎨', company: 'Various', diagram: 'designpatterns' },
+  { id: 162, title: 'System Trade-offs', description: '10 key system design trade-offs', category: 'architecture', readTime: '10 min', image: '⚖️', company: 'Various', diagram: 'tradeoffs' },
+  { id: 163, title: 'Data Pipeline', description: 'ETL vs ELT, batch vs streaming', category: 'database', readTime: '10 min', image: '🔀', company: 'Airflow', diagram: 'datapipeline' },
+  { id: 164, title: 'Data Lake vs Warehouse', description: 'Architecture comparison', category: 'database', readTime: '8 min', image: '🏞️', company: 'Snowflake', diagram: 'datalakehouse' },
+  { id: 165, title: 'Change Data Capture', description: 'Debezium, Kafka Connect, CDC patterns', category: 'database', readTime: '9 min', image: '📡', company: 'Debezium', diagram: 'cdcpattern' },
+  { id: 166, title: 'Kafka Deep Dive', description: 'Internals, message loss, partitioning', category: 'messaging', readTime: '12 min', image: '📊', company: 'Confluent', diagram: 'kafkadeep' },
+  { id: 167, title: 'Search Engine', description: 'Crawling, indexing, ranking architecture', category: 'realworld', readTime: '12 min', image: '🔍', company: 'Google', diagram: 'searchengine' },
+  { id: 168, title: 'Elasticsearch', description: 'Shards, replicas, cluster management', category: 'database', readTime: '10 min', image: '🔎', company: 'Elastic', diagram: 'elasticsearch' },
+  { id: 169, title: 'Generative AI Stack', description: 'LLMs, RAG, AI development landscape', category: 'architecture', readTime: '15 min', image: '🤖', company: 'OpenAI', diagram: 'genaistack' },
+  // Phase 2: Linux & OS
+  { id: 170, title: 'Linux Boot Process', description: 'BIOS/UEFI → GRUB → Kernel → systemd', category: 'devops', readTime: '8 min', image: '🐧', company: 'Linux Foundation', diagram: 'linuxboot' },
+  { id: 171, title: 'Linux File System', description: 'FHS directory structure and hierarchy', category: 'devops', readTime: '7 min', image: '📁', company: 'Linux Foundation', diagram: 'linuxfs' },
+  { id: 172, title: 'Linux Permissions', description: 'chmod, chown, octal notation explained', category: 'security', readTime: '6 min', image: '🔐', company: 'Linux', diagram: 'linuxperms' },
+  { id: 173, title: 'Linux Performance Tools', description: 'vmstat, iostat, netstat, perf, strace', category: 'devops', readTime: '10 min', image: '📊', company: 'Brendan Gregg', diagram: 'linuxperf' },
+  { id: 174, title: 'Linux Commands', description: '18 most-used commands with examples', category: 'devops', readTime: '8 min', image: '💻', company: 'Linux', diagram: 'linuxcmds' },
+  // Phase 2: API Design
+  { id: 175, title: 'REST Best Practices', description: 'Pagination, filtering, error handling', category: 'api', readTime: '8 min', image: '📋', company: 'Stripe', diagram: 'restbest' },
+  { id: 176, title: 'GraphQL Deep Dive', description: 'N+1 problem, schema design, resolvers', category: 'api', readTime: '10 min', image: '🕸️', company: 'Meta', diagram: 'graphqldeep' },
+  { id: 177, title: 'gRPC Internals', description: 'Protocol buffers, streaming types', category: 'api', readTime: '9 min', image: '⚡', company: 'Google', diagram: 'grpcinternals' },
+  { id: 178, title: 'API Gateway Patterns', description: 'Aggregation, transformation, routing', category: 'api', readTime: '8 min', image: '🚪', company: 'Kong', diagram: 'gatewaypatterns' },
+  { id: 179, title: 'Proxy vs Gateway vs LB', description: 'Clear comparison of infrastructure', category: 'loadbalancing', readTime: '7 min', image: '🔀', company: 'Nginx', diagram: 'proxygwlb' },
+  { id: 180, title: 'GraphQL Adoption', description: '4 patterns: Client, BFF, Monolithic, Federation', category: 'api', readTime: '8 min', image: '📈', company: 'Apollo', diagram: 'graphqladopt' },
+  { id: 181, title: 'Polling vs Webhooks', description: 'When to use each, retry mechanisms', category: 'api', readTime: '6 min', image: '🔄', company: 'GitHub', diagram: 'pollwebhook' },
+  { id: 182, title: 'API Protocols Landscape', description: 'REST, GraphQL, gRPC, WebSocket, Webhook', category: 'api', readTime: '10 min', image: '🗺️', company: 'Various', diagram: 'apilandscape' },
+  // Phase 2: Real-Time & Communication
+  { id: 183, title: 'Live Streaming', description: 'Video capture, transcoding, RTMP/HLS, CDN', category: 'realworld', readTime: '12 min', image: '📺', company: 'Twitch', diagram: 'livestream' },
+  { id: 184, title: 'Push Notifications', description: 'FCM, APNs, push architecture', category: 'messaging', readTime: '8 min', image: '🔔', company: 'Firebase', diagram: 'pushnotify' },
+  { id: 185, title: 'WebSocket Deep Dive', description: 'Connection lifecycle, heartbeats, scaling', category: 'api', readTime: '9 min', image: '🔗', company: 'Discord', diagram: 'wsdeep' },
+  // Phase 2: DevOps & CI/CD
+  { id: 186, title: 'CI/CD Pipeline', description: 'Plan, develop, build, test, release flow', category: 'devops', readTime: '10 min', image: '🔄', company: 'GitHub', diagram: 'cicdpipe' },
+  { id: 187, title: 'Config Management vs IaC', description: 'Terraform, Ansible, CloudFormation comparison', category: 'devops', readTime: '8 min', image: '⚙️', company: 'HashiCorp', diagram: 'configiac' },
+  { id: 188, title: 'Docker Deep Dive', description: 'Client, daemon, registry, image layers', category: 'devops', readTime: '10 min', image: '🐳', company: 'Docker', diagram: 'dockerdeep' },
+  { id: 189, title: 'Git Workflows', description: 'Git flow, GitHub flow, trunk-based', category: 'devops', readTime: '7 min', image: '🌳', company: 'Various', diagram: 'gitworkflows' },
+  // Phase 2: Performance & Monitoring
+  { id: 190, title: 'Web Performance Metrics', description: 'Load Time, TTFB, FCP, LCP, CLS', category: 'devops', readTime: '8 min', image: '⚡', company: 'Google', diagram: 'webperf' },
+  { id: 191, title: 'Frontend Performance', description: '8 optimization tips for faster sites', category: 'devops', readTime: '7 min', image: '🚀', company: 'Various', diagram: 'frontendperf' },
+  { id: 192, title: 'Latency Numbers', description: 'L1/L2 cache, RAM, SSD, network latencies', category: 'distributed', readTime: '6 min', image: '⏱️', company: 'Jeff Dean', diagram: 'latencynums' },
+  { id: 193, title: 'Latency Reduction', description: 'Indexing, caching, CDN, async strategies', category: 'distributed', readTime: '8 min', image: '📉', company: 'Various', diagram: 'latencyreduce' },
+  // Phase 2: Advanced Caching
+  { id: 194, title: 'Cache Eviction Policies', description: 'LRU, LFU, MRU, SLRU, FIFO comparison', category: 'caching', readTime: '8 min', image: '🗑️', company: 'Redis', diagram: 'cacheevict' },
+  { id: 195, title: 'Two-Tier Caching', description: 'In-memory + distributed cache layers', category: 'caching', readTime: '7 min', image: '🏗️', company: 'Netflix', diagram: 'twoTierCache' },
+  { id: 196, title: 'Redis Sentinel & Cluster', description: '16384 hash slots, sharding, failover', category: 'caching', readTime: '10 min', image: '🔴', company: 'Redis', diagram: 'rediscluster' },
+  // Phase 2: Architecture Patterns
+  { id: 197, title: 'High Availability Patterns', description: 'Hot-Hot, Hot-Warm, RTO/RPO', category: 'distributed', readTime: '9 min', image: '🔄', company: 'AWS', diagram: 'hapatterns' },
+  { id: 198, title: 'Software Architecture', description: 'Microkernel, Space-Based, Pipe-Filter', category: 'architecture', readTime: '10 min', image: '🏛️', company: 'Various', diagram: 'archpatterns' },
+  { id: 199, title: 'Fault-Tolerant Systems', description: '6 principles for resilient systems', category: 'distributed', readTime: '8 min', image: '🛡️', company: 'Netflix', diagram: 'faulttolerant' },
+  { id: 200, title: 'SOLID Principles', description: 'SRP, OCP, LSP, ISP, DIP explained', category: 'architecture', readTime: '9 min', image: '🧱', company: 'Various', diagram: 'solidprinciples' },
+  // Phase 2: Messaging
+  { id: 201, title: 'Kafka Use Cases', description: 'Log analysis, CDC, recommendations', category: 'messaging', readTime: '10 min', image: '📊', company: 'LinkedIn', diagram: 'kafkausecases' },
+  { id: 202, title: 'Cloud Messaging Patterns', description: 'Async Reply, Claim Check, Priority Queue', category: 'messaging', readTime: '8 min', image: '☁️', company: 'Azure', diagram: 'cloudmsgpatterns' },
+  { id: 203, title: 'Kafka 101', description: 'Producer, Consumer, Broker, Topic basics', category: 'messaging', readTime: '8 min', image: '📬', company: 'Confluent', diagram: 'kafka101' },
+  // Phase 2: Payment & Security
+  { id: 204, title: 'Credit Card Economics', description: 'Interchange fees, merchant discount', category: 'realworld', readTime: '7 min', image: '💳', company: 'Visa', diagram: 'creditcardfees' },
+  { id: 205, title: 'Payment Gateway', description: 'Authorization, capture, settlement flow', category: 'realworld', readTime: '9 min', image: '💰', company: 'Stripe', diagram: 'paymentgateway' },
+  { id: 206, title: 'Sensitive Data Management', description: 'GDPR, RBAC, key management', category: 'security', readTime: '8 min', image: '🔒', company: 'Various', diagram: 'sensitivedata' },
+  // Phase 2: Database Advanced
+  { id: 207, title: 'B-Tree Deep Dive', description: 'Disk-based operations, index structure', category: 'database', readTime: '10 min', image: '🌲', company: 'PostgreSQL', diagram: 'btreedeep' },
+  { id: 208, title: 'NoSQL Types', description: 'Document, Key-Value, Column, Graph', category: 'database', readTime: '9 min', image: '🗄️', company: 'Various', diagram: 'nosqltypes' },
+  { id: 209, title: 'Star & Snowflake Schema', description: 'OLAP optimization, data warehousing', category: 'database', readTime: '8 min', image: '⭐', company: 'Snowflake', diagram: 'starsnowflake' },
+  { id: 210, title: 'Database Design', description: 'Normalization, keys, constraints cheatsheet', category: 'database', readTime: '8 min', image: '📋', company: 'Various', diagram: 'dbdesign' },
+  // Phase 3: Developer Resources
+  { id: 211, title: 'Top Engineering Blogs', description: 'Netflix, Uber, Cloudflare, Meta, LinkedIn blogs', category: 'resources', readTime: '5 min', image: '📝', company: 'Various', diagram: 'engblogs' },
+  { id: 212, title: 'Top Books for Developers', description: 'Pragmatic Programmer, Clean Code, DDIA', category: 'resources', readTime: '6 min', image: '📚', company: 'Various', diagram: 'devbooks' },
+  { id: 213, title: 'Transformative CS Papers', description: 'Dynamo, GFS, BigTable, Borg, Kafka papers', category: 'resources', readTime: '8 min', image: '📄', company: 'Google/Amazon', diagram: 'cspapers' },
+  { id: 214, title: 'Open Source by Big Tech', description: 'React, Kubernetes, TensorFlow, VS Code', category: 'resources', readTime: '6 min', image: '🌐', company: 'Various', diagram: 'opensource' },
+  { id: 215, title: 'Soft Skills Books', description: 'Communication, leadership, career growth', category: 'resources', readTime: '5 min', image: '🤝', company: 'Various', diagram: 'softskills' },
+  { id: 216, title: 'Diagrams as Code', description: 'Mermaid, PlantUML, Diagrams.py tools', category: 'resources', readTime: '6 min', image: '📊', company: 'Various', diagram: 'diagramtools' },
+  { id: 217, title: 'Coding Principles', description: 'DRY, YAGNI, KISS, separation of concerns', category: 'resources', readTime: '7 min', image: '💡', company: 'Various', diagram: 'codingprinciples' },
+  // Phase 3: Developer Roadmaps
+  { id: 218, title: 'Full-Stack Roadmap', description: 'Frontend, backend, databases, deployment', category: 'resources', readTime: '8 min', image: '🗺️', company: 'roadmap.sh', diagram: 'fullstackroad' },
+  { id: 219, title: 'Software Architect Path', description: 'From developer to architect knowledge map', category: 'resources', readTime: '9 min', image: '🏗️', company: 'Various', diagram: 'architectroad' },
+  { id: 220, title: 'Cybersecurity Roadmap', description: 'Security fundamentals to advanced topics', category: 'security', readTime: '8 min', image: '🔒', company: 'Various', diagram: 'securityroad' },
+  { id: 221, title: 'Backend Developer Roadmap', description: 'Languages, databases, APIs, deployment', category: 'resources', readTime: '8 min', image: '⚙️', company: 'roadmap.sh', diagram: 'backendroad' },
+  { id: 222, title: 'DevOps Roadmap', description: 'CI/CD, containers, cloud, monitoring', category: 'devops', readTime: '8 min', image: '🔄', company: 'roadmap.sh', diagram: 'devopsroad' },
+  // Phase 3: Programming Concepts
+  { id: 223, title: 'UML Class Diagrams', description: 'Classes, relationships, multiplicity notation', category: 'architecture', readTime: '7 min', image: '📐', company: 'Various', diagram: 'umlclass' },
+  { id: 224, title: 'Programming Paradigms', description: 'OOP vs Functional vs Procedural comparison', category: 'architecture', readTime: '8 min', image: '🧮', company: 'Various', diagram: 'paradigms' },
+  { id: 225, title: 'Garbage Collection', description: 'Java, Python, Go memory management', category: 'architecture', readTime: '9 min', image: '♻️', company: 'Various', diagram: 'garbagecollection' },
+  { id: 226, title: 'Concurrency vs Parallelism', description: 'I/O-bound vs CPU-bound, threads vs processes', category: 'distributed', readTime: '8 min', image: '⚡', company: 'Various', diagram: 'concurrencyparallel' },
+  { id: 227, title: 'JavaScript Event Loop', description: 'Call stack, microtasks, macrotasks explained', category: 'architecture', readTime: '8 min', image: '🔁', company: 'Various', diagram: 'eventloop' },
+  { id: 228, title: 'C++ Use Cases', description: 'Embedded, games, OS, databases, HFT', category: 'resources', readTime: '6 min', image: '⚙️', company: 'Various', diagram: 'cppusecases' },
+  // Phase 3: Web & Frontend
+  { id: 229, title: 'CSS Fundamentals', description: 'Selectors, Flexbox, Grid, animations', category: 'architecture', readTime: '7 min', image: '🎨', company: 'Various', diagram: 'cssfundamentals' },
+  { id: 230, title: 'OOP Principles', description: 'Encapsulation, Abstraction, Inheritance, Polymorphism', category: 'architecture', readTime: '8 min', image: '🧱', company: 'Various', diagram: 'oopprinciples' },
+  { id: 231, title: 'Why Nginx is Popular', description: 'Event-driven architecture, use cases', category: 'loadbalancing', readTime: '6 min', image: '🌐', company: 'Nginx', diagram: 'nginxpopular' },
+  // Phase 3: Additional Topics
+  { id: 232, title: 'Slack Notification Tree', description: 'When to DM, channel, or email decision tree', category: 'realworld', readTime: '4 min', image: '💬', company: 'Slack', diagram: 'slacknotify' },
+  { id: 233, title: 'QR Code Login', description: 'How WeChat/WhatsApp QR login works', category: 'security', readTime: '5 min', image: '📱', company: 'WeChat', diagram: 'qrlogin' },
+  { id: 234, title: 'Pinterest Git Optimization', description: 'Monorepo challenges and solutions', category: 'realworld', readTime: '7 min', image: '📌', company: 'Pinterest', diagram: 'pinterestgit' },
+  { id: 235, title: 'Stack Overflow Architecture', description: 'Monolith at scale case study', category: 'realworld', readTime: '8 min', image: '📚', company: 'Stack Overflow', diagram: 'stackoverflowarch' },
+  { id: 236, title: 'KISS Principle', description: 'Keep It Simple, Stupid in practice', category: 'architecture', readTime: '4 min', image: '💋', company: 'Various', diagram: 'kissprinciple' },
+  { id: 237, title: 'API Client Tools', description: 'Postman, Insomnia, Thunder Client comparison', category: 'api', readTime: '5 min', image: '🔧', company: 'Various', diagram: 'apiclients' },
+  { id: 238, title: 'Semantic Versioning', description: 'Major.Minor.Patch versioning explained', category: 'devops', readTime: '4 min', image: '🏷️', company: 'Various', diagram: 'semver' },
+  { id: 239, title: 'VPN Architecture', description: 'Site-to-site vs client VPN explained', category: 'security', readTime: '6 min', image: '🔐', company: 'Various', diagram: 'vpnarch' },
+  { id: 240, title: 'Memory Stack vs Heap', description: 'RAM hierarchy, allocation strategies', category: 'architecture', readTime: '7 min', image: '🧠', company: 'Various', diagram: 'memorytypes' },
+  { id: 241, title: 'International Payments', description: 'Currency conversion, SWIFT, cross-border', category: 'realworld', readTime: '8 min', image: '💱', company: 'SWIFT', diagram: 'internationalpay' },
 ];
 
 function Diagram({ type, color }) {
@@ -1895,6 +2040,3744 @@ function Diagram({ type, color }) {
         <text x="250" y="130" textAnchor="middle" fill="#a1a1aa" fontSize="7">Clients see one endpoint • Servers hidden • Centralized security</text>
       </svg>
     ),
+    thunderherd: (
+      <svg viewBox="0 0 500 180" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Thunder Herd Problem & Solutions</text>
+        <rect x="15" y="30" width="220" height="140" rx="8" fill="rgba(248,113,113,0.08)" stroke="#f87171" strokeDasharray="4,4" />
+        <text x="125" y="48" textAnchor="middle" fill="#f87171" fontSize="10" fontWeight="600">❌ The Problem</text>
+        <rect x="30" y="58" width="60" height="25" rx="4" fill="#60a5fa20" stroke="#60a5fa" /><text x="60" y="75" textAnchor="middle" fill="#fafafa" fontSize="7">Cache</text>
+        <text x="60" y="95" textAnchor="middle" fill="#f87171" fontSize="7">🕐 TTL Expires!</text>
+        {[0,1,2,3,4].map(i => <g key={i}><circle cx={30 + i*20} cy="115" r="8" fill="#fb923c20" stroke="#fb923c" /><text x={30 + i*20} y="118" textAnchor="middle" fill="#fb923c" fontSize="6">R{i+1}</text><path d={`M${30 + i*20} 125 L120 145`} stroke="#f87171" strokeWidth="1" strokeDasharray="2,2" /></g>)}
+        <rect x="100" y="140" width="50" height="22" rx="4" fill="#f4728620" stroke="#f472b6" strokeWidth="2" /><text x="125" y="155" textAnchor="middle" fill="#f472b6" fontSize="7">💾 DB</text>
+        <text x="125" y="175" textAnchor="middle" fill="#f87171" fontSize="6">1000s hit DB simultaneously!</text>
+        <rect x="265" y="30" width="220" height="140" rx="8" fill="rgba(74,222,128,0.08)" stroke="#4ade80" strokeDasharray="4,4" />
+        <text x="375" y="48" textAnchor="middle" fill="#4ade80" fontSize="10" fontWeight="600">✓ Solutions</text>
+        <rect x="280" y="60" width="90" height="25" rx="4" fill="#4ade8020" stroke="#4ade80" /><text x="325" y="77" textAnchor="middle" fill="#fafafa" fontSize="7">🔒 Locking</text>
+        <text x="325" y="92" textAnchor="middle" fill="#71717a" fontSize="6">One request fetches</text>
+        <rect x="380" y="60" width="90" height="25" rx="4" fill="#22d3ee20" stroke="#22d3ee" /><text x="425" y="77" textAnchor="middle" fill="#fafafa" fontSize="7">⏰ Early Expire</text>
+        <text x="425" y="92" textAnchor="middle" fill="#71717a" fontSize="6">Probabilistic refresh</text>
+        <rect x="280" y="105" width="90" height="25" rx="4" fill="#a78bfa20" stroke="#a78bfa" /><text x="325" y="122" textAnchor="middle" fill="#fafafa" fontSize="7">📦 Background</text>
+        <text x="325" y="137" textAnchor="middle" fill="#71717a" fontSize="6">Async refresh job</text>
+        <rect x="380" y="105" width="90" height="25" rx="4" fill="#fbbf2420" stroke="#fbbf24" /><text x="425" y="122" textAnchor="middle" fill="#fafafa" fontSize="7">♾️ Never Expire</text>
+        <text x="425" y="137" textAnchor="middle" fill="#71717a" fontSize="6">Manual invalidation</text>
+        <text x="375" y="165" textAnchor="middle" fill="#4ade80" fontSize="7">Facebook: Request coalescing saves 99% DB load</text>
+      </svg>
+    ),
+    cachepenetration: (
+      <svg viewBox="0 0 500 170" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Cache Penetration: Querying Non-existent Keys</text>
+        <rect x="15" y="28" width="220" height="130" rx="8" fill="rgba(248,113,113,0.08)" stroke="#f87171" strokeDasharray="4,4" />
+        <text x="125" y="48" textAnchor="middle" fill="#f87171" fontSize="10" fontWeight="600">❌ The Attack</text>
+        <circle cx="50" cy="80" r="15" fill="#fb923c20" stroke="#fb923c" /><text x="50" y="84" textAnchor="middle" fill="#fb923c" fontSize="8">🤖</text>
+        <text x="50" y="105" textAnchor="middle" fill="#71717a" fontSize="6">Attacker</text>
+        <path d="M70 80 L100 80" stroke="#f87171" strokeWidth="2" /><text x="85" y="75" textAnchor="middle" fill="#f87171" fontSize="6">key=-1</text>
+        <rect x="105" y="65" width="50" height="30" rx="4" fill="#60a5fa20" stroke="#60a5fa" /><text x="130" y="84" textAnchor="middle" fill="#fafafa" fontSize="7">Cache</text>
+        <text x="130" y="105" textAnchor="middle" fill="#f87171" fontSize="6">MISS!</text>
+        <path d="M160 80 L185 80" stroke="#f87171" strokeWidth="2" />
+        <rect x="190" y="65" width="50" height="30" rx="4" fill="#f4728620" stroke="#f472b6" strokeWidth="2" /><text x="215" y="84" textAnchor="middle" fill="#f472b6" fontSize="7">💾 DB</text>
+        <text x="215" y="105" textAnchor="middle" fill="#f87171" fontSize="6">MISS!</text>
+        <text x="125" y="145" textAnchor="middle" fill="#f87171" fontSize="7">Every request hits DB → DDoS effect</text>
+        <rect x="265" y="28" width="220" height="130" rx="8" fill="rgba(74,222,128,0.08)" stroke="#4ade80" strokeDasharray="4,4" />
+        <text x="375" y="48" textAnchor="middle" fill="#4ade80" fontSize="10" fontWeight="600">✓ Solutions</text>
+        <rect x="280" y="60" width="95" height="40" rx="4" fill="#4ade8020" stroke="#4ade80" />
+        <text x="327" y="77" textAnchor="middle" fill="#fafafa" fontSize="8">🌸 Bloom Filter</text>
+        <text x="327" y="92" textAnchor="middle" fill="#71717a" fontSize="6">Pre-check existence</text>
+        <rect x="385" y="60" width="95" height="40" rx="4" fill="#22d3ee20" stroke="#22d3ee" />
+        <text x="432" y="77" textAnchor="middle" fill="#fafafa" fontSize="8">∅ Cache Nulls</text>
+        <text x="432" y="92" textAnchor="middle" fill="#71717a" fontSize="6">Store empty results</text>
+        <rect x="280" y="108" width="200" height="35" rx="4" fill="#a78bfa15" stroke="#a78bfa" />
+        <text x="380" y="125" textAnchor="middle" fill="#a78bfa" fontSize="7">✓ Input Validation: Reject invalid IDs early</text>
+        <text x="380" y="140" textAnchor="middle" fill="#71717a" fontSize="6">Rate limiting + IP blocking for repeated attacks</text>
+      </svg>
+    ),
+    cachebreakdown: (
+      <svg viewBox="0 0 500 170" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Cache Breakdown: Hot Key Expiration</text>
+        <rect x="15" y="28" width="220" height="130" rx="8" fill="rgba(248,113,113,0.08)" stroke="#f87171" strokeDasharray="4,4" />
+        <text x="125" y="48" textAnchor="middle" fill="#f87171" fontSize="10" fontWeight="600">❌ The Problem</text>
+        <rect x="35" y="60" width="70" height="30" rx="4" fill="#fbbf2420" stroke="#fbbf24" strokeWidth="2" />
+        <text x="70" y="75" textAnchor="middle" fill="#fbbf24" fontSize="8">🔥 Hot Key</text>
+        <text x="70" y="88" textAnchor="middle" fill="#fbbf24" fontSize="6">"trending_post"</text>
+        <text x="70" y="108" textAnchor="middle" fill="#f87171" fontSize="7">TTL Expires!</text>
+        {[0,1,2].map(i => <g key={i}><rect x={120} y={60 + i*25} width="35" height="18" rx="3" fill="#60a5fa20" stroke="#60a5fa" /><text x="137" y={72 + i*25} textAnchor="middle" fill="#60a5fa" fontSize="5">10K req</text></g>)}
+        <path d="M160 75 L200 115" stroke="#f87171" strokeWidth="2" />
+        <rect x="180" y="105" width="45" height="25" rx="4" fill="#f4728620" stroke="#f472b6" strokeWidth="2" /><text x="202" y="122" textAnchor="middle" fill="#f472b6" fontSize="7">💾 DB</text>
+        <text x="202" y="145" textAnchor="middle" fill="#f87171" fontSize="6">💥 Overload!</text>
+        <rect x="265" y="28" width="220" height="130" rx="8" fill="rgba(74,222,128,0.08)" stroke="#4ade80" strokeDasharray="4,4" />
+        <text x="375" y="48" textAnchor="middle" fill="#4ade80" fontSize="10" fontWeight="600">✓ Solutions</text>
+        <rect x="280" y="60" width="95" height="38" rx="4" fill="#4ade8020" stroke="#4ade80" />
+        <text x="327" y="76" textAnchor="middle" fill="#fafafa" fontSize="7">🔒 Mutex Lock</text>
+        <text x="327" y="90" textAnchor="middle" fill="#71717a" fontSize="6">One thread rebuilds</text>
+        <rect x="385" y="60" width="95" height="38" rx="4" fill="#22d3ee20" stroke="#22d3ee" />
+        <text x="432" y="76" textAnchor="middle" fill="#fafafa" fontSize="7">♾️ No Expiry</text>
+        <text x="432" y="90" textAnchor="middle" fill="#71717a" fontSize="6">Manual invalidation</text>
+        <rect x="280" y="105" width="95" height="38" rx="4" fill="#a78bfa20" stroke="#a78bfa" />
+        <text x="327" y="121" textAnchor="middle" fill="#fafafa" fontSize="7">🔄 Logical TTL</text>
+        <text x="327" y="135" textAnchor="middle" fill="#71717a" fontSize="6">Soft expiration</text>
+        <rect x="385" y="105" width="95" height="38" rx="4" fill="#fb923c20" stroke="#fb923c" />
+        <text x="432" y="121" textAnchor="middle" fill="#fafafa" fontSize="7">📊 Singleflight</text>
+        <text x="432" y="135" textAnchor="middle" fill="#71717a" fontSize="6">Dedupe requests</text>
+      </svg>
+    ),
+    cachecrash: (
+      <svg viewBox="0 0 500 170" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Cache Crash: Recovery & Warm-up Strategies</text>
+        <rect x="15" y="28" width="140" height="130" rx="8" fill="rgba(248,113,113,0.08)" stroke="#f87171" strokeDasharray="4,4" />
+        <text x="85" y="48" textAnchor="middle" fill="#f87171" fontSize="9" fontWeight="600">❌ Crash Scenario</text>
+        <rect x="55" y="60" width="60" height="30" rx="4" fill="#52525b" stroke="#71717a" strokeWidth="2" strokeDasharray="3,3" />
+        <text x="85" y="80" textAnchor="middle" fill="#71717a" fontSize="8">Cache ☠️</text>
+        <text x="85" y="100" textAnchor="middle" fill="#f87171" fontSize="7">All data lost!</text>
+        <text x="85" y="115" textAnchor="middle" fill="#f87171" fontSize="6">100% cache miss</text>
+        <rect x="45" y="125" width="80" height="22" rx="3" fill="#f4728630" stroke="#f472b6" strokeWidth="2" /><text x="85" y="140" textAnchor="middle" fill="#f472b6" fontSize="7">💾 DB Overload</text>
+        <rect x="175" y="28" width="310" height="130" rx="8" fill="rgba(74,222,128,0.08)" stroke="#4ade80" strokeDasharray="4,4" />
+        <text x="330" y="48" textAnchor="middle" fill="#4ade80" fontSize="10" fontWeight="600">✓ Recovery Strategies</text>
+        <rect x="190" y="58" width="90" height="42" rx="4" fill="#4ade8020" stroke="#4ade80" />
+        <text x="235" y="74" textAnchor="middle" fill="#fafafa" fontSize="7">🔥 Cache Warming</text>
+        <text x="235" y="88" textAnchor="middle" fill="#71717a" fontSize="6">Pre-load popular keys</text>
+        <text x="235" y="98" textAnchor="middle" fill="#71717a" fontSize="5">on startup</text>
+        <rect x="290" y="58" width="90" height="42" rx="4" fill="#22d3ee20" stroke="#22d3ee" />
+        <text x="335" y="74" textAnchor="middle" fill="#fafafa" fontSize="7">💾 Persistent Cache</text>
+        <text x="335" y="88" textAnchor="middle" fill="#71717a" fontSize="6">Redis RDB/AOF</text>
+        <text x="335" y="98" textAnchor="middle" fill="#71717a" fontSize="5">survives restart</text>
+        <rect x="390" y="58" width="90" height="42" rx="4" fill="#a78bfa20" stroke="#a78bfa" />
+        <text x="435" y="74" textAnchor="middle" fill="#fafafa" fontSize="7">🔄 Replica Failover</text>
+        <text x="435" y="88" textAnchor="middle" fill="#71717a" fontSize="6">Promote replica</text>
+        <text x="435" y="98" textAnchor="middle" fill="#71717a" fontSize="5">to primary</text>
+        <rect x="190" y="108" width="140" height="38" rx="4" fill="#fb923c20" stroke="#fb923c" />
+        <text x="260" y="124" textAnchor="middle" fill="#fafafa" fontSize="7">🚦 Gradual Traffic Ramp-up</text>
+        <text x="260" y="138" textAnchor="middle" fill="#71717a" fontSize="6">10% → 50% → 100% over time</text>
+        <rect x="340" y="108" width="140" height="38" rx="4" fill="#fbbf2420" stroke="#fbbf24" />
+        <text x="410" y="124" textAnchor="middle" fill="#fafafa" fontSize="7">🛡️ Circuit Breaker</text>
+        <text x="410" y="138" textAnchor="middle" fill="#71717a" fontSize="6">Protect DB from overload</text>
+      </svg>
+    ),
+    cachinglevels: (
+      <svg viewBox="0 0 500 200" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">8 Levels of Caching Architecture</text>
+        {[
+          { y: 28, label: '1. Client Cache', detail: 'Browser/App', color: '#4ade80', latency: '~0ms' },
+          { y: 48, label: '2. CDN Cache', detail: 'Edge Locations', color: '#22d3ee', latency: '~10ms' },
+          { y: 68, label: '3. Load Balancer', detail: 'Nginx/HAProxy', color: '#60a5fa', latency: '~1ms' },
+          { y: 88, label: '4. API Gateway', detail: 'Response Cache', color: '#a78bfa', latency: '~2ms' },
+          { y: 108, label: '5. App Cache', detail: 'CPU/RAM/Disk', color: '#f472b6', latency: '~0.1ms' },
+          { y: 128, label: '6. Distributed Cache', detail: 'Redis/Memcached', color: '#fb923c', latency: '~1ms' },
+          { y: 148, label: '7. Search Index', detail: 'Elasticsearch', color: '#fbbf24', latency: '~5ms' },
+          { y: 168, label: '8. Database Cache', detail: 'Query/Buffer', color: '#f87171', latency: '~10ms' }
+        ].map((level, i) => (
+          <g key={i}>
+            <rect x="20" y={level.y} width="180" height="17" rx="3" fill={`${level.color}20`} stroke={level.color} strokeWidth="1.5" />
+            <text x="30" y={level.y + 12} fill={level.color} fontSize="7" fontWeight="600">{level.label}</text>
+            <text x="195" y={level.y + 12} textAnchor="end" fill="#71717a" fontSize="6">{level.detail}</text>
+            <rect x="210" y={level.y} width="50" height="17" rx="3" fill={`${level.color}10`} stroke={level.color} strokeWidth="0.5" />
+            <text x="235" y={level.y + 12} textAnchor="middle" fill={level.color} fontSize="6">{level.latency}</text>
+            {i < 7 && <path d={`M110 ${level.y + 17} L110 ${level.y + 28}`} stroke="#3f3f46" strokeWidth="1" />}
+          </g>
+        ))}
+        <rect x="280" y="28" width="200" height="160" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="380" y="48" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Cache Hit Rate Impact</text>
+        <text x="295" y="68" fill="#4ade80" fontSize="7">• 90% hit rate = 10x less DB load</text>
+        <text x="295" y="85" fill="#22d3ee" fontSize="7">• CDN: Static assets, images</text>
+        <text x="295" y="102" fill="#60a5fa" fontSize="7">• LB: SSL session, routing</text>
+        <text x="295" y="119" fill="#a78bfa" fontSize="7">• Gateway: API responses</text>
+        <text x="295" y="136" fill="#fb923c" fontSize="7">• Redis: Hot data, sessions</text>
+        <text x="295" y="153" fill="#fbbf24" fontSize="7">• ES: Search results</text>
+        <text x="295" y="170" fill="#f87171" fontSize="7">• DB: Query plans, buffers</text>
+        <text x="380" y="185" textAnchor="middle" fill="#71717a" fontSize="6">Netflix: 30M+ ops/sec across layers</text>
+      </svg>
+    ),
+    k8sarchitecture: (
+      <svg viewBox="0 0 500 200" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Kubernetes Architecture</text>
+        <rect x="15" y="25" width="220" height="165" rx="8" fill="rgba(96,165,250,0.08)" stroke="#60a5fa" strokeWidth="2" />
+        <text x="125" y="42" textAnchor="middle" fill="#60a5fa" fontSize="10" fontWeight="600">Control Plane</text>
+        <rect x="30" y="52" width="90" height="30" rx="4" fill="#60a5fa20" stroke="#60a5fa" />
+        <text x="75" y="71" textAnchor="middle" fill="#fafafa" fontSize="7">🔌 API Server</text>
+        <rect x="130" y="52" width="90" height="30" rx="4" fill="#60a5fa20" stroke="#60a5fa" />
+        <text x="175" y="71" textAnchor="middle" fill="#fafafa" fontSize="7">📅 Scheduler</text>
+        <rect x="30" y="90" width="90" height="30" rx="4" fill="#60a5fa20" stroke="#60a5fa" />
+        <text x="75" y="109" textAnchor="middle" fill="#fafafa" fontSize="7">🎛️ Controller Mgr</text>
+        <rect x="130" y="90" width="90" height="30" rx="4" fill="#60a5fa20" stroke="#60a5fa" />
+        <text x="175" y="109" textAnchor="middle" fill="#fafafa" fontSize="7">💾 etcd</text>
+        <rect x="30" y="128" width="190" height="25" rx="4" fill="#a78bfa20" stroke="#a78bfa" />
+        <text x="125" y="145" textAnchor="middle" fill="#a78bfa" fontSize="7">☁️ Cloud Controller Manager</text>
+        <text x="125" y="175" textAnchor="middle" fill="#71717a" fontSize="6">Single source of truth</text>
+        <rect x="265" y="25" width="220" height="165" rx="8" fill="rgba(74,222,128,0.08)" stroke="#4ade80" strokeWidth="2" />
+        <text x="375" y="42" textAnchor="middle" fill="#4ade80" fontSize="10" fontWeight="600">Worker Nodes</text>
+        <rect x="280" y="52" width="90" height="60" rx="4" fill="#4ade8020" stroke="#4ade80" />
+        <text x="325" y="68" textAnchor="middle" fill="#fafafa" fontSize="7">📦 Pod</text>
+        <rect x="290" y="78" width="30" height="20" rx="2" fill="#22d3ee20" stroke="#22d3ee" /><text x="305" y="92" textAnchor="middle" fill="#22d3ee" fontSize="5">C1</text>
+        <rect x="330" y="78" width="30" height="20" rx="2" fill="#22d3ee20" stroke="#22d3ee" /><text x="345" y="92" textAnchor="middle" fill="#22d3ee" fontSize="5">C2</text>
+        <rect x="380" y="52" width="90" height="60" rx="4" fill="#4ade8020" stroke="#4ade80" />
+        <text x="425" y="68" textAnchor="middle" fill="#fafafa" fontSize="7">📦 Pod</text>
+        <rect x="390" y="78" width="30" height="20" rx="2" fill="#22d3ee20" stroke="#22d3ee" /><text x="405" y="92" textAnchor="middle" fill="#22d3ee" fontSize="5">C1</text>
+        <rect x="430" y="78" width="30" height="20" rx="2" fill="#22d3ee20" stroke="#22d3ee" /><text x="445" y="92" textAnchor="middle" fill="#22d3ee" fontSize="5">C2</text>
+        <rect x="280" y="120" width="95" height="25" rx="3" fill="#fb923c20" stroke="#fb923c" />
+        <text x="327" y="137" textAnchor="middle" fill="#fb923c" fontSize="7">🤖 Kubelet</text>
+        <rect x="385" y="120" width="85" height="25" rx="3" fill="#f472b620" stroke="#f472b6" />
+        <text x="427" y="137" textAnchor="middle" fill="#f472b6" fontSize="7">🔀 Kube-Proxy</text>
+        <rect x="280" y="153" width="190" height="25" rx="3" fill="#fbbf2420" stroke="#fbbf24" />
+        <text x="375" y="170" textAnchor="middle" fill="#fbbf24" fontSize="7">🐳 Container Runtime (containerd/CRI-O)</text>
+        <path d="M240 90 L260 90" stroke="#71717a" strokeWidth="2" strokeDasharray="4,4" />
+      </svg>
+    ),
+    k8spatterns: (
+      <svg viewBox="0 0 500 210" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Top 10 Kubernetes Design Patterns</text>
+        <rect x="15" y="25" width="150" height="85" rx="6" fill="rgba(74,222,128,0.08)" stroke="#4ade80" strokeDasharray="4,4" />
+        <text x="90" y="42" textAnchor="middle" fill="#4ade80" fontSize="8" fontWeight="600">Foundational</text>
+        <rect x="25" y="50" width="130" height="18" rx="3" fill="#4ade8020" stroke="#4ade80" /><text x="90" y="63" textAnchor="middle" fill="#fafafa" fontSize="6">💓 Health Probe</text>
+        <rect x="25" y="72" width="130" height="18" rx="3" fill="#4ade8020" stroke="#4ade80" /><text x="90" y="85" textAnchor="middle" fill="#fafafa" fontSize="6">📋 Predictable Demands</text>
+        <rect x="25" y="94" width="130" height="18" rx="3" fill="#4ade8020" stroke="#4ade80" /><text x="90" y="107" textAnchor="middle" fill="#fafafa" fontSize="6">🎯 Automated Placement</text>
+        <rect x="175" y="25" width="150" height="85" rx="6" fill="rgba(96,165,250,0.08)" stroke="#60a5fa" strokeDasharray="4,4" />
+        <text x="250" y="42" textAnchor="middle" fill="#60a5fa" fontSize="8" fontWeight="600">Structural</text>
+        <rect x="185" y="50" width="130" height="18" rx="3" fill="#60a5fa20" stroke="#60a5fa" /><text x="250" y="63" textAnchor="middle" fill="#fafafa" fontSize="6">🚀 Init Container</text>
+        <rect x="185" y="72" width="130" height="18" rx="3" fill="#60a5fa20" stroke="#60a5fa" /><text x="250" y="85" textAnchor="middle" fill="#fafafa" fontSize="6">🏍️ Sidecar</text>
+        <rect x="335" y="25" width="150" height="85" rx="6" fill="rgba(251,146,60,0.08)" stroke="#fb923c" strokeDasharray="4,4" />
+        <text x="410" y="42" textAnchor="middle" fill="#fb923c" fontSize="8" fontWeight="600">Behavioral</text>
+        <rect x="345" y="50" width="130" height="18" rx="3" fill="#fb923c20" stroke="#fb923c" /><text x="410" y="63" textAnchor="middle" fill="#fafafa" fontSize="6">📦 Batch Job</text>
+        <rect x="345" y="72" width="130" height="18" rx="3" fill="#fb923c20" stroke="#fb923c" /><text x="410" y="85" textAnchor="middle" fill="#fafafa" fontSize="6">💾 Stateful Service</text>
+        <rect x="345" y="94" width="130" height="18" rx="3" fill="#fb923c20" stroke="#fb923c" /><text x="410" y="107" textAnchor="middle" fill="#fafafa" fontSize="6">🔎 Service Discovery</text>
+        <rect x="95" y="120" width="310" height="80" rx="6" fill="rgba(167,139,250,0.08)" stroke="#a78bfa" strokeDasharray="4,4" />
+        <text x="250" y="137" textAnchor="middle" fill="#a78bfa" fontSize="8" fontWeight="600">Higher-Level Patterns</text>
+        <rect x="110" y="147" width="140" height="22" rx="3" fill="#a78bfa20" stroke="#a78bfa" />
+        <text x="180" y="162" textAnchor="middle" fill="#fafafa" fontSize="7">🎛️ Controller</text>
+        <text x="180" y="175" textAnchor="middle" fill="#71717a" fontSize="5">Reconciliation loop</text>
+        <rect x="260" y="147" width="140" height="22" rx="3" fill="#a78bfa20" stroke="#a78bfa" />
+        <text x="330" y="162" textAnchor="middle" fill="#fafafa" fontSize="7">🔧 Operator</text>
+        <text x="330" y="175" textAnchor="middle" fill="#71717a" fontSize="5">Domain-specific automation</text>
+        <text x="250" y="195" textAnchor="middle" fill="#71717a" fontSize="6">Source: Kubernetes Patterns by Bilgin Ibryam & Roland Huß</text>
+      </svg>
+    ),
+    k8stools: (
+      <svg viewBox="0 0 500 200" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Kubernetes Ecosystem Tools</text>
+        {[
+          { x: 20, y: 30, w: 145, h: 75, title: '📊 Monitoring', color: '#4ade80', tools: ['Prometheus', 'Grafana', 'Datadog', 'New Relic'] },
+          { x: 175, y: 30, w: 145, h: 75, title: '🔒 Security', color: '#f87171', tools: ['Falco', 'OPA', 'Trivy', 'Vault'] },
+          { x: 330, y: 30, w: 145, h: 75, title: '🌐 Networking', color: '#60a5fa', tools: ['Calico', 'Cilium', 'Istio', 'Linkerd'] },
+          { x: 20, y: 115, w: 145, h: 75, title: '📦 CI/CD', color: '#a78bfa', tools: ['ArgoCD', 'Flux', 'Jenkins X', 'Tekton'] },
+          { x: 175, y: 115, w: 145, h: 75, title: '💾 Storage', color: '#fb923c', tools: ['Rook', 'Longhorn', 'OpenEBS', 'Velero'] },
+          { x: 330, y: 115, w: 145, h: 75, title: '🛠️ Dev Tools', color: '#22d3ee', tools: ['Helm', 'Kustomize', 'Skaffold', 'Telepresence'] }
+        ].map((cat, i) => (
+          <g key={i}>
+            <rect x={cat.x} y={cat.y} width={cat.w} height={cat.h} rx="6" fill={`${cat.color}10`} stroke={cat.color} strokeWidth="1.5" />
+            <text x={cat.x + cat.w/2} y={cat.y + 18} textAnchor="middle" fill={cat.color} fontSize="8" fontWeight="600">{cat.title}</text>
+            {cat.tools.map((tool, j) => (
+              <text key={j} x={cat.x + 10 + (j % 2) * 70} y={cat.y + 38 + Math.floor(j / 2) * 16} fill="#a1a1aa" fontSize="6">{tool}</text>
+            ))}
+          </g>
+        ))}
+      </svg>
+    ),
+    containersecurity: (
+      <svg viewBox="0 0 500 180" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Container Security Best Practices</text>
+        <rect x="15" y="28" width="150" height="140" rx="6" fill="rgba(248,113,113,0.08)" stroke="#f87171" strokeWidth="1.5" />
+        <text x="90" y="45" textAnchor="middle" fill="#f87171" fontSize="9" fontWeight="600">🔍 Image Security</text>
+        <rect x="25" y="55" width="130" height="22" rx="3" fill="#f8717120" stroke="#f87171" />
+        <text x="90" y="70" textAnchor="middle" fill="#fafafa" fontSize="7">Scan for vulnerabilities</text>
+        <rect x="25" y="82" width="130" height="22" rx="3" fill="#f8717120" stroke="#f87171" />
+        <text x="90" y="97" textAnchor="middle" fill="#fafafa" fontSize="7">Use minimal base images</text>
+        <rect x="25" y="109" width="130" height="22" rx="3" fill="#f8717120" stroke="#f87171" />
+        <text x="90" y="124" textAnchor="middle" fill="#fafafa" fontSize="7">Sign & verify images</text>
+        <rect x="25" y="136" width="130" height="22" rx="3" fill="#f8717120" stroke="#f87171" />
+        <text x="90" y="151" textAnchor="middle" fill="#fafafa" fontSize="7">Private registry</text>
+        <rect x="175" y="28" width="150" height="140" rx="6" fill="rgba(251,191,36,0.08)" stroke="#fbbf24" strokeWidth="1.5" />
+        <text x="250" y="45" textAnchor="middle" fill="#fbbf24" fontSize="9" fontWeight="600">🛡️ Pod Security</text>
+        <rect x="185" y="55" width="130" height="22" rx="3" fill="#fbbf2420" stroke="#fbbf24" />
+        <text x="250" y="70" textAnchor="middle" fill="#fafafa" fontSize="7">Run as non-root</text>
+        <rect x="185" y="82" width="130" height="22" rx="3" fill="#fbbf2420" stroke="#fbbf24" />
+        <text x="250" y="97" textAnchor="middle" fill="#fafafa" fontSize="7">Read-only filesystem</text>
+        <rect x="185" y="109" width="130" height="22" rx="3" fill="#fbbf2420" stroke="#fbbf24" />
+        <text x="250" y="124" textAnchor="middle" fill="#fafafa" fontSize="7">Drop capabilities</text>
+        <rect x="185" y="136" width="130" height="22" rx="3" fill="#fbbf2420" stroke="#fbbf24" />
+        <text x="250" y="151" textAnchor="middle" fill="#fafafa" fontSize="7">Resource limits</text>
+        <rect x="335" y="28" width="150" height="140" rx="6" fill="rgba(74,222,128,0.08)" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="410" y="45" textAnchor="middle" fill="#4ade80" fontSize="9" fontWeight="600">🔐 Secrets Mgmt</text>
+        <rect x="345" y="55" width="130" height="22" rx="3" fill="#4ade8020" stroke="#4ade80" />
+        <text x="410" y="70" textAnchor="middle" fill="#fafafa" fontSize="7">External secrets</text>
+        <rect x="345" y="82" width="130" height="22" rx="3" fill="#4ade8020" stroke="#4ade80" />
+        <text x="410" y="97" textAnchor="middle" fill="#fafafa" fontSize="7">Vault integration</text>
+        <rect x="345" y="109" width="130" height="22" rx="3" fill="#4ade8020" stroke="#4ade80" />
+        <text x="410" y="124" textAnchor="middle" fill="#fafafa" fontSize="7">Encrypt at rest</text>
+        <rect x="345" y="136" width="130" height="22" rx="3" fill="#4ade8020" stroke="#4ade80" />
+        <text x="410" y="151" textAnchor="middle" fill="#fafafa" fontSize="7">Rotate regularly</text>
+      </svg>
+    ),
+    osimodel: (
+      <svg viewBox="0 0 500 210" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">OSI 7-Layer Model</text>
+        {[
+          { n: '7', name: 'Application', proto: 'HTTP, SMTP, DNS', color: '#f87171', ex: 'Chrome, Outlook' },
+          { n: '6', name: 'Presentation', proto: 'SSL/TLS, JPEG', color: '#fb923c', ex: 'Encryption, Format' },
+          { n: '5', name: 'Session', proto: 'NetBIOS, RPC', color: '#fbbf24', ex: 'Session mgmt' },
+          { n: '4', name: 'Transport', proto: 'TCP, UDP', color: '#4ade80', ex: 'Ports, Segments' },
+          { n: '3', name: 'Network', proto: 'IP, ICMP', color: '#22d3ee', ex: 'Routers, Packets' },
+          { n: '2', name: 'Data Link', proto: 'Ethernet, WiFi', color: '#60a5fa', ex: 'Switches, Frames' },
+          { n: '1', name: 'Physical', proto: 'Cables, Signals', color: '#a78bfa', ex: 'Bits, Hubs' }
+        ].map((layer, i) => (
+          <g key={i}>
+            <rect x="20" y={28 + i * 25} width="30" height="22" rx="3" fill={`${layer.color}30`} stroke={layer.color} strokeWidth="1.5" />
+            <text x="35" y={43 + i * 25} textAnchor="middle" fill={layer.color} fontSize="10" fontWeight="bold">{layer.n}</text>
+            <rect x="55" y={28 + i * 25} width="100" height="22" rx="3" fill={`${layer.color}20`} stroke={layer.color} />
+            <text x="105" y={43 + i * 25} textAnchor="middle" fill="#fafafa" fontSize="8">{layer.name}</text>
+            <rect x="160" y={28 + i * 25} width="120" height="22" rx="3" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+            <text x="220" y={43 + i * 25} textAnchor="middle" fill="#a1a1aa" fontSize="7">{layer.proto}</text>
+            <text x="310" y={43 + i * 25} fill="#71717a" fontSize="6">{layer.ex}</text>
+          </g>
+        ))}
+        <rect x="360" y="28" width="125" height="175" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="422" y="48" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">Encapsulation</text>
+        <text x="375" y="68" fill="#f87171" fontSize="6">↓ Data</text>
+        <text x="375" y="88" fill="#fb923c" fontSize="6">↓ + Format</text>
+        <text x="375" y="108" fill="#fbbf24" fontSize="6">↓ + Session</text>
+        <text x="375" y="128" fill="#4ade80" fontSize="6">↓ + Port (Segment)</text>
+        <text x="375" y="148" fill="#22d3ee" fontSize="6">↓ + IP (Packet)</text>
+        <text x="375" y="168" fill="#60a5fa" fontSize="6">↓ + MAC (Frame)</text>
+        <text x="375" y="188" fill="#a78bfa" fontSize="6">↓ + Signal (Bits)</text>
+      </svg>
+    ),
+    httpstatus: (
+      <svg viewBox="0 0 500 180" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">HTTP Status Codes</text>
+        {[
+          { range: '1xx', name: 'Informational', color: '#a78bfa', examples: '100 Continue, 101 Switching' },
+          { range: '2xx', name: 'Success', color: '#4ade80', examples: '200 OK, 201 Created, 204 No Content' },
+          { range: '3xx', name: 'Redirection', color: '#22d3ee', examples: '301 Moved, 302 Found, 304 Not Modified' },
+          { range: '4xx', name: 'Client Error', color: '#fbbf24', examples: '400 Bad, 401 Unauth, 403 Forbidden, 404 Not Found' },
+          { range: '5xx', name: 'Server Error', color: '#f87171', examples: '500 Internal, 502 Gateway, 503 Unavailable, 504 Timeout' }
+        ].map((cat, i) => (
+          <g key={i}>
+            <rect x="20" y={28 + i * 30} width="55" height="26" rx="4" fill={`${cat.color}30`} stroke={cat.color} strokeWidth="2" />
+            <text x="47" y={46 + i * 30} textAnchor="middle" fill={cat.color} fontSize="11" fontWeight="bold">{cat.range}</text>
+            <rect x="82" y={28 + i * 30} width="90" height="26" rx="3" fill={`${cat.color}15`} stroke={cat.color} />
+            <text x="127" y={46 + i * 30} textAnchor="middle" fill="#fafafa" fontSize="8">{cat.name}</text>
+            <text x="185" y={46 + i * 30} fill="#a1a1aa" fontSize="6">{cat.examples}</text>
+          </g>
+        ))}
+        <rect x="400" y="28" width="85" height="150" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="442" y="48" textAnchor="middle" fill="#fafafa" fontSize="7" fontWeight="600">Common</text>
+        <text x="410" y="68" fill="#4ade80" fontSize="6">200 Success</text>
+        <text x="410" y="85" fill="#4ade80" fontSize="6">201 Created</text>
+        <text x="410" y="102" fill="#22d3ee" fontSize="6">301 Redirect</text>
+        <text x="410" y="119" fill="#fbbf24" fontSize="6">401 Unauth</text>
+        <text x="410" y="136" fill="#fbbf24" fontSize="6">404 Not Found</text>
+        <text x="410" y="153" fill="#f87171" fontSize="6">500 Server Err</text>
+        <text x="410" y="170" fill="#f87171" fontSize="6">503 Unavailable</text>
+      </svg>
+    ),
+    sslhandshake: (
+      <svg viewBox="0 0 500 190" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">TLS 1.3 Handshake (1-RTT)</text>
+        <rect x="30" y="30" width="80" height="145" rx="6" fill="rgba(96,165,250,0.1)" stroke="#60a5fa" strokeWidth="2" />
+        <text x="70" y="50" textAnchor="middle" fill="#60a5fa" fontSize="9" fontWeight="600">🖥️ Client</text>
+        <rect x="390" y="30" width="80" height="145" rx="6" fill="rgba(74,222,128,0.1)" stroke="#4ade80" strokeWidth="2" />
+        <text x="430" y="50" textAnchor="middle" fill="#4ade80" fontSize="9" fontWeight="600">🌐 Server</text>
+        <path d="M115 70 L385 85" stroke="#60a5fa" strokeWidth="2" markerEnd="url(#arrow)" />
+        <text x="250" y="72" textAnchor="middle" fill="#60a5fa" fontSize="7">ClientHello + KeyShare</text>
+        <text x="250" y="82" textAnchor="middle" fill="#71717a" fontSize="5">Cipher suites, TLS version, ECDHE public key</text>
+        <path d="M385 105 L115 120" stroke="#4ade80" strokeWidth="2" markerEnd="url(#arrow)" />
+        <text x="250" y="107" textAnchor="middle" fill="#4ade80" fontSize="7">ServerHello + KeyShare + Certificate</text>
+        <text x="250" y="117" textAnchor="middle" fill="#71717a" fontSize="5">Chosen cipher, server public key, cert chain</text>
+        <path d="M115 140 L385 155" stroke="#a78bfa" strokeWidth="2" markerEnd="url(#arrow)" />
+        <text x="250" y="142" textAnchor="middle" fill="#a78bfa" fontSize="7">Finished (Encrypted)</text>
+        <text x="250" y="152" textAnchor="middle" fill="#71717a" fontSize="5">Verify handshake, start sending data</text>
+        <rect x="140" y="165" width="220" height="20" rx="3" fill="#4ade8020" stroke="#4ade80" />
+        <text x="250" y="179" textAnchor="middle" fill="#4ade80" fontSize="7">🔒 Encrypted Application Data</text>
+        <defs><marker id="arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#71717a"/></marker></defs>
+      </svg>
+    ),
+    sshprotocol: (
+      <svg viewBox="0 0 500 180" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">SSH Protocol Architecture</text>
+        <rect x="20" y="30" width="145" height="140" rx="6" fill="rgba(96,165,250,0.08)" stroke="#60a5fa" strokeDasharray="4,4" />
+        <text x="92" y="48" textAnchor="middle" fill="#60a5fa" fontSize="8" fontWeight="600">Transport Layer</text>
+        <rect x="30" y="58" width="125" height="22" rx="3" fill="#60a5fa20" stroke="#60a5fa" />
+        <text x="92" y="73" textAnchor="middle" fill="#fafafa" fontSize="7">Key Exchange (DH)</text>
+        <rect x="30" y="85" width="125" height="22" rx="3" fill="#60a5fa20" stroke="#60a5fa" />
+        <text x="92" y="100" textAnchor="middle" fill="#fafafa" fontSize="7">Encryption (AES)</text>
+        <rect x="30" y="112" width="125" height="22" rx="3" fill="#60a5fa20" stroke="#60a5fa" />
+        <text x="92" y="127" textAnchor="middle" fill="#fafafa" fontSize="7">Integrity (HMAC)</text>
+        <rect x="30" y="139" width="125" height="22" rx="3" fill="#60a5fa20" stroke="#60a5fa" />
+        <text x="92" y="154" textAnchor="middle" fill="#fafafa" fontSize="7">Compression</text>
+        <rect x="178" y="30" width="145" height="140" rx="6" fill="rgba(251,191,36,0.08)" stroke="#fbbf24" strokeDasharray="4,4" />
+        <text x="250" y="48" textAnchor="middle" fill="#fbbf24" fontSize="8" fontWeight="600">Auth Layer</text>
+        <rect x="188" y="58" width="125" height="22" rx="3" fill="#fbbf2420" stroke="#fbbf24" />
+        <text x="250" y="73" textAnchor="middle" fill="#fafafa" fontSize="7">🔑 Public Key</text>
+        <rect x="188" y="85" width="125" height="22" rx="3" fill="#fbbf2420" stroke="#fbbf24" />
+        <text x="250" y="100" textAnchor="middle" fill="#fafafa" fontSize="7">🔐 Password</text>
+        <rect x="188" y="112" width="125" height="22" rx="3" fill="#fbbf2420" stroke="#fbbf24" />
+        <text x="250" y="127" textAnchor="middle" fill="#fafafa" fontSize="7">📜 Certificate</text>
+        <rect x="188" y="139" width="125" height="22" rx="3" fill="#fbbf2420" stroke="#fbbf24" />
+        <text x="250" y="154" textAnchor="middle" fill="#fafafa" fontSize="7">🔢 MFA/TOTP</text>
+        <rect x="336" y="30" width="145" height="140" rx="6" fill="rgba(74,222,128,0.08)" stroke="#4ade80" strokeDasharray="4,4" />
+        <text x="408" y="48" textAnchor="middle" fill="#4ade80" fontSize="8" fontWeight="600">Connection Layer</text>
+        <rect x="346" y="58" width="125" height="22" rx="3" fill="#4ade8020" stroke="#4ade80" />
+        <text x="408" y="73" textAnchor="middle" fill="#fafafa" fontSize="7">Terminal Session</text>
+        <rect x="346" y="85" width="125" height="22" rx="3" fill="#4ade8020" stroke="#4ade80" />
+        <text x="408" y="100" textAnchor="middle" fill="#fafafa" fontSize="7">Port Forwarding</text>
+        <rect x="346" y="112" width="125" height="22" rx="3" fill="#4ade8020" stroke="#4ade80" />
+        <text x="408" y="127" textAnchor="middle" fill="#fafafa" fontSize="7">SFTP/SCP</text>
+        <rect x="346" y="139" width="125" height="22" rx="3" fill="#4ade8020" stroke="#4ade80" />
+        <text x="408" y="154" textAnchor="middle" fill="#fafafa" fontSize="7">X11 Forwarding</text>
+      </svg>
+    ),
+    ipv4v6: (
+      <svg viewBox="0 0 500 170" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">IPv4 vs IPv6 Comparison</text>
+        <rect x="20" y="28" width="220" height="130" rx="6" fill="rgba(251,146,60,0.08)" stroke="#fb923c" strokeWidth="2" />
+        <text x="130" y="48" textAnchor="middle" fill="#fb923c" fontSize="11" fontWeight="600">IPv4</text>
+        <text x="35" y="68" fill="#fafafa" fontSize="7">📏 32-bit (4.3 billion addresses)</text>
+        <text x="35" y="85" fill="#fafafa" fontSize="7">📝 192.168.1.1</text>
+        <text x="35" y="102" fill="#fafafa" fontSize="7">🔄 NAT required for address reuse</text>
+        <text x="35" y="119" fill="#fafafa" fontSize="7">📊 Variable header (20-60 bytes)</text>
+        <text x="35" y="136" fill="#fafafa" fontSize="7">✓ ~75% of Internet traffic</text>
+        <text x="35" y="150" fill="#f87171" fontSize="6">⚠️ Address exhaustion since 2015</text>
+        <rect x="260" y="28" width="220" height="130" rx="6" fill="rgba(74,222,128,0.08)" stroke="#4ade80" strokeWidth="2" />
+        <text x="370" y="48" textAnchor="middle" fill="#4ade80" fontSize="11" fontWeight="600">IPv6</text>
+        <text x="275" y="68" fill="#fafafa" fontSize="7">📏 128-bit (340 undecillion)</text>
+        <text x="275" y="85" fill="#fafafa" fontSize="7">📝 2001:0db8:85a3::8a2e:0370</text>
+        <text x="275" y="102" fill="#fafafa" fontSize="7">🚫 No NAT needed</text>
+        <text x="275" y="119" fill="#fafafa" fontSize="7">📊 Fixed header (40 bytes)</text>
+        <text x="275" y="136" fill="#fafafa" fontSize="7">📈 ~40% adoption, growing</text>
+        <text x="275" y="150" fill="#4ade80" fontSize="6">✓ Mandatory IPsec, auto-config</text>
+      </svg>
+    ),
+    tcpudp: (
+      <svg viewBox="0 0 500 180" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">TCP vs UDP: When to Use Each</text>
+        <rect x="20" y="28" width="220" height="140" rx="6" fill="rgba(96,165,250,0.08)" stroke="#60a5fa" strokeWidth="2" />
+        <text x="130" y="48" textAnchor="middle" fill="#60a5fa" fontSize="11" fontWeight="600">TCP (Reliable)</text>
+        <text x="35" y="68" fill="#4ade80" fontSize="7">✓ Guaranteed delivery</text>
+        <text x="35" y="83" fill="#4ade80" fontSize="7">✓ Ordered packets</text>
+        <text x="35" y="98" fill="#4ade80" fontSize="7">✓ Congestion control</text>
+        <text x="35" y="113" fill="#f87171" fontSize="7">✗ Higher latency (handshake)</text>
+        <text x="35" y="128" fill="#f87171" fontSize="7">✗ Head-of-line blocking</text>
+        <text x="35" y="150" fill="#71717a" fontSize="6">Use: HTTP, Email, File transfer</text>
+        <text x="35" y="162" fill="#60a5fa" fontSize="6">Netflix, Stripe, GitHub</text>
+        <rect x="260" y="28" width="220" height="140" rx="6" fill="rgba(251,146,60,0.08)" stroke="#fb923c" strokeWidth="2" />
+        <text x="370" y="48" textAnchor="middle" fill="#fb923c" fontSize="11" fontWeight="600">UDP (Fast)</text>
+        <text x="275" y="68" fill="#4ade80" fontSize="7">✓ Lower latency</text>
+        <text x="275" y="83" fill="#4ade80" fontSize="7">✓ No connection overhead</text>
+        <text x="275" y="98" fill="#4ade80" fontSize="7">✓ Multicast support</text>
+        <text x="275" y="113" fill="#f87171" fontSize="7">✗ No delivery guarantee</text>
+        <text x="275" y="128" fill="#f87171" fontSize="7">✗ No ordering</text>
+        <text x="275" y="150" fill="#71717a" fontSize="6">Use: Gaming, VoIP, DNS, Streaming</text>
+        <text x="275" y="162" fill="#fb923c" fontSize="6">Discord, Zoom, Twitch, QUIC</text>
+      </svg>
+    ),
+    netprotocols: (
+      <svg viewBox="0 0 500 200" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Top 8 Network Protocols</text>
+        {[
+          { x: 20, y: 28, name: 'HTTP/1.1', desc: 'Text, Keep-alive', color: '#60a5fa', use: 'Legacy web' },
+          { x: 145, y: 28, name: 'HTTP/2', desc: 'Binary, Multiplex', color: '#4ade80', use: 'Modern web' },
+          { x: 270, y: 28, name: 'HTTP/3', desc: 'QUIC, No HOL', color: '#22d3ee', use: 'Google, CF' },
+          { x: 395, y: 28, name: 'WebSocket', desc: 'Full-duplex', color: '#a78bfa', use: 'Chat, Gaming' },
+          { x: 20, y: 110, name: 'gRPC', desc: 'Protobuf, Stream', color: '#f472b6', use: 'Microservices' },
+          { x: 145, y: 110, name: 'GraphQL', desc: 'Query language', color: '#fb923c', use: 'APIs' },
+          { x: 270, y: 110, name: 'MQTT', desc: 'Pub/Sub, Light', color: '#fbbf24', use: 'IoT' },
+          { x: 395, y: 110, name: 'AMQP', desc: 'Message queue', color: '#f87171', use: 'Enterprise' }
+        ].map((p, i) => (
+          <g key={i}>
+            <rect x={p.x} y={p.y} width="105" height="70" rx="6" fill={`${p.color}15`} stroke={p.color} strokeWidth="1.5" />
+            <text x={p.x + 52} y={p.y + 20} textAnchor="middle" fill={p.color} fontSize="9" fontWeight="600">{p.name}</text>
+            <text x={p.x + 52} y={p.y + 38} textAnchor="middle" fill="#a1a1aa" fontSize="7">{p.desc}</text>
+            <text x={p.x + 52} y={p.y + 55} textAnchor="middle" fill="#71717a" fontSize="6">{p.use}</text>
+          </g>
+        ))}
+      </svg>
+    ),
+    oauth2flows: (
+      <svg viewBox="0 0 500 200" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">OAuth 2.0 Four Flows - Google, GitHub, Okta</text>
+        <rect x="20" y="30" width="110" height="75" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="75" y="50" textAnchor="middle" fill="#4ade80" fontSize="9" fontWeight="600">Authorization Code</text>
+        <text x="75" y="65" textAnchor="middle" fill="#a1a1aa" fontSize="7">Server-side apps</text>
+        <text x="75" y="80" textAnchor="middle" fill="#71717a" fontSize="6">Most secure</text>
+        <text x="75" y="95" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ Recommended</text>
+        <rect x="140" y="30" width="110" height="75" rx="6" fill="#a78bfa15" stroke="#a78bfa" strokeWidth="1.5" />
+        <text x="195" y="50" textAnchor="middle" fill="#a78bfa" fontSize="9" fontWeight="600">PKCE Flow</text>
+        <text x="195" y="65" textAnchor="middle" fill="#a1a1aa" fontSize="7">Mobile/SPA apps</text>
+        <text x="195" y="80" textAnchor="middle" fill="#71717a" fontSize="6">Code verifier</text>
+        <text x="195" y="95" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ Modern standard</text>
+        <rect x="260" y="30" width="110" height="75" rx="6" fill="#fb923c15" stroke="#fb923c" strokeWidth="1.5" />
+        <text x="315" y="50" textAnchor="middle" fill="#fb923c" fontSize="9" fontWeight="600">Client Credentials</text>
+        <text x="315" y="65" textAnchor="middle" fill="#a1a1aa" fontSize="7">Service-to-service</text>
+        <text x="315" y="80" textAnchor="middle" fill="#71717a" fontSize="6">No user context</text>
+        <text x="315" y="95" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ M2M auth</text>
+        <rect x="380" y="30" width="110" height="75" rx="6" fill="#f8717115" stroke="#f87171" strokeWidth="1.5" />
+        <text x="435" y="50" textAnchor="middle" fill="#f87171" fontSize="9" fontWeight="600">Implicit (Deprecated)</text>
+        <text x="435" y="65" textAnchor="middle" fill="#a1a1aa" fontSize="7">Legacy SPAs</text>
+        <text x="435" y="80" textAnchor="middle" fill="#71717a" fontSize="6">Token in URL</text>
+        <text x="435" y="95" textAnchor="middle" fill="#f87171" fontSize="6">✗ Use PKCE instead</text>
+        <rect x="20" y="115" width="470" height="75" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="135" textAnchor="middle" fill="#fafafa" fontSize="10" fontWeight="600">Authorization Code + PKCE Flow</text>
+        <text x="250" y="155" textAnchor="middle" fill="#a1a1aa" fontSize="8">App → Auth Server (code_challenge) → User Login → Code → App (code_verifier) → Tokens</text>
+        <text x="250" y="175" textAnchor="middle" fill="#4ade80" fontSize="7">✓ No client secret exposed • ✓ CSRF protection • ✓ Works in browsers</text>
+      </svg>
+    ),
+    sessiontoken: (
+      <svg viewBox="0 0 500 200" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Session vs Cookie vs JWT - Auth0, Okta comparison</text>
+        <rect x="20" y="30" width="145" height="90" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="92" y="50" textAnchor="middle" fill="#4ade80" fontSize="10" fontWeight="600">🍪 Session Cookie</text>
+        <text x="92" y="68" textAnchor="middle" fill="#a1a1aa" fontSize="7">Server stores session</text>
+        <text x="92" y="82" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ Easy revocation</text>
+        <text x="92" y="95" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ Secure HttpOnly</text>
+        <text x="92" y="108" textAnchor="middle" fill="#f87171" fontSize="6">✗ Server state needed</text>
+        <rect x="177" y="30" width="145" height="90" rx="6" fill="#a78bfa15" stroke="#a78bfa" strokeWidth="1.5" />
+        <text x="250" y="50" textAnchor="middle" fill="#a78bfa" fontSize="10" fontWeight="600">🎫 JWT Token</text>
+        <text x="250" y="68" textAnchor="middle" fill="#a1a1aa" fontSize="7">Self-contained claims</text>
+        <text x="250" y="82" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ Stateless/scalable</text>
+        <text x="250" y="95" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ Cross-domain</text>
+        <text x="250" y="108" textAnchor="middle" fill="#f87171" fontSize="6">✗ Hard to revoke</text>
+        <rect x="335" y="30" width="145" height="90" rx="6" fill="#fb923c15" stroke="#fb923c" strokeWidth="1.5" />
+        <text x="407" y="50" textAnchor="middle" fill="#fb923c" fontSize="10" fontWeight="600">🔄 Refresh Token</text>
+        <text x="407" y="68" textAnchor="middle" fill="#a1a1aa" fontSize="7">Long-lived rotation</text>
+        <text x="407" y="82" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ Short access tokens</text>
+        <text x="407" y="95" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ Rotation security</text>
+        <text x="407" y="108" textAnchor="middle" fill="#f87171" fontSize="6">✗ Complex implementation</text>
+        <rect x="20" y="130" width="470" height="55" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="150" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Best Practice: Short JWT (15min) + Refresh Token + Secure Cookie Storage</text>
+        <text x="250" y="170" textAnchor="middle" fill="#71717a" fontSize="7">Store tokens in HttpOnly cookies (not localStorage) • Use refresh token rotation • Implement token blacklist for logout</text>
+      </svg>
+    ),
+    dataprotection: (
+      <svg viewBox="0 0 500 200" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Encoding vs Encryption vs Tokenization - Stripe, PCI DSS</text>
+        <rect x="20" y="30" width="145" height="85" rx="6" fill="#60a5fa15" stroke="#60a5fa" strokeWidth="1.5" />
+        <text x="92" y="50" textAnchor="middle" fill="#60a5fa" fontSize="10" fontWeight="600">📝 Encoding</text>
+        <text x="92" y="68" textAnchor="middle" fill="#a1a1aa" fontSize="7">Base64, URL encode</text>
+        <text x="92" y="82" textAnchor="middle" fill="#22d3ee" fontSize="6">Purpose: Data format</text>
+        <text x="92" y="95" textAnchor="middle" fill="#f87171" fontSize="6">NOT for security</text>
+        <text x="92" y="108" textAnchor="middle" fill="#71717a" fontSize="6">Reversible by anyone</text>
+        <rect x="177" y="30" width="145" height="85" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="250" y="50" textAnchor="middle" fill="#4ade80" fontSize="10" fontWeight="600">🔐 Encryption</text>
+        <text x="250" y="68" textAnchor="middle" fill="#a1a1aa" fontSize="7">AES-256, RSA</text>
+        <text x="250" y="82" textAnchor="middle" fill="#22d3ee" fontSize="6">Purpose: Confidentiality</text>
+        <text x="250" y="95" textAnchor="middle" fill="#22d3ee" fontSize="6">Key required to decrypt</text>
+        <text x="250" y="108" textAnchor="middle" fill="#71717a" fontSize="6">Mathematically secure</text>
+        <rect x="335" y="30" width="145" height="85" rx="6" fill="#a78bfa15" stroke="#a78bfa" strokeWidth="1.5" />
+        <text x="407" y="50" textAnchor="middle" fill="#a78bfa" fontSize="10" fontWeight="600">🎰 Tokenization</text>
+        <text x="407" y="68" textAnchor="middle" fill="#a1a1aa" fontSize="7">Replace with token</text>
+        <text x="407" y="82" textAnchor="middle" fill="#22d3ee" fontSize="6">Purpose: PCI compliance</text>
+        <text x="407" y="95" textAnchor="middle" fill="#22d3ee" fontSize="6">Original in vault</text>
+        <text x="407" y="108" textAnchor="middle" fill="#71717a" fontSize="6">Format-preserving</text>
+        <rect x="20" y="125" width="470" height="60" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="145" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Use Case: Credit Card 4242-4242-4242-4242</text>
+        <text x="250" y="162" textAnchor="middle" fill="#71717a" fontSize="7">Encoded: NDI0Mi00MjQy... | Encrypted: aGVsbG8gd29ybGQ= | Tokenized: tok_visa_4242</text>
+        <text x="250" y="178" textAnchor="middle" fill="#4ade80" fontSize="7">✓ Stripe uses tokenization for PCI DSS compliance - original card never touches your servers</text>
+      </svg>
+    ),
+    devsecops: (
+      <svg viewBox="0 0 500 200" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">DevSecOps Pipeline - Snyk, SonarQube, Trivy</text>
+        {[
+          { x: 20, name: 'Plan', tools: 'Threat Model', color: '#60a5fa' },
+          { x: 100, name: 'Code', tools: 'SAST, Secrets', color: '#4ade80' },
+          { x: 180, name: 'Build', tools: 'SCA, SBOM', color: '#22d3ee' },
+          { x: 260, name: 'Test', tools: 'DAST, IAST', color: '#a78bfa' },
+          { x: 340, name: 'Deploy', tools: 'IaC Scan', color: '#fb923c' },
+          { x: 420, name: 'Monitor', tools: 'SIEM, WAF', color: '#f472b6' }
+        ].map((s, i) => (
+          <g key={i}>
+            <rect x={s.x} y="30" width="70" height="50" rx="6" fill={`${s.color}15`} stroke={s.color} strokeWidth="1.5" />
+            <text x={s.x + 35} y="50" textAnchor="middle" fill={s.color} fontSize="9" fontWeight="600">{s.name}</text>
+            <text x={s.x + 35} y="68" textAnchor="middle" fill="#a1a1aa" fontSize="6">{s.tools}</text>
+            {i < 5 && <path d={`M${s.x + 75} 55 L${s.x + 95} 55`} stroke="#3f3f46" strokeWidth="1.5" markerEnd="url(#arrow)" />}
+          </g>
+        ))}
+        <defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#3f3f46" /></marker></defs>
+        <rect x="20" y="95" width="225" height="90" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="132" y="115" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Security Tools</text>
+        <text x="132" y="132" textAnchor="middle" fill="#4ade80" fontSize="7">SAST: Snyk Code, SonarQube</text>
+        <text x="132" y="146" textAnchor="middle" fill="#a78bfa" fontSize="7">DAST: OWASP ZAP, Burp Suite</text>
+        <text x="132" y="160" textAnchor="middle" fill="#22d3ee" fontSize="7">SCA: Snyk Open Source, Dependabot</text>
+        <text x="132" y="174" textAnchor="middle" fill="#fb923c" fontSize="7">IaC: Checkov, tfsec, Trivy</text>
+        <rect x="255" y="95" width="235" height="90" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="372" y="115" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Shift Left Benefits</text>
+        <text x="372" y="132" textAnchor="middle" fill="#71717a" fontSize="7">• Find vulnerabilities early (10x cheaper)</text>
+        <text x="372" y="146" textAnchor="middle" fill="#71717a" fontSize="7">• Block vulnerable deps at PR</text>
+        <text x="372" y="160" textAnchor="middle" fill="#71717a" fontSize="7">• Automated security gates</text>
+        <text x="372" y="174" textAnchor="middle" fill="#71717a" fontSize="7">• Compliance as code</text>
+      </svg>
+    ),
+    securitydomains: (
+      <svg viewBox="0 0 500 220" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">12 Security Domains - OWASP, NIST Framework</text>
+        {[
+          { x: 20, y: 28, name: 'Authentication', icon: '🔐', color: '#4ade80' },
+          { x: 145, y: 28, name: 'Authorization', icon: '👤', color: '#22d3ee' },
+          { x: 270, y: 28, name: 'Input Validation', icon: '✅', color: '#a78bfa' },
+          { x: 395, y: 28, name: 'Crypto', icon: '🔒', color: '#f472b6' },
+          { x: 20, y: 78, name: 'Error Handling', icon: '⚠️', color: '#fb923c' },
+          { x: 145, y: 78, name: 'Logging', icon: '📝', color: '#fbbf24' },
+          { x: 270, y: 78, name: 'Data Protection', icon: '💾', color: '#60a5fa' },
+          { x: 395, y: 78, name: 'Communication', icon: '📡', color: '#f87171' },
+          { x: 20, y: 128, name: 'Config Mgmt', icon: '⚙️', color: '#2dd4bf' },
+          { x: 145, y: 128, name: 'DB Security', icon: '🗄️', color: '#e879f9' },
+          { x: 270, y: 128, name: 'File Handling', icon: '📁', color: '#84cc16' },
+          { x: 395, y: 128, name: 'Memory Mgmt', icon: '🧠', color: '#06b6d4' }
+        ].map((d, i) => (
+          <g key={i}>
+            <rect x={d.x} y={d.y} width="115" height="42" rx="5" fill={`${d.color}15`} stroke={d.color} strokeWidth="1.5" />
+            <text x={d.x + 16} y={d.y + 26} fill="#fafafa" fontSize="12">{d.icon}</text>
+            <text x={d.x + 32} y={d.y + 26} fill={d.color} fontSize="8" fontWeight="600">{d.name}</text>
+          </g>
+        ))}
+        <rect x="20" y="178" width="470" height="35" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="195" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">Key Principles: Defense in Depth • Least Privilege • Fail Secure • Separation of Duties</text>
+        <text x="250" y="208" textAnchor="middle" fill="#71717a" fontSize="7">Based on OWASP Secure Coding Practices & NIST Cybersecurity Framework</text>
+      </svg>
+    ),
+    apisecurity: (
+      <svg viewBox="0 0 500 200" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">OWASP API Security Top 10 - Cloudflare, AWS WAF</text>
+        {[
+          { x: 20, y: 28, name: 'Broken Auth', rank: '1', color: '#f87171', risk: 'Critical' },
+          { x: 145, y: 28, name: 'Broken Object Auth', rank: '2', color: '#f87171', risk: 'Critical' },
+          { x: 270, y: 28, name: 'Data Exposure', rank: '3', color: '#fb923c', risk: 'High' },
+          { x: 395, y: 28, name: 'Rate Limiting', rank: '4', color: '#fb923c', risk: 'High' },
+          { x: 20, y: 78, name: 'Function Auth', rank: '5', color: '#fbbf24', risk: 'Medium' },
+          { x: 145, y: 78, name: 'Mass Assignment', rank: '6', color: '#fbbf24', risk: 'Medium' },
+          { x: 270, y: 78, name: 'Security Misconfig', rank: '7', color: '#fbbf24', risk: 'Medium' },
+          { x: 395, y: 78, name: 'Injection', rank: '8', color: '#f87171', risk: 'Critical' }
+        ].map((v, i) => (
+          <g key={i}>
+            <rect x={v.x} y={v.y} width="115" height="42" rx="5" fill={`${v.color}15`} stroke={v.color} strokeWidth="1.5" />
+            <text x={v.x + 12} y={v.y + 18} fill={v.color} fontSize="10" fontWeight="700">#{v.rank}</text>
+            <text x={v.x + 30} y={v.y + 18} fill="#fafafa" fontSize="8">{v.name}</text>
+            <text x={v.x + 57} y={v.y + 34} textAnchor="middle" fill="#71717a" fontSize="6">{v.risk}</text>
+          </g>
+        ))}
+        <rect x="20" y="130" width="470" height="60" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="148" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Essential API Security Controls</text>
+        <text x="130" y="165" textAnchor="middle" fill="#4ade80" fontSize="7">✓ Rate limiting (429)</text>
+        <text x="250" y="165" textAnchor="middle" fill="#4ade80" fontSize="7">✓ Input validation</text>
+        <text x="370" y="165" textAnchor="middle" fill="#4ade80" fontSize="7">✓ Output encoding</text>
+        <text x="130" y="180" textAnchor="middle" fill="#22d3ee" fontSize="7">✓ JWT validation</text>
+        <text x="250" y="180" textAnchor="middle" fill="#22d3ee" fontSize="7">✓ API gateway</text>
+        <text x="370" y="180" textAnchor="middle" fill="#22d3ee" fontSize="7">✓ WAF protection</text>
+      </svg>
+    ),
+    apiauthmethods: (
+      <svg viewBox="0 0 500 200" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">REST API Authentication Methods - AWS, Stripe, GitHub</text>
+        <rect x="20" y="30" width="110" height="85" rx="6" fill="#60a5fa15" stroke="#60a5fa" strokeWidth="1.5" />
+        <text x="75" y="50" textAnchor="middle" fill="#60a5fa" fontSize="9" fontWeight="600">🔑 API Key</text>
+        <text x="75" y="65" textAnchor="middle" fill="#a1a1aa" fontSize="7">Header: X-API-Key</text>
+        <text x="75" y="80" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ Simple, fast</text>
+        <text x="75" y="93" textAnchor="middle" fill="#f87171" fontSize="6">✗ No user context</text>
+        <text x="75" y="106" textAnchor="middle" fill="#71717a" fontSize="6">Use: Internal APIs</text>
+        <rect x="140" y="30" width="110" height="85" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="195" y="50" textAnchor="middle" fill="#4ade80" fontSize="9" fontWeight="600">🔐 OAuth 2.0</text>
+        <text x="195" y="65" textAnchor="middle" fill="#a1a1aa" fontSize="7">Bearer token</text>
+        <text x="195" y="80" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ Delegated access</text>
+        <text x="195" y="93" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ Scoped permissions</text>
+        <text x="195" y="106" textAnchor="middle" fill="#71717a" fontSize="6">Use: Third-party</text>
+        <rect x="260" y="30" width="110" height="85" rx="6" fill="#a78bfa15" stroke="#a78bfa" strokeWidth="1.5" />
+        <text x="315" y="50" textAnchor="middle" fill="#a78bfa" fontSize="9" fontWeight="600">🎫 JWT</text>
+        <text x="315" y="65" textAnchor="middle" fill="#a1a1aa" fontSize="7">Self-contained</text>
+        <text x="315" y="80" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ Stateless</text>
+        <text x="315" y="93" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ Claims in token</text>
+        <text x="315" y="106" textAnchor="middle" fill="#71717a" fontSize="6">Use: Microservices</text>
+        <rect x="380" y="30" width="110" height="85" rx="6" fill="#fb923c15" stroke="#fb923c" strokeWidth="1.5" />
+        <text x="435" y="50" textAnchor="middle" fill="#fb923c" fontSize="9" fontWeight="600">🔒 Basic Auth</text>
+        <text x="435" y="65" textAnchor="middle" fill="#a1a1aa" fontSize="7">Base64 user:pass</text>
+        <text x="435" y="80" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ Universal support</text>
+        <text x="435" y="93" textAnchor="middle" fill="#f87171" fontSize="6">✗ Credentials in header</text>
+        <text x="435" y="106" textAnchor="middle" fill="#71717a" fontSize="6">Use: Dev/testing</text>
+        <rect x="20" y="125" width="470" height="60" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="145" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Production Best Practices</text>
+        <text x="130" y="162" textAnchor="middle" fill="#71717a" fontSize="7">AWS: IAM + SigV4 signing</text>
+        <text x="250" y="162" textAnchor="middle" fill="#71717a" fontSize="7">Stripe: API key + webhook signatures</text>
+        <text x="370" y="162" textAnchor="middle" fill="#71717a" fontSize="7">GitHub: OAuth + PAT tokens</text>
+        <text x="250" y="178" textAnchor="middle" fill="#4ade80" fontSize="7">✓ Always use HTTPS • ✓ Rotate keys regularly • ✓ Use short-lived tokens</text>
+      </svg>
+    ),
+    dbdatastructures: (
+      <svg viewBox="0 0 500 200" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Database Data Structures - LevelDB, RocksDB, Cassandra</text>
+        <rect x="20" y="30" width="110" height="75" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="75" y="50" textAnchor="middle" fill="#4ade80" fontSize="9" fontWeight="600">🌲 B-Tree</text>
+        <text x="75" y="65" textAnchor="middle" fill="#a1a1aa" fontSize="7">Balanced, sorted</text>
+        <text x="75" y="80" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ Read optimized</text>
+        <text x="75" y="95" textAnchor="middle" fill="#71717a" fontSize="6">PostgreSQL, MySQL</text>
+        <rect x="140" y="30" width="110" height="75" rx="6" fill="#a78bfa15" stroke="#a78bfa" strokeWidth="1.5" />
+        <text x="195" y="50" textAnchor="middle" fill="#a78bfa" fontSize="9" fontWeight="600">📚 LSM Tree</text>
+        <text x="195" y="65" textAnchor="middle" fill="#a1a1aa" fontSize="7">Log-structured merge</text>
+        <text x="195" y="80" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ Write optimized</text>
+        <text x="195" y="95" textAnchor="middle" fill="#71717a" fontSize="6">RocksDB, Cassandra</text>
+        <rect x="260" y="30" width="110" height="75" rx="6" fill="#fb923c15" stroke="#fb923c" strokeWidth="1.5" />
+        <text x="315" y="50" textAnchor="middle" fill="#fb923c" fontSize="9" fontWeight="600">📋 SSTable</text>
+        <text x="315" y="65" textAnchor="middle" fill="#a1a1aa" fontSize="7">Sorted string table</text>
+        <text x="315" y="80" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ Immutable, fast</text>
+        <text x="315" y="95" textAnchor="middle" fill="#71717a" fontSize="6">BigTable, LevelDB</text>
+        <rect x="380" y="30" width="110" height="75" rx="6" fill="#22d3ee15" stroke="#22d3ee" strokeWidth="1.5" />
+        <text x="435" y="50" textAnchor="middle" fill="#22d3ee" fontSize="9" fontWeight="600">⏭️ Skiplist</text>
+        <text x="435" y="65" textAnchor="middle" fill="#a1a1aa" fontSize="7">Probabilistic layers</text>
+        <text x="435" y="80" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ Simple, O(log n)</text>
+        <text x="435" y="95" textAnchor="middle" fill="#71717a" fontSize="6">Redis, MemTable</text>
+        <rect x="20" y="115" width="470" height="70" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="135" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">LSM Tree Write Path: MemTable → WAL → SSTable → Compaction</text>
+        <text x="250" y="155" textAnchor="middle" fill="#71717a" fontSize="7">Write: O(1) to memory + O(1) WAL | Read: Check bloom filter → MemTable → SSTables</text>
+        <text x="250" y="175" textAnchor="middle" fill="#4ade80" fontSize="7">B-Tree: Read-heavy OLTP | LSM: Write-heavy workloads | Skiplist: In-memory sorted data</text>
+      </svg>
+    ),
+    sqloptimization: (
+      <svg viewBox="0 0 500 200" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">SQL Query Optimization - PostgreSQL EXPLAIN ANALYZE</text>
+        {[
+          { x: 20, name: 'Query', desc: 'Parse SQL', color: '#60a5fa' },
+          { x: 100, name: 'Plan', desc: 'Cost estimate', color: '#4ade80' },
+          { x: 180, name: 'Optimize', desc: 'Choose path', color: '#a78bfa' },
+          { x: 260, name: 'Execute', desc: 'Run plan', color: '#22d3ee' },
+          { x: 340, name: 'Fetch', desc: 'Return rows', color: '#fb923c' }
+        ].map((s, i) => (
+          <g key={i}>
+            <rect x={s.x} y="30" width="70" height="45" rx="6" fill={`${s.color}15`} stroke={s.color} strokeWidth="1.5" />
+            <text x={s.x + 35} y="48" textAnchor="middle" fill={s.color} fontSize="8" fontWeight="600">{s.name}</text>
+            <text x={s.x + 35} y="63" textAnchor="middle" fill="#a1a1aa" fontSize="6">{s.desc}</text>
+            {i < 4 && <path d={`M${s.x + 75} 52 L${s.x + 95} 52`} stroke="#3f3f46" strokeWidth="1.5" />}
+          </g>
+        ))}
+        <rect x="420" y="30" width="70" height="45" rx="6" fill="#f4728015" stroke="#f472b6" strokeWidth="1.5" />
+        <text x="455" y="48" textAnchor="middle" fill="#f472b6" fontSize="8" fontWeight="600">Cache</text>
+        <text x="455" y="63" textAnchor="middle" fill="#a1a1aa" fontSize="6">Plan cache</text>
+        <rect x="20" y="85" width="225" height="100" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="132" y="102" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Index Strategies</text>
+        <text x="132" y="118" textAnchor="middle" fill="#4ade80" fontSize="7">B-Tree: =, &lt;, &gt;, BETWEEN, LIKE 'x%'</text>
+        <text x="132" y="132" textAnchor="middle" fill="#a78bfa" fontSize="7">Hash: = only, faster point lookups</text>
+        <text x="132" y="146" textAnchor="middle" fill="#22d3ee" fontSize="7">GIN: Arrays, JSONB, full-text</text>
+        <text x="132" y="160" textAnchor="middle" fill="#fb923c" fontSize="7">GiST: Geometry, range types</text>
+        <text x="132" y="174" textAnchor="middle" fill="#f472b6" fontSize="7">Composite: Multi-column (left-most)</text>
+        <rect x="255" y="85" width="235" height="100" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="372" y="102" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Common Pitfalls</text>
+        <text x="372" y="118" textAnchor="middle" fill="#f87171" fontSize="7">✗ SELECT * (fetch all columns)</text>
+        <text x="372" y="132" textAnchor="middle" fill="#f87171" fontSize="7">✗ Functions on indexed columns</text>
+        <text x="372" y="146" textAnchor="middle" fill="#f87171" fontSize="7">✗ LIKE '%x' (cant use index)</text>
+        <text x="372" y="160" textAnchor="middle" fill="#f87171" fontSize="7">✗ Implicit type conversion</text>
+        <text x="372" y="174" textAnchor="middle" fill="#f87171" fontSize="7">✗ Missing stats (ANALYZE)</text>
+      </svg>
+    ),
+    dbtransactions: (
+      <svg viewBox="0 0 500 200" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Database Transactions - ACID & Isolation Levels</text>
+        <rect x="20" y="30" width="110" height="55" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="75" y="48" textAnchor="middle" fill="#4ade80" fontSize="9" fontWeight="600">⚛️ Atomicity</text>
+        <text x="75" y="65" textAnchor="middle" fill="#a1a1aa" fontSize="7">All or nothing</text>
+        <text x="75" y="78" textAnchor="middle" fill="#71717a" fontSize="6">Rollback on failure</text>
+        <rect x="140" y="30" width="110" height="55" rx="6" fill="#a78bfa15" stroke="#a78bfa" strokeWidth="1.5" />
+        <text x="195" y="48" textAnchor="middle" fill="#a78bfa" fontSize="9" fontWeight="600">✅ Consistency</text>
+        <text x="195" y="65" textAnchor="middle" fill="#a1a1aa" fontSize="7">Valid state only</text>
+        <text x="195" y="78" textAnchor="middle" fill="#71717a" fontSize="6">Constraints enforced</text>
+        <rect x="260" y="30" width="110" height="55" rx="6" fill="#22d3ee15" stroke="#22d3ee" strokeWidth="1.5" />
+        <text x="315" y="48" textAnchor="middle" fill="#22d3ee" fontSize="9" fontWeight="600">🔒 Isolation</text>
+        <text x="315" y="65" textAnchor="middle" fill="#a1a1aa" fontSize="7">Concurrent txns</text>
+        <text x="315" y="78" textAnchor="middle" fill="#71717a" fontSize="6">Appear sequential</text>
+        <rect x="380" y="30" width="110" height="55" rx="6" fill="#fb923c15" stroke="#fb923c" strokeWidth="1.5" />
+        <text x="435" y="48" textAnchor="middle" fill="#fb923c" fontSize="9" fontWeight="600">💾 Durability</text>
+        <text x="435" y="65" textAnchor="middle" fill="#a1a1aa" fontSize="7">Permanent on commit</text>
+        <text x="435" y="78" textAnchor="middle" fill="#71717a" fontSize="6">WAL guarantees</text>
+        <rect x="20" y="95" width="470" height="90" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="112" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Isolation Levels (weakest → strongest)</text>
+        <text x="65" y="132" textAnchor="middle" fill="#f87171" fontSize="7">Read Uncommitted</text>
+        <text x="65" y="145" textAnchor="middle" fill="#71717a" fontSize="6">Dirty reads ✗</text>
+        <text x="175" y="132" textAnchor="middle" fill="#fb923c" fontSize="7">Read Committed</text>
+        <text x="175" y="145" textAnchor="middle" fill="#71717a" fontSize="6">PG default</text>
+        <text x="285" y="132" textAnchor="middle" fill="#4ade80" fontSize="7">Repeatable Read</text>
+        <text x="285" y="145" textAnchor="middle" fill="#71717a" fontSize="6">MySQL default</text>
+        <text x="395" y="132" textAnchor="middle" fill="#22d3ee" fontSize="7">Serializable</text>
+        <text x="395" y="145" textAnchor="middle" fill="#71717a" fontSize="6">Strictest, slow</text>
+        <text x="250" y="170" textAnchor="middle" fill="#71717a" fontSize="7">Phenomena: Dirty Read → Non-repeatable Read → Phantom Read → Write Skew</text>
+      </svg>
+    ),
+    dbmodels: (
+      <svg viewBox="0 0 500 200" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">6 Database Models - Evolution of Data Storage</text>
+        {[
+          { x: 20, y: 28, name: 'Flat File', era: '1960s', color: '#71717a', use: 'CSV, logs' },
+          { x: 145, y: 28, name: 'Hierarchical', era: '1970s', color: '#60a5fa', use: 'XML, LDAP' },
+          { x: 270, y: 28, name: 'Network', era: '1970s', color: '#a78bfa', use: 'CODASYL' },
+          { x: 395, y: 28, name: 'Relational', era: '1980s+', color: '#4ade80', use: 'PostgreSQL' },
+          { x: 85, y: 105, name: 'Star Schema', era: 'OLAP', color: '#fb923c', use: 'Analytics' },
+          { x: 270, y: 105, name: 'Snowflake', era: 'OLAP', color: '#22d3ee', use: 'Normalized DW' }
+        ].map((m, i) => (
+          <g key={i}>
+            <rect x={m.x} y={m.y} width="115" height="65" rx="6" fill={`${m.color}15`} stroke={m.color} strokeWidth="1.5" />
+            <text x={m.x + 57} y={m.y + 20} textAnchor="middle" fill={m.color} fontSize="9" fontWeight="600">{m.name}</text>
+            <text x={m.x + 57} y={m.y + 38} textAnchor="middle" fill="#a1a1aa" fontSize="7">{m.era}</text>
+            <text x={m.x + 57} y={m.y + 52} textAnchor="middle" fill="#71717a" fontSize="6">{m.use}</text>
+          </g>
+        ))}
+        <rect x="395" y="105" width="95" height="65" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="442" y="125" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">Modern</text>
+        <text x="442" y="140" textAnchor="middle" fill="#f472b6" fontSize="7">Document</text>
+        <text x="442" y="152" textAnchor="middle" fill="#f87171" fontSize="7">Graph</text>
+        <text x="442" y="164" textAnchor="middle" fill="#fbbf24" fontSize="7">Key-Value</text>
+        <text x="250" y="188" textAnchor="middle" fill="#4ade80" fontSize="7">Relational: OLTP | Star/Snowflake: OLAP | Document: Flexibility | Graph: Relationships</text>
+      </svg>
+    ),
+    shardingguide: (
+      <svg viewBox="0 0 500 200" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Database Sharding Strategies - Vitess, CockroachDB, Instagram</text>
+        <rect x="20" y="30" width="110" height="75" rx="6" fill="#60a5fa15" stroke="#60a5fa" strokeWidth="1.5" />
+        <text x="75" y="48" textAnchor="middle" fill="#60a5fa" fontSize="9" fontWeight="600">📊 Range Shard</text>
+        <text x="75" y="63" textAnchor="middle" fill="#a1a1aa" fontSize="7">A-M → Shard1</text>
+        <text x="75" y="78" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ Range queries</text>
+        <text x="75" y="93" textAnchor="middle" fill="#f87171" fontSize="6">✗ Hotspots</text>
+        <rect x="140" y="30" width="110" height="75" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="195" y="48" textAnchor="middle" fill="#4ade80" fontSize="9" fontWeight="600">#️⃣ Hash Shard</text>
+        <text x="195" y="63" textAnchor="middle" fill="#a1a1aa" fontSize="7">hash(key) % N</text>
+        <text x="195" y="78" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ Even distribution</text>
+        <text x="195" y="93" textAnchor="middle" fill="#f87171" fontSize="6">✗ Resharding pain</text>
+        <rect x="260" y="30" width="110" height="75" rx="6" fill="#a78bfa15" stroke="#a78bfa" strokeWidth="1.5" />
+        <text x="315" y="48" textAnchor="middle" fill="#a78bfa" fontSize="9" fontWeight="600">💍 Consistent Hash</text>
+        <text x="315" y="63" textAnchor="middle" fill="#a1a1aa" fontSize="7">Hash ring</text>
+        <text x="315" y="78" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ Easy resharding</text>
+        <text x="315" y="93" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ Add nodes easily</text>
+        <rect x="380" y="30" width="110" height="75" rx="6" fill="#fb923c15" stroke="#fb923c" strokeWidth="1.5" />
+        <text x="435" y="48" textAnchor="middle" fill="#fb923c" fontSize="9" fontWeight="600">🪣 Virtual Buckets</text>
+        <text x="435" y="63" textAnchor="middle" fill="#a1a1aa" fontSize="7">Logical → Physical</text>
+        <text x="435" y="78" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ Flexible mapping</text>
+        <text x="435" y="93" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ Cassandra style</text>
+        <rect x="20" y="115" width="470" height="70" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="135" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Shard Key Selection (Critical Decision)</text>
+        <text x="250" y="155" textAnchor="middle" fill="#71717a" fontSize="7">Instagram: user_id % 4096 shards | Vitess: vschema mapping | CockroachDB: auto-sharding with ranges</text>
+        <text x="250" y="175" textAnchor="middle" fill="#4ade80" fontSize="7">✓ High cardinality • ✓ Even distribution • ✓ Query locality • ✗ Avoid timestamps</text>
+      </svg>
+    ),
+    pgecosystem: (
+      <svg viewBox="0 0 500 200" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">PostgreSQL Ecosystem - Extensions & Tools</text>
+        <rect x="200" y="25" width="100" height="40" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="2" />
+        <text x="250" y="48" textAnchor="middle" fill="#4ade80" fontSize="10" fontWeight="700">🐘 PostgreSQL</text>
+        {[
+          { x: 20, y: 80, name: 'TimescaleDB', desc: 'Time-series', color: '#60a5fa', use: 'IoT, metrics' },
+          { x: 145, y: 80, name: 'pgVector', desc: 'Embeddings', color: '#a78bfa', use: 'AI/ML, RAG' },
+          { x: 270, y: 80, name: 'PostGIS', desc: 'Geospatial', color: '#22d3ee', use: 'Maps, location' },
+          { x: 395, y: 80, name: 'Apache AGE', desc: 'Graph queries', color: '#f472b6', use: 'Graph DB' },
+          { x: 20, y: 140, name: 'pg_cron', desc: 'Job scheduler', color: '#fb923c', use: 'Background jobs' },
+          { x: 145, y: 140, name: 'Citus', desc: 'Distributed', color: '#4ade80', use: 'Sharding' },
+          { x: 270, y: 140, name: 'pg_stat', desc: 'Monitoring', color: '#fbbf24', use: 'Performance' },
+          { x: 395, y: 140, name: 'pgBouncer', desc: 'Connection pool', color: '#f87171', use: 'Scaling' }
+        ].map((e, i) => (
+          <g key={i}>
+            <rect x={e.x} y={e.y} width="115" height="50" rx="5" fill={`${e.color}15`} stroke={e.color} strokeWidth="1.5" />
+            <text x={e.x + 57} y={e.y + 18} textAnchor="middle" fill={e.color} fontSize="8" fontWeight="600">{e.name}</text>
+            <text x={e.x + 57} y={e.y + 32} textAnchor="middle" fill="#a1a1aa" fontSize="6">{e.desc}</text>
+            <text x={e.x + 57} y={e.y + 44} textAnchor="middle" fill="#71717a" fontSize="5">{e.use}</text>
+            <path d={`M${e.x + 57} ${e.y} L250 70`} stroke="#3f3f46" strokeWidth="0.5" strokeDasharray="2,2" />
+          </g>
+        ))}
+      </svg>
+    ),
+    micropractices: (
+      <svg viewBox="0 0 500 220" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">9 Microservices Best Practices - Netflix, Uber, Spotify</text>
+        {[
+          { x: 20, y: 28, name: '1. Single Purpose', desc: 'One business capability', color: '#4ade80' },
+          { x: 175, y: 28, name: '2. Separate DBs', desc: 'Database per service', color: '#60a5fa' },
+          { x: 330, y: 28, name: '3. Stateless', desc: 'No local state', color: '#a78bfa' },
+          { x: 20, y: 85, name: '4. Containers', desc: 'Docker + K8s', color: '#22d3ee' },
+          { x: 175, y: 85, name: '5. API Gateway', desc: 'Single entry point', color: '#fb923c' },
+          { x: 330, y: 85, name: '6. CI/CD', desc: 'Independent deploy', color: '#f472b6' },
+          { x: 20, y: 142, name: '7. DDD', desc: 'Domain-driven design', color: '#fbbf24' },
+          { x: 175, y: 142, name: '8. Event-Driven', desc: 'Async messaging', color: '#f87171' },
+          { x: 330, y: 142, name: '9. Observability', desc: 'Logs, metrics, traces', color: '#2dd4bf' }
+        ].map((p, i) => (
+          <g key={i}>
+            <rect x={p.x} y={p.y} width="145" height="48" rx="6" fill={`${p.color}15`} stroke={p.color} strokeWidth="1.5" />
+            <text x={p.x + 72} y={p.y + 20} textAnchor="middle" fill={p.color} fontSize="8" fontWeight="600">{p.name}</text>
+            <text x={p.x + 72} y={p.y + 36} textAnchor="middle" fill="#a1a1aa" fontSize="7">{p.desc}</text>
+          </g>
+        ))}
+        <text x="250" y="210" textAnchor="middle" fill="#4ade80" fontSize="7">Netflix: 1000+ microservices | Uber: 2000+ | Spotify: 800+ autonomous squads</text>
+      </svg>
+    ),
+    prodcomponents: (
+      <svg viewBox="0 0 500 220" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">9 Essential Production Components - Netflix, Amazon</text>
+        {[
+          { x: 20, y: 28, name: 'API Gateway', desc: 'ZUUL, Kong', color: '#4ade80', icon: '🚪' },
+          { x: 175, y: 28, name: 'Service Registry', desc: 'Eureka, Consul', color: '#60a5fa', icon: '📋' },
+          { x: 330, y: 28, name: 'Config Server', desc: 'Spring Cloud', color: '#a78bfa', icon: '⚙️' },
+          { x: 20, y: 85, name: 'Auth Server', desc: 'OAuth2, Keycloak', color: '#22d3ee', icon: '🔐' },
+          { x: 175, y: 85, name: 'Load Balancer', desc: 'Ribbon, ALB', color: '#fb923c', icon: '⚖️' },
+          { x: 330, y: 85, name: 'Circuit Breaker', desc: 'Hystrix, Resilience4j', color: '#f472b6', icon: '🔌' },
+          { x: 20, y: 142, name: 'Distributed Cache', desc: 'Redis, Memcached', color: '#fbbf24', icon: '🗄️' },
+          { x: 175, y: 142, name: 'Message Broker', desc: 'Kafka, RabbitMQ', color: '#f87171', icon: '📨' },
+          { x: 330, y: 142, name: 'Observability', desc: 'Jaeger, Prometheus', color: '#2dd4bf', icon: '👁️' }
+        ].map((c, i) => (
+          <g key={i}>
+            <rect x={c.x} y={c.y} width="145" height="48" rx="6" fill={`${c.color}15`} stroke={c.color} strokeWidth="1.5" />
+            <text x={c.x + 18} y={c.y + 28} fill="#fafafa" fontSize="14">{c.icon}</text>
+            <text x={c.x + 85} y={c.y + 20} textAnchor="middle" fill={c.color} fontSize="8" fontWeight="600">{c.name}</text>
+            <text x={c.x + 85} y={c.y + 36} textAnchor="middle" fill="#a1a1aa" fontSize="6">{c.desc}</text>
+          </g>
+        ))}
+        <text x="250" y="210" textAnchor="middle" fill="#71717a" fontSize="7">Without these components, microservices become distributed chaos</text>
+      </svg>
+    ),
+    servicediscovery: (
+      <svg viewBox="0 0 500 200" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Service Discovery - Consul, Eureka, DNS-based</text>
+        <rect x="200" y="30" width="100" height="45" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="2" />
+        <text x="250" y="48" textAnchor="middle" fill="#4ade80" fontSize="9" fontWeight="600">Service Registry</text>
+        <text x="250" y="62" textAnchor="middle" fill="#a1a1aa" fontSize="7">Consul / Eureka</text>
+        {[
+          { x: 40, y: 100, name: 'Service A', instances: '3 instances', color: '#60a5fa' },
+          { x: 190, y: 100, name: 'Service B', instances: '2 instances', color: '#a78bfa' },
+          { x: 340, y: 100, name: 'Service C', instances: '4 instances', color: '#fb923c' }
+        ].map((s, i) => (
+          <g key={i}>
+            <rect x={s.x} y={s.y} width="120" height="45" rx="6" fill={`${s.color}15`} stroke={s.color} strokeWidth="1.5" />
+            <text x={s.x + 60} y={s.y + 20} textAnchor="middle" fill={s.color} fontSize="9" fontWeight="600">{s.name}</text>
+            <text x={s.x + 60} y={s.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="7">{s.instances}</text>
+            <path d={`M${s.x + 60} ${s.y} L250 75`} stroke="#3f3f46" strokeWidth="1" strokeDasharray="3,3" />
+          </g>
+        ))}
+        <rect x="20" y="160" width="460" height="30" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="178" textAnchor="middle" fill="#fafafa" fontSize="8">Register → Health Check → Query → Load Balance → Connect</text>
+      </svg>
+    ),
+    disttracing: (
+      <svg viewBox="0 0 500 200" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Distributed Tracing - Jaeger, Zipkin, OpenTelemetry</text>
+        <rect x="20" y="35" width="460" height="55" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="52" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Trace ID: abc-123-xyz (spans entire request)</text>
+        {[
+          { x: 40, name: 'Gateway', ms: '5ms', color: '#4ade80', width: 80 },
+          { x: 130, name: 'Auth', ms: '15ms', color: '#60a5fa', width: 60 },
+          { x: 200, name: 'Order Svc', ms: '45ms', color: '#a78bfa', width: 100 },
+          { x: 310, name: 'Inventory', ms: '25ms', color: '#fb923c', width: 70 },
+          { x: 390, name: 'DB', ms: '10ms', color: '#f87171', width: 50 }
+        ].map((s, i) => (
+          <g key={i}>
+            <rect x={s.x} y="60" width={s.width} height="20" rx="3" fill={s.color} fillOpacity="0.3" stroke={s.color} />
+            <text x={s.x + s.width / 2} y="73" textAnchor="middle" fill="#fafafa" fontSize="6">{s.name} ({s.ms})</text>
+          </g>
+        ))}
+        <rect x="20" y="100" width="225" height="85" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="132" y="118" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Tracing Tools</text>
+        <text x="132" y="135" textAnchor="middle" fill="#4ade80" fontSize="7">Jaeger - Uber (CNCF)</text>
+        <text x="132" y="150" textAnchor="middle" fill="#60a5fa" fontSize="7">Zipkin - Twitter</text>
+        <text x="132" y="165" textAnchor="middle" fill="#a78bfa" fontSize="7">OpenTelemetry - Standard</text>
+        <text x="132" y="180" textAnchor="middle" fill="#fb923c" fontSize="7">AWS X-Ray - Cloud native</text>
+        <rect x="255" y="100" width="225" height="85" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="367" y="118" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Key Concepts</text>
+        <text x="367" y="135" textAnchor="middle" fill="#71717a" fontSize="7">Trace: Full request journey</text>
+        <text x="367" y="150" textAnchor="middle" fill="#71717a" fontSize="7">Span: Single operation unit</text>
+        <text x="367" y="165" textAnchor="middle" fill="#71717a" fontSize="7">Context: Propagated headers</text>
+        <text x="367" y="180" textAnchor="middle" fill="#71717a" fontSize="7">Sampling: % of traces stored</text>
+      </svg>
+    ),
+    heartbeatdetect: (
+      <svg viewBox="0 0 500 200" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">6 Heartbeat Detection Mechanisms - ZooKeeper, etcd, Consul</text>
+        {[
+          { x: 20, y: 28, name: 'Push-based', desc: 'Node sends heartbeats', color: '#4ade80', pro: 'Simple' },
+          { x: 175, y: 28, name: 'Pull-based', desc: 'Monitor polls nodes', color: '#60a5fa', pro: 'Controlled' },
+          { x: 330, y: 28, name: 'Gossip', desc: 'Peer-to-peer spread', color: '#a78bfa', pro: 'Scalable' },
+          { x: 20, y: 100, name: 'Lease-based', desc: 'Time-bound validity', color: '#22d3ee', pro: 'Automatic cleanup' },
+          { x: 175, y: 100, name: 'Phi Accrual', desc: 'Adaptive threshold', color: '#fb923c', pro: 'Accurate' },
+          { x: 330, y: 100, name: 'SWIM', desc: 'Scalable protocol', color: '#f472b6', pro: 'Efficient' }
+        ].map((h, i) => (
+          <g key={i}>
+            <rect x={h.x} y={h.y} width="145" height="60" rx="6" fill={`${h.color}15`} stroke={h.color} strokeWidth="1.5" />
+            <text x={h.x + 72} y={h.y + 18} textAnchor="middle" fill={h.color} fontSize="8" fontWeight="600">{h.name}</text>
+            <text x={h.x + 72} y={h.y + 34} textAnchor="middle" fill="#a1a1aa" fontSize="7">{h.desc}</text>
+            <text x={h.x + 72} y={h.y + 50} textAnchor="middle" fill="#22d3ee" fontSize="6">✓ {h.pro}</text>
+          </g>
+        ))}
+        <rect x="20" y="170" width="460" height="22" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="184" textAnchor="middle" fill="#71717a" fontSize="7">ZooKeeper: Session heartbeats | Cassandra: Gossip + Phi Accrual | Consul: Gossip + SWIM</text>
+      </svg>
+    ),
+    commpatterns: (
+      <svg viewBox="0 0 500 200" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Microservices Communication Patterns</text>
+        <rect x="20" y="30" width="225" height="75" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="132" y="48" textAnchor="middle" fill="#4ade80" fontSize="10" fontWeight="600">Synchronous</text>
+        <text x="132" y="65" textAnchor="middle" fill="#a1a1aa" fontSize="7">REST, gRPC, GraphQL</text>
+        <text x="132" y="80" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ Simple, immediate response</text>
+        <text x="132" y="93" textAnchor="middle" fill="#f87171" fontSize="6">✗ Tight coupling, cascading failure</text>
+        <rect x="255" y="30" width="225" height="75" rx="6" fill="#a78bfa15" stroke="#a78bfa" strokeWidth="1.5" />
+        <text x="367" y="48" textAnchor="middle" fill="#a78bfa" fontSize="10" fontWeight="600">Asynchronous</text>
+        <text x="367" y="65" textAnchor="middle" fill="#a1a1aa" fontSize="7">Kafka, RabbitMQ, SQS</text>
+        <text x="367" y="80" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ Loose coupling, resilient</text>
+        <text x="367" y="93" textAnchor="middle" fill="#f87171" fontSize="6">✗ Complex debugging, eventual consistency</text>
+        <rect x="20" y="115" width="225" height="75" rx="6" fill="#fb923c15" stroke="#fb923c" strokeWidth="1.5" />
+        <text x="132" y="133" textAnchor="middle" fill="#fb923c" fontSize="10" fontWeight="600">Choreography</text>
+        <text x="132" y="150" textAnchor="middle" fill="#a1a1aa" fontSize="7">Services react to events</text>
+        <text x="132" y="165" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ Decentralized, flexible</text>
+        <text x="132" y="178" textAnchor="middle" fill="#f87171" fontSize="6">✗ Hard to track flow</text>
+        <rect x="255" y="115" width="225" height="75" rx="6" fill="#22d3ee15" stroke="#22d3ee" strokeWidth="1.5" />
+        <text x="367" y="133" textAnchor="middle" fill="#22d3ee" fontSize="10" fontWeight="600">Orchestration</text>
+        <text x="367" y="150" textAnchor="middle" fill="#a1a1aa" fontSize="7">Central coordinator</text>
+        <text x="367" y="165" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ Clear flow, easy to monitor</text>
+        <text x="367" y="178" textAnchor="middle" fill="#f87171" fontSize="6">✗ Single point of failure</text>
+      </svg>
+    ),
+    cloudcompare: (
+      <svg viewBox="0 0 500 240" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Cloud Service Comparison - AWS vs Azure vs GCP</text>
+        <rect x="20" y="25" width="145" height="30" rx="4" fill="#fb923c15" stroke="#fb923c" strokeWidth="1.5" />
+        <text x="92" y="44" textAnchor="middle" fill="#fb923c" fontSize="10" fontWeight="600">AWS</text>
+        <rect x="177" y="25" width="145" height="30" rx="4" fill="#38bdf815" stroke="#38bdf8" strokeWidth="1.5" />
+        <text x="250" y="44" textAnchor="middle" fill="#38bdf8" fontSize="10" fontWeight="600">Azure</text>
+        <rect x="335" y="25" width="145" height="30" rx="4" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="407" y="44" textAnchor="middle" fill="#4ade80" fontSize="10" fontWeight="600">GCP</text>
+        {[
+          { cat: 'Compute', aws: 'EC2, Lambda', azure: 'VMs, Functions', gcp: 'Compute, Cloud Run' },
+          { cat: 'Storage', aws: 'S3, EBS', azure: 'Blob, Disk', gcp: 'Cloud Storage' },
+          { cat: 'Database', aws: 'RDS, DynamoDB', azure: 'SQL DB, Cosmos', gcp: 'Cloud SQL, Spanner' },
+          { cat: 'Container', aws: 'EKS, ECS', azure: 'AKS, ACI', gcp: 'GKE, Cloud Run' },
+          { cat: 'Serverless', aws: 'Lambda, Fargate', azure: 'Functions, ACA', gcp: 'Functions, Run' },
+          { cat: 'CDN', aws: 'CloudFront', azure: 'Front Door', gcp: 'Cloud CDN' },
+          { cat: 'ML/AI', aws: 'SageMaker', azure: 'ML Studio', gcp: 'Vertex AI' }
+        ].map((row, i) => (
+          <g key={i}>
+            <text x="10" y={78 + i * 22} fill="#a1a1aa" fontSize="7" fontWeight="600">{row.cat}</text>
+            <text x="92" y={78 + i * 22} textAnchor="middle" fill="#fb923c" fontSize="6">{row.aws}</text>
+            <text x="250" y={78 + i * 22} textAnchor="middle" fill="#38bdf8" fontSize="6">{row.azure}</text>
+            <text x="407" y={78 + i * 22} textAnchor="middle" fill="#4ade80" fontSize="6">{row.gcp}</text>
+            <line x1="20" y1={83 + i * 22} x2="480" y2={83 + i * 22} stroke="#3f3f46" strokeWidth="0.5" />
+          </g>
+        ))}
+        <rect x="20" y="215" width="460" height="20" rx="4" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="228" textAnchor="middle" fill="#71717a" fontSize="7">AWS: 200+ services | Azure: Strong enterprise | GCP: Best for data/ML</text>
+      </svg>
+    ),
+    disasterrecovery: (
+      <svg viewBox="0 0 500 220" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Disaster Recovery Strategies - RTO vs RPO Trade-offs</text>
+        {[
+          { x: 20, y: 30, name: 'Backup & Restore', rto: 'Hours', rpo: 'Hours', cost: '$', color: '#60a5fa', desc: 'Cheapest, slowest' },
+          { x: 140, y: 30, name: 'Pilot Light', rto: '10s min', rpo: 'Minutes', cost: '$$', color: '#4ade80', desc: 'Core running' },
+          { x: 260, y: 30, name: 'Warm Standby', rto: 'Minutes', rpo: 'Seconds', cost: '$$$', color: '#fbbf24', desc: 'Scaled-down copy' },
+          { x: 380, y: 30, name: 'Hot Standby', rto: 'Seconds', rpo: 'Zero', cost: '$$$$', color: '#f87171', desc: 'Full active-active' }
+        ].map((s, i) => (
+          <g key={i}>
+            <rect x={s.x} y={s.y} width="110" height="90" rx="6" fill={`${s.color}15`} stroke={s.color} strokeWidth="1.5" />
+            <text x={s.x + 55} y={s.y + 18} textAnchor="middle" fill={s.color} fontSize="8" fontWeight="600">{s.name}</text>
+            <text x={s.x + 55} y={s.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{s.desc}</text>
+            <text x={s.x + 55} y={s.y + 52} textAnchor="middle" fill="#22d3ee" fontSize="6">RTO: {s.rto}</text>
+            <text x={s.x + 55} y={s.y + 66} textAnchor="middle" fill="#a78bfa" fontSize="6">RPO: {s.rpo}</text>
+            <text x={s.x + 55} y={s.y + 80} textAnchor="middle" fill="#fbbf24" fontSize="8">{s.cost}</text>
+          </g>
+        ))}
+        <rect x="20" y="130" width="460" height="75" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="148" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Key Metrics</text>
+        <text x="130" y="168" textAnchor="middle" fill="#22d3ee" fontSize="8">RTO: Recovery Time Objective</text>
+        <text x="370" y="168" textAnchor="middle" fill="#a78bfa" fontSize="8">RPO: Recovery Point Objective</text>
+        <text x="130" y="185" textAnchor="middle" fill="#71717a" fontSize="7">How long to recover?</text>
+        <text x="370" y="185" textAnchor="middle" fill="#71717a" fontSize="7">How much data loss acceptable?</text>
+        <text x="250" y="200" textAnchor="middle" fill="#4ade80" fontSize="7">Netflix: Multi-region active-active | Stripe: Hot standby | Banks: Zero RPO required</text>
+      </svg>
+    ),
+    cloudcost: (
+      <svg viewBox="0 0 500 220" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">6 Cloud Cost Reduction Strategies - FinOps Best Practices</text>
+        {[
+          { x: 20, y: 28, name: '1. Reserved Instances', desc: '1-3 year commit', save: '30-72% off', color: '#4ade80' },
+          { x: 175, y: 28, name: '2. Spot/Preemptible', desc: 'Unused capacity', save: '60-90% off', color: '#60a5fa' },
+          { x: 330, y: 28, name: '3. Right-sizing', desc: 'Match instance to load', save: '20-40% off', color: '#a78bfa' },
+          { x: 20, y: 100, name: '4. Auto-scaling', desc: 'Scale down off-peak', save: '30-50% off', color: '#22d3ee' },
+          { x: 175, y: 100, name: '5. Storage Tiering', desc: 'S3 IA, Glacier', save: '40-80% off', color: '#fb923c' },
+          { x: 330, y: 100, name: '6. Savings Plans', desc: 'Flexible commitment', save: '20-50% off', color: '#f472b6' }
+        ].map((s, i) => (
+          <g key={i}>
+            <rect x={s.x} y={s.y} width="145" height="60" rx="6" fill={`${s.color}15`} stroke={s.color} strokeWidth="1.5" />
+            <text x={s.x + 72} y={s.y + 18} textAnchor="middle" fill={s.color} fontSize="8" fontWeight="600">{s.name}</text>
+            <text x={s.x + 72} y={s.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="7">{s.desc}</text>
+            <text x={s.x + 72} y={s.y + 50} textAnchor="middle" fill="#4ade80" fontSize="7" fontWeight="600">{s.save}</text>
+          </g>
+        ))}
+        <rect x="20" y="170" width="460" height="40" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="188" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">Tools: AWS Cost Explorer, Azure Cost Management, GCP Cost Management</text>
+        <text x="250" y="202" textAnchor="middle" fill="#71717a" fontSize="7">Airbnb: 40% savings | Lyft: $100M saved | Spotify: 50% compute reduction</text>
+      </svg>
+    ),
+    awsroadmap: (
+      <svg viewBox="0 0 500 240" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">AWS Services Learning Roadmap by Domain</text>
+        {[
+          { x: 20, y: 28, cat: 'Compute', services: 'EC2 → Lambda → ECS → EKS', color: '#fb923c', level: 'Start Here' },
+          { x: 260, y: 28, cat: 'Storage', services: 'S3 → EBS → EFS → FSx', color: '#60a5fa', level: 'Essentials' },
+          { x: 20, y: 85, cat: 'Database', services: 'RDS → DynamoDB → ElastiCache → Aurora', color: '#4ade80', level: 'Data Layer' },
+          { x: 260, y: 85, cat: 'Networking', services: 'VPC → Route53 → CloudFront → API GW', color: '#a78bfa', level: 'Connectivity' },
+          { x: 20, y: 142, cat: 'Security', services: 'IAM → KMS → Secrets Mgr → WAF', color: '#f87171', level: 'Critical' },
+          { x: 260, y: 142, cat: 'DevOps', services: 'CodePipeline → CloudFormation → CDK', color: '#22d3ee', level: 'Automation' }
+        ].map((d, i) => (
+          <g key={i}>
+            <rect x={d.x} y={d.y} width="220" height="48" rx="6" fill={`${d.color}15`} stroke={d.color} strokeWidth="1.5" />
+            <text x={d.x + 10} y={d.y + 18} fill={d.color} fontSize="9" fontWeight="600">{d.cat}</text>
+            <text x={d.x + 210} y={d.y + 18} textAnchor="end" fill="#71717a" fontSize="6">{d.level}</text>
+            <text x={d.x + 110} y={d.y + 36} textAnchor="middle" fill="#a1a1aa" fontSize="7">{d.services}</text>
+          </g>
+        ))}
+        <rect x="20" y="200" width="460" height="32" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="215" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">Certifications: Cloud Practitioner → Solutions Architect → DevOps → Specialty</text>
+        <text x="250" y="228" textAnchor="middle" fill="#71717a" fontSize="7">200+ AWS services | Start with 20 core services | Add as needed</text>
+      </svg>
+    ),
+    cloudlb: (
+      <svg viewBox="0 0 500 220" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Cloud Load Balancer Decision Tree</text>
+        <rect x="175" y="25" width="150" height="35" rx="6" fill="#a78bfa15" stroke="#a78bfa" strokeWidth="1.5" />
+        <text x="250" y="47" textAnchor="middle" fill="#a78bfa" fontSize="9" fontWeight="600">Need Load Balancer?</text>
+        <rect x="20" y="80" width="145" height="60" rx="6" fill="#fb923c15" stroke="#fb923c" strokeWidth="1.5" />
+        <text x="92" y="98" textAnchor="middle" fill="#fb923c" fontSize="9" fontWeight="600">AWS</text>
+        <text x="92" y="112" textAnchor="middle" fill="#a1a1aa" fontSize="6">ALB: HTTP/HTTPS (L7)</text>
+        <text x="92" y="124" textAnchor="middle" fill="#a1a1aa" fontSize="6">NLB: TCP/UDP (L4)</text>
+        <text x="92" y="136" textAnchor="middle" fill="#a1a1aa" fontSize="6">GWLB: Third-party</text>
+        <rect x="177" y="80" width="145" height="60" rx="6" fill="#38bdf815" stroke="#38bdf8" strokeWidth="1.5" />
+        <text x="250" y="98" textAnchor="middle" fill="#38bdf8" fontSize="9" fontWeight="600">Azure</text>
+        <text x="250" y="112" textAnchor="middle" fill="#a1a1aa" fontSize="6">App GW: HTTP/HTTPS (L7)</text>
+        <text x="250" y="124" textAnchor="middle" fill="#a1a1aa" fontSize="6">Load Balancer: L4</text>
+        <text x="250" y="136" textAnchor="middle" fill="#a1a1aa" fontSize="6">Front Door: Global</text>
+        <rect x="335" y="80" width="145" height="60" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="407" y="98" textAnchor="middle" fill="#4ade80" fontSize="9" fontWeight="600">GCP</text>
+        <text x="407" y="112" textAnchor="middle" fill="#a1a1aa" fontSize="6">HTTP(S) LB: Global L7</text>
+        <text x="407" y="124" textAnchor="middle" fill="#a1a1aa" fontSize="6">Network LB: Regional L4</text>
+        <text x="407" y="136" textAnchor="middle" fill="#a1a1aa" fontSize="6">Internal LB: Private</text>
+        <path d="M250 60 L92 80" stroke="#3f3f46" strokeWidth="1" />
+        <path d="M250 60 L250 80" stroke="#3f3f46" strokeWidth="1" />
+        <path d="M250 60 L407 80" stroke="#3f3f46" strokeWidth="1" />
+        <rect x="20" y="150" width="460" height="55" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="168" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">Decision Criteria</text>
+        <text x="130" y="185" textAnchor="middle" fill="#22d3ee" fontSize="7">L7: Path routing, headers</text>
+        <text x="370" y="185" textAnchor="middle" fill="#fb923c" fontSize="7">L4: Low latency, any protocol</text>
+        <text x="250" y="198" textAnchor="middle" fill="#71717a" fontSize="7">Global: Multi-region | Regional: Single region | Internal: Private network</text>
+      </svg>
+    ),
+    netflixstack: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Netflix Tech Stack - 200M+ subscribers, 1B+ hours/week</text>
+        <rect x="20" y="25" width="460" height="30" rx="4" fill="#f8717115" stroke="#f87171" strokeWidth="1.5" />
+        <text x="250" y="44" textAnchor="middle" fill="#f87171" fontSize="9" fontWeight="600">Clients: iOS, Android, TV, Web (React)</text>
+        <rect x="20" y="60" width="460" height="30" rx="4" fill="#fb923c15" stroke="#fb923c" strokeWidth="1.5" />
+        <text x="250" y="79" textAnchor="middle" fill="#fb923c" fontSize="9" fontWeight="600">CDN: Open Connect (own CDN) - 15,000+ servers worldwide</text>
+        <rect x="20" y="95" width="225" height="35" rx="4" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="132" y="116" textAnchor="middle" fill="#4ade80" fontSize="9" fontWeight="600">API Gateway: ZUUL</text>
+        <rect x="255" y="95" width="225" height="35" rx="4" fill="#60a5fa15" stroke="#60a5fa" strokeWidth="1.5" />
+        <text x="367" y="116" textAnchor="middle" fill="#60a5fa" fontSize="9" fontWeight="600">GraphQL Federation</text>
+        <rect x="20" y="135" width="145" height="50" rx="4" fill="#a78bfa15" stroke="#a78bfa" strokeWidth="1.5" />
+        <text x="92" y="155" textAnchor="middle" fill="#a78bfa" fontSize="8" fontWeight="600">Microservices</text>
+        <text x="92" y="170" textAnchor="middle" fill="#a1a1aa" fontSize="6">1000+ services</text>
+        <text x="92" y="180" textAnchor="middle" fill="#a1a1aa" fontSize="6">Spring Boot + Java</text>
+        <rect x="177" y="135" width="145" height="50" rx="4" fill="#22d3ee15" stroke="#22d3ee" strokeWidth="1.5" />
+        <text x="250" y="155" textAnchor="middle" fill="#22d3ee" fontSize="8" fontWeight="600">Service Discovery</text>
+        <text x="250" y="170" textAnchor="middle" fill="#a1a1aa" fontSize="6">Eureka</text>
+        <text x="250" y="180" textAnchor="middle" fill="#a1a1aa" fontSize="6">Client-side LB</text>
+        <rect x="335" y="135" width="145" height="50" rx="4" fill="#fbbf2415" stroke="#fbbf24" strokeWidth="1.5" />
+        <text x="407" y="155" textAnchor="middle" fill="#fbbf24" fontSize="8" fontWeight="600">Resilience</text>
+        <text x="407" y="170" textAnchor="middle" fill="#a1a1aa" fontSize="6">Hystrix, Resilience4j</text>
+        <text x="407" y="180" textAnchor="middle" fill="#a1a1aa" fontSize="6">Circuit breakers</text>
+        <rect x="20" y="190" width="225" height="35" rx="4" fill="#f472b615" stroke="#f472b6" strokeWidth="1.5" />
+        <text x="132" y="211" textAnchor="middle" fill="#f472b6" fontSize="9" fontWeight="600">Data: Cassandra, DynamoDB, EVCache</text>
+        <rect x="255" y="190" width="225" height="35" rx="4" fill="#2dd4bf15" stroke="#2dd4bf" strokeWidth="1.5" />
+        <text x="367" y="211" textAnchor="middle" fill="#2dd4bf" fontSize="9" fontWeight="600">Streaming: Kafka (700B events/day)</text>
+        <rect x="20" y="230" width="460" height="22" rx="4" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="244" textAnchor="middle" fill="#71717a" fontSize="7">AWS: EC2, S3, CloudFront | Observability: Atlas metrics, Spectator, Mantis</text>
+      </svg>
+    ),
+    netflixapi: (
+      <svg viewBox="0 0 500 220" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Netflix API Evolution - 2008 to Present</text>
+        {[
+          { x: 20, y: 30, era: '2008', name: 'Monolith', desc: 'Single Java app', color: '#f87171' },
+          { x: 140, y: 30, era: '2012', name: 'Direct Access', desc: 'Clients call services', color: '#fb923c' },
+          { x: 260, y: 30, era: '2014', name: 'API Gateway', desc: 'ZUUL + aggregation', color: '#4ade80' },
+          { x: 380, y: 30, era: '2020+', name: 'GraphQL Fed', desc: 'Studio API', color: '#60a5fa' }
+        ].map((e, i) => (
+          <g key={i}>
+            <rect x={e.x} y={e.y} width="110" height="70" rx="6" fill={`${e.color}15`} stroke={e.color} strokeWidth="1.5" />
+            <text x={e.x + 55} y={e.y + 18} textAnchor="middle" fill={e.color} fontSize="9" fontWeight="600">{e.name}</text>
+            <text x={e.x + 55} y={e.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="7">{e.desc}</text>
+            <text x={e.x + 55} y={e.y + 55} textAnchor="middle" fill="#71717a" fontSize="7">{e.era}</text>
+            {i < 3 && <path d={`M${e.x + 115} ${e.y + 35} L${e.x + 135} ${e.y + 35}`} stroke="#3f3f46" strokeWidth="1.5" markerEnd="url(#arrow)" />}
+          </g>
+        ))}
+        <defs><marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#3f3f46"/></marker></defs>
+        <rect x="20" y="110" width="460" height="95" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="128" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Key Lessons</text>
+        <text x="130" y="148" textAnchor="middle" fill="#f87171" fontSize="7">Monolith: Simple but scaling issues</text>
+        <text x="370" y="148" textAnchor="middle" fill="#fb923c" fontSize="7">Direct: N+1 calls from clients</text>
+        <text x="130" y="165" textAnchor="middle" fill="#4ade80" fontSize="7">Gateway: Aggregation layer works</text>
+        <text x="370" y="165" textAnchor="middle" fill="#60a5fa" fontSize="7">GraphQL: Self-serve API schema</text>
+        <text x="250" y="185" textAnchor="middle" fill="#a78bfa" fontSize="7">GraphQL Federation: Domain teams own their schema</text>
+        <text x="250" y="200" textAnchor="middle" fill="#71717a" fontSize="7">Evolution took 15+ years - gradual migration, not big bang</text>
+      </svg>
+    ),
+    discordarch: (
+      <svg viewBox="0 0 500 220" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Discord Database Evolution - 150M+ MAU, Trillions of messages</text>
+        {[
+          { x: 20, y: 30, era: '2015', name: 'MongoDB', desc: 'Single node, simple', color: '#4ade80', issue: 'Scaling limits' },
+          { x: 140, y: 30, era: '2017', name: 'Cassandra', desc: 'Distributed, scale-out', color: '#fb923c', issue: 'GC pauses, latency' },
+          { x: 260, y: 30, era: '2020', name: 'Cassandra + Rust', desc: 'Custom data service', color: '#a78bfa', issue: 'Still JVM issues' },
+          { x: 380, y: 30, era: '2022+', name: 'ScyllaDB', desc: 'C++, no GC', color: '#60a5fa', issue: 'Best of both' }
+        ].map((e, i) => (
+          <g key={i}>
+            <rect x={e.x} y={e.y} width="110" height="75" rx="6" fill={`${e.color}15`} stroke={e.color} strokeWidth="1.5" />
+            <text x={e.x + 55} y={e.y + 18} textAnchor="middle" fill={e.color} fontSize="9" fontWeight="600">{e.name}</text>
+            <text x={e.x + 55} y={e.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="7">{e.desc}</text>
+            <text x={e.x + 55} y={e.y + 50} textAnchor="middle" fill="#71717a" fontSize="6">{e.era}</text>
+            <text x={e.x + 55} y={e.y + 65} textAnchor="middle" fill="#f87171" fontSize="6">{e.issue}</text>
+            {i < 3 && <path d={`M${e.x + 115} ${e.y + 37} L${e.x + 135} ${e.y + 37}`} stroke="#3f3f46" strokeWidth="1.5" />}
+          </g>
+        ))}
+        <rect x="20" y="115" width="460" height="90" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="133" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Architecture Highlights</text>
+        <text x="130" y="153" textAnchor="middle" fill="#22d3ee" fontSize="7">Message store: Time-bucketed</text>
+        <text x="370" y="153" textAnchor="middle" fill="#fb923c" fontSize="7">Hot/Cold: Recent in memory</text>
+        <text x="130" y="170" textAnchor="middle" fill="#4ade80" fontSize="7">Elixir: Real-time WebSockets</text>
+        <text x="370" y="170" textAnchor="middle" fill="#a78bfa" fontSize="7">Rust: Data services layer</text>
+        <text x="250" y="190" textAnchor="middle" fill="#60a5fa" fontSize="8">ScyllaDB Result: p99 latency 15ms → 5ms, GC pauses eliminated</text>
+      </svg>
+    ),
+    redisarch: (
+      <svg viewBox="0 0 500 240" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Redis Architecture - In-Memory Data Structure Store</text>
+        <rect x="175" y="25" width="150" height="35" rx="6" fill="#f8717115" stroke="#f87171" strokeWidth="2" />
+        <text x="250" y="47" textAnchor="middle" fill="#f87171" fontSize="10" fontWeight="700">Redis Server</text>
+        <text x="250" y="58" textAnchor="middle" fill="#a1a1aa" fontSize="6">Single-threaded + I/O threads (6.0+)</text>
+        {[
+          { x: 20, y: 75, name: 'Strings', desc: 'SET/GET, counters', color: '#4ade80' },
+          { x: 100, y: 75, name: 'Lists', desc: 'Queues, feeds', color: '#60a5fa' },
+          { x: 180, y: 75, name: 'Sets', desc: 'Tags, unique', color: '#a78bfa' },
+          { x: 260, y: 75, name: 'Hashes', desc: 'Objects, fields', color: '#22d3ee' },
+          { x: 340, y: 75, name: 'Sorted Sets', desc: 'Leaderboards', color: '#fb923c' },
+          { x: 420, y: 75, name: 'Streams', desc: 'Event log', color: '#f472b6' }
+        ].map((d, i) => (
+          <g key={i}>
+            <rect x={d.x} y={d.y} width="72" height="42" rx="4" fill={`${d.color}15`} stroke={d.color} strokeWidth="1" />
+            <text x={d.x + 36} y={d.y + 16} textAnchor="middle" fill={d.color} fontSize="7" fontWeight="600">{d.name}</text>
+            <text x={d.x + 36} y={d.y + 32} textAnchor="middle" fill="#71717a" fontSize="5">{d.desc}</text>
+          </g>
+        ))}
+        <rect x="20" y="125" width="225" height="50" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="132" y="143" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">Persistence</text>
+        <text x="132" y="158" textAnchor="middle" fill="#4ade80" fontSize="7">RDB: Point-in-time snapshots</text>
+        <text x="132" y="170" textAnchor="middle" fill="#60a5fa" fontSize="7">AOF: Append-only file (durability)</text>
+        <rect x="255" y="125" width="225" height="50" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="367" y="143" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">High Availability</text>
+        <text x="367" y="158" textAnchor="middle" fill="#fb923c" fontSize="7">Sentinel: Auto failover</text>
+        <text x="367" y="170" textAnchor="middle" fill="#a78bfa" fontSize="7">Cluster: 16384 hash slots</text>
+        <rect x="20" y="185" width="460" height="45" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="203" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">Evolution: 2009-2024</text>
+        <text x="250" y="218" textAnchor="middle" fill="#71717a" fontSize="7">2009: Created | 2015: Cluster | 2020: I/O threads | 2022: Redis Functions | 2024: Redis 8.0</text>
+      </svg>
+    ),
+    uberstack: (
+      <svg viewBox="0 0 500 240" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Uber Tech Stack - 100M+ MAU, 25M trips/day</text>
+        <rect x="20" y="25" width="460" height="25" rx="4" fill="#f8717115" stroke="#f87171" strokeWidth="1.5" />
+        <text x="250" y="42" textAnchor="middle" fill="#f87171" fontSize="9" fontWeight="600">Mobile: iOS (Swift), Android (Kotlin) + React Native</text>
+        <rect x="20" y="55" width="225" height="40" rx="4" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="132" y="72" textAnchor="middle" fill="#4ade80" fontSize="8" fontWeight="600">API Gateway: Edge</text>
+        <text x="132" y="86" textAnchor="middle" fill="#a1a1aa" fontSize="6">Rate limiting, auth, routing</text>
+        <rect x="255" y="55" width="225" height="40" rx="4" fill="#60a5fa15" stroke="#60a5fa" strokeWidth="1.5" />
+        <text x="367" y="72" textAnchor="middle" fill="#60a5fa" fontSize="8" fontWeight="600">Maps: H3 Hexagonal Grid</text>
+        <text x="367" y="86" textAnchor="middle" fill="#a1a1aa" fontSize="6">Hierarchical spatial index</text>
+        {[
+          { x: 20, y: 100, name: 'Dispatch', desc: 'Real-time matching', color: '#a78bfa' },
+          { x: 140, y: 100, name: 'Pricing', desc: 'Dynamic/surge', color: '#22d3ee' },
+          { x: 260, y: 100, name: 'ETA', desc: 'ML predictions', color: '#fb923c' },
+          { x: 380, y: 100, name: 'Payments', desc: 'Multi-currency', color: '#f472b6' }
+        ].map((s, i) => (
+          <g key={i}>
+            <rect x={s.x} y={s.y} width="110" height="40" rx="4" fill={`${s.color}15`} stroke={s.color} strokeWidth="1.5" />
+            <text x={s.x + 55} y={s.y + 17} textAnchor="middle" fill={s.color} fontSize="8" fontWeight="600">{s.name}</text>
+            <text x={s.x + 55} y={s.y + 32} textAnchor="middle" fill="#a1a1aa" fontSize="6">{s.desc}</text>
+          </g>
+        ))}
+        <rect x="20" y="145" width="145" height="40" rx="4" fill="#fbbf2415" stroke="#fbbf24" strokeWidth="1.5" />
+        <text x="92" y="162" textAnchor="middle" fill="#fbbf24" fontSize="8" fontWeight="600">Data Platform</text>
+        <text x="92" y="177" textAnchor="middle" fill="#a1a1aa" fontSize="6">Kafka, Spark, Presto</text>
+        <rect x="177" y="145" width="145" height="40" rx="4" fill="#2dd4bf15" stroke="#2dd4bf" strokeWidth="1.5" />
+        <text x="250" y="162" textAnchor="middle" fill="#2dd4bf" fontSize="8" fontWeight="600">Storage</text>
+        <text x="250" y="177" textAnchor="middle" fill="#a1a1aa" fontSize="6">MySQL, Cassandra, Redis</text>
+        <rect x="335" y="145" width="145" height="40" rx="4" fill="#f8717115" stroke="#f87171" strokeWidth="1.5" />
+        <text x="407" y="162" textAnchor="middle" fill="#f87171" fontSize="8" fontWeight="600">Observability</text>
+        <text x="407" y="177" textAnchor="middle" fill="#a1a1aa" fontSize="6">Jaeger (created here)</text>
+        <rect x="20" y="190" width="460" height="40" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="208" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">Key Technologies: Go (backend), gRPC, Docker, Kubernetes, Cadence (workflow)</text>
+        <text x="250" y="222" textAnchor="middle" fill="#71717a" fontSize="7">4000+ microservices | Multi-datacenter | 4 trillion messages/day on Kafka</text>
+      </svg>
+    ),
+    twelvefactor: (
+      <svg viewBox="0 0 500 280" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">12-Factor App - Cloud-Native Principles (Heroku)</text>
+        {[
+          { x: 20, y: 25, n: '1', name: 'Codebase', desc: 'One repo, many deploys', color: '#4ade80' },
+          { x: 140, y: 25, n: '2', name: 'Dependencies', desc: 'Explicit declaration', color: '#60a5fa' },
+          { x: 260, y: 25, n: '3', name: 'Config', desc: 'Store in environment', color: '#a78bfa' },
+          { x: 380, y: 25, n: '4', name: 'Backing Services', desc: 'Treat as resources', color: '#22d3ee' },
+          { x: 20, y: 85, n: '5', name: 'Build/Release/Run', desc: 'Strict separation', color: '#fb923c' },
+          { x: 140, y: 85, n: '6', name: 'Processes', desc: 'Stateless, share-nothing', color: '#f472b6' },
+          { x: 260, y: 85, n: '7', name: 'Port Binding', desc: 'Export via port', color: '#fbbf24' },
+          { x: 380, y: 85, n: '8', name: 'Concurrency', desc: 'Scale via processes', color: '#f87171' },
+          { x: 20, y: 145, n: '9', name: 'Disposability', desc: 'Fast start, graceful stop', color: '#2dd4bf' },
+          { x: 140, y: 145, n: '10', name: 'Dev/Prod Parity', desc: 'Keep environments similar', color: '#4ade80' },
+          { x: 260, y: 145, n: '11', name: 'Logs', desc: 'Treat as event streams', color: '#60a5fa' },
+          { x: 380, y: 145, n: '12', name: 'Admin Processes', desc: 'Run as one-off', color: '#a78bfa' }
+        ].map((f, i) => (
+          <g key={i}>
+            <rect x={f.x} y={f.y} width="110" height="50" rx="5" fill={`${f.color}15`} stroke={f.color} strokeWidth="1.5" />
+            <text x={f.x + 12} y={f.y + 18} fill={f.color} fontSize="10" fontWeight="700">{f.n}</text>
+            <text x={f.x + 65} y={f.y + 18} textAnchor="middle" fill={f.color} fontSize="7" fontWeight="600">{f.name}</text>
+            <text x={f.x + 55} y={f.y + 38} textAnchor="middle" fill="#a1a1aa" fontSize="6">{f.desc}</text>
+          </g>
+        ))}
+        <rect x="20" y="205" width="460" height="60" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="223" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Key Benefits</text>
+        <text x="130" y="243" textAnchor="middle" fill="#4ade80" fontSize="7">Portable across clouds</text>
+        <text x="250" y="243" textAnchor="middle" fill="#60a5fa" fontSize="7">Scale horizontally</text>
+        <text x="370" y="243" textAnchor="middle" fill="#a78bfa" fontSize="7">CI/CD friendly</text>
+        <text x="250" y="258" textAnchor="middle" fill="#71717a" fontSize="7">Netflix, Heroku, Spotify, Airbnb - all follow 12-factor principles</text>
+      </svg>
+    ),
+    sdlcmodels: (
+      <svg viewBox="0 0 500 240" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">8 SDLC Models - Choose Based on Requirements</text>
+        {[
+          { x: 20, y: 28, name: 'Waterfall', desc: 'Sequential phases', use: 'Fixed requirements', color: '#60a5fa' },
+          { x: 140, y: 28, name: 'Agile', desc: 'Iterative sprints', use: 'Evolving needs', color: '#4ade80' },
+          { x: 260, y: 28, name: 'V-Model', desc: 'Verification focus', use: 'Safety-critical', color: '#a78bfa' },
+          { x: 380, y: 28, name: 'Iterative', desc: 'Repeated cycles', use: 'Unclear scope', color: '#22d3ee' },
+          { x: 20, y: 100, name: 'Spiral', desc: 'Risk-driven', use: 'High-risk projects', color: '#fb923c' },
+          { x: 140, y: 100, name: 'Big Bang', desc: 'No formal process', use: 'Tiny projects', color: '#f87171' },
+          { x: 260, y: 100, name: 'RAD', desc: 'Rapid prototyping', use: 'Quick delivery', color: '#f472b6' },
+          { x: 380, y: 100, name: 'Incremental', desc: 'Phased delivery', use: 'Large systems', color: '#fbbf24' }
+        ].map((m, i) => (
+          <g key={i}>
+            <rect x={m.x} y={m.y} width="110" height="60" rx="5" fill={`${m.color}15`} stroke={m.color} strokeWidth="1.5" />
+            <text x={m.x + 55} y={m.y + 18} textAnchor="middle" fill={m.color} fontSize="8" fontWeight="600">{m.name}</text>
+            <text x={m.x + 55} y={m.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{m.desc}</text>
+            <text x={m.x + 55} y={m.y + 50} textAnchor="middle" fill="#71717a" fontSize="5">{m.use}</text>
+          </g>
+        ))}
+        <rect x="20" y="170" width="460" height="55" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="188" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Modern Trend: Hybrid Approaches</text>
+        <text x="250" y="208" textAnchor="middle" fill="#71717a" fontSize="7">Most teams: Agile + DevOps | Regulated industries: V-Model + Agile</text>
+        <text x="250" y="220" textAnchor="middle" fill="#4ade80" fontSize="7">Spotify: Squads (Agile) | Google: Iterative + Continuous | Banks: Waterfall for compliance</text>
+      </svg>
+    ),
+    designpatterns: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Design Patterns Cheat Sheet - Gang of Four (GoF)</text>
+        <rect x="20" y="25" width="145" height="90" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="92" y="43" textAnchor="middle" fill="#4ade80" fontSize="9" fontWeight="600">Creational</text>
+        <text x="92" y="58" textAnchor="middle" fill="#a1a1aa" fontSize="6">Singleton - One instance</text>
+        <text x="92" y="70" textAnchor="middle" fill="#a1a1aa" fontSize="6">Factory - Create objects</text>
+        <text x="92" y="82" textAnchor="middle" fill="#a1a1aa" fontSize="6">Builder - Step by step</text>
+        <text x="92" y="94" textAnchor="middle" fill="#a1a1aa" fontSize="6">Prototype - Clone</text>
+        <text x="92" y="106" textAnchor="middle" fill="#a1a1aa" fontSize="6">Abstract Factory - Families</text>
+        <rect x="177" y="25" width="145" height="90" rx="6" fill="#60a5fa15" stroke="#60a5fa" strokeWidth="1.5" />
+        <text x="250" y="43" textAnchor="middle" fill="#60a5fa" fontSize="9" fontWeight="600">Structural</text>
+        <text x="250" y="58" textAnchor="middle" fill="#a1a1aa" fontSize="6">Adapter - Interface convert</text>
+        <text x="250" y="70" textAnchor="middle" fill="#a1a1aa" fontSize="6">Decorator - Add behavior</text>
+        <text x="250" y="82" textAnchor="middle" fill="#a1a1aa" fontSize="6">Facade - Simplify API</text>
+        <text x="250" y="94" textAnchor="middle" fill="#a1a1aa" fontSize="6">Proxy - Control access</text>
+        <text x="250" y="106" textAnchor="middle" fill="#a1a1aa" fontSize="6">Composite - Tree structure</text>
+        <rect x="335" y="25" width="145" height="90" rx="6" fill="#a78bfa15" stroke="#a78bfa" strokeWidth="1.5" />
+        <text x="407" y="43" textAnchor="middle" fill="#a78bfa" fontSize="9" fontWeight="600">Behavioral</text>
+        <text x="407" y="58" textAnchor="middle" fill="#a1a1aa" fontSize="6">Observer - Pub/Sub</text>
+        <text x="407" y="70" textAnchor="middle" fill="#a1a1aa" fontSize="6">Strategy - Swap algorithms</text>
+        <text x="407" y="82" textAnchor="middle" fill="#a1a1aa" fontSize="6">Command - Encapsulate action</text>
+        <text x="407" y="94" textAnchor="middle" fill="#a1a1aa" fontSize="6">State - State machine</text>
+        <text x="407" y="106" textAnchor="middle" fill="#a1a1aa" fontSize="6">Template - Define skeleton</text>
+        <rect x="20" y="125" width="460" height="55" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="143" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Most Used in Modern Systems</text>
+        <text x="130" y="163" textAnchor="middle" fill="#4ade80" fontSize="7">Factory: Spring, React</text>
+        <text x="250" y="163" textAnchor="middle" fill="#60a5fa" fontSize="7">Observer: Event systems</text>
+        <text x="370" y="163" textAnchor="middle" fill="#a78bfa" fontSize="7">Strategy: Payment gateways</text>
+        <rect x="20" y="190" width="460" height="55" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="208" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Anti-Patterns to Avoid</text>
+        <text x="130" y="228" textAnchor="middle" fill="#f87171" fontSize="7">God Object: Too much</text>
+        <text x="250" y="228" textAnchor="middle" fill="#f87171" fontSize="7">Spaghetti: No structure</text>
+        <text x="370" y="228" textAnchor="middle" fill="#f87171" fontSize="7">Golden Hammer: Overuse</text>
+      </svg>
+    ),
+    tradeoffs: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">10 Key System Design Trade-offs</text>
+        {[
+          { x: 20, y: 28, left: 'Performance', right: 'Cost', color: '#4ade80' },
+          { x: 260, y: 28, left: 'Consistency', right: 'Availability', color: '#60a5fa' },
+          { x: 20, y: 75, left: 'Latency', right: 'Throughput', color: '#a78bfa' },
+          { x: 260, y: 75, left: 'Simplicity', right: 'Flexibility', color: '#22d3ee' },
+          { x: 20, y: 122, left: 'Read Speed', right: 'Write Speed', color: '#fb923c' },
+          { x: 260, y: 122, left: 'Normalization', right: 'Denormalization', color: '#f472b6' },
+          { x: 20, y: 169, left: 'SQL', right: 'NoSQL', color: '#fbbf24' },
+          { x: 260, y: 169, left: 'Monolith', right: 'Microservices', color: '#f87171' }
+        ].map((t, i) => (
+          <g key={i}>
+            <rect x={t.x} y={t.y} width="220" height="38" rx="5" fill={`${t.color}15`} stroke={t.color} strokeWidth="1.5" />
+            <text x={t.x + 55} y={t.y + 23} textAnchor="middle" fill={t.color} fontSize="8" fontWeight="600">{t.left}</text>
+            <text x={t.x + 110} y={t.y + 23} textAnchor="middle" fill="#71717a" fontSize="10">⟷</text>
+            <text x={t.x + 165} y={t.y + 23} textAnchor="middle" fill={t.color} fontSize="8" fontWeight="600">{t.right}</text>
+          </g>
+        ))}
+        <rect x="20" y="215" width="460" height="35" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="233" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">No perfect choice - understand requirements, measure, iterate</text>
+        <text x="250" y="245" textAnchor="middle" fill="#71717a" fontSize="7">Every trade-off depends on: Scale, Budget, Team, Timeline, Requirements</text>
+      </svg>
+    ),
+    datapipeline: (
+      <svg viewBox="0 0 500 220" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Data Pipeline Architecture - ETL vs ELT, Batch vs Streaming</text>
+        <rect x="20" y="30" width="225" height="70" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="132" y="50" textAnchor="middle" fill="#4ade80" fontSize="10" fontWeight="600">ETL (Extract-Transform-Load)</text>
+        <text x="132" y="68" textAnchor="middle" fill="#a1a1aa" fontSize="7">Transform before loading</text>
+        <text x="132" y="83" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ Cleaned data in warehouse</text>
+        <text x="132" y="95" textAnchor="middle" fill="#f87171" fontSize="6">✗ Slower, inflexible</text>
+        <rect x="255" y="30" width="225" height="70" rx="6" fill="#60a5fa15" stroke="#60a5fa" strokeWidth="1.5" />
+        <text x="367" y="50" textAnchor="middle" fill="#60a5fa" fontSize="10" fontWeight="600">ELT (Extract-Load-Transform)</text>
+        <text x="367" y="68" textAnchor="middle" fill="#a1a1aa" fontSize="7">Transform after loading</text>
+        <text x="367" y="83" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ Faster, flexible</text>
+        <text x="367" y="95" textAnchor="middle" fill="#f87171" fontSize="6">✗ Raw data in warehouse</text>
+        <rect x="20" y="110" width="225" height="50" rx="6" fill="#fb923c15" stroke="#fb923c" strokeWidth="1.5" />
+        <text x="132" y="130" textAnchor="middle" fill="#fb923c" fontSize="9" fontWeight="600">Batch Processing</text>
+        <text x="132" y="148" textAnchor="middle" fill="#a1a1aa" fontSize="7">Spark, Hadoop, scheduled jobs</text>
+        <rect x="255" y="110" width="225" height="50" rx="6" fill="#a78bfa15" stroke="#a78bfa" strokeWidth="1.5" />
+        <text x="367" y="130" textAnchor="middle" fill="#a78bfa" fontSize="9" fontWeight="600">Stream Processing</text>
+        <text x="367" y="148" textAnchor="middle" fill="#a1a1aa" fontSize="7">Kafka Streams, Flink, real-time</text>
+        <rect x="20" y="170" width="460" height="40" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="188" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">Tools: Airflow (orchestration), dbt (transform), Fivetran (ingestion)</text>
+        <text x="250" y="202" textAnchor="middle" fill="#71717a" fontSize="7">Netflix: 500PB data, 1.5T events/day | Uber: Presto for SQL analytics</text>
+      </svg>
+    ),
+    datalakehouse: (
+      <svg viewBox="0 0 500 220" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Data Lake vs Data Warehouse vs Lakehouse</text>
+        <rect x="20" y="30" width="145" height="100" rx="6" fill="#60a5fa15" stroke="#60a5fa" strokeWidth="1.5" />
+        <text x="92" y="50" textAnchor="middle" fill="#60a5fa" fontSize="9" fontWeight="600">Data Warehouse</text>
+        <text x="92" y="68" textAnchor="middle" fill="#a1a1aa" fontSize="6">Structured only</text>
+        <text x="92" y="82" textAnchor="middle" fill="#a1a1aa" fontSize="6">Schema-on-write</text>
+        <text x="92" y="96" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ Fast queries</text>
+        <text x="92" y="110" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ BI optimized</text>
+        <text x="92" y="124" textAnchor="middle" fill="#f87171" fontSize="6">✗ Limited types</text>
+        <rect x="177" y="30" width="145" height="100" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="250" y="50" textAnchor="middle" fill="#4ade80" fontSize="9" fontWeight="600">Data Lake</text>
+        <text x="250" y="68" textAnchor="middle" fill="#a1a1aa" fontSize="6">All data types</text>
+        <text x="250" y="82" textAnchor="middle" fill="#a1a1aa" fontSize="6">Schema-on-read</text>
+        <text x="250" y="96" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ Cheap storage</text>
+        <text x="250" y="110" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ ML friendly</text>
+        <text x="250" y="124" textAnchor="middle" fill="#f87171" fontSize="6">✗ Slow queries</text>
+        <rect x="335" y="30" width="145" height="100" rx="6" fill="#a78bfa15" stroke="#a78bfa" strokeWidth="1.5" />
+        <text x="407" y="50" textAnchor="middle" fill="#a78bfa" fontSize="9" fontWeight="600">Lakehouse</text>
+        <text x="407" y="68" textAnchor="middle" fill="#a1a1aa" fontSize="6">Best of both</text>
+        <text x="407" y="82" textAnchor="middle" fill="#a1a1aa" fontSize="6">Delta Lake, Iceberg</text>
+        <text x="407" y="96" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ ACID on lake</text>
+        <text x="407" y="110" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ Unified analytics</text>
+        <text x="407" y="124" textAnchor="middle" fill="#22d3ee" fontSize="6">✓ Time travel</text>
+        <rect x="20" y="140" width="460" height="65" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="158" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Popular Solutions</text>
+        <text x="130" y="178" textAnchor="middle" fill="#60a5fa" fontSize="7">Warehouse: Snowflake, BigQuery, Redshift</text>
+        <text x="370" y="178" textAnchor="middle" fill="#4ade80" fontSize="7">Lake: S3 + Athena, HDFS</text>
+        <text x="250" y="195" textAnchor="middle" fill="#a78bfa" fontSize="7">Lakehouse: Databricks, Delta Lake, Apache Iceberg, Apache Hudi</text>
+      </svg>
+    ),
+    cdcpattern: (
+      <svg viewBox="0 0 500 220" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Change Data Capture (CDC) - Real-time Data Sync</text>
+        <rect x="20" y="30" width="100" height="60" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="70" y="55" textAnchor="middle" fill="#4ade80" fontSize="9" fontWeight="600">Source DB</text>
+        <text x="70" y="75" textAnchor="middle" fill="#a1a1aa" fontSize="6">MySQL, Postgres</text>
+        <path d="M125 60 L175 60" stroke="#4ade80" strokeWidth="2" markerEnd="url(#arrowGreen)" />
+        <rect x="180" y="30" width="140" height="60" rx="6" fill="#fb923c15" stroke="#fb923c" strokeWidth="1.5" />
+        <text x="250" y="50" textAnchor="middle" fill="#fb923c" fontSize="9" fontWeight="600">CDC Tool</text>
+        <text x="250" y="68" textAnchor="middle" fill="#a1a1aa" fontSize="6">Debezium, Maxwell</text>
+        <text x="250" y="82" textAnchor="middle" fill="#a1a1aa" fontSize="6">Reads transaction log</text>
+        <path d="M325 60 L375 60" stroke="#fb923c" strokeWidth="2" />
+        <rect x="380" y="30" width="100" height="60" rx="6" fill="#60a5fa15" stroke="#60a5fa" strokeWidth="1.5" />
+        <text x="430" y="55" textAnchor="middle" fill="#60a5fa" fontSize="9" fontWeight="600">Kafka</text>
+        <text x="430" y="75" textAnchor="middle" fill="#a1a1aa" fontSize="6">Event stream</text>
+        <defs><marker id="arrowGreen" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#4ade80"/></marker></defs>
+        <rect x="20" y="100" width="225" height="55" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="132" y="118" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">CDC Methods</text>
+        <text x="132" y="135" textAnchor="middle" fill="#a78bfa" fontSize="7">Log-based: Transaction log (best)</text>
+        <text x="132" y="148" textAnchor="middle" fill="#71717a" fontSize="7">Trigger | Timestamp | Diff-based</text>
+        <rect x="255" y="100" width="225" height="55" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="367" y="118" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">Use Cases</text>
+        <text x="367" y="135" textAnchor="middle" fill="#22d3ee" fontSize="7">Cache invalidation, Search sync</text>
+        <text x="367" y="148" textAnchor="middle" fill="#22d3ee" fontSize="7">Analytics pipeline, Microservices</text>
+        <rect x="20" y="165" width="460" height="40" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="183" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">Tools: Debezium (OSS), AWS DMS, Airbyte, Fivetran</text>
+        <text x="250" y="198" textAnchor="middle" fill="#71717a" fontSize="7">Airbnb: CDC for search sync | LinkedIn: CDC for data lake | Uber: Marmaray</text>
+      </svg>
+    ),
+    kafkadeep: (
+      <svg viewBox="0 0 500 240" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Kafka Deep Dive - Internals & Best Practices</text>
+        <rect x="20" y="28" width="145" height="80" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="92" y="46" textAnchor="middle" fill="#4ade80" fontSize="9" fontWeight="600">Producer</text>
+        <text x="92" y="62" textAnchor="middle" fill="#a1a1aa" fontSize="6">acks=all: Durability</text>
+        <text x="92" y="76" textAnchor="middle" fill="#a1a1aa" fontSize="6">acks=1: Performance</text>
+        <text x="92" y="90" textAnchor="middle" fill="#a1a1aa" fontSize="6">Batching, compression</text>
+        <text x="92" y="102" textAnchor="middle" fill="#22d3ee" fontSize="5">idempotence=true</text>
+        <rect x="177" y="28" width="145" height="80" rx="6" fill="#fb923c15" stroke="#fb923c" strokeWidth="1.5" />
+        <text x="250" y="46" textAnchor="middle" fill="#fb923c" fontSize="9" fontWeight="600">Broker/Topic</text>
+        <text x="250" y="62" textAnchor="middle" fill="#a1a1aa" fontSize="6">Partitions = parallelism</text>
+        <text x="250" y="76" textAnchor="middle" fill="#a1a1aa" fontSize="6">Replication factor = 3</text>
+        <text x="250" y="90" textAnchor="middle" fill="#a1a1aa" fontSize="6">Log segments, compaction</text>
+        <text x="250" y="102" textAnchor="middle" fill="#22d3ee" fontSize="5">min.insync.replicas=2</text>
+        <rect x="335" y="28" width="145" height="80" rx="6" fill="#60a5fa15" stroke="#60a5fa" strokeWidth="1.5" />
+        <text x="407" y="46" textAnchor="middle" fill="#60a5fa" fontSize="9" fontWeight="600">Consumer</text>
+        <text x="407" y="62" textAnchor="middle" fill="#a1a1aa" fontSize="6">Consumer groups</text>
+        <text x="407" y="76" textAnchor="middle" fill="#a1a1aa" fontSize="6">Offset commit</text>
+        <text x="407" y="90" textAnchor="middle" fill="#a1a1aa" fontSize="6">Rebalancing protocol</text>
+        <text x="407" y="102" textAnchor="middle" fill="#22d3ee" fontSize="5">auto.offset.reset</text>
+        <rect x="20" y="118" width="225" height="55" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="132" y="136" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">Message Loss Scenarios</text>
+        <text x="132" y="153" textAnchor="middle" fill="#f87171" fontSize="6">acks=0/1 + leader crash</text>
+        <text x="132" y="166" textAnchor="middle" fill="#f87171" fontSize="6">Consumer crash before commit</text>
+        <rect x="255" y="118" width="225" height="55" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="367" y="136" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">Exactly-Once Config</text>
+        <text x="367" y="153" textAnchor="middle" fill="#4ade80" fontSize="6">enable.idempotence=true</text>
+        <text x="367" y="166" textAnchor="middle" fill="#4ade80" fontSize="6">transactional.id + acks=all</text>
+        <rect x="20" y="183" width="460" height="45" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="201" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">Scaling: LinkedIn 7T msgs/day | Uber 4T msgs/day | Netflix 700B events/day</text>
+        <text x="250" y="218" textAnchor="middle" fill="#71717a" fontSize="7">Partitions = max(target_throughput/100MB/s, num_consumers) | Start with 12-24</text>
+      </svg>
+    ),
+    searchengine: (
+      <svg viewBox="0 0 500 220" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Search Engine Architecture - Google-scale Design</text>
+        {[
+          { x: 20, y: 30, name: 'Crawling', desc: 'Fetch web pages', tool: 'Scrapy, Heritrix', color: '#4ade80' },
+          { x: 140, y: 30, name: 'Parsing', desc: 'Extract content', tool: 'DOM, NLP', color: '#60a5fa' },
+          { x: 260, y: 30, name: 'Indexing', desc: 'Inverted index', tool: 'Lucene', color: '#a78bfa' },
+          { x: 380, y: 30, name: 'Ranking', desc: 'Relevance scoring', tool: 'PageRank, ML', color: '#fb923c' }
+        ].map((s, i) => (
+          <g key={i}>
+            <rect x={s.x} y={s.y} width="110" height="65" rx="6" fill={`${s.color}15`} stroke={s.color} strokeWidth="1.5" />
+            <text x={s.x + 55} y={s.y + 20} textAnchor="middle" fill={s.color} fontSize="9" fontWeight="600">{s.name}</text>
+            <text x={s.x + 55} y={s.y + 38} textAnchor="middle" fill="#a1a1aa" fontSize="7">{s.desc}</text>
+            <text x={s.x + 55} y={s.y + 55} textAnchor="middle" fill="#71717a" fontSize="6">{s.tool}</text>
+            {i < 3 && <path d={`M${s.x + 115} ${s.y + 32} L${s.x + 135} ${s.y + 32}`} stroke="#3f3f46" strokeWidth="1.5" />}
+          </g>
+        ))}
+        <rect x="20" y="105" width="225" height="50" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="132" y="123" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">Inverted Index</text>
+        <text x="132" y="140" textAnchor="middle" fill="#a1a1aa" fontSize="7">Term → [doc1, doc5, doc12...]</text>
+        <text x="132" y="152" textAnchor="middle" fill="#71717a" fontSize="6">TF-IDF, BM25 scoring</text>
+        <rect x="255" y="105" width="225" height="50" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="367" y="123" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">Query Processing</text>
+        <text x="367" y="140" textAnchor="middle" fill="#a1a1aa" fontSize="7">Tokenize → Analyze → Score → Rank</text>
+        <text x="367" y="152" textAnchor="middle" fill="#71717a" fontSize="6">Query expansion, spell check</text>
+        <rect x="20" y="165" width="460" height="40" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="183" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">Google: 100B+ pages indexed, 8.5B searches/day</text>
+        <text x="250" y="198" textAnchor="middle" fill="#71717a" fontSize="7">MapReduce for indexing | Distributed shards | Real-time with Caffeine</text>
+      </svg>
+    ),
+    elasticsearch: (
+      <svg viewBox="0 0 500 220" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Elasticsearch Architecture - Distributed Search & Analytics</text>
+        <rect x="175" y="25" width="150" height="35" rx="6" fill="#fbbf2415" stroke="#fbbf24" strokeWidth="2" />
+        <text x="250" y="47" textAnchor="middle" fill="#fbbf24" fontSize="10" fontWeight="600">Cluster</text>
+        {[
+          { x: 20, y: 75, name: 'Node 1', role: 'Master', shards: 'P0, R1', color: '#4ade80' },
+          { x: 180, y: 75, name: 'Node 2', role: 'Data', shards: 'P1, R0', color: '#60a5fa' },
+          { x: 340, y: 75, name: 'Node 3', role: 'Data', shards: 'P2, R2', color: '#a78bfa' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="55" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="7">{n.role}</text>
+            <text x={n.x + 70} y={n.y + 48} textAnchor="middle" fill="#71717a" fontSize="6">Shards: {n.shards}</text>
+            <path d={`M${n.x + 70} ${n.y} L250 60`} stroke="#3f3f46" strokeWidth="0.5" strokeDasharray="2,2" />
+          </g>
+        ))}
+        <rect x="20" y="140" width="225" height="65" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="132" y="158" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">Key Concepts</text>
+        <text x="132" y="175" textAnchor="middle" fill="#22d3ee" fontSize="7">Index: Collection of documents</text>
+        <text x="132" y="190" textAnchor="middle" fill="#fb923c" fontSize="7">Shard: Horizontal partition</text>
+        <text x="132" y="200" textAnchor="middle" fill="#a78bfa" fontSize="6">Replica: Copy for HA</text>
+        <rect x="255" y="140" width="225" height="65" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="367" y="158" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">Sizing Rules</text>
+        <text x="367" y="175" textAnchor="middle" fill="#71717a" fontSize="7">Shard: 10-50GB each</text>
+        <text x="367" y="190" textAnchor="middle" fill="#71717a" fontSize="7">1 replica = 2x storage</text>
+        <text x="367" y="200" textAnchor="middle" fill="#71717a" fontSize="6">Nodes: shards/20 minimum</text>
+      </svg>
+    ),
+    genaistack: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Generative AI Stack - 2024 Landscape</text>
+        <rect x="20" y="25" width="460" height="35" rx="6" fill="#a78bfa15" stroke="#a78bfa" strokeWidth="1.5" />
+        <text x="250" y="47" textAnchor="middle" fill="#a78bfa" fontSize="10" fontWeight="600">Foundation Models: GPT-4, Claude, Gemini, Llama, Mistral</text>
+        <rect x="20" y="68" width="145" height="55" rx="5" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="92" y="88" textAnchor="middle" fill="#4ade80" fontSize="8" fontWeight="600">Inference</text>
+        <text x="92" y="103" textAnchor="middle" fill="#a1a1aa" fontSize="6">vLLM, TensorRT-LLM</text>
+        <text x="92" y="115" textAnchor="middle" fill="#a1a1aa" fontSize="6">NVIDIA, Groq, AWS Inf2</text>
+        <rect x="177" y="68" width="145" height="55" rx="5" fill="#60a5fa15" stroke="#60a5fa" strokeWidth="1.5" />
+        <text x="250" y="88" textAnchor="middle" fill="#60a5fa" fontSize="8" fontWeight="600">Orchestration</text>
+        <text x="250" y="103" textAnchor="middle" fill="#a1a1aa" fontSize="6">LangChain, LlamaIndex</text>
+        <text x="250" y="115" textAnchor="middle" fill="#a1a1aa" fontSize="6">Semantic Kernel</text>
+        <rect x="335" y="68" width="145" height="55" rx="5" fill="#fb923c15" stroke="#fb923c" strokeWidth="1.5" />
+        <text x="407" y="88" textAnchor="middle" fill="#fb923c" fontSize="8" fontWeight="600">Vector DB</text>
+        <text x="407" y="103" textAnchor="middle" fill="#a1a1aa" fontSize="6">Pinecone, Weaviate</text>
+        <text x="407" y="115" textAnchor="middle" fill="#a1a1aa" fontSize="6">pgVector, Chroma</text>
+        <rect x="20" y="130" width="225" height="55" rx="5" fill="#22d3ee15" stroke="#22d3ee" strokeWidth="1.5" />
+        <text x="132" y="150" textAnchor="middle" fill="#22d3ee" fontSize="9" fontWeight="600">RAG (Retrieval Augmented)</text>
+        <text x="132" y="168" textAnchor="middle" fill="#a1a1aa" fontSize="7">Query → Retrieve → Augment → Generate</text>
+        <text x="132" y="180" textAnchor="middle" fill="#71717a" fontSize="6">Reduces hallucinations, uses your data</text>
+        <rect x="255" y="130" width="225" height="55" rx="5" fill="#f472b615" stroke="#f472b6" strokeWidth="1.5" />
+        <text x="367" y="150" textAnchor="middle" fill="#f472b6" fontSize="9" fontWeight="600">Fine-tuning</text>
+        <text x="367" y="168" textAnchor="middle" fill="#a1a1aa" fontSize="7">LoRA, QLoRA, RLHF</text>
+        <text x="367" y="180" textAnchor="middle" fill="#71717a" fontSize="6">Custom behavior, domain expertise</text>
+        <rect x="20" y="195" width="460" height="50" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="213" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Production Stack: Model API → Prompt Engineering → Guardrails → Evaluation</text>
+        <text x="250" y="230" textAnchor="middle" fill="#71717a" fontSize="7">Companies: OpenAI, Anthropic, Google, Meta, Mistral | Observability: LangSmith, Weights & Biases</text>
+      </svg>
+    ),
+    linuxboot: (
+      <svg viewBox="0 0 500 220" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Linux Boot Process - From Power On to User Space</text>
+        {[
+          { x: 20, y: 35, name: 'BIOS/UEFI', desc: 'POST, Hardware Init', color: '#f472b6' },
+          { x: 115, y: 35, name: 'MBR/GPT', desc: 'Bootloader Location', color: '#fb923c' },
+          { x: 210, y: 35, name: 'GRUB', desc: 'Bootloader Menu', color: '#4ade80' },
+          { x: 305, y: 35, name: 'Kernel', desc: 'vmlinuz + initramfs', color: '#60a5fa' },
+          { x: 400, y: 35, name: 'systemd', desc: 'PID 1, Init System', color: '#a78bfa' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="85" height="45" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 42} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 42} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+            {i < 4 && <path d={`M${n.x + 85} ${n.y + 22} L${n.x + 95} ${n.y + 22}`} stroke="#3f3f46" strokeWidth="1.5" markerEnd="url(#arrow)" />}
+          </g>
+        ))}
+        <rect x="20" y="95" width="460" height="55" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="112" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">systemd Targets (Run Levels)</text>
+        {['poweroff.target (0)', 'rescue.target (1)', 'multi-user.target (3)', 'graphical.target (5)', 'reboot.target (6)'].map((t, i) => (
+          <text key={i} x={50 + i * 95} y={135} textAnchor="middle" fill="#71717a" fontSize="7">{t}</text>
+        ))}
+        <rect x="20" y="160" width="225" height="45" rx="5" fill="#22d3ee15" stroke="#22d3ee" strokeWidth="1.5" />
+        <text x="132" y="178" textAnchor="middle" fill="#22d3ee" fontSize="8" fontWeight="600">initramfs Tasks</text>
+        <text x="132" y="195" textAnchor="middle" fill="#a1a1aa" fontSize="6">Load drivers, mount root FS, start init</text>
+        <rect x="255" y="160" width="225" height="45" rx="5" fill="#fbbf2415" stroke="#fbbf24" strokeWidth="1.5" />
+        <text x="367" y="178" textAnchor="middle" fill="#fbbf24" fontSize="8" fontWeight="600">User Space</text>
+        <text x="367" y="195" textAnchor="middle" fill="#a1a1aa" fontSize="6">Services, daemons, login manager</text>
+      </svg>
+    ),
+    linuxfs: (
+      <svg viewBox="0 0 500 240" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Linux Filesystem Hierarchy Standard (FHS)</text>
+        <rect x="200" y="25" width="100" height="30" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="2" />
+        <text x="250" y="45" textAnchor="middle" fill="#4ade80" fontSize="10" fontWeight="700">/</text>
+        {[
+          { x: 20, y: 75, name: '/bin', desc: 'Essential binaries', color: '#60a5fa' },
+          { x: 100, y: 75, name: '/boot', desc: 'Bootloader files', color: '#f472b6' },
+          { x: 180, y: 75, name: '/dev', desc: 'Device files', color: '#fb923c' },
+          { x: 260, y: 75, name: '/etc', desc: 'Config files', color: '#a78bfa' },
+          { x: 340, y: 75, name: '/home', desc: 'User homes', color: '#22d3ee' },
+          { x: 420, y: 75, name: '/lib', desc: 'Libraries', color: '#fbbf24' }
+        ].map((n, i) => (
+          <g key={i}>
+            <path d={`M250 55 L${n.x + 35} 75`} stroke="#3f3f46" strokeWidth="0.5" />
+            <rect x={n.x} y={n.y} width="70" height="40" rx="5" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 35} y={n.y + 17} textAnchor="middle" fill={n.color} fontSize="8" fontWeight="600">{n.name}</text>
+            <text x={n.x + 35} y={n.y + 32} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+          </g>
+        ))}
+        {[
+          { x: 20, y: 130, name: '/opt', desc: 'Optional software', color: '#4ade80' },
+          { x: 100, y: 130, name: '/proc', desc: 'Process info', color: '#60a5fa' },
+          { x: 180, y: 130, name: '/root', desc: 'Root home', color: '#f472b6' },
+          { x: 260, y: 130, name: '/sbin', desc: 'System binaries', color: '#fb923c' },
+          { x: 340, y: 130, name: '/tmp', desc: 'Temporary files', color: '#a78bfa' },
+          { x: 420, y: 130, name: '/usr', desc: 'User programs', color: '#22d3ee' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="70" height="40" rx="5" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 35} y={n.y + 17} textAnchor="middle" fill={n.color} fontSize="8" fontWeight="600">{n.name}</text>
+            <text x={n.x + 35} y={n.y + 32} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+          </g>
+        ))}
+        <rect x="20" y="185" width="145" height="45" rx="5" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="92" y="202" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">/var</text>
+        <text x="92" y="218" textAnchor="middle" fill="#a1a1aa" fontSize="6">Variable data, logs</text>
+        <rect x="177" y="185" width="145" height="45" rx="5" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="202" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">/mnt & /media</text>
+        <text x="250" y="218" textAnchor="middle" fill="#a1a1aa" fontSize="6">Mount points</text>
+        <rect x="335" y="185" width="145" height="45" rx="5" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="407" y="202" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">/sys</text>
+        <text x="407" y="218" textAnchor="middle" fill="#a1a1aa" fontSize="6">Kernel/hardware info</text>
+      </svg>
+    ),
+    linuxperms: (
+      <svg viewBox="0 0 500 220" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Linux File Permissions - chmod, chown, ACL</text>
+        <rect x="20" y="30" width="460" height="50" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="250" y="50" textAnchor="middle" fill="#4ade80" fontSize="10" fontWeight="600">-rwxr-xr-- 1 user group 4096 Jan 1 file.txt</text>
+        <text x="45" y="72" textAnchor="middle" fill="#f472b6" fontSize="7">type</text>
+        <text x="95" y="72" textAnchor="middle" fill="#60a5fa" fontSize="7">user</text>
+        <text x="145" y="72" textAnchor="middle" fill="#fb923c" fontSize="7">group</text>
+        <text x="195" y="72" textAnchor="middle" fill="#a78bfa" fontSize="7">other</text>
+        {[
+          { x: 20, y: 95, bits: 'rwx', val: '7', name: 'User (Owner)', color: '#60a5fa' },
+          { x: 180, y: 95, bits: 'r-x', val: '5', name: 'Group', color: '#fb923c' },
+          { x: 340, y: 95, bits: 'r--', val: '4', name: 'Other', color: '#a78bfa' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="45" rx="5" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#fafafa" fontSize="10" fontFamily="monospace">{n.bits} = {n.val}</text>
+          </g>
+        ))}
+        <rect x="20" y="155" width="225" height="55" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="132" y="172" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">Octal Notation</text>
+        <text x="132" y="188" textAnchor="middle" fill="#22d3ee" fontSize="7">755 = rwxr-xr-x (exec)</text>
+        <text x="132" y="202" textAnchor="middle" fill="#fbbf24" fontSize="7">644 = rw-r--r-- (file)</text>
+        <rect x="255" y="155" width="225" height="55" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="367" y="172" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">Commands</text>
+        <text x="367" y="188" textAnchor="middle" fill="#71717a" fontSize="7">chmod 755 file | chown user:group</text>
+        <text x="367" y="202" textAnchor="middle" fill="#71717a" fontSize="7">chmod +x file | umask 022</text>
+      </svg>
+    ),
+    linuxperf: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Linux Performance Tools - Brendan Gregg's Observability Wheel</text>
+        {[
+          { x: 20, y: 30, name: 'CPU', tools: 'top, htop, mpstat, pidstat', color: '#f472b6' },
+          { x: 180, y: 30, name: 'Memory', tools: 'free, vmstat, pmap, slabtop', color: '#60a5fa' },
+          { x: 340, y: 30, name: 'Disk I/O', tools: 'iostat, iotop, blktrace', color: '#4ade80' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="50" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.tools}</text>
+          </g>
+        ))}
+        {[
+          { x: 20, y: 95, name: 'Network', tools: 'netstat, ss, iftop, tcpdump', color: '#fb923c' },
+          { x: 180, y: 95, name: 'Process', tools: 'ps, pstree, strace, lsof', color: '#a78bfa' },
+          { x: 340, y: 95, name: 'System', tools: 'dmesg, sysctl, uptime', color: '#22d3ee' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="50" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.tools}</text>
+          </g>
+        ))}
+        <rect x="20" y="160" width="225" height="85" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="132" y="178" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">Advanced Tracing</text>
+        <text x="132" y="195" textAnchor="middle" fill="#f472b6" fontSize="7">perf - CPU profiling, flame graphs</text>
+        <text x="132" y="210" textAnchor="middle" fill="#60a5fa" fontSize="7">eBPF/bpftrace - Dynamic tracing</text>
+        <text x="132" y="225" textAnchor="middle" fill="#4ade80" fontSize="7">SystemTap - Kernel probing</text>
+        <rect x="255" y="160" width="225" height="85" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="367" y="178" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">Quick Diagnosis</text>
+        <text x="367" y="195" textAnchor="middle" fill="#71717a" fontSize="7">1. uptime → load average</text>
+        <text x="367" y="210" textAnchor="middle" fill="#71717a" fontSize="7">2. vmstat 1 → memory, CPU</text>
+        <text x="367" y="225" textAnchor="middle" fill="#71717a" fontSize="7">3. iostat -x 1 → disk latency</text>
+      </svg>
+    ),
+    linuxcmds: (
+      <svg viewBox="0 0 500 280" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">18 Essential Linux Commands</text>
+        {[
+          { x: 20, y: 30, cmds: ['ls - list files', 'cd - change dir', 'pwd - current dir'], color: '#4ade80', title: 'Navigation' },
+          { x: 180, y: 30, cmds: ['cp - copy', 'mv - move/rename', 'rm - remove'], color: '#60a5fa', title: 'File Ops' },
+          { x: 340, y: 30, cmds: ['cat - view file', 'grep - search text', 'find - find files'], color: '#f472b6', title: 'Search/View' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="70" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 15} textAnchor="middle" fill={n.color} fontSize="8" fontWeight="600">{n.title}</text>
+            {n.cmds.map((c, j) => <text key={j} x={n.x + 70} y={n.y + 32 + j * 13} textAnchor="middle" fill="#a1a1aa" fontSize="6">{c}</text>)}
+          </g>
+        ))}
+        {[
+          { x: 20, y: 115, cmds: ['chmod - permissions', 'chown - ownership', 'sudo - run as root'], color: '#fb923c', title: 'Permissions' },
+          { x: 180, y: 115, cmds: ['ps - processes', 'top - monitor', 'kill - terminate'], color: '#a78bfa', title: 'Processes' },
+          { x: 340, y: 115, cmds: ['ssh - remote login', 'scp - secure copy', 'curl - HTTP client'], color: '#22d3ee', title: 'Network' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="70" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 15} textAnchor="middle" fill={n.color} fontSize="8" fontWeight="600">{n.title}</text>
+            {n.cmds.map((c, j) => <text key={j} x={n.x + 70} y={n.y + 32 + j * 13} textAnchor="middle" fill="#a1a1aa" fontSize="6">{c}</text>)}
+          </g>
+        ))}
+        <rect x="20" y="200" width="225" height="65" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="132" y="218" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">Package Management</text>
+        <text x="132" y="235" textAnchor="middle" fill="#71717a" fontSize="7">apt/yum install | update | remove</text>
+        <text x="132" y="250" textAnchor="middle" fill="#71717a" fontSize="7">systemctl start/stop/status service</text>
+        <rect x="255" y="200" width="225" height="65" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="367" y="218" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">Pipes & Redirection</text>
+        <text x="367" y="235" textAnchor="middle" fill="#71717a" fontSize="7">cmd1 | cmd2 - pipe output</text>
+        <text x="367" y="250" textAnchor="middle" fill="#71717a" fontSize="7">&gt; file, &gt;&gt; append, 2&gt;&amp;1 stderr</text>
+      </svg>
+    ),
+    restbest: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">REST API Best Practices</text>
+        {[
+          { x: 20, y: 30, name: 'Naming', rules: ['Use nouns: /users', 'Plural: /orders/{id}', 'Lowercase, hyphens'], color: '#4ade80' },
+          { x: 180, y: 30, name: 'HTTP Methods', rules: ['GET: read', 'POST: create', 'PUT/PATCH: update'], color: '#60a5fa' },
+          { x: 340, y: 30, name: 'Status Codes', rules: ['2xx: success', '4xx: client error', '5xx: server error'], color: '#f472b6' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="65" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 15} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            {n.rules.map((r, j) => <text key={j} x={n.x + 70} y={n.y + 32 + j * 12} textAnchor="middle" fill="#a1a1aa" fontSize="6">{r}</text>)}
+          </g>
+        ))}
+        <rect x="20" y="110" width="225" height="60" rx="6" fill="#fb923c15" stroke="#fb923c" strokeWidth="1.5" />
+        <text x="132" y="128" textAnchor="middle" fill="#fb923c" fontSize="9" fontWeight="600">Pagination</text>
+        <text x="132" y="145" textAnchor="middle" fill="#a1a1aa" fontSize="7">Offset: ?page=2&limit=20</text>
+        <text x="132" y="160" textAnchor="middle" fill="#a1a1aa" fontSize="7">Cursor: ?cursor=xyz&limit=20 (preferred)</text>
+        <rect x="255" y="110" width="225" height="60" rx="6" fill="#a78bfa15" stroke="#a78bfa" strokeWidth="1.5" />
+        <text x="367" y="128" textAnchor="middle" fill="#a78bfa" fontSize="9" fontWeight="600">Filtering & Sorting</text>
+        <text x="367" y="145" textAnchor="middle" fill="#a1a1aa" fontSize="7">?status=active&sort=-created_at</text>
+        <text x="367" y="160" textAnchor="middle" fill="#a1a1aa" fontSize="7">?fields=id,name (sparse fieldsets)</text>
+        <rect x="20" y="185" width="460" height="60" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="205" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Error Response Format</text>
+        <text x="250" y="225" textAnchor="middle" fill="#22d3ee" fontSize="7" fontFamily="monospace">{`{ "error": { "code": "INVALID_INPUT", "message": "...", "details": [...] } }`}</text>
+        <text x="250" y="240" textAnchor="middle" fill="#71717a" fontSize="6">Companies: Stripe, GitHub, Twilio follow these patterns</text>
+      </svg>
+    ),
+    graphqldeep: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">GraphQL Deep Dive - Schema, Resolvers, N+1</text>
+        <rect x="20" y="30" width="145" height="70" rx="6" fill="#f472b615" stroke="#f472b6" strokeWidth="1.5" />
+        <text x="92" y="48" textAnchor="middle" fill="#f472b6" fontSize="9" fontWeight="600">Schema</text>
+        <text x="92" y="65" textAnchor="middle" fill="#a1a1aa" fontSize="7">type Query {"{ }"}</text>
+        <text x="92" y="78" textAnchor="middle" fill="#a1a1aa" fontSize="7">type Mutation {"{ }"}</text>
+        <text x="92" y="91" textAnchor="middle" fill="#a1a1aa" fontSize="7">type Subscription {"{ }"}</text>
+        <rect x="177" y="30" width="145" height="70" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="250" y="48" textAnchor="middle" fill="#4ade80" fontSize="9" fontWeight="600">Resolver</text>
+        <text x="250" y="65" textAnchor="middle" fill="#a1a1aa" fontSize="7">Field → Data Source</text>
+        <text x="250" y="78" textAnchor="middle" fill="#a1a1aa" fontSize="7">parent, args, context</text>
+        <text x="250" y="91" textAnchor="middle" fill="#a1a1aa" fontSize="7">info (AST)</text>
+        <rect x="335" y="30" width="145" height="70" rx="6" fill="#60a5fa15" stroke="#60a5fa" strokeWidth="1.5" />
+        <text x="407" y="48" textAnchor="middle" fill="#60a5fa" fontSize="9" fontWeight="600">DataLoader</text>
+        <text x="407" y="65" textAnchor="middle" fill="#a1a1aa" fontSize="7">Batch requests</text>
+        <text x="407" y="78" textAnchor="middle" fill="#a1a1aa" fontSize="7">Solve N+1 problem</text>
+        <text x="407" y="91" textAnchor="middle" fill="#a1a1aa" fontSize="7">Per-request cache</text>
+        <rect x="20" y="115" width="225" height="60" rx="6" fill="#fb923c15" stroke="#fb923c" strokeWidth="1.5" />
+        <text x="132" y="133" textAnchor="middle" fill="#fb923c" fontSize="9" fontWeight="600">N+1 Problem</text>
+        <text x="132" y="150" textAnchor="middle" fill="#a1a1aa" fontSize="7">Query users → N queries for posts</text>
+        <text x="132" y="165" textAnchor="middle" fill="#22d3ee" fontSize="7">Solution: DataLoader batches into 1 query</text>
+        <rect x="255" y="115" width="225" height="60" rx="6" fill="#a78bfa15" stroke="#a78bfa" strokeWidth="1.5" />
+        <text x="367" y="133" textAnchor="middle" fill="#a78bfa" fontSize="9" fontWeight="600">Schema Design</text>
+        <text x="367" y="150" textAnchor="middle" fill="#a1a1aa" fontSize="7">Connections for pagination</text>
+        <text x="367" y="165" textAnchor="middle" fill="#a1a1aa" fontSize="7">Relay cursor spec</text>
+        <rect x="20" y="190" width="460" height="55" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="210" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Production Patterns</text>
+        <text x="250" y="228" textAnchor="middle" fill="#71717a" fontSize="7">Query depth limiting | Cost analysis | Persisted queries | Schema stitching</text>
+        <text x="250" y="240" textAnchor="middle" fill="#71717a" fontSize="6">Companies: GitHub, Shopify, Twitter, Airbnb</text>
+      </svg>
+    ),
+    grpcinternals: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">gRPC Internals - Protocol Buffers & Streaming</text>
+        <rect x="20" y="30" width="140" height="65" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="90" y="48" textAnchor="middle" fill="#4ade80" fontSize="9" fontWeight="600">Protocol Buffers</text>
+        <text x="90" y="65" textAnchor="middle" fill="#a1a1aa" fontSize="7">Binary serialization</text>
+        <text x="90" y="78" textAnchor="middle" fill="#a1a1aa" fontSize="7">~10x smaller than JSON</text>
+        <text x="90" y="88" textAnchor="middle" fill="#a1a1aa" fontSize="6">.proto schema → codegen</text>
+        <rect x="180" y="30" width="140" height="65" rx="6" fill="#60a5fa15" stroke="#60a5fa" strokeWidth="1.5" />
+        <text x="250" y="48" textAnchor="middle" fill="#60a5fa" fontSize="9" fontWeight="600">HTTP/2</text>
+        <text x="250" y="65" textAnchor="middle" fill="#a1a1aa" fontSize="7">Multiplexing</text>
+        <text x="250" y="78" textAnchor="middle" fill="#a1a1aa" fontSize="7">Header compression</text>
+        <text x="250" y="88" textAnchor="middle" fill="#a1a1aa" fontSize="6">Binary framing</text>
+        <rect x="340" y="30" width="140" height="65" rx="6" fill="#f472b615" stroke="#f472b6" strokeWidth="1.5" />
+        <text x="410" y="48" textAnchor="middle" fill="#f472b6" fontSize="9" fontWeight="600">Code Generation</text>
+        <text x="410" y="65" textAnchor="middle" fill="#a1a1aa" fontSize="7">Client stubs</text>
+        <text x="410" y="78" textAnchor="middle" fill="#a1a1aa" fontSize="7">Server interfaces</text>
+        <text x="410" y="88" textAnchor="middle" fill="#a1a1aa" fontSize="6">Type-safe APIs</text>
+        <rect x="20" y="110" width="460" height="60" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="128" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">4 Streaming Types</text>
+        {['Unary (1:1)', 'Server Stream (1:N)', 'Client Stream (N:1)', 'Bidirectional (N:N)'].map((t, i) => (
+          <text key={i} x={80 + i * 110} y={155} textAnchor="middle" fill={['#4ade80', '#60a5fa', '#fb923c', '#a78bfa'][i]} fontSize="7">{t}</text>
+        ))}
+        <rect x="20" y="185" width="225" height="60" rx="6" fill="#22d3ee15" stroke="#22d3ee" strokeWidth="1.5" />
+        <text x="132" y="203" textAnchor="middle" fill="#22d3ee" fontSize="9" fontWeight="600">When to Use gRPC</text>
+        <text x="132" y="220" textAnchor="middle" fill="#a1a1aa" fontSize="7">Microservice-to-microservice</text>
+        <text x="132" y="235" textAnchor="middle" fill="#a1a1aa" fontSize="7">High-performance, low latency</text>
+        <rect x="255" y="185" width="225" height="60" rx="6" fill="#fbbf2415" stroke="#fbbf24" strokeWidth="1.5" />
+        <text x="367" y="203" textAnchor="middle" fill="#fbbf24" fontSize="9" fontWeight="600">Trade-offs</text>
+        <text x="367" y="220" textAnchor="middle" fill="#a1a1aa" fontSize="7">+ Performance, type safety</text>
+        <text x="367" y="235" textAnchor="middle" fill="#a1a1aa" fontSize="7">- Browser support, debugging</text>
+      </svg>
+    ),
+    gatewaypatterns: (
+      <svg viewBox="0 0 500 240" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">API Gateway Patterns - Routing, Aggregation, Security</text>
+        <rect x="175" y="25" width="150" height="40" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="2" />
+        <text x="250" y="50" textAnchor="middle" fill="#4ade80" fontSize="10" fontWeight="600">API Gateway</text>
+        {[
+          { x: 20, y: 85, name: 'Routing', desc: 'Path-based, header-based', color: '#60a5fa' },
+          { x: 180, y: 85, name: 'Aggregation', desc: 'Combine multiple APIs', color: '#f472b6' },
+          { x: 340, y: 85, name: 'Protocol Trans.', desc: 'REST ↔ gRPC ↔ WS', color: '#fb923c' }
+        ].map((n, i) => (
+          <g key={i}>
+            <path d="M250 65 L250 75" stroke="#3f3f46" strokeWidth="1" />
+            <path d={`M250 75 L${n.x + 70} 85`} stroke="#3f3f46" strokeWidth="0.5" />
+            <rect x={n.x} y={n.y} width="140" height="45" rx="5" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="8" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+          </g>
+        ))}
+        {[
+          { x: 20, y: 145, name: 'Auth/AuthZ', desc: 'JWT, OAuth, API keys', color: '#a78bfa' },
+          { x: 180, y: 145, name: 'Rate Limiting', desc: 'Quotas, throttling', color: '#22d3ee' },
+          { x: 340, y: 145, name: 'Caching', desc: 'Response caching', color: '#fbbf24' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="45" rx="5" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="8" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+          </g>
+        ))}
+        <rect x="20" y="200" width="460" height="30" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="220" textAnchor="middle" fill="#71717a" fontSize="7">Solutions: Kong, AWS API Gateway, Azure APIM, Apigee, NGINX, Traefik, Ambassador</text>
+      </svg>
+    ),
+    proxygwlb: (
+      <svg viewBox="0 0 500 240" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Reverse Proxy vs API Gateway vs Load Balancer</text>
+        {[
+          { x: 20, y: 35, name: 'Reverse Proxy', desc: 'Forward requests, SSL termination, caching', features: ['Hide backend servers', 'SSL/TLS termination', 'Static content serving'], color: '#4ade80', examples: 'Nginx, HAProxy' },
+          { x: 180, y: 35, name: 'API Gateway', desc: 'API management, auth, rate limiting', features: ['Authentication/AuthZ', 'Request transformation', 'API versioning'], color: '#60a5fa', examples: 'Kong, Apigee' },
+          { x: 340, y: 35, name: 'Load Balancer', desc: 'Distribute traffic across servers', features: ['Health checks', 'Session affinity', 'L4/L7 balancing'], color: '#f472b6', examples: 'AWS ALB, F5' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="130" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+            {n.features.map((f, j) => <text key={j} x={n.x + 70} y={n.y + 55 + j * 15} textAnchor="middle" fill="#71717a" fontSize="6">• {f}</text>)}
+            <text x={n.x + 70} y={n.y + 115} textAnchor="middle" fill="#fafafa" fontSize="6">{n.examples}</text>
+          </g>
+        ))}
+        <rect x="20" y="180" width="460" height="45" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="198" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">When to Use Each</text>
+        <text x="250" y="215" textAnchor="middle" fill="#71717a" fontSize="7">Reverse Proxy: Simple forwarding | API Gateway: API management | LB: High availability</text>
+      </svg>
+    ),
+    graphqladopt: (
+      <svg viewBox="0 0 500 240" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">GraphQL Adoption Patterns - 4 Architecture Approaches</text>
+        {[
+          { x: 20, y: 35, name: 'Client-Side', desc: 'GraphQL in browser, direct to REST', good: 'Simple migration', bad: 'Multiple round trips', color: '#4ade80' },
+          { x: 260, y: 35, name: 'BFF (Backend for Frontend)', desc: 'GraphQL per client type', good: 'Optimized per client', bad: 'Code duplication', color: '#60a5fa' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="220" height="80" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 110} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 110} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="7">{n.desc}</text>
+            <text x={n.x + 110} y={n.y + 55} textAnchor="middle" fill="#22d3ee" fontSize="6">✓ {n.good}</text>
+            <text x={n.x + 110} y={n.y + 70} textAnchor="middle" fill="#f472b6" fontSize="6">✗ {n.bad}</text>
+          </g>
+        ))}
+        {[
+          { x: 20, y: 130, name: 'Monolithic Gateway', desc: 'Single GraphQL server', good: 'Simple to start', bad: 'Scaling bottleneck', color: '#f472b6' },
+          { x: 260, y: 130, name: 'Federation', desc: 'Distributed graph across services', good: 'Team autonomy, scale', bad: 'Complex operations', color: '#a78bfa' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="220" height="80" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 110} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 110} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="7">{n.desc}</text>
+            <text x={n.x + 110} y={n.y + 55} textAnchor="middle" fill="#22d3ee" fontSize="6">✓ {n.good}</text>
+            <text x={n.x + 110} y={n.y + 70} textAnchor="middle" fill="#f472b6" fontSize="6">✗ {n.bad}</text>
+          </g>
+        ))}
+        <text x="250" y="228" textAnchor="middle" fill="#71717a" fontSize="7">Most companies: Start Monolithic → Move to Federation as team grows</text>
+      </svg>
+    ),
+    pollwebhook: (
+      <svg viewBox="0 0 500 220" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Polling vs Webhooks - Push vs Pull Patterns</text>
+        <rect x="20" y="30" width="220" height="110" rx="6" fill="#60a5fa15" stroke="#60a5fa" strokeWidth="1.5" />
+        <text x="130" y="50" textAnchor="middle" fill="#60a5fa" fontSize="10" fontWeight="600">Polling (Pull)</text>
+        <text x="130" y="70" textAnchor="middle" fill="#a1a1aa" fontSize="7">Client repeatedly asks: "Any updates?"</text>
+        <text x="130" y="90" textAnchor="middle" fill="#4ade80" fontSize="7">✓ Simple, client controls timing</text>
+        <text x="130" y="105" textAnchor="middle" fill="#4ade80" fontSize="7">✓ Works through firewalls</text>
+        <text x="130" y="120" textAnchor="middle" fill="#f472b6" fontSize="7">✗ Wastes resources on no-change</text>
+        <text x="130" y="135" textAnchor="middle" fill="#f472b6" fontSize="7">✗ Delay between polls</text>
+        <rect x="260" y="30" width="220" height="110" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="370" y="50" textAnchor="middle" fill="#4ade80" fontSize="10" fontWeight="600">Webhooks (Push)</text>
+        <text x="370" y="70" textAnchor="middle" fill="#a1a1aa" fontSize="7">Server pushes: "Here's an update!"</text>
+        <text x="370" y="90" textAnchor="middle" fill="#4ade80" fontSize="7">✓ Real-time, efficient</text>
+        <text x="370" y="105" textAnchor="middle" fill="#4ade80" fontSize="7">✓ Only when data changes</text>
+        <text x="370" y="120" textAnchor="middle" fill="#f472b6" fontSize="7">✗ Needs public endpoint</text>
+        <text x="370" y="135" textAnchor="middle" fill="#f472b6" fontSize="7">✗ Retry/delivery complexity</text>
+        <rect x="20" y="155" width="460" height="50" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="173" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">Webhook Best Practices</text>
+        <text x="250" y="190" textAnchor="middle" fill="#71717a" fontSize="7">Signature verification | Idempotency keys | Retry with exponential backoff | Timeout handling</text>
+      </svg>
+    ),
+    apilandscape: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">API Protocols Landscape - When to Use What</text>
+        {[
+          { x: 20, y: 30, name: 'REST', desc: 'HTTP + JSON, stateless', use: 'CRUD, public APIs', company: 'Stripe, GitHub', color: '#4ade80' },
+          { x: 180, y: 30, name: 'GraphQL', desc: 'Query language, single endpoint', use: 'Flexible queries, mobile', company: 'GitHub, Shopify', color: '#f472b6' },
+          { x: 340, y: 30, name: 'gRPC', desc: 'Binary, HTTP/2, streaming', use: 'Microservices, perf', company: 'Google, Netflix', color: '#60a5fa' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="80" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+            <text x={n.x + 70} y={n.y + 52} textAnchor="middle" fill="#22d3ee" fontSize="6">{n.use}</text>
+            <text x={n.x + 70} y={n.y + 68} textAnchor="middle" fill="#71717a" fontSize="6">{n.company}</text>
+          </g>
+        ))}
+        {[
+          { x: 20, y: 125, name: 'WebSocket', desc: 'Full-duplex, persistent', use: 'Real-time, chat, gaming', company: 'Slack, Discord', color: '#fb923c' },
+          { x: 180, y: 125, name: 'Webhooks', desc: 'HTTP callbacks, event-driven', use: 'Notifications, integrations', company: 'Stripe, GitHub', color: '#a78bfa' },
+          { x: 340, y: 125, name: 'SSE', desc: 'Server-sent events, one-way', use: 'Live updates, feeds', company: 'Twitter, Stock apps', color: '#22d3ee' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="80" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+            <text x={n.x + 70} y={n.y + 52} textAnchor="middle" fill="#22d3ee" fontSize="6">{n.use}</text>
+            <text x={n.x + 70} y={n.y + 68} textAnchor="middle" fill="#71717a" fontSize="6">{n.company}</text>
+          </g>
+        ))}
+        <rect x="20" y="220" width="460" height="30" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="240" textAnchor="middle" fill="#71717a" fontSize="7">Decision: External API → REST | High perf → gRPC | Flexible client → GraphQL | Real-time → WebSocket/SSE</text>
+      </svg>
+    ),
+    // Phase 2: Real-Time, DevOps, Performance
+    livestream: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Live Streaming Architecture - Capture to Delivery</text>
+        {[
+          { x: 20, y: 35, name: 'Capture', desc: 'Camera, OBS, Encoder', color: '#f472b6' },
+          { x: 115, y: 35, name: 'Ingest', desc: 'RTMP to origin', color: '#fb923c' },
+          { x: 210, y: 35, name: 'Transcode', desc: 'Multiple bitrates', color: '#4ade80' },
+          { x: 305, y: 35, name: 'Package', desc: 'HLS/DASH segments', color: '#60a5fa' },
+          { x: 400, y: 35, name: 'CDN', desc: 'Global delivery', color: '#a78bfa' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="85" height="50" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 42} y={n.y + 20} textAnchor="middle" fill={n.color} fontSize="8" fontWeight="600">{n.name}</text>
+            <text x={n.x + 42} y={n.y + 38} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+            {i < 4 && <path d={`M${n.x + 85} ${n.y + 25} L${n.x + 95} ${n.y + 25}`} stroke="#3f3f46" strokeWidth="1.5" />}
+          </g>
+        ))}
+        <rect x="20" y="100" width="225" height="70" rx="6" fill="#22d3ee15" stroke="#22d3ee" strokeWidth="1.5" />
+        <text x="132" y="118" textAnchor="middle" fill="#22d3ee" fontSize="9" fontWeight="600">Protocols</text>
+        <text x="132" y="138" textAnchor="middle" fill="#a1a1aa" fontSize="7">RTMP: Ingest (low latency)</text>
+        <text x="132" y="153" textAnchor="middle" fill="#a1a1aa" fontSize="7">HLS: Apple, 6-30s latency</text>
+        <text x="132" y="165" textAnchor="middle" fill="#a1a1aa" fontSize="7">DASH: Standard, adaptive</text>
+        <rect x="255" y="100" width="225" height="70" rx="6" fill="#fbbf2415" stroke="#fbbf24" strokeWidth="1.5" />
+        <text x="367" y="118" textAnchor="middle" fill="#fbbf24" fontSize="9" fontWeight="600">Adaptive Bitrate</text>
+        <text x="367" y="138" textAnchor="middle" fill="#a1a1aa" fontSize="7">1080p: 6 Mbps</text>
+        <text x="367" y="153" textAnchor="middle" fill="#a1a1aa" fontSize="7">720p: 3 Mbps</text>
+        <text x="367" y="165" textAnchor="middle" fill="#a1a1aa" fontSize="7">360p: 1 Mbps</text>
+        <rect x="20" y="185" width="460" height="60" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="205" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Companies & Low Latency</text>
+        <text x="250" y="225" textAnchor="middle" fill="#71717a" fontSize="7">Twitch: Sub-3s with Low Latency HLS | YouTube Live: DASH + WebRTC | Discord: WebRTC for calls</text>
+        <text x="250" y="238" textAnchor="middle" fill="#71717a" fontSize="6">WebRTC: Real-time, P2P, sub-500ms | SRT: Secure, low latency</text>
+      </svg>
+    ),
+    pushnotify: (
+      <svg viewBox="0 0 500 240" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Push Notification Architecture - FCM, APNs, Web Push</text>
+        <rect x="175" y="30" width="150" height="40" rx="6" fill="#fb923c15" stroke="#fb923c" strokeWidth="2" />
+        <text x="250" y="55" textAnchor="middle" fill="#fb923c" fontSize="10" fontWeight="600">Your Backend</text>
+        {[
+          { x: 20, y: 100, name: 'FCM', desc: 'Firebase (Android/iOS/Web)', color: '#fbbf24' },
+          { x: 180, y: 100, name: 'APNs', desc: 'Apple Push (iOS/macOS)', color: '#a78bfa' },
+          { x: 340, y: 100, name: 'Web Push', desc: 'Service Worker + VAPID', color: '#60a5fa' }
+        ].map((n, i) => (
+          <g key={i}>
+            <path d={`M250 70 L${n.x + 70} 100`} stroke="#3f3f46" strokeWidth="0.5" />
+            <rect x={n.x} y={n.y} width="140" height="50" rx="5" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 20} textAnchor="middle" fill={n.color} fontSize="8" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 38} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+          </g>
+        ))}
+        <rect x="20" y="170" width="225" height="55" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="132" y="188" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">Token Management</text>
+        <text x="132" y="205" textAnchor="middle" fill="#71717a" fontSize="7">Device registers → Get token</text>
+        <text x="132" y="218" textAnchor="middle" fill="#71717a" fontSize="7">Store token → Send by topic/token</text>
+        <rect x="255" y="170" width="225" height="55" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="367" y="188" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">Best Practices</text>
+        <text x="367" y="205" textAnchor="middle" fill="#71717a" fontSize="7">Batch sends, handle token refresh</text>
+        <text x="367" y="218" textAnchor="middle" fill="#71717a" fontSize="7">Rate limit, respect preferences</text>
+      </svg>
+    ),
+    wsdeep: (
+      <svg viewBox="0 0 500 240" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">WebSocket Deep Dive - Connection Lifecycle & Scaling</text>
+        {[
+          { x: 20, y: 35, name: 'HTTP Upgrade', desc: 'Upgrade: websocket', color: '#4ade80' },
+          { x: 140, y: 35, name: 'Handshake', desc: 'Sec-WebSocket-Key', color: '#60a5fa' },
+          { x: 260, y: 35, name: 'Connected', desc: 'Full-duplex open', color: '#f472b6' },
+          { x: 380, y: 35, name: 'Close', desc: 'Close frame + code', color: '#fb923c' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="100" height="45" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 50} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="8" fontWeight="600">{n.name}</text>
+            <text x={n.x + 50} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+            {i < 3 && <path d={`M${n.x + 100} ${n.y + 22} L${n.x + 120} ${n.y + 22}`} stroke="#3f3f46" strokeWidth="1" />}
+          </g>
+        ))}
+        <rect x="20" y="95" width="225" height="65" rx="6" fill="#a78bfa15" stroke="#a78bfa" strokeWidth="1.5" />
+        <text x="132" y="113" textAnchor="middle" fill="#a78bfa" fontSize="9" fontWeight="600">Keep-Alive</text>
+        <text x="132" y="130" textAnchor="middle" fill="#a1a1aa" fontSize="7">Ping/Pong frames (30-60s)</text>
+        <text x="132" y="145" textAnchor="middle" fill="#a1a1aa" fontSize="7">Detect dead connections</text>
+        <text x="132" y="158" textAnchor="middle" fill="#a1a1aa" fontSize="6">Handle reconnection with backoff</text>
+        <rect x="255" y="95" width="225" height="65" rx="6" fill="#22d3ee15" stroke="#22d3ee" strokeWidth="1.5" />
+        <text x="367" y="113" textAnchor="middle" fill="#22d3ee" fontSize="9" fontWeight="600">Scaling</text>
+        <text x="367" y="130" textAnchor="middle" fill="#a1a1aa" fontSize="7">Sticky sessions (IP hash)</text>
+        <text x="367" y="145" textAnchor="middle" fill="#a1a1aa" fontSize="7">Redis Pub/Sub for broadcast</text>
+        <text x="367" y="158" textAnchor="middle" fill="#a1a1aa" fontSize="6">Connection limits per server (~65K)</text>
+        <rect x="20" y="175" width="460" height="50" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="195" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Companies: Discord (millions of connections), Slack, Figma, Notion</text>
+        <text x="250" y="215" textAnchor="middle" fill="#71717a" fontSize="7">Socket.IO: Auto-fallback | ws: Node.js library | AWS API Gateway: Managed WebSocket</text>
+      </svg>
+    ),
+    cicdpipe: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">CI/CD Pipeline - From Code to Production</text>
+        {[
+          { x: 20, y: 35, name: 'Plan', desc: 'Jira, Linear', color: '#a78bfa' },
+          { x: 100, y: 35, name: 'Code', desc: 'Git, IDE', color: '#60a5fa' },
+          { x: 180, y: 35, name: 'Build', desc: 'Compile, Docker', color: '#4ade80' },
+          { x: 260, y: 35, name: 'Test', desc: 'Unit, Integration', color: '#fbbf24' },
+          { x: 340, y: 35, name: 'Release', desc: 'Tag, Artifact', color: '#f472b6' },
+          { x: 420, y: 35, name: 'Deploy', desc: 'K8s, Lambda', color: '#22d3ee' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="70" height="45" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 35} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="7" fontWeight="600">{n.name}</text>
+            <text x={n.x + 35} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="5">{n.desc}</text>
+            {i < 5 && <path d={`M${n.x + 70} ${n.y + 22} L${n.x + 80} ${n.y + 22}`} stroke="#3f3f46" strokeWidth="1" />}
+          </g>
+        ))}
+        <rect x="20" y="95" width="225" height="75" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="132" y="112" textAnchor="middle" fill="#4ade80" fontSize="9" fontWeight="600">CI (Continuous Integration)</text>
+        <text x="132" y="130" textAnchor="middle" fill="#a1a1aa" fontSize="7">Merge often → Auto build → Auto test</text>
+        <text x="132" y="148" textAnchor="middle" fill="#71717a" fontSize="6">Tools: GitHub Actions, Jenkins, GitLab CI</text>
+        <text x="132" y="163" textAnchor="middle" fill="#71717a" fontSize="6">CircleCI, Travis CI, Azure DevOps</text>
+        <rect x="255" y="95" width="225" height="75" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="367" y="112" textAnchor="middle" fill="#60a5fa" fontSize="9" fontWeight="600">CD (Continuous Delivery/Deploy)</text>
+        <text x="367" y="130" textAnchor="middle" fill="#a1a1aa" fontSize="7">Delivery: Deploy-ready artifacts</text>
+        <text x="367" y="148" textAnchor="middle" fill="#a1a1aa" fontSize="7">Deployment: Auto push to prod</text>
+        <text x="367" y="163" textAnchor="middle" fill="#71717a" fontSize="6">ArgoCD, Spinnaker, Flux</text>
+        <rect x="20" y="185" width="460" height="60" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="205" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Best Practices</text>
+        <text x="250" y="225" textAnchor="middle" fill="#71717a" fontSize="7">Fast feedback (&lt;10 min) | Trunk-based development | Feature flags | Canary/Blue-green deploys</text>
+        <text x="250" y="238" textAnchor="middle" fill="#71717a" fontSize="6">Amazon: Deploy every 11.7 seconds | Netflix: Full CD with canary</text>
+      </svg>
+    ),
+    configiac: (
+      <svg viewBox="0 0 500 240" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Configuration Management vs Infrastructure as Code</text>
+        <rect x="20" y="35" width="220" height="100" rx="6" fill="#a78bfa15" stroke="#a78bfa" strokeWidth="1.5" />
+        <text x="130" y="55" textAnchor="middle" fill="#a78bfa" fontSize="10" fontWeight="600">Config Management</text>
+        <text x="130" y="75" textAnchor="middle" fill="#a1a1aa" fontSize="7">Manage existing servers</text>
+        <text x="130" y="92" textAnchor="middle" fill="#22d3ee" fontSize="7">Ansible, Chef, Puppet, Salt</text>
+        <text x="130" y="109" textAnchor="middle" fill="#71717a" fontSize="6">Mutable: Update in place</text>
+        <text x="130" y="124" textAnchor="middle" fill="#71717a" fontSize="6">Agent or agentless (SSH)</text>
+        <rect x="260" y="35" width="220" height="100" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="370" y="55" textAnchor="middle" fill="#4ade80" fontSize="10" fontWeight="600">Infrastructure as Code</text>
+        <text x="370" y="75" textAnchor="middle" fill="#a1a1aa" fontSize="7">Provision infrastructure</text>
+        <text x="370" y="92" textAnchor="middle" fill="#22d3ee" fontSize="7">Terraform, Pulumi, CloudFormation</text>
+        <text x="370" y="109" textAnchor="middle" fill="#71717a" fontSize="6">Immutable: Replace, dont update</text>
+        <text x="370" y="124" textAnchor="middle" fill="#71717a" fontSize="6">Declarative state management</text>
+        <rect x="20" y="150" width="460" height="75" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="170" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Tools Comparison</text>
+        {[
+          { x: 50, name: 'Terraform', desc: 'Cloud-agnostic', color: '#a78bfa' },
+          { x: 165, name: 'Ansible', desc: 'Agentless, YAML', color: '#f472b6' },
+          { x: 280, name: 'Pulumi', desc: 'Real languages', color: '#4ade80' },
+          { x: 395, name: 'CDK', desc: 'AWS native', color: '#fb923c' }
+        ].map((t, i) => (
+          <g key={i}>
+            <text x={t.x} y={195} textAnchor="middle" fill={t.color} fontSize="8" fontWeight="600">{t.name}</text>
+            <text x={t.x} y={212} textAnchor="middle" fill="#71717a" fontSize="6">{t.desc}</text>
+          </g>
+        ))}
+      </svg>
+    ),
+    dockerdeep: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Docker Architecture - Layers, Daemon, Registry</text>
+        {[
+          { x: 20, y: 35, name: 'Docker Client', desc: 'CLI commands', color: '#60a5fa' },
+          { x: 180, y: 35, name: 'Docker Daemon', desc: 'Manages containers', color: '#4ade80' },
+          { x: 340, y: 35, name: 'Registry', desc: 'Image storage', color: '#f472b6' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="50" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 20} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 38} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+          </g>
+        ))}
+        <path d="M160 60 L180 60" stroke="#3f3f46" strokeWidth="1" />
+        <path d="M320 60 L340 60" stroke="#3f3f46" strokeWidth="1" strokeDasharray="3,3" />
+        <rect x="20" y="100" width="225" height="80" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="132" y="118" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Image Layers</text>
+        <text x="132" y="138" textAnchor="middle" fill="#fb923c" fontSize="7">Layer 4: CMD, COPY app</text>
+        <text x="132" y="153" textAnchor="middle" fill="#a78bfa" fontSize="7">Layer 3: npm install</text>
+        <text x="132" y="168" textAnchor="middle" fill="#22d3ee" fontSize="7">Layer 2: Base image</text>
+        <text x="132" y="178" textAnchor="middle" fill="#71717a" fontSize="6">Layers cached, shared</text>
+        <rect x="255" y="100" width="225" height="80" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="367" y="118" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Container Runtime</text>
+        <text x="367" y="138" textAnchor="middle" fill="#a1a1aa" fontSize="7">containerd: Industry standard</text>
+        <text x="367" y="153" textAnchor="middle" fill="#a1a1aa" fontSize="7">runc: OCI runtime</text>
+        <text x="367" y="168" textAnchor="middle" fill="#a1a1aa" fontSize="7">cgroups: Resource limits</text>
+        <text x="367" y="178" textAnchor="middle" fill="#71717a" fontSize="6">namespaces: Isolation</text>
+        <rect x="20" y="195" width="460" height="50" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="215" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Best Practices: Multi-stage builds, .dockerignore, non-root user, minimal base image</text>
+        <text x="250" y="235" textAnchor="middle" fill="#71717a" fontSize="7">Used by: Every modern company | Registries: Docker Hub, ECR, GCR, ACR</text>
+      </svg>
+    ),
+    gitworkflows: (
+      <svg viewBox="0 0 500 240" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Git Workflows - Git Flow, GitHub Flow, Trunk-Based</text>
+        <rect x="20" y="35" width="145" height="100" rx="6" fill="#a78bfa15" stroke="#a78bfa" strokeWidth="1.5" />
+        <text x="92" y="55" textAnchor="middle" fill="#a78bfa" fontSize="9" fontWeight="600">Git Flow</text>
+        <text x="92" y="72" textAnchor="middle" fill="#a1a1aa" fontSize="6">main, develop, feature/</text>
+        <text x="92" y="85" textAnchor="middle" fill="#a1a1aa" fontSize="6">release/, hotfix/</text>
+        <text x="92" y="102" textAnchor="middle" fill="#4ade80" fontSize="6">✓ Versioned releases</text>
+        <text x="92" y="118" textAnchor="middle" fill="#f472b6" fontSize="6">✗ Complex, slow</text>
+        <text x="92" y="130" textAnchor="middle" fill="#71717a" fontSize="6">Best: Versioned software</text>
+        <rect x="177" y="35" width="145" height="100" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="250" y="55" textAnchor="middle" fill="#4ade80" fontSize="9" fontWeight="600">GitHub Flow</text>
+        <text x="250" y="72" textAnchor="middle" fill="#a1a1aa" fontSize="6">main + feature branches</text>
+        <text x="250" y="85" textAnchor="middle" fill="#a1a1aa" fontSize="6">PR → Review → Merge</text>
+        <text x="250" y="102" textAnchor="middle" fill="#4ade80" fontSize="6">✓ Simple, fast</text>
+        <text x="250" y="118" textAnchor="middle" fill="#f472b6" fontSize="6">✗ No release branches</text>
+        <text x="250" y="130" textAnchor="middle" fill="#71717a" fontSize="6">Best: Web apps, SaaS</text>
+        <rect x="335" y="35" width="145" height="100" rx="6" fill="#60a5fa15" stroke="#60a5fa" strokeWidth="1.5" />
+        <text x="407" y="55" textAnchor="middle" fill="#60a5fa" fontSize="9" fontWeight="600">Trunk-Based</text>
+        <text x="407" y="72" textAnchor="middle" fill="#a1a1aa" fontSize="6">All commits to main</text>
+        <text x="407" y="85" textAnchor="middle" fill="#a1a1aa" fontSize="6">Feature flags, short PRs</text>
+        <text x="407" y="102" textAnchor="middle" fill="#4ade80" fontSize="6">✓ Fastest CI/CD</text>
+        <text x="407" y="118" textAnchor="middle" fill="#f472b6" fontSize="6">✗ Needs mature CI/CD</text>
+        <text x="407" y="130" textAnchor="middle" fill="#71717a" fontSize="6">Best: High velocity teams</text>
+        <rect x="20" y="150" width="460" height="75" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="170" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Company Examples</text>
+        <text x="250" y="190" textAnchor="middle" fill="#71717a" fontSize="7">Git Flow: Versioned libraries | GitHub Flow: GitHub, most startups | Trunk: Google, Meta, Netflix</text>
+        <text x="250" y="210" textAnchor="middle" fill="#71717a" fontSize="7">Key: Trunk-based with feature flags enables fastest iteration with safety</text>
+      </svg>
+    ),
+    webperf: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Web Performance Metrics - Core Web Vitals & More</text>
+        {[
+          { x: 20, y: 35, name: 'FCP', full: 'First Contentful Paint', target: '< 1.8s', color: '#4ade80' },
+          { x: 180, y: 35, name: 'LCP', full: 'Largest Contentful Paint', target: '< 2.5s', color: '#60a5fa' },
+          { x: 340, y: 35, name: 'CLS', full: 'Cumulative Layout Shift', target: '< 0.1', color: '#f472b6' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="60" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="10" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.full}</text>
+            <text x={n.x + 70} y={n.y + 50} textAnchor="middle" fill="#22d3ee" fontSize="7">{n.target}</text>
+          </g>
+        ))}
+        {[
+          { x: 20, y: 110, name: 'TTFB', full: 'Time to First Byte', target: '< 800ms', color: '#fb923c' },
+          { x: 180, y: 110, name: 'INP', full: 'Interaction to Next Paint', target: '< 200ms', color: '#a78bfa' },
+          { x: 340, y: 110, name: 'TBT', full: 'Total Blocking Time', target: '< 200ms', color: '#22d3ee' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="60" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="10" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.full}</text>
+            <text x={n.x + 70} y={n.y + 50} textAnchor="middle" fill="#22d3ee" fontSize="7">{n.target}</text>
+          </g>
+        ))}
+        <rect x="20" y="185" width="460" height="60" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="205" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Core Web Vitals (Google ranking factor): LCP, INP, CLS</text>
+        <text x="250" y="225" textAnchor="middle" fill="#71717a" fontSize="7">Tools: Lighthouse, PageSpeed Insights, Web Vitals extension, Chrome DevTools</text>
+        <text x="250" y="238" textAnchor="middle" fill="#71717a" fontSize="6">Real User Monitoring: Datadog RUM, New Relic, Sentry Performance</text>
+      </svg>
+    ),
+    frontendperf: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Frontend Performance - 8 Optimization Techniques</text>
+        {[
+          { x: 20, y: 30, name: 'Code Splitting', desc: 'Load only needed JS', color: '#4ade80' },
+          { x: 180, y: 30, name: 'Lazy Loading', desc: 'Defer below-fold images', color: '#60a5fa' },
+          { x: 340, y: 30, name: 'Compression', desc: 'Brotli/Gzip assets', color: '#f472b6' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="50" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="8" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+          </g>
+        ))}
+        {[
+          { x: 20, y: 95, name: 'Image Optimization', desc: 'WebP, srcset, CDN', color: '#fb923c' },
+          { x: 180, y: 95, name: 'Caching', desc: 'Browser + CDN cache', color: '#a78bfa' },
+          { x: 340, y: 95, name: 'Minification', desc: 'Remove whitespace', color: '#22d3ee' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="50" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="8" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+          </g>
+        ))}
+        {[
+          { x: 20, y: 160, name: 'Tree Shaking', desc: 'Remove unused code', color: '#fbbf24' },
+          { x: 180, y: 160, name: 'Preconnect', desc: 'Early DNS/TLS hints', color: '#f472b6' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="50" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="8" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+          </g>
+        ))}
+        <rect x="340" y="160" width="140" height="85" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="410" y="180" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">Tools</text>
+        <text x="410" y="198" textAnchor="middle" fill="#71717a" fontSize="6">Webpack, Vite, esbuild</text>
+        <text x="410" y="213" textAnchor="middle" fill="#71717a" fontSize="6">Parcel, Rollup</text>
+        <text x="410" y="228" textAnchor="middle" fill="#71717a" fontSize="6">Next.js, Nuxt</text>
+      </svg>
+    ),
+    latencynums: (
+      <svg viewBox="0 0 500 280" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Latency Numbers Every Programmer Should Know</text>
+        {[
+          { y: 35, name: 'L1 cache reference', time: '0.5 ns', color: '#4ade80', bar: 2 },
+          { y: 55, name: 'Branch mispredict', time: '5 ns', color: '#4ade80', bar: 3 },
+          { y: 75, name: 'L2 cache reference', time: '7 ns', color: '#60a5fa', bar: 4 },
+          { y: 95, name: 'Mutex lock/unlock', time: '25 ns', color: '#60a5fa', bar: 8 },
+          { y: 115, name: 'Main memory reference', time: '100 ns', color: '#fbbf24', bar: 20 },
+          { y: 135, name: 'SSD random read', time: '150 μs', color: '#fb923c', bar: 60 },
+          { y: 155, name: 'Read 1MB from memory', time: '250 μs', color: '#fb923c', bar: 80 },
+          { y: 175, name: 'Round trip same DC', time: '500 μs', color: '#f472b6', bar: 100 },
+          { y: 195, name: 'Read 1MB from SSD', time: '1 ms', color: '#f472b6', bar: 140 },
+          { y: 215, name: 'HDD seek', time: '10 ms', color: '#a78bfa', bar: 200 },
+          { y: 235, name: 'CA to Netherlands', time: '150 ms', color: '#22d3ee', bar: 300 }
+        ].map((n, i) => (
+          <g key={i}>
+            <text x="155" y={n.y + 10} textAnchor="end" fill="#a1a1aa" fontSize="7">{n.name}</text>
+            <rect x="160" y={n.y} width={n.bar} height="15" rx="2" fill={n.color} />
+            <text x={170 + n.bar} y={n.y + 10} fill={n.color} fontSize="7">{n.time}</text>
+          </g>
+        ))}
+        <text x="250" y="270" textAnchor="middle" fill="#71717a" fontSize="7">Source: Jeff Dean (Google) | Memory is 100x faster than SSD, 10000x faster than HDD</text>
+      </svg>
+    ),
+    latencyreduce: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Latency Reduction Strategies</text>
+        {[
+          { x: 20, y: 35, name: 'Caching', desc: 'In-memory, Redis, CDN', impact: '10-100x faster', color: '#4ade80' },
+          { x: 180, y: 35, name: 'Indexing', desc: 'B-tree, hash indexes', impact: '100-1000x faster', color: '#60a5fa' },
+          { x: 340, y: 35, name: 'CDN', desc: 'Edge serving', impact: '2-10x faster', color: '#f472b6' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="65" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+            <text x={n.x + 70} y={n.y + 52} textAnchor="middle" fill="#22d3ee" fontSize="7">{n.impact}</text>
+          </g>
+        ))}
+        {[
+          { x: 20, y: 115, name: 'Async Processing', desc: 'Queue background work', impact: 'Non-blocking', color: '#fb923c' },
+          { x: 180, y: 115, name: 'Connection Pool', desc: 'Reuse DB connections', impact: '5-20x faster', color: '#a78bfa' },
+          { x: 340, y: 115, name: 'Data Locality', desc: 'Compute near data', impact: '10-50x faster', color: '#22d3ee' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="65" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+            <text x={n.x + 70} y={n.y + 52} textAnchor="middle" fill="#22d3ee" fontSize="7">{n.impact}</text>
+          </g>
+        ))}
+        <rect x="20" y="195" width="460" height="50" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="215" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Priority: Cache hot data → Index queries → Use CDN → Async where possible</text>
+        <text x="250" y="235" textAnchor="middle" fill="#71717a" fontSize="7">Measure first (APM tools), optimize bottlenecks, avoid premature optimization</text>
+      </svg>
+    ),
+    // Remaining Phase 2 diagrams
+    cacheevict: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Cache Eviction Policies Comparison</text>
+        {[
+          { x: 20, y: 35, name: 'LRU', full: 'Least Recently Used', desc: 'Evict oldest access', color: '#4ade80' },
+          { x: 180, y: 35, name: 'LFU', full: 'Least Frequently Used', desc: 'Evict lowest count', color: '#60a5fa' },
+          { x: 340, y: 35, name: 'FIFO', full: 'First In First Out', desc: 'Evict oldest entry', color: '#f472b6' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="60" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="10" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.full}</text>
+            <text x={n.x + 70} y={n.y + 50} textAnchor="middle" fill="#71717a" fontSize="6">{n.desc}</text>
+          </g>
+        ))}
+        {[
+          { x: 20, y: 110, name: 'TTL', full: 'Time To Live', desc: 'Expire after time', color: '#fb923c' },
+          { x: 180, y: 110, name: 'Random', full: 'Random Eviction', desc: 'Simple, fast', color: '#a78bfa' },
+          { x: 340, y: 110, name: 'SLRU', full: 'Segmented LRU', desc: 'Protected segment', color: '#22d3ee' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="60" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="10" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.full}</text>
+            <text x={n.x + 70} y={n.y + 50} textAnchor="middle" fill="#71717a" fontSize="6">{n.desc}</text>
+          </g>
+        ))}
+        <rect x="20" y="185" width="460" height="60" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="205" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Common Choices</text>
+        <text x="250" y="225" textAnchor="middle" fill="#71717a" fontSize="7">General purpose: LRU | Scan-resistant: SLRU | Simple: TTL + LRU</text>
+        <text x="250" y="238" textAnchor="middle" fill="#71717a" fontSize="6">Redis: allkeys-lru, volatile-lru, allkeys-lfu, volatile-ttl, noeviction</text>
+      </svg>
+    ),
+    twoTierCache: (
+      <svg viewBox="0 0 500 220" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Two-Tier Caching Architecture</text>
+        <rect x="100" y="35" width="300" height="45" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="250" y="55" textAnchor="middle" fill="#4ade80" fontSize="10" fontWeight="600">L1: In-Process Cache</text>
+        <text x="250" y="72" textAnchor="middle" fill="#a1a1aa" fontSize="7">Caffeine, Guava (Java) | lru-cache (Node) | ~1ms</text>
+        <path d="M250 80 L250 95" stroke="#3f3f46" strokeWidth="1.5" markerEnd="url(#arrow)" />
+        <rect x="100" y="95" width="300" height="45" rx="6" fill="#60a5fa15" stroke="#60a5fa" strokeWidth="1.5" />
+        <text x="250" y="115" textAnchor="middle" fill="#60a5fa" fontSize="10" fontWeight="600">L2: Distributed Cache</text>
+        <text x="250" y="132" textAnchor="middle" fill="#a1a1aa" fontSize="7">Redis, Memcached | Network hop | ~1-5ms</text>
+        <rect x="20" y="155" width="225" height="50" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="132" y="173" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">Benefits</text>
+        <text x="132" y="190" textAnchor="middle" fill="#71717a" fontSize="7">Reduce network calls, higher throughput</text>
+        <rect x="255" y="155" width="225" height="50" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="367" y="173" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">Challenges</text>
+        <text x="367" y="190" textAnchor="middle" fill="#71717a" fontSize="7">Invalidation complexity, memory per instance</text>
+      </svg>
+    ),
+    rediscluster: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Redis Sentinel vs Redis Cluster</text>
+        <rect x="20" y="35" width="220" height="100" rx="6" fill="#f472b615" stroke="#f472b6" strokeWidth="1.5" />
+        <text x="130" y="55" textAnchor="middle" fill="#f472b6" fontSize="10" fontWeight="600">Redis Sentinel</text>
+        <text x="130" y="75" textAnchor="middle" fill="#a1a1aa" fontSize="7">High availability, auto-failover</text>
+        <text x="130" y="92" textAnchor="middle" fill="#71717a" fontSize="6">1 master + N replicas</text>
+        <text x="130" y="107" textAnchor="middle" fill="#71717a" fontSize="6">3+ sentinels for quorum</text>
+        <text x="130" y="122" textAnchor="middle" fill="#22d3ee" fontSize="6">Use: HA without sharding</text>
+        <rect x="260" y="35" width="220" height="100" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="370" y="55" textAnchor="middle" fill="#4ade80" fontSize="10" fontWeight="600">Redis Cluster</text>
+        <text x="370" y="75" textAnchor="middle" fill="#a1a1aa" fontSize="7">Sharding + High availability</text>
+        <text x="370" y="92" textAnchor="middle" fill="#71717a" fontSize="6">16384 hash slots distributed</text>
+        <text x="370" y="107" textAnchor="middle" fill="#71717a" fontSize="6">Min 3 masters + replicas</text>
+        <text x="370" y="122" textAnchor="middle" fill="#22d3ee" fontSize="6">Use: Scale beyond single node</text>
+        <rect x="20" y="150" width="460" height="95" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="170" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Cluster Key Distribution</text>
+        <text x="250" y="190" textAnchor="middle" fill="#a1a1aa" fontSize="7">slot = CRC16(key) mod 16384</text>
+        <text x="250" y="210" textAnchor="middle" fill="#71717a" fontSize="7">Hash tags: {"{"}user:1{"}"}:session and {"{"}user:1{"}"}:cart → same slot</text>
+        <text x="250" y="230" textAnchor="middle" fill="#71717a" fontSize="6">Multi-key operations only work if keys are on same slot</text>
+      </svg>
+    ),
+    hapatterns: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">High Availability Patterns</text>
+        {[
+          { x: 20, y: 35, name: 'Active-Active', desc: 'Both serve traffic', rto: 'Zero', color: '#4ade80' },
+          { x: 180, y: 35, name: 'Active-Passive', desc: 'Standby takes over', rto: 'Minutes', color: '#60a5fa' },
+          { x: 340, y: 35, name: 'Active-Warm', desc: 'Warm ready quickly', rto: 'Seconds', color: '#f472b6' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="65" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+            <text x={n.x + 70} y={n.y + 52} textAnchor="middle" fill="#22d3ee" fontSize="7">RTO: {n.rto}</text>
+          </g>
+        ))}
+        <rect x="20" y="115" width="225" height="60" rx="6" fill="#fb923c15" stroke="#fb923c" strokeWidth="1.5" />
+        <text x="132" y="133" textAnchor="middle" fill="#fb923c" fontSize="9" fontWeight="600">RTO (Recovery Time Objective)</text>
+        <text x="132" y="150" textAnchor="middle" fill="#a1a1aa" fontSize="7">Max acceptable downtime</text>
+        <text x="132" y="165" textAnchor="middle" fill="#71717a" fontSize="6">E-commerce: minutes | Finance: seconds</text>
+        <rect x="255" y="115" width="225" height="60" rx="6" fill="#a78bfa15" stroke="#a78bfa" strokeWidth="1.5" />
+        <text x="367" y="133" textAnchor="middle" fill="#a78bfa" fontSize="9" fontWeight="600">RPO (Recovery Point Objective)</text>
+        <text x="367" y="150" textAnchor="middle" fill="#a1a1aa" fontSize="7">Max acceptable data loss</text>
+        <text x="367" y="165" textAnchor="middle" fill="#71717a" fontSize="6">Sync replication: zero | Async: minutes</text>
+        <rect x="20" y="190" width="460" height="55" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="210" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">SLA: 99.9% = 8.7h/year | 99.99% = 52min/year | 99.999% = 5min/year</text>
+        <text x="250" y="230" textAnchor="middle" fill="#71717a" fontSize="7">AWS, Google Cloud: Multi-AZ for 99.99% | Multi-region for 99.999%</text>
+      </svg>
+    ),
+    archpatterns: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Software Architecture Patterns</text>
+        {[
+          { x: 20, y: 35, name: 'Microkernel', desc: 'Core + plugins', use: 'IDEs, browsers', color: '#4ade80' },
+          { x: 180, y: 35, name: 'Space-Based', desc: 'Distributed memory', use: 'High volume', color: '#60a5fa' },
+          { x: 340, y: 35, name: 'Pipe-Filter', desc: 'Data transforms', use: 'ETL, compilers', color: '#f472b6' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="65" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+            <text x={n.x + 70} y={n.y + 52} textAnchor="middle" fill="#22d3ee" fontSize="6">{n.use}</text>
+          </g>
+        ))}
+        {[
+          { x: 20, y: 115, name: 'Event-Driven', desc: 'Async events', use: 'Real-time', color: '#fb923c' },
+          { x: 180, y: 115, name: 'Hexagonal', desc: 'Ports & adapters', use: 'Testable core', color: '#a78bfa' },
+          { x: 340, y: 115, name: 'CQRS', desc: 'Read/write split', use: 'High read load', color: '#22d3ee' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="65" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+            <text x={n.x + 70} y={n.y + 52} textAnchor="middle" fill="#22d3ee" fontSize="6">{n.use}</text>
+          </g>
+        ))}
+        <rect x="20" y="195" width="460" height="50" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="215" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Choose based on: Team size, scalability needs, domain complexity</text>
+        <text x="250" y="235" textAnchor="middle" fill="#71717a" fontSize="7">Start simple (layered), evolve as needed. Most systems use hybrid approaches.</text>
+      </svg>
+    ),
+    faulttolerant: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Fault-Tolerant System Principles</text>
+        {[
+          { x: 20, y: 35, name: 'Redundancy', desc: 'Multiple instances', icon: '📦📦', color: '#4ade80' },
+          { x: 180, y: 35, name: 'Isolation', desc: 'Bulkhead pattern', icon: '🚢', color: '#60a5fa' },
+          { x: 340, y: 35, name: 'Failover', desc: 'Auto switch to backup', icon: '🔄', color: '#f472b6' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="60" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+            <text x={n.x + 70} y={n.y + 50} textAnchor="middle" fontSize="12">{n.icon}</text>
+          </g>
+        ))}
+        {[
+          { x: 20, y: 110, name: 'Circuit Breaker', desc: 'Stop cascading failures', icon: '🔌', color: '#fb923c' },
+          { x: 180, y: 110, name: 'Retry + Backoff', desc: 'Handle transient errors', icon: '🔁', color: '#a78bfa' },
+          { x: 340, y: 110, name: 'Timeout', desc: 'Bound response time', icon: '⏱️', color: '#22d3ee' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="60" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+            <text x={n.x + 70} y={n.y + 50} textAnchor="middle" fontSize="12">{n.icon}</text>
+          </g>
+        ))}
+        <rect x="20" y="185" width="460" height="60" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="205" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Netflix: Hystrix (now Resilience4j) | AWS: Auto-scaling groups</text>
+        <text x="250" y="225" textAnchor="middle" fill="#71717a" fontSize="7">Chaos Engineering: Test failures proactively (Chaos Monkey, LitmusChaos)</text>
+        <text x="250" y="238" textAnchor="middle" fill="#71717a" fontSize="6">Design for failure: Assume everything can and will fail</text>
+      </svg>
+    ),
+    solidprinciples: (
+      <svg viewBox="0 0 500 280" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">SOLID Principles</text>
+        {[
+          { y: 35, letter: 'S', name: 'Single Responsibility', desc: 'One class, one reason to change', color: '#4ade80' },
+          { y: 75, letter: 'O', name: 'Open/Closed', desc: 'Open for extension, closed for modification', color: '#60a5fa' },
+          { y: 115, letter: 'L', name: 'Liskov Substitution', desc: 'Subtypes must be substitutable', color: '#f472b6' },
+          { y: 155, letter: 'I', name: 'Interface Segregation', desc: 'Many specific interfaces > one general', color: '#fb923c' },
+          { y: 195, letter: 'D', name: 'Dependency Inversion', desc: 'Depend on abstractions, not concretions', color: '#a78bfa' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x="20" y={n.y} width="40" height="30" rx="4" fill={`${n.color}30`} stroke={n.color} strokeWidth="1.5" />
+            <text x="40" y={n.y + 20} textAnchor="middle" fill={n.color} fontSize="14" fontWeight="700">{n.letter}</text>
+            <text x="75" y={n.y + 14} fill="#fafafa" fontSize="9" fontWeight="600">{n.name}</text>
+            <text x="75" y={n.y + 27} fill="#a1a1aa" fontSize="7">{n.desc}</text>
+          </g>
+        ))}
+        <rect x="20" y="235" width="460" height="30" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="255" textAnchor="middle" fill="#71717a" fontSize="7">Apply when code changes frequently. Dont over-engineer simple code.</text>
+      </svg>
+    ),
+    kafkausecases: (
+      <svg viewBox="0 0 500 240" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Kafka Use Cases</text>
+        {[
+          { x: 20, y: 35, name: 'Log Aggregation', desc: 'Collect logs from services', company: 'LinkedIn, Uber', color: '#4ade80' },
+          { x: 180, y: 35, name: 'Event Sourcing', desc: 'Store events as source of truth', company: 'Banks, Trading', color: '#60a5fa' },
+          { x: 340, y: 35, name: 'Stream Processing', desc: 'Real-time transformations', company: 'Netflix, Uber', color: '#f472b6' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="70" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+            <text x={n.x + 70} y={n.y + 55} textAnchor="middle" fill="#71717a" fontSize="6">{n.company}</text>
+          </g>
+        ))}
+        {[
+          { x: 20, y: 120, name: 'CDC', desc: 'Database change capture', company: 'Debezium', color: '#fb923c' },
+          { x: 180, y: 120, name: 'Microservices', desc: 'Async communication', company: 'Everyone', color: '#a78bfa' },
+          { x: 340, y: 120, name: 'Metrics/Monitoring', desc: 'Time-series ingestion', company: 'InfluxDB, Datadog', color: '#22d3ee' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="70" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+            <text x={n.x + 70} y={n.y + 55} textAnchor="middle" fill="#71717a" fontSize="6">{n.company}</text>
+          </g>
+        ))}
+        <text x="250" y="220" textAnchor="middle" fill="#71717a" fontSize="7">LinkedIn: 7T+ messages/day | Uber: 4T messages/day | Netflix: 700B events/day</text>
+      </svg>
+    ),
+    cloudmsgpatterns: (
+      <svg viewBox="0 0 500 220" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Cloud Messaging Patterns</text>
+        {[
+          { x: 20, y: 35, name: 'Async Request-Reply', desc: 'Request → Queue → Reply queue', color: '#4ade80' },
+          { x: 180, y: 35, name: 'Claim Check', desc: 'Store payload, pass reference', color: '#60a5fa' },
+          { x: 340, y: 35, name: 'Priority Queue', desc: 'High priority processed first', color: '#f472b6' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="55" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="8" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 38} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+          </g>
+        ))}
+        {[
+          { x: 20, y: 105, name: 'Competing Consumers', desc: 'Multiple workers, one message', color: '#fb923c' },
+          { x: 180, y: 105, name: 'Pub/Sub', desc: 'One message, many subscribers', color: '#a78bfa' },
+          { x: 340, y: 105, name: 'Dead Letter Queue', desc: 'Failed messages for review', color: '#22d3ee' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="55" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="8" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 38} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+          </g>
+        ))}
+        <rect x="20" y="175" width="460" height="30" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="195" textAnchor="middle" fill="#71717a" fontSize="7">Services: AWS SQS/SNS, Azure Service Bus, Google Pub/Sub, RabbitMQ</text>
+      </svg>
+    ),
+    kafka101: (
+      <svg viewBox="0 0 500 240" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Kafka 101 - Core Concepts</text>
+        {[
+          { x: 20, y: 35, name: 'Producer', desc: 'Publishes messages to topics', color: '#4ade80' },
+          { x: 180, y: 35, name: 'Topic', desc: 'Category of messages', color: '#60a5fa' },
+          { x: 340, y: 35, name: 'Consumer', desc: 'Reads messages from topics', color: '#f472b6' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="50" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 20} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 38} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+          </g>
+        ))}
+        <path d="M160 60 L180 60" stroke="#3f3f46" strokeWidth="1.5" markerEnd="url(#arrow)" />
+        <path d="M320 60 L340 60" stroke="#3f3f46" strokeWidth="1.5" markerEnd="url(#arrow)" />
+        {[
+          { x: 20, y: 100, name: 'Partition', desc: 'Ordered, immutable log', color: '#fb923c' },
+          { x: 180, y: 100, name: 'Broker', desc: 'Kafka server node', color: '#a78bfa' },
+          { x: 340, y: 100, name: 'Consumer Group', desc: 'Coordinated consumers', color: '#22d3ee' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="50" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 20} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 38} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+          </g>
+        ))}
+        <rect x="20" y="165" width="460" height="60" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="185" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Key Guarantees</text>
+        <text x="250" y="205" textAnchor="middle" fill="#71717a" fontSize="7">Ordering within partition | At-least-once delivery | Durability via replication</text>
+        <text x="250" y="218" textAnchor="middle" fill="#71717a" fontSize="6">Partition count determines max parallelism | Messages retained by time or size</text>
+      </svg>
+    ),
+    creditcardfees: (
+      <svg viewBox="0 0 500 220" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Credit Card Payment Economics</text>
+        <rect x="20" y="35" width="460" height="50" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="250" y="55" textAnchor="middle" fill="#4ade80" fontSize="9" fontWeight="600">Merchant Discount Rate (MDR): 1.5% - 3.5%</text>
+        <text x="250" y="75" textAnchor="middle" fill="#a1a1aa" fontSize="7">What merchant pays per transaction</text>
+        {[
+          { x: 20, y: 100, name: 'Interchange', pct: '1.5-2%', to: '→ Issuing Bank', color: '#60a5fa' },
+          { x: 180, y: 100, name: 'Assessment', pct: '0.13-0.15%', to: '→ Card Network', color: '#f472b6' },
+          { x: 340, y: 100, name: 'Processor', pct: '0.2-0.5%', to: '→ Acquirer', color: '#fb923c' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="55" rx="5" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="8" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#22d3ee" fontSize="8">{n.pct}</text>
+            <text x={n.x + 70} y={n.y + 48} textAnchor="middle" fill="#71717a" fontSize="6">{n.to}</text>
+          </g>
+        ))}
+        <rect x="20" y="170" width="460" height="35" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="192" textAnchor="middle" fill="#71717a" fontSize="7">Visa/Mastercard networks | Stripe, Square add ~0.5% | Debit cheaper than credit</text>
+      </svg>
+    ),
+    paymentgateway: (
+      <svg viewBox="0 0 500 240" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Payment Gateway Flow</text>
+        {[
+          { x: 20, y: 35, name: 'Customer', desc: 'Card details', color: '#60a5fa' },
+          { x: 115, y: 35, name: 'Merchant', desc: 'Checkout', color: '#4ade80' },
+          { x: 210, y: 35, name: 'Gateway', desc: 'Stripe, Adyen', color: '#f472b6' },
+          { x: 305, y: 35, name: 'Acquirer', desc: 'Bank', color: '#fb923c' },
+          { x: 400, y: 35, name: 'Issuer', desc: 'Card bank', color: '#a78bfa' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="85" height="50" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 42} y={n.y + 20} textAnchor="middle" fill={n.color} fontSize="8" fontWeight="600">{n.name}</text>
+            <text x={n.x + 42} y={n.y + 38} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+            {i < 4 && <path d={`M${n.x + 85} ${n.y + 25} L${n.x + 95} ${n.y + 25}`} stroke="#3f3f46" strokeWidth="1" />}
+          </g>
+        ))}
+        {[
+          { x: 20, y: 100, name: 'Authorization', desc: 'Verify funds, reserve amount', color: '#4ade80' },
+          { x: 180, y: 100, name: 'Capture', desc: 'Finalize transaction', color: '#60a5fa' },
+          { x: 340, y: 100, name: 'Settlement', desc: 'Move funds (T+1/2)', color: '#f472b6' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="50" rx="5" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 20} textAnchor="middle" fill={n.color} fontSize="8" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 38} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+          </g>
+        ))}
+        <rect x="20" y="165" width="460" height="60" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="185" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Key Considerations</text>
+        <text x="250" y="205" textAnchor="middle" fill="#71717a" fontSize="7">PCI DSS compliance | Tokenization | 3D Secure for fraud | Idempotency keys</text>
+        <text x="250" y="218" textAnchor="middle" fill="#71717a" fontSize="6">Stripe, Adyen, Braintree handle complexity. Never store raw card numbers.</text>
+      </svg>
+    ),
+    sensitivedata: (
+      <svg viewBox="0 0 500 240" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Sensitive Data Management</text>
+        {[
+          { x: 20, y: 35, name: 'Encryption', desc: 'At rest & in transit', icon: '🔐', color: '#4ade80' },
+          { x: 180, y: 35, name: 'Access Control', desc: 'RBAC, least privilege', icon: '🔑', color: '#60a5fa' },
+          { x: 340, y: 35, name: 'Audit Logging', desc: 'Who accessed what', icon: '📋', color: '#f472b6' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="60" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+            <text x={n.x + 70} y={n.y + 52} textAnchor="middle" fontSize="12">{n.icon}</text>
+          </g>
+        ))}
+        {[
+          { x: 20, y: 110, name: 'Tokenization', desc: 'Replace sensitive with tokens', icon: '🎫', color: '#fb923c' },
+          { x: 180, y: 110, name: 'Key Management', desc: 'KMS, rotation, HSM', icon: '🗝️', color: '#a78bfa' },
+          { x: 340, y: 110, name: 'Data Masking', desc: 'Hide in non-prod', icon: '🎭', color: '#22d3ee' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="60" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+            <text x={n.x + 70} y={n.y + 52} textAnchor="middle" fontSize="12">{n.icon}</text>
+          </g>
+        ))}
+        <rect x="20" y="185" width="460" height="40" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="205" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">GDPR: Right to erasure | PCI DSS: Card data | HIPAA: Health data</text>
+        <text x="250" y="218" textAnchor="middle" fill="#71717a" fontSize="6">AWS KMS, HashiCorp Vault, Azure Key Vault for key management</text>
+      </svg>
+    ),
+    btreedeep: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">B-Tree Index Deep Dive</text>
+        <rect x="175" y="30" width="150" height="35" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="250" y="52" textAnchor="middle" fill="#4ade80" fontSize="9" fontWeight="600">Root Node [10, 20]</text>
+        {[
+          { x: 50, y: 90, keys: '[3, 5, 7]', color: '#60a5fa' },
+          { x: 200, y: 90, keys: '[12, 15, 18]', color: '#60a5fa' },
+          { x: 350, y: 90, keys: '[25, 30, 40]', color: '#60a5fa' }
+        ].map((n, i) => (
+          <g key={i}>
+            <path d={`M250 65 L${n.x + 50} 90`} stroke="#3f3f46" strokeWidth="0.5" />
+            <rect x={n.x} y={n.y} width="100" height="30" rx="4" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 50} y={n.y + 20} textAnchor="middle" fill={n.color} fontSize="8">{n.keys}</text>
+          </g>
+        ))}
+        <rect x="20" y="140" width="225" height="55" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="132" y="158" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">Why B-Tree for Databases?</text>
+        <text x="132" y="175" textAnchor="middle" fill="#71717a" fontSize="6">Balanced: O(log n) lookup</text>
+        <text x="132" y="188" textAnchor="middle" fill="#71717a" fontSize="6">Disk-friendly: Large fan-out</text>
+        <rect x="255" y="140" width="225" height="55" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="367" y="158" textAnchor="middle" fill="#fafafa" fontSize="8" fontWeight="600">B+ Tree Variant</text>
+        <text x="367" y="175" textAnchor="middle" fill="#71717a" fontSize="6">Data only in leaves</text>
+        <text x="367" y="188" textAnchor="middle" fill="#71717a" fontSize="6">Leaves linked for range scans</text>
+        <rect x="20" y="210" width="460" height="35" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="230" textAnchor="middle" fill="#71717a" fontSize="7">PostgreSQL, MySQL InnoDB use B+ trees. SSDs make LSM trees competitive (RocksDB)</text>
+      </svg>
+    ),
+    nosqltypes: (
+      <svg viewBox="0 0 500 240" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">NoSQL Database Types</text>
+        {[
+          { x: 20, y: 35, name: 'Document', desc: 'JSON-like, flexible schema', examples: 'MongoDB, CouchDB', use: 'CMS, catalogs', color: '#4ade80' },
+          { x: 260, y: 35, name: 'Key-Value', desc: 'Simple key → value pairs', examples: 'Redis, DynamoDB', use: 'Caching, sessions', color: '#60a5fa' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="220" height="80" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 110} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="10" fontWeight="600">{n.name}</text>
+            <text x={n.x + 110} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+            <text x={n.x + 110} y={n.y + 52} textAnchor="middle" fill="#22d3ee" fontSize="6">{n.examples}</text>
+            <text x={n.x + 110} y={n.y + 68} textAnchor="middle" fill="#71717a" fontSize="6">{n.use}</text>
+          </g>
+        ))}
+        {[
+          { x: 20, y: 130, name: 'Wide-Column', desc: 'Column families, sparse data', examples: 'Cassandra, HBase', use: 'Time-series, IoT', color: '#f472b6' },
+          { x: 260, y: 130, name: 'Graph', desc: 'Nodes and relationships', examples: 'Neo4j, Neptune', use: 'Social, fraud', color: '#fb923c' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="220" height="80" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 110} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="10" fontWeight="600">{n.name}</text>
+            <text x={n.x + 110} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+            <text x={n.x + 110} y={n.y + 52} textAnchor="middle" fill="#22d3ee" fontSize="6">{n.examples}</text>
+            <text x={n.x + 110} y={n.y + 68} textAnchor="middle" fill="#71717a" fontSize="6">{n.use}</text>
+          </g>
+        ))}
+        <text x="250" y="230" textAnchor="middle" fill="#71717a" fontSize="7">Choose based on data model and access patterns, not hype</text>
+      </svg>
+    ),
+    starsnowflake: (
+      <svg viewBox="0 0 500 240" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Star Schema vs Snowflake Schema</text>
+        <rect x="20" y="35" width="220" height="130" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="130" y="55" textAnchor="middle" fill="#4ade80" fontSize="10" fontWeight="600">Star Schema</text>
+        <rect x="90" y="70" width="80" height="30" rx="4" fill="#fb923c25" stroke="#fb923c" />
+        <text x="130" y="90" textAnchor="middle" fill="#fb923c" fontSize="7">Fact Table</text>
+        {['Date', 'Product', 'Store', 'Customer'].map((d, i) => (
+          <g key={i}>
+            <rect x={40 + (i % 2) * 90} y={110 + Math.floor(i / 2) * 35} width="60" height="20" rx="3" fill="#60a5fa20" stroke="#60a5fa" />
+            <text x={70 + (i % 2) * 90} y={123 + Math.floor(i / 2) * 35} textAnchor="middle" fill="#60a5fa" fontSize="6">{d}</text>
+          </g>
+        ))}
+        <rect x="260" y="35" width="220" height="130" rx="6" fill="#f472b615" stroke="#f472b6" strokeWidth="1.5" />
+        <text x="370" y="55" textAnchor="middle" fill="#f472b6" fontSize="10" fontWeight="600">Snowflake Schema</text>
+        <text x="370" y="75" textAnchor="middle" fill="#a1a1aa" fontSize="7">Normalized dimensions</text>
+        <text x="370" y="92" textAnchor="middle" fill="#a1a1aa" fontSize="7">More joins, less redundancy</text>
+        <text x="370" y="110" textAnchor="middle" fill="#71717a" fontSize="6">Product → Category → Department</text>
+        <text x="370" y="127" textAnchor="middle" fill="#71717a" fontSize="6">Date → Month → Quarter → Year</text>
+        <text x="370" y="150" textAnchor="middle" fill="#22d3ee" fontSize="6">Use: Complex hierarchies</text>
+        <rect x="20" y="180" width="460" height="45" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="200" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Star: Faster queries, more storage | Snowflake: Less storage, more joins</text>
+        <text x="250" y="218" textAnchor="middle" fill="#71717a" fontSize="7">Used by: Snowflake, BigQuery, Redshift for OLAP workloads</text>
+      </svg>
+    ),
+    dbdesign: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Database Design Cheatsheet</text>
+        {[
+          { x: 20, y: 35, name: '1NF', desc: 'Atomic values, no repeating groups', color: '#4ade80' },
+          { x: 180, y: 35, name: '2NF', desc: 'No partial dependencies', color: '#60a5fa' },
+          { x: 340, y: 35, name: '3NF', desc: 'No transitive dependencies', color: '#f472b6' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="50" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 20} textAnchor="middle" fill={n.color} fontSize="10" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 38} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+          </g>
+        ))}
+        {[
+          { x: 20, y: 100, name: 'Primary Key', desc: 'Unique row identifier', example: 'id SERIAL PRIMARY KEY', color: '#fb923c' },
+          { x: 180, y: 100, name: 'Foreign Key', desc: 'Reference to another table', example: 'user_id REFERENCES users(id)', color: '#a78bfa' },
+          { x: 340, y: 100, name: 'Indexes', desc: 'Speed up lookups', example: 'CREATE INDEX ON users(email)', color: '#22d3ee' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="65" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+            <text x={n.x + 70} y={n.y + 52} textAnchor="middle" fill="#71717a" fontSize="5">{n.example}</text>
+          </g>
+        ))}
+        <rect x="20" y="180" width="460" height="65" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="200" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Common Constraints</text>
+        <text x="250" y="218" textAnchor="middle" fill="#71717a" fontSize="7">NOT NULL | UNIQUE | CHECK | DEFAULT | ON DELETE CASCADE</text>
+        <text x="250" y="235" textAnchor="middle" fill="#71717a" fontSize="6">Normalize for OLTP, denormalize for OLAP. Measure before optimizing.</text>
+      </svg>
+    ),
+    // Phase 3: Developer Resources
+    engblogs: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Top Engineering Blogs - Learn from the Best</text>
+        {[
+          { x: 20, y: 35, name: 'Netflix Tech', desc: 'Streaming, resilience', color: '#e50914', url: 'netflixtechblog.com' },
+          { x: 180, y: 35, name: 'Uber Eng', desc: 'Real-time, scale', color: '#000000', url: 'eng.uber.com' },
+          { x: 340, y: 35, name: 'Cloudflare', desc: 'Edge, security', color: '#f38020', url: 'blog.cloudflare.com' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="55" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="7">{n.desc}</text>
+            <text x={n.x + 70} y={n.y + 48} textAnchor="middle" fill="#71717a" fontSize="5">{n.url}</text>
+          </g>
+        ))}
+        {[
+          { x: 20, y: 105, name: 'Meta Eng', desc: 'Scale, infra', color: '#1877f2', url: 'engineering.fb.com' },
+          { x: 180, y: 105, name: 'LinkedIn Eng', desc: 'Data, ML', color: '#0077b5', url: 'engineering.linkedin.com' },
+          { x: 340, y: 105, name: 'Stripe Eng', desc: 'Payments, API', color: '#635bff', url: 'stripe.com/blog/engineering' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="55" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="7">{n.desc}</text>
+            <text x={n.x + 70} y={n.y + 48} textAnchor="middle" fill="#71717a" fontSize="5">{n.url}</text>
+          </g>
+        ))}
+        <rect x="20" y="175" width="460" height="70" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="195" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">More: AWS Architecture Blog, Google Cloud Blog, Discord Eng, Slack Eng</text>
+        <text x="250" y="215" textAnchor="middle" fill="#71717a" fontSize="7">Learn architecture decisions, scaling challenges, and post-mortems from real systems</text>
+        <text x="250" y="232" textAnchor="middle" fill="#22d3ee" fontSize="6">Pro tip: Subscribe to their newsletters and RSS feeds</text>
+      </svg>
+    ),
+    devbooks: (
+      <svg viewBox="0 0 500 280" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Essential Books for Software Developers</text>
+        {[
+          { x: 20, y: 35, name: 'Clean Code', author: 'Robert Martin', topic: 'Code quality', color: '#4ade80' },
+          { x: 180, y: 35, name: 'DDIA', author: 'Kleppmann', topic: 'Distributed sys', color: '#60a5fa' },
+          { x: 340, y: 35, name: 'Pragmatic Prog', author: 'Hunt & Thomas', topic: 'Best practices', color: '#f472b6' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="60" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="7">{n.author}</text>
+            <text x={n.x + 70} y={n.y + 50} textAnchor="middle" fill="#71717a" fontSize="6">{n.topic}</text>
+          </g>
+        ))}
+        {[
+          { x: 20, y: 110, name: 'System Design', author: 'Alex Xu', topic: 'Interview prep', color: '#fb923c' },
+          { x: 180, y: 110, name: 'Clean Arch', author: 'Robert Martin', topic: 'Architecture', color: '#a78bfa' },
+          { x: 340, y: 110, name: 'Refactoring', author: 'Martin Fowler', topic: 'Code evolution', color: '#22d3ee' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="60" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="7">{n.author}</text>
+            <text x={n.x + 70} y={n.y + 50} textAnchor="middle" fill="#71717a" fontSize="6">{n.topic}</text>
+          </g>
+        ))}
+        <rect x="20" y="185" width="460" height="80" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="205" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Reading Path</text>
+        <text x="250" y="225" textAnchor="middle" fill="#71717a" fontSize="7">Junior: Clean Code → Pragmatic → Refactoring</text>
+        <text x="250" y="242" textAnchor="middle" fill="#71717a" fontSize="7">Senior: DDIA → Clean Arch → Domain-Driven Design</text>
+        <text x="250" y="257" textAnchor="middle" fill="#22d3ee" fontSize="6">One chapter per week = 52 chapters/year of learning</text>
+      </svg>
+    ),
+    cspapers: (
+      <svg viewBox="0 0 500 280" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Transformative Computer Science Papers</text>
+        {[
+          { x: 20, y: 35, name: 'Dynamo', year: '2007', company: 'Amazon', impact: 'DynamoDB, Cassandra', color: '#ff9900' },
+          { x: 180, y: 35, name: 'GFS', year: '2003', company: 'Google', impact: 'HDFS, distributed FS', color: '#4285f4' },
+          { x: 340, y: 35, name: 'MapReduce', year: '2004', company: 'Google', impact: 'Hadoop, Spark', color: '#34a853' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="60" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 15} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name} ({n.year})</text>
+            <text x={n.x + 70} y={n.y + 32} textAnchor="middle" fill="#a1a1aa" fontSize="7">{n.company}</text>
+            <text x={n.x + 70} y={n.y + 48} textAnchor="middle" fill="#71717a" fontSize="6">{n.impact}</text>
+          </g>
+        ))}
+        {[
+          { x: 20, y: 110, name: 'Raft', year: '2014', company: 'Stanford', impact: 'etcd, Consul', color: '#f472b6' },
+          { x: 180, y: 110, name: 'Kafka', year: '2011', company: 'LinkedIn', impact: 'Event streaming', color: '#22d3ee' },
+          { x: 340, y: 110, name: 'Spanner', year: '2012', company: 'Google', impact: 'Global SQL DB', color: '#fbbc04' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="60" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 15} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name} ({n.year})</text>
+            <text x={n.x + 70} y={n.y + 32} textAnchor="middle" fill="#a1a1aa" fontSize="7">{n.company}</text>
+            <text x={n.x + 70} y={n.y + 48} textAnchor="middle" fill="#71717a" fontSize="6">{n.impact}</text>
+          </g>
+        ))}
+        <rect x="20" y="185" width="460" height="80" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="205" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">More Essential Papers</text>
+        <text x="250" y="225" textAnchor="middle" fill="#71717a" fontSize="7">BigTable, Cassandra, Paxos, Borg, Chubby, Bigtable, TAO</text>
+        <text x="250" y="242" textAnchor="middle" fill="#71717a" fontSize="7">papers.lovereading.art or paperswelove.org</text>
+        <text x="250" y="257" textAnchor="middle" fill="#22d3ee" fontSize="6">Read one paper per month to deeply understand distributed systems</text>
+      </svg>
+    ),
+    opensource: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Popular Open Source Projects by Big Tech</text>
+        {[
+          { x: 20, y: 35, name: 'React', company: 'Meta', stars: '220k+', color: '#61dafb' },
+          { x: 120, y: 35, name: 'Kubernetes', company: 'Google', stars: '105k+', color: '#326ce5' },
+          { x: 220, y: 35, name: 'VS Code', company: 'Microsoft', stars: '155k+', color: '#007acc' },
+          { x: 320, y: 35, name: 'TensorFlow', company: 'Google', stars: '180k+', color: '#ff6f00' },
+          { x: 420, y: 35, name: 'TypeScript', company: 'Microsoft', stars: '95k+', color: '#3178c6' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="80" height="55" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 40} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="8" fontWeight="600">{n.name}</text>
+            <text x={n.x + 40} y={n.y + 32} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.company}</text>
+            <text x={n.x + 40} y={n.y + 45} textAnchor="middle" fill="#71717a" fontSize="6">⭐ {n.stars}</text>
+          </g>
+        ))}
+        {[
+          { x: 20, y: 105, name: 'PyTorch', company: 'Meta', stars: '75k+', color: '#ee4c2c' },
+          { x: 120, y: 105, name: 'Kafka', company: 'LinkedIn', stars: '27k+', color: '#231f20' },
+          { x: 220, y: 105, name: 'GraphQL', company: 'Meta', stars: '14k+', color: '#e535ab' },
+          { x: 320, y: 105, name: 'Flutter', company: 'Google', stars: '160k+', color: '#02569b' },
+          { x: 420, y: 105, name: 'Go', company: 'Google', stars: '118k+', color: '#00add8' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="80" height="55" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 40} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="8" fontWeight="600">{n.name}</text>
+            <text x={n.x + 40} y={n.y + 32} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.company}</text>
+            <text x={n.x + 40} y={n.y + 45} textAnchor="middle" fill="#71717a" fontSize="6">⭐ {n.stars}</text>
+          </g>
+        ))}
+        <rect x="20" y="175" width="460" height="70" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="195" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Why Companies Open Source</text>
+        <text x="250" y="215" textAnchor="middle" fill="#71717a" fontSize="7">Talent recruitment | Community contributions | Industry standards | Developer ecosystem</text>
+        <text x="250" y="232" textAnchor="middle" fill="#22d3ee" fontSize="6">Contributing to OSS is great for learning and career growth</text>
+      </svg>
+    ),
+    softskills: (
+      <svg viewBox="0 0 500 240" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Soft Skills Books for Developers</text>
+        {[
+          { x: 20, y: 35, name: 'Soft Skills', author: 'Sonmez', skill: 'Career growth', color: '#4ade80' },
+          { x: 180, y: 35, name: 'Staff Engineer', author: 'Larson', skill: 'IC leadership', color: '#60a5fa' },
+          { x: 340, y: 35, name: 'Crucial Convos', author: 'Various', skill: 'Communication', color: '#f472b6' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="55" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="7">{n.author}</text>
+            <text x={n.x + 70} y={n.y + 48} textAnchor="middle" fill="#71717a" fontSize="6">{n.skill}</text>
+          </g>
+        ))}
+        {[
+          { x: 20, y: 105, name: 'Never Split Diff', author: 'Voss', skill: 'Negotiation', color: '#fb923c' },
+          { x: 180, y: 105, name: 'Manager Path', author: 'Fournier', skill: 'Management', color: '#a78bfa' },
+          { x: 340, y: 105, name: 'Thinking Fast', author: 'Kahneman', skill: 'Decision making', color: '#22d3ee' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="55" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="7">{n.author}</text>
+            <text x={n.x + 70} y={n.y + 48} textAnchor="middle" fill="#71717a" fontSize="6">{n.skill}</text>
+          </g>
+        ))}
+        <rect x="20" y="175" width="460" height="50" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="195" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">80% of career success comes from soft skills, not just technical ability</text>
+        <text x="250" y="215" textAnchor="middle" fill="#71717a" fontSize="7">Communication, leadership, and influence matter more at senior levels</text>
+      </svg>
+    ),
+    diagramtools: (
+      <svg viewBox="0 0 500 240" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Diagrams as Code Tools</text>
+        {[
+          { x: 20, y: 35, name: 'Mermaid', lang: 'Markdown', use: 'GitHub, Docs', color: '#ff3670' },
+          { x: 180, y: 35, name: 'PlantUML', lang: 'Custom DSL', use: 'UML diagrams', color: '#8bc34a' },
+          { x: 340, y: 35, name: 'Diagrams.py', lang: 'Python', use: 'Cloud arch', color: '#3776ab' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="55" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="7">{n.lang}</text>
+            <text x={n.x + 70} y={n.y + 48} textAnchor="middle" fill="#71717a" fontSize="6">{n.use}</text>
+          </g>
+        ))}
+        <rect x="20" y="105" width="225" height="60" rx="6" fill="#22d3ee15" stroke="#22d3ee" strokeWidth="1.5" />
+        <text x="132" y="125" textAnchor="middle" fill="#22d3ee" fontSize="9" fontWeight="600">Benefits</text>
+        <text x="132" y="145" textAnchor="middle" fill="#a1a1aa" fontSize="7">Version control friendly</text>
+        <text x="132" y="158" textAnchor="middle" fill="#71717a" fontSize="6">Auto-generate from code</text>
+        <rect x="255" y="105" width="225" height="60" rx="6" fill="#fb923c15" stroke="#fb923c" strokeWidth="1.5" />
+        <text x="367" y="125" textAnchor="middle" fill="#fb923c" fontSize="9" fontWeight="600">Comparison</text>
+        <text x="367" y="145" textAnchor="middle" fill="#a1a1aa" fontSize="7">Mermaid: Simple, GitHub native</text>
+        <text x="367" y="158" textAnchor="middle" fill="#71717a" fontSize="6">D2: Modern, better layouts</text>
+        <rect x="20" y="180" width="460" height="45" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="200" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">More tools: D2, Structurizr, Graphviz, Excalidraw, tldraw</text>
+        <text x="250" y="218" textAnchor="middle" fill="#71717a" fontSize="7">Keep diagrams in sync with code by generating from source</text>
+      </svg>
+    ),
+    codingprinciples: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Essential Coding Principles</text>
+        {[
+          { x: 20, y: 35, name: 'DRY', full: "Don't Repeat Yourself", desc: 'Extract duplication', color: '#4ade80' },
+          { x: 180, y: 35, name: 'KISS', full: 'Keep It Simple', desc: 'Simple over clever', color: '#60a5fa' },
+          { x: 340, y: 35, name: 'YAGNI', full: "You Ain't Gonna Need It", desc: 'Build when needed', color: '#f472b6' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="60" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="10" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.full}</text>
+            <text x={n.x + 70} y={n.y + 50} textAnchor="middle" fill="#71717a" fontSize="6">{n.desc}</text>
+          </g>
+        ))}
+        {[
+          { x: 20, y: 110, name: 'SoC', full: 'Separation of Concerns', desc: 'One responsibility', color: '#fb923c' },
+          { x: 180, y: 110, name: 'LoD', full: 'Law of Demeter', desc: 'Talk to friends only', color: '#a78bfa' },
+          { x: 340, y: 110, name: 'CoC', full: 'Convention over Config', desc: 'Sensible defaults', color: '#22d3ee' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="60" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="10" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.full}</text>
+            <text x={n.x + 70} y={n.y + 50} textAnchor="middle" fill="#71717a" fontSize="6">{n.desc}</text>
+          </g>
+        ))}
+        <rect x="20" y="185" width="460" height="60" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="205" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Balance is Key</text>
+        <text x="250" y="223" textAnchor="middle" fill="#71717a" fontSize="7">DRY too much = wrong abstraction | YAGNI too much = tech debt</text>
+        <text x="250" y="238" textAnchor="middle" fill="#22d3ee" fontSize="6">Apply principles thoughtfully, not dogmatically</text>
+      </svg>
+    ),
+    fullstackroad: (
+      <svg viewBox="0 0 500 280" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Full-Stack Developer Roadmap</text>
+        {[
+          { x: 20, y: 35, name: 'Frontend', items: 'HTML, CSS, JS, React/Vue', color: '#4ade80' },
+          { x: 180, y: 35, name: 'Backend', items: 'Node/Python, APIs, Auth', color: '#60a5fa' },
+          { x: 340, y: 35, name: 'Database', items: 'SQL, NoSQL, ORMs', color: '#f472b6' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="50" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 38} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.items}</text>
+          </g>
+        ))}
+        <path d="M160 60 L175 60" stroke="#3f3f46" strokeWidth="2" />
+        <path d="M320 60 L335 60" stroke="#3f3f46" strokeWidth="2" />
+        {[
+          { x: 20, y: 100, name: 'DevOps', items: 'Docker, CI/CD, Cloud', color: '#fb923c' },
+          { x: 180, y: 100, name: 'Testing', items: 'Unit, Integration, E2E', color: '#a78bfa' },
+          { x: 340, y: 100, name: 'Security', items: 'OWASP, Auth, HTTPS', color: '#22d3ee' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="50" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 38} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.items}</text>
+          </g>
+        ))}
+        <rect x="20" y="165" width="460" height="100" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="185" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Learning Path (12-18 months)</text>
+        <text x="250" y="205" textAnchor="middle" fill="#71717a" fontSize="7">1-3mo: HTML/CSS/JS basics → 3-6mo: React + Node</text>
+        <text x="250" y="222" textAnchor="middle" fill="#71717a" fontSize="7">6-9mo: Databases + Auth → 9-12mo: DevOps + Projects</text>
+        <text x="250" y="239" textAnchor="middle" fill="#71717a" fontSize="7">12-18mo: Advanced topics + Real projects</text>
+        <text x="250" y="256" textAnchor="middle" fill="#22d3ee" fontSize="6">roadmap.sh/full-stack - Follow the interactive roadmap</text>
+      </svg>
+    ),
+    architectroad: (
+      <svg viewBox="0 0 500 280" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Software Architect Knowledge Map</text>
+        {[
+          { x: 20, y: 35, name: 'Design Patterns', items: 'GoF, Enterprise, Cloud', color: '#4ade80' },
+          { x: 180, y: 35, name: 'Architecture Styles', items: 'Micro, Event, Serverless', color: '#60a5fa' },
+          { x: 340, y: 35, name: 'System Design', items: 'Scalability, Reliability', color: '#f472b6' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="50" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 38} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.items}</text>
+          </g>
+        ))}
+        {[
+          { x: 20, y: 100, name: 'Data Architecture', items: 'OLTP, OLAP, Lakes', color: '#fb923c' },
+          { x: 180, y: 100, name: 'Security', items: 'Zero Trust, IAM, Crypto', color: '#a78bfa' },
+          { x: 340, y: 100, name: 'Leadership', items: 'ADRs, RFCs, Mentoring', color: '#22d3ee' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="50" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 38} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.items}</text>
+          </g>
+        ))}
+        <rect x="20" y="165" width="460" height="100" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="185" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Developer → Architect Path</text>
+        <text x="250" y="205" textAnchor="middle" fill="#71717a" fontSize="7">Senior Dev (5+ yrs) → Staff/Principal → Architect</text>
+        <text x="250" y="222" textAnchor="middle" fill="#71717a" fontSize="7">Key skills: Trade-off analysis, cross-team influence, long-term thinking</text>
+        <text x="250" y="239" textAnchor="middle" fill="#71717a" fontSize="7">Read: Clean Architecture, DDIA, Fundamentals of Software Arch</text>
+        <text x="250" y="256" textAnchor="middle" fill="#22d3ee" fontSize="6">Architects write code less but make decisions with 10x impact</text>
+      </svg>
+    ),
+    securityroad: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Cybersecurity Learning Roadmap</text>
+        {[
+          { x: 20, y: 35, name: 'Fundamentals', items: 'Networks, OS, Crypto', color: '#4ade80' },
+          { x: 180, y: 35, name: 'Web Security', items: 'OWASP Top 10, XSS, SQLI', color: '#60a5fa' },
+          { x: 340, y: 35, name: 'Offensive', items: 'Pentesting, Bug bounty', color: '#f472b6' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="50" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 38} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.items}</text>
+          </g>
+        ))}
+        {[
+          { x: 20, y: 100, name: 'Defensive', items: 'SIEM, SOC, IR', color: '#fb923c' },
+          { x: 180, y: 100, name: 'Cloud Security', items: 'AWS/GCP/Azure sec', color: '#a78bfa' },
+          { x: 340, y: 100, name: 'Certs', items: 'OSCP, CEH, CISSP', color: '#22d3ee' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="50" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 38} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.items}</text>
+          </g>
+        ))}
+        <rect x="20" y="165" width="460" height="80" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="185" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Practice Platforms</text>
+        <text x="250" y="205" textAnchor="middle" fill="#71717a" fontSize="7">HackTheBox, TryHackMe, PortSwigger Web Security Academy</text>
+        <text x="250" y="222" textAnchor="middle" fill="#71717a" fontSize="7">Bug Bounty: HackerOne, Bugcrowd, Synack</text>
+        <text x="250" y="238" textAnchor="middle" fill="#22d3ee" fontSize="6">Security skills are in high demand - average salary $120k+</text>
+      </svg>
+    ),
+    backendroad: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Backend Developer Roadmap</text>
+        {[
+          { x: 20, y: 35, name: 'Languages', items: 'Python, Go, Java, Node', color: '#4ade80' },
+          { x: 180, y: 35, name: 'Databases', items: 'PostgreSQL, Redis, Mongo', color: '#60a5fa' },
+          { x: 340, y: 35, name: 'APIs', items: 'REST, GraphQL, gRPC', color: '#f472b6' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="50" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 38} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.items}</text>
+          </g>
+        ))}
+        {[
+          { x: 20, y: 100, name: 'Caching', items: 'Redis, Memcached, CDN', color: '#fb923c' },
+          { x: 180, y: 100, name: 'Message Queues', items: 'Kafka, RabbitMQ, SQS', color: '#a78bfa' },
+          { x: 340, y: 100, name: 'Containers', items: 'Docker, Kubernetes', color: '#22d3ee' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="50" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 38} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.items}</text>
+          </g>
+        ))}
+        <rect x="20" y="165" width="460" height="80" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="185" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Senior Backend Skills</text>
+        <text x="250" y="205" textAnchor="middle" fill="#71717a" fontSize="7">System design, distributed systems, performance optimization</text>
+        <text x="250" y="222" textAnchor="middle" fill="#71717a" fontSize="7">Monitoring: Prometheus, Grafana, ELK Stack</text>
+        <text x="250" y="238" textAnchor="middle" fill="#22d3ee" fontSize="6">roadmap.sh/backend - Complete interactive roadmap</text>
+      </svg>
+    ),
+    devopsroad: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">DevOps Engineer Roadmap</text>
+        {[
+          { x: 20, y: 35, name: 'OS & Linux', items: 'Shell, processes, networking', color: '#4ade80' },
+          { x: 180, y: 35, name: 'Containers', items: 'Docker, Kubernetes, Helm', color: '#60a5fa' },
+          { x: 340, y: 35, name: 'CI/CD', items: 'Jenkins, GitHub Actions', color: '#f472b6' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="50" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 38} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.items}</text>
+          </g>
+        ))}
+        {[
+          { x: 20, y: 100, name: 'IaC', items: 'Terraform, Ansible, Pulumi', color: '#fb923c' },
+          { x: 180, y: 100, name: 'Cloud', items: 'AWS, GCP, Azure', color: '#a78bfa' },
+          { x: 340, y: 100, name: 'Monitoring', items: 'Prometheus, Grafana, PD', color: '#22d3ee' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="50" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 38} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.items}</text>
+          </g>
+        ))}
+        <rect x="20" y="165" width="460" height="80" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="185" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">DevOps Culture</text>
+        <text x="250" y="205" textAnchor="middle" fill="#71717a" fontSize="7">Automate everything | Continuous improvement | Blameless postmortems</text>
+        <text x="250" y="222" textAnchor="middle" fill="#71717a" fontSize="7">SRE overlap: SLOs, SLIs, Error budgets, On-call</text>
+        <text x="250" y="238" textAnchor="middle" fill="#22d3ee" fontSize="6">roadmap.sh/devops - Detailed path with resources</text>
+      </svg>
+    ),
+    umlclass: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">UML Class Diagram Notation</text>
+        <rect x="20" y="30" width="140" height="90" rx="4" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <rect x="20" y="30" width="140" height="22" rx="4" fill="#4ade8030" />
+        <text x="90" y="46" textAnchor="middle" fill="#4ade80" fontSize="9" fontWeight="600">ClassName</text>
+        <line x1="20" y1="52" x2="160" y2="52" stroke="#4ade80" strokeWidth="0.5" />
+        <text x="30" y="68" fill="#a1a1aa" fontSize="7">- privateAttr: Type</text>
+        <text x="30" y="82" fill="#a1a1aa" fontSize="7">+ publicAttr: Type</text>
+        <line x1="20" y1="90" x2="160" y2="90" stroke="#4ade80" strokeWidth="0.5" />
+        <text x="30" y="105" fill="#a1a1aa" fontSize="7">+ publicMethod()</text>
+        <text x="30" y="118" fill="#a1a1aa" fontSize="7"># protectedMethod()</text>
+        <rect x="180" y="30" width="140" height="90" rx="4" fill="#60a5fa15" stroke="#60a5fa" strokeWidth="1.5" />
+        <text x="250" y="50" textAnchor="middle" fill="#60a5fa" fontSize="9" fontWeight="600">Relationships</text>
+        <text x="190" y="70" fill="#a1a1aa" fontSize="7">─── Association</text>
+        <text x="190" y="85" fill="#a1a1aa" fontSize="7">──▷ Inheritance</text>
+        <text x="190" y="100" fill="#a1a1aa" fontSize="7">◇── Aggregation</text>
+        <text x="190" y="115" fill="#a1a1aa" fontSize="7">◆── Composition</text>
+        <rect x="340" y="30" width="140" height="90" rx="4" fill="#f472b615" stroke="#f472b6" strokeWidth="1.5" />
+        <text x="410" y="50" textAnchor="middle" fill="#f472b6" fontSize="9" fontWeight="600">Multiplicity</text>
+        <text x="350" y="70" fill="#a1a1aa" fontSize="7">1 - exactly one</text>
+        <text x="350" y="85" fill="#a1a1aa" fontSize="7">0..1 - zero or one</text>
+        <text x="350" y="100" fill="#a1a1aa" fontSize="7">* - zero or more</text>
+        <text x="350" y="115" fill="#a1a1aa" fontSize="7">1..* - one or more</text>
+        <rect x="20" y="135" width="460" height="110" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="155" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Quick Reference</text>
+        <text x="250" y="175" textAnchor="middle" fill="#71717a" fontSize="7">Visibility: + public, - private, # protected, ~ package</text>
+        <text x="250" y="192" textAnchor="middle" fill="#71717a" fontSize="7">Composition = strong ownership (child dies with parent)</text>
+        <text x="250" y="209" textAnchor="middle" fill="#71717a" fontSize="7">Aggregation = weak ownership (child can exist independently)</text>
+        <text x="250" y="226" textAnchor="middle" fill="#71717a" fontSize="7">Abstract classes: italics | Interfaces: &lt;&lt;interface&gt;&gt;</text>
+        <text x="250" y="240" textAnchor="middle" fill="#22d3ee" fontSize="6">Tools: PlantUML, Mermaid, draw.io, Lucidchart</text>
+      </svg>
+    ),
+    paradigms: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Programming Paradigms Comparison</text>
+        {[
+          { x: 20, y: 35, name: 'OOP', desc: 'Objects with state + behavior', langs: 'Java, C++, Python', color: '#4ade80' },
+          { x: 180, y: 35, name: 'Functional', desc: 'Pure functions, immutability', langs: 'Haskell, Elixir, Scala', color: '#60a5fa' },
+          { x: 340, y: 35, name: 'Procedural', desc: 'Sequential instructions', langs: 'C, Go, Pascal', color: '#f472b6' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="65" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="10" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.desc}</text>
+            <text x={n.x + 70} y={n.y + 52} textAnchor="middle" fill="#71717a" fontSize="6">{n.langs}</text>
+          </g>
+        ))}
+        <rect x="20" y="115" width="225" height="60" rx="6" fill="#fb923c15" stroke="#fb923c" strokeWidth="1.5" />
+        <text x="132" y="135" textAnchor="middle" fill="#fb923c" fontSize="9" fontWeight="600">OOP Pros</text>
+        <text x="132" y="152" textAnchor="middle" fill="#a1a1aa" fontSize="7">Encapsulation, reusability, modeling</text>
+        <text x="132" y="168" textAnchor="middle" fill="#71717a" fontSize="6">Good for: Large apps, domain modeling</text>
+        <rect x="255" y="115" width="225" height="60" rx="6" fill="#a78bfa15" stroke="#a78bfa" strokeWidth="1.5" />
+        <text x="367" y="135" textAnchor="middle" fill="#a78bfa" fontSize="9" fontWeight="600">FP Pros</text>
+        <text x="367" y="152" textAnchor="middle" fill="#a1a1aa" fontSize="7">Testability, concurrency, predictability</text>
+        <text x="367" y="168" textAnchor="middle" fill="#71717a" fontSize="6">Good for: Data pipelines, concurrent</text>
+        <rect x="20" y="190" width="460" height="55" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="210" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Modern Languages: Multi-Paradigm</text>
+        <text x="250" y="228" textAnchor="middle" fill="#71717a" fontSize="7">JavaScript, Python, Kotlin, Rust support OOP + FP + Procedural</text>
+        <text x="250" y="242" textAnchor="middle" fill="#22d3ee" fontSize="6">Choose paradigm based on problem, not dogma</text>
+      </svg>
+    ),
+    garbagecollection: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Garbage Collection Comparison</text>
+        {[
+          { x: 20, y: 35, name: 'Java GC', type: 'Generational', pause: 'Can be long', color: '#f89820' },
+          { x: 180, y: 35, name: 'Go GC', type: 'Concurrent', pause: 'Sub-ms', color: '#00add8' },
+          { x: 340, y: 35, name: 'Python GC', type: 'Ref counting', pause: 'Rare', color: '#3776ab' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="55" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="7">{n.type}</text>
+            <text x={n.x + 70} y={n.y + 48} textAnchor="middle" fill="#71717a" fontSize="6">Pause: {n.pause}</text>
+          </g>
+        ))}
+        <rect x="20" y="105" width="225" height="65" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="132" y="125" textAnchor="middle" fill="#4ade80" fontSize="9" fontWeight="600">GC Algorithms</text>
+        <text x="132" y="142" textAnchor="middle" fill="#a1a1aa" fontSize="7">Mark-Sweep: Find live, remove dead</text>
+        <text x="132" y="157" textAnchor="middle" fill="#a1a1aa" fontSize="7">Copying: Move live to new space</text>
+        <text x="132" y="172" textAnchor="middle" fill="#71717a" fontSize="6">Generational: Young/Old segregation</text>
+        <rect x="255" y="105" width="225" height="65" rx="6" fill="#f472b615" stroke="#f472b6" strokeWidth="1.5" />
+        <text x="367" y="125" textAnchor="middle" fill="#f472b6" fontSize="9" fontWeight="600">Rust: No GC</text>
+        <text x="367" y="142" textAnchor="middle" fill="#a1a1aa" fontSize="7">Ownership + Borrowing</text>
+        <text x="367" y="157" textAnchor="middle" fill="#a1a1aa" fontSize="7">Compile-time memory safety</text>
+        <text x="367" y="172" textAnchor="middle" fill="#71717a" fontSize="6">Zero runtime overhead</text>
+        <rect x="20" y="185" width="460" height="60" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="205" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">GC Tuning Tips</text>
+        <text x="250" y="223" textAnchor="middle" fill="#71717a" fontSize="7">Java: -Xmx, G1GC for low latency | Go: GOGC env var</text>
+        <text x="250" y="238" textAnchor="middle" fill="#22d3ee" fontSize="6">Monitor GC pauses in production - they impact p99 latency</text>
+      </svg>
+    ),
+    concurrencyparallel: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Concurrency vs Parallelism</text>
+        <rect x="20" y="35" width="225" height="80" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="132" y="55" textAnchor="middle" fill="#4ade80" fontSize="10" fontWeight="600">Concurrency</text>
+        <text x="132" y="75" textAnchor="middle" fill="#a1a1aa" fontSize="7">Dealing with multiple things at once</text>
+        <text x="132" y="92" textAnchor="middle" fill="#a1a1aa" fontSize="7">Structure/Design concept</text>
+        <text x="132" y="107" textAnchor="middle" fill="#71717a" fontSize="6">Single core can be concurrent</text>
+        <rect x="255" y="35" width="225" height="80" rx="6" fill="#60a5fa15" stroke="#60a5fa" strokeWidth="1.5" />
+        <text x="367" y="55" textAnchor="middle" fill="#60a5fa" fontSize="10" fontWeight="600">Parallelism</text>
+        <text x="367" y="75" textAnchor="middle" fill="#a1a1aa" fontSize="7">Doing multiple things at once</text>
+        <text x="367" y="92" textAnchor="middle" fill="#a1a1aa" fontSize="7">Execution concept</text>
+        <text x="367" y="107" textAnchor="middle" fill="#71717a" fontSize="6">Requires multiple cores</text>
+        <rect x="20" y="130" width="225" height="55" rx="6" fill="#fb923c15" stroke="#fb923c" strokeWidth="1.5" />
+        <text x="132" y="150" textAnchor="middle" fill="#fb923c" fontSize="9" fontWeight="600">I/O-Bound Tasks</text>
+        <text x="132" y="167" textAnchor="middle" fill="#a1a1aa" fontSize="7">Network, disk, DB calls</text>
+        <text x="132" y="180" textAnchor="middle" fill="#71717a" fontSize="6">Use: async/await, threads</text>
+        <rect x="255" y="130" width="225" height="55" rx="6" fill="#a78bfa15" stroke="#a78bfa" strokeWidth="1.5" />
+        <text x="367" y="150" textAnchor="middle" fill="#a78bfa" fontSize="9" fontWeight="600">CPU-Bound Tasks</text>
+        <text x="367" y="167" textAnchor="middle" fill="#a1a1aa" fontSize="7">Computation, processing</text>
+        <text x="367" y="180" textAnchor="middle" fill="#71717a" fontSize="6">Use: multiprocessing, workers</text>
+        <rect x="20" y="200" width="460" height="45" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="218" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Rob Pike: Concurrency is about structure, parallelism is about execution</text>
+        <text x="250" y="235" textAnchor="middle" fill="#22d3ee" fontSize="6">Python GIL limits parallelism but not concurrency (use multiprocessing)</text>
+      </svg>
+    ),
+    eventloop: (
+      <svg viewBox="0 0 500 280" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">JavaScript Event Loop</text>
+        <rect x="20" y="35" width="140" height="70" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="90" y="55" textAnchor="middle" fill="#4ade80" fontSize="9" fontWeight="600">Call Stack</text>
+        <text x="90" y="75" textAnchor="middle" fill="#a1a1aa" fontSize="7">LIFO execution</text>
+        <text x="90" y="92" textAnchor="middle" fill="#71717a" fontSize="6">One thing at a time</text>
+        <rect x="180" y="35" width="140" height="70" rx="6" fill="#60a5fa15" stroke="#60a5fa" strokeWidth="1.5" />
+        <text x="250" y="55" textAnchor="middle" fill="#60a5fa" fontSize="9" fontWeight="600">Microtask Queue</text>
+        <text x="250" y="75" textAnchor="middle" fill="#a1a1aa" fontSize="7">Promises, queueMicrotask</text>
+        <text x="250" y="92" textAnchor="middle" fill="#71717a" fontSize="6">Higher priority</text>
+        <rect x="340" y="35" width="140" height="70" rx="6" fill="#f472b615" stroke="#f472b6" strokeWidth="1.5" />
+        <text x="410" y="55" textAnchor="middle" fill="#f472b6" fontSize="9" fontWeight="600">Macrotask Queue</text>
+        <text x="410" y="75" textAnchor="middle" fill="#a1a1aa" fontSize="7">setTimeout, setInterval</text>
+        <text x="410" y="92" textAnchor="middle" fill="#71717a" fontSize="6">Lower priority</text>
+        <path d="M90 110 L90 130 L250 130 L250 110" stroke="#3f3f46" strokeWidth="2" fill="none" />
+        <path d="M250 110 L250 130 L410 130 L410 110" stroke="#3f3f46" strokeWidth="2" fill="none" />
+        <rect x="180" y="120" width="140" height="40" rx="6" fill="#fb923c15" stroke="#fb923c" strokeWidth="1.5" />
+        <text x="250" y="145" textAnchor="middle" fill="#fb923c" fontSize="9" fontWeight="600">Event Loop</text>
+        <rect x="20" y="175" width="460" height="90" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="195" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Execution Order</text>
+        <text x="250" y="215" textAnchor="middle" fill="#71717a" fontSize="7">1. Execute all sync code (call stack)</text>
+        <text x="250" y="232" textAnchor="middle" fill="#71717a" fontSize="7">2. Execute ALL microtasks (Promise.then, queueMicrotask)</text>
+        <text x="250" y="249" textAnchor="middle" fill="#71717a" fontSize="7">3. Execute ONE macrotask (setTimeout callback) → Repeat from 2</text>
+        <text x="250" y="262" textAnchor="middle" fill="#22d3ee" fontSize="6">Microtasks always run before next macrotask - can starve macrotasks!</text>
+      </svg>
+    ),
+    cppusecases: (
+      <svg viewBox="0 0 500 240" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">C++ Use Cases - Where Performance Matters</text>
+        {[
+          { x: 20, y: 35, name: 'Game Engines', examples: 'Unreal, Unity core', reason: 'Low latency, GPU', color: '#4ade80' },
+          { x: 180, y: 35, name: 'Embedded', examples: 'IoT, automotive', reason: 'Memory control', color: '#60a5fa' },
+          { x: 340, y: 35, name: 'OS/Drivers', examples: 'Windows, Linux', reason: 'Hardware access', color: '#f472b6' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="60" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="7">{n.examples}</text>
+            <text x={n.x + 70} y={n.y + 50} textAnchor="middle" fill="#71717a" fontSize="6">{n.reason}</text>
+          </g>
+        ))}
+        {[
+          { x: 20, y: 110, name: 'Databases', examples: 'MySQL, Mongo, Redis', reason: 'Query perf', color: '#fb923c' },
+          { x: 180, y: 110, name: 'HFT/Trading', examples: 'Exchanges, algos', reason: 'Microseconds', color: '#a78bfa' },
+          { x: 340, y: 110, name: 'Browsers', examples: 'Chrome, Firefox', reason: 'JS engines', color: '#22d3ee' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="60" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="7">{n.examples}</text>
+            <text x={n.x + 70} y={n.y + 50} textAnchor="middle" fill="#71717a" fontSize="6">{n.reason}</text>
+          </g>
+        ))}
+        <rect x="20" y="185" width="460" height="40" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="203" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Modern C++: Use C++17/20, smart pointers, RAII for safety</text>
+        <text x="250" y="218" textAnchor="middle" fill="#22d3ee" fontSize="6">Consider Rust for new projects needing similar performance with better safety</text>
+      </svg>
+    ),
+    cssfundamentals: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">CSS Fundamentals Cheatsheet</text>
+        {[
+          { x: 20, y: 35, name: 'Selectors', items: '.class #id tag [attr]', color: '#4ade80' },
+          { x: 180, y: 35, name: 'Flexbox', items: 'display: flex; gap', color: '#60a5fa' },
+          { x: 340, y: 35, name: 'Grid', items: 'grid-template-columns', color: '#f472b6' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="50" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 38} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.items}</text>
+          </g>
+        ))}
+        {[
+          { x: 20, y: 100, name: 'Box Model', items: 'margin, border, padding', color: '#fb923c' },
+          { x: 180, y: 100, name: 'Positioning', items: 'static, relative, absolute', color: '#a78bfa' },
+          { x: 340, y: 100, name: 'Animations', items: '@keyframes, transition', color: '#22d3ee' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="50" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 38} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.items}</text>
+          </g>
+        ))}
+        <rect x="20" y="165" width="460" height="80" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="185" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Modern CSS</text>
+        <text x="250" y="205" textAnchor="middle" fill="#71717a" fontSize="7">CSS Variables: --color: #fff; color: var(--color)</text>
+        <text x="250" y="222" textAnchor="middle" fill="#71717a" fontSize="7">Container queries, :has(), subgrid, nesting (native)</text>
+        <text x="250" y="238" textAnchor="middle" fill="#22d3ee" fontSize="6">Tools: Tailwind CSS, CSS Modules, styled-components</text>
+      </svg>
+    ),
+    oopprinciples: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Four Pillars of OOP</text>
+        {[
+          { x: 20, y: 35, name: 'Encapsulation', desc: 'Bundle data + methods', example: 'private fields + getters', color: '#4ade80' },
+          { x: 260, y: 35, name: 'Abstraction', desc: 'Hide complexity', example: 'interfaces, abstract classes', color: '#60a5fa' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="220" height="60" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 110} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="10" fontWeight="600">{n.name}</text>
+            <text x={n.x + 110} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="7">{n.desc}</text>
+            <text x={n.x + 110} y={n.y + 50} textAnchor="middle" fill="#71717a" fontSize="6">{n.example}</text>
+          </g>
+        ))}
+        {[
+          { x: 20, y: 110, name: 'Inheritance', desc: 'Reuse via parent classes', example: 'class Dog extends Animal', color: '#f472b6' },
+          { x: 260, y: 110, name: 'Polymorphism', desc: 'Same interface, diff behavior', example: 'method overriding', color: '#fb923c' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="220" height="60" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 110} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="10" fontWeight="600">{n.name}</text>
+            <text x={n.x + 110} y={n.y + 35} textAnchor="middle" fill="#a1a1aa" fontSize="7">{n.desc}</text>
+            <text x={n.x + 110} y={n.y + 50} textAnchor="middle" fill="#71717a" fontSize="6">{n.example}</text>
+          </g>
+        ))}
+        <rect x="20" y="185" width="460" height="60" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="205" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Modern OOP Best Practices</text>
+        <text x="250" y="223" textAnchor="middle" fill="#71717a" fontSize="7">Favor composition over inheritance | Program to interfaces | SOLID principles</text>
+        <text x="250" y="238" textAnchor="middle" fill="#22d3ee" fontSize="6">Pure OOP languages: Java, C# | Multi-paradigm: Python, TypeScript, Kotlin</text>
+      </svg>
+    ),
+    nginxpopular: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Why Nginx is Popular - Event-Driven Architecture</text>
+        <rect x="20" y="35" width="225" height="80" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="132" y="55" textAnchor="middle" fill="#4ade80" fontSize="9" fontWeight="600">Apache (Process/Thread)</text>
+        <text x="132" y="75" textAnchor="middle" fill="#a1a1aa" fontSize="7">1 process/thread per connection</text>
+        <text x="132" y="92" textAnchor="middle" fill="#a1a1aa" fontSize="7">Memory: ~2-10 MB per conn</text>
+        <text x="132" y="107" textAnchor="middle" fill="#71717a" fontSize="6">Limited concurrent connections</text>
+        <rect x="255" y="35" width="225" height="80" rx="6" fill="#60a5fa15" stroke="#60a5fa" strokeWidth="1.5" />
+        <text x="367" y="55" textAnchor="middle" fill="#60a5fa" fontSize="9" fontWeight="600">Nginx (Event-Driven)</text>
+        <text x="367" y="75" textAnchor="middle" fill="#a1a1aa" fontSize="7">Async, non-blocking I/O</text>
+        <text x="367" y="92" textAnchor="middle" fill="#a1a1aa" fontSize="7">Memory: ~2.5 KB per conn</text>
+        <text x="367" y="107" textAnchor="middle" fill="#71717a" fontSize="6">Handles 10K+ connections easily</text>
+        <rect x="20" y="130" width="460" height="55" rx="6" fill="#f472b615" stroke="#f472b6" strokeWidth="1.5" />
+        <text x="250" y="150" textAnchor="middle" fill="#f472b6" fontSize="9" fontWeight="600">Nginx Use Cases</text>
+        <text x="250" y="170" textAnchor="middle" fill="#a1a1aa" fontSize="7">Web server | Reverse proxy | Load balancer | SSL termination | API gateway</text>
+        <rect x="20" y="200" width="460" height="45" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="218" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">32%+ of all websites use Nginx (2024) - Netflix, Dropbox, WordPress.com</text>
+        <text x="250" y="235" textAnchor="middle" fill="#22d3ee" fontSize="6">Alternatives: Caddy (auto HTTPS), Traefik (K8s native), HAProxy (LB focused)</text>
+      </svg>
+    ),
+    slacknotify: (
+      <svg viewBox="0 0 500 240" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Slack Notification Decision Tree</text>
+        <rect x="180" y="30" width="140" height="35" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="250" y="52" textAnchor="middle" fill="#4ade80" fontSize="8" fontWeight="600">Need to communicate?</text>
+        <path d="M250 65 L250 80" stroke="#3f3f46" strokeWidth="1.5" />
+        <rect x="180" y="80" width="140" height="35" rx="6" fill="#60a5fa15" stroke="#60a5fa" strokeWidth="1.5" />
+        <text x="250" y="102" textAnchor="middle" fill="#60a5fa" fontSize="8" fontWeight="600">Urgent response needed?</text>
+        <path d="M180 97 L100 97 L100 125" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="140" y="93" fill="#4ade80" fontSize="6">Yes</text>
+        <path d="M320 97 L400 97 L400 125" stroke="#f472b6" strokeWidth="1.5" />
+        <text x="360" y="93" fill="#f472b6" fontSize="6">No</text>
+        <rect x="40" y="125" width="120" height="35" rx="6" fill="#fb923c15" stroke="#fb923c" strokeWidth="1.5" />
+        <text x="100" y="147" textAnchor="middle" fill="#fb923c" fontSize="8" fontWeight="600">Direct Message</text>
+        <rect x="340" y="125" width="120" height="35" rx="6" fill="#a78bfa15" stroke="#a78bfa" strokeWidth="1.5" />
+        <text x="400" y="142" textAnchor="middle" fill="#a78bfa" fontSize="8" fontWeight="600">Channel message</text>
+        <text x="400" y="155" textAnchor="middle" fill="#71717a" fontSize="6">(searchable, async)</text>
+        <rect x="20" y="180" width="460" height="45" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="198" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Best Practices</text>
+        <text x="250" y="215" textAnchor="middle" fill="#71717a" fontSize="7">Thread replies | @here for online | @channel sparingly | Status updates in channels</text>
+      </svg>
+    ),
+    qrlogin: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">QR Code Login Flow (WeChat/WhatsApp Web)</text>
+        {[
+          { x: 20, y: 35, step: '1', name: 'Web generates QR', desc: 'Contains session ID', color: '#4ade80' },
+          { x: 180, y: 35, step: '2', name: 'Phone scans QR', desc: 'App reads session ID', color: '#60a5fa' },
+          { x: 340, y: 35, step: '3', name: 'Phone confirms', desc: 'User approves login', color: '#f472b6' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="55" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.step}. {n.name}</text>
+            <text x={n.x + 70} y={n.y + 40} textAnchor="middle" fill="#a1a1aa" fontSize="7">{n.desc}</text>
+          </g>
+        ))}
+        {[
+          { x: 20, y: 105, step: '4', name: 'Phone sends auth', desc: 'Token to server', color: '#fb923c' },
+          { x: 180, y: 105, step: '5', name: 'Server validates', desc: 'Links session to user', color: '#a78bfa' },
+          { x: 340, y: 105, step: '6', name: 'Web gets access', desc: 'Long-polling/WS update', color: '#22d3ee' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="55" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.step}. {n.name}</text>
+            <text x={n.x + 70} y={n.y + 40} textAnchor="middle" fill="#a1a1aa" fontSize="7">{n.desc}</text>
+          </g>
+        ))}
+        <rect x="20" y="175" width="460" height="70" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="195" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Security Features</text>
+        <text x="250" y="215" textAnchor="middle" fill="#71717a" fontSize="7">QR expires quickly (1-2 min) | Session bound to device | 2FA on phone</text>
+        <text x="250" y="232" textAnchor="middle" fill="#22d3ee" fontSize="6">Used by: WeChat, WhatsApp, Slack, Discord, Spotify</text>
+      </svg>
+    ),
+    pinterestgit: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Pinterest Git Optimization Case Study</text>
+        <rect x="20" y="35" width="225" height="80" rx="6" fill="#f472b615" stroke="#f472b6" strokeWidth="1.5" />
+        <text x="132" y="55" textAnchor="middle" fill="#f472b6" fontSize="9" fontWeight="600">Problem</text>
+        <text x="132" y="75" textAnchor="middle" fill="#a1a1aa" fontSize="7">Monorepo: 350K files, 200K commits</text>
+        <text x="132" y="92" textAnchor="middle" fill="#a1a1aa" fontSize="7">git status: 45 seconds</text>
+        <text x="132" y="107" textAnchor="middle" fill="#71717a" fontSize="6">Developer productivity tanked</text>
+        <rect x="255" y="35" width="225" height="80" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="367" y="55" textAnchor="middle" fill="#4ade80" fontSize="9" fontWeight="600">Solution</text>
+        <text x="367" y="75" textAnchor="middle" fill="#a1a1aa" fontSize="7">Git file system monitor (fsmonitor)</text>
+        <text x="367" y="92" textAnchor="middle" fill="#a1a1aa" fontSize="7">Watchman integration</text>
+        <text x="367" y="107" textAnchor="middle" fill="#71717a" fontSize="6">git status: 0.5 seconds (90x faster)</text>
+        <rect x="20" y="130" width="460" height="55" rx="6" fill="#60a5fa15" stroke="#60a5fa" strokeWidth="1.5" />
+        <text x="250" y="150" textAnchor="middle" fill="#60a5fa" fontSize="9" fontWeight="600">Other Optimizations</text>
+        <text x="250" y="170" textAnchor="middle" fill="#a1a1aa" fontSize="7">Sparse checkout | Partial clone | Commit graph | Multi-pack index</text>
+        <rect x="20" y="200" width="460" height="45" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="218" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Microsoft, Google, Facebook also use monorepos with custom tooling</text>
+        <text x="250" y="235" textAnchor="middle" fill="#22d3ee" fontSize="6">For large repos: Consider Scalar (Microsoft) or VFS for Git</text>
+      </svg>
+    ),
+    stackoverflowarch: (
+      <svg viewBox="0 0 500 280" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Stack Overflow Architecture - Monolith at Scale</text>
+        <rect x="20" y="35" width="225" height="70" rx="6" fill="#fb923c15" stroke="#fb923c" strokeWidth="1.5" />
+        <text x="132" y="55" textAnchor="middle" fill="#fb923c" fontSize="9" fontWeight="600">Scale (2024)</text>
+        <text x="132" y="75" textAnchor="middle" fill="#a1a1aa" fontSize="7">1.3B monthly page views</text>
+        <text x="132" y="92" textAnchor="middle" fill="#71717a" fontSize="6">9 web servers | 4 SQL servers</text>
+        <rect x="255" y="35" width="225" height="70" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="367" y="55" textAnchor="middle" fill="#4ade80" fontSize="9" fontWeight="600">Team Size</text>
+        <text x="367" y="75" textAnchor="middle" fill="#a1a1aa" fontSize="7">~50 developers for SO</text>
+        <text x="367" y="92" textAnchor="middle" fill="#71717a" fontSize="6">Proof: You dont need microservices</text>
+        {[
+          { x: 20, y: 120, name: 'HAProxy', desc: 'Load balancing', color: '#4ade80' },
+          { x: 120, y: 120, name: 'IIS', desc: 'Web servers', color: '#60a5fa' },
+          { x: 220, y: 120, name: 'SQL Server', desc: 'Primary DB', color: '#f472b6' },
+          { x: 320, y: 120, name: 'Redis', desc: 'L1/L2 cache', color: '#fb923c' },
+          { x: 420, y: 120, name: 'Elastic', desc: 'Search', color: '#a78bfa' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="80" height="45" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 40} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="8" fontWeight="600">{n.name}</text>
+            <text x={n.x + 40} y={n.y + 35} textAnchor="middle" fill="#71717a" fontSize="6">{n.desc}</text>
+          </g>
+        ))}
+        <rect x="20" y="180" width="460" height="85" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="200" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Key Lessons</text>
+        <text x="250" y="220" textAnchor="middle" fill="#71717a" fontSize="7">Aggressive caching (Redis multi-tier) | SQL is fast when done right</text>
+        <text x="250" y="237" textAnchor="middle" fill="#71717a" fontSize="7">Performance culture | Measure everything | Simple beats complex</text>
+        <text x="250" y="254" textAnchor="middle" fill="#22d3ee" fontSize="6">Read: Nick Craver Stack Overflow blog series - legendary performance posts</text>
+      </svg>
+    ),
+    kissprinciple: (
+      <svg viewBox="0 0 500 220" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">KISS Principle - Keep It Simple, Stupid</text>
+        <rect x="20" y="35" width="225" height="70" rx="6" fill="#f472b615" stroke="#f472b6" strokeWidth="1.5" />
+        <text x="132" y="55" textAnchor="middle" fill="#f472b6" fontSize="9" fontWeight="600">Over-Engineering</text>
+        <text x="132" y="75" textAnchor="middle" fill="#a1a1aa" fontSize="7">Abstracting too early</text>
+        <text x="132" y="92" textAnchor="middle" fill="#71717a" fontSize="6">Building for hypotheticals</text>
+        <rect x="255" y="35" width="225" height="70" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="367" y="55" textAnchor="middle" fill="#4ade80" fontSize="9" fontWeight="600">KISS Approach</text>
+        <text x="367" y="75" textAnchor="middle" fill="#a1a1aa" fontSize="7">Simplest solution first</text>
+        <text x="367" y="92" textAnchor="middle" fill="#71717a" fontSize="6">Refactor when needed</text>
+        <rect x="20" y="120" width="460" height="85" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="140" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">KISS in Practice</text>
+        <text x="250" y="160" textAnchor="middle" fill="#71717a" fontSize="7">Prefer readable code over clever code | Avoid premature optimization</text>
+        <text x="250" y="177" textAnchor="middle" fill="#71717a" fontSize="7">Start monolith, split later | Use boring technology</text>
+        <text x="250" y="194" textAnchor="middle" fill="#22d3ee" fontSize="6">Einstein: Everything should be as simple as possible, but not simpler</text>
+      </svg>
+    ),
+    apiclients: (
+      <svg viewBox="0 0 500 240" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">API Client Tools Comparison</text>
+        {[
+          { x: 20, y: 35, name: 'Postman', pros: 'Full-featured, team collab', cons: 'Heavy, cloud sync', color: '#ff6c37' },
+          { x: 180, y: 35, name: 'Insomnia', pros: 'Clean UI, GraphQL', cons: 'Less plugins', color: '#4000bf' },
+          { x: 340, y: 35, name: 'Thunder Client', pros: 'VS Code native, fast', cons: 'Less features', color: '#22d3ee' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="70" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="9" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 38} textAnchor="middle" fill="#4ade80" fontSize="6">✓ {n.pros}</text>
+            <text x={n.x + 70} y={n.y + 55} textAnchor="middle" fill="#f472b6" fontSize="6">✗ {n.cons}</text>
+          </g>
+        ))}
+        <rect x="20" y="120" width="460" height="55" rx="6" fill="#fb923c15" stroke="#fb923c" strokeWidth="1.5" />
+        <text x="250" y="140" textAnchor="middle" fill="#fb923c" fontSize="9" fontWeight="600">CLI Alternatives</text>
+        <text x="250" y="158" textAnchor="middle" fill="#a1a1aa" fontSize="7">curl - Universal, scriptable | HTTPie - Human-friendly | xh - Rust, fast</text>
+        <rect x="20" y="190" width="460" height="35" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="210" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Pick based on team needs: Collaboration (Postman) | Speed (Thunder) | CLI (curl)</text>
+      </svg>
+    ),
+    semver: (
+      <svg viewBox="0 0 500 220" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Semantic Versioning (SemVer) - MAJOR.MINOR.PATCH</text>
+        {[
+          { x: 20, y: 35, name: 'MAJOR', when: 'Breaking changes', example: '2.0.0', color: '#f472b6' },
+          { x: 180, y: 35, name: 'MINOR', when: 'New features (backward compatible)', example: '1.5.0', color: '#4ade80' },
+          { x: 340, y: 35, name: 'PATCH', when: 'Bug fixes', example: '1.5.3', color: '#60a5fa' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="140" height="65" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 70} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="10" fontWeight="600">{n.name}</text>
+            <text x={n.x + 70} y={n.y + 38} textAnchor="middle" fill="#a1a1aa" fontSize="6">{n.when}</text>
+            <text x={n.x + 70} y={n.y + 55} textAnchor="middle" fill="#71717a" fontSize="7">e.g., {n.example}</text>
+          </g>
+        ))}
+        <rect x="20" y="115" width="460" height="90" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="135" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Version Ranges (npm/yarn)</text>
+        <text x="250" y="155" textAnchor="middle" fill="#71717a" fontSize="7">^1.2.3 = 1.x.x (minor updates OK) | ~1.2.3 = 1.2.x (patch updates only)</text>
+        <text x="250" y="172" textAnchor="middle" fill="#71717a" fontSize="7">1.2.3 = exact version | &gt;=1.2.3 = this or higher</text>
+        <text x="250" y="192" textAnchor="middle" fill="#22d3ee" fontSize="6">Pre-release: 1.0.0-alpha.1 | Build metadata: 1.0.0+build.123</text>
+      </svg>
+    ),
+    vpnarch: (
+      <svg viewBox="0 0 500 260" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">VPN Architecture - Site-to-Site vs Client VPN</text>
+        <rect x="20" y="35" width="225" height="90" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="132" y="55" textAnchor="middle" fill="#4ade80" fontSize="9" fontWeight="600">Site-to-Site VPN</text>
+        <text x="132" y="75" textAnchor="middle" fill="#a1a1aa" fontSize="7">Connects entire networks</text>
+        <text x="132" y="92" textAnchor="middle" fill="#a1a1aa" fontSize="7">Office ↔ Cloud/DC</text>
+        <text x="132" y="110" textAnchor="middle" fill="#71717a" fontSize="6">IPsec, always-on, hardware</text>
+        <rect x="255" y="35" width="225" height="90" rx="6" fill="#60a5fa15" stroke="#60a5fa" strokeWidth="1.5" />
+        <text x="367" y="55" textAnchor="middle" fill="#60a5fa" fontSize="9" fontWeight="600">Client VPN</text>
+        <text x="367" y="75" textAnchor="middle" fill="#a1a1aa" fontSize="7">Individual device access</text>
+        <text x="367" y="92" textAnchor="middle" fill="#a1a1aa" fontSize="7">Laptop → Corporate network</text>
+        <text x="367" y="110" textAnchor="middle" fill="#71717a" fontSize="6">OpenVPN, WireGuard, software</text>
+        <rect x="20" y="140" width="460" height="55" rx="6" fill="#f472b615" stroke="#f472b6" strokeWidth="1.5" />
+        <text x="250" y="160" textAnchor="middle" fill="#f472b6" fontSize="9" fontWeight="600">VPN Protocols</text>
+        <text x="250" y="180" textAnchor="middle" fill="#a1a1aa" fontSize="7">WireGuard (modern, fast) | OpenVPN (flexible) | IPsec/IKEv2 (enterprise) | L2TP (legacy)</text>
+        <rect x="20" y="210" width="460" height="35" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="230" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Zero Trust alternative: BeyondCorp model - no VPN needed, identity-based access</text>
+      </svg>
+    ),
+    memorytypes: (
+      <svg viewBox="0 0 500 280" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">Memory: Stack vs Heap</text>
+        <rect x="20" y="35" width="225" height="100" rx="6" fill="#4ade8015" stroke="#4ade80" strokeWidth="1.5" />
+        <text x="132" y="55" textAnchor="middle" fill="#4ade80" fontSize="10" fontWeight="600">Stack</text>
+        <text x="132" y="75" textAnchor="middle" fill="#a1a1aa" fontSize="7">LIFO, auto-managed</text>
+        <text x="132" y="92" textAnchor="middle" fill="#a1a1aa" fontSize="7">Local variables, function calls</text>
+        <text x="132" y="109" textAnchor="middle" fill="#a1a1aa" fontSize="7">Fast allocation (pointer bump)</text>
+        <text x="132" y="126" textAnchor="middle" fill="#71717a" fontSize="6">Limited size (~1-8 MB)</text>
+        <rect x="255" y="35" width="225" height="100" rx="6" fill="#f472b615" stroke="#f472b6" strokeWidth="1.5" />
+        <text x="367" y="55" textAnchor="middle" fill="#f472b6" fontSize="10" fontWeight="600">Heap</text>
+        <text x="367" y="75" textAnchor="middle" fill="#a1a1aa" fontSize="7">Dynamic, manual/GC managed</text>
+        <text x="367" y="92" textAnchor="middle" fill="#a1a1aa" fontSize="7">Objects, dynamic arrays</text>
+        <text x="367" y="109" textAnchor="middle" fill="#a1a1aa" fontSize="7">Slower (fragmentation)</text>
+        <text x="367" y="126" textAnchor="middle" fill="#71717a" fontSize="6">Large, limited by RAM</text>
+        <rect x="20" y="150" width="460" height="55" rx="6" fill="#60a5fa15" stroke="#60a5fa" strokeWidth="1.5" />
+        <text x="250" y="170" textAnchor="middle" fill="#60a5fa" fontSize="9" fontWeight="600">Memory Hierarchy (Speed → Capacity)</text>
+        <text x="250" y="190" textAnchor="middle" fill="#a1a1aa" fontSize="7">Registers → L1 Cache → L2 Cache → L3 Cache → RAM → SSD → HDD</text>
+        <rect x="20" y="220" width="460" height="45" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="238" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Stack overflow: recursion too deep | Heap: memory leaks, fragmentation</text>
+        <text x="250" y="255" textAnchor="middle" fill="#22d3ee" fontSize="6">Rust/Go put small objects on stack for performance (escape analysis)</text>
+      </svg>
+    ),
+    internationalpay: (
+      <svg viewBox="0 0 500 280" style={{ width: '100%', maxWidth: 500, display: 'block', margin: '0 auto' }}>
+        <text x="250" y="15" textAnchor="middle" fill="#52525b" fontSize="9">International Payments - Cross-Border Flow</text>
+        {[
+          { x: 20, y: 35, name: 'Sender Bank', desc: 'Initiates payment', color: '#4ade80' },
+          { x: 140, y: 35, name: 'SWIFT', desc: 'Messaging network', color: '#60a5fa' },
+          { x: 260, y: 35, name: 'Correspondent', desc: 'Intermediary bank', color: '#f472b6' },
+          { x: 380, y: 35, name: 'Receiver Bank', desc: 'Credits recipient', color: '#fb923c' }
+        ].map((n, i) => (
+          <g key={i}>
+            <rect x={n.x} y={n.y} width="100" height="50" rx="6" fill={`${n.color}15`} stroke={n.color} strokeWidth="1.5" />
+            <text x={n.x + 50} y={n.y + 18} textAnchor="middle" fill={n.color} fontSize="8" fontWeight="600">{n.name}</text>
+            <text x={n.x + 50} y={n.y + 38} textAnchor="middle" fill="#71717a" fontSize="6">{n.desc}</text>
+            {i < 3 && <path d={`M${n.x + 100} ${n.y + 25} L${n.x + 120} ${n.y + 25}`} stroke="#3f3f46" strokeWidth="1.5" />}
+          </g>
+        ))}
+        <rect x="20" y="100" width="225" height="70" rx="6" fill="#a78bfa15" stroke="#a78bfa" strokeWidth="1.5" />
+        <text x="132" y="120" textAnchor="middle" fill="#a78bfa" fontSize="9" fontWeight="600">Traditional SWIFT</text>
+        <text x="132" y="140" textAnchor="middle" fill="#a1a1aa" fontSize="7">2-5 business days</text>
+        <text x="132" y="157" textAnchor="middle" fill="#71717a" fontSize="6">$25-50 fees, multiple hops</text>
+        <rect x="255" y="100" width="225" height="70" rx="6" fill="#22d3ee15" stroke="#22d3ee" strokeWidth="1.5" />
+        <text x="367" y="120" textAnchor="middle" fill="#22d3ee" fontSize="9" fontWeight="600">Modern Alternatives</text>
+        <text x="367" y="140" textAnchor="middle" fill="#a1a1aa" fontSize="7">Wise, Revolut: Minutes, low fees</text>
+        <text x="367" y="157" textAnchor="middle" fill="#71717a" fontSize="6">Ripple/XRP: Blockchain-based</text>
+        <rect x="20" y="185" width="460" height="80" rx="6" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" />
+        <text x="250" y="205" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600">Currency Conversion</text>
+        <text x="250" y="225" textAnchor="middle" fill="#71717a" fontSize="7">FX rate + markup (1-5%) | Mid-market rate is best | Banks add hidden fees</text>
+        <text x="250" y="242" textAnchor="middle" fill="#71717a" fontSize="7">SWIFT GPI: Faster tracking | ISO 20022: New message format</text>
+        <text x="250" y="257" textAnchor="middle" fill="#22d3ee" fontSize="6">$150 trillion+ moves through SWIFT annually</text>
+      </svg>
+    ),
   };
   return diagrams[type] || <div style={{ padding: '2rem', textAlign: 'center', background: `${color}10`, borderRadius: '8px' }}><span style={{ fontSize: '2.5rem' }}>📊</span><p style={{ color: '#71717a', marginTop: '0.5rem', fontSize: '0.85rem' }}>{type}</p></div>;
 }
@@ -2596,6 +6479,1045 @@ const content = {
     concepts: ['Atomicity: All or nothing', 'Consistency: Valid state transitions', 'Isolation: Concurrent transactions', 'Durability: Committed data persists', 'Foundation of RDBMS'],
     tradeoffs: [['Property', 'Benefit', 'Cost'], ['Atomicity', 'Rollback on failure', 'Logging overhead'], ['Isolation', 'Correctness', 'Lock contention'], ['Durability', 'Data safety', 'Disk sync']],
     interview: ['ACID vs BASE?', 'Isolation levels explained?', 'How achieve durability?']
+  },
+  thunderherd: {
+    concepts: ['Cache expiration causes simultaneous DB requests', 'Multiple clients race to rebuild cache', 'Database overload from sudden traffic spike', 'Solutions: Locking, early refresh, background jobs', 'Request coalescing deduplicates identical requests'],
+    tradeoffs: [['Solution', 'Pros', 'Cons'], ['Mutex Lock', 'Guaranteed single rebuild', 'Added latency, lock contention'], ['Early Expire', 'No thundering herd', 'Complex probability logic'], ['Background Refresh', 'No user impact', 'Stale data window'], ['Never Expire', 'Zero stampede risk', 'Manual invalidation needed']],
+    interview: ['How prevent cache stampede?', 'Compare locking vs probabilistic refresh', 'What is request coalescing?'],
+    deepDive: 'Facebook solved this with lease mechanism: first request gets a lease token, others wait. If lease holder crashes, token expires and another client takes over. Google uses probabilistic early expiration: refresh probability increases as TTL approaches. Formula: exp(-beta * remaining_ttl) where beta controls aggressiveness. Request coalescing in Nginx combines duplicate in-flight requests - 99% reduction in backend calls during traffic spikes.',
+    realWorld: 'Facebook: Lease-based locking in Memcached for 5B+ requests/sec. Netflix: EVCache with probabilistic refresh. Cloudflare: Request coalescing handles 25M+ requests/sec. Instagram: Background refresh for hot keys with 100K+ QPS.',
+    gotchas: 'Mutex locks create single point of failure if holder crashes. Set lock timeout shorter than TTL. Probabilistic refresh only works with predictable access patterns. Test thundering herd with cache flush during peak traffic.'
+  },
+  cachepenetration: {
+    concepts: ['Queries for non-existent data bypass cache', 'Every miss hits database directly', 'Can be malicious attack or bug', 'Bloom filter pre-checks key existence', 'Cache null values with short TTL'],
+    tradeoffs: [['Solution', 'Pros', 'Cons'], ['Bloom Filter', 'Memory efficient, O(1)', 'False positives possible'], ['Cache Nulls', 'Simple to implement', 'Memory for null entries'], ['Input Validation', 'Blocks invalid requests', 'Requires business logic'], ['Rate Limiting', 'Protects DB', 'May block valid users']],
+    interview: ['Bloom filter vs caching nulls?', 'How handle legitimate new keys?', 'Cache penetration vs stampede?'],
+    deepDive: 'Bloom filter uses k hash functions mapping to m bits. False positive rate: (1 - e^(-kn/m))^k where n = items. For 1M keys, 10MB bloom filter gives <1% false positives. Caching nulls: store empty result with 30-60s TTL to absorb repeated queries. Combine both: bloom filter first, then cache nulls for items that pass filter. Redis SETNX with TTL for null caching.',
+    realWorld: 'Google Bigtable: Bloom filter per SSTable reduces disk reads 99%. Cassandra: Row-level bloom filters default. HBase: Block-level bloom filters. Redis: Built-in bloom filter module. Cloudflare: Rate limiting + null caching for 7M+ sites.',
+    gotchas: 'Bloom filter must be rebuilt when data changes. False negatives never happen but false positives waste cache space. Dont cache nulls too long or real data appears missing. Log and alert on high null cache rates - may indicate attack.'
+  },
+  cachebreakdown: {
+    concepts: ['Hot key expiration under high load', 'Single popular item expires and causes stampede', 'Different from thunderherd: affects one key', 'Mutex prevents concurrent rebuilds', 'Logical expiration separates TTL from refresh'],
+    tradeoffs: [['Solution', 'Pros', 'Cons'], ['Mutex Lock', 'Single rebuild', 'Lock contention on hot key'], ['Never Expire', 'Zero breakdown', 'Manual invalidation burden'], ['Logical TTL', 'Graceful refresh', 'Stale data during refresh'], ['Singleflight', 'Dedupes concurrent calls', 'Added code complexity']],
+    interview: ['Mutex vs singleflight pattern?', 'How detect hot keys?', 'Logical vs physical TTL?'],
+    deepDive: 'Singleflight pattern (Go stdlib): first caller executes, others wait for result. Unlike mutex, callers share the result. Logical TTL: store actual data + soft expiry timestamp. If soft expired, serve stale while refreshing async. Hot key detection: Redis OBJECT FREQ command or client-side sampling. Instagram uses shadow keys: hot_key + hot_key_shadow where shadow has longer TTL as backup.',
+    realWorld: 'Instagram: Shadow keys for trending posts with 1M+ views. Twitter: Singleflight for trending hashtags. Netflix: Never-expire for catalog data with event-driven invalidation. Go stdlib: sync/singleflight used by Kubernetes, Docker, Prometheus.',
+    gotchas: 'Hot keys often unpredictable (viral content). Pre-warm cache before marketing campaigns. Monitor key access distribution - power law means top 1% keys get 90% traffic. Consider dedicated cache cluster for hot keys.'
+  },
+  cachecrash: {
+    concepts: ['Complete cache layer failure', 'All requests hit database', 'Cold start with empty cache', 'Warm-up strategies before serving traffic', 'Persistence options prevent data loss'],
+    tradeoffs: [['Strategy', 'Pros', 'Cons'], ['Cache Warming', 'Fast recovery', 'Needs data source'], ['Persistent Cache', 'Survives restart', 'Disk I/O overhead'], ['Replica Failover', 'Instant recovery', '2x cost'], ['Gradual Ramp', 'Protects DB', 'Slower recovery']],
+    interview: ['Redis RDB vs AOF?', 'How warm cache at startup?', 'Cache cluster failover strategies?'],
+    deepDive: 'Redis persistence: RDB snapshots every N changes (fast recovery, some data loss) vs AOF logs every write (slow recovery, no data loss). Use both: AOF for durability, RDB for fast restart. Cache warming: replay access logs or query top-N from DB. Netflix warms EVCache from Cassandra before enabling traffic. Gradual ramp-up: start at 10% traffic, increase as cache fills.',
+    realWorld: 'Redis: RDB+AOF for production, snapshots every 15 min. Netflix: EVCache replication across 3 zones, automatic failover. Facebook: Memcached cold cache warm-up takes 6 hours for petabyte-scale. AWS ElastiCache: Multi-AZ with automatic failover in <60 seconds.',
+    gotchas: 'Never disable persistence in production. RDB fork can cause latency spike for large datasets. AOF rewrite also needs careful tuning. Test cache failure regularly - know your recovery time. Database needs headroom for cache failures.'
+  },
+  cachinglevels: {
+    concepts: ['8 layers of caching in modern architecture', 'Each layer reduces latency and load', 'Client → CDN → LB → Gateway → App → Distributed → Search → DB', 'Cache closer to user = faster response', 'Trade-off between freshness and performance'],
+    tradeoffs: [['Layer', 'Latency', 'Freshness Trade-off'], ['Client/Browser', '~0ms', 'Stale until refresh'], ['CDN Edge', '~10ms', 'TTL-based invalidation'], ['Distributed Cache', '~1ms', 'Near real-time'], ['Database Cache', '~10ms', 'Automatic invalidation']],
+    interview: ['When to cache at each layer?', 'How coordinate invalidation across layers?', 'CDN vs application cache?'],
+    deepDive: 'Layer selection: Static content → CDN (1 year TTL). Session data → Distributed cache (Redis). Query results → Application cache. Full-text → Search cache. Invalidation cascade: write to DB → invalidate distributed cache → CDN purge → client refresh. Cache-Control headers coordinate browser + CDN. Netflix uses cache hierarchy: L1 (in-process) → L2 (EVCache) → L3 (Cassandra).',
+    realWorld: 'Netflix: 8 caching layers serve 30M+ ops/sec. Cloudflare: 200+ edge locations, 50TB+ cached globally. Facebook: TAO cache handles 99% of social graph reads. LinkedIn: Feed uses 5 cache layers from browser to MySQL.',
+    gotchas: 'More layers = more complexity for invalidation. Browser cache hardest to invalidate (versioned URLs help). Each layer adds debugging difficulty. Monitor hit rates at every layer - identify weak spots.'
+  },
+  k8sarchitecture: {
+    concepts: ['Control plane manages cluster state', 'API Server: Central hub for all communication', 'etcd: Distributed key-value store for state', 'Scheduler: Assigns pods to nodes', 'Worker nodes run actual workloads'],
+    tradeoffs: [['Component', 'Purpose', 'Failure Impact'], ['API Server', 'All operations', 'Cluster unusable'], ['etcd', 'State storage', 'Data loss risk'], ['Scheduler', 'Pod placement', 'No new scheduling'], ['Kubelet', 'Node agent', 'Node unhealthy']],
+    interview: ['How API Server handles requests?', 'Why etcd over other databases?', 'Control plane HA setup?'],
+    deepDive: 'API Server: RESTful interface, all kubectl commands go here. Implements admission controllers for validation/mutation. etcd: Raft consensus for strong consistency, watch API for change notifications. Scheduler: 2-phase (filter + score) to find best node. Controller Manager: runs reconciliation loops (Deployment → ReplicaSet → Pods). Production: 3+ control plane nodes, 5 etcd nodes for quorum.',
+    realWorld: 'Google GKE: Managed control plane, 99.95% SLA. Spotify: 200+ clusters, 6000+ nodes. Shopify: 800K+ pods during Black Friday. Airbnb: 1000+ microservices on Kubernetes.',
+    gotchas: 'etcd performance critical - use SSDs, separate etcd cluster. API Server rate limiting prevents overload. Control plane and workloads on separate nodes in production. Watch API can overwhelm etcd - limit list/watch operations.'
+  },
+  k8spatterns: {
+    concepts: ['Health Probe: Liveness and readiness checks', 'Sidecar: Helper container alongside main app', 'Init Container: Setup before main container', 'Operator: Custom controller for complex apps', 'Service Discovery: Dynamic endpoint resolution'],
+    tradeoffs: [['Pattern', 'Use Case', 'Complexity'], ['Sidecar', 'Cross-cutting concerns', 'Resource overhead'], ['Init Container', 'Setup/migration', 'Startup delay'], ['Operator', 'Stateful apps', 'High dev effort'], ['DaemonSet', 'Node-level agents', 'Resource per node']],
+    interview: ['Liveness vs readiness probes?', 'When use operator vs Helm?', 'Sidecar vs library?'],
+    deepDive: 'Sidecar pattern: Istio injects Envoy proxy for mTLS, observability, traffic control. Init containers: run database migrations, wait for dependencies. Operators: extend Kubernetes API for stateful workloads (databases, message queues). CRDs + Controllers = Operator. Health probes: liveness restarts unhealthy containers, readiness removes from service endpoints.',
+    realWorld: 'Istio: Sidecar proxy for service mesh in 10K+ companies. Prometheus Operator: Manages monitoring stack. Redis Operator: Handles cluster formation and failover. Kafka Strimzi Operator: Manages Kafka on Kubernetes.',
+    gotchas: 'Sidecar increases pod resource usage 2x. Init container failure blocks pod startup. Operators are powerful but complex to build correctly. Readiness probe failure during deployment = rollback.'
+  },
+  k8stools: {
+    concepts: ['Monitoring: Prometheus, Grafana, Datadog', 'Security: Falco, OPA, Trivy, Vault', 'Networking: Calico, Cilium, Istio', 'CI/CD: ArgoCD, Flux, Tekton', 'Storage: Rook, Longhorn, Velero'],
+    tradeoffs: [['Category', 'CNCF Tool', 'Enterprise Alternative'], ['Monitoring', 'Prometheus', 'Datadog, New Relic'], ['Mesh', 'Istio', 'Linkerd, Consul'], ['GitOps', 'ArgoCD', 'Flux, Spinnaker'], ['Security', 'Falco', 'Aqua, Sysdig']],
+    interview: ['Prometheus vs commercial APM?', 'Istio vs Linkerd trade-offs?', 'ArgoCD vs Flux?'],
+    deepDive: 'CNCF landscape: 100+ projects across 20+ categories. Prometheus: Pull-based metrics, PromQL, AlertManager. Istio: Feature-rich but complex (sidecar overhead). Linkerd: Simpler, lower resource usage. ArgoCD: GitOps with UI, SSO, RBAC. OPA: Policy as code for admission control. Trivy: Image vulnerability scanning.',
+    realWorld: 'Spotify: Prometheus + Grafana for 200+ clusters. Airbnb: Istio service mesh. Netflix: Custom tooling (Spinnaker for CD). Pinterest: Calico for network policy. Shopify: ArgoCD for GitOps.',
+    gotchas: 'Too many tools = integration nightmare. Start simple (Prometheus + basic networking). Istio adds 10-20ms latency per hop. OPA policies can break deployments if too strict. Plan for tool upgrades - version compatibility matters.'
+  },
+  containersecurity: {
+    concepts: ['Image scanning for vulnerabilities', 'Run as non-root user', 'Read-only root filesystem', 'Drop unnecessary capabilities', 'Secret management with Vault'],
+    tradeoffs: [['Practice', 'Security Benefit', 'Operational Cost'], ['Non-root', 'Limits exploit damage', 'App compatibility issues'], ['Read-only FS', 'Prevents tampering', 'Needs volume mounts'], ['Network Policy', 'Micro-segmentation', 'Complex rule management'], ['Image Signing', 'Supply chain security', 'CI/CD integration']],
+    interview: ['PodSecurityPolicy vs OPA?', 'How handle secrets in containers?', 'Container escape attacks?'],
+    deepDive: 'Defense in depth: Scan images (Trivy) → Sign images (Cosign) → Admission control (OPA) → Runtime security (Falco). Pod Security Standards: Privileged, Baseline, Restricted. securityContext: runAsNonRoot, readOnlyRootFilesystem, allowPrivilegeEscalation: false. Drop all capabilities, add only needed (NET_BIND_SERVICE). Secrets: never in image, use Vault with sidecar or CSI driver.',
+    realWorld: 'Google: Binary Authorization for GKE. Netflix: Automated CVE scanning blocks vulnerable images. Capital One: Vault for all secrets. Shopify: Falco for runtime anomaly detection. DoD: STIG-hardened base images.',
+    gotchas: 'Non-root breaks apps expecting root. Read-only FS needs writable volumes for logs/temp. Network policies default allow - explicit deny needed. Image scanning at build AND runtime (new CVEs discovered daily).'
+  },
+  osimodel: {
+    concepts: ['7 layers of network communication', 'Physical → Data Link → Network → Transport → Session → Presentation → Application', 'Each layer has specific protocols', 'Encapsulation adds headers going down', 'De-encapsulation removes headers going up'],
+    tradeoffs: [['Layer', 'Function', 'Example Protocols'], ['Application (7)', 'User interface', 'HTTP, SMTP, DNS'], ['Transport (4)', 'End-to-end delivery', 'TCP, UDP'], ['Network (3)', 'Routing', 'IP, ICMP'], ['Data Link (2)', 'Framing', 'Ethernet, WiFi']],
+    interview: ['Which layer do firewalls operate?', 'TCP/IP vs OSI model?', 'How does NAT work?'],
+    deepDive: 'TCP/IP model collapses OSI to 4 layers: Application, Transport, Internet, Network Access. L4 load balancer: routes based on TCP/UDP port, fast (millions req/sec). L7 load balancer: inspects HTTP headers, slower but smarter routing. Firewalls: L3 (packet filtering), L4 (stateful), L7 (application-aware). Encapsulation overhead: Ethernet 14B + IP 20B + TCP 20B = 54B minimum header per packet.',
+    realWorld: 'AWS: NLB (L4, 100ns latency) vs ALB (L7, 1ms latency). Cloudflare: L7 DDoS protection inspects 25M+ req/sec. Cisco: L2/L3 switches for data center fabrics. Netflix: L7 load balancing with Zuul for routing logic.',
+    gotchas: 'OSI is conceptual model, not implementation. Real protocols span multiple layers. Troubleshoot bottom-up: physical first, then work up. MTU mismatch causes fragmentation issues at L3.'
+  },
+  httpstatus: {
+    concepts: ['1xx: Informational (100 Continue)', '2xx: Success (200 OK, 201 Created, 204 No Content)', '3xx: Redirection (301 Permanent, 302 Temporary, 304 Not Modified)', '4xx: Client Error (400 Bad Request, 401, 403, 404)', '5xx: Server Error (500, 502 Bad Gateway, 503, 504)'],
+    tradeoffs: [['Code', 'When to Use', 'Client Behavior'], ['301', 'Permanent move', 'Cache redirect'], ['302', 'Temporary move', 'Don\'t cache'], ['304', 'Not modified', 'Use cached version'], ['429', 'Rate limited', 'Retry with backoff']],
+    interview: ['401 vs 403?', '502 vs 504?', 'Why 204 vs 200?'],
+    deepDive: '401 Unauthorized: missing/invalid auth. 403 Forbidden: authenticated but not permitted. 502 Bad Gateway: upstream returned invalid response. 504 Gateway Timeout: upstream didn\'t respond. 429 Too Many Requests: include Retry-After header. 204 No Content: successful but no body (DELETE, PUT). API design: use 201+Location for created resources, 202 for async processing.',
+    realWorld: 'Stripe: 402 Payment Required for declined cards. GitHub: 422 Unprocessable Entity for validation errors. Twitter: 429 with rate limit headers. AWS: 503 with exponential backoff recommendation. Cloudflare: Custom 5xx for specific edge errors.',
+    gotchas: 'Don\'t return 200 for errors (with error in body). 5xx should be retried, 4xx should not (usually). Log 5xx for debugging, 4xx for abuse detection. Status code is first thing client checks - make it meaningful.'
+  },
+  sslhandshake: {
+    concepts: ['ClientHello: cipher suites, TLS version', 'ServerHello: chosen cipher, certificate', 'Key exchange: establish shared secret', 'Verify certificate chain to CA', 'Encrypted session established'],
+    tradeoffs: [['TLS Version', 'Security', 'Compatibility'], ['TLS 1.3', 'Best, 1-RTT', 'New clients only'], ['TLS 1.2', 'Good, 2-RTT', 'Wide support'], ['TLS 1.0/1.1', 'Deprecated', 'Legacy only']],
+    interview: ['TLS 1.2 vs 1.3 handshake?', 'What is perfect forward secrecy?', 'How does MITM attack work?'],
+    deepDive: 'TLS 1.3: 1-RTT handshake (vs 2-RTT in 1.2), removed weak ciphers, mandatory PFS. Key exchange: ECDHE (Elliptic Curve Diffie-Hellman Ephemeral) for PFS. Certificate validation: check signature, expiry, revocation (OCSP/CRL), hostname match. 0-RTT resumption in TLS 1.3 enables instant reconnection but has replay attack risk. Certificate Transparency logs prevent rogue CA certs.',
+    realWorld: 'Cloudflare: TLS 1.3 for 25% of HTTPS traffic. Let\'s Encrypt: 300M+ free certificates. Google: Certificate Transparency pioneer. AWS: ACM for automatic renewal. Apple: App Transport Security requires TLS 1.2+.',
+    gotchas: 'Certificate expiry causes outages - automate renewal. OCSP stapling reduces latency. TLS termination at load balancer simplifies backend. Mixed content (HTTP resources on HTTPS page) blocked by browsers. HSTS prevents downgrade attacks.'
+  },
+  sshprotocol: {
+    concepts: ['Transport layer: encryption, integrity', 'User authentication: password, key, certificate', 'Connection: multiplexed channels', 'Port forwarding: local, remote, dynamic', 'Key exchange: Diffie-Hellman'],
+    tradeoffs: [['Auth Method', 'Security', 'Convenience'], ['Password', 'Low', 'Easy'], ['SSH Key', 'High', 'Key management'], ['Certificate', 'Highest', 'CA infrastructure'], ['MFA', 'Highest', 'Complexity']],
+    interview: ['SSH vs TLS differences?', 'How does SSH key auth work?', 'SSH tunneling use cases?'],
+    deepDive: 'SSH key auth: client has private key, server has public key in authorized_keys. Challenge-response: server encrypts random data with public key, client decrypts with private. Ed25519 keys recommended (fast, secure, short). SSH certificates: signed by CA, include validity period and principals. Jump hosts: ProxyJump for bastion access. Agent forwarding: use local keys on remote servers (security risk).',
+    realWorld: 'GitHub: SSH for git operations, 100M+ repos. HashiCorp Vault: SSH certificate authority. Teleport: Zero-trust SSH with audit logs. AWS: EC2 Instance Connect for browser SSH. Google Cloud: OS Login with IAM integration.',
+    gotchas: 'Never share private keys. Disable password auth in production. Agent forwarding exposes keys to compromised hosts. Rotate keys regularly. known_hosts prevents MITM but can break on server rebuild.'
+  },
+  ipv4v6: {
+    concepts: ['IPv4: 32-bit, 4.3 billion addresses', 'IPv6: 128-bit, 340 undecillion addresses', 'NAT extends IPv4 address space', 'IPv6 simplifies headers, no NAT needed', 'Dual-stack: run both protocols'],
+    tradeoffs: [['Aspect', 'IPv4', 'IPv6'], ['Address size', '32-bit (4B)', '128-bit (340 undecillion)'], ['NAT needed', 'Yes', 'No'], ['Header', 'Variable, complex', 'Fixed, simpler'], ['Adoption', '~75%', '~40%']],
+    interview: ['Why still using IPv4?', 'How does NAT work?', 'IPv6 transition strategies?'],
+    deepDive: 'IPv4 exhaustion: ARIN ran out 2015. NAT (Network Address Translation): many private IPs share one public IP. IPv6 benefits: no NAT = true end-to-end, simpler routing, mandatory IPsec, auto-configuration (SLAAC). Transition: Dual-stack (run both), tunneling (6to4, Teredo), translation (NAT64). IPv6 adoption: mobile networks lead (80%+), enterprise lags.',
+    realWorld: 'Google: 40%+ traffic IPv6. Facebook: 90% of traffic IPv6-capable. AWS: Dual-stack VPCs default. Mobile carriers: T-Mobile 95% IPv6. Apple: IPv6-only network required for App Store approval.',
+    gotchas: 'IPv6 addresses are long - use DNS. Some apps hardcode IPv4. Firewalls need IPv6 rules too. IPv6 makes port scanning easier (no NAT hiding). Test with IPv6-only to ensure compatibility.'
+  },
+  tcpudp: {
+    concepts: ['TCP: connection-oriented, reliable, ordered', 'UDP: connectionless, unreliable, unordered', 'TCP: 3-way handshake, retransmission', 'UDP: fire-and-forget, lower latency', 'Choice depends on application needs'],
+    tradeoffs: [['Feature', 'TCP', 'UDP'], ['Reliability', 'Guaranteed', 'Best effort'], ['Ordering', 'Maintained', 'Not guaranteed'], ['Latency', 'Higher (handshake)', 'Lower'], ['Use case', 'HTTP, email', 'Gaming, video']],
+    interview: ['When use UDP over TCP?', 'How TCP handles packet loss?', 'Why DNS uses UDP?'],
+    deepDive: 'TCP congestion control: slow start, congestion avoidance, fast retransmit. Head-of-line blocking: one lost packet blocks entire stream. QUIC (HTTP/3): UDP-based, fixes HOL blocking with streams. UDP for: real-time (VoIP, gaming), discovery (DHCP, DNS), multicast. DNS uses UDP for small queries (<512B), TCP for large (zone transfers). Modern games: UDP + custom reliability layer.',
+    realWorld: 'Discord: UDP for voice with custom protocol. Zoom: UDP with forward error correction. Netflix: TCP for video (needs reliability). Google: QUIC for 35% of Chrome traffic. Gaming: UDP with client-side prediction.',
+    gotchas: 'UDP through NAT is tricky (no connection tracking). Firewalls may block UDP. TCP overhead significant for small messages. QUIC adoption requires infrastructure updates. Don\'t reinvent reliability - use existing protocols.'
+  },
+  netprotocols: {
+    concepts: ['HTTP/1.1: text-based, keep-alive', 'HTTP/2: binary, multiplexed, server push', 'HTTP/3: QUIC-based, no HOL blocking', 'WebSocket: full-duplex, persistent', 'gRPC: HTTP/2 + Protocol Buffers'],
+    tradeoffs: [['Protocol', 'Pros', 'Cons'], ['HTTP/1.1', 'Simple, universal', '6 conn limit, HOL'], ['HTTP/2', 'Multiplexed, fast', 'TCP HOL, complex'], ['HTTP/3', 'No HOL, fast', 'UDP, new'], ['gRPC', 'Efficient, typed', 'Not browser-native']],
+    interview: ['HTTP/2 vs gRPC?', 'WebSocket vs SSE?', 'When use HTTP/3?'],
+    deepDive: 'HTTP/2: single connection, multiplexed streams, header compression (HPACK). Server push deprecated (unused). HTTP/3: QUIC = UDP + TLS 1.3 + reliability. No TCP HOL blocking - lost packet only affects one stream. WebSocket: upgrade from HTTP, bidirectional messages. SSE: server-to-client only, auto-reconnect, simpler. gRPC: strict contracts, streaming support, code generation.',
+    realWorld: 'Google: HTTP/3 for Search, YouTube, Gmail. Cloudflare: HTTP/3 for 25%+ of traffic. Slack: WebSocket for real-time messaging. Twitter: gRPC for internal services. Stock exchanges: Custom UDP protocols for microsecond latency.',
+    gotchas: 'HTTP/2 needs TLS in browsers (h2c unsupported). WebSocket through proxies can fail. gRPC needs code generation setup. HTTP/3 UDP may be blocked by corporate firewalls. Choose based on requirements, not hype.'
+  },
+  oauth2flows: {
+    concepts: ['Authorization Code: Server-side apps with client secret', 'PKCE: Mobile/SPA apps with code verifier', 'Client Credentials: Service-to-service M2M', 'Implicit (Deprecated): Legacy SPAs, token in URL', 'Refresh Token: Long-lived rotation for session extension'],
+    tradeoffs: [['Flow', 'Security', 'Use Case'], ['Authorization Code', 'Highest (server keeps secret)', 'Web apps with backend'], ['PKCE', 'High (code verifier)', 'Mobile, SPA, CLI'], ['Client Credentials', 'High (M2M only)', 'Microservices, cron jobs'], ['Implicit', 'Low (deprecated)', 'Never use - use PKCE']],
+    interview: ['Why is PKCE more secure than Implicit?', 'When use Client Credentials vs Authorization Code?', 'How does refresh token rotation work?'],
+    deepDive: 'Authorization Code: App redirects to auth server → user logs in → auth server returns code → app exchanges code + client_secret for tokens. PKCE adds code_verifier (random string) and code_challenge (SHA256 hash). Auth server verifies the challenge on token exchange - no secret needed. Refresh token rotation: each refresh returns new refresh token, old one invalidated. This limits damage if token stolen.',
+    realWorld: 'Google: OAuth 2.0 for all Google APIs, 1B+ users. GitHub: OAuth for third-party apps, 100M+ developers. Okta: Enterprise SSO with PKCE for mobile. Auth0: 10B+ logins/month. Spotify: OAuth for API access, 500M+ users.',
+    gotchas: 'Never use Implicit flow - vulnerable to token leakage in URL. PKCE is now required for public clients (mobile, SPA). Access tokens should be short-lived (5-15 min). Store refresh tokens securely (not localStorage). Always use HTTPS for token exchange.'
+  },
+  sessiontoken: {
+    concepts: ['Session Cookie: Server stores session state, client gets ID', 'JWT: Self-contained claims, signed/encrypted', 'Refresh Token: Long-lived token for getting new access tokens', 'HttpOnly Cookie: JavaScript cannot access, XSS protection', 'SameSite Cookie: CSRF protection attribute'],
+    tradeoffs: [['Method', 'Scalability', 'Revocation'], ['Session Cookie', 'Needs session store', 'Instant (delete from store)'], ['JWT', 'Stateless, highly scalable', 'Hard (wait for expiry)'], ['JWT + Blacklist', 'Medium', 'Possible but adds state'], ['Short JWT + Refresh', 'Good balance', 'Revoke refresh token']],
+    interview: ['How revoke a JWT before expiry?', 'Session vs JWT for microservices?', 'Where to store tokens in browser?'],
+    deepDive: 'JWT structure: header.payload.signature (Base64 encoded). Claims: iss (issuer), sub (subject), exp (expiry), iat (issued at), custom claims. Signature: HMAC-SHA256 or RSA. Revocation strategies: short expiry (15 min), blacklist in Redis, refresh token rotation. Storage: HttpOnly cookies (secure from XSS) vs localStorage (vulnerable to XSS but no CSRF). Best: HttpOnly cookie with SameSite=Strict.',
+    realWorld: 'Auth0: JWT for stateless auth, 10B+ logins. Netflix: Short-lived JWTs with refresh rotation. Stripe: Session cookies for dashboard, API keys for programmatic. Discord: JWTs with 7-day expiry. GitHub: Session cookies with CSRF tokens.',
+    gotchas: 'JWT in localStorage = XSS vulnerability. Large JWTs increase request size (sent with every request). Never store sensitive data in JWT payload (its only Base64, not encrypted). Refresh token must be stored more securely than access token. Set proper expiry - too long is insecure, too short is annoying.'
+  },
+  dataprotection: {
+    concepts: ['Encoding: Data format conversion (Base64, URL encode)', 'Encryption: Confidentiality with key (AES, RSA)', 'Hashing: One-way fingerprint (SHA-256, bcrypt)', 'Tokenization: Replace sensitive data with token', 'Key Management: Secure key storage and rotation'],
+    tradeoffs: [['Method', 'Reversible', 'Use Case'], ['Encoding', 'Yes, by anyone', 'Data transport only'], ['Symmetric Encryption', 'Yes, with key', 'Data at rest, fast'], ['Asymmetric Encryption', 'Yes, with private key', 'Key exchange, signatures'], ['Tokenization', 'Yes, via vault lookup', 'PCI compliance'], ['Hashing', 'No', 'Password storage']],
+    interview: ['Encoding vs Encryption for API data?', 'How does tokenization reduce PCI scope?', 'Why bcrypt over SHA-256 for passwords?'],
+    deepDive: 'Encryption: AES-256-GCM for symmetric (fast, authenticated). RSA-2048+ for asymmetric (slow, key exchange). Tokenization: original stored in secure vault, token has no mathematical relationship. PCI DSS: tokenization removes card data from your systems = reduced compliance scope. Hashing for passwords: bcrypt/scrypt/Argon2 with salt and work factor. Key rotation: encrypt with new key, re-encrypt data gradually.',
+    realWorld: 'Stripe: Tokenization for cards, PCI Level 1. AWS KMS: Managed encryption keys for S3, EBS. HashiCorp Vault: Secret management, 10K+ companies. Apple: End-to-end encryption for iMessage. 1Password: Zero-knowledge encryption.',
+    gotchas: 'Base64 is NOT encryption - anyone can decode. Never roll your own crypto - use established libraries. Key management is the hardest part - use HSM or KMS. Bcrypt has 72-byte limit - hash long passwords first. Tokenization requires highly available vault.'
+  },
+  devsecops: {
+    concepts: ['Shift Left: Security earlier in SDLC', 'SAST: Static code analysis for vulnerabilities', 'DAST: Dynamic testing of running application', 'SCA: Software Composition Analysis for dependencies', 'IaC Security: Scan Terraform, CloudFormation'],
+    tradeoffs: [['Tool Type', 'When', 'Coverage'], ['SAST', 'Code commit/PR', 'Code patterns, secrets'], ['SCA', 'Build time', 'Vulnerable dependencies'], ['DAST', 'Runtime/staging', 'Injection, misconfig'], ['IAST', 'Runtime with agent', 'Real vulnerabilities']],
+    interview: ['SAST vs DAST vs SCA?', 'How prioritize vulnerability remediation?', 'Security gates in CI/CD?'],
+    deepDive: 'Pipeline: PR → SAST + SCA scan → Block on critical → Build → Container scan → DAST in staging → Deploy with approval. SAST tools: Snyk Code, SonarQube, Semgrep. SCA tools: Snyk Open Source, Dependabot, WhiteSource. DAST tools: OWASP ZAP, Burp Suite. IaC tools: Checkov, tfsec, Trivy. SBOM: Software Bill of Materials for supply chain security.',
+    realWorld: 'Netflix: Continuous security testing, Security Monkey. Google: OSS-Fuzz for automated fuzzing. Microsoft: SDL integrated into Azure DevOps. GitHub: Dependabot alerts, CodeQL analysis. Capital One: Cloud Custodian for compliance.',
+    gotchas: 'Too many false positives = alert fatigue. Start with high/critical only. SAST cant find runtime issues. DAST cant find all code paths. Prioritize: exploitability > severity > fix effort. Security gates that block everything get bypassed.'
+  },
+  securitydomains: {
+    concepts: ['Authentication: Verify identity (who you are)', 'Authorization: Verify permissions (what you can do)', 'Input Validation: Sanitize all user input', 'Cryptography: Encryption, hashing, signatures', 'Logging: Audit trail for security events'],
+    tradeoffs: [['Domain', 'Primary Threat', 'Key Control'], ['Authentication', 'Credential theft', 'MFA, strong passwords'], ['Authorization', 'Privilege escalation', 'RBAC, least privilege'], ['Input Validation', 'Injection attacks', 'Allowlist, encoding'], ['Cryptography', 'Data exposure', 'AES-256, TLS 1.3']],
+    interview: ['Defense in depth examples?', 'Least privilege in microservices?', 'Security logging requirements?'],
+    deepDive: 'OWASP Secure Coding: 12 domains covering full application security. Defense in depth: multiple security layers (WAF + app validation + DB permissions). Least privilege: service accounts with minimal permissions. Fail secure: default deny, explicit allow. Separation of duties: no single person controls entire flow. Security logging: who, what, when, from where, success/failure.',
+    realWorld: 'AWS: IAM for authorization, 200+ services. Google: BeyondCorp zero-trust model. Netflix: Microservice security with mutual TLS. Stripe: PCI DSS Level 1 across all domains. Apple: Secure enclave for cryptographic keys.',
+    gotchas: 'Security is not a feature - its a property of every feature. Authentication without authorization = useless. Input validation on client AND server. Never log sensitive data (passwords, tokens, PII). Test security controls - dont assume they work.'
+  },
+  apisecurity: {
+    concepts: ['BOLA: Broken Object Level Authorization', 'Rate Limiting: Prevent abuse and DoS', 'Input Validation: Prevent injection attacks', 'Authentication: Verify caller identity', 'Output Encoding: Prevent XSS in responses'],
+    tradeoffs: [['Control', 'Protection', 'Performance Impact'], ['Rate Limiting', 'DoS, brute force', 'State management'], ['Input Validation', 'Injection, XSS', 'Processing overhead'], ['WAF', 'Known attack patterns', 'Latency, false positives'], ['mTLS', 'Service identity', 'Certificate management']],
+    interview: ['OWASP API Top 10 vs Web Top 10?', 'How prevent BOLA?', 'API rate limiting strategies?'],
+    deepDive: 'OWASP API Top 10 (2023): 1. BOLA, 2. Broken Auth, 3. Object Property Level Auth, 4. Unrestricted Resource Consumption, 5. Broken Function Level Auth, 6. Server Side Request Forgery, 7. Security Misconfiguration, 8. Injection, 9. Improper Asset Management, 10. Unsafe API Consumption. BOLA prevention: always check user owns resource, never trust client IDs. Rate limiting: Token bucket with per-user and global limits.',
+    realWorld: 'Cloudflare: WAF protecting 25M+ sites. AWS API Gateway: Built-in throttling, WAF integration. Stripe: Idempotency keys prevent duplicate charges. GitHub: Rate limiting with X-RateLimit headers. Twilio: Webhook validation signatures.',
+    gotchas: 'BOLA is #1 for a reason - most common API vulnerability. Client-side validation is not security. Rate limits too strict = false positives. Too loose = ineffective. Log all API errors - they reveal attack patterns. Version your API - breaking changes create security gaps.'
+  },
+  apiauthmethods: {
+    concepts: ['API Key: Simple identifier in header/query', 'OAuth 2.0 Bearer: Delegated access token', 'JWT: Self-contained signed token', 'Basic Auth: Base64 encoded username:password', 'mTLS: Mutual TLS with client certificates'],
+    tradeoffs: [['Method', 'Security', 'Complexity'], ['API Key', 'Low (no user context)', 'Very simple'], ['OAuth Bearer', 'High (scoped, expiring)', 'Complex flow'], ['JWT', 'Medium (verify signature)', 'Medium'], ['Basic Auth', 'Low (credentials sent)', 'Very simple'], ['mTLS', 'Highest (cert-based)', 'Certificate management']],
+    interview: ['When use API key vs OAuth?', 'JWT vs opaque tokens?', 'How secure API keys?'],
+    deepDive: 'API Key: X-API-Key header, identify application not user. Scope: rate limits, feature access. OAuth Bearer: Authorization: Bearer <token>, delegated user access. JWT: Self-contained claims, verify with public key. Signature prevents tampering. Basic Auth: Base64(username:password), only over HTTPS. mTLS: Client presents certificate, server verifies. Used for service-to-service.',
+    realWorld: 'AWS: SigV4 signature for all API calls. Stripe: API keys + webhook signatures. GitHub: Personal Access Tokens with fine-grained permissions. Google Cloud: Service account keys + OAuth. Twilio: Account SID + Auth Token (Basic Auth pattern).',
+    gotchas: 'API keys are not secrets if in client code. Rotate keys regularly - breach detection is hard. Bearer tokens in URLs get logged - use headers. Basic Auth credentials cached by browsers - logout is tricky. mTLS certificate rotation needs automation.'
+  },
+  dbdatastructures: {
+    concepts: ['B-Tree: Balanced tree for disk-based sorted data', 'LSM Tree: Log-structured merge for write-heavy', 'SSTable: Sorted String Table, immutable on disk', 'Skiplist: Probabilistic layers for O(log n)', 'Inverted Index: Term → Document mapping for search'],
+    tradeoffs: [['Structure', 'Read', 'Write'], ['B-Tree', 'O(log n), optimal', 'O(log n), in-place'], ['LSM Tree', 'O(log n), check levels', 'O(1), sequential'], ['Skiplist', 'O(log n)', 'O(log n)'], ['Hash Index', 'O(1)', 'O(1), no range']],
+    interview: ['B-Tree vs LSM Tree trade-offs?', 'Why LSM for write-heavy?', 'How does compaction work?'],
+    deepDive: 'B-Tree: Nodes sorted, fan-out 100-500 for disk. Each node = 1 disk page (4-16KB). Optimal for read-heavy OLTP. LSM Tree: Writes go to MemTable (skiplist) → flush to SSTable → background compaction. Write amplification: data rewritten during compaction. Read amplification: check multiple levels. Bloom filters reduce unnecessary disk reads. Compaction strategies: Size-tiered (Cassandra) vs Leveled (RocksDB).',
+    realWorld: 'LevelDB/RocksDB: LSM Tree, 100K+ writes/sec. PostgreSQL/MySQL: B-Tree indexes. Cassandra: LSM with size-tiered compaction. Redis: Skiplist for sorted sets. Elasticsearch: Inverted index + segment merging.',
+    gotchas: 'LSM compaction can spike latency - tune carefully. B-Tree suffers from fragmentation over time. Bloom filters use memory - balance false positive rate. SSTable merging is I/O intensive. Monitor write amplification ratio.'
+  },
+  sqloptimization: {
+    concepts: ['EXPLAIN ANALYZE: View actual execution plan', 'Index types: B-Tree, Hash, GIN, GiST', 'Query planner: Cost-based optimization', 'Statistics: ANALYZE keeps stats current', 'Covering index: All columns in index'],
+    tradeoffs: [['Index Type', 'Best For', 'Limitation'], ['B-Tree', '=, <, >, BETWEEN', 'Large values slow'], ['Hash', 'Equality only', 'No range queries'], ['GIN', 'Arrays, JSONB, FTS', 'Slower writes'], ['Partial', 'Subset of rows', 'Limited scope']],
+    interview: ['How read EXPLAIN output?', 'When does index not help?', 'Composite index column order?'],
+    deepDive: 'Query execution: Parse → Rewrite → Plan → Execute. Cost estimation: seq_page_cost=1.0, random_page_cost=4.0, cpu_tuple_cost=0.01. Index selection: planner compares sequential scan vs index scan costs. Left-most prefix rule: composite index (a, b, c) can use (a), (a, b), or (a, b, c). Covering index: includes all queried columns, avoids table lookup (Index-Only Scan). Statistics: histogram, most common values, null fraction.',
+    realWorld: 'Uber: 10K+ PostgreSQL indexes, careful monitoring. Instagram: Partial indexes for active users only. Stripe: Covering indexes for billing queries. Discord: GIN indexes for JSONB search. Amazon RDS: Performance Insights for query analysis.',
+    gotchas: 'LIKE %x% cannot use B-Tree index. Functions on columns prevent index use (create expression index). Too many indexes slow writes. Outdated statistics → bad plans (run ANALYZE). Index bloat requires REINDEX. Check for sequential scans on large tables.'
+  },
+  dbtransactions: {
+    concepts: ['ACID: Atomicity, Consistency, Isolation, Durability', 'Isolation levels: Read Uncommitted → Serializable', 'MVCC: Multi-Version Concurrency Control', 'Deadlock: Circular wait detection', '2PC: Two-phase commit for distributed'],
+    tradeoffs: [['Isolation', 'Anomaly Prevented', 'Performance'], ['Read Uncommitted', 'None', 'Fastest'], ['Read Committed', 'Dirty read', 'Good'], ['Repeatable Read', 'Non-repeatable', 'Medium'], ['Serializable', 'All anomalies', 'Slowest']],
+    interview: ['What causes phantom reads?', 'MVCC vs locking?', 'How detect deadlocks?'],
+    deepDive: 'MVCC (PostgreSQL): Each row has xmin (created by txn) and xmax (deleted by txn). Readers dont block writers. Snapshot isolation: txn sees consistent snapshot at start. Serializable: PostgreSQL uses SSI (Serializable Snapshot Isolation) with predicate locks. Deadlock detection: wait-for graph, abort youngest txn. MySQL: InnoDB uses gap locks for phantom prevention.',
+    realWorld: 'PostgreSQL: MVCC, Read Committed default. MySQL: Repeatable Read default, gap locks. CockroachDB: Serializable only, optimistic locking. Spanner: External consistency with TrueTime. DynamoDB: Transactions with 25-item limit.',
+    gotchas: 'Serializable is slow - use only when needed. Long transactions hold locks/versions. Deadlocks require retry logic. MVCC vacuum is essential (PostgreSQL autovacuum). Read Committed can see different data in same txn. Distributed transactions are 10x slower.'
+  },
+  dbmodels: {
+    concepts: ['Flat file: Simple records, no relationships', 'Hierarchical: Tree structure, IMS style', 'Relational: Tables with foreign keys', 'Star schema: Fact + dimension tables', 'Snowflake: Normalized star schema', 'Network: Graph-like CODASYL'],
+    tradeoffs: [['Model', 'Query Flexibility', 'Write Performance'], ['Relational', 'High (SQL)', 'Medium'], ['Star Schema', 'Fast aggregations', 'ETL complexity'], ['Document', 'Schema flexible', 'Good'], ['Graph', 'Relationship traversal', 'Variable']],
+    interview: ['Star vs snowflake schema?', 'OLTP vs OLAP data model?', 'When denormalize?'],
+    deepDive: 'Star schema: Central fact table (events/transactions) + dimension tables (who/what/when/where). Optimized for aggregations, denormalized for query speed. Snowflake: Dimensions normalized into sub-dimensions. Saves space but more joins. OLAP engines (BigQuery, Redshift) optimize for star schema scans. Modern: Document (MongoDB flexibility), Graph (Neo4j relationships), Time-series (InfluxDB metrics).',
+    realWorld: 'Amazon Redshift: Star schema for analytics. Snowflake: Named after the schema pattern. MongoDB: Document model for 50K+ companies. Neo4j: Graph DB for fraud detection, recommendations. ClickHouse: Columnar for real-time analytics.',
+    gotchas: 'Over-normalization kills query performance. Star schema needs careful dimension design. Snowflake schema joins can be expensive. Document model: think about access patterns upfront. Graph traversal can explode with dense connections.'
+  },
+  shardingguide: {
+    concepts: ['Range sharding: Divide by key ranges', 'Hash sharding: Consistent hash of key', 'Consistent hashing: Ring-based distribution', 'Virtual buckets: Logical to physical mapping', 'Shard key: Most important decision'],
+    tradeoffs: [['Strategy', 'Distribution', 'Range Queries'], ['Range', 'Can be uneven', 'Efficient'], ['Hash', 'Even', 'Scatter-gather'], ['Consistent', 'Even, easy resize', 'Scatter-gather'], ['Directory', 'Controlled', 'Lookup needed']],
+    interview: ['How choose shard key?', 'Cross-shard query challenges?', 'Resharding strategies?'],
+    deepDive: 'Shard key selection criteria: high cardinality, even distribution, query locality. Bad keys: timestamps (hot partition), low cardinality (uneven). Instagram: user_id modulo number of shards. Vitess: vschema maps logical shards to physical MySQL. Consistent hashing: minimal data movement when adding nodes. Virtual nodes: each server owns multiple points on ring for better balance. Cross-shard: scatter-gather pattern, expensive for joins.',
+    realWorld: 'Instagram: 12K+ shards, user_id based. Vitess (YouTube): Manages sharded MySQL at scale. CockroachDB: Automatic range-based sharding. Cassandra: Consistent hashing with vnodes. MongoDB: Range or hash sharding.',
+    gotchas: 'Wrong shard key = rewrite entire database. Cross-shard transactions are very slow. Hotspots can overwhelm single shard. Plan resharding before you need it. Scatter-gather queries dont scale linearly. Consider read replicas before sharding.'
+  },
+  pgecosystem: {
+    concepts: ['TimescaleDB: Time-series extension', 'pgVector: Vector embeddings for AI', 'PostGIS: Geospatial data and queries', 'Citus: Distributed PostgreSQL', 'pgBouncer: Connection pooling'],
+    tradeoffs: [['Extension', 'Use Case', 'Overhead'], ['TimescaleDB', 'Time-series', 'Chunking complexity'], ['pgVector', 'Embeddings/AI', 'Index build time'], ['PostGIS', 'Geospatial', 'Large data types'], ['Citus', 'Sharding', 'Distributed complexity']],
+    interview: ['pgVector vs dedicated vector DB?', 'When use TimescaleDB?', 'PostGIS vs application-side geo?'],
+    deepDive: 'TimescaleDB: Hypertables auto-partition by time. Compression up to 95%. Continuous aggregates for rollups. pgVector: Store 1536-dim OpenAI embeddings, IVFFlat or HNSW indexes. 10-100x faster than linear scan. PostGIS: Geography vs Geometry types, spatial indexes (GiST). ST_DWithin for proximity queries. Citus: Distributed tables, reference tables, local tables. Transparent sharding.',
+    realWorld: 'Timescale: IoT at Comcast, 100B+ rows. pgVector: AI startups, RAG applications. PostGIS: Uber, Lyft for location data. Citus: Microsoft (acquired), Azure PostgreSQL Hyperscale. Supabase: PostgreSQL + pgVector for AI features.',
+    gotchas: 'Extensions add upgrade complexity. pgVector index build can take hours for millions of vectors. PostGIS SRID must match for operations. Citus distributed queries can be slow if poorly designed. pgBouncer transaction mode breaks some features (prepared statements).'
+  },
+  micropractices: {
+    concepts: ['Single responsibility: One service = one business capability', 'Database per service: No shared databases', 'Stateless services: Store state externally', 'Containerization: Docker for consistency', 'API Gateway: Single entry point for clients'],
+    tradeoffs: [['Practice', 'Benefit', 'Challenge'], ['Single Purpose', 'Easy to understand', 'More services to manage'], ['Separate DBs', 'Independence', 'Data consistency'], ['Stateless', 'Easy scaling', 'External state management'], ['Containers', 'Portability', 'Orchestration complexity']],
+    interview: ['How determine service boundaries?', 'Database per service challenges?', 'When NOT use microservices?'],
+    deepDive: 'Service boundaries: Use DDD bounded contexts. Each context = potential microservice. Database per service: Prevents tight coupling, enables polyglot persistence. Challenge: distributed transactions (use Saga pattern). Stateless: Store sessions in Redis, use JWT for auth. Enables horizontal scaling. API Gateway: Netflix ZUUL, Kong, AWS API Gateway. Handles auth, rate limiting, routing, aggregation.',
+    realWorld: 'Netflix: 1000+ microservices, 2 billion API calls/day. Uber: 2000+ microservices, 50M trips/day. Amazon: Two-pizza team rule, each owns services. Spotify: Squads own services end-to-end. Airbnb: Migrated from Rails monolith to 500+ services.',
+    gotchas: 'Microservices add complexity - dont use for small teams. Network latency replaces function calls. Distributed debugging is hard. Data consistency requires eventual consistency mindset. Start with monolith, extract services as needed.'
+  },
+  prodcomponents: {
+    concepts: ['API Gateway: Entry point with auth, rate limiting', 'Service Registry: Dynamic service discovery', 'Config Server: Centralized configuration', 'Circuit Breaker: Prevent cascade failures', 'Distributed Cache: Reduce database load'],
+    tradeoffs: [['Component', 'Must-Have', 'Nice-to-Have'], ['API Gateway', 'Yes', 'Load balancing built-in'], ['Service Registry', 'Yes for dynamic', 'No if static IPs'], ['Config Server', 'Yes for secrets', 'Can use env vars'], ['Circuit Breaker', 'Yes', 'Retry + timeout sufficient']],
+    interview: ['Minimum viable production setup?', 'Config server vs environment variables?', 'When skip service registry?'],
+    deepDive: 'API Gateway: ZUUL (Netflix), Kong (open source), AWS API Gateway. Features: authentication, rate limiting, request transformation, response caching. Service Registry: Eureka (Netflix), Consul (HashiCorp), etcd. Self-registration vs third-party registration. Config Server: Spring Cloud Config, HashiCorp Vault for secrets. Git-backed for version control. Circuit Breaker: Hystrix (deprecated), Resilience4j. States: Closed → Open → Half-Open.',
+    realWorld: 'Netflix: ZUUL + Eureka + Hystrix stack. Amazon: AWS API Gateway + ECS Service Discovery. Uber: Custom service mesh with Consul. Spotify: Envoy proxy for service mesh. Pinterest: Kong API Gateway.',
+    gotchas: 'Start with essentials: Gateway, Registry, basic monitoring. Add complexity as needed. Service registry requires health checks - configure properly. Config server is single point of failure - make it HA. Too many circuit breakers = hard to debug.'
+  },
+  servicediscovery: {
+    concepts: ['Service Registry: Central database of services', 'Self-registration: Services register themselves', 'Health checks: Verify service availability', 'Client-side discovery: Client queries registry', 'Server-side discovery: Load balancer queries registry'],
+    tradeoffs: [['Type', 'Pros', 'Cons'], ['Client-side', 'Simpler, fewer hops', 'Client complexity'], ['Server-side', 'Simpler clients', 'Extra hop, SPOF'], ['DNS-based', 'Universal support', 'TTL caching issues'], ['Consul/Eureka', 'Feature-rich', 'Operational overhead']],
+    interview: ['Client-side vs server-side discovery?', 'DNS TTL problems?', 'Self-registration vs registrar?'],
+    deepDive: 'Self-registration: Service sends heartbeats, deregisters on shutdown. Registrar pattern: Separate process registers services (Kubernetes does this). Client-side: Ribbon (Netflix) caches registry, load balances locally. Server-side: AWS ELB, Kubernetes Service. DNS-based: Route 53, CoreDNS. Simple but TTL causes stale entries. Consul: Supports both patterns, built-in health checks, key-value store.',
+    realWorld: 'Netflix: Eureka for service registry, Ribbon for client-side LB. Kubernetes: etcd + kube-proxy for server-side discovery. HashiCorp Consul: Used by Stripe, Twitch, Criteo. AWS: Cloud Map + App Mesh. Airbnb: SmartStack (custom, now deprecated).',
+    gotchas: 'DNS TTL can return stale IPs - use short TTL or SDK. Health checks must match service readiness. Self-registration needs graceful shutdown. Registry must be highly available - use cluster. Client-side discovery needs retry logic for stale entries.'
+  },
+  disttracing: {
+    concepts: ['Trace: Full request journey across services', 'Span: Single operation within a trace', 'Context propagation: Pass trace ID in headers', 'Sampling: Store percentage of traces', 'Correlation ID: Link related requests'],
+    tradeoffs: [['Tool', 'Deployment', 'Storage'], ['Jaeger', 'Self-hosted', 'Elasticsearch, Cassandra'], ['Zipkin', 'Self-hosted', 'MySQL, Cassandra'], ['OpenTelemetry', 'Standard', 'Multiple backends'], ['AWS X-Ray', 'Managed', 'AWS']],
+    interview: ['Trace vs span vs log?', 'Sampling strategies?', 'OpenTelemetry vs vendor-specific?'],
+    deepDive: 'Context propagation: W3C Trace Context standard (traceparent header). Contains: trace-id, parent-id, flags. Sampling: Head-based (decide at start) vs tail-based (decide after). Adaptive sampling: sample more errors. OpenTelemetry: CNCF standard, auto-instrumentation for 10+ languages. Collectors aggregate and export to backends. Jaeger architecture: Client → Agent → Collector → Storage → Query.',
+    realWorld: 'Uber: Created Jaeger, traces 1M+ spans/sec. Google: Dapper paper inspired modern tracing. Netflix: Uses OpenTelemetry + custom tools. Lyft: Envoy proxy built-in tracing. Shopify: 1B+ traces/day with OpenTelemetry.',
+    gotchas: 'Tracing adds latency - use async reporting. Storage grows fast - set retention policies. Sampling means missing some traces - use adaptive sampling for errors. Instrumentation requires code changes or auto-instrumentation. Trace context must be propagated through all services including async.'
+  },
+  heartbeatdetect: {
+    concepts: ['Push-based: Node sends periodic heartbeats', 'Pull-based: Monitor polls nodes', 'Gossip: Nodes share failure info with peers', 'Phi Accrual: Adaptive threshold based on history', 'SWIM: Scalable Weakly-consistent Infection-style Membership'],
+    tradeoffs: [['Mechanism', 'Scalability', 'Accuracy'], ['Push', 'Good', 'Depends on interval'], ['Pull', 'Limited', 'Controlled'], ['Gossip', 'Excellent', 'Eventually consistent'], ['Phi Accrual', 'Good', 'Excellent'], ['SWIM', 'Excellent', 'Good']],
+    interview: ['Push vs pull heartbeats?', 'How Cassandra detects failures?', 'False positive in failure detection?'],
+    deepDive: 'Push-based: Node → Monitor at fixed interval. Timeout = failure. Simple but noisy networks cause false positives. Phi Accrual (Cassandra): Track heartbeat history, compute probability of failure. Adapts to network conditions. SWIM: Probe random node, if no response ask k others to probe. Scales O(log n). Gossip: Combine with heartbeats, spread failure info peer-to-peer. Consul uses SWIM + gossip. ZooKeeper: Session-based, client maintains ephemeral nodes.',
+    realWorld: 'Cassandra: Phi Accrual for accuracy. Consul: SWIM + gossip for scale. ZooKeeper: Session heartbeats with ephemeral nodes. etcd: Raft leader heartbeats. Kubernetes: kubelet node heartbeats to API server.',
+    gotchas: 'Heartbeat interval tradeoff: too fast = network overhead, too slow = slow detection. Network partitions cause split-brain - need quorum. Phi Accrual needs history - cold start is tricky. SWIM can have temporary inconsistency. Always have manual override for false positives.'
+  },
+  commpatterns: {
+    concepts: ['Synchronous: Request-response, wait for reply', 'Asynchronous: Fire-and-forget, use queues', 'Choreography: Services react to events independently', 'Orchestration: Central coordinator manages flow', 'Event sourcing: Store events, not current state'],
+    tradeoffs: [['Pattern', 'Coupling', 'Complexity'], ['Sync (REST)', 'Tight', 'Simple'], ['Async (Queue)', 'Loose', 'Medium'], ['Choreography', 'Very loose', 'Hard to track'], ['Orchestration', 'Medium', 'Single coordinator'], ['Event Sourcing', 'Loose', 'High']],
+    interview: ['When use orchestration vs choreography?', 'Saga pattern for transactions?', 'gRPC vs REST for internal?'],
+    deepDive: 'Synchronous: REST (simple, ubiquitous), gRPC (efficient, typed). Use for queries, real-time responses. Asynchronous: Kafka (high throughput), RabbitMQ (flexible routing), SQS (managed). Use for commands, fire-and-forget. Choreography: Services publish events, others react. Good for loose coupling. Hard to understand full flow. Orchestration: Saga orchestrator (Camunda, Temporal) coordinates steps. Clear flow but single point of failure. Event sourcing: Store events, rebuild state. Perfect audit log but complex queries.',
+    realWorld: 'Netflix: Mix of sync (REST) and async (Kafka). Uber: gRPC for internal, REST for external. Amazon: Choreography with SNS/SQS. Spotify: Event-driven with Kafka. Airbnb: Temporal for orchestration.',
+    gotchas: 'Dont mix sync calls in async flows - defeats purpose. Choreography needs good event design upfront. Orchestrator is SPOF - make it stateless. gRPC needs code generation - adds build complexity. Event sourcing queries need CQRS pattern.'
+  },
+  cloudcompare: {
+    concepts: ['AWS: Market leader (32%), 200+ services, most mature', 'Azure: Enterprise favorite (22%), Office 365 integration', 'GCP: Data/ML leader (10%), Kubernetes native, global network', 'Multi-cloud: Avoid vendor lock-in, best-of-breed', 'Hybrid cloud: On-prem + cloud integration'],
+    tradeoffs: [['Provider', 'Strength', 'Consideration'], ['AWS', 'Broadest services, largest community', 'Complexity, cost at scale'], ['Azure', 'Enterprise integration, hybrid', 'Learning curve from AWS'], ['GCP', 'Data/ML, K8s, global network', 'Smaller ecosystem, fewer regions']],
+    interview: ['When choose multi-cloud?', 'AWS vs GCP for ML workloads?', 'How migrate between clouds?'],
+    deepDive: 'Service mapping: EC2 = Azure VMs = Compute Engine. S3 = Blob Storage = Cloud Storage. Lambda = Functions = Cloud Functions. RDS = Azure SQL = Cloud SQL. Each has unique strengths: AWS (breadth), Azure (enterprise), GCP (data). Multi-cloud strategy: Use Terraform/Pulumi for IaC across clouds. Kubernetes enables portability. Consider data gravity - data transfer costs add up.',
+    realWorld: 'Netflix: All-in AWS, built on EC2/S3. Spotify: Google Cloud for data platform. Twitter: GCP for data, AWS for compute. Dropbox: Left AWS for own infra, saved $75M/2yrs. Airbnb: AWS with some GCP. Apple: Google Cloud for iCloud storage.',
+    gotchas: 'Multi-cloud adds complexity - most companies are better with one cloud. Service names differ but concepts are same. Data egress costs can be shocking. Reserved instances dont transfer between clouds. Each cloud has unique services worth using.'
+  },
+  disasterrecovery: {
+    concepts: ['RTO: Recovery Time Objective - how long to recover', 'RPO: Recovery Point Objective - acceptable data loss', 'Backup & Restore: Cheapest, slowest recovery', 'Pilot Light: Core systems always on, scale up on demand', 'Warm Standby: Scaled-down full system running', 'Hot Standby: Full active-active, instant failover'],
+    tradeoffs: [['Strategy', 'RTO', 'RPO', 'Cost'], ['Backup/Restore', 'Hours', 'Hours', '$'], ['Pilot Light', '10-30 min', 'Minutes', '$$'], ['Warm Standby', 'Minutes', 'Seconds', '$$$'], ['Hot/Active-Active', 'Seconds', 'Near-zero', '$$$$']],
+    interview: ['How determine RTO/RPO requirements?', 'Active-active vs active-passive?', 'Testing DR plans?'],
+    deepDive: 'Backup & Restore: AWS Backup, S3 cross-region replication. Good for non-critical systems. Pilot Light: Database replicated, minimal compute. Use AWS Launch Templates for quick scale-up. Warm Standby: Route 53 health checks trigger failover. Run at 10-20% capacity. Hot Standby: Global load balancing, multi-region deployments. Netflix Chaos Engineering approach - assume failures will happen.',
+    realWorld: 'Netflix: Multi-region active-active, Chaos Monkey testing. Stripe: Hot standby, zero data loss for payments. Banks: Zero RPO mandatory, active-active required. Capital One: AWS multi-region with automated failover. Slack: Cross-region data replication.',
+    gotchas: 'DR is insurance - pay now or pay more later. Test DR regularly - untested plans fail. Data sync lag matters for RPO. DNS TTL affects failover time. Stateful services complicate DR significantly.'
+  },
+  cloudcost: {
+    concepts: ['Reserved Instances: 1-3 year commit for 30-72% savings', 'Spot/Preemptible: Unused capacity at 60-90% discount', 'Right-sizing: Match instance size to actual usage', 'Auto-scaling: Scale down during off-peak hours', 'Storage tiering: Move cold data to cheaper storage', 'Savings Plans: Flexible commitment across services'],
+    tradeoffs: [['Strategy', 'Savings', 'Flexibility'], ['Reserved', '30-72%', 'Locked in'], ['Spot', '60-90%', 'Can be terminated'], ['Right-size', '20-40%', 'Requires monitoring'], ['Auto-scale', '30-50%', 'Needs architecture support']],
+    interview: ['Reserved vs Savings Plans?', 'When use spot instances?', 'How measure cloud waste?'],
+    deepDive: 'Reserved Instances: All upfront = more savings. Convertible RIs allow changes. Savings Plans: Compute Savings Plan is most flexible. Spot: Perfect for stateless, fault-tolerant workloads. Use spot-fleet for diversity. Right-sizing: AWS Compute Optimizer, GCP Recommender. Storage: S3 Intelligent-Tiering automates. Lifecycle policies for Glacier. FinOps: Showback/chargeback to teams.',
+    realWorld: 'Airbnb: 40% savings with FinOps practices. Lyft: $100M+ saved over 5 years. Spotify: 50% reduction in compute costs. Pinterest: Spot instances for 80% of batch workloads. Netflix: Right-sizing saved millions annually.',
+    gotchas: 'Reserved instances need commitment - measure first. Spot interruptions require proper handling. Auto-scaling needs proper metrics. Storage egress costs often overlooked. Tag everything for cost allocation. Review unused resources monthly.'
+  },
+  awsroadmap: {
+    concepts: ['Core services: EC2, S3, RDS, Lambda, VPC, IAM', 'Compute progression: EC2 → Lambda → ECS → EKS', 'Database progression: RDS → DynamoDB → Aurora', 'Networking: VPC → Route 53 → CloudFront → API Gateway', 'Security essentials: IAM → KMS → Secrets Manager → WAF'],
+    tradeoffs: [['Learning Path', 'Focus', 'Career Path'], ['Solutions Architect', 'Design, best practices', 'Architecture roles'], ['Developer', 'Code, SDK, CI/CD', 'Backend development'], ['DevOps', 'Automation, IaC', 'Platform engineering'], ['Specialty', 'Deep domain expertise', 'Expert roles']],
+    interview: ['Which services to learn first?', 'EC2 vs Lambda decision?', 'VPC design basics?'],
+    deepDive: 'Start with compute (EC2 basics, Lambda for serverless), storage (S3 for everything), database (RDS for relational, DynamoDB for NoSQL). Add networking (VPC is foundational), security (IAM is non-negotiable). Then specialize: containers (ECS/EKS), data (Redshift, EMR), ML (SageMaker). Certifications help: Cloud Practitioner → Solutions Architect Associate → Professional or Specialty.',
+    realWorld: 'Netflix: Heavy EC2, S3, DynamoDB, CloudFront usage. Airbnb: RDS, ElastiCache, EKS. Stripe: Lambda for event processing. Capital One: All-in on AWS, extensive use of Lambda. Slack: ElastiCache, EKS, extensive VPC design.',
+    gotchas: 'Dont try to learn all 200+ services. Focus on 20 core services covering 80% of use cases. Free tier helps for learning. AWS documentation is excellent. Re:Invent videos are great learning resources. Start building - hands-on beats theory.'
+  },
+  cloudlb: {
+    concepts: ['Layer 4 (L4): TCP/UDP load balancing, fastest, protocol-agnostic', 'Layer 7 (L7): HTTP/HTTPS, path routing, header inspection', 'Global: Anycast, multi-region, best for worldwide users', 'Regional: Single region, lower latency for local traffic', 'Internal: Private network only, no public exposure'],
+    tradeoffs: [['Type', 'Best For', 'Limitation'], ['L4 (NLB/Network)', 'Low latency, any protocol', 'No content inspection'], ['L7 (ALB/App GW)', 'HTTP routing, WAF', 'Higher latency'], ['Global (CloudFront)', 'Worldwide distribution', 'Cost at scale'], ['Internal', 'Service-to-service', 'No public access']],
+    interview: ['ALB vs NLB decision?', 'When use global load balancer?', 'SSL termination where?'],
+    deepDive: 'AWS: ALB for HTTP (path routing, host routing), NLB for TCP/UDP (static IP, low latency), GWLB for third-party appliances. Azure: Application Gateway (L7 + WAF), Load Balancer (L4), Front Door (global CDN + LB). GCP: Global HTTP(S) LB (anycast), Network LB (regional L4), Internal LB. SSL termination: at LB reduces backend load but exposes traffic internally. Consider end-to-end encryption for sensitive data.',
+    realWorld: 'Netflix: AWS ALB + CloudFront for streaming. Stripe: ALB with WAF for API protection. Uber: GCP Global LB for worldwide coverage. Spotify: Mix of ALB and NLB. Slack: ALB with detailed path routing.',
+    gotchas: 'L7 adds latency - measure if it matters. NLB preserves client IP, ALB does not (use X-Forwarded-For). WebSocket needs ALB sticky sessions. Global LB has edge locations limits. Health check tuning is critical - too aggressive causes flapping.'
+  },
+  netflixstack: {
+    concepts: ['Open Connect: Custom CDN with 15,000+ servers in ISP networks', 'ZUUL: API Gateway for routing, filtering, security', 'Eureka: Service discovery with client-side load balancing', 'EVCache: Memcached-based distributed cache', 'Chaos Engineering: Simian Army for fault tolerance testing'],
+    tradeoffs: [['Component', 'Technology', 'Why'], ['API Gateway', 'ZUUL → Spring Cloud Gateway', 'Custom needs, performance'], ['Database', 'Cassandra over RDBMS', 'Global scale, availability'], ['Cache', 'EVCache (Memcached)', 'Low latency, proven'], ['Message Queue', 'Kafka', 'High throughput streaming']],
+    interview: ['Why Netflix built Open Connect?', 'How Netflix handles failures?', 'Describe Netflix microservices architecture'],
+    deepDive: 'Architecture layers: CDN (Open Connect) → Edge (ZUUL) → Mid-tier services → Data stores. Open Connect places servers directly in ISP networks - 95% of traffic. Microservices: 1000+ services, each owned by a team. Resilience: Hystrix circuit breakers, retry with backoff, bulkheads. Data: Cassandra for user data (global), DynamoDB for metadata. Observability: Atlas for metrics, Mantis for stream processing.',
+    realWorld: 'Netflix: 200M+ subscribers, 15% of global internet traffic. Open Connect delivers 100+ Tbps during peak. 2 billion API calls/day. Chaos Monkey randomly terminates instances in production. 1B+ hours of video streamed weekly.',
+    gotchas: 'Netflix scale is unusual - dont copy everything. Their solutions evolved over 15+ years. Chaos Engineering requires mature monitoring first. Open-source tools (Eureka, ZUUL) are battle-tested. Start with managed services, build custom when needed.'
+  },
+  netflixapi: {
+    concepts: ['Monolith era: Single deployable with shared database', 'Direct access: Clients call microservices directly (N+1 problem)', 'Gateway aggregation: Backend for Frontend pattern', 'GraphQL Federation: Distributed schema ownership', 'Studio API: Domain-driven API design'],
+    tradeoffs: [['Era', 'Approach', 'Challenge'], ['Monolith', 'Simple deployment', 'Scaling bottleneck'], ['Direct', 'Service independence', 'Client complexity'], ['Gateway', 'Optimized aggregation', 'Gateway bottleneck'], ['Federation', 'Distributed ownership', 'Schema governance']],
+    interview: ['Why move from monolith?', 'Problems with direct service access?', 'Benefits of GraphQL federation?'],
+    deepDive: 'Evolution: 2008 monolith → 2012 microservices with direct access → 2014 ZUUL + aggregation layer → 2020 GraphQL Federation. Direct access problems: N+1 calls from mobile clients, client-side complexity. Gateway solution: Server-side aggregation, optimized payloads. GraphQL Federation: Each domain team owns their schema, federated gateway composes. Studio API serves content creation tools with complex data needs.',
+    realWorld: 'Netflix: Evolution took 15+ years. No big-bang migration. GraphQL Federation serves Netflix Studio (content creation) where data relationships are complex. Traditional REST still used for streaming. Mobile clients benefit from aggregation layer.',
+    gotchas: 'Evolution is gradual, not revolutionary. GraphQL adds complexity - not for every use case. Federation requires governance tooling. Gateway can become bottleneck - need multiple gateways. Keep REST for simple CRUD operations.'
+  },
+  discordarch: {
+    concepts: ['MongoDB era: Simple start, single node limitations', 'Cassandra migration: Distributed, write-optimized', 'Rust data service: Custom layer for optimization', 'ScyllaDB: C++ rewrite of Cassandra, no GC', 'Time-bucketed storage: Messages partitioned by time'],
+    tradeoffs: [['Database', 'Pros', 'Cons'], ['MongoDB', 'Simple, flexible', 'Single-node limits'], ['Cassandra', 'Distributed, available', 'GC pauses, tuning'], ['ScyllaDB', 'No GC, fast', 'Newer, less ecosystem']],
+    interview: ['Why leave MongoDB?', 'Cassandra GC problems?', 'Why ScyllaDB over Cassandra?'],
+    deepDive: 'Growth forced migration: MongoDB hit single-node limits at 100M messages. Cassandra: Distributed, but JVM GC caused p99 latency spikes during compaction. Rust data service: Added caching layer in Rust for hot data. ScyllaDB decision: C++ rewrite of Cassandra, API compatible, no GC pauses. Results: p99 latency 15ms → 5ms, tail latency eliminated.',
+    realWorld: 'Discord: 150M+ MAU, trillions of messages stored. Time-bucketed: Messages partitioned by channel + time window. Elixir: WebSocket connections (millions concurrent). Rust: Data services layer. ScyllaDB migration reduced operational complexity.',
+    gotchas: 'Start simple (MongoDB is fine initially). Cassandra tuning is complex - GC pauses are real. ScyllaDB is Cassandra-compatible - easier migration. Rust services add performance but complexity. Hot/cold data architecture crucial for cost.'
+  },
+  redisarch: {
+    concepts: ['Single-threaded: Simplicity, no locks, atomic operations', 'Data structures: Strings, Lists, Sets, Hashes, Sorted Sets, Streams', 'Persistence: RDB snapshots, AOF append-only file', 'Sentinel: High availability with automatic failover', 'Cluster: Horizontal scaling with 16384 hash slots'],
+    tradeoffs: [['Feature', 'RDB', 'AOF'], ['Performance', 'Faster recovery', 'Slower'], ['Durability', 'Point-in-time', 'Every write'], ['File Size', 'Compact', 'Larger'], ['Recovery', 'Fast', 'Slower rebuild']],
+    interview: ['Why single-threaded?', 'RDB vs AOF trade-offs?', 'How does Redis Cluster work?'],
+    deepDive: 'Single-threaded simplicity: No locks, no race conditions, predictable latency. I/O threads (6.0+): Multi-threaded network I/O, single-threaded commands. Data structures: Sorted Sets use skiplists for O(log n). Persistence: RDB for backups, AOF for durability (or both). Sentinel: 3+ nodes, quorum-based failover. Cluster: Hash slots assigned to nodes, resharding online.',
+    realWorld: 'Twitter: 10K+ Redis instances, timeline cache. GitHub: Session storage, rate limiting. Pinterest: 1000+ Redis instances. Slack: User presence, rate limiting. Instagram: Stories, user sessions. Stack Overflow: Caching layer.',
+    gotchas: 'Single-threaded means one slow command blocks all. Large keys are dangerous. Memory is the limit - monitor closely. Cluster resharding is online but impacts latency. Sentinel needs odd number of nodes. Persistence can cause latency spikes.'
+  },
+  uberstack: {
+    concepts: ['H3: Hexagonal hierarchical geospatial indexing', 'Dispatch: Real-time rider-driver matching', 'Surge pricing: Dynamic pricing based on demand', 'Ringpop: Consistent hashing for service discovery', 'Schemaless: MySQL-backed distributed datastore'],
+    tradeoffs: [['Component', 'Technology', 'Why'], ['Backend', 'Go', 'Simple, concurrent, fast'], ['RPC', 'gRPC', 'Efficient, typed, streaming'], ['Workflow', 'Cadence (Temporal)', 'Long-running, fault-tolerant'], ['Geo', 'H3', 'Efficient hexagonal grid']],
+    interview: ['How does Uber dispatch work?', 'Explain surge pricing architecture', 'Why Go for backend?'],
+    deepDive: 'Dispatch: Real-time matching using supply/demand signals. Every driver sends location every 4 seconds. H3: Earth divided into hexagons at multiple resolutions. Efficient for spatial queries (nearby drivers). Surge: ML model predicts demand, adjusts prices to balance supply. Cadence: Workflow engine for long-running processes (trip lifecycle). Data: Schemaless (MySQL + custom layer), Cassandra for high-volume.',
+    realWorld: 'Uber: 100M+ MAU, 25M trips/day. 4000+ microservices. H3 open-sourced, used by many companies. Jaeger (tracing) created at Uber. Kafka: 4 trillion messages/day. Multi-datacenter active-active.',
+    gotchas: 'Real-time systems require specialized design. Geo-indexing is complex - use established solutions (H3, S2). gRPC needs careful schema evolution. Microservices at this scale require extensive tooling. Start with simpler architecture, evolve as needed.'
+  },
+  twelvefactor: {
+    concepts: ['Codebase: One repo per app, many deploys from same codebase', 'Dependencies: Explicitly declare and isolate dependencies', 'Config: Store config in environment variables', 'Backing services: Treat databases, queues as attached resources', 'Build/Release/Run: Strict separation of stages'],
+    tradeoffs: [['Factor', 'Benefit', 'Challenge'], ['Stateless', 'Easy scaling', 'External state management'], ['Port binding', 'Self-contained', 'Service discovery needed'], ['Disposability', 'Fast scaling', 'Graceful shutdown logic'], ['Dev/Prod parity', 'Fewer bugs', 'More infrastructure']],
+    interview: ['How handle state in 12-factor app?', 'Why environment variables for config?', 'Explain build/release/run separation'],
+    deepDive: 'Stateless processes: Store sessions in Redis, files in S3. No sticky sessions. Port binding: App exports HTTP via port, doesnt rely on webserver injection. Works with containers. Dev/prod parity: Docker Compose locally, same images in prod. Disposability: Fast startup (seconds) and SIGTERM handling. Logs as streams: Write to stdout, let platform aggregate. Admin processes: Run migrations, scripts as one-off pods.',
+    realWorld: 'Heroku: Created 12-factor, all apps follow it. Netflix: 12-factor for 1000+ microservices. Spotify: All backend services follow principles. Airbnb: Kubernetes + 12-factor. Every cloud-native app implicitly uses most factors.',
+    gotchas: 'Not all factors apply to all apps - use judgment. Config via env vars has limits (large configs). Stateless can be hard for legacy apps. Dev/prod parity requires investment. Some factors overlap with container best practices.'
+  },
+  sdlcmodels: {
+    concepts: ['Waterfall: Sequential phases, no going back', 'Agile: Iterative sprints, continuous feedback', 'V-Model: Testing parallel to development', 'Spiral: Risk-driven, prototypes per iteration', 'Iterative: Repeated refinement cycles'],
+    tradeoffs: [['Model', 'Best For', 'Avoid When'], ['Waterfall', 'Fixed requirements, compliance', 'Uncertain scope'], ['Agile', 'Evolving needs, fast delivery', 'Strict contracts'], ['V-Model', 'Safety-critical, testing focus', 'Rapid changes'], ['RAD', 'Quick prototypes', 'Large teams']],
+    interview: ['When choose Waterfall over Agile?', 'How does V-Model ensure quality?', 'Agile vs Scrum vs Kanban?'],
+    deepDive: 'Waterfall: Requirements → Design → Implementation → Testing → Deployment. Good for construction, hardware. Agile: Sprints (2-4 weeks), daily standups, retrospectives. Scrum adds roles (PO, SM). V-Model: Each development phase has corresponding test phase. Spiral: Plan → Risk analysis → Build → Evaluate. Good for large government projects. Modern: Most teams use hybrid - Agile for development, Waterfall for planning.',
+    realWorld: 'Spotify: Squad model (modified Agile). Google: Iterative with continuous deployment. Banks: V-Model for core systems. SpaceX: Waterfall for hardware, Agile for software. Amazon: Two-pizza teams, continuous delivery.',
+    gotchas: 'No model fits all projects. Agile can fail without discipline. Waterfall works for stable requirements. V-Model adds overhead for small projects. Consider team size, domain, and regulatory needs.'
+  },
+  designpatterns: {
+    concepts: ['Creational: Object creation mechanisms (Factory, Builder, Singleton)', 'Structural: Object composition (Adapter, Decorator, Facade)', 'Behavioral: Object interaction (Observer, Strategy, Command)', 'Anti-patterns: Common mistakes to avoid (God Object, Spaghetti)'],
+    tradeoffs: [['Pattern', 'Use When', 'Avoid When'], ['Singleton', 'Shared resource', 'Need testability'], ['Factory', 'Complex creation', 'Simple constructors'], ['Observer', 'Event-driven', 'Simple callbacks work'], ['Strategy', 'Swap algorithms', 'One algorithm']],
+    interview: ['Factory vs Abstract Factory?', 'When use Decorator vs Inheritance?', 'Observer pattern in event systems?'],
+    deepDive: 'Factory: Create objects without specifying concrete class. Used in React.createElement, Spring beans. Observer: Publishers notify subscribers of changes. Used in React state, event emitters, RxJS. Strategy: Family of algorithms, interchangeable. Used in payment processors, compression. Decorator: Add behavior dynamically. Used in Python decorators, Java I/O streams. Facade: Simplified interface to complex subsystem. Used in libraries, SDKs.',
+    realWorld: 'React: Factory (createElement), Observer (useState). Spring: Factory (beans), Singleton (services). Node.js: Observer (EventEmitter). AWS SDK: Facade pattern. Redux: Command pattern for actions.',
+    gotchas: 'Dont force patterns where not needed. Singleton makes testing hard - use DI instead. Over-abstraction is worse than no patterns. Learn patterns but apply judgment. Modern languages have built-in alternatives.'
+  },
+  tradeoffs: {
+    concepts: ['CAP theorem: Consistency, Availability, Partition tolerance - pick 2', 'Latency vs Throughput: Optimize one or balance both', 'Simplicity vs Flexibility: YAGNI vs future-proofing', 'Cost vs Performance: Throw money or optimize code', 'Read vs Write optimization: Denormalize for reads, normalize for writes'],
+    tradeoffs: [['Choice', 'Favoring A', 'Favoring B'], ['Consistency/Availability', 'Banks, inventory', 'Social media, caching'], ['SQL/NoSQL', 'Transactions, joins', 'Scale, flexibility'], ['Monolith/Microservices', 'Small team, starting', 'Large team, scale']],
+    interview: ['How does CAP affect database choice?', 'When accept eventual consistency?', 'Monolith vs microservices decision?'],
+    deepDive: 'CAP: Network partitions happen, so choose CP (consistent but unavailable during partition) or AP (available but potentially stale). PACELC extends: during partition C/A, else latency/consistency. Latency vs throughput: Batching increases throughput, adds latency. Streaming has low latency, lower throughput. Read/write: CQRS separates read/write models. Write-optimized (LSM) vs read-optimized (B-tree).',
+    realWorld: 'Amazon: AP for shopping cart (high availability). Banks: CP for transactions. Netflix: Eventually consistent for recommendations. Uber: Real-time needs low latency. Airbnb: Denormalized search, normalized core data.',
+    gotchas: 'Trade-offs are context-dependent - no universal answers. Measure before optimizing. Start simple, add complexity as needed. Document decisions (ADRs). Revisit as requirements change.'
+  },
+  datapipeline: {
+    concepts: ['ETL: Extract, Transform, Load - traditional approach', 'ELT: Extract, Load, Transform - modern cloud approach', 'Batch: Process data in scheduled chunks', 'Streaming: Process data in real-time as it arrives', 'Orchestration: Coordinate pipeline steps (Airflow, Dagster)'],
+    tradeoffs: [['Approach', 'Pros', 'Cons'], ['ETL', 'Clean data in warehouse', 'Slower, less flexible'], ['ELT', 'Faster, flexible', 'Raw data needs governance'], ['Batch', 'Simple, cost-effective', 'Delayed insights'], ['Streaming', 'Real-time', 'Complex, expensive']],
+    interview: ['ETL vs ELT when?', 'Batch vs streaming decision?', 'How handle late data?'],
+    deepDive: 'ETL: Transform on dedicated servers before loading. Good when compute is cheaper than storage (pre-cloud). ELT: Load raw data, transform in warehouse (BigQuery, Snowflake). Leverages warehouse compute. Batch: Spark, Hadoop. Schedule with Airflow. Good for daily/hourly jobs. Streaming: Kafka Streams, Flink, Spark Streaming. Use for real-time dashboards, fraud detection. Hybrid: Lambda (batch + stream) or Kappa (stream-only) architectures.',
+    realWorld: 'Netflix: 500PB data, ELT with Spark. Uber: Streaming for surge pricing. Airbnb: dbt for transformations. Spotify: Scio (Scala) on Dataflow. LinkedIn: Gobblin for ingestion.',
+    gotchas: 'Streaming adds complexity - start with batch. ELT needs data governance for raw data. Airflow DAGs can become complex. Exactly-once is hard - design for at-least-once. Monitor data quality at each stage.'
+  },
+  datalakehouse: {
+    concepts: ['Data Warehouse: Structured data, schema-on-write, fast queries', 'Data Lake: Raw data, schema-on-read, cheap storage', 'Lakehouse: Best of both - ACID on lake, unified analytics', 'Delta Lake: Open-source lakehouse from Databricks', 'Apache Iceberg: Table format with time travel'],
+    tradeoffs: [['Type', 'Query Speed', 'Flexibility'], ['Warehouse', 'Fast', 'Limited to structured'], ['Lake', 'Slow', 'Any data type'], ['Lakehouse', 'Good', 'Best of both']],
+    interview: ['Data lake vs warehouse decision?', 'What is lakehouse architecture?', 'Delta Lake vs Iceberg?'],
+    deepDive: 'Warehouse: Columnar storage, predefined schema. Best for BI, reporting. Examples: Snowflake, BigQuery, Redshift. Lake: Object storage (S3, GCS), Parquet/ORC files. Schema defined at query time. Good for ML, raw data. Lakehouse: Add ACID transactions to lake. Delta Lake adds transaction log. Iceberg adds partition evolution. Time travel: Query data as of specific timestamp.',
+    realWorld: 'Databricks: Created Delta Lake, powers lakehouse for Fortune 500. Netflix: Iceberg for 500PB data lake. Uber: BigLake (internal lakehouse). Airbnb: Delta Lake for data mesh. Apple: Iceberg for analytics.',
+    gotchas: 'Lakehouse is newer - evaluate maturity. Small files problem on lakes (combine them). Delta/Iceberg need maintenance (compaction). Warehouse still better for pure BI. Consider existing skills and tools.'
+  },
+  cdcpattern: {
+    concepts: ['Log-based CDC: Read database transaction log (WAL/binlog)', 'Query-based CDC: Poll for changes (timestamp, diff)', 'Trigger-based CDC: Database triggers capture changes', 'Debezium: Open-source CDC platform for Kafka', 'Outbox pattern: Write events to outbox table, CDC publishes'],
+    tradeoffs: [['Method', 'Impact on Source', 'Reliability'], ['Log-based', 'Zero impact', 'Most reliable'], ['Query-based', 'Query load', 'Can miss changes'], ['Trigger-based', 'Write overhead', 'Reliable but complex']],
+    interview: ['Log-based vs query-based CDC?', 'Explain outbox pattern', 'CDC for microservices events?'],
+    deepDive: 'Log-based (best): Read Postgres WAL or MySQL binlog. No impact on source DB. Captures all changes including deletes. Debezium connects to DB, publishes to Kafka. Outbox pattern: Service writes domain event to outbox table in same transaction. CDC reads outbox, publishes to Kafka. Guarantees consistency. Use cases: Cache invalidation, search sync, analytics pipeline, microservices integration.',
+    realWorld: 'Airbnb: CDC syncs to Elasticsearch. LinkedIn: Databus for CDC at scale. Uber: Marmaray for data lake ingestion. Wix: Debezium for 100+ services. Shopify: CDC for warehouse sync.',
+    gotchas: 'Log-based needs DB permissions and config. Schema changes need careful handling. High-volume tables can create lag. Debezium needs Kafka Connect cluster. Test CDC with production-like data volumes.'
+  },
+  kafkadeep: {
+    concepts: ['Producer acks: 0 (fire-forget), 1 (leader), all (replicas)', 'Partitions: Unit of parallelism, ordered within partition', 'Consumer groups: Load balance across consumers', 'Exactly-once: Idempotent producer + transactional', 'Log compaction: Keep latest value per key'],
+    tradeoffs: [['Setting', 'Durability', 'Performance'], ['acks=0', 'Low (can lose)', 'Fastest'], ['acks=1', 'Medium', 'Good'], ['acks=all', 'Highest', 'Slower'], ['min.insync.replicas=2', 'Very high', 'Needs 3+ replicas']],
+    interview: ['How prevent message loss?', 'Partition count decision?', 'Consumer group rebalancing?'],
+    deepDive: 'Producer config: acks=all, enable.idempotence=true, retries=MAX. Broker config: replication.factor=3, min.insync.replicas=2. Consumer: enable.auto.commit=false, process then commit. Partition count: max(throughput/100MB/s, consumer count). Cant decrease later. Log compaction: Keeps latest message per key. Good for state stores. Segment size affects compaction efficiency.',
+    realWorld: 'LinkedIn: Created Kafka, 7T+ messages/day. Uber: 4T messages/day, Kafka backbone. Netflix: 700B events/day. Confluent: Kafka creators, enterprise support. Wix: 100K+ topics.',
+    gotchas: 'Partition count cant be decreased - start right. acks=all adds latency (measure impact). Consumer lag indicates problems. Dont commit before processing. Monitor under-replicated partitions. Test failure scenarios.'
+  },
+  searchengine: {
+    concepts: ['Crawling: Fetch web pages, respect robots.txt', 'Indexing: Build inverted index from documents', 'Ranking: Score relevance using PageRank, TF-IDF, ML', 'Query processing: Parse, expand, score, rank results', 'Inverted index: Term → list of documents containing term'],
+    tradeoffs: [['Component', 'Latency', 'Quality'], ['Index size', 'Smaller faster', 'Larger more complete'], ['Ranking complexity', 'Simple faster', 'Complex more relevant'], ['Freshness', 'Batch cheaper', 'Real-time expensive']],
+    interview: ['How does PageRank work?', 'Inverted index vs forward index?', 'How handle typos in search?'],
+    deepDive: 'Crawling: BFS from seed URLs, politeness rules, dedup with URL fingerprints. Indexing: Tokenize → Stem → Build posting lists. Lucene is core engine. Ranking: TF-IDF (term frequency × inverse document frequency). BM25 is modern improvement. PageRank for web authority. Modern: ML ranking (LTR) with features. Query: Tokenize, expand (synonyms), score across shards, merge results.',
+    realWorld: 'Google: 100B+ pages, 8.5B searches/day. Caffeine for real-time indexing. Bing: Similar scale, different ranking. DuckDuckGo: Privacy-focused, uses Bing index. Elasticsearch: 60%+ of enterprise search.',
+    gotchas: 'Crawling at scale is complex - handle rate limits. Index maintenance (deletes, updates) is expensive. Ranking quality needs continuous tuning. Sharding affects result quality. Autocomplete and spell-check are separate systems.'
+  },
+  elasticsearch: {
+    concepts: ['Index: Collection of documents with similar characteristics', 'Shard: Horizontal partition of an index (Lucene index)', 'Replica: Copy of primary shard for HA and read scaling', 'Cluster: Collection of nodes storing data', 'Mapping: Schema definition for document fields'],
+    tradeoffs: [['Setting', 'Benefit', 'Cost'], ['More shards', 'Write parallelism', 'Query overhead'], ['More replicas', 'Read scaling, HA', 'Storage, write latency'], ['Larger shards', 'Fewer shards to manage', 'Slower rebalancing']],
+    interview: ['Shard sizing rules?', 'Primary vs replica shards?', 'How handle schema changes?'],
+    deepDive: 'Shard sizing: 10-50GB each. Max 20 shards per GB heap. Too many shards = overhead. Shards/index = number of primaries. Replica = copy on different node. Write goes to primary, replicates to replica. Query hits all shards, merges results. Mapping: Dynamic (auto-detect) or explicit. Changing mapping needs reindex. Rollover: Time or size-based index rotation.',
+    realWorld: 'Wikipedia: Elasticsearch for search. GitHub: Code search with ES. Netflix: Logging with ELK stack. Uber: Driver/rider search. Slack: Message search across workspaces.',
+    gotchas: 'Shard count is fixed at index creation. Over-sharding is common mistake. Deep pagination is expensive (use search_after). Mapping explosions with dynamic fields. Monitor cluster health (green/yellow/red). JVM heap sizing is critical.'
+  },
+  genaistack: {
+    concepts: ['Foundation models: GPT-4, Claude, Gemini, Llama, Mistral', 'RAG: Retrieve relevant context, augment prompt, generate', 'Vector database: Store and query embeddings (Pinecone, Weaviate)', 'Fine-tuning: LoRA, QLoRA for domain adaptation', 'Prompt engineering: System prompts, few-shot, chain-of-thought'],
+    tradeoffs: [['Approach', 'Pros', 'Cons'], ['RAG', 'Uses your data, no training', 'Retrieval quality matters'], ['Fine-tuning', 'Better for style/format', 'Expensive, needs data'], ['Prompt engineering', 'Quick iteration', 'Context limits'], ['Agents', 'Complex tasks', 'Unpredictable']],
+    interview: ['RAG vs fine-tuning decision?', 'How reduce hallucinations?', 'Vector DB selection criteria?'],
+    deepDive: 'RAG pipeline: Query → Embed → Vector search → Retrieve chunks → Augment prompt → Generate. Chunk size matters (512-1024 tokens). Embedding models: OpenAI, Cohere, open-source (sentence-transformers). Vector DBs: Pinecone (managed), Weaviate (hybrid search), pgVector (PostgreSQL native). Fine-tuning: LoRA (low-rank adaptation) for efficient training. QLoRA adds quantization. RLHF for behavior alignment.',
+    realWorld: 'OpenAI: GPT-4, DALL-E, Whisper. Anthropic: Claude, Constitutional AI. Google: Gemini, PaLM. Meta: Llama (open weights). Perplexity: RAG-based search. GitHub Copilot: Code generation.',
+    gotchas: 'Hallucinations are inherent - verify outputs. RAG retrieval quality limits generation quality. Fine-tuning needs quality data. Prompt injection is security risk. Monitor costs - inference adds up. Evaluation is hard - use multiple metrics.'
+  },
+  // Phase 2: Linux & OS
+  linuxboot: {
+    concepts: ['BIOS/UEFI: Power-on self-test, hardware initialization', 'MBR/GPT: Master Boot Record or GUID Partition Table locates bootloader', 'GRUB: GRand Unified Bootloader, menu for kernel selection', 'Kernel: vmlinuz loaded with initramfs for initial filesystem', 'systemd: PID 1, manages services and targets'],
+    tradeoffs: [['Stage', 'Purpose', 'Failure Impact'], ['BIOS/UEFI', 'Hardware init', 'No boot at all'], ['Bootloader', 'Load kernel', 'Boot menu fails'], ['Kernel', 'Hardware drivers', 'Kernel panic'], ['systemd', 'Services start', 'Partial boot']],
+    interview: ['Explain Linux boot process', 'What is initramfs for?', 'How to troubleshoot boot failures?'],
+    deepDive: 'BIOS (legacy) vs UEFI (modern): UEFI is faster, supports larger disks (>2TB), Secure Boot. initramfs: Temporary root filesystem in RAM with essential drivers to mount real root. systemd replaces SysVinit: Parallel service startup, socket activation, cgroups. Boot targets: rescue.target (single user), multi-user.target (servers), graphical.target (desktop).',
+    realWorld: 'AWS EC2: Uses UEFI on newer instances. Docker: Containers share host kernel. systemd: Used by Ubuntu, RHEL, Debian. CoreOS/Flatcar: Minimal boot for containers. Chrome OS: Verified boot with dm-verity.',
+    gotchas: 'GRUB recovery: Hold Shift during boot. Kernel panics: Usually driver issues. systemd-analyze blame shows slow services. journalctl -b for boot logs. UEFI Secure Boot can block unsigned kernels.'
+  },
+  linuxfs: {
+    concepts: ['/: Root of everything', '/bin, /sbin: Essential binaries (ls, cp, mount)', '/etc: System configuration files', '/home: User home directories', '/var: Variable data (logs, mail, spool)', '/tmp: Temporary files, cleared on reboot'],
+    tradeoffs: [['Directory', 'Purpose', 'Mounting'], ['/boot', 'Kernel, GRUB', 'Often separate partition'], ['/home', 'User data', 'Often separate for backups'], ['/var', 'Logs, data', 'Separate to prevent root fill'], ['/tmp', 'Temp files', 'Often tmpfs (RAM)']],
+    interview: ['Difference between /bin and /usr/bin?', 'Why separate /boot partition?', 'What is in /proc and /sys?'],
+    deepDive: 'FHS (Filesystem Hierarchy Standard) defines structure. /proc: Virtual filesystem for process info (cat /proc/cpuinfo). /sys: Kernel and hardware info, sysfs. /dev: Device files (block, character). Modern systems merge /bin→/usr/bin, /lib→/usr/lib. XDG Base Directory: ~/.config, ~/.local/share for user apps.',
+    realWorld: 'Docker: Uses overlay filesystem, shares /usr. Kubernetes: Uses emptyDir for /tmp in pods. NixOS: Immutable /nix store. Ubuntu: Uses /snap for snaps. Android: Modified Linux FS layout.',
+    gotchas: 'Running out of space in /: Check /var/log. /tmp cleanup: systemd-tmpfiles. Symlinks in /lib and /bin on modern distros. Hidden files in home: .bashrc, .ssh, .config. Space usage: du -sh /* | sort -h.'
+  },
+  linuxperms: {
+    concepts: ['rwx: Read (4), Write (2), Execute (1)', 'User/Group/Other: Three permission sets', 'chmod: Change permissions (755, 644)', 'chown: Change owner (user:group)', 'umask: Default permission mask for new files'],
+    tradeoffs: [['Permission', 'Files', 'Directories'], ['r (read)', 'View contents', 'List files'], ['w (write)', 'Modify file', 'Create/delete files'], ['x (execute)', 'Run as program', 'Enter directory']],
+    interview: ['Explain 755 vs 644', 'What is sticky bit?', 'How do ACLs extend permissions?'],
+    deepDive: 'Special bits: SUID (4000) runs as owner, SGID (2000) runs as group, Sticky (1000) prevents deletion. ACLs (getfacl, setfacl) for fine-grained control. Capabilities: Split root privileges (CAP_NET_BIND_SERVICE). SELinux/AppArmor: Mandatory Access Control beyond DAC. sudo: Temporary privilege escalation.',
+    realWorld: 'AWS: EC2 key pairs require 400 permissions. Docker: Often runs as root, security concern. Kubernetes: securityContext for pod permissions. GitHub: SSH keys need 600. Web servers: 755 for directories, 644 for files.',
+    gotchas: 'World-writable files are security risk. SSH keys must be 600 or 400. SUID on scripts is dangerous. Root can access despite permissions. umask 022 is typical (files 644, dirs 755).'
+  },
+  linuxperf: {
+    concepts: ['top/htop: Real-time process monitoring', 'vmstat: Virtual memory, CPU, I/O stats', 'iostat: Disk I/O statistics', 'netstat/ss: Network connections and sockets', 'strace: System call tracing', 'perf: CPU profiling and flame graphs'],
+    tradeoffs: [['Tool', 'Overhead', 'Detail'], ['top', 'Low', 'Process summary'], ['perf', 'Medium', 'CPU profiling'], ['strace', 'High', 'System calls'], ['eBPF', 'Low', 'Deep tracing']],
+    interview: ['How diagnose high CPU usage?', 'Explain load average', 'What is eBPF?'],
+    deepDive: 'Load average: 1/5/15 min avg of runnable + waiting processes. Rule: LA < CPU cores is healthy. USE Method (Brendan Gregg): Utilization, Saturation, Errors for each resource. eBPF: Safe kernel tracing without modules. Flame graphs: Visualize CPU time by stack. perf record + perf report for profiling.',
+    realWorld: 'Netflix: Uses Vector for time-series metrics. Google: Developed eBPF predecessors. Datadog: Agent uses these tools. AWS: CloudWatch agent uses similar metrics. Brendan Gregg: Created flame graphs, USE method at Netflix.',
+    gotchas: 'strace slows applications significantly. top CPU% can exceed 100% (multi-core). vmstat first row is since boot average. Load average ignores I/O on Linux. eBPF requires modern kernel (4.x+).'
+  },
+  linuxcmds: {
+    concepts: ['Navigation: cd, ls, pwd, find', 'File operations: cp, mv, rm, mkdir, touch', 'Text processing: cat, grep, sed, awk', 'System: ps, top, kill, df, du', 'Network: curl, wget, ssh, scp, netstat', 'Permissions: chmod, chown, sudo'],
+    tradeoffs: [['Task', 'Command', 'Alternative'], ['Search text', 'grep', 'ripgrep (rg)'], ['Find files', 'find', 'fd, locate'], ['View files', 'cat', 'less, bat'], ['Disk usage', 'du', 'ncdu']],
+    interview: ['grep vs awk vs sed?', 'How find large files?', 'Explain pipes and redirection'],
+    deepDive: 'Pipes: cmd1 | cmd2 passes stdout to stdin. Redirection: > overwrites, >> appends, 2>&1 combines stderr. xargs: Build commands from stdin. Command substitution: $(command) or `command`. Process substitution: diff <(cmd1) <(cmd2). Job control: bg, fg, &, Ctrl-Z.',
+    realWorld: 'DevOps: ssh, rsync, curl daily. Data engineering: awk, sed for ETL. SRE: ps, netstat for debugging. Kubernetes: kubectl exec uses these. CI/CD: Shell scripts use these commands.',
+    gotchas: 'rm -rf / is catastrophic (use --no-preserve-root). grep -r can be slow (use ripgrep). find with -exec is slow (use xargs). Quotes matter: single vs double. Always test delete commands with echo first.'
+  },
+  // Phase 2: API Design
+  restbest: {
+    concepts: ['Use nouns for resources: /users, /orders', 'HTTP methods: GET (read), POST (create), PUT (replace), PATCH (update), DELETE', 'Status codes: 2xx success, 4xx client error, 5xx server error', 'Versioning: /v1/users or Accept header', 'HATEOAS: Include links for discoverability'],
+    tradeoffs: [['Practice', 'Benefit', 'Cost'], ['Pagination', 'Performance', 'Complexity'], ['Versioning', 'Stability', 'Maintenance'], ['HATEOAS', 'Discoverability', 'Verbosity']],
+    interview: ['PUT vs PATCH?', 'How handle partial failures?', 'API versioning strategies?'],
+    deepDive: 'Pagination: Offset-based (page, limit) vs cursor-based (after). Cursor is better for real-time data. Filtering: ?status=active&sort=-created_at. Sparse fieldsets: ?fields=id,name. Error format: { error: { code, message, details } }. Rate limiting headers: X-RateLimit-Limit, Remaining, Reset.',
+    realWorld: 'Stripe: Gold standard REST API, detailed errors. GitHub: Uses hypermedia (HATEOAS). Twilio: Great versioning strategy. Twitter: Rate limit examples. Shopify: Cursor-based pagination.',
+    gotchas: 'PUT requires full resource (not partial). DELETE should be idempotent. 404 vs 410 (gone permanently). Avoid verbs in URLs (/createUser is wrong). Cache GET responses, never POST.'
+  },
+  graphqldeep: {
+    concepts: ['Schema: Types, Queries, Mutations, Subscriptions', 'Resolvers: Functions that fetch data for fields', 'DataLoader: Batch and cache to solve N+1', 'Fragments: Reusable field selections', 'Directives: @skip, @include, @deprecated'],
+    tradeoffs: [['Feature', 'Benefit', 'Challenge'], ['Single endpoint', 'Simple client', 'Caching harder'], ['Type system', 'Safety', 'Schema evolution'], ['Subscriptions', 'Real-time', 'Stateful connections']],
+    interview: ['How solve N+1 problem?', 'GraphQL vs REST performance?', 'Security considerations?'],
+    deepDive: 'N+1: Query users, then N queries for each users posts. DataLoader batches into 1 query per tick. Schema design: Use connections for pagination (Relay spec). Persisted queries: Hash queries, send hash instead of full query. Query complexity: Assign cost to fields, limit total cost per query.',
+    realWorld: 'GitHub: Full GraphQL API, explorer. Shopify: Storefront API uses GraphQL. Facebook: Created GraphQL for mobile. Netflix: Uses Federated GraphQL. Airbnb: Apollo Federation for 50+ services.',
+    gotchas: 'No built-in caching like REST. Deep queries can be expensive (limit depth). File uploads need multipart or separate endpoint. Subscriptions need WebSocket infrastructure. Schema changes can break clients.'
+  },
+  grpcinternals: {
+    concepts: ['Protocol Buffers: Binary serialization format (.proto files)', 'HTTP/2: Multiplexing, header compression, streaming', 'Service definition: Define RPC methods in .proto', 'Code generation: protoc generates client/server stubs', 'Streaming: Unary, server, client, bidirectional'],
+    tradeoffs: [['Aspect', 'gRPC', 'REST'], ['Performance', 'Fast (binary)', 'Slower (JSON)'], ['Debugging', 'Harder', 'Easy (curl)'], ['Browser', 'Limited', 'Native']],
+    interview: ['Why Protocol Buffers over JSON?', 'Explain streaming types', 'How handle versioning?'],
+    deepDive: 'Proto3: Default values not serialized, no required fields. Backward compatibility: Add fields with new numbers, dont remove/reuse. Streaming: Server stream for large responses, bidirectional for chat. gRPC-Web: Browser support via proxy. Deadlines: Set timeouts that propagate through service calls.',
+    realWorld: 'Google: Uses gRPC internally for all services. Netflix: gRPC for inter-service. Uber: Migrated to gRPC for performance. Envoy: gRPC load balancing. Kubernetes: API server uses gRPC internally.',
+    gotchas: 'Field numbers are forever (dont reuse). Browser support needs grpc-web proxy. Debugging requires special tools (grpcurl). Large messages need chunking. Load balancing needs L7 understanding.'
+  },
+  gatewaypatterns: {
+    concepts: ['Routing: Path-based, header-based routing to services', 'Aggregation: Combine multiple service calls into one response', 'Protocol translation: REST to gRPC, HTTP to WebSocket', 'Cross-cutting: Auth, rate limiting, logging centralized', 'Circuit breaking: Prevent cascade failures'],
+    tradeoffs: [['Pattern', 'Benefit', 'Cost'], ['Aggregation', 'Fewer round trips', 'Gateway complexity'], ['Protocol translation', 'Client flexibility', 'Latency'], ['Centralized auth', 'Consistency', 'Single point']],
+    interview: ['API Gateway vs Service Mesh?', 'How handle authentication?', 'Gateway performance impact?'],
+    deepDive: 'BFF (Backend for Frontend): Separate gateway per client type. GraphQL Gateway: Unified query across services. Edge vs internal gateway: Edge for public, internal for service mesh. Rate limiting: Token bucket at gateway. Request transformation: Add headers, modify body, aggregate responses.',
+    realWorld: 'Kong: Open-source gateway, plugin ecosystem. AWS API Gateway: Serverless, Lambda integration. Apigee: Enterprise features, analytics. Netflix Zuul: Edge gateway, now Zuul 2 (non-blocking). Ambassador: Kubernetes-native, Envoy-based.',
+    gotchas: 'Gateway is single point of failure. Aggregation adds latency. WebSocket passthrough needs special config. Large request bodies need streaming. Monitor gateway latency separately.'
+  },
+  proxygwlb: {
+    concepts: ['Reverse Proxy: Sits in front of servers, forwards requests', 'Load Balancer: Distributes traffic across servers', 'API Gateway: Full API management (auth, rate limit, transform)', 'L4 vs L7: Transport layer vs application layer', 'Service Mesh: Sidecar proxies for microservices'],
+    tradeoffs: [['Type', 'Primary Purpose', 'Complexity'], ['Reverse Proxy', 'Forwarding, SSL', 'Low'], ['Load Balancer', 'Distribution', 'Medium'], ['API Gateway', 'API management', 'High']],
+    interview: ['When use each type?', 'L4 vs L7 load balancing?', 'Nginx as all three?'],
+    deepDive: 'Nginx: Can be all three depending on config. HAProxy: High-performance L4/L7 LB. Envoy: Modern proxy with observability. L4: Fast, TCP-level (IP + port). L7: Slower, HTTP-level (headers, cookies, paths). Service mesh (Istio): Sidecars handle all cross-cutting concerns.',
+    realWorld: 'Cloudflare: Global reverse proxy + CDN. AWS: ALB (L7), NLB (L4), API Gateway. Netflix: Zuul for edge, Ribbon for internal. Google: Front-end servers → GFE proxies. Uber: Custom L7 LB for gRPC.',
+    gotchas: 'Dont use API Gateway for simple proxying. L4 cant do HTTP routing. Sticky sessions complicate scaling. Health checks essential for all. Consider failover between regions.'
+  },
+  graphqladopt: {
+    concepts: ['Client-side: GraphQL in browser, wraps REST APIs', 'BFF: Backend for Frontend GraphQL per client', 'Monolithic: Single GraphQL gateway for all services', 'Federation: Each service owns part of the graph', 'Relay: Facebook specification for GraphQL clients'],
+    tradeoffs: [['Pattern', 'Team Independence', 'Consistency'], ['Monolithic', 'Low', 'High'], ['Federation', 'High', 'Medium'], ['BFF', 'Medium', 'Low']],
+    interview: ['When adopt GraphQL?', 'Federation vs schema stitching?', 'Migration strategy from REST?'],
+    deepDive: 'Schema stitching: Merge schemas at gateway. Federation (Apollo): @key, @extends for entity ownership. Supergraph: Composed schema from subgraphs. Gateway: Composes query plan across services. Start monolithic: Extract to federation as services grow. Incremental adoption: Wrap REST APIs with GraphQL layer.',
+    realWorld: 'Netflix: Apollo Federation for catalog. Airbnb: Federation with 50+ subgraphs. GitHub: Started monolithic, evaluating federation. Shopify: Monolithic for storefront. Apollo: Created Federation specification.',
+    gotchas: 'Federation adds operational complexity. Schema conflicts between teams. Version subgraphs independently. Monitor resolver performance. Gateway becomes critical path.'
+  },
+  pollwebhook: {
+    concepts: ['Polling: Client repeatedly requests for updates', 'Webhooks: Server pushes updates to client endpoint', 'Long polling: Keep request open until update or timeout', 'Retry: Exponential backoff for failed deliveries', 'Signature: HMAC verification for webhook security'],
+    tradeoffs: [['Method', 'Real-time', 'Infrastructure'], ['Polling', 'Delayed', 'Simple'], ['Webhooks', 'Instant', 'Needs endpoint'], ['Long polling', 'Near real-time', 'Connection overhead']],
+    interview: ['When choose polling vs webhooks?', 'How secure webhooks?', 'Webhook delivery guarantees?'],
+    deepDive: 'Webhook security: HMAC signature in header, verify on receive. Idempotency: Send unique ID, receiver deduplicates. Retry: Exponential backoff (1s, 2s, 4s, 8s...). Dead letter: Store failed webhooks for manual retry. Status callbacks: Support 2xx range, retry on 5xx, drop on 4xx (bad config).',
+    realWorld: 'Stripe: Webhook events with signatures. GitHub: Webhooks for repo events. Slack: Slash commands use webhooks. Twilio: Status callbacks for SMS. Shopify: Webhooks for order events.',
+    gotchas: 'Webhook receivers must respond fast (<5s). HTTPS required for security. Handle duplicate deliveries (idempotent processing). Monitor webhook queue depth. Test with ngrok locally.'
+  },
+  apilandscape: {
+    concepts: ['REST: HTTP + JSON, stateless, resource-oriented', 'GraphQL: Query language, single endpoint, type-safe', 'gRPC: Binary protocol, streaming, high performance', 'WebSocket: Full-duplex persistent connection', 'Webhooks: Event-driven push notifications'],
+    tradeoffs: [['Protocol', 'Use Case', 'Trade-off'], ['REST', 'Public APIs', 'Over/under-fetching'], ['GraphQL', 'Complex clients', 'Caching complexity'], ['gRPC', 'Microservices', 'Browser support'], ['WebSocket', 'Real-time', 'Stateful']],
+    interview: ['How choose between protocols?', 'Can they coexist?', 'Future of API protocols?'],
+    deepDive: 'Decision matrix: External → REST (ubiquitous). Mobile with varying needs → GraphQL. Service-to-service high perf → gRPC. Real-time bidirectional → WebSocket. Event notifications → Webhooks. Hybrid: REST for public, gRPC internal, WebSocket for real-time. API Gateway can translate between them.',
+    realWorld: 'Google: REST (external), gRPC (internal). GitHub: REST and GraphQL side-by-side. Slack: REST + WebSocket for real-time. Discord: REST + WebSocket + gRPC. Stripe: REST primary, webhooks for events.',
+    gotchas: 'One size doesnt fit all. REST is still dominant for public APIs. GraphQL requires client investment. gRPC needs infrastructure support. Consider team expertise and tooling.'
+  },
+  // Phase 2: Real-Time & Communication
+  livestream: {
+    concepts: ['Capture: Camera/screen → Encoder (OBS, hardware)', 'Ingest: RTMP stream to origin server', 'Transcode: Convert to multiple bitrates/resolutions', 'Package: Segment into HLS/DASH formats', 'Deliver: CDN distributes to edge locations'],
+    tradeoffs: [['Protocol', 'Latency', 'Compatibility'], ['RTMP', '1-3s', 'Ingest only'], ['HLS', '6-30s', 'Universal'], ['DASH', '4-20s', 'Standard'], ['WebRTC', '<500ms', 'Limited scale']],
+    interview: ['How reduce live stream latency?', 'ABR vs single bitrate?', 'CDN for live vs VOD?'],
+    deepDive: 'Adaptive Bitrate Streaming (ABR): Multiple quality levels, client switches based on bandwidth. Segment length affects latency (2-6 seconds typical). Low Latency HLS (LL-HLS): Partial segments, <3s latency. WebRTC for real-time: P2P, sub-second, but limited to ~1000 viewers without SFU. SRT: Secure, UDP-based, low latency ingest.',
+    realWorld: 'Twitch: RTMP ingest, HLS delivery, <3s low latency mode. YouTube Live: DASH + LL-DASH. Netflix: Not live, but ABR pioneer. Zoom/Meet: WebRTC for video calls. Discord: WebRTC with custom SFU.',
+    gotchas: 'Live is harder than VOD (no buffering ahead). RTMP is dying but still used for ingest. WebRTC scaling needs SFU/MCU infrastructure. Test with real network conditions. Monitor stream health (bitrate, keyframes).'
+  },
+  pushnotify: {
+    concepts: ['FCM: Firebase Cloud Messaging for Android/iOS/Web', 'APNs: Apple Push Notification service', 'Web Push: VAPID keys + Service Worker', 'Topic messaging: Subscribe devices to topics', 'Token management: Handle registration and refresh'],
+    tradeoffs: [['Platform', 'Reliability', 'Cost'], ['FCM', 'High', 'Free (limits)'], ['APNs', 'High', 'Free'], ['Web Push', 'Medium', 'Free'], ['Custom', 'Variable', 'Higher']],
+    interview: ['FCM vs custom solution?', 'How handle token expiration?', 'Notification delivery guarantees?'],
+    deepDive: 'Token lifecycle: Device registers → Gets token → App sends to backend → Token refreshes periodically. Priority: High for time-sensitive (uses more battery). Collapsible: Replace previous undelivered. Data vs notification: Data for custom handling, notification for system display. Batching: FCM supports up to 500 tokens per request.',
+    realWorld: 'WhatsApp: FCM for Android, APNs for iOS. Slack: All three platforms. Instagram: Heavy push usage for engagement. Uber: Real-time ride updates. Amazon: Order and delivery notifications.',
+    gotchas: 'Tokens can become invalid (uninstall, re-register). Rate limits exist (FCM: 1M/minute per project). iOS requires user permission. Web Push needs HTTPS. China blocks FCM (need alternatives).'
+  },
+  wsdeep: {
+    concepts: ['Upgrade: HTTP → WebSocket handshake', 'Frames: Text or binary message format', 'Ping/Pong: Keep-alive heartbeat', 'Close: Graceful termination with status code', 'Reconnection: Exponential backoff strategy'],
+    tradeoffs: [['Aspect', 'WebSocket', 'SSE'], ['Direction', 'Bidirectional', 'Server → Client'], ['Protocol', 'Custom', 'HTTP'], ['Reconnect', 'Manual', 'Auto']],
+    interview: ['WebSocket vs long polling?', 'How scale WebSocket?', 'When use SSE instead?'],
+    deepDive: 'Scaling: Sticky sessions (IP hash) keep connections on same server. Redis Pub/Sub for cross-server broadcast. Connection limit ~65K per IP per server. Heartbeat: 30-60s ping to detect dead connections. Reconnection: Track last message ID, replay on reconnect. Compression: permessage-deflate extension.',
+    realWorld: 'Discord: Millions of concurrent connections. Slack: Real-time messaging, presence. Figma: Collaborative cursors, changes. Notion: Real-time collaboration. Trading platforms: Price updates.',
+    gotchas: 'Load balancers must support WebSocket upgrade. No auto-reconnect (handle in client). Memory per connection adds up. Timeouts from proxies (increase limits). Test connection handling under failures.'
+  },
+  // Phase 2: DevOps & CI/CD
+  cicdpipe: {
+    concepts: ['Plan: Requirements, stories, sprints', 'Code: Version control, branches, PRs', 'Build: Compile, lint, containerize', 'Test: Unit, integration, E2E, security', 'Deploy: Staging → Production with rollback'],
+    tradeoffs: [['Stage', 'Speed', 'Safety'], ['Direct deploy', 'Fast', 'Risky'], ['Canary', 'Slower', 'Safe'], ['Blue-green', 'Fast switch', 'Cost (2x infra)']],
+    interview: ['CI vs CD vs CD?', 'How achieve fast feedback?', 'Deployment strategies?'],
+    deepDive: 'CI (Continuous Integration): Merge code often, auto-build and test. CD (Delivery): Always deploy-ready artifacts. CD (Deployment): Auto-deploy to production. Pipeline stages: Lint → Unit tests → Build → Integration tests → Security scan → Deploy staging → Deploy prod. Feature flags enable trunk-based development.',
+    realWorld: 'Amazon: Deploys every 11.7 seconds. Google: Monorepo with 25K+ engineers. Netflix: Full CD with canary analysis. GitHub: Ship to production 20+ times/day. Etsy: Pioneer of continuous deployment.',
+    gotchas: 'Slow pipelines kill velocity (target <10 min). Flaky tests erode trust. Feature flags need cleanup. Rollback must be tested regularly. Monitor after every deploy.'
+  },
+  configiac: {
+    concepts: ['Config Management: Manage existing servers (Ansible, Chef, Puppet)', 'IaC: Provision infrastructure (Terraform, Pulumi, CloudFormation)', 'Mutable: Update servers in place', 'Immutable: Replace servers, never update', 'Declarative: Define desired state, tool converges'],
+    tradeoffs: [['Tool', 'Approach', 'Learning'], ['Terraform', 'Declarative IaC', 'HCL syntax'], ['Ansible', 'Procedural config', 'YAML, SSH'], ['Pulumi', 'Programming IaC', 'Real languages'], ['CloudFormation', 'AWS native', 'JSON/YAML']],
+    interview: ['Terraform vs Ansible use cases?', 'Immutable vs mutable infra?', 'State management in Terraform?'],
+    deepDive: 'Terraform: State file tracks resources. Use remote backend (S3) for team. Plan before apply. Modules for reusability. Ansible: Agentless, SSH-based. Playbooks define tasks. Idempotent actions. Good for config drift. Pulumi: TypeScript/Python/Go for infra. Testing with standard tools. CDK: AWS constructs in code.',
+    realWorld: 'Netflix: Heavy Terraform, immutable infrastructure. Shopify: Terraform for cloud, Ansible for bare metal. HashiCorp: Created Terraform, used by most. Airbnb: Terraformed AWS accounts. Spotify: Terraform for all cloud resources.',
+    gotchas: 'Terraform state is critical - secure it. Drift detection needs regular runs. Config management + IaC often used together. Cloud-specific tools lock you in. Start simple, add complexity as needed.'
+  },
+  dockerdeep: {
+    concepts: ['Docker Client: CLI commands (build, run, push)', 'Docker Daemon: Background service managing containers', 'Registry: Store and distribute images (Docker Hub, ECR)', 'Image layers: Read-only, cached, shared between containers', 'Container: Running instance with writable layer'],
+    tradeoffs: [['Base Image', 'Size', 'Security'], ['Alpine', '5MB', 'Minimal attack surface'], ['Debian Slim', '80MB', 'More packages'], ['Ubuntu', '200MB', 'Familiar']],
+    interview: ['Image layers and caching?', 'Multi-stage builds?', 'Container vs VM?'],
+    deepDive: 'Layers: Each Dockerfile instruction creates layer. Cache invalidation cascades down. Order matters (deps before code). Multi-stage: Build in fat image, copy artifacts to slim. Security: Non-root user, read-only filesystem, no secrets in layers. Runtime: containerd (industry standard), cgroups (resource limits), namespaces (isolation).',
+    realWorld: 'Docker: Universal adoption, every company. Kubernetes: Uses containerd runtime. AWS ECS/EKS: Docker images on AWS. Google Cloud Run: Serverless containers. Every CI/CD pipeline uses Docker.',
+    gotchas: 'Secrets in build args are visible in history. Large images slow deploys. Alpine has musl (not glibc) issues. Volume mounts for persistence. Prune regularly (docker system prune).'
+  },
+  gitworkflows: {
+    concepts: ['Git Flow: main, develop, feature/, release/, hotfix/', 'GitHub Flow: main + short-lived feature branches', 'Trunk-based: All commits to main, feature flags', 'GitLab Flow: Environment branches (production, staging)', 'Squash merge: Clean history, one commit per feature'],
+    tradeoffs: [['Workflow', 'Complexity', 'Release Speed'], ['Git Flow', 'High', 'Slow (planned)'], ['GitHub Flow', 'Low', 'Fast (continuous)'], ['Trunk-based', 'Low', 'Fastest']],
+    interview: ['When use Git Flow?', 'Trunk-based prerequisites?', 'How handle hotfixes?'],
+    deepDive: 'Git Flow: Good for versioned software (libraries, mobile apps). Long-lived branches, structured releases. GitHub Flow: Simple, merge to main, deploy often. Feature branches short-lived (<day). Trunk-based: Commit to main directly or via short PRs. Feature flags hide incomplete work. Requires strong CI/CD and testing.',
+    realWorld: 'Google: Monorepo, trunk-based, 40K commits/day. Facebook: Trunk-based for web. GitHub: GitHub Flow (obviously). Microsoft: Git Flow for Office, trunk-based for Azure. Shopify: Trunk-based + feature flags.',
+    gotchas: 'Long-lived branches create merge hell. Feature flags need cleanup. Trunk-based needs fast CI (<10 min). Squash loses detailed history. Choose based on release cadence.'
+  },
+  // Phase 2: Performance & Monitoring
+  webperf: {
+    concepts: ['FCP: First Contentful Paint - when first content appears', 'LCP: Largest Contentful Paint - when main content appears', 'CLS: Cumulative Layout Shift - visual stability', 'INP: Interaction to Next Paint - responsiveness', 'TTFB: Time to First Byte - server response time'],
+    tradeoffs: [['Metric', 'Target', 'Impact'], ['LCP', '< 2.5s', 'SEO ranking'], ['INP', '< 200ms', 'UX'], ['CLS', '< 0.1', 'Trust']],
+    interview: ['Core Web Vitals for SEO?', 'How improve LCP?', 'What causes CLS?'],
+    deepDive: 'Core Web Vitals (Google ranking): LCP, INP, CLS. Measure in lab (Lighthouse) and field (RUM). LCP optimization: Optimize hero image, preload critical assets, server-side render. CLS causes: Images without dimensions, dynamic content insertion, web fonts. INP: Reduce JavaScript, break up long tasks, use web workers.',
+    realWorld: 'Google: Created Core Web Vitals, uses for ranking. Amazon: 100ms slower = 1% revenue loss. Pinterest: 40% less wait time = 15% more signups. BBC: 10% users lost per second of load. Walmart: 1s faster = 2% conversion.',
+    gotchas: 'Lab and field metrics differ. Mobile is usually worse than desktop. Third-party scripts kill performance. Measure real users, not just synthetic. Performance budgets prevent regression.'
+  },
+  frontendperf: {
+    concepts: ['Code splitting: Load only needed JavaScript', 'Lazy loading: Defer offscreen images/components', 'Compression: Brotli/Gzip for text assets', 'Caching: Browser cache + CDN caching', 'Critical CSS: Inline above-fold styles'],
+    tradeoffs: [['Technique', 'Benefit', 'Complexity'], ['Code split', 'Smaller bundles', 'Route config'], ['Lazy load', 'Faster initial', 'Loading states'], ['SSR', 'Better FCP', 'Server cost']],
+    interview: ['Bundle size reduction strategies?', 'When use SSR vs SSG?', 'Image optimization techniques?'],
+    deepDive: 'Code splitting: Dynamic imports, route-based chunking. Bundle analyzer to find issues. Tree shaking: Remove unused exports (ES modules required). Images: WebP/AVIF format, srcset for responsive, lazy loading native. Fonts: Font-display: swap, subset fonts, preload critical. Preconnect: dns-prefetch and preconnect for third-party.',
+    realWorld: 'Airbnb: Reduced JS by 50%, improved conversion. Twitter: Moved to lite version for slow networks. Shopify: Optimized images for merchants. Netflix: Custom loading for TV apps. LinkedIn: Lazy loading increased engagement.',
+    gotchas: 'Too many chunks hurt performance (waterfall). Lazy loading can cause layout shift. Brotli not supported everywhere. CDN cache invalidation is tricky. Measure real impact, not just bundle size.'
+  },
+  latencynums: {
+    concepts: ['L1 cache: 0.5ns - fastest, on CPU core', 'L2 cache: 7ns - per-core cache', 'Main memory: 100ns - RAM access', 'SSD: 150μs - random read', 'Network: 500μs same DC, 150ms cross-continent'],
+    tradeoffs: [['Storage', 'Latency', 'Cost/GB'], ['RAM', '~100ns', '$$$'], ['SSD', '~100μs', '$$'], ['HDD', '~10ms', '$']],
+    interview: ['Why cache in memory vs SSD?', 'Network latency factors?', 'How do these affect system design?'],
+    deepDive: 'Memory hierarchy: L1 (fastest, smallest) → L2 → L3 → RAM → SSD → HDD → Network. Each level 10-100x slower. Implications: Cache hot data in memory. Sequential access much faster than random. Network round trips dominate most systems. Data locality matters - compute near data.',
+    realWorld: 'Google: Jeff Dean created these benchmarks. Redis: Why in-memory matters. CDN: Why edge locations matter. Database indexes: Why B-trees work. Kafka: Why sequential writes are fast.',
+    gotchas: 'These numbers are approximate and change with hardware. Focus on orders of magnitude. Network is usually the bottleneck. SSDs have limited writes (wear). Memory bandwidth also matters.'
+  },
+  latencyreduce: {
+    concepts: ['Caching: Memory cache (Redis) for hot data', 'Indexing: Database indexes for fast lookups', 'CDN: Edge caching for static content', 'Async: Queue background work, return fast', 'Connection pooling: Reuse expensive connections'],
+    tradeoffs: [['Strategy', 'Complexity', 'Impact'], ['Cache', 'Medium (invalidation)', '10-100x'], ['CDN', 'Low', '2-10x'], ['Async', 'High (eventual)', 'Non-blocking']],
+    interview: ['Where to add caching?', 'Trade-off of async processing?', 'How profile latency?'],
+    deepDive: 'Priority order: 1) Measure (APM tools) to find bottleneck. 2) Cache most frequent queries. 3) Add missing indexes. 4) Move static assets to CDN. 5) Make slow operations async. 6) Connection pools for DB, HTTP. 7) Data locality (compute near data). Avoid premature optimization.',
+    realWorld: 'Netflix: Everything cached at edge. Uber: Async for non-critical paths. LinkedIn: Heavy use of connection pools. Shopify: CDN for all assets. Discord: Distributed caching with Rust.',
+    gotchas: 'Measure before optimizing. Cache invalidation is hard. Async adds complexity and failure modes. CDN cold caches are slow. Connection pools have limits.'
+  },
+  // Phase 2: Advanced Caching
+  cacheevict: {
+    concepts: ['LRU (Least Recently Used): Evict oldest accessed item - most common', 'LFU (Least Frequently Used): Evict least accessed item - better for hot data', 'FIFO (First In First Out): Simple queue, evict oldest - least accurate', 'SLRU (Segmented LRU): Probation + protected segments - better hit rate', 'TTL (Time To Live): Time-based expiration - for freshness requirements'],
+    tradeoffs: [['Policy', 'Pros', 'Cons', 'Used By'], ['LRU', 'Good recency', 'No frequency tracking', 'Redis, Memcached'], ['LFU', 'Hot data stays', 'Cold data stuck', 'Caffeine'], ['SLRU', 'Best hit rate', 'Complex', 'CDNs'], ['TTL', 'Fresh data', 'May evict hot items', 'All caches']],
+    interview: ['When use LFU over LRU?', 'How implement O(1) LRU?', 'What is cache pollution?'],
+    deepDive: 'LRU implementation: HashMap + doubly-linked list for O(1) get/put/evict. LinkedHashMap in Java. LFU needs min-heap or frequency buckets. SLRU: New items enter probation segment, promoted to protected on second access. Reduces scan resistance. Adaptive policies (ARC, LIRS) auto-tune but add complexity.',
+    realWorld: 'Redis: Uses approximated LRU (sampling) for memory efficiency. Caffeine (Java): Uses Window TinyLFU - state of the art. CDNs: Use SLRU variants for better hit rates. MySQL: Uses LRU for buffer pool. Browser: Uses combination of LRU + size.',
+    gotchas: 'LRU fails for sequential scans (cache pollution). LFU bad for changing access patterns. TTL alone wastes memory. Approximated LRU trades accuracy for speed. Size-based eviction needed for variable-size items.'
+  },
+  twoTierCache: {
+    concepts: ['L1 (Local): In-process cache - fastest, limited size, no network', 'L2 (Distributed): Redis/Memcached - shared, larger, network hop', 'Write-through: Write to both L1 and L2 together', 'Write-behind: Write L1 immediately, async to L2', 'Cache-aside: Application manages both layers explicitly'],
+    tradeoffs: [['Tier', 'Latency', 'Size', 'Consistency'], ['L1 Local', '~100ns', 'MB-GB', 'Per-process only'], ['L2 Redis', '~1ms', 'GB-TB', 'Shared across nodes'], ['Both', 'L1 hit: fast', 'Combined', 'Invalidation needed']],
+    interview: ['How invalidate L1 across nodes?', 'When skip L1?', 'Write-through vs write-behind?'],
+    deepDive: 'Pattern: Check L1 → Miss → Check L2 → Miss → Database → Populate L2 → Populate L1. Invalidation: Pub/sub for L1 invalidation across nodes. Redis keyspace notifications or dedicated channel. L1 sizing: Small but hot - top 5-10% of data. L2 sizing: Larger, covers working set.',
+    realWorld: 'Netflix: Guava L1 + EVCache L2. Facebook: Local cache + Memcached. Twitter: Caffeine L1 + Redis L2. LinkedIn: Couchbase multi-tier. Uber: Local + Redis with geo-awareness.',
+    gotchas: 'L1 staleness without proper invalidation. Memory pressure from L1. Thundering herd on L1 miss. Serialization overhead for L2. Monitor both hit rates separately.'
+  },
+  rediscluster: {
+    concepts: ['Redis Sentinel: HA with automatic failover for single master', 'Redis Cluster: Sharding across 16384 hash slots', 'Hash slots: CRC16(key) mod 16384 determines node', 'Master-replica: Each shard has replicas for durability', 'MOVED/ASK: Client redirects for cluster resharding'],
+    tradeoffs: [['Mode', 'Scalability', 'Complexity', 'Multi-key Ops'], ['Sentinel', 'Vertical only', 'Low', 'Full support'], ['Cluster', 'Horizontal', 'High', 'Hash tags only'], ['Single', 'Limited', 'Lowest', 'Full support']],
+    interview: ['How handle cluster failover?', 'What are hash tags?', 'Cross-slot operations?'],
+    deepDive: 'Sentinel: 3+ sentinels monitor master. Quorum-based failover (usually 2). Promotes replica to master. Cluster: Slots 0-16383 distributed across masters. Hash tags: {user}:profile and {user}:orders same slot. MOVED: permanent redirect. ASK: temporary during migration. Gossip protocol for node discovery.',
+    realWorld: 'Instagram: Redis Cluster with 500+ nodes. Discord: Custom proxy over Redis Cluster. GitHub: Sentinel for HA. Pinterest: Cluster for recommendation cache. Twitch: Cluster for chat state.',
+    gotchas: 'Cluster: No multi-key ops across slots (use hash tags). Sentinel: Manual resharding. Split-brain without proper quorum. Memory fragmentation. Lua scripts limited in cluster mode.'
+  },
+  // Phase 2: Architecture Patterns
+  hapatterns: {
+    concepts: ['Hot-Hot (Active-Active): Both DCs serve traffic, best availability', 'Hot-Warm (Active-Passive): Standby DC for failover only', 'RTO (Recovery Time Objective): Max acceptable downtime', 'RPO (Recovery Point Objective): Max acceptable data loss', 'Failover: Automatic switch to healthy instance/DC'],
+    tradeoffs: [['Pattern', 'Cost', 'RTO', 'Complexity'], ['Hot-Hot', 'Highest', 'Seconds', 'Data sync hard'], ['Hot-Warm', 'Medium', 'Minutes', 'Moderate'], ['Hot-Cold', 'Lowest', 'Hours', 'Simplest']],
+    interview: ['RTO vs RPO trade-offs?', 'How achieve zero RTO?', 'CAP implications for HA?'],
+    deepDive: 'Hot-Hot: Both sites fully operational. Requires data replication (sync or async). Conflict resolution for writes (last-write-wins, CRDT, or version vectors). DNS or global load balancer for traffic. Hot-Warm: Replicate data continuously, but standby not serving. Faster failover than cold, cheaper than hot-hot.',
+    realWorld: 'Netflix: Active-active across 3 AWS regions. Google: Active-active globally. Stripe: Active-passive for payment processing (consistency). AWS: Multi-AZ for RDS. Shopify: Active-active with regional routing.',
+    gotchas: 'Active-active write conflicts need resolution strategy. Failover testing is critical (chaos engineering). DNS failover has TTL delays. Data replication lag affects RPO. Cost grows with redundancy level.'
+  },
+  archpatterns: {
+    concepts: ['Microkernel: Core + plugins (browsers, IDEs)', 'Space-Based: In-memory data grid for extreme scale', 'Pipe-Filter: Data transformation pipeline (Unix, ETL)', 'Event-Driven: Async events decouple components', 'Hexagonal (Ports-Adapters): Business logic isolated from infra'],
+    tradeoffs: [['Pattern', 'Best For', 'Complexity', 'Scalability'], ['Microkernel', 'Extensibility', 'Medium', 'Limited'], ['Space-Based', 'Extreme scale', 'Very High', 'Excellent'], ['Pipe-Filter', 'Data processing', 'Low', 'Good'], ['Event-Driven', 'Decoupling', 'High', 'Very Good']],
+    interview: ['When use space-based?', 'Microkernel examples?', 'Event-driven vs request-response?'],
+    deepDive: 'Microkernel: Core system + plugin modules. Plugin interface defines contracts. Examples: VS Code, Eclipse, WordPress. Space-Based: Tuple spaces, processing units with in-memory data. No central database bottleneck. GigaSpaces, Hazelcast. Pipe-Filter: Unix pipes, Apache Beam, Kafka Streams.',
+    realWorld: 'Eclipse: Microkernel with OSGi plugins. eBay: Space-based for flash sales. Netflix: Pipe-filter for video encoding. Uber: Event-driven for ride matching. Various: Hexagonal in DDD projects.',
+    gotchas: 'Microkernel plugin compatibility/versioning. Space-based: Memory costs, eventual consistency. Pipe-filter: Ordering guarantees. Event-driven: Event sourcing complexity. Choose based on specific requirements.'
+  },
+  faulttolerant: {
+    concepts: ['Redundancy: Multiple instances eliminate single points of failure', 'Isolation: Bulkheads prevent cascade failures', 'Graceful Degradation: Reduced functionality over total failure', 'Fast Recovery: Minimize MTTR with automation', 'Chaos Engineering: Test failures in production'],
+    tradeoffs: [['Principle', 'Benefit', 'Cost'], ['Redundancy', 'No SPOF', 'Resources, sync'], ['Isolation', 'Blast radius', 'Complexity'], ['Degradation', 'Partial service', 'Feature flags'], ['Recovery', 'Lower MTTR', 'Automation effort']],
+    interview: ['Design for N+1 redundancy?', 'How isolate failures?', 'Graceful degradation examples?'],
+    deepDive: 'Six principles: 1) Redundancy at every layer. 2) Bulkhead isolation (separate pools, regions). 3) Circuit breakers for external calls. 4) Timeouts and retries with backoff. 5) Health checks and self-healing. 6) Monitoring and alerting. Defense in depth - multiple mechanisms.',
+    realWorld: 'Netflix: Chaos Monkey, Simian Army. AWS: Availability Zones isolation. Google: N+2 redundancy standard. Stripe: Graceful degradation in payment flow. Amazon: Cell-based architecture.',
+    gotchas: 'Testing failures is hard (but essential). Redundancy doesn\'t help correlated failures. Retries can cause thundering herd. Too many fallbacks mask real issues. Document failure modes explicitly.'
+  },
+  solidprinciples: {
+    concepts: ['SRP: Single Responsibility - one reason to change', 'OCP: Open-Closed - extend without modifying', 'LSP: Liskov Substitution - subtypes replaceable', 'ISP: Interface Segregation - small specific interfaces', 'DIP: Dependency Inversion - depend on abstractions'],
+    tradeoffs: [['Principle', 'Benefit', 'Risk If Ignored'], ['SRP', 'Maintainable', 'God classes'], ['OCP', 'Extensible', 'Modification ripples'], ['LSP', 'Polymorphism', 'Unexpected behavior'], ['ISP', 'Decoupled', 'Fat interfaces'], ['DIP', 'Testable', 'Tight coupling']],
+    interview: ['SRP violation signs?', 'OCP with strategy pattern?', 'DIP in layered architecture?'],
+    deepDive: 'SRP: Class should have one actor to serve. Split by business capability. OCP: Use inheritance, composition, or plugins. Strategy/Template patterns. LSP: Preconditions cannot be strengthened. Rectangle/Square problem. ISP: Many small interfaces > one large. Role interfaces. DIP: High-level modules don\'t depend on low-level.',
+    realWorld: 'Spring Framework: DIP with IoC container. React: SRP with component composition. AWS SDK: ISP with service-specific clients. Plugin systems: OCP everywhere. Payment processors: LSP for processor interface.',
+    gotchas: 'Over-engineering with too many abstractions. SRP doesn\'t mean one method per class. LSP is about behavior, not syntax. Interface explosion from ISP. DIP adds indirection overhead.'
+  },
+  // Phase 2: Messaging
+  kafkausecases: {
+    concepts: ['Log Aggregation: Collect logs from services centrally', 'Stream Processing: Real-time analytics with Kafka Streams', 'Event Sourcing: Store events as source of truth', 'CDC (Change Data Capture): Database changes to Kafka', 'Metrics Pipeline: Collect and process system metrics'],
+    tradeoffs: [['Use Case', 'Latency', 'Volume', 'Ordering'], ['Log aggregation', 'Seconds OK', 'Very high', 'Per-source'], ['Stream processing', 'Sub-second', 'High', 'Per-partition'], ['Event sourcing', 'Low', 'Medium', 'Strict per-entity'], ['CDC', 'Near real-time', 'Medium', 'Strict per-table']],
+    interview: ['Kafka vs RabbitMQ for logs?', 'CDC implementation?', 'Stream processing frameworks?'],
+    deepDive: 'Log aggregation: Filebeat → Kafka → ELK/Splunk. Buffering for bursty logs. Stream processing: Kafka Streams, Flink, Spark Streaming. Windowed aggregations. CDC: Debezium captures DB changes. Outbox pattern for transactional messaging. Event sourcing: Events = source of truth, derive state.',
+    realWorld: 'LinkedIn: Log aggregation at scale (origin of Kafka). Uber: Real-time pricing with Kafka Streams. Shopify: CDC for data warehouse sync. Netflix: Metrics pipeline with Kafka. Walmart: Event sourcing for inventory.',
+    gotchas: 'Log volume can explode costs. CDC schema evolution challenges. Event sourcing adds complexity. Stream processing exactly-once is hard. Partition count affects parallelism.'
+  },
+  cloudmsgpatterns: {
+    concepts: ['Async Request-Reply: Reply to temp queue, correlate with ID', 'Claim Check: Store large payload separately, pass reference', 'Priority Queue: Multiple queues with consumers prioritized', 'Competing Consumers: Multiple workers share queue load', 'Message Deduplication: Handle duplicate deliveries idempotently'],
+    tradeoffs: [['Pattern', 'Problem Solved', 'Complexity'], ['Async Reply', 'Long operations', 'Correlation tracking'], ['Claim Check', 'Large messages', 'External storage'], ['Priority Queue', 'SLA differentiation', 'Multiple queues'], ['Competing Consumers', 'Scale processing', 'Message ordering']],
+    interview: ['Implement priority queue?', 'Handle large payloads?', 'Deduplication strategies?'],
+    deepDive: 'Async Reply: Correlation ID links request/response. Temporary queues or polling. Claim Check: Azure Blob + message reference. S3 presigned URLs. Priority: Separate high/medium/low queues. Weight-based consumption. Deduplication: Message ID + idempotency key. TTL on dedup window.',
+    realWorld: 'Azure: Native patterns in Service Bus. AWS: SQS + S3 for claim check. Stripe: Priority queues for payment webhooks. Shopify: Competing consumers for order processing. Google: Pub/Sub deduplication.',
+    gotchas: 'Async reply timeout handling. Claim check storage lifecycle. Priority inversion (starving low priority). Competing consumers lose ordering. Dedup window sizing trade-offs.'
+  },
+  kafka101: {
+    concepts: ['Broker: Kafka server storing partitions', 'Topic: Logical channel for messages, divided into partitions', 'Partition: Ordered, immutable log - unit of parallelism', 'Producer: Writes to topic partitions', 'Consumer Group: Coordinated consumers sharing partitions'],
+    tradeoffs: [['Component', 'Scale Factor', 'Bottleneck'], ['Brokers', 'Horizontal', 'Disk, network'], ['Partitions', 'Parallelism', 'Memory per partition'], ['Consumers', 'Per partition', 'One per partition max'], ['Producers', 'Unlimited', 'Broker throughput']],
+    interview: ['Partition assignment?', 'Consumer rebalancing?', 'Why immutable log?'],
+    deepDive: 'Architecture: Producers → Brokers (Topics/Partitions) → Consumer Groups. Partitions enable parallelism. Replication factor for durability. ZooKeeper (legacy) or KRaft for cluster coordination. Consumer offset tracking for exactly-once semantics.',
+    realWorld: 'LinkedIn: Created Kafka, 7T messages/day. Uber: 1M+ messages/second. Netflix: All inter-service communication. Apple: User-facing notifications. Walmart: Transaction processing.',
+    gotchas: 'Partition count: Can increase, never decrease. Consumer lag monitoring essential. Broker disk is the bottleneck. Rebalancing causes pause. Message ordering only within partition.'
+  },
+  // Phase 2: Payment & Security
+  creditcardfees: {
+    concepts: ['Interchange: Bank-to-bank fee (largest, ~1.5-3%)', 'Assessment: Card network fee (Visa/MC ~0.13%)', 'Processor fee: Payment processor margin', 'MDR: Total Merchant Discount Rate to merchant', 'Chargebacks: Disputed transactions, costly to merchants'],
+    tradeoffs: [['Card Type', 'Interchange', 'Reason'], ['Debit', 'Lower (~0.5%)', 'Lower risk'], ['Credit', 'Higher (~2%)', 'Rewards funding'], ['Premium/Rewards', 'Highest (~3%)', 'Rich rewards'], ['B2B/Corporate', 'Very high', 'Extended terms']],
+    interview: ['Why debit cheaper?', 'Who sets interchange?', 'How reduce processing costs?'],
+    deepDive: 'Flow: Customer pays → Merchant → Processor → Network → Issuing Bank. Interchange: Set by networks (Visa, Mastercard). Varies by card type, MCC, region. EU caps at 0.3%. US has Durbin Amendment for debit. Processors: Square, Stripe add margin on top. Revenue model for payment companies.',
+    realWorld: 'Visa/Mastercard: ~$20B+ annual revenue from assessments. Stripe: 2.9% + 30¢ includes all fees. Square: Simplified flat-rate pricing. Costco: Pushed for lower interchange. Amazon: Threatens to drop cards over fees.',
+    gotchas: 'Interchange is non-negotiable (set by networks). Chargebacks: $20-100 fee + lost goods. PCI compliance costs. Currency conversion markups. Level 2/3 data for lower B2B rates.'
+  },
+  paymentgateway: {
+    concepts: ['Authorization: Verify funds, get approval code', 'Capture: Actually transfer the funds', 'Settlement: Bank-to-bank fund movement', 'Void: Cancel before capture', 'Refund: Return funds after settlement'],
+    tradeoffs: [['Step', 'Timing', 'Reversibility'], ['Auth', 'Instant', 'Voidable'], ['Capture', 'Within 7 days', 'Refundable'], ['Settlement', '1-3 days', 'Chargeback only'], ['Refund', '3-10 days', 'Final']],
+    interview: ['Auth vs capture timing?', 'Why delay capture?', 'Idempotency in payments?'],
+    deepDive: 'Flow: 1) Customer enters card. 2) Gateway encrypts, sends to processor. 3) Processor routes to network (Visa/MC). 4) Network routes to issuing bank. 5) Bank authorizes. 6) Response back through chain. Auth hold: Reserves funds. Capture: Triggers settlement. Batch settlement typically end of day.',
+    realWorld: 'Stripe: Unified auth+capture by default. Uber: Auth on ride start, capture on end. Hotels: Auth at check-in, capture at checkout. Amazon: Auth at order, capture at ship. Gas stations: Auth $1, capture actual amount.',
+    gotchas: 'Auth expires (7-30 days). Partial capture allowed. Auth hold frustrates customers (shows as pending). Settlement timing affects cash flow. 3D Secure adds friction but reduces chargebacks.'
+  },
+  sensitivedata: {
+    concepts: ['Encryption at rest: AES-256 for stored data', 'Encryption in transit: TLS 1.3 for network data', 'Key Management: HSM or cloud KMS for key storage', 'RBAC: Role-based access to sensitive data', 'Data Masking: Show partial data (****1234)'],
+    tradeoffs: [['Control', 'Security', 'Complexity'], ['Encryption', 'Data protected', 'Key management'], ['RBAC', 'Access control', 'Role explosion'], ['Masking', 'Limit exposure', 'Audit requirements'], ['Tokenization', 'Remove PCI scope', 'Token vault']],
+    interview: ['Encryption key rotation?', 'GDPR right to deletion?', 'Tokenization vs encryption?'],
+    deepDive: 'Defense in depth: 1) Encrypt at rest (AES-256-GCM). 2) Encrypt in transit (TLS 1.3). 3) Encrypt at application layer for sensitive fields. Key management: Never in code. Use KMS (AWS, GCP, Azure). HSM for highest security. Rotate keys regularly. GDPR: Right to erasure, data portability, consent tracking.',
+    realWorld: 'Stripe: Tokenization removes PCI scope for merchants. AWS: KMS with automatic rotation. Slack: Encryption at rest with customer keys. Healthcare: HIPAA BAA requirements. Banking: HSM for all key operations.',
+    gotchas: 'Key rotation without downtime is hard. Logs may contain sensitive data. Backup encryption separate from primary. Insider threats need monitoring. Compliance != security.'
+  },
+  // Phase 2: Database Advanced
+  btreedeep: {
+    concepts: ['Node structure: Keys + pointers, branching factor ~100', 'Disk-optimized: Node size = page size (4KB-16KB)', 'Height: 3-4 levels for billions of rows', 'Range queries: Leaf nodes linked for sequential scan', 'Write amplification: One write may update multiple pages'],
+    tradeoffs: [['Aspect', 'B-Tree', 'LSM-Tree'], ['Read', 'O(log n), single path', 'O(log n), multiple files'], ['Write', 'Random I/O', 'Sequential (faster)'], ['Range', 'Excellent', 'Requires merge'], ['Space', 'Some overhead', 'Space amplification']],
+    interview: ['Why B-tree for databases?', 'B-tree vs B+tree?', 'Index bloat causes?'],
+    deepDive: 'B+tree (used in DBs): Only leaves have data, internal nodes just keys+pointers. Leaf nodes doubly-linked for range scans. Height = log_B(N) where B = branching factor. With B=100, 3 levels handles 100M rows. Page splits on insert, merge on delete. VACUUM reclaims dead space.',
+    realWorld: 'PostgreSQL: B-tree is default index. MySQL InnoDB: Clustered B+tree index. Oracle: B-tree for primary indexes. SQL Server: Clustered and non-clustered B-trees. SQLite: B-tree for everything.',
+    gotchas: 'Index bloat from updates/deletes. Page splits cause write amplification. Hot spots on sequential inserts. Covering indexes reduce lookups. Partial indexes save space. REINDEX to rebuild bloated indexes.'
+  },
+  nosqltypes: {
+    concepts: ['Document (MongoDB): JSON-like, flexible schema, nested data', 'Key-Value (Redis, DynamoDB): Simple lookup, fast, limited queries', 'Column-Family (Cassandra, HBase): Wide rows, time-series friendly', 'Graph (Neo4j): Relationships first-class, traversal queries', 'Time-Series (InfluxDB): Optimized for temporal data'],
+    tradeoffs: [['Type', 'Query Pattern', 'Schema', 'Example'], ['Document', 'Flexible', 'Schema-less', 'MongoDB'], ['Key-Value', 'Get/Set by key', 'None', 'Redis'], ['Column-Family', 'Wide rows', 'Column-based', 'Cassandra'], ['Graph', 'Traversals', 'Nodes+Edges', 'Neo4j']],
+    interview: ['When use document vs relational?', 'Graph DB use cases?', 'Column-family vs row-store?'],
+    deepDive: 'Document: Embed related data, avoid joins. Best for content management, catalogs. Key-Value: Caching, session storage, simple lookups. Column-Family: Write-heavy, time-series, IoT. Sparse data efficient. Graph: Social networks, fraud detection, recommendations. Traversals O(relationships) not O(data).',
+    realWorld: 'MongoDB: Used by Uber, eBay, Adobe. Redis: Used by Twitter, GitHub, Pinterest. Cassandra: Used by Netflix, Apple, Instagram. Neo4j: Used by NASA, Walmart, Airbnb. DynamoDB: Used by Amazon, Lyft, Redfin.',
+    gotchas: 'Document DBs can lead to data duplication. Key-Value limited query flexibility. Column-family updates are expensive. Graph DBs not for simple queries. Choose based on access patterns.'
+  },
+  starsnowflake: {
+    concepts: ['Star Schema: Fact table + denormalized dimension tables', 'Snowflake: Star with normalized dimensions', 'Fact Table: Measurements/metrics (sales, events)', 'Dimension: Descriptive attributes (product, date, customer)', 'Grain: Level of detail in fact table (one row = one sale)'],
+    tradeoffs: [['Schema', 'Query Speed', 'Storage', 'Maintenance'], ['Star', 'Faster (fewer joins)', 'More (denormalized)', 'Easier'], ['Snowflake', 'Slower (more joins)', 'Less', 'Harder (updates)'], ['Flat', 'Fastest', 'Most', 'Hardest (duplicates)']],
+    interview: ['Star vs snowflake choice?', 'Slowly changing dimensions?', 'Fact table grain?'],
+    deepDive: 'Star: Central fact table with foreign keys to dimension tables. Dimensions denormalized for query speed. Snowflake: Dimensions normalized (product → category → department). Saves space, adds joins. SCD Types: Type 1 (overwrite), Type 2 (history rows), Type 3 (previous column). OLAP cubes built on star schemas.',
+    realWorld: 'Snowflake (company): Cloud data warehouse, uses star internally. Amazon Redshift: Optimized for star schemas. BigQuery: Nested/repeated fields alternative to star. Tableau: Works best with star schemas. Power BI: Prefers star for performance.',
+    gotchas: 'Star schema requires ETL discipline. Snowflake slow for ad-hoc queries. SCD Type 2 explodes dimension size. Grain mistakes cause wrong aggregations. Bridge tables for many-to-many.'
+  },
+  dbdesign: {
+    concepts: ['1NF: Atomic values, no repeating groups', '2NF: 1NF + no partial key dependencies', '3NF: 2NF + no transitive dependencies', 'Primary Key: Unique identifier for each row', 'Foreign Key: Reference to another table\'s primary key'],
+    tradeoffs: [['Form', 'Redundancy', 'Query Complexity', 'Write Speed'], ['1NF', 'High', 'Simple', 'Slow (updates)'], ['2NF', 'Medium', 'Medium', 'Medium'], ['3NF', 'Low', 'More joins', 'Fast'], ['BCNF', 'Minimal', 'Complex', 'Fastest writes']],
+    interview: ['When denormalize?', 'Surrogate vs natural keys?', 'Index design principles?'],
+    deepDive: 'Normal forms prevent anomalies: Insert (can\'t add data without related data), Update (same data in multiple places), Delete (losing data unintentionally). Keys: Surrogate (auto-increment, UUID) vs Natural (email, SSN). Indexes: B-tree default, hash for equality, GIN for arrays, BRIN for sorted. Covering indexes include all columns needed.',
+    realWorld: 'OLTP systems: Highly normalized (3NF). OLAP systems: Denormalized (star schema). E-commerce: Products often denormalized for speed. Banking: Strict normalization for integrity. Social media: Mix based on access patterns.',
+    gotchas: 'Over-normalization kills read performance. Under-normalization causes update anomalies. UUID PKs can hurt index performance. NULL handling varies by DB. Composite keys complicate ORM mapping.'
+  },
+  // Phase 3: Developer Resources
+  engblogs: {
+    concepts: ['Netflix Tech Blog: Microservices, resilience, data engineering', 'Uber Engineering: Real-time systems, ML at scale, maps', 'Cloudflare Blog: Edge computing, security, network performance', 'Meta Engineering: AI/ML, infrastructure, mobile development', 'LinkedIn Engineering: Data infrastructure, search, recommendations'],
+    tradeoffs: [['Blog', 'Strength', 'Focus Area'], ['Netflix', 'Distributed systems', 'Streaming, chaos'], ['Uber', 'Real-time systems', 'Maps, pricing'], ['Cloudflare', 'Edge/network', 'CDN, security'], ['Meta', 'Scale patterns', 'AI, mobile'], ['LinkedIn', 'Data engineering', 'Search, graph']],
+    interview: ['Which blog for microservices?', 'Best resource for distributed systems?', 'How engineers share knowledge?'],
+    deepDive: 'Engineering blogs reveal real production challenges. Netflix pioneered chaos engineering documentation. Uber shares ride-matching algorithms. Cloudflare explains DDoS mitigation. Meta publishes React and infrastructure insights. These blogs are interview gold - they show what companies actually build and value.',
+    realWorld: 'Netflix: 100+ deep technical posts. Uber: Open-sourced many tools from blog posts. Cloudflare: Explains internet outages publicly. Stripe: Idempotency keys concept widely adopted. Discord: Scaling WebSocket servers documentation.',
+    gotchas: 'Blogs often show idealized versions. Implementation details may be outdated. Not all solutions apply to your scale. Follow multiple companies for balanced view. RSS feeds help track updates.'
+  },
+  devbooks: {
+    concepts: ['The Pragmatic Programmer: Career wisdom, DRY, orthogonality', 'Clean Code: Readable code, naming, functions, SOLID', 'DDIA: Distributed systems, storage engines, consensus', 'Design Patterns: GoF patterns, object-oriented design', 'System Design Interview: Scalability, real-world systems'],
+    tradeoffs: [['Book', 'Level', 'Focus'], ['Pragmatic Programmer', 'All levels', 'Mindset'], ['Clean Code', 'Junior-Mid', 'Code quality'], ['DDIA', 'Mid-Senior', 'Distributed systems'], ['Design Patterns', 'Mid', 'OOP patterns'], ['System Design Interview', 'Senior', 'Interview prep']],
+    interview: ['Must-read books for engineers?', 'When to read DDIA?', 'How books complement experience?'],
+    deepDive: 'Pragmatic Programmer: Timeless principles like DRY and tracer bullets. Clean Code: Controversial but influential on industry standards. DDIA by Martin Kleppmann: Deep dive into how databases and distributed systems actually work. Essential for senior roles.',
+    realWorld: 'FAANG interviews often reference DDIA concepts. Clean Code shaped many style guides. Design Patterns vocabulary used daily. Staff engineers cite Pragmatic Programmer. System Design Interview became interview standard.',
+    gotchas: 'Books age - check publication dates. Not all advice applies to your stack. Theory differs from practice. One book wont make you expert. Combine with hands-on projects.'
+  },
+  cspapers: {
+    concepts: ['MapReduce: Distributed processing framework, Google 2004', 'Dynamo: Key-value store design, Amazon 2007', 'Raft: Understandable consensus algorithm, 2013', 'Bigtable: Distributed storage system, Google 2006', 'Paxos Made Simple: Consensus explained, Lamport'],
+    tradeoffs: [['Paper', 'Impact', 'Difficulty'], ['MapReduce', 'Spawned Hadoop ecosystem', 'Medium'], ['Dynamo', 'Inspired Cassandra, Riak', 'Hard'], ['Raft', 'Replaced Paxos in practice', 'Medium'], ['Bigtable', 'HBase, LevelDB origins', 'Hard'], ['GFS', 'HDFS design basis', 'Medium']],
+    interview: ['Key insight from Dynamo paper?', 'Why Raft over Paxos?', 'How papers influence systems?'],
+    deepDive: 'Google papers shaped modern infrastructure. MapReduce made distributed computing accessible. Dynamo showed how to build highly available systems with eventual consistency. Raft made consensus understandable and implementable. Reading original papers reveals why systems work the way they do.',
+    realWorld: 'Hadoop: Direct MapReduce implementation. Cassandra: Dynamo + Bigtable hybrid. etcd: Uses Raft for consensus. CockroachDB: Spanner paper inspired. Kafka: Based on log-structured storage papers.',
+    gotchas: 'Papers assume background knowledge. Academic style can be dense. Implementation differs from paper. Focus on key insights first. Use explanatory blog posts alongside.'
+  },
+  opensource: {
+    concepts: ['First Contribution: Start with good-first-issue labels', 'Code Review: Learn from maintainer feedback', 'Documentation: Often overlooked, high impact', 'Testing: Add tests for existing features', 'Community: Join Discord, Slack, mailing lists'],
+    tradeoffs: [['Contribution Type', 'Effort', 'Impact', 'Learning'], ['Bug fixes', 'Medium', 'High', 'Codebase knowledge'], ['Documentation', 'Low', 'High', 'Understanding'], ['Features', 'High', 'Very high', 'Deep expertise'], ['Tests', 'Medium', 'Medium', 'Quality practices'], ['Triage', 'Low', 'Medium', 'Community building']],
+    interview: ['Open source contributions?', 'How handle maintainer feedback?', 'OSS project experience?'],
+    deepDive: 'OSS contributions demonstrate initiative and collaboration skills. Start small - fix typos, improve docs, add tests. Graduate to bug fixes and features. Maintainer feedback is free senior review. Well-known projects on resume stand out.',
+    realWorld: 'React: 1600+ contributors. VS Code: Community-driven features. Kubernetes: Enterprise-backed OSS. Linux kernel: Gold standard. Apache projects: Foundation governance model.',
+    gotchas: 'Maintainers are volunteers - be patient. Read contributing guides first. Large PRs hard to review. Understand project roadmap. Some projects have slow response times.'
+  },
+  softskills: {
+    concepts: ['Communication: Clear writing, presentations, 1:1s', 'Collaboration: Code review etiquette, pair programming', 'Time Management: Estimation, prioritization, focus', 'Mentorship: Teaching, receiving feedback, growing others', 'Leadership: Technical decisions, team influence, ownership'],
+    tradeoffs: [['Skill', 'Junior Focus', 'Senior Focus'], ['Communication', 'Ask good questions', 'Explain complex topics'], ['Collaboration', 'Accept feedback', 'Give constructive feedback'], ['Time Management', 'Meet deadlines', 'Set realistic timelines'], ['Leadership', 'Own your tasks', 'Own team outcomes']],
+    interview: ['Conflict resolution example?', 'How handle disagreement?', 'Leadership without authority?'],
+    deepDive: 'Technical skills plateau - soft skills differentiate. Staff+ engineers spend 50%+ time on communication. Influence without authority requires trust-building. Written communication scales better than meetings. Mentorship accelerates career growth both ways.',
+    realWorld: 'Amazon: Writing-first culture (6-pagers). Google: Strong code review culture. Netflix: Radical candor feedback. Stripe: Written RFCs for decisions. Microsoft: Growth mindset adoption.',
+    gotchas: 'Soft skills take years to develop. Feedback can feel personal. Cultural differences matter. Remote work needs more explicit communication. Over-collaboration slows progress.'
+  },
+  diagramtools: {
+    concepts: ['Mermaid: Text-based, Git-friendly, markdown support', 'Excalidraw: Hand-drawn style, collaborative, simple', 'Draw.io: Feature-rich, many templates, free', 'Lucidchart: Professional, team collaboration, integrations', 'PlantUML: Code-based, UML focused, CI/CD friendly'],
+    tradeoffs: [['Tool', 'Best For', 'Weakness'], ['Mermaid', 'Version control', 'Limited styling'], ['Excalidraw', 'Quick sketches', 'Not formal'], ['Draw.io', 'Detailed diagrams', 'Heavy interface'], ['Lucidchart', 'Team collaboration', 'Paid features'], ['PlantUML', 'UML diagrams', 'Learning curve']],
+    interview: ['Diagram tool preferences?', 'How document architecture?', 'Version control diagrams?'],
+    deepDive: 'Diagram-as-code (Mermaid, PlantUML) enables version control and automation. Excalidraw great for whiteboard sessions. Draw.io/Lucidchart for polished documentation. Choice depends on audience - informal for team, formal for stakeholders.',
+    realWorld: 'GitHub: Native Mermaid support in markdown. Notion: Excalidraw embedding. Confluence: Draw.io integration. Google: Proprietary diagramming tools. AWS: Architecture Icons for diagrams.',
+    gotchas: 'Too detailed diagrams become unreadable. Keep diagrams updated with code. Different audiences need different detail levels. Auto-generated diagrams often messy. Simple is usually better.'
+  },
+  codingprinciples: {
+    concepts: ['DRY: Dont Repeat Yourself - single source of truth', 'SOLID: Single responsibility, Open-closed, Liskov, Interface segregation, Dependency inversion', 'YAGNI: You Arent Gonna Need It - avoid premature features', 'KISS: Keep It Simple, Stupid - simplicity over complexity', 'Clean Code: Readable, maintainable, testable code'],
+    tradeoffs: [['Principle', 'Benefit', 'Danger of Over-applying'], ['DRY', 'Maintainability', 'Wrong abstractions'], ['SOLID', 'Flexibility', 'Over-engineering'], ['YAGNI', 'Faster delivery', 'Missing foresight'], ['KISS', 'Readability', 'Ignoring complexity'], ['Clean Code', 'Team velocity', 'Bikeshedding']],
+    interview: ['SOLID in practice?', 'When break DRY?', 'Over-engineering examples?'],
+    deepDive: 'Principles are guidelines, not laws. DRY often misapplied - duplication is better than wrong abstraction. SOLID matters most for library/framework code. YAGNI prevents gold-plating. KISS is most important but hardest to follow.',
+    realWorld: 'Google: Readability reviews for clean code. Amazon: Two-pizza teams enable SOLID. Basecamp: YAGNI advocates. Linux kernel: KISS for critical paths. Netflix: Principle-driven architecture decisions.',
+    gotchas: 'Principles can conflict. Junior devs over-apply DRY. SOLID adds indirection. YAGNI doesnt mean no planning. Context determines which principle matters most.'
+  },
+  // Phase 3: Developer Roadmaps
+  fullstackroad: {
+    concepts: ['Frontend: HTML, CSS, JavaScript, React/Vue/Angular', 'Backend: Node.js/Python/Java, REST APIs, databases', 'DevOps: Git, CI/CD, Docker, cloud basics', 'Databases: SQL, NoSQL, caching, query optimization', 'System Design: Scalability, architecture patterns, trade-offs'],
+    tradeoffs: [['Path', 'Pros', 'Cons'], ['Frontend First', 'Visual feedback', 'Limited system view'], ['Backend First', 'System understanding', 'Slower visible progress'], ['Full-Stack Bootcamp', 'Fast overview', 'Shallow depth'], ['CS Degree', 'Strong fundamentals', 'Time investment']],
+    interview: ['Full-stack project experience?', 'Strongest area?', 'How stay current?'],
+    deepDive: 'Full-stack path: HTML/CSS → JavaScript → React → Node.js → SQL → REST APIs → Docker → AWS/GCP basics. T-shaped skills: Broad knowledge, deep in one area. Frontend moving to server (Next.js, Remix). Backend moving to serverless. Both converging.',
+    realWorld: 'Startups: Need full-stack flexibility. FAANG: Specialized roles but system knowledge valued. Agencies: Full-stack efficiency. Enterprise: Specialized but cross-functional appreciated.',
+    gotchas: 'Jack of all trades, master of none risk. Technology changes fast. Depth matters for senior roles. Dont spread too thin early. Pick specialization after broad exposure.'
+  },
+  architectroad: {
+    concepts: ['Technical Leadership: Design decisions, mentoring, standards', 'System Design: Distributed systems, scalability, reliability', 'Domain Knowledge: Business context, industry patterns', 'Communication: RFCs, presentations, stakeholder management', 'Trade-offs: Cost vs performance, consistency vs availability'],
+    tradeoffs: [['Focus', 'Staff Path', 'Manager Path'], ['Technical depth', 'Primary', 'Secondary'], ['People management', 'Indirect', 'Direct'], ['Architecture decisions', 'Hands-on', 'Oversight'], ['Career ceiling', 'IC track', 'Exec track']],
+    interview: ['Architecture decision process?', 'How handle technical debt?', 'Cross-team coordination?'],
+    deepDive: 'Path: Senior Engineer (5+ years) → Staff (8+ years) → Principal (12+ years). Key transitions: Individual contributor → Technical leader → Organization influencer. Requires: Deep technical expertise, business acumen, communication skills, influence without authority.',
+    realWorld: 'Google: Staff/Principal/Distinguished Engineer levels. Amazon: Principal Engineer, Distinguished Engineer. Netflix: Senior Staff, Architect. Stripe: Infrastructure IC track. Meta: E7+ architect responsibilities.',
+    gotchas: 'Architect role varies by company. Some architects dont code. Stay hands-on to remain credible. Politics increases at higher levels. Technical debt is your responsibility.'
+  },
+  securityroad: {
+    concepts: ['Application Security: OWASP, secure coding, code review', 'Network Security: Firewalls, IDS/IPS, network segmentation', 'Cloud Security: IAM, encryption, compliance (SOC2, HIPAA)', 'Penetration Testing: Ethical hacking, vulnerability assessment', 'Incident Response: Detection, containment, forensics, recovery'],
+    tradeoffs: [['Specialization', 'Demand', 'Entry Difficulty'], ['AppSec', 'Very high', 'Medium (dev background)'], ['Cloud Security', 'Very high', 'Medium'], ['Pen Testing', 'High', 'Hard (certifications)'], ['Security Engineering', 'Very high', 'Medium'], ['GRC', 'High', 'Lower']],
+    interview: ['Security vulnerability found?', 'OWASP Top 10?', 'Security in SDLC?'],
+    deepDive: 'Path: Developer → Security-focused developer → Application Security Engineer → Security Architect. Certifications: CISSP, OSCP, CEH valuable. DevSecOps integrating security into CI/CD. Cloud security is fastest growing area.',
+    realWorld: 'Google: Project Zero, bug bounties. Microsoft: Security Development Lifecycle. Netflix: Security Chaos Engineering. Cloudflare: DDoS protection innovations. Bug bounty: HackerOne, Bugcrowd platforms.',
+    gotchas: 'Security is everyone\'s job. Compliance != Security. Zero-day vulnerabilities always exist. Social engineering often easiest attack. Security slows development - balance needed.'
+  },
+  backendroad: {
+    concepts: ['Languages: Python, Java, Go, Node.js, Rust', 'Databases: PostgreSQL, MySQL, MongoDB, Redis', 'APIs: REST, GraphQL, gRPC, WebSockets', 'Infrastructure: Docker, Kubernetes, AWS/GCP/Azure', 'Architecture: Microservices, event-driven, serverless'],
+    tradeoffs: [['Language', 'Strength', 'Best For'], ['Python', 'Productivity, ML', 'Startups, data'], ['Java', 'Enterprise, performance', 'Banking, Android'], ['Go', 'Concurrency, simplicity', 'Infrastructure'], ['Node.js', 'JS ecosystem, async', 'Real-time apps'], ['Rust', 'Performance, safety', 'Systems programming']],
+    interview: ['Backend language choice?', 'Database selection criteria?', 'Microservices experience?'],
+    deepDive: 'Foundation: One language deeply → SQL databases → REST APIs → Authentication → Caching → Message queues → Docker → Cloud. Then: Distributed systems, system design, performance optimization. Language choice matters less than fundamentals.',
+    realWorld: 'Netflix: Java, Python. Uber: Go, Java, Python. Stripe: Ruby, Go. Discord: Elixir, Rust. Airbnb: Java, Ruby. Google: C++, Go, Java, Python.',
+    gotchas: 'Dont chase languages. Fundamentals transfer. Database knowledge is timeless. Cloud changes fast. Understand the why, not just how.'
+  },
+  devopsroad: {
+    concepts: ['CI/CD: Jenkins, GitHub Actions, GitLab CI, CircleCI', 'Infrastructure as Code: Terraform, Pulumi, CloudFormation', 'Containers: Docker, Kubernetes, container registries', 'Monitoring: Prometheus, Grafana, DataDog, PagerDuty', 'Cloud: AWS, GCP, Azure - compute, storage, networking'],
+    tradeoffs: [['Tool Category', 'Popular Choice', 'Alternative'], ['CI/CD', 'GitHub Actions', 'Jenkins, GitLab CI'], ['IaC', 'Terraform', 'Pulumi, CDK'], ['Container Orchestration', 'Kubernetes', 'ECS, Nomad'], ['Monitoring', 'Prometheus+Grafana', 'DataDog'], ['Cloud', 'AWS', 'GCP, Azure']],
+    interview: ['CI/CD pipeline design?', 'Infrastructure as Code experience?', 'Incident response process?'],
+    deepDive: 'Path: Developer → DevOps Engineer → SRE → Platform Engineer. Linux fundamentals essential. Automation mindset: If you do it twice, script it. GitOps: Infrastructure changes through Git. Platform engineering: Building internal developer platforms.',
+    realWorld: 'Google: SRE originated, error budgets. Netflix: Chaos engineering, Spinnaker. Amazon: You build it, you run it. Spotify: Platform teams, Backstage. Uber: Internal platform investments.',
+    gotchas: 'DevOps is culture, not tools. Automation takes time investment upfront. Kubernetes complexity often overkill. Cloud costs surprise teams. On-call fatigue is real.'
+  },
+  // Phase 3: Programming Concepts
+  umlclass: {
+    concepts: ['Class: Rectangle with name, attributes, methods', 'Association: Line connecting related classes', 'Inheritance: Arrow pointing to parent class', 'Composition: Filled diamond, strong ownership', 'Aggregation: Empty diamond, weak ownership'],
+    tradeoffs: [['Relationship', 'Symbol', 'Meaning'], ['Association', 'Plain line', 'Uses/knows about'], ['Dependency', 'Dashed arrow', 'Temporary usage'], ['Inheritance', 'Hollow arrow', 'Is-a relationship'], ['Composition', 'Filled diamond', 'Part-of (lifecycle)'], ['Aggregation', 'Empty diamond', 'Has-a (independent)']],
+    interview: ['Composition vs aggregation?', 'When use inheritance?', 'UML in practice?'],
+    deepDive: 'UML class diagrams show static structure. Composition: Child dies with parent (Order has LineItems). Aggregation: Child can exist independently (Team has Players). Modern use: Sketch designs, not formal spec. Mermaid/PlantUML make diagrams as code.',
+    realWorld: 'Enterprise: Formal UML documentation. Startups: Whiteboard sketches. Architecture reviews: High-level class diagrams. Domain-Driven Design: Bounded context diagrams. API design: Interface definitions.',
+    gotchas: 'Full UML rarely used in practice. Keep diagrams high-level. Diagrams go stale quickly. Show important relationships only. Code is the real documentation.'
+  },
+  paradigms: {
+    concepts: ['Imperative: Step-by-step instructions, state changes', 'Object-Oriented: Objects, encapsulation, inheritance, polymorphism', 'Functional: Pure functions, immutability, composition', 'Declarative: What, not how (SQL, HTML, React)', 'Reactive: Data streams, propagation of change'],
+    tradeoffs: [['Paradigm', 'Strength', 'Best For'], ['OOP', 'Modeling real-world', 'Business logic, GUI'], ['Functional', 'Predictability', 'Data transformation'], ['Imperative', 'Control flow clarity', 'Performance-critical'], ['Declarative', 'Readability', 'UI, queries'], ['Reactive', 'Async handling', 'Real-time updates']],
+    interview: ['Functional vs OOP preference?', 'When use each paradigm?', 'Multi-paradigm examples?'],
+    deepDive: 'Most languages are multi-paradigm. JavaScript: All paradigms. Python: OOP + functional. Java: OOP primary, functional added. Functional gaining popularity: Immutability simplifies concurrency. React: Functional components won over classes.',
+    realWorld: 'React: Functional components default. Scala: FP on JVM. Haskell: Pure functional. Erlang/Elixir: Actor model. Rust: Multi-paradigm with FP emphasis.',
+    gotchas: 'Paradigms are tools, not religions. Pure FP hard in real apps. OOP can lead to complexity. Mix paradigms pragmatically. Understand trade-offs.'
+  },
+  garbagecollection: {
+    concepts: ['Reference Counting: Count references, free when zero', 'Mark and Sweep: Mark reachable, sweep unreachable', 'Generational: Young and old generations, frequent young GC', 'Stop-the-World: Pause application during GC', 'Concurrent GC: Collect while application runs'],
+    tradeoffs: [['GC Type', 'Throughput', 'Latency', 'Memory'], ['Serial', 'Low', 'High pauses', 'Low'], ['Parallel', 'High', 'Medium pauses', 'Medium'], ['CMS', 'Medium', 'Low pauses', 'Higher'], ['G1', 'High', 'Predictable', 'Medium'], ['ZGC', 'High', 'Sub-ms pauses', 'Higher']],
+    interview: ['GC tuning experience?', 'Memory leak debugging?', 'Generational hypothesis?'],
+    deepDive: 'Generational hypothesis: Most objects die young. Young gen collected frequently (minor GC), old gen rarely (major GC). G1: Divides heap into regions, collects garbage-first regions. ZGC: Concurrent, sub-millisecond pauses, scales to TB heaps.',
+    realWorld: 'Java: G1 default since Java 9. Go: Low-latency concurrent GC. .NET: Generational with regions. Python: Reference counting + cycle detector. Rust: No GC, ownership model.',
+    gotchas: 'GC tuning is often premature optimization. Memory leaks still possible (references held). Stop-the-world can cause latency spikes. Allocation rate affects GC frequency. Understand your GC before tuning.'
+  },
+  concurrencyparallel: {
+    concepts: ['Concurrency: Managing multiple tasks, may not run simultaneously', 'Parallelism: Running multiple tasks at exact same time', 'Thread: OS-level execution unit, shared memory', 'Process: Isolated execution, separate memory space', 'Async/Await: Non-blocking I/O, single thread can handle many tasks'],
+    tradeoffs: [['Model', 'Use Case', 'Complexity'], ['Multi-threading', 'CPU-bound parallel work', 'High (race conditions)'], ['Multi-processing', 'CPU-bound, isolation needed', 'Medium (IPC overhead)'], ['Async/Await', 'I/O-bound operations', 'Lower (single thread)'], ['Actor Model', 'Message passing, isolation', 'Medium'], ['CSP (Go)', 'Goroutines + channels', 'Lower']],
+    interview: ['Concurrency vs parallelism difference?', 'Race condition handling?', 'Async programming model?'],
+    deepDive: 'Concurrency is about structure (dealing with many things). Parallelism is about execution (doing many things). Single core can be concurrent but not parallel. Node.js: Concurrent (async), not parallel (single thread). Go: Concurrent and parallel (goroutines on multiple cores).',
+    realWorld: 'Node.js: Event loop concurrency. Go: Goroutines + channels. Java: Thread pools, CompletableFuture. Python: asyncio, multiprocessing. Rust: Fearless concurrency with ownership.',
+    gotchas: 'Shared mutable state is the root of all evil. Race conditions are hard to reproduce. Deadlocks from improper locking. Async doesnt mean fast. More threads != more performance.'
+  },
+  eventloop: {
+    concepts: ['Call Stack: Synchronous code execution, LIFO', 'Web APIs: Browser-provided async operations (setTimeout, fetch)', 'Callback Queue: Completed async callbacks waiting', 'Microtask Queue: Promises, higher priority than callbacks', 'Event Loop: Moves callbacks to stack when stack is empty'],
+    tradeoffs: [['Queue', 'Contains', 'Priority'], ['Microtasks', 'Promise callbacks, queueMicrotask', 'Highest'], ['Animation', 'requestAnimationFrame', 'High'], ['Macrotasks', 'setTimeout, setInterval, I/O', 'Normal'], ['Idle', 'requestIdleCallback', 'Lowest']],
+    interview: ['Event loop explanation?', 'Microtask vs macrotask?', 'How avoid blocking event loop?'],
+    deepDive: 'Event loop enables single-threaded async. Steps: 1) Execute sync code on stack. 2) Run all microtasks. 3) Render if needed. 4) Run one macrotask. 5) Repeat. Promise.then always before setTimeout. Long-running sync code blocks everything.',
+    realWorld: 'Node.js: libuv event loop, same principles. Browser: UI rendering in event loop. React: Concurrent mode uses scheduler. Web Workers: Separate event loops for parallel work.',
+    gotchas: 'Sync code blocks event loop completely. Microtasks can starve macrotasks. setTimeout(0) not immediate. Promise.resolve() schedules microtask. Understand execution order for debugging.'
+  },
+  cppusecases: {
+    concepts: ['Game Engines: Performance-critical rendering, physics', 'Systems Programming: OS kernels, device drivers', 'Embedded Systems: Resource-constrained devices', 'High-Frequency Trading: Microsecond latency requirements', 'Databases: Core engines (MySQL, MongoDB, Redis)'],
+    tradeoffs: [['Use Case', 'Why C++', 'Alternative'], ['Games', 'Raw performance, control', 'C#/Unity, Rust'], ['Systems', 'Hardware access, no GC', 'Rust, C'], ['Embedded', 'Small footprint, deterministic', 'C, Rust'], ['HFT', 'Minimal latency', 'FPGA'], ['Browsers', 'Performance + complexity', 'Rust emerging']],
+    interview: ['When choose C++?', 'C++ vs Rust comparison?', 'Memory management in C++?'],
+    deepDive: 'C++ used where performance is critical and GC pauses unacceptable. Games: Unreal Engine (C++), Unity (C# but core is C++). Browsers: Chrome, Firefox cores in C++. Databases: MySQL, PostgreSQL, MongoDB all have C++ in core. Modern C++ (11/14/17/20) much safer than legacy.',
+    realWorld: 'Google: Search infrastructure, Chrome. Meta: Core services. Microsoft: Windows, Office. Adobe: Creative suite. Bloomberg: Trading systems. CERN: Particle physics simulations.',
+    gotchas: 'Memory safety issues still common. Build systems are complex. Long compile times. Legacy codebases challenging. Rust is modern alternative for new projects.'
+  },
+  // Phase 3: Web & Frontend
+  cssfundamentals: {
+    concepts: ['Box Model: Content, padding, border, margin', 'Flexbox: One-dimensional layouts, alignment', 'Grid: Two-dimensional layouts, rows and columns', 'Specificity: ID > Class > Element selector priority', 'Cascade: Order matters, last rule wins (same specificity)'],
+    tradeoffs: [['Layout Method', 'Use Case', 'Complexity'], ['Flexbox', '1D layouts, navigation, cards', 'Low'], ['Grid', '2D layouts, page structure', 'Medium'], ['Float', 'Legacy, text wrapping', 'High (clearfix)'], ['Position', 'Overlays, fixed elements', 'Low'], ['Table', 'Tabular data only', 'Low']],
+    interview: ['Flexbox vs Grid choice?', 'CSS specificity calculation?', 'Responsive design approach?'],
+    deepDive: 'Modern CSS: Flexbox for components, Grid for page layout. Mobile-first: Start with mobile styles, add breakpoints. CSS Custom Properties (variables) enable theming. BEM naming for maintainability. Utility-first (Tailwind) gaining popularity.',
+    realWorld: 'Tailwind CSS: Utility-first revolution. Bootstrap: Component library standard. Material UI: Google design system. Styled Components: CSS-in-JS approach. CSS Modules: Scoped styles.',
+    gotchas: 'Specificity wars in large codebases. !important is code smell. Flexbox gaps browser support. Grid support now universal. Performance: Large stylesheets impact load time.'
+  },
+  oopprinciples: {
+    concepts: ['Encapsulation: Hide internal state, expose interface', 'Abstraction: Simplify complex reality with models', 'Inheritance: Reuse code through parent-child relationships', 'Polymorphism: Same interface, different implementations', 'Composition: Build complex objects from simpler ones'],
+    tradeoffs: [['Principle', 'Benefit', 'Pitfall'], ['Encapsulation', 'Information hiding', 'Over-protected data'], ['Inheritance', 'Code reuse', 'Deep hierarchies, fragile base'], ['Polymorphism', 'Flexibility', 'Runtime errors if misused'], ['Composition', 'Flexible combination', 'More boilerplate'], ['Abstraction', 'Simplicity', 'Leaky abstractions']],
+    interview: ['Composition over inheritance?', 'Polymorphism examples?', 'SOLID principles application?'],
+    deepDive: 'Favor composition over inheritance - more flexible, less coupling. Inheritance creates tight coupling and fragile base class problem. Interface-based polymorphism preferred. Encapsulation: Not just private fields, but hiding implementation details. Modern trend: Mix OOP with functional concepts.',
+    realWorld: 'Java: Traditional OOP, SOLID focus. Python: Duck typing, less strict OOP. JavaScript: Prototypal inheritance, now class syntax. Go: Composition through embedding, interfaces. Rust: Traits for polymorphism, no inheritance.',
+    gotchas: 'Deep inheritance hierarchies are hard to maintain. God objects violate single responsibility. Getters/setters dont mean encapsulation. Anemic domain models miss the point. OOP isnt always the answer.'
+  },
+  nginxpopular: {
+    concepts: ['Event-driven: Handles thousands of connections per worker', 'Reverse Proxy: Load balancing, SSL termination, caching', 'Static Content: Efficient file serving with sendfile', 'Configuration: Declarative config files, hot reload', 'Modularity: Core modules, third-party extensions'],
+    tradeoffs: [['Feature', 'Nginx', 'Apache'], ['Architecture', 'Event-driven', 'Process/thread per connection'], ['Concurrency', '10K+ connections', 'Hundreds'], ['Static files', 'Very fast', 'Slower'], ['Dynamic', 'Proxy to app server', 'mod_php embedded'], ['Config', '.conf files', '.htaccess flexibility']],
+    interview: ['Why choose Nginx?', 'Nginx vs Apache use cases?', 'Load balancing strategies?'],
+    deepDive: 'Nginx handles 10K+ concurrent connections with minimal memory through event-driven architecture. Master process manages worker processes. Each worker handles many connections without blocking. C10K problem solution. Used as reverse proxy in front of application servers.',
+    realWorld: 'Netflix: Nginx for edge delivery. Cloudflare: OpenResty (Nginx + Lua). Dropbox: Custom Nginx modules. WordPress: Most common web server. Docker: Default for many container setups.',
+    gotchas: 'Not for dynamic content directly (proxy to app). Configuration syntax learning curve. Debugging can be challenging. Module ecosystem smaller than Apache. HTTPS configuration requires attention.'
+  },
+  // Phase 3: Additional Topics (MISC)
+  slacknotify: {
+    concepts: ['Webhooks: HTTP POST to Slack URL, simple integration', 'Bot Users: OAuth, interactive messages, commands', 'Real-time Messaging: WebSocket connection for instant updates', 'Block Kit: Rich message formatting with interactive components', 'Events API: Subscribe to workspace events, serverless-friendly'],
+    tradeoffs: [['Method', 'Complexity', 'Capabilities'], ['Incoming Webhook', 'Very low', 'Send messages only'], ['Bot User', 'Medium', 'Full interaction'], ['Events API', 'Medium', 'React to events'], ['RTM (deprecated)', 'High', 'Real-time connection'], ['Workflow Builder', 'Low', 'No-code automation']],
+    interview: ['Notification system design?', 'Webhook vs bot approach?', 'Rate limiting handling?'],
+    deepDive: 'Architecture: Event source → Queue (reliability) → Notification service → Slack API. Webhooks for simple one-way notifications. Bot users for interactive workflows. Block Kit for rich formatting. Rate limits: 1 message/second per channel, burst allowed.',
+    realWorld: 'GitHub: PR notifications via webhooks. PagerDuty: Incident alerts with actions. DataDog: Alert notifications. Jira: Issue updates. CI/CD: Build status notifications.',
+    gotchas: 'Rate limits can be hit during incidents. Message delivery not guaranteed (queue needed). Rich formatting increases payload size. Bot tokens need secure storage. Channel flooding annoys users.'
+  },
+  qrlogin: {
+    concepts: ['QR Generation: Server creates unique session token in QR', 'Mobile Scan: App scans, authenticates with server', 'Polling/WebSocket: Desktop waits for confirmation', 'Token Exchange: Mobile confirms, desktop gets auth token', 'Security: Short TTL, one-time use, device binding'],
+    tradeoffs: [['Aspect', 'QR Login', 'Password'], ['Security', 'Higher (device-bound)', 'Phishing risk'], ['UX', 'Fast if phone ready', 'Typing required'], ['Dependency', 'Needs mobile app', 'Self-contained'], ['Offline', 'Needs both online', 'Works offline'], ['Adoption', 'Familiar pattern', 'Universal']],
+    interview: ['QR login security model?', 'How prevent replay attacks?', 'Alternative to QR?'],
+    deepDive: 'Flow: 1) Desktop requests login, gets session ID. 2) Session ID encoded in QR. 3) Mobile scans, sends session ID + auth to server. 4) Server validates, marks session authenticated. 5) Desktop poll/WebSocket receives auth token. Security: TTL ~2 min, single use, HTTPS required.',
+    realWorld: 'WhatsApp Web: Original popular implementation. Discord: Desktop login. Telegram: Multi-device support. WeChat: Primary login method in China. Banking apps: Transaction confirmation.',
+    gotchas: 'QR hijacking possible if displayed on compromised screen. Session fixation if not implemented correctly. Mobile app required. Network connectivity needed. Accessibility concerns for vision-impaired.'
+  },
+  pinterestgit: {
+    concepts: ['Trunk-Based Development: Short-lived branches, frequent merges', 'Feature Flags: Deploy code without enabling features', 'Continuous Deployment: Merge to main triggers deploy', 'Small PRs: Easier review, faster iteration', 'Automated Testing: Gate merges with CI checks'],
+    tradeoffs: [['Strategy', 'Pros', 'Cons'], ['Trunk-based', 'Fast integration', 'Needs feature flags'], ['GitFlow', 'Clear releases', 'Complex, slow'], ['GitHub Flow', 'Simple, CI/CD friendly', 'Less structure'], ['Ship/Show/Ask', 'Flexible', 'Requires trust']],
+    interview: ['Git branching strategy?', 'Feature flag implementation?', 'CI/CD pipeline design?'],
+    deepDive: 'Pinterest approach: Small PRs (under 200 lines), trunk-based development, feature flags for gradual rollout. Ship: Merge directly for small changes. Show: Merge, notify for review. Ask: PR for feedback before merge. Feature flags enable testing in production safely.',
+    realWorld: 'Google: Monorepo, trunk-based. Facebook: Mercurial, ship fast. Netflix: Microservices, independent deploys. Stripe: Careful review process. GitHub: Dogfooding GitHub Flow.',
+    gotchas: 'Feature flag tech debt accumulates. Trunk-based needs strong CI. Code review bottleneck. Merge conflicts with large teams. Branch naming conventions matter.'
+  },
+  stackoverflowarch: {
+    concepts: ['Monolith: Single .NET application, vertically scaled', 'SQL Server: Primary database, heavily optimized', 'Caching: Redis for hot data, aggressive caching', 'CDN: Static content delivery, edge caching', 'Minimal Services: Two tiers, not microservices'],
+    tradeoffs: [['Approach', 'Stack Overflow', 'Typical Startup'], ['Architecture', 'Monolith', 'Microservices rush'], ['Scaling', 'Vertical first', 'Horizontal first'], ['Database', 'Optimize SQL', 'NoSQL for everything'], ['Caching', 'Heavy optimization', 'Add when slow'], ['Team', 'Small, focused', 'Large, specialized']],
+    interview: ['Monolith vs microservices?', 'Vertical vs horizontal scaling?', 'Optimization techniques?'],
+    deepDive: 'Stack Overflow: 1.3B page views/month with ~9 web servers. Success factors: Aggressive SQL optimization, heavy caching (Redis), CDN for static content, minimal network hops. Proves monoliths can scale when well-optimized. Team of ~50 engineers.',
+    realWorld: 'Stack Overflow: 9 servers for 1.3B views. Basecamp: Monolith philosophy. Shopify: Modular monolith. GitHub: Started monolith, gradual extraction. Instagram: Scaled Python monolith to 1B users.',
+    gotchas: 'Monolith requires discipline. Team size matters more than architecture. Premature microservices add complexity. Vertical scaling has limits. Optimization requires measurement first.'
+  },
+  kissprinciple: {
+    concepts: ['Simplicity: Fewest moving parts to solve problem', 'Readability: Code explains itself, minimal comments needed', 'Maintainability: Future you can understand it', 'Debugging: Simple code has fewer bugs, easier to fix', 'Pragmatism: Working beats perfect'],
+    tradeoffs: [['Choice', 'Simple', 'Complex'], ['Framework', 'Vanilla JS/stdlib', 'Heavy framework'], ['Architecture', 'Monolith', 'Microservices'], ['Data flow', 'Request-response', 'Event sourcing'], ['Storage', 'Single database', 'Polyglot persistence'], ['Deployment', 'Single server', 'Kubernetes']],
+    interview: ['Over-engineering example?', 'When is complexity justified?', 'Simple solution that scaled?'],
+    deepDive: 'Complexity has ongoing costs: learning curve, debugging difficulty, maintenance burden. Start simple, add complexity only when needed and measured. WhatsApp: 50 engineers, 900M users. Instagram: Scaled Python to 1B users. Complexity is easy to add, hard to remove.',
+    realWorld: 'SQLite: 100K websites use it. Redis: Simple data structures, powerful. Go language: Simplicity as feature. Unix philosophy: Do one thing well. Basecamp: Intentionally simple stack.',
+    gotchas: 'Simple is not easy. Oversimplification ignores real requirements. Complexity sometimes unavoidable. Team experience affects simple. Context determines appropriate complexity.'
+  },
+  apiclients: {
+    concepts: ['REST Clients: Axios, Fetch, requests - HTTP-based', 'GraphQL Clients: Apollo, Relay, urql - query language', 'SDK/Libraries: Official client libraries from providers', 'Code Generation: OpenAPI, protobuf generate typed clients', 'Retry/Resilience: Built-in retry, circuit breakers'],
+    tradeoffs: [['Client Type', 'Pros', 'Cons'], ['Fetch/Axios', 'Lightweight, flexible', 'Manual error handling'], ['Apollo (GraphQL)', 'Caching, DevTools', 'Complexity, bundle size'], ['Generated SDKs', 'Type safety, complete', 'Version coupling'], ['Official SDKs', 'Best practices built-in', 'Vendor lock-in']],
+    interview: ['Client library choice criteria?', 'Error handling strategies?', 'Caching approaches?'],
+    deepDive: 'Modern API clients: Type safety (TypeScript), automatic retries, request/response interceptors, caching. Fetch API now has most features. Axios popular for interceptors and transforms. Apollo Client for GraphQL with normalized cache. OpenAPI generators create type-safe clients.',
+    realWorld: 'Stripe: Best-in-class official SDKs. AWS: SDK for every language. Google: Generated client libraries. Twilio: Helper libraries with examples. GitHub: Octokit official clients.',
+    gotchas: 'Bundle size matters for frontend. SDK versions lag API versions. Rate limiting handling needed. Error responses vary by API. Testing requires mocking.'
+  },
+  semver: {
+    concepts: ['MAJOR: Breaking changes, incompatible API changes', 'MINOR: New features, backwards compatible', 'PATCH: Bug fixes, backwards compatible', 'Pre-release: Alpha, beta, rc tags (1.0.0-beta.1)', 'Build metadata: +build.123, ignored in precedence'],
+    tradeoffs: [['Strategy', 'Pros', 'Cons'], ['Strict SemVer', 'Clear expectations', 'Frequent major bumps'], ['CalVer', 'Time-based clarity', 'No compatibility info'], ['0.x forever', 'Flexibility', 'No stability signal'], ['Marketing versions', 'Customer-friendly', 'Technical confusion']],
+    interview: ['When bump major version?', 'Pre-release versioning?', 'Dependency version strategy?'],
+    deepDive: 'SemVer rules: Major for breaking changes, minor for additions, patch for fixes. npm/yarn use semver ranges: ^1.2.3 (minor updates), ~1.2.3 (patch only). Breaking change = anything that requires user code changes. Deprecation before removal in next major.',
+    realWorld: 'npm: Semver standard. React: Major for breaking changes. Node.js: Even = LTS, odd = current. Chrome: Marketing version, fast releases. Kubernetes: API versioning (v1, v1beta1).',
+    gotchas: 'Semver is social contract, not enforced. Minor versions can break in practice. 0.x means anything can change. Lock files prevent surprises. Test dependency updates.'
+  },
+  vpnarch: {
+    concepts: ['Tunneling: Encapsulate traffic in encrypted tunnel', 'Authentication: Certificates, username/password, MFA', 'Split Tunneling: Route some traffic through VPN, rest direct', 'Protocols: OpenVPN, WireGuard, IPSec, IKEv2', 'Exit Nodes: Where traffic emerges, determines apparent location'],
+    tradeoffs: [['Protocol', 'Speed', 'Security', 'Compatibility'], ['WireGuard', 'Fastest', 'Modern crypto', 'Newer'], ['OpenVPN', 'Good', 'Battle-tested', 'Universal'], ['IPSec/IKEv2', 'Fast', 'Enterprise standard', 'Native support'], ['PPTP', 'Fast', 'Broken', 'Legacy only']],
+    interview: ['VPN security model?', 'Split tunneling use case?', 'Corporate VPN design?'],
+    deepDive: 'VPN creates encrypted tunnel between client and server. All traffic appears to originate from VPN server IP. WireGuard: Modern, fast, simple (4000 lines of code vs OpenVPN 100K+). Corporate VPNs: Access internal resources. Consumer VPNs: Privacy, geo-unblocking.',
+    realWorld: 'Cloudflare: WARP (WireGuard-based). NordVPN: WireGuard (NordLynx). Tailscale: WireGuard mesh VPN. Corporate: Cisco AnyConnect, GlobalProtect. AWS: Client VPN, Site-to-Site.',
+    gotchas: 'VPN provider sees all traffic. Free VPNs often sell data. Performance overhead varies. DNS leaks expose activity. Corporate VPNs can see personal traffic.'
+  },
+  memorytypes: {
+    concepts: ['Stack: Fast, automatic, fixed size, local variables', 'Heap: Dynamic, manual/GC managed, larger, objects', 'Registers: Fastest, CPU-level, very limited', 'Cache: L1/L2/L3, between CPU and RAM, transparent', 'Virtual Memory: Abstraction layer, enables paging/swapping'],
+    tradeoffs: [['Memory Type', 'Speed', 'Size', 'Management'], ['Registers', 'Fastest', 'Bytes', 'Compiler'], ['L1 Cache', 'Very fast', 'KB', 'Hardware'], ['L2/L3 Cache', 'Fast', 'MB', 'Hardware'], ['Stack', 'Fast', 'MB', 'Automatic'], ['Heap', 'Slower', 'GB', 'Manual/GC']],
+    interview: ['Stack vs heap allocation?', 'Memory leak causes?', 'Cache-friendly code?'],
+    deepDive: 'Stack: LIFO, thread-local, fast allocation (just move pointer). Heap: Random access, shared, fragmentation possible. Cache hierarchy: CPU checks L1 → L2 → L3 → RAM. Cache miss expensive. Locality of reference: Access nearby memory for cache hits.',
+    realWorld: 'Game engines: Custom allocators, stack allocation preferred. Databases: Buffer pool management. JVM: Eden, Survivor, Old gen heap regions. Redis: Single-threaded, cache-friendly. High-frequency trading: Lock-free, cache-line aware.',
+    gotchas: 'Stack overflow from deep recursion. Heap fragmentation over time. False sharing in multi-threaded code. Large allocations can be slow. Memory leaks crash eventually.'
+  },
+  internationalpay: {
+    concepts: ['SWIFT: Messaging network for bank-to-bank transfers', 'Correspondent Banking: Intermediary banks for international transfers', 'FX Rates: Exchange rates, spreads, markups', 'Settlement: Actual fund movement, 1-5 days', 'ISO 20022: New messaging standard, richer data'],
+    tradeoffs: [['Method', 'Speed', 'Cost', 'Reach'], ['SWIFT', '1-5 days', '$25-50', 'Global'], ['Wise/Revolut', 'Hours-1 day', '0.5-1%', 'Most countries'], ['Western Union', 'Minutes', '5-10%', 'Cash pickup'], ['Crypto/Stablecoins', 'Minutes', 'Variable', 'Limited adoption'], ['Local rails', 'Same day', 'Low', 'Regional']],
+    interview: ['International payment flow?', 'Why SWIFT is slow?', 'Currency conversion strategies?'],
+    deepDive: 'SWIFT flow: Bank A → Correspondent Bank → SWIFT Network → Correspondent Bank → Bank B. Each hop adds delay and fees. Fintech disruption: Wise holds local currency pools, avoids SWIFT for common corridors. Real-time settlement emerging with new rails.',
+    realWorld: 'SWIFT: $150 trillion annually. Wise: $9B monthly transfer volume. PayPal: 200+ countries. Stripe: 135+ currencies. Ripple: Blockchain-based SWIFT alternative attempt.',
+    gotchas: 'Compliance (AML/KYC) adds delays. Correspondent bank fees hidden. FX markup often buried. Settlement vs authorization timing. Recipient bank fees possible.'
   }
 };
 
