@@ -204,7 +204,7 @@ function ModernLandingPage() {
       <div className="flex flex-col min-h-screen bg-black text-white">
         {/* Header */}
         <header className="sticky top-0 z-50 w-full border-b border-gray-800 bg-black/95 backdrop-blur supports-[backdrop-filter]:bg-black/60">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex h-14 items-center justify-between">
+          <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex h-14 items-center justify-between">
             <div className="flex items-center space-x-2">
               <img src="/img/logo-sdlc-white.png" alt="SDLC.dev" className="h-16 w-auto" />
               <Badge variant="secondary" className="bg-blue-500/10 text-blue-400 border-blue-500/20 text-xs">
@@ -263,7 +263,7 @@ function ModernLandingPage() {
 
         <main className="flex-1">
           {/* Mobile-Optimized Hero Section */}
-          <section className="block lg:hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <section className="block lg:hidden max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8">
               {/* Mobile Hero Section - Left Side */}
               <div className="flex-1 w-full text-center md:text-left space-y-6">
@@ -437,8 +437,8 @@ function ModernLandingPage() {
 
           {/* Free Trial Banner */}
           {/* <section className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 border-b border-gray-800">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-              <div className="mx-auto max-w-4xl">
+            <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-3">
+              <div className="mx-auto max-w-[1200px]">
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-center">
                   <div className="flex items-center space-x-2">
                     <Sparkles className="h-4 w-4 text-blue-400" />
@@ -464,7 +464,7 @@ function ModernLandingPage() {
           </section> */}
 
           {/* Hero + Chat Section Side by Side */}
-          <section className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-4">
+          <section className="hidden lg:block max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-4">
             <div className="mx-auto max-w-7xl">
               <div className="flex flex-col lg:flex-row items-center lg:items-start gap-12 lg:gap-20">
                 {/* Hero Section */}
@@ -674,8 +674,8 @@ function ModernLandingPage() {
           </section>
 
           {/* Trust Indicators Banner */}
-          {/* <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="mx-auto max-w-4xl">
+          {/* <section className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="mx-auto max-w-[1200px]">
               <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-6">
                 <div className="flex flex-col md:flex-row items-center justify-center gap-8 text-white">
                   <div className="flex items-center space-x-3">
@@ -699,7 +699,7 @@ function ModernLandingPage() {
          
 
           {/* Mobile Core Features */}
-          <section className="block lg:hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <section className="block lg:hidden max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div className="space-y-8">
               <div className="text-center">
                 <h2 className="text-2xl font-bold text-white mb-4">
@@ -745,7 +745,7 @@ function ModernLandingPage() {
           </section>
 
           {/* Live Demo Preview */}
-          <section id="demo" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <section id="demo" className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-16">
             <div className="mx-auto max-w-7xl">
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 blur-3xl" />
@@ -805,7 +805,7 @@ function ModernLandingPage() {
           </section>
 
           {/* Mobile Stats Section */}
-          <section className="block lg:hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 border-y border-gray-800">
+          <section className="block lg:hidden max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-12 border-y border-gray-800">
             <div className="space-y-8">
               <div className="text-center">
                 <h2 className="text-2xl font-bold text-white mb-4">
@@ -842,8 +842,8 @@ function ModernLandingPage() {
           </section>
 
           {/* Desktop Stats Section */}
-          <section className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 border-y border-gray-800">
-            <div className="mx-auto max-w-6xl">
+          <section className="hidden lg:block max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-16 border-y border-gray-800">
+            <div className="mx-auto max-w-[1400px]">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
                 <div className="text-center space-y-2">
                   <div className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
@@ -874,7 +874,7 @@ function ModernLandingPage() {
           </section>
 
           {/* Mobile AI Capabilities Section */}
-          <section id="features" className="block lg:hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <section id="features" className="block lg:hidden max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-16">
             <div className="space-y-8">
               <div className="text-center">
                 <h2 className="text-2xl font-bold text-white mb-4">
@@ -950,8 +950,8 @@ function ModernLandingPage() {
           </section>
 
           {/* AI Capabilities Section */}
-          <section id="features" className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-            <div className="mx-auto max-w-6xl">
+          <section id="features" className="hidden lg:block max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-24">
+            <div className="mx-auto max-w-[1400px]">
               <div className="text-center mb-16">
                 <h2 className="text-4xl font-bold mb-4">
                   <span className="bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
@@ -1188,7 +1188,7 @@ function ModernLandingPage() {
           </section>
 
           {/* Mobile Integrations Section */}
-          <section id="integrations" className="block lg:hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <section id="integrations" className="block lg:hidden max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-16">
             <div className="space-y-8">
               <div className="text-center">
                 <h2 className="text-2xl font-bold text-white mb-4">
@@ -1230,8 +1230,8 @@ function ModernLandingPage() {
           </section>
 
           {/* Integrations */}
-          <section id="integrations" className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-            <div className="mx-auto max-w-6xl">
+          <section id="integrations" className="hidden lg:block max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-24">
+            <div className="mx-auto max-w-[1400px]">
               <div className="text-center mb-16">
                 <h2 className="text-4xl font-bold mb-4">
                   <span className="bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
@@ -1275,7 +1275,7 @@ function ModernLandingPage() {
           </section>
 
           {/* Mobile Free Trial Section */}
-          <section className="block lg:hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-pink-900/20">
+          <section className="block lg:hidden max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-16 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-pink-900/20">
             <div className="space-y-8">
               <div className="text-center">
                 <Badge className="bg-green-500/10 text-green-400 border-green-500/20 mb-4">
@@ -1355,8 +1355,8 @@ function ModernLandingPage() {
           </section>
 
           {/* Free Trial Section */}
-          <section className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-pink-900/20">
-            <div className="mx-auto max-w-6xl">
+          <section className="hidden lg:block max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-24 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-pink-900/20">
+            <div className="mx-auto max-w-[1400px]">
               <div className="text-center mb-16">
                 <Badge className="bg-green-500/10 text-green-400 border-green-500/20 mb-4">
                   <CheckCircle className="mr-1 h-3 w-3" />
@@ -1488,7 +1488,7 @@ function ModernLandingPage() {
           </section>
 
           {/* Mobile Early Access Section */}
-          <section className="block lg:hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 bg-gray-900/50">
+          <section className="block lg:hidden max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-16 bg-gray-900/50">
             <div className="space-y-8">
               <div className="text-center">
                 <Badge className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 text-yellow-400 border-yellow-500/20 mb-4">
@@ -1562,8 +1562,8 @@ function ModernLandingPage() {
           </section>
 
           {/* Early Access Section */}
-          <section className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 bg-gray-900/50">
-            <div className="mx-auto max-w-4xl text-center">
+          <section className="hidden lg:block max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-24 bg-gray-900/50">
+            <div className="mx-auto max-w-[1200px] text-center">
               <Badge className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 text-yellow-400 border-yellow-500/20 mb-6">
                 <Sparkles className="mr-1 h-3 w-3" />
                 Coming Soon • Advanced Features
@@ -1715,7 +1715,7 @@ function ModernLandingPage() {
 
         {/* Footer */}
         <footer className="border-t border-gray-800 bg-gray-900/50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="grid gap-6 md:grid-cols-4">
               <div className="space-y-3">
                 <div className="flex items-center space-x-2">

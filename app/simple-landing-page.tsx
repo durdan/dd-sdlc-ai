@@ -641,8 +641,8 @@ export default function SimpleLandingPage() {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 flex items-center justify-center px-4 py-6 sm:py-12">
-          <div className="max-w-3xl mx-auto w-full space-y-6 sm:space-y-8">
+        <main className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-6 sm:py-12">
+          <div className="max-w-5xl w-full mx-auto space-y-6 sm:space-y-8">
             {/* Hero Section */}
             <div className="text-center space-y-3 sm:space-y-4">
               <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold tracking-tight">
@@ -945,7 +945,7 @@ export default function SimpleLandingPage() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Step 1 */}
             <div className="relative">
               <GlassCard className="p-5 text-center h-full">
