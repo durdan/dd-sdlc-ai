@@ -85,10 +85,24 @@ export async function middleware(request: NextRequest) {
   
   // Apply rate limiting to API routes
   if (pathname.startsWith('/api/')) {
-    // Stricter limits for generation endpoints
-    if (pathname.includes('generate') || pathname.includes('claude')) {
+    // Higher limit for idea-to-spec (generates multiple diagrams in sequence)
+    if (pathname.includes('idea-to-spec')) {
+      if (!checkRateLimit(`api-idea-to-spec-${clientIP}`, 20, 60000)) { // 20 requests per minute
+        return new NextResponse('Too Many Requests', {
+          status: 429,
+          headers: {
+            'Retry-After': '60',
+            'X-RateLimit-Limit': '20',
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': new Date(Date.now() + 60000).toISOString()
+          }
+        });
+      }
+    }
+    // Stricter limits for other generation endpoints
+    else if (pathname.includes('generate') || pathname.includes('claude')) {
       if (!checkRateLimit(`api-generate-${clientIP}`, 5, 60000)) { // 5 requests per minute
-        return new NextResponse('Too Many Requests', { 
+        return new NextResponse('Too Many Requests', {
           status: 429,
           headers: {
             'Retry-After': '60',
