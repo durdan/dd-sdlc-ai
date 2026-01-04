@@ -36,7 +36,8 @@ Relationships: Actor -> Use Case`,
 
   journey: `
 Node Types: [actor], [user], [page], [screen], [action], [form], [email], [success], [error], [decision], [notification], [milestone]
-Connections: Node1 -> Node2, Node1 -label-> Node2`,
+Connections: Source -Label-> Target (ALWAYS use labeled edges for proper horizontal layout)
+Example: User -Visit-> Landing, Landing -Click-> SignUp`,
 
   c4: `
 Elements: [person], [system], [container], [component], [external], [database]
@@ -129,32 +130,29 @@ IMPORTANT: Output ONLY the raw journey DSL, no markdown code blocks, no explanat
 ${DSL_REFERENCES.journey}
 
 Example output:
-[actor] Customer
-[page] Homepage
-[action] SearchProducts
-[page] ProductList
-[action] AddToCart
-[page] Cart
-[action] Checkout
-[form] PaymentForm
-[success] OrderConfirmed
+[actor] User
+[page] Landing
+[action] SignUp
+[page] Dashboard
+[action] CreateProject
+[form] ProjectForm
+[success] ProjectCreated
 
-Customer -> Homepage
-Homepage -> SearchProducts
-SearchProducts -> ProductList
-ProductList -> AddToCart
-AddToCart -> Cart
-Cart -> Checkout
-Checkout -> PaymentForm
-PaymentForm -> OrderConfirmed`,
+User -Visit-> Landing
+Landing -Click-> SignUp
+SignUp -Complete-> Dashboard
+Dashboard -Navigate-> CreateProject
+CreateProject -Submit-> ProjectForm
+ProjectForm -Success-> ProjectCreated`,
     user: (idea: string, context?: string) => `Generate a DDflow user journey with 6-8 nodes for this project.
 
 Project: ${idea}
 ${context ? `\nContext: ${context}` : ''}
 
 CRITICAL FORMAT:
-- Nodes: [type] NodeName (single words or CamelCase, no spaces)
-- Connections: Source -> Target OR Source -label-> Target
+- Nodes: [type] NodeName (single words or CamelCase, NO spaces)
+- Connections: ALWAYS use labeled edges: Source -Label-> Target
+- Labels should be action verbs: Visit, Click, Submit, Complete, Navigate, View, etc.
 - Available types: actor, user, page, screen, action, form, email, success, error, decision
 
 Generate the journey DSL only.`,
