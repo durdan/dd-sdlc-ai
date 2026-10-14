@@ -1,5 +1,5 @@
 "use client"
-// Request a walkthrough: describe the system, watch the script stream in while
+// Explain your system: describe the system, watch the script stream in while
 // the system diagram is drawn beside it, ask for changes or approve. Approved
 // requests join the queue and are produced by hand.
 import { useCallback, useEffect, useRef, useState } from "react"
@@ -169,7 +169,7 @@ export default function RequestStudio() {
     return (
       <Shell>
         <div className={`${card} mx-auto max-w-xl p-8 text-center`}>
-          <h1 className="text-2xl font-bold">Request a walkthrough</h1>
+          <h1 className="text-2xl font-bold">Explain your system</h1>
           <p className="mt-3 text-[#4f5d5a]">
             Describe a system and we turn it into a narrated, animated architecture walkthrough like the ones in the library. Sign in to start; we
             email you when it is ready.
@@ -187,7 +187,7 @@ export default function RequestStudio() {
       <Shell>
         <form onSubmit={submit} className="mx-auto max-w-2xl space-y-5">
           <div>
-            <h1 className="text-[28px] font-bold leading-tight">Request a walkthrough</h1>
+            <h1 className="text-[28px] font-bold leading-tight">Explain your system</h1>
             <p className="mt-2 text-[#4f5d5a]">
               Tell us the system. You get a draft script and a system diagram in about a minute; approve it and we produce the narrated walkthrough,
               usually within two working days.
@@ -238,7 +238,7 @@ export default function RequestStudio() {
           </label>
           {error ? <p className="text-sm text-[#b4443a]">{error}</p> : null}
           <button className={button} disabled={busy || form.topic.trim().length < 3}>
-            {busy ? "Starting…" : "Draft my walkthrough"}
+            {busy ? "Starting…" : "Draft the script and diagram"}
           </button>
         </form>
       </Shell>

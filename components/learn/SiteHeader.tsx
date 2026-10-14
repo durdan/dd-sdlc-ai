@@ -31,8 +31,8 @@ export default function SiteHeader() {
             Paths
           </Link>
           <Link href={user ? "/requests" : "/request"} className="rounded-full px-3 py-1.5 hover:bg-[#e6efec] hover:text-[#3d6b63]">
-            <span className="sm:hidden">Request</span>
-            <span className="hidden sm:inline">{user ? "My requests" : "Request a walkthrough"}</span>
+            <span className="sm:hidden">{user ? "Requests" : "Explain"}</span>
+            <span className="hidden sm:inline">{user ? "My requests" : "Explain your system"}</span>
           </Link>
           {loading ? null : user ? (
             <>
