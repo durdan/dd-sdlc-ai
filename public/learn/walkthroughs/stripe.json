@@ -1,0 +1,1482 @@
+{
+ "id": "stripe",
+ "title": "Stripe payments",
+ "subtitle": "Company case study",
+ "voice": "en-GB-SoniaNeural",
+ "template": "case-study",
+ "meta": {
+  "kind": "company",
+  "category": "Payments",
+  "level": "intermediate",
+  "uses": [
+   "idempotency",
+   "retry",
+   "rate-limiting",
+   "timeout",
+   "sharding"
+  ],
+  "related": [],
+  "blurb": "From API call to settled payment: idempotency keys, rate limiters, 3-D Secure and signed webhooks.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14",
+  "changelog": [
+   {
+    "date": "2026-10-14",
+    "note": "First version."
+   }
+  ]
+ },
+ "diagrams": [
+  {
+   "id": "context",
+   "kind": "c4",
+   "title": "Level 1 · Context",
+   "direction": "DOWN",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request · response"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "push · asynchronous"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "financial partners"
+    }
+   ],
+   "elements": [
+    {
+     "id": "customer",
+     "kind": "person",
+     "label": "Customer",
+     "sub": "pays on a merchant's site or app"
+    },
+    {
+     "id": "merchant",
+     "kind": "external",
+     "label": "Merchant",
+     "sub": "website, app and server"
+    },
+    {
+     "id": "stripe",
+     "kind": "system",
+     "label": "Stripe",
+     "sub": "API, payments, fraud, events"
+    },
+    {
+     "id": "acquirer",
+     "kind": "external",
+     "label": "Acquiring partners",
+     "sub": "banks that settle card payments · simplified"
+    },
+    {
+     "id": "networks",
+     "kind": "external",
+     "label": "Card networks",
+     "sub": "Visa, Mastercard and others"
+    },
+    {
+     "id": "issuer",
+     "kind": "external",
+     "label": "Issuing bank",
+     "sub": "approves, runs 3-D Secure"
+    },
+    {
+     "id": "payout",
+     "kind": "external",
+     "label": "Merchant's bank",
+     "sub": "receives payouts"
+    }
+   ],
+   "edges": [
+    {
+     "id": "c-cust-merch",
+     "from": "customer",
+     "to": "merchant",
+     "label": "checkout",
+     "style": "solid"
+    },
+    {
+     "id": "c-cust-stripe",
+     "from": "customer",
+     "to": "stripe",
+     "label": "card details, via Stripe.js",
+     "style": "solid"
+    },
+    {
+     "id": "c-merch-stripe",
+     "from": "merchant",
+     "to": "stripe",
+     "label": "API calls, idempotency keys",
+     "style": "solid"
+    },
+    {
+     "id": "c-stripe-merch",
+     "from": "stripe",
+     "to": "merchant",
+     "label": "signed webhooks",
+     "style": "dashed"
+    },
+    {
+     "id": "c-stripe-acq",
+     "from": "stripe",
+     "to": "acquirer",
+     "label": "authorise, capture",
+     "style": "dotted"
+    },
+    {
+     "id": "c-acq-net",
+     "from": "acquirer",
+     "to": "networks",
+     "label": "card messages",
+     "style": "dotted"
+    },
+    {
+     "id": "c-net-iss",
+     "from": "networks",
+     "to": "issuer",
+     "label": "approve or decline",
+     "style": "dotted"
+    },
+    {
+     "id": "c-iss-cust",
+     "from": "issuer",
+     "to": "customer",
+     "label": "3-D Secure challenge",
+     "style": "dashed"
+    },
+    {
+     "id": "c-stripe-payout",
+     "from": "stripe",
+     "to": "payout",
+     "label": "payouts",
+     "style": "dotted"
+    }
+   ]
+  },
+  {
+   "id": "containers",
+   "kind": "c4",
+   "title": "Level 2 · Containers",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "payments",
+     "label": "Payments",
+     "tone": "core"
+    },
+    {
+     "id": "platform",
+     "label": "Data platform",
+     "tone": "data"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request · response"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "events · asynchronous"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "storage"
+    }
+   ],
+   "elements": [
+    {
+     "id": "elements",
+     "kind": "container",
+     "label": "Stripe.js and Elements",
+     "sub": "card details go straight to Stripe",
+     "tone": "neutral",
+     "rank": 0
+    },
+    {
+     "id": "merchant",
+     "kind": "external",
+     "label": "Merchant server",
+     "sub": "secret key, webhook endpoint",
+     "rank": 0
+    },
+    {
+     "id": "edge",
+     "kind": "container",
+     "label": "API edge",
+     "sub": "auth, versions, limits, idempotency",
+     "tone": "core",
+     "rank": 1
+    },
+    {
+     "id": "pi",
+     "kind": "container",
+     "label": "PaymentIntents",
+     "sub": "the payment state machine",
+     "group": "payments",
+     "rank": 2
+    },
+    {
+     "id": "radar",
+     "kind": "container",
+     "label": "Radar",
+     "sub": "fraud score in under 100 ms",
+     "group": "payments",
+     "rank": 2
+    },
+    {
+     "id": "threeds",
+     "kind": "container",
+     "label": "3-D Secure",
+     "sub": "authentication with the issuer",
+     "group": "payments",
+     "rank": 2
+    },
+    {
+     "id": "proc",
+     "kind": "container",
+     "label": "Card processing",
+     "sub": "authorise, capture · illustrative",
+     "group": "payments",
+     "rank": 3
+    },
+    {
+     "id": "events",
+     "kind": "container",
+     "label": "Events and webhooks",
+     "sub": "sign, deliver, retry",
+     "tone": "stream",
+     "rank": 3
+    },
+    {
+     "id": "docdb",
+     "kind": "store",
+     "label": "DocDB",
+     "sub": "MongoDB-based, sharded",
+     "group": "platform",
+     "rank": 4
+    },
+    {
+     "id": "cdc",
+     "kind": "store",
+     "label": "Change stream",
+     "sub": "oplog → Kafka → S3",
+     "group": "platform",
+     "rank": 4
+    },
+    {
+     "id": "ledger",
+     "kind": "store",
+     "label": "Ledger",
+     "sub": "immutable money-movement log",
+     "group": "platform",
+     "rank": 4
+    },
+    {
+     "id": "partners",
+     "kind": "external",
+     "label": "Networks and banks",
+     "sub": "acquirers, card networks, issuers",
+     "rank": 5
+    }
+   ],
+   "edges": [
+    {
+     "id": "k-el-edge",
+     "from": "elements",
+     "to": "edge",
+     "label": "confirm with card",
+     "style": "solid"
+    },
+    {
+     "id": "k-m-edge",
+     "from": "merchant",
+     "to": "edge",
+     "label": "create PaymentIntent",
+     "style": "solid"
+    },
+    {
+     "id": "k-edge-pi",
+     "from": "edge",
+     "to": "pi",
+     "style": "solid"
+    },
+    {
+     "id": "k-pi-radar",
+     "from": "pi",
+     "to": "radar",
+     "label": "score",
+     "style": "solid"
+    },
+    {
+     "id": "k-pi-3ds",
+     "from": "pi",
+     "to": "threeds",
+     "label": "authenticate",
+     "style": "solid"
+    },
+    {
+     "id": "k-3ds-el",
+     "from": "threeds",
+     "to": "elements",
+     "label": "challenge",
+     "style": "dashed"
+    },
+    {
+     "id": "k-pi-proc",
+     "from": "pi",
+     "to": "proc",
+     "label": "authorise",
+     "style": "solid"
+    },
+    {
+     "id": "k-proc-net",
+     "from": "proc",
+     "to": "partners",
+     "label": "card messages",
+     "style": "solid"
+    },
+    {
+     "id": "k-pi-docdb",
+     "from": "pi",
+     "to": "docdb",
+     "label": "state",
+     "style": "dotted"
+    },
+    {
+     "id": "k-docdb-cdc",
+     "from": "docdb",
+     "to": "cdc",
+     "label": "oplog",
+     "style": "dashed"
+    },
+    {
+     "id": "k-cdc-ledger",
+     "from": "cdc",
+     "to": "ledger",
+     "label": "money events · illustrative",
+     "style": "dashed"
+    },
+    {
+     "id": "k-pi-events",
+     "from": "pi",
+     "to": "events",
+     "label": "payment_intent.succeeded",
+     "style": "dashed"
+    },
+    {
+     "id": "k-events-m",
+     "from": "events",
+     "to": "merchant",
+     "label": "signed webhook",
+     "style": "dashed"
+    }
+   ]
+  },
+  {
+   "id": "edge",
+   "kind": "c4",
+   "title": "Level 3 · Inside the API edge (our reconstruction)",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "edgeg",
+     "label": "API edge · our design, built from Stripe's posts",
+     "tone": "core"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request path"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "response · rejection"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "state"
+    }
+   ],
+   "elements": [
+    {
+     "id": "client",
+     "kind": "external",
+     "label": "Merchant server",
+     "sub": "POST with Idempotency-Key",
+     "rank": 0
+    },
+    {
+     "id": "auth",
+     "kind": "component",
+     "label": "Authenticate",
+     "sub": "API key → account",
+     "group": "edgeg",
+     "rank": 1
+    },
+    {
+     "id": "version",
+     "kind": "component",
+     "label": "Version resolver",
+     "sub": "account default or Stripe-Version",
+     "group": "edgeg",
+     "rank": 1
+    },
+    {
+     "id": "limit",
+     "kind": "component",
+     "label": "Rate limiters",
+     "sub": "per second and concurrent · token bucket",
+     "group": "edgeg",
+     "rank": 2
+    },
+    {
+     "id": "shed",
+     "kind": "component",
+     "label": "Load shedders",
+     "sub": "fleet usage, worker utilisation",
+     "group": "edgeg",
+     "rank": 2
+    },
+    {
+     "id": "redis",
+     "kind": "store",
+     "label": "Redis",
+     "sub": "limiter counters",
+     "tone": "data",
+     "rank": 2
+    },
+    {
+     "id": "idem",
+     "kind": "component",
+     "label": "Idempotency layer",
+     "sub": "key → saved response",
+     "group": "edgeg",
+     "rank": 3
+    },
+    {
+     "id": "idemstore",
+     "kind": "store",
+     "label": "Idempotency records",
+     "sub": "pruned after at least 24 h",
+     "tone": "data",
+     "rank": 3
+    },
+    {
+     "id": "handler",
+     "kind": "container",
+     "label": "API handler",
+     "sub": "for example PaymentIntents",
+     "group": "edgeg",
+     "rank": 4
+    },
+    {
+     "id": "modules",
+     "kind": "component",
+     "label": "Version change modules",
+     "sub": "walk the response back to the pinned version",
+     "group": "edgeg",
+     "rank": 4
+    }
+   ],
+   "edges": [
+    {
+     "id": "e-req",
+     "from": "client",
+     "to": "auth",
+     "label": "request",
+     "style": "solid"
+    },
+    {
+     "id": "e-auth-ver",
+     "from": "auth",
+     "to": "version",
+     "style": "solid"
+    },
+    {
+     "id": "e-ver-lim",
+     "from": "version",
+     "to": "limit",
+     "style": "solid"
+    },
+    {
+     "id": "e-lim-redis",
+     "from": "limit",
+     "to": "redis",
+     "label": "take a token",
+     "style": "dotted"
+    },
+    {
+     "id": "e-lim-shed",
+     "from": "limit",
+     "to": "shed",
+     "style": "solid"
+    },
+    {
+     "id": "e-lim-429",
+     "from": "limit",
+     "to": "client",
+     "label": "429 too many requests",
+     "style": "dashed"
+    },
+    {
+     "id": "e-shed-503",
+     "from": "shed",
+     "to": "client",
+     "label": "503 for non-critical",
+     "style": "dashed"
+    },
+    {
+     "id": "e-shed-idem",
+     "from": "shed",
+     "to": "idem",
+     "label": "critical first",
+     "style": "solid"
+    },
+    {
+     "id": "e-idem-store",
+     "from": "idem",
+     "to": "idemstore",
+     "label": "look up, save",
+     "style": "dotted"
+    },
+    {
+     "id": "e-idem-handler",
+     "from": "idem",
+     "to": "handler",
+     "label": "new key only",
+     "style": "solid"
+    },
+    {
+     "id": "e-handler-mod",
+     "from": "handler",
+     "to": "modules",
+     "label": "current-version response",
+     "style": "solid"
+    },
+    {
+     "id": "e-mod-client",
+     "from": "modules",
+     "to": "client",
+     "label": "response at pinned version",
+     "style": "dashed"
+    }
+   ]
+  },
+  {
+   "id": "pi3ds",
+   "kind": "sequence",
+   "title": "A PaymentIntent with 3-D Secure",
+   "participants": [
+    {
+     "id": "s-browser",
+     "label": "Customer's browser"
+    },
+    {
+     "id": "s-merchant",
+     "label": "Merchant server"
+    },
+    {
+     "id": "s-api",
+     "label": "Stripe API"
+    },
+    {
+     "id": "s-radar",
+     "label": "Radar"
+    },
+    {
+     "id": "s-issuer",
+     "label": "Issuing bank"
+    },
+    {
+     "id": "s-network",
+     "label": "Card network"
+    }
+   ],
+   "messages": [
+    {
+     "id": "p1",
+     "from": "s-merchant",
+     "to": "s-api",
+     "label": "create PaymentIntent, Idempotency-Key",
+     "style": "solid"
+    },
+    {
+     "id": "p2",
+     "from": "s-api",
+     "to": "s-merchant",
+     "label": "requires_payment_method, client secret",
+     "style": "dashed"
+    },
+    {
+     "id": "p3",
+     "from": "s-merchant",
+     "to": "s-browser",
+     "label": "client secret to the page",
+     "style": "solid"
+    },
+    {
+     "id": "p4",
+     "from": "s-browser",
+     "to": "s-api",
+     "label": "confirm with card details",
+     "style": "solid"
+    },
+    {
+     "id": "p5",
+     "from": "s-api",
+     "to": "s-radar",
+     "label": "risk score, 3DS rules",
+     "style": "solid"
+    },
+    {
+     "id": "p6",
+     "from": "s-api",
+     "to": "s-issuer",
+     "label": "start 3-D Secure",
+     "style": "solid"
+    },
+    {
+     "id": "p7",
+     "from": "s-api",
+     "to": "s-browser",
+     "label": "requires_action, next_action",
+     "style": "dashed"
+    },
+    {
+     "id": "p8",
+     "from": "s-browser",
+     "to": "s-issuer",
+     "label": "challenge: code or banking app",
+     "style": "solid"
+    },
+    {
+     "id": "p9",
+     "from": "s-issuer",
+     "to": "s-api",
+     "label": "authenticated",
+     "style": "dashed"
+    },
+    {
+     "id": "p10",
+     "from": "s-api",
+     "to": "s-network",
+     "label": "authorise",
+     "style": "solid"
+    },
+    {
+     "id": "p11",
+     "from": "s-network",
+     "to": "s-api",
+     "label": "approved by issuer",
+     "style": "dashed"
+    },
+    {
+     "id": "p12",
+     "from": "s-api",
+     "to": "s-browser",
+     "label": "succeeded",
+     "style": "dashed"
+    }
+   ]
+  },
+  {
+   "id": "webhook",
+   "kind": "sequence",
+   "title": "Webhook delivery with retries",
+   "participants": [
+    {
+     "id": "w-events",
+     "label": "Stripe events"
+    },
+    {
+     "id": "w-send",
+     "label": "Webhook delivery"
+    },
+    {
+     "id": "w-end",
+     "label": "Merchant endpoint"
+    },
+    {
+     "id": "w-queue",
+     "label": "Merchant worker"
+    },
+    {
+     "id": "w-api",
+     "label": "Stripe API"
+    }
+   ],
+   "messages": [
+    {
+     "id": "w1",
+     "from": "w-events",
+     "to": "w-send",
+     "label": "payment_intent.succeeded",
+     "style": "solid"
+    },
+    {
+     "id": "w2",
+     "from": "w-send",
+     "to": "w-end",
+     "label": "POST, Stripe-Signature t=…, v1=…",
+     "style": "solid"
+    },
+    {
+     "id": "w3",
+     "from": "w-end",
+     "to": "w-send",
+     "label": "500 or timeout",
+     "style": "dashed"
+    },
+    {
+     "id": "w4",
+     "from": "w-send",
+     "to": "w-end",
+     "label": "retry later, backoff, new signature",
+     "style": "solid"
+    },
+    {
+     "id": "w5",
+     "from": "w-end",
+     "to": "w-queue",
+     "label": "verify, record event id, enqueue",
+     "style": "solid"
+    },
+    {
+     "id": "w6",
+     "from": "w-end",
+     "to": "w-send",
+     "label": "200 straight away",
+     "style": "dashed"
+    },
+    {
+     "id": "w7",
+     "from": "w-queue",
+     "to": "w-api",
+     "label": "retrieve latest PaymentIntent",
+     "style": "solid"
+    },
+    {
+     "id": "w8",
+     "from": "w-api",
+     "to": "w-queue",
+     "label": "status: succeeded",
+     "style": "dashed"
+    }
+   ]
+  },
+  {
+   "id": "docdb",
+   "kind": "c4",
+   "title": "Level 3 · DocDB and the Data Movement Platform",
+   "direction": "DOWN",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "query · control"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "change data capture"
+    }
+   ],
+   "elements": [
+    {
+     "id": "app",
+     "kind": "container",
+     "label": "Product application",
+     "sub": "for example PaymentIntents",
+     "rank": 0
+    },
+    {
+     "id": "proxy",
+     "kind": "component",
+     "label": "Database proxies",
+     "sub": "Go · routing, admission, access",
+     "tone": "core",
+     "rank": 1
+    },
+    {
+     "id": "meta",
+     "kind": "component",
+     "label": "Chunk metadata service",
+     "sub": "which chunk lives on which shard",
+     "tone": "core",
+     "rank": 1
+    },
+    {
+     "id": "shard",
+     "kind": "store",
+     "label": "Source shard",
+     "sub": "replica set: primary and secondaries",
+     "tone": "data",
+     "rank": 2
+    },
+    {
+     "id": "target",
+     "kind": "store",
+     "label": "Target shard",
+     "sub": "the chunk's new home",
+     "tone": "data",
+     "rank": 2
+    },
+    {
+     "id": "coord",
+     "kind": "component",
+     "label": "Migration coordinator",
+     "sub": "Data Movement Platform",
+     "tone": "stream",
+     "rank": 2
+    },
+    {
+     "id": "kafka",
+     "kind": "store",
+     "label": "Kafka",
+     "sub": "oplog from every shard",
+     "tone": "stream",
+     "rank": 3
+    },
+    {
+     "id": "repl",
+     "kind": "component",
+     "label": "Replication service",
+     "sub": "replays writes to the target",
+     "tone": "stream",
+     "rank": 3
+    },
+    {
+     "id": "s3",
+     "kind": "store",
+     "label": "Object store",
+     "sub": "for example Amazon S3",
+     "tone": "data",
+     "rank": 4
+    }
+   ],
+   "edges": [
+    {
+     "id": "d-app-proxy",
+     "from": "app",
+     "to": "proxy",
+     "label": "query",
+     "style": "solid"
+    },
+    {
+     "id": "d-proxy-meta",
+     "from": "proxy",
+     "to": "meta",
+     "label": "which shard?",
+     "style": "solid"
+    },
+    {
+     "id": "d-proxy-shard",
+     "from": "proxy",
+     "to": "shard",
+     "label": "reads, writes",
+     "style": "solid"
+    },
+    {
+     "id": "d-shard-kafka",
+     "from": "shard",
+     "to": "kafka",
+     "label": "oplog",
+     "style": "dashed"
+    },
+    {
+     "id": "d-kafka-s3",
+     "from": "kafka",
+     "to": "s3",
+     "label": "archive",
+     "style": "dashed"
+    },
+    {
+     "id": "d-coord-meta",
+     "from": "coord",
+     "to": "meta",
+     "label": "register, then switch route",
+     "style": "solid"
+    },
+    {
+     "id": "d-coord-target",
+     "from": "coord",
+     "to": "target",
+     "label": "bulk import from snapshot",
+     "style": "solid"
+    },
+    {
+     "id": "d-kafka-repl",
+     "from": "kafka",
+     "to": "repl",
+     "label": "changes since snapshot",
+     "style": "dashed"
+    },
+    {
+     "id": "d-repl-target",
+     "from": "repl",
+     "to": "target",
+     "label": "replay writes",
+     "style": "dashed"
+    },
+    {
+     "id": "d-proxy-target",
+     "from": "proxy",
+     "to": "target",
+     "label": "after the switch",
+     "style": "solid"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "overview",
+   "title": "Overview"
+  },
+  {
+   "id": "requirements",
+   "title": "Requirements and scale"
+  },
+  {
+   "id": "context",
+   "title": "Context"
+  },
+  {
+   "id": "containers",
+   "title": "Containers"
+  },
+  {
+   "id": "deep-dive",
+   "title": "Deep dive"
+  },
+  {
+   "id": "flows",
+   "title": "Core flows"
+  },
+  {
+   "id": "data",
+   "title": "Data and caching"
+  },
+  {
+   "id": "growth",
+   "title": "Growth"
+  },
+  {
+   "id": "failures",
+   "title": "Failure modes"
+  },
+  {
+   "id": "patterns",
+   "title": "Patterns used"
+  },
+  {
+   "id": "decisions",
+   "title": "Key decisions"
+  },
+  {
+   "id": "mvp",
+   "title": "What we would build first"
+  }
+ ],
+ "shots": [
+  {
+   "id": "s01",
+   "chapter": "overview",
+   "diagram": "context",
+   "focus": [],
+   "trace": [],
+   "engineer": "This is Stripe, seen from the outside. A business, which Stripe calls a merchant, adds a few lines of code and an API key, and can then take card payments from customers almost anywhere. Behind that small API sit card networks, banks and a lot of regulation. The one idea everything here depends on is simple to say and hard to build: a payment must happen exactly once, even when networks fail, clients retry and banks are slow.",
+   "executive": "Stripe lets any business take payments online through a simple API. Its central promise is that each payment happens exactly once."
+  },
+  {
+   "id": "s02",
+   "chapter": "requirements",
+   "card": {
+    "heading": "Scale, from Stripe's own publications",
+    "kind": "numbers",
+    "points": [
+     "$1.9T | total volume on Stripe in 2025, up 34%",
+     "~1.6% | of global GDP (Stripe's estimate)",
+     "5M+ | businesses, directly or via platforms",
+     "99.9995% | public API reliability target (2026)",
+     "~$60k | per second on average ($1.9T ÷ 31.5M s)"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "First, the scale, from Stripe's own annual letter, published in February 2026. Businesses on Stripe processed about one point nine trillion dollars in 2025, up thirty-four per cent, which Stripe puts at roughly one point six per cent of global GDP. It serves more than five million businesses. And in 2026 Stripe wrote that it targets ninety-nine point nine nine nine five per cent reliability for its public API. Divide the volume by the seconds in a year and you get about sixty thousand dollars every second, on average.",
+   "executive": "Nearly two trillion dollars a year flows through Stripe, about sixty thousand dollars every second."
+  },
+  {
+   "id": "s03",
+   "chapter": "requirements",
+   "card": {
+    "heading": "What the system must do (our list)",
+    "points": [
+     "Any request can be retried without a double charge",
+     "Card numbers never touch the merchant's servers",
+     "Strong customer authentication when a bank or law requires it",
+     "Old integrations keep working, unchanged, for years",
+     "The merchant hears about every outcome, even days later",
+     "One noisy merchant cannot slow down the others"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Then the requirements. These are ours, written from the product rather than from a Stripe document. A merchant can retry any request without charging a customer twice. Card numbers never touch the merchant's servers. Strong customer authentication runs when a bank or a regulation asks for it. Old integrations keep working for years without changes. The merchant learns about every outcome, even ones that arrive days later. And one noisy merchant can never slow down everyone else.",
+   "executive": "Safe retries, card details kept away from merchants, bank authentication when needed, integrations that never break, reliable notifications, and fairness between customers."
+  },
+  {
+   "id": "s04",
+   "title": "Merchants and customers",
+   "chapter": "context",
+   "diagram": "context",
+   "focus": [
+    "customer",
+    "merchant",
+    "stripe"
+   ],
+   "trace": [
+    "c-cust-merch",
+    "c-cust-stripe",
+    "c-merch-stripe",
+    "c-stripe-merch"
+   ],
+   "engineer": "Two kinds of user meet here. The merchant's server talks to Stripe's API with a secret key, and sends an idempotency key with each request that changes something. The customer's card details go from the checkout page straight to Stripe through Stripe.js, so the merchant never sees the full card number. Stripe talks back to the merchant in two ways: an answer to each API call, and signed webhooks for things that happen later.",
+   "executive": "Merchants call Stripe's API; customers' card details go straight to Stripe; Stripe tells merchants what happened through webhooks."
+  },
+  {
+   "id": "s05",
+   "title": "The money side",
+   "chapter": "context",
+   "diagram": "context",
+   "focus": [
+    "stripe",
+    "acquirer",
+    "networks",
+    "issuer",
+    "payout"
+   ],
+   "trace": [
+    "c-stripe-acq",
+    "c-acq-net",
+    "c-net-iss",
+    "c-iss-cust",
+    "c-stripe-payout"
+   ],
+   "engineer": "Behind Stripe sits the card system. This part is simplified, because the arrangement with acquiring banks varies from country to country. A card authorisation travels through an acquirer and the card network to the bank that issued the card, which approves or declines it. That issuing bank may also ask the customer to prove who they are, with 3-D Secure. Later, settled money is paid out to the merchant's own bank account.",
+   "executive": "Stripe passes each card payment through the card networks to the customer's bank, then pays the merchant."
+  },
+  {
+   "id": "s06",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [],
+   "trace": [],
+   "engineer": "One level in. Stripe has not published a container diagram, so this is our design, built from what its engineering posts and documentation describe. An API edge in front. A payments group with PaymentIntents, the Radar fraud system, 3-D Secure and card processing. Events and webhooks to the side. And underneath, a data platform: DocDB, Stripe's database built on MongoDB, a change stream, and Ledger, its log of every money movement.",
+   "executive": "Inside, an API front door, a payments core, a notification system and a data platform. The layout is our reconstruction."
+  },
+  {
+   "id": "s07",
+   "title": "Confirm a payment",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "merchant",
+    "elements",
+    "edge",
+    "pi",
+    "radar",
+    "proc",
+    "partners"
+   ],
+   "trace": [
+    "k-m-edge",
+    "k-el-edge",
+    "k-edge-pi",
+    "k-pi-radar",
+    "k-pi-proc",
+    "k-proc-net"
+   ],
+   "engineer": "The main path. The merchant's server creates a PaymentIntent through the API edge. The customer's browser then confirms it, sending card details through Elements. PaymentIntents asks Radar for a fraud score; Stripe says Radar looks at more than a thousand characteristics of a transaction and decides in under a hundred milliseconds. If the payment looks fine, card processing asks the networks and banks to authorise it.",
+   "executive": "A payment is created, checked for fraud in a fraction of a second, then sent to the banks for approval."
+  },
+  {
+   "id": "s08",
+   "title": "Authenticate",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "pi",
+    "threeds",
+    "elements"
+   ],
+   "trace": [
+    "k-pi-3ds",
+    "k-3ds-el"
+   ],
+   "engineer": "Sometimes the bank wants proof. Stripe triggers 3-D Secure when a regulation such as strong customer authentication in Europe requires it, when the issuer asks with a soft decline, or when Radar rules request it. The 3-D Secure container talks to the issuer, and the challenge appears in the customer's browser through Elements: a code, or a tap in a banking app. Then the payment carries on.",
+   "executive": "When the customer's bank wants extra proof, the customer confirms in their banking app, and the payment continues."
+  },
+  {
+   "id": "s09",
+   "title": "Record and notify",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "pi",
+    "docdb",
+    "cdc",
+    "ledger",
+    "events",
+    "merchant"
+   ],
+   "trace": [
+    "k-pi-docdb",
+    "k-docdb-cdc",
+    "k-cdc-ledger",
+    "k-pi-events",
+    "k-events-m"
+   ],
+   "engineer": "Every state change is stored. PaymentIntents writes to DocDB. Each DocDB shard's operations log flows into Kafka and is archived to object storage, a pipeline Stripe describes publicly. Ledger, Stripe's immutable record of money movement, sees about five billion events a day; feeding it from this stream is our simplification. At the same time, an event such as payment intent succeeded goes to the webhook system, which delivers it to the merchant.",
+   "executive": "Each change is saved, streamed into a permanent record of money movement, and announced to the merchant."
+  },
+  {
+   "id": "s10",
+   "chapter": "deep-dive",
+   "diagram": "edge",
+   "focus": [],
+   "trace": [],
+   "engineer": "Inside the API edge. Stripe has written separately about rate limiters, idempotency and API versioning, but not about how they are wired together, so this order is our design. A request is authenticated and mapped to an account. Its API version is resolved. Then come rate limiters and load shedders, then the idempotency layer, and only then the handler that does the work. On the way out, the response is reshaped for the version the merchant expects.",
+   "executive": "Every request passes the same checkpoints: who is calling, which version they expect, whether there is capacity, and whether it was already done."
+  },
+  {
+   "id": "s11",
+   "title": "Limit and shed",
+   "chapter": "deep-dive",
+   "diagram": "edge",
+   "focus": [
+    "limit",
+    "shed",
+    "redis",
+    "client"
+   ],
+   "trace": [
+    "e-ver-lim",
+    "e-lim-redis",
+    "e-lim-429",
+    "e-lim-shed",
+    "e-shed-503"
+   ],
+   "engineer": "Stripe's 2017 post on scaling its API describes four limiters. A request rate limiter caps requests per second for each user, using a token bucket kept in Redis; too many and you get a 429. A concurrent request limiter caps how many are in flight at once. A fleet usage load shedder keeps capacity for critical work, like creating a charge, and rejects non-critical requests with a 503. And a worker utilisation shedder sheds the lowest-priority traffic first when workers are overloaded.",
+   "executive": "Limits stop one customer from swamping the system, and under heavy load the less important requests are turned away first."
+  },
+  {
+   "id": "s12",
+   "title": "Idempotency",
+   "chapter": "deep-dive",
+   "diagram": "edge",
+   "focus": [
+    "idem",
+    "idemstore",
+    "handler"
+   ],
+   "trace": [
+    "e-shed-idem",
+    "e-idem-store",
+    "e-idem-handler"
+   ],
+   "engineer": "Next, idempotency. The client creates a unique key, Stripe suggests a version four UUID, and sends it in the Idempotency-Key header on a POST request. Stripe's documentation says it saves the status code and body of the first request once the endpoint starts running. A retry with the same key gets that saved response, even if it was an error. If the parameters differ, the request is rejected. Keys can be pruned once they are at least twenty-four hours old.",
+   "executive": "Each request carries a unique key, so if it is sent twice, the second copy just gets the first answer back."
+  },
+  {
+   "id": "s13",
+   "title": "Versions",
+   "chapter": "deep-dive",
+   "diagram": "edge",
+   "focus": [
+    "version",
+    "handler",
+    "modules",
+    "client"
+   ],
+   "trace": [
+    "e-auth-ver",
+    "e-handler-mod",
+    "e-mod-client"
+   ],
+   "engineer": "Last, versions. Each account has a default API version, and a single request can override it with the Stripe-Version header. Stripe's 2017 post explains how: every breaking change is wrapped in a version change module, and the API builds the current response, then walks it back through each module to the version the caller is pinned to. Since 2024, Stripe ships monthly releases with no breaking changes, and two named major releases a year.",
+   "executive": "Merchants stay on the API version they built against; Stripe translates every response back to that version."
+  },
+  {
+   "id": "s14",
+   "title": "Create",
+   "chapter": "flows",
+   "diagram": "pi3ds",
+   "focus": [
+    "s-merchant",
+    "s-api",
+    "s-browser"
+   ],
+   "trace": [
+    "p1",
+    "p2",
+    "p3"
+   ],
+   "engineer": "Now step by step: a card payment with 3-D Secure. The merchant's server creates a PaymentIntent for the amount, with an idempotency key. Stripe's documentation says to create it as soon as you know the amount, so every attempt is recorded. It starts in the status requires payment method, and returns a client secret. The merchant passes that secret to the checkout page, never the secret API key.",
+   "executive": "The merchant creates a payment for the amount and hands a one-time token to the checkout page."
+  },
+  {
+   "id": "s15",
+   "title": "Challenge",
+   "chapter": "flows",
+   "diagram": "pi3ds",
+   "focus": [
+    "s-browser",
+    "s-api",
+    "s-radar",
+    "s-issuer"
+   ],
+   "trace": [
+    "p4",
+    "p5",
+    "p6",
+    "p7",
+    "p8"
+   ],
+   "engineer": "The customer enters card details and the browser confirms the PaymentIntent directly with Stripe. Stripe checks the risk and decides whether 3-D Secure is needed. Here it is, so Stripe contacts the issuer's authentication server, and the PaymentIntent moves to requires action. Stripe.js shows the challenge, and the customer approves in their banking app or types a code. The issuer decides whether to challenge at all; some checks finish with no visible step.",
+   "executive": "The customer confirms the payment, and their bank asks them to approve it in their banking app."
+  },
+  {
+   "id": "s16",
+   "title": "Authorise",
+   "chapter": "flows",
+   "diagram": "pi3ds",
+   "focus": [
+    "s-api",
+    "s-network",
+    "s-browser"
+   ],
+   "trace": [
+    "p9",
+    "p10",
+    "p11",
+    "p12"
+   ],
+   "engineer": "Once authenticated, Stripe sends the authorisation through the card network to the issuer, which approves it. For a card, the PaymentIntent usually reaches succeeded within moments. Slower methods such as bank debits sit in processing for days, and if a merchant authorises now and captures later, it waits in requires capture. If anything fails, it goes back to requires payment method, so the customer can try another card on the same PaymentIntent.",
+   "executive": "The bank approves, and the payment succeeds; if it fails, the customer can simply try another card."
+  },
+  {
+   "id": "s17",
+   "title": "Deliver and retry",
+   "chapter": "flows",
+   "diagram": "webhook",
+   "focus": [
+    "w-events",
+    "w-send",
+    "w-end"
+   ],
+   "trace": [
+    "w1",
+    "w2",
+    "w3",
+    "w4"
+   ],
+   "engineer": "The second flow: telling the merchant. The payment produces an event, payment intent succeeded. Stripe posts it to the merchant's endpoint, signed in the Stripe-Signature header with a timestamp and an HMAC SHA-256 signature. If the endpoint returns an error or times out, Stripe tries again. In live mode it keeps trying for up to three days with exponential backoff, and every attempt carries a fresh timestamp and signature.",
+   "executive": "Stripe sends a signed message to the merchant, and keeps retrying for up to three days if it does not get through."
+  },
+  {
+   "id": "s18",
+   "title": "Handle safely",
+   "chapter": "flows",
+   "diagram": "webhook",
+   "focus": [
+    "w-end",
+    "w-queue",
+    "w-api"
+   ],
+   "trace": [
+    "w5",
+    "w6",
+    "w7",
+    "w8"
+   ],
+   "engineer": "On the merchant's side, Stripe's advice adds up to a small pattern. Verify the signature, and reject old timestamps; the libraries allow five minutes by default. Record the event id, because the same event can arrive more than once. Put it on a queue and return 200 at once, before any slow work. Do not rely on order, since Stripe does not guarantee it; fetch the latest PaymentIntent from the API and act on that.",
+   "executive": "The merchant checks the message is genuine, ignores duplicates, replies at once, and does the real work afterwards."
+  },
+  {
+   "id": "s19",
+   "title": "DocDB",
+   "chapter": "data",
+   "diagram": "docdb",
+   "focus": [
+    "app",
+    "proxy",
+    "meta",
+    "shard"
+   ],
+   "trace": [
+    "d-app-proxy",
+    "d-proxy-meta",
+    "d-proxy-shard"
+   ],
+   "engineer": "Where the data lives. Stripe chose MongoDB when it launched in 2011, and built DocDB on top of MongoDB Community. Applications never talk to a shard directly. They go through database proxies, written in Go, which check access and admission, ask a chunk metadata service which shard holds the data, and route the query. In 2024 Stripe described over five million queries a second, petabytes of financial data, and more than two thousand shards.",
+   "executive": "Stripe's main database is its own service on top of MongoDB, split across thousands of shards behind a routing layer."
+  },
+  {
+   "id": "s20",
+   "title": "Change stream",
+   "chapter": "data",
+   "diagram": "docdb",
+   "focus": [
+    "shard",
+    "kafka",
+    "s3"
+   ],
+   "trace": [
+    "d-shard-kafka",
+    "d-kafka-s3"
+   ],
+   "engineer": "Every write lands in a shard's operations log, the oplog. Stripe streams the oplog from every shard into Kafka and archives it to object storage such as Amazon S3. That stream feeds replication and analytics without adding reads to busy shards. What is never stored where: full card numbers stay inside Stripe, not in the merchant's database, which keeps most of the merchant's systems out of the heaviest card-security rules. Idempotency records are short-lived; payment records are kept.",
+   "executive": "Every change is streamed and archived. Card numbers stay with Stripe, so merchants never have to store them."
+  },
+  {
+   "id": "s21",
+   "chapter": "growth",
+   "card": {
+    "heading": "How it got here, from Stripe's own posts",
+    "kind": "compare",
+    "points": [
+     "Year | Change",
+     "2011 | Launches on MongoDB",
+     "2017 | Writes up idempotency, rate limiters, API versioning, online migrations",
+     "2022 | Sorbet type-checks 15M+ lines of Ruby",
+     "2023 | $1T processed at 99.999% uptime",
+     "2024 | $1.4T; monthly API releases, two majors a year",
+     "2025 | $1.9T, up 34%",
+     "2026 | Own Go proxy replaces Envoy; 25M lines of Ruby auto-formatted"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "How it grew. In 2011 Stripe launched on MongoDB. In 2017 it wrote up the ideas in this video: idempotency keys, rate limiters, versioning, and online migrations by dual writing. In 2022 its Sorbet type checker ran over fifteen million lines of Ruby. In 2023 it processed a trillion dollars at five nines of uptime. Volume reached one point four trillion in 2024 and one point nine trillion in 2025. And in 2026 it replaced Envoy with its own proxy.",
+   "executive": "The same core ideas from 2017 now carry nearly twice the volume they carried in 2023."
+  },
+  {
+   "id": "s22",
+   "title": "Moving data live",
+   "chapter": "growth",
+   "diagram": "docdb",
+   "focus": [
+    "coord",
+    "meta",
+    "target",
+    "kafka",
+    "repl",
+    "proxy"
+   ],
+   "trace": [
+    "d-coord-meta",
+    "d-coord-target",
+    "d-kafka-repl",
+    "d-repl-target",
+    "d-proxy-target"
+   ],
+   "engineer": "Growth also means moving data without stopping. Stripe's Data Movement Platform took it from a few shards of tens of terabytes each to thousands of small ones. A coordinator registers the move, bulk-loads a snapshot onto the target shard, and replays later writes from the oplog. After a correctness check, it pauses writes briefly, waits for replication to catch up, and switches the route. Stripe says the switch takes under two seconds, and failed requests succeed on retry.",
+   "executive": "Stripe moves live data between database servers while payments keep flowing; the hand-over takes under two seconds."
+  },
+  {
+   "id": "s23",
+   "chapter": "failures",
+   "card": {
+    "heading": "What fails, and what protects users",
+    "kind": "compare",
+    "points": [
+     "Failure | Protection",
+     "Client times out mid-charge | Retry with the same idempotency key; get the saved response",
+     "One merchant floods the API | Per-user rate limiter returns 429 to that merchant only",
+     "Fleet overloaded | Load shedders drop non-critical traffic, test mode first",
+     "Merchant endpoint down | Webhooks retry for up to 3 days with backoff",
+     "Issuer 3DS outage | May proceed without authentication where permissible",
+     "A partner bank slows down | Our design: time-outs and a circuit breaker per partner"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "What breaks, and what protects people. A client times out mid-charge: it retries with the same idempotency key and gets the original answer. One merchant floods the API: rate limiters return 429s to that merchant only. The whole fleet is overloaded: load shedders drop non-critical traffic, starting with test mode. A merchant's endpoint is down: webhooks retry for days. A bank's authentication server fails: Stripe may continue without 3-D Secure where permitted. Our design adds a breaker per partner.",
+   "executive": "Each failure has a planned answer: retries are safe, noisy users are limited, low-priority work is dropped first, and notifications keep trying."
+  },
+  {
+   "id": "s24",
+   "chapter": "patterns",
+   "card": {
+    "heading": "Patterns used",
+    "points": [
+     "Idempotency keys: retries never repeat a side effect",
+     "Retry with backoff and jitter: clients, and webhook delivery",
+     "Rate limiting and load shedding: token buckets, critical traffic first",
+     "Timeouts: webhooks answer fast; 3DS allows at least five minutes",
+     "Sharding: DocDB, with live chunk migration"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The named patterns, each with its own walkthrough. Idempotency keys, so a retry never repeats a side effect. Retry with exponential backoff and jitter, which Stripe recommends to clients and uses for webhooks. Rate limiting and load shedding at the edge. Timeouts everywhere: a webhook endpoint must answer quickly, and 3-D Secure screens must allow at least five minutes. And sharding, with live data movement, underneath it all.",
+   "executive": "A handful of well-known patterns: safe retries, backing off, limiting load, timeouts, and splitting data across servers."
+  },
+  {
+   "id": "s25",
+   "chapter": "decisions",
+   "card": {
+    "heading": "Key decisions",
+    "kind": "compare",
+    "points": [
+     "Decision | Why",
+     "Version pinned per account | Old integrations keep working; responses are translated back",
+     "Idempotency keys on every POST | Safe retries without asking \"did it work?\" first",
+     "PaymentIntent state machine | 3DS, bank debits and capture later fit one object",
+     "Signed webhooks with retries | Outcomes arrive late; merchants must hear about them",
+     "Own DBaaS on MongoDB | No off-the-shelf service in 2011 met its needs"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The decisions that shaped it. Pin each account to an API version and translate responses, rather than break old integrations. Make every write retryable with idempotency keys, rather than ask merchants to check before retrying. Model a payment as a PaymentIntent state machine, so 3-D Secure and slow payment methods fit the same object. Notify with signed webhooks and retries. And build DocDB on MongoDB, because no managed service in 2011 met Stripe's needs.",
+   "executive": "Never break integrations, make retries safe, give every payment a clear state, push updates reliably, and build the database layer in-house."
+  },
+  {
+   "id": "s26",
+   "chapter": "mvp",
+   "card": {
+    "heading": "What we would build first",
+    "points": [
+     "One service and Postgres; payments as a strict state machine",
+     "Idempotency keys with a unique constraint, kept 24 h or more",
+     "A token-bucket rate limiter per API key",
+     "Signed webhooks from a transactional outbox, retried with backoff",
+     "Hosted card fields from a processor: never hold card numbers",
+     "A dated API version on every account from day one"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "If we built a small payments platform today, this is where we would start. One service and Postgres, with a payments table that is a strict state machine. Idempotency keys stored with a unique constraint, kept for at least a day. A token-bucket rate limiter per API key. Webhooks from a transactional outbox, signed, with retries and backoff. Hosted card fields from a card processor, so we never hold card numbers. And versioning from the first day.",
+   "executive": "Start with one service and one database, but build in safe retries, rate limits, reliable notifications and versioning from day one."
+  }
+ ]
+}

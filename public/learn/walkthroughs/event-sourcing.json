@@ -1,0 +1,1018 @@
+{
+ "id": "event-sourcing",
+ "title": "Event sourcing",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "diagrams": [
+  {
+   "id": "current",
+   "kind": "c4",
+   "title": "Only the latest number survives",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "customer",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Customer",
+     "sub": "deposits and withdraws"
+    },
+    {
+     "id": "script",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Hotfix script",
+     "sub": "run by hand in production"
+    },
+    {
+     "id": "svc",
+     "kind": "container",
+     "tone": "core",
+     "label": "Account service",
+     "sub": "updates rows in place"
+    },
+    {
+     "id": "accounts",
+     "kind": "store",
+     "tone": "data",
+     "label": "accounts table",
+     "sub": "id 42 · balance 70"
+    },
+    {
+     "id": "audit",
+     "kind": "store",
+     "tone": "data",
+     "label": "account_audit table",
+     "sub": "written alongside, by hand"
+    },
+    {
+     "id": "support",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Support agent",
+     "sub": "why is it 70?"
+    }
+   ],
+   "edges": [
+    {
+     "id": "p1",
+     "from": "customer",
+     "to": "svc",
+     "style": "solid",
+     "label": "deposit 100, withdraw 30"
+    },
+    {
+     "id": "p2",
+     "from": "svc",
+     "to": "accounts",
+     "style": "solid",
+     "label": "UPDATE balance = 70"
+    },
+    {
+     "id": "p3",
+     "from": "support",
+     "to": "accounts",
+     "style": "dashed",
+     "label": "only the latest number"
+    },
+    {
+     "id": "n1",
+     "from": "svc",
+     "to": "audit",
+     "style": "solid",
+     "label": "INSERT audit row"
+    },
+    {
+     "id": "n2",
+     "from": "script",
+     "to": "accounts",
+     "style": "dashed",
+     "label": "UPDATE balance = 95 · no audit row"
+    },
+    {
+     "id": "n3",
+     "from": "audit",
+     "to": "support",
+     "style": "dashed",
+     "label": "history no longer adds up"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "command or write"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or drift"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "event or signal"
+    }
+   ]
+  },
+  {
+   "id": "parts",
+   "kind": "c4",
+   "title": "Events are the truth; everything else is derived",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "write",
+     "label": "Write side [owns the truth]",
+     "tone": "core"
+    },
+    {
+     "id": "read",
+     "label": "Read side [derived, rebuildable]",
+     "tone": "data"
+    }
+   ],
+   "elements": [
+    {
+     "id": "client",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Client",
+     "sub": "commands and queries"
+    },
+    {
+     "id": "handler",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Command handler",
+     "sub": "load, decide, append",
+     "group": "write"
+    },
+    {
+     "id": "agg",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Account aggregate",
+     "sub": "state rebuilt from events",
+     "group": "write"
+    },
+    {
+     "id": "store",
+     "kind": "store",
+     "tone": "data",
+     "label": "Event store",
+     "sub": "append-only stream per account",
+     "group": "write"
+    },
+    {
+     "id": "snap",
+     "kind": "store",
+     "tone": "data",
+     "label": "Snapshots",
+     "sub": "state every N events",
+     "group": "write"
+    },
+    {
+     "id": "projector",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Projector",
+     "sub": "subscribes to new events",
+     "group": "read"
+    },
+    {
+     "id": "view",
+     "kind": "store",
+     "tone": "data",
+     "label": "Read model",
+     "sub": "balances and statements",
+     "group": "read"
+    }
+   ],
+   "edges": [
+    {
+     "id": "e1",
+     "from": "client",
+     "to": "handler",
+     "style": "solid",
+     "label": "Withdraw 30"
+    },
+    {
+     "id": "e2",
+     "from": "handler",
+     "to": "store",
+     "style": "solid",
+     "label": "read stream account-42"
+    },
+    {
+     "id": "e3",
+     "from": "handler",
+     "to": "agg",
+     "style": "solid",
+     "label": "replay, then decide"
+    },
+    {
+     "id": "e4",
+     "from": "handler",
+     "to": "store",
+     "style": "solid",
+     "label": "append Withdrew 30 · expect v2"
+    },
+    {
+     "id": "e5",
+     "from": "store",
+     "to": "projector",
+     "style": "dotted",
+     "label": "new event"
+    },
+    {
+     "id": "e6",
+     "from": "projector",
+     "to": "view",
+     "style": "solid",
+     "label": "update balance"
+    },
+    {
+     "id": "e7",
+     "from": "client",
+     "to": "view",
+     "style": "solid",
+     "label": "query balance"
+    },
+    {
+     "id": "e8",
+     "from": "snap",
+     "to": "handler",
+     "style": "dotted",
+     "label": "start from latest snapshot"
+    },
+    {
+     "id": "e9",
+     "from": "agg",
+     "to": "snap",
+     "style": "dotted",
+     "label": "save state every N events"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "command or write"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or drift"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "event or signal"
+    }
+   ]
+  },
+  {
+   "id": "flow",
+   "kind": "sequence",
+   "title": "Load, decide, append",
+   "participants": [
+    {
+     "id": "client",
+     "label": "Client"
+    },
+    {
+     "id": "handler",
+     "label": "Command handler"
+    },
+    {
+     "id": "store",
+     "label": "Event store"
+    },
+    {
+     "id": "proj",
+     "label": "Projection"
+    }
+   ],
+   "messages": [
+    {
+     "id": "f1",
+     "from": "client",
+     "to": "handler",
+     "style": "solid",
+     "label": "Withdraw 30 from account 42"
+    },
+    {
+     "id": "f2",
+     "from": "handler",
+     "to": "store",
+     "style": "solid",
+     "label": "read stream account-42"
+    },
+    {
+     "id": "f3",
+     "from": "store",
+     "to": "handler",
+     "style": "solid",
+     "label": "v1 Opened · v2 Deposited 100 → balance 100"
+    },
+    {
+     "id": "f4",
+     "from": "handler",
+     "to": "store",
+     "style": "solid",
+     "label": "append Withdrew 30 · expected version 2"
+    },
+    {
+     "id": "f5",
+     "from": "store",
+     "to": "handler",
+     "style": "solid",
+     "label": "ok · stream now at version 3"
+    },
+    {
+     "id": "f6",
+     "from": "handler",
+     "to": "client",
+     "style": "solid",
+     "label": "accepted"
+    },
+    {
+     "id": "f7",
+     "from": "store",
+     "to": "proj",
+     "style": "solid",
+     "label": "Withdrew 30 (asynchronously)"
+    },
+    {
+     "id": "f8",
+     "from": "client",
+     "to": "proj",
+     "style": "solid",
+     "label": "query balance → 70, once caught up"
+    }
+   ]
+  },
+  {
+   "id": "conflict",
+   "kind": "sequence",
+   "title": "Two withdrawals, one stream",
+   "participants": [
+    {
+     "id": "client",
+     "label": "Client"
+    },
+    {
+     "id": "a",
+     "label": "Handler A"
+    },
+    {
+     "id": "b",
+     "label": "Handler B"
+    },
+    {
+     "id": "store",
+     "label": "Event store"
+    }
+   ],
+   "messages": [
+    {
+     "id": "c1",
+     "from": "a",
+     "to": "store",
+     "style": "solid",
+     "label": "read account-42 · v2, balance 100"
+    },
+    {
+     "id": "c2",
+     "from": "b",
+     "to": "store",
+     "style": "solid",
+     "label": "read account-42 · v2, balance 100"
+    },
+    {
+     "id": "c3",
+     "from": "a",
+     "to": "store",
+     "style": "solid",
+     "label": "append Withdrew 80 · expect v2"
+    },
+    {
+     "id": "c4",
+     "from": "store",
+     "to": "a",
+     "style": "solid",
+     "label": "ok · now v3"
+    },
+    {
+     "id": "c5",
+     "from": "b",
+     "to": "store",
+     "style": "solid",
+     "label": "append Withdrew 50 · expect v2"
+    },
+    {
+     "id": "c6",
+     "from": "store",
+     "to": "b",
+     "style": "solid",
+     "label": "rejected: stream is at v3"
+    },
+    {
+     "id": "c7",
+     "from": "b",
+     "to": "store",
+     "style": "solid",
+     "label": "re-read · v3, balance 20"
+    },
+    {
+     "id": "c8",
+     "from": "b",
+     "to": "client",
+     "style": "solid",
+     "label": "declined: insufficient funds"
+    }
+   ]
+  },
+  {
+   "id": "evolve",
+   "kind": "c4",
+   "title": "Events live for ever: old shapes and personal data",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "old",
+     "kind": "store",
+     "tone": "data",
+     "label": "Stored events",
+     "sub": "MoneyDeposited v1 · amount only"
+    },
+    {
+     "id": "upcaster",
+     "kind": "component",
+     "tone": "core",
+     "label": "Upcaster",
+     "sub": "v1 → v2 as events are read"
+    },
+    {
+     "id": "handler",
+     "kind": "component",
+     "tone": "core",
+     "label": "Handlers and projections",
+     "sub": "only know the latest version"
+    },
+    {
+     "id": "erase",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Erasure request",
+     "sub": "right to be forgotten"
+    },
+    {
+     "id": "keys",
+     "kind": "store",
+     "tone": "stream",
+     "label": "Key store",
+     "sub": "one key per customer"
+    },
+    {
+     "id": "pii",
+     "kind": "store",
+     "tone": "data",
+     "label": "Events with personal data",
+     "sub": "name and address encrypted"
+    }
+   ],
+   "edges": [
+    {
+     "id": "u1",
+     "from": "old",
+     "to": "upcaster",
+     "style": "solid",
+     "label": "read v1"
+    },
+    {
+     "id": "u2",
+     "from": "upcaster",
+     "to": "handler",
+     "style": "solid",
+     "label": "as v2: amount + currency"
+    },
+    {
+     "id": "k1",
+     "from": "keys",
+     "to": "handler",
+     "style": "dotted",
+     "label": "key for customer 42"
+    },
+    {
+     "id": "k2",
+     "from": "erase",
+     "to": "keys",
+     "style": "dashed",
+     "label": "delete key 42"
+    },
+    {
+     "id": "k3",
+     "from": "pii",
+     "to": "handler",
+     "style": "dashed",
+     "label": "ciphertext only: unreadable"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "command or write"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or drift"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "event or signal"
+    }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "ledger",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Accounting ledgers",
+     "sub": "double entry, documented from about 1300"
+    },
+    {
+     "id": "young",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Greg Young",
+     "sub": "credited with CQRS; developed Event Store"
+    },
+    {
+     "id": "fowler",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Martin Fowler",
+     "sub": "Event Sourcing article, 2005"
+    },
+    {
+     "id": "kurrent",
+     "kind": "container",
+     "tone": "core",
+     "label": "KurrentDB",
+     "sub": "formerly EventStoreDB · renamed 2025"
+    },
+    {
+     "id": "axon",
+     "kind": "container",
+     "tone": "core",
+     "label": "Axon Framework",
+     "sub": "Java · event-sourced aggregates by default"
+    },
+    {
+     "id": "ms",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Microsoft Azure Architecture Center",
+     "sub": "Event Sourcing pattern page"
+    }
+   ],
+   "edges": [
+    {
+     "id": "w1",
+     "from": "ledger",
+     "to": "fowler",
+     "style": "solid",
+     "label": "same idea, in software"
+    },
+    {
+     "id": "w2",
+     "from": "young",
+     "to": "fowler",
+     "style": "dotted",
+     "label": "CQRS, described 2011"
+    },
+    {
+     "id": "w3",
+     "from": "young",
+     "to": "kurrent",
+     "style": "solid",
+     "label": "a database built for events"
+    },
+    {
+     "id": "w4",
+     "from": "fowler",
+     "to": "axon",
+     "style": "solid",
+     "label": "framework support"
+    },
+    {
+     "id": "w5",
+     "from": "fowler",
+     "to": "ms",
+     "style": "dotted",
+     "label": "cloud guidance"
+    }
+   ]
+  },
+  {
+   "id": "related",
+   "kind": "c4",
+   "title": "Related patterns",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "es",
+     "kind": "container",
+     "tone": "core",
+     "label": "Event sourcing",
+     "sub": "events are the source of truth"
+    },
+    {
+     "id": "cqrs",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "CQRS",
+     "sub": "separate write and read models"
+    },
+    {
+     "id": "view",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Materialised view",
+     "sub": "read model built from events"
+    },
+    {
+     "id": "saga",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Saga",
+     "sub": "multi-step work across services"
+    },
+    {
+     "id": "outbox",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Transactional outbox",
+     "sub": "keep state, publish reliably"
+    },
+    {
+     "id": "notif",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Event notification",
+     "sub": "events as messages, not storage"
+    },
+    {
+     "id": "cdc",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Audit log and change data capture",
+     "sub": "history beside the truth"
+    }
+   ],
+   "edges": [
+    {
+     "id": "r1",
+     "from": "es",
+     "to": "cqrs",
+     "style": "solid",
+     "label": "usually paired with"
+    },
+    {
+     "id": "r2",
+     "from": "es",
+     "to": "view",
+     "style": "solid",
+     "label": "builds"
+    },
+    {
+     "id": "r3",
+     "from": "saga",
+     "to": "es",
+     "style": "solid",
+     "label": "reacts to its events"
+    },
+    {
+     "id": "r4",
+     "from": "outbox",
+     "to": "es",
+     "style": "dotted",
+     "label": "the alternative when state is the truth"
+    },
+    {
+     "id": "r5",
+     "from": "notif",
+     "to": "es",
+     "style": "dotted",
+     "label": "often confused with"
+    },
+    {
+     "id": "r6",
+     "from": "cdc",
+     "to": "es",
+     "style": "dotted",
+     "label": "history, but not the truth"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "problem",
+   "title": "The problem"
+  },
+  {
+   "id": "naive",
+   "title": "The naive fix"
+  },
+  {
+   "id": "pattern",
+   "title": "The pattern"
+  },
+  {
+   "id": "how",
+   "title": "How it works"
+  },
+  {
+   "id": "failure",
+   "title": "When it goes wrong"
+  },
+  {
+   "id": "tradeoffs",
+   "title": "Trade-offs"
+  },
+  {
+   "id": "wild",
+   "title": "In the wild"
+  },
+  {
+   "id": "related",
+   "title": "Related patterns"
+  },
+  {
+   "id": "recap",
+   "title": "Recap"
+  }
+ ],
+ "shots": [
+  {
+   "id": "es-problem",
+   "chapter": "problem",
+   "title": "Overwrite",
+   "diagram": "current",
+   "focus": [],
+   "trace": [
+    "p1",
+    "p2",
+    "p3"
+   ],
+   "engineer": "Here is a bank account the usual way. A customer deposits a hundred pounds, then withdraws thirty. Each time, the account service updates one row in place, so the table now says seventy. A week later the customer rings support: why is my balance seventy? The agent looks at the table, and all it holds is the number. Which transactions got us here, in what order, and why, was thrown away on every update.",
+   "executive": "A normal database keeps only the latest balance. When someone asks how it got there, the history has already been overwritten."
+  },
+  {
+   "id": "es-naive",
+   "chapter": "naive",
+   "title": "Audit drift",
+   "diagram": "current",
+   "focus": [],
+   "trace": [
+    "n1",
+    "n2",
+    "n3"
+   ],
+   "engineer": "The obvious fix is an audit table. Every time the service updates the balance, it also inserts a row describing the change. But now there are two records of the truth, written separately. A crash between the two writes loses an audit row. Someone runs a hotfix script straight against the accounts table, and no audit row is written at all. Within months the history no longer adds up to the balance, and nobody knows which one to believe.",
+   "executive": "Adding a separate history table helps until the two disagree, and then you cannot trust either."
+  },
+  {
+   "id": "es-parts",
+   "chapter": "pattern",
+   "title": "Write and read",
+   "diagram": "parts",
+   "focus": [],
+   "trace": [
+    "e1",
+    "e2",
+    "e3",
+    "e4",
+    "e5",
+    "e6",
+    "e7"
+   ],
+   "engineer": "Event sourcing turns this round. The source of truth is an append-only stream of events per account: opened, deposited a hundred, withdrew thirty. Nothing is ever updated or deleted. To handle a command, the handler reads the stream and replays it into the account aggregate to get the current state, decides, and appends new events. Everything else, such as the balance shown on screen, is a read model built from those events, and can be thrown away and rebuilt.",
+   "executive": "Instead of storing the balance, you store every transaction, and work the balance out from them. The history is the record."
+  },
+  {
+   "id": "es-replay",
+   "chapter": "pattern",
+   "card": {
+    "heading": "Replaying account 42",
+    "kind": "compare",
+    "points": [
+     "Event | Balance after",
+     "v1 AccountOpened | 0",
+     "v2 Deposited 100 | 100",
+     "v3 Withdrew 30 | 70",
+     "v4 FeeCharged 5 | 65"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Replay is just a fold over the events, in order. Start from nothing, apply each event, and you have the state at that point. Stop early and you have the state on any past date, which Martin Fowler calls a temporal query. Notice the events record intent, such as a fee being charged, not just a new number. Microsoft's guidance makes the same point: two seats reserved tells you far more than seats remaining changed to forty-two.",
+   "executive": "Play the transactions back in order and you get the balance, today or on any date in the past."
+  },
+  {
+   "id": "es-how",
+   "chapter": "how",
+   "title": "Sequence",
+   "diagram": "flow",
+   "focus": [],
+   "trace": [
+    "f1",
+    "f2",
+    "f3",
+    "f4",
+    "f5",
+    "f6",
+    "f7",
+    "f8"
+   ],
+   "engineer": "Step by step. The client asks to withdraw thirty. The handler reads stream account forty-two and gets two events, so the balance is a hundred and the stream is at version two. The rule passes, so it appends Withdrew thirty, saying it expects version two. The store checks, appends, and the stream is now at version three. Separately, a projection picks up the new event and updates the balance view, so a query shortly afterwards shows seventy.",
+   "executive": "The system reads the account's history, checks the request against it, and adds one new event. Screens are updated from that event a moment later."
+  },
+  {
+   "id": "es-snapshots",
+   "chapter": "how",
+   "title": "Snapshots",
+   "diagram": "parts",
+   "focus": [],
+   "trace": [
+    "e8",
+    "e9",
+    "e5",
+    "e6"
+   ],
+   "engineer": "Two refinements. Long streams are slow to replay, so you save a snapshot of the state every N events, then load the latest snapshot and replay only what came after. Axon's documentation shows a snapshot every five hundred events. Snapshots are a cache: the stream is still the truth. And read models are updated asynchronously, so they are eventually consistent: a user may briefly see the old balance. That is where CQRS comes in, with separate models for writing and reading.",
+   "executive": "Snapshots save replaying everything each time, and the screens can lag the truth by a moment."
+  },
+  {
+   "id": "es-conflict",
+   "chapter": "failure",
+   "title": "Conflict",
+   "diagram": "conflict",
+   "focus": [],
+   "trace": [
+    "c1",
+    "c2",
+    "c3",
+    "c4",
+    "c5",
+    "c6",
+    "c7",
+    "c8"
+   ],
+   "engineer": "What if two withdrawals arrive at once? Both handlers read the stream at version two, with a hundred in the account. Handler A appends Withdrew eighty, expecting version two, and succeeds. Handler B appends Withdrew fifty, also expecting version two, but the stream is now at version three, so the store rejects it. B re-reads, sees twenty left, and declines. This is optimistic concurrency on the stream version, and it is what stops two writers overdrawing the account.",
+   "executive": "If two requests race, the second is told the history changed under it, so it checks again rather than overdrawing the account."
+  },
+  {
+   "id": "es-upcast",
+   "chapter": "failure",
+   "title": "Upcasting",
+   "diagram": "evolve",
+   "focus": [],
+   "trace": [
+    "u1",
+    "u2"
+   ],
+   "engineer": "Events are kept for ever, but their shape changes. Last year Money Deposited had just an amount; now it needs a currency. You must not edit stored events, so you add an upcaster: a small function that converts version one into version two as events are read. Axon chains them, one step per version, so handlers only ever see the latest shape. Rewriting history in place is possible, but Microsoft calls it a last resort, because it undermines the audit trail.",
+   "executive": "Old events can't be edited, so the system translates old formats into the new one whenever it reads them."
+  },
+  {
+   "id": "es-forget",
+   "chapter": "failure",
+   "title": "Forgetting",
+   "diagram": "evolve",
+   "focus": [],
+   "trace": [
+    "k1",
+    "k2",
+    "k3"
+   ],
+   "engineer": "The hardest part: a customer asks you to delete their personal data, but the store is append-only. Either keep personal data outside the events and refer to it by id, or use crypto-shredding. Encrypt each customer's personal fields with their own key, held in a separate key store. To forget them, delete the key. The events stay intact, but those fields are now unreadable ciphertext. It costs encryption on every read and write, and key management you cannot get wrong.",
+   "executive": "To delete someone's personal data from a permanent history, you encrypt it with their own key, then destroy the key."
+  },
+  {
+   "id": "es-tradeoffs",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "What it buys and what it costs",
+    "kind": "compare",
+    "points": [
+     "Gain | Cost",
+     "Full history and audit trail | Events can never be edited",
+     "State at any past moment | Replay time; snapshots to manage",
+     "New read models from old events | Read models lag the truth",
+     "Appends avoid hot-row locks | Version conflicts to retry",
+     "Intent captured in the data | No ad hoc SQL on current state"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "What you gain and what it costs. You get a complete audit trail and the state at any point in time, but replay and versioning are now your problem. You can build new read models from old events, but every read model lags the truth. Appends avoid lock contention on hot rows, but you need optimistic concurrency and retries. And you cannot simply query current state with SQL: you build projections for every question you want to ask.",
+   "executive": "You gain a perfect history and flexible reporting. You pay in complexity, lag between writes and screens, and harder queries."
+  },
+  {
+   "id": "es-whennot",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "When not to use it",
+    "points": [
+     "Simple CRUD with no need for history",
+     "Prototypes and short-lived systems",
+     "Views that must be consistent in real time",
+     "Static reference data",
+     "Teams new to event-driven design"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "When not to use it. Microsoft's own page is blunt: it is a complex pattern, costly to migrate to or from, and most systems are fine without it. Skip it for plain create, read, update and delete with no need for history; for prototypes and short-lived systems; when views must be consistent in real time; for static reference data; and for teams new to event-driven design. Apply it only where it pays, such as a payment ledger, and keep the rest ordinary.",
+   "executive": "Most systems don't need it. Use it for the few parts where history really matters, such as money, and keep everything else simple."
+  },
+  {
+   "id": "es-wild",
+   "chapter": "wild",
+   "title": "Lineage",
+   "diagram": "wild",
+   "focus": [],
+   "trace": [
+    "w1",
+    "w2",
+    "w3",
+    "w4",
+    "w5"
+   ],
+   "engineer": "In the wild. The oldest example is the accounting ledger: double-entry records survive from around thirteen hundred, and you never rub out an entry, you post a correcting one. Martin Fowler described event sourcing for software in two thousand and five. Greg Young, whom Fowler credits with CQRS, developed Event Store, a database for event streams, later EventStoreDB and renamed KurrentDB in twenty twenty-five. In Java, Axon Framework event-sources aggregates by default. And Microsoft documents it as a cloud design pattern.",
+   "executive": "Accountants have worked this way for centuries. Today there are dedicated databases and frameworks for it, and the major cloud guides document it."
+  },
+  {
+   "id": "es-related",
+   "chapter": "related",
+   "title": "Neighbours",
+   "diagram": "related",
+   "focus": [],
+   "trace": [
+    "r1",
+    "r2",
+    "r3",
+    "r4",
+    "r5",
+    "r6"
+   ],
+   "engineer": "Its neighbours. CQRS is the usual partner: events on the write side, projections on the read side, which are materialised views. Sagas coordinate work across services by reacting to events. The transactional outbox is the alternative when current state stays the truth and you just need to publish changes reliably. Event notification sends events as messages but does not store them as the truth. And an audit log or change data capture keeps history beside the state, not instead of it.",
+   "executive": "It is usually paired with CQRS and sagas, and often confused with simply publishing events or keeping an audit log."
+  },
+  {
+   "id": "es-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "Store what happened; derive state by replaying it",
+     "Append with an expected version to stop conflicting writes",
+     "Plan for schema change, erasure and lagging read models"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. Store what happened, not just where you ended up: the event stream is the truth, and state is derived by replaying it. Guard each stream with an expected version, so concurrent writers cannot both win. And plan the hard parts before you start: schema changes, personal data, and read models that lag. Use it where history is the product, like a ledger, and nowhere else.",
+   "executive": "Store what happened, not just the result. Protect each history from conflicting writes. Use it only where history really matters."
+  }
+ ],
+ "subtitle": "Design pattern",
+ "meta": {
+  "kind": "pattern",
+  "category": "Data",
+  "level": "advanced",
+  "uses": [],
+  "related": [
+   "cqrs",
+   "outbox",
+   "saga"
+  ],
+  "blurb": "Store every change as an event; rebuild state by replaying them, and keep the full history.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ }
+}

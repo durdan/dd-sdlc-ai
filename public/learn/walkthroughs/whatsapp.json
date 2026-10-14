@@ -1,0 +1,1188 @@
+{
+ "id": "whatsapp",
+ "title": "WhatsApp messaging",
+ "subtitle": "Company case study",
+ "template": "case-study",
+ "voice": "en-GB-SoniaNeural",
+ "diagrams": [
+  {
+   "id": "context",
+   "kind": "c4",
+   "title": "Level 1 · Context",
+   "direction": "DOWN",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "encrypted messages"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "push · wake-up"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "third-party service"
+    }
+   ],
+   "elements": [
+    {
+     "id": "alice",
+     "kind": "person",
+     "label": "Sender",
+     "sub": "phone plus linked devices"
+    },
+    {
+     "id": "bob",
+     "kind": "person",
+     "label": "Recipient",
+     "sub": "often offline, asleep or on a bad network"
+    },
+    {
+     "id": "wa",
+     "kind": "system",
+     "label": "WhatsApp",
+     "sub": "relays and queues ciphertext it cannot read"
+    },
+    {
+     "id": "push",
+     "kind": "external",
+     "label": "Phone push services",
+     "sub": "APNs, FCM · illustrative"
+    },
+    {
+     "id": "sms",
+     "kind": "external",
+     "label": "Mobile networks",
+     "sub": "SMS or call to verify a number · illustrative"
+    }
+   ],
+   "edges": [
+    {
+     "id": "c-alice",
+     "from": "alice",
+     "to": "wa",
+     "label": "send, receipts, keys",
+     "style": "solid"
+    },
+    {
+     "id": "c-bob",
+     "from": "wa",
+     "to": "bob",
+     "label": "deliver when connected",
+     "style": "solid"
+    },
+    {
+     "id": "c-push",
+     "from": "wa",
+     "to": "push",
+     "label": "wake a sleeping app",
+     "style": "dotted"
+    },
+    {
+     "id": "c-push-bob",
+     "from": "push",
+     "to": "bob",
+     "label": "notification",
+     "style": "dashed"
+    },
+    {
+     "id": "c-sms",
+     "from": "wa",
+     "to": "sms",
+     "label": "registration code",
+     "style": "dotted"
+    }
+   ]
+  },
+  {
+   "id": "containers",
+   "kind": "c4",
+   "title": "Level 2 · Containers",
+   "direction": "DOWN",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request · upload"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "delivered over a live connection"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "storage"
+    }
+   ],
+   "groups": [
+    {
+     "id": "clients",
+     "label": "Clients · all encryption happens here",
+     "tone": "neutral"
+    },
+    {
+     "id": "svc",
+     "label": "Back-end services",
+     "tone": "stream"
+    },
+    {
+     "id": "store",
+     "label": "Storage · ciphertext and public keys only",
+     "tone": "data"
+    }
+   ],
+   "elements": [
+    {
+     "id": "phone",
+     "kind": "container",
+     "label": "Primary phone app",
+     "sub": "Signal Protocol, local history",
+     "tone": "neutral",
+     "group": "clients",
+     "rank": 0
+    },
+    {
+     "id": "companion",
+     "kind": "container",
+     "label": "Linked devices",
+     "sub": "web, desktop · own keys (2021)",
+     "tone": "neutral",
+     "group": "clients",
+     "rank": 0
+    },
+    {
+     "id": "chat",
+     "kind": "container",
+     "label": "Chat servers",
+     "sub": "Erlang, FreeBSD (2014) · one per device",
+     "rank": 1,
+     "tone": "core"
+    },
+    {
+     "id": "keys",
+     "kind": "container",
+     "label": "Key distribution",
+     "sub": "public identity and prekeys",
+     "group": "svc",
+     "tone": "stream",
+     "rank": 2
+    },
+    {
+     "id": "groupsvc",
+     "kind": "container",
+     "label": "Group service",
+     "sub": "membership, server fan-out",
+     "group": "svc",
+     "tone": "stream",
+     "rank": 2
+    },
+    {
+     "id": "pushgw",
+     "kind": "container",
+     "label": "Push gateway",
+     "sub": "wake apps · illustrative",
+     "group": "svc",
+     "tone": "stream",
+     "rank": 2
+    },
+    {
+     "id": "media",
+     "kind": "container",
+     "label": "Media servers",
+     "sub": "encrypted blob store",
+     "group": "svc",
+     "tone": "stream",
+     "rank": 2
+    },
+    {
+     "id": "accounts",
+     "kind": "store",
+     "label": "Accounts and devices",
+     "sub": "device lists, signatures",
+     "group": "store",
+     "rank": 3
+    },
+    {
+     "id": "offline",
+     "kind": "store",
+     "label": "Offline store",
+     "sub": "queued ciphertext, up to 30 days",
+     "group": "store",
+     "rank": 3
+    },
+    {
+     "id": "appstate",
+     "kind": "store",
+     "label": "App-state store",
+     "sub": "encrypted contacts, archives, stars",
+     "group": "store",
+     "rank": 3
+    }
+   ],
+   "edges": [
+    {
+     "id": "k-phone-chat",
+     "from": "phone",
+     "to": "chat",
+     "label": "connect · Noise Pipes",
+     "style": "solid"
+    },
+    {
+     "id": "k-chat-accounts",
+     "from": "chat",
+     "to": "accounts",
+     "label": "authenticate device",
+     "style": "dotted"
+    },
+    {
+     "id": "k-chat-keys",
+     "from": "chat",
+     "to": "keys",
+     "label": "prekey bundles",
+     "style": "solid"
+    },
+    {
+     "id": "k-chat-offline",
+     "from": "chat",
+     "to": "offline",
+     "label": "recipient offline: queue",
+     "style": "dotted"
+    },
+    {
+     "id": "k-chat-push",
+     "from": "chat",
+     "to": "pushgw",
+     "label": "wake recipient",
+     "style": "dashed"
+    },
+    {
+     "id": "k-chat-companion",
+     "from": "chat",
+     "to": "companion",
+     "label": "one copy per device",
+     "style": "dashed"
+    },
+    {
+     "id": "k-chat-groups",
+     "from": "chat",
+     "to": "groupsvc",
+     "label": "group message",
+     "style": "solid"
+    },
+    {
+     "id": "k-phone-media",
+     "from": "phone",
+     "to": "media",
+     "label": "upload encrypted file",
+     "style": "solid"
+    },
+    {
+     "id": "k-companion-media",
+     "from": "companion",
+     "to": "media",
+     "label": "download, check hash",
+     "style": "solid"
+    },
+    {
+     "id": "k-companion-appstate",
+     "from": "companion",
+     "to": "appstate",
+     "label": "sync settings",
+     "style": "dotted"
+    }
+   ]
+  },
+  {
+   "id": "chatnode",
+   "kind": "c4",
+   "title": "Level 3 · Inside a chat server (partly illustrative)",
+   "direction": "DOWN",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "Erlang message"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "to another node · single hop"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "storage · metrics"
+    }
+   ],
+   "groups": [
+    {
+     "id": "node",
+     "label": "One chat node · BEAM virtual machine",
+     "tone": "core"
+    }
+   ],
+   "elements": [
+    {
+     "id": "dev",
+     "kind": "person",
+     "label": "Phone",
+     "sub": "one TCP connection"
+    },
+    {
+     "id": "conn",
+     "kind": "component",
+     "label": "Connection process",
+     "sub": "one Erlang process per device",
+     "group": "node"
+    },
+    {
+     "id": "router",
+     "kind": "component",
+     "label": "Session router",
+     "sub": "which node holds the recipient (pg2)",
+     "group": "node"
+    },
+    {
+     "id": "workers",
+     "kind": "component",
+     "label": "Partitioned workers",
+     "sub": "hash the key to one worker",
+     "group": "node"
+    },
+    {
+     "id": "writer",
+     "kind": "component",
+     "label": "Offline writer",
+     "sub": "write-back cache, variable sync delay",
+     "group": "node"
+    },
+    {
+     "id": "monitor",
+     "kind": "component",
+     "label": "Backlog monitor",
+     "sub": "alert on long queues",
+     "group": "node"
+    },
+    {
+     "id": "peer",
+     "kind": "container",
+     "label": "Recipient's chat node",
+     "sub": "same code, another server"
+    },
+    {
+     "id": "mnesia",
+     "kind": "store",
+     "label": "Mnesia tables",
+     "sub": "fragmented, one node per record"
+    },
+    {
+     "id": "mailbox",
+     "kind": "store",
+     "label": "Offline mailboxes",
+     "sub": "per user, on SSD"
+    }
+   ],
+   "edges": [
+    {
+     "id": "n-dev-conn",
+     "from": "dev",
+     "to": "conn",
+     "label": "encrypted frames",
+     "style": "solid"
+    },
+    {
+     "id": "n-conn-router",
+     "from": "conn",
+     "to": "router",
+     "label": "where is the recipient?",
+     "style": "solid"
+    },
+    {
+     "id": "n-router-peer",
+     "from": "router",
+     "to": "peer",
+     "label": "forward",
+     "style": "dashed"
+    },
+    {
+     "id": "n-conn-workers",
+     "from": "conn",
+     "to": "workers",
+     "label": "account, group lookups",
+     "style": "solid"
+    },
+    {
+     "id": "n-workers-mnesia",
+     "from": "workers",
+     "to": "mnesia",
+     "label": "async, dirty reads",
+     "style": "dotted"
+    },
+    {
+     "id": "n-router-writer",
+     "from": "router",
+     "to": "writer",
+     "label": "not connected",
+     "style": "solid"
+    },
+    {
+     "id": "n-writer-mailbox",
+     "from": "writer",
+     "to": "mailbox",
+     "label": "batched writes",
+     "style": "dotted"
+    },
+    {
+     "id": "n-workers-monitor",
+     "from": "workers",
+     "to": "monitor",
+     "label": "queue lengths",
+     "style": "dotted"
+    },
+    {
+     "id": "n-writer-monitor",
+     "from": "writer",
+     "to": "monitor",
+     "label": "queue lengths",
+     "style": "dotted"
+    }
+   ]
+  },
+  {
+   "id": "offline-send",
+   "kind": "sequence",
+   "title": "Send a message to a friend who is offline",
+   "participants": [
+    {
+     "id": "s-alice",
+     "label": "Sender's phone"
+    },
+    {
+     "id": "s-chat",
+     "label": "Chat servers"
+    },
+    {
+     "id": "s-off",
+     "label": "Offline store"
+    },
+    {
+     "id": "s-push",
+     "label": "Push service"
+    },
+    {
+     "id": "s-bob",
+     "label": "Recipient's phone"
+    }
+   ],
+   "messages": [
+    {
+     "id": "o1",
+     "from": "s-alice",
+     "to": "s-chat",
+     "label": "encrypted message, id 42"
+    },
+    {
+     "id": "o2",
+     "from": "s-chat",
+     "to": "s-alice",
+     "label": "server ack · one grey tick",
+     "style": "dashed"
+    },
+    {
+     "id": "o3",
+     "from": "s-chat",
+     "to": "s-off",
+     "label": "recipient not connected: queue ciphertext"
+    },
+    {
+     "id": "o4",
+     "from": "s-chat",
+     "to": "s-push",
+     "label": "wake the app",
+     "style": "dashed"
+    },
+    {
+     "id": "o5",
+     "from": "s-push",
+     "to": "s-bob",
+     "label": "notification",
+     "style": "dashed"
+    },
+    {
+     "id": "o6",
+     "from": "s-bob",
+     "to": "s-chat",
+     "label": "reconnect"
+    },
+    {
+     "id": "o7",
+     "from": "s-off",
+     "to": "s-chat",
+     "label": "drain mailbox"
+    },
+    {
+     "id": "o8",
+     "from": "s-chat",
+     "to": "s-bob",
+     "label": "deliver message 42",
+     "style": "dashed"
+    },
+    {
+     "id": "o9",
+     "from": "s-bob",
+     "to": "s-chat",
+     "label": "delivery receipt"
+    },
+    {
+     "id": "o10",
+     "from": "s-chat",
+     "to": "s-off",
+     "label": "delete once delivered"
+    },
+    {
+     "id": "o11",
+     "from": "s-chat",
+     "to": "s-alice",
+     "label": "two grey ticks",
+     "style": "dashed"
+    },
+    {
+     "id": "o12",
+     "from": "s-bob",
+     "to": "s-chat",
+     "label": "read receipt"
+    },
+    {
+     "id": "o13",
+     "from": "s-chat",
+     "to": "s-alice",
+     "label": "two blue ticks",
+     "style": "dashed"
+    }
+   ]
+  },
+  {
+   "id": "first-message",
+   "kind": "sequence",
+   "title": "First message: fetch prekeys, agree a key (X3DH)",
+   "participants": [
+    {
+     "id": "f-alice",
+     "label": "Sender's phone"
+    },
+    {
+     "id": "f-keys",
+     "label": "Key distribution"
+    },
+    {
+     "id": "f-chat",
+     "label": "Chat servers"
+    },
+    {
+     "id": "f-bob",
+     "label": "Recipient's phone"
+    },
+    {
+     "id": "f-laptop",
+     "label": "Recipient's laptop"
+    }
+   ],
+   "messages": [
+    {
+     "id": "x1",
+     "from": "f-bob",
+     "to": "f-keys",
+     "label": "at install: identity key, signed prekey, batch of one-time prekeys"
+    },
+    {
+     "id": "x2",
+     "from": "f-alice",
+     "to": "f-keys",
+     "label": "keys for every recipient device"
+    },
+    {
+     "id": "x3",
+     "from": "f-keys",
+     "to": "f-alice",
+     "label": "identity, signed prekey, one one-time prekey (then deleted)"
+    },
+    {
+     "id": "x4",
+     "from": "f-alice",
+     "to": "f-chat",
+     "label": "4 × ECDH → root key; one copy per device"
+    },
+    {
+     "id": "x5",
+     "from": "f-chat",
+     "to": "f-bob",
+     "label": "message + sender's identity and ephemeral keys",
+     "style": "dashed"
+    },
+    {
+     "id": "x6",
+     "from": "f-chat",
+     "to": "f-laptop",
+     "label": "separate copy, separate session",
+     "style": "dashed"
+    },
+    {
+     "id": "x7",
+     "from": "f-bob",
+     "to": "f-chat",
+     "label": "reply carries a new ratchet key"
+    },
+    {
+     "id": "x8",
+     "from": "f-chat",
+     "to": "f-alice",
+     "label": "DH ratchet: fresh chain keys",
+     "style": "dashed"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "overview",
+   "title": "Overview"
+  },
+  {
+   "id": "requirements",
+   "title": "Requirements and scale"
+  },
+  {
+   "id": "context",
+   "title": "Context"
+  },
+  {
+   "id": "containers",
+   "title": "Containers"
+  },
+  {
+   "id": "deep-dive",
+   "title": "Inside a chat server"
+  },
+  {
+   "id": "flows",
+   "title": "Core flows"
+  },
+  {
+   "id": "data",
+   "title": "Data and caching"
+  },
+  {
+   "id": "growth",
+   "title": "Growth"
+  },
+  {
+   "id": "failures",
+   "title": "Failure modes"
+  },
+  {
+   "id": "patterns",
+   "title": "Patterns used"
+  },
+  {
+   "id": "decisions",
+   "title": "Key decisions"
+  },
+  {
+   "id": "mvp",
+   "title": "What we would build first"
+  }
+ ],
+ "shots": [
+  {
+   "id": "w01",
+   "chapter": "overview",
+   "diagram": "context",
+   "focus": [],
+   "trace": [],
+   "engineer": "This is WhatsApp, the messaging app that, by its own account, more than three billion people in over a hundred and eighty countries use. Everything in this design rests on one idea: the server is a relay, not a home for your messages. It moves ciphertext it cannot read, holds a message only until the recipient's device collects it, and then deletes it. Your history lives on your own devices. Keep that in mind, because almost every decision follows from it.",
+   "executive": "WhatsApp is used by more than three billion people. Its servers pass messages along without being able to read them, and do not keep them once delivered."
+  },
+  {
+   "id": "w-req-scale",
+   "chapter": "requirements",
+   "card": {
+    "heading": "Scale, from WhatsApp's own statements",
+    "kind": "numbers",
+    "points": [
+     "3B+ | people use WhatsApp, in 180+ countries (whatsapp.com, 2026)",
+     "2B+ | users, February 2020",
+     "465M | monthly users, March 2014 talk",
+     "19B in · 40B out | messages a day, March 2014 talk",
+     "147M | concurrent connections, March 2014 talk",
+     "~1M | phones per chat server, March 2014 talk"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The scale, from WhatsApp's own statements. Today its website says more than three billion people use it. It passed two billion in February 2020. The most detailed numbers are older, from an engineering talk in March 2014: four hundred and sixty-five million monthly users, nineteen billion messages in and forty billion out each day, a hundred and forty-seven million phones connected at once, and around a million phones on each chat server. Treat those as dated, but they show the shape.",
+   "executive": "Billions of users today. In 2014 it was already tens of billions of messages a day, with about a million phones connected to each server."
+  },
+  {
+   "id": "w-req-needs",
+   "chapter": "requirements",
+   "card": {
+    "heading": "What the system must do (our wording)",
+    "points": [
+     "Deliver every message exactly once, in order, even if the recipient is offline for days",
+     "Show the sender what happened: sent, delivered, read",
+     "Nobody but the two ends can read a message, including WhatsApp",
+     "Work on cheap phones and poor networks: small frames, fast reconnects",
+     "Every linked device gets every message, even with the phone switched off",
+     "Photos and videos as fast as text, without the server seeing them"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The requirements, in our own words rather than WhatsApp's. Deliver every message exactly once and in order, even to someone who has been offline for days. Tell the sender what happened, with sent, delivered and read. Make sure nobody but the two ends can read it, WhatsApp included. Work on cheap phones and poor networks. Deliver to every linked device, even when the phone is off. And make photos and videos feel as quick as text.",
+   "executive": "Messages must always arrive, stay private, work on poor networks, and reach all of a person's devices."
+  },
+  {
+   "id": "w-req-envelope",
+   "chapter": "requirements",
+   "card": {
+    "heading": "Back of the envelope (our arithmetic)",
+    "kind": "numbers",
+    "points": [
+     "~220K/s | messages in, average (19B ÷ 86,400 s, 2014)",
+     "342K/s | peak messages in, per the 2014 talk",
+     "~2× | out vs in: groups and receipts fan out",
+     "~150 | chat servers for 147M connections at ~1M each (2014)"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Some quick arithmetic on the 2014 figures. Nineteen billion messages a day is roughly two hundred and twenty thousand a second on average; the talk reported a peak of three hundred and forty-two thousand. About twice as many go out as come in, because group messages fan out to many members. And a hundred and forty-seven million connections at about a million per server is around a hundred and fifty chat servers, which is what the talk showed. Connections, not messages, set the server count.",
+   "executive": "In 2014 a few hundred thousand messages a second were handled by around a hundred and fifty chat servers."
+  },
+  {
+   "id": "w02",
+   "chapter": "context",
+   "title": "Sender and recipient",
+   "diagram": "context",
+   "focus": [
+    "alice",
+    "wa",
+    "bob"
+   ],
+   "trace": [
+    "c-alice",
+    "c-bob"
+   ],
+   "engineer": "From the outside there are only two kinds of actor: someone sending and someone receiving, and everybody is both. The sender's app keeps one connection open to WhatsApp and pushes encrypted messages, receipts and key requests down it. The recipient gets the message when their device is connected. The important word is when: phones sleep, lose signal and run out of battery, so the system must be built for a recipient who is usually not there.",
+   "executive": "People send and receive over a connection that stays open, and the system expects the other person to be offline much of the time."
+  },
+  {
+   "id": "w03",
+   "chapter": "context",
+   "title": "Outside services",
+   "diagram": "context",
+   "focus": [
+    "wa",
+    "push",
+    "sms",
+    "bob"
+   ],
+   "trace": [
+    "c-push",
+    "c-push-bob",
+    "c-sms"
+   ],
+   "engineer": "Two outside services matter. Phone operating systems often stop background apps from holding a connection, so WhatsApp asks the platform push services, Apple's and Google's, to wake the app when a message is waiting. And accounts are tied to phone numbers, verified with a code sent by SMS or a call through mobile networks. WhatsApp has not published which providers it uses; the names here are our illustration of the standard approach.",
+   "executive": "It relies on Apple and Google to wake phones up, and on mobile networks to verify phone numbers."
+  },
+  {
+   "id": "w04",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [],
+   "trace": [],
+   "engineer": "One level in. WhatsApp has never published a full container diagram, so this is our reconstruction from its talks, its security whitepaper and its multi-device post. Clients at the top do all the encryption. A tier of chat servers holds every device's connection. Behind them sit key distribution, groups, push and media. At the bottom, storage that only ever holds ciphertext and public keys. We will walk four paths through it.",
+   "executive": "Inside, phones connect to chat servers, which call a few supporting services. This picture is our reconstruction."
+  },
+  {
+   "id": "w05",
+   "chapter": "containers",
+   "title": "Connect",
+   "diagram": "containers",
+   "focus": [
+    "phone",
+    "chat",
+    "accounts"
+   ],
+   "trace": [
+    "k-phone-chat",
+    "k-chat-accounts"
+   ],
+   "engineer": "First, connecting. The app opens one long-lived connection to a chat server and wraps it in Noise Pipes, using Curve25519, AES-GCM and SHA-256, according to the whitepaper. That gives fast setup and fast resume on flaky mobile links, and hides who is connecting from anyone watching the network. The device proves who it is with a key pair, so the server stores only the public half. A stolen user database holds no passwords to crack.",
+   "executive": "Each phone keeps one encrypted connection open, and logs in with a key rather than a password the server could leak."
+  },
+  {
+   "id": "w06",
+   "chapter": "containers",
+   "title": "Send and fan out",
+   "diagram": "containers",
+   "focus": [
+    "chat",
+    "keys",
+    "companion",
+    "groupsvc"
+   ],
+   "trace": [
+    "k-chat-keys",
+    "k-chat-companion",
+    "k-chat-groups"
+   ],
+   "engineer": "Sending. The first time you message someone, your app fetches their public keys from key distribution. After that, the whitepaper calls the approach client fan-out: your app encrypts the message separately for each of the recipient's devices, and for your own other devices, and sends one copy per device. Groups are the exception. Each member shares a sender key once, then sends a single encrypted copy, and the server fans it out to every member.",
+   "executive": "Your phone encrypts a separate copy for every device that should receive it. For groups, the server makes the copies."
+  },
+  {
+   "id": "w07",
+   "chapter": "containers",
+   "title": "Offline delivery",
+   "diagram": "containers",
+   "focus": [
+    "chat",
+    "offline",
+    "pushgw"
+   ],
+   "trace": [
+    "k-chat-offline",
+    "k-chat-push"
+   ],
+   "engineer": "Offline delivery is store and forward. If the recipient's device is not connected, the chat server writes the ciphertext to the offline store and asks the push gateway to wake the app. WhatsApp's privacy policy says undelivered messages are kept encrypted for up to thirty days, then deleted, and that delivered messages are removed from its servers. The 2014 talk adds a useful detail: most queued messages are picked up very quickly.",
+   "executive": "If the recipient is offline, the message waits, encrypted, for up to thirty days, and the app is woken to fetch it."
+  },
+  {
+   "id": "w08",
+   "chapter": "containers",
+   "title": "Media and linked devices",
+   "diagram": "containers",
+   "focus": [
+    "phone",
+    "media",
+    "companion",
+    "appstate"
+   ],
+   "trace": [
+    "k-phone-media",
+    "k-companion-media",
+    "k-companion-appstate"
+   ],
+   "engineer": "Media takes a different road. The sender encrypts the file with a fresh AES key, uploads the encrypted blob to media servers, and sends an ordinary message carrying the key, a MAC key, a hash and a pointer. Each receiving device downloads the blob, checks the hash and decrypts. Linked devices, since 2021, also sync settings such as archived chats from an encrypted app-state store, so they keep working with the phone switched off.",
+   "executive": "Photos and videos are encrypted and uploaded once; the message only carries the key. Linked devices sync their settings in encrypted form."
+  },
+  {
+   "id": "w09",
+   "chapter": "deep-dive",
+   "diagram": "chatnode",
+   "focus": [],
+   "trace": [],
+   "engineer": "Inside one chat server. The components come from Rick Reed's Erlang Factory talks in 2012 and 2014, so they are dated; how they connect is partly our own reconstruction. The server is a single Erlang virtual machine on FreeBSD. The 2012 talk was about going from two hundred thousand connections per server to two million, and found that almost every fix was about removing contention, mostly through patches to the Erlang runtime and to how work was partitioned.",
+   "executive": "Here is one chat server, as WhatsApp described it in 2012 and 2014. Part of this is our reconstruction."
+  },
+  {
+   "id": "w10",
+   "chapter": "deep-dive",
+   "title": "A process per connection",
+   "diagram": "chatnode",
+   "focus": [
+    "dev",
+    "conn",
+    "router",
+    "peer"
+   ],
+   "trace": [
+    "n-dev-conn",
+    "n-conn-router",
+    "n-router-peer"
+   ],
+   "engineer": "Each connected device gets its own lightweight Erlang process, which is how one machine held around a million phones: an Erlang process is far lighter than an operating-system thread. When a message arrives, the connection process asks where the recipient is connected and forwards it to that node. The 2014 talk describes routing over pg2 process groups, with every message delivered in a single hop, even between clusters in different data centres.",
+   "executive": "Every connected phone gets its own tiny process, and messages hop straight to the server holding the recipient."
+  },
+  {
+   "id": "w11",
+   "chapter": "deep-dive",
+   "title": "Partitions and backlog",
+   "diagram": "chatnode",
+   "focus": [
+    "conn",
+    "workers",
+    "mnesia",
+    "writer",
+    "mailbox",
+    "monitor"
+   ],
+   "trace": [
+    "n-conn-workers",
+    "n-workers-mnesia",
+    "n-router-writer",
+    "n-writer-mailbox",
+    "n-workers-monitor",
+    "n-writer-monitor"
+   ],
+   "engineer": "Shared work is partitioned. Lookups hash their key to one worker, and Mnesia tables are split into fragments so each record is read and written on only one node, mostly without transactions. Offline messages go through a write-back cache with a variable sync delay, so a surge is absorbed rather than hitting the disk. And everything is watched for backlog: the talk says bottlenecks show up as long message queues, and alerts fire at around half a million.",
+   "executive": "Work is split by key so nothing is shared, writes are batched, and growing queues are the alarm."
+  },
+  {
+   "id": "w12",
+   "chapter": "flows",
+   "title": "Send to an offline friend",
+   "diagram": "offline-send",
+   "focus": [
+    "s-alice",
+    "s-chat",
+    "s-off",
+    "s-push",
+    "s-bob"
+   ],
+   "trace": [
+    "o1",
+    "o2",
+    "o3",
+    "o4",
+    "o5"
+   ],
+   "engineer": "First flow: sending to a friend whose phone is off. The sender's app sends the encrypted message with an id it chose. The server acknowledges it, and the sender sees one grey tick: the server has it. The recipient is not connected, so the ciphertext is queued in the offline store, and a push notification asks the phone to wake. The sender's job is done. Their app can go to sleep, and nothing more is needed from it.",
+   "executive": "The message reaches the server, the sender sees one tick, and the message waits for the recipient."
+  },
+  {
+   "id": "w13",
+   "chapter": "flows",
+   "title": "Delivered and read",
+   "diagram": "offline-send",
+   "focus": [
+    "s-chat",
+    "s-off",
+    "s-bob",
+    "s-alice"
+   ],
+   "trace": [
+    "o6",
+    "o7",
+    "o8",
+    "o9",
+    "o10",
+    "o11",
+    "o12",
+    "o13"
+   ],
+   "engineer": "Later the recipient's phone reconnects. The server drains its mailbox and delivers message forty-two. The phone sends back a delivery receipt; only then is the queued copy deleted, and the sender sees two grey ticks. When the chat is opened, a read receipt turns them blue. Receipts are just small messages, so they too queue if the sender is offline. And because messages carry ids, a copy delivered twice after a reconnect is recognised and dropped.",
+   "executive": "When the recipient comes back, the message is delivered and deleted from the server; two ticks, then blue when read."
+  },
+  {
+   "id": "w14",
+   "chapter": "flows",
+   "title": "Fetch prekeys",
+   "diagram": "first-message",
+   "focus": [
+    "f-bob",
+    "f-keys",
+    "f-alice"
+   ],
+   "trace": [
+    "x1",
+    "x2",
+    "x3"
+   ],
+   "engineer": "Second flow: the very first message between two people, which uses the Signal Protocol's key agreement, X3DH. It is built for exactly our problem: the recipient is offline. At install, every device uploads its public identity key, a signed prekey and a batch of one-time prekeys. The sender asks for a bundle for each of the recipient's devices, and the server hands out one one-time prekey per device, then deletes it so it is never reused.",
+   "executive": "Each phone publishes keys in advance, so a stranger can start an encrypted chat with it even while it is switched off."
+  },
+  {
+   "id": "w15",
+   "chapter": "flows",
+   "title": "Agree a key, then ratchet",
+   "diagram": "first-message",
+   "focus": [
+    "f-alice",
+    "f-chat",
+    "f-bob",
+    "f-laptop"
+   ],
+   "trace": [
+    "x4",
+    "x5",
+    "x6",
+    "x7",
+    "x8"
+   ],
+   "engineer": "The sender combines four Diffie-Hellman results into a master secret and derives a root key, without the recipient taking part. It can send straight away, putting its identity and ephemeral keys in the message header, and it sends one copy per device, each over its own session. When the recipient replies, a new Diffie-Hellman exchange produces fresh chain keys, and every single message uses a new message key. Steal a phone tomorrow and yesterday's messages stay sealed.",
+   "executive": "The sender works out a shared secret alone and sends at once. Keys then change with every message, so old messages stay safe."
+  },
+  {
+   "id": "w16",
+   "chapter": "data",
+   "title": "Stores",
+   "diagram": "containers",
+   "focus": [
+    "accounts",
+    "offline",
+    "appstate",
+    "media",
+    "keys"
+   ],
+   "trace": [
+    "k-chat-accounts",
+    "k-chat-offline",
+    "k-companion-appstate"
+   ],
+   "engineer": "What is stored where. Account and device records, including the signatures that tie linked devices to a phone, sit in a server-side store. Public keys sit in key distribution; private keys never leave the device. Undelivered messages stay as ciphertext for up to thirty days. Media blobs are kept encrypted, and the policy says forwarded media is held for a while so forwards are faster. What is never stored on the server: readable messages, private keys, or your chat history once delivered.",
+   "executive": "The server keeps accounts, public keys and encrypted messages waiting for delivery. It never keeps readable messages or your chat history."
+  },
+  {
+   "id": "w17",
+   "chapter": "data",
+   "title": "History on the device",
+   "diagram": "containers",
+   "focus": [
+    "phone",
+    "companion",
+    "appstate"
+   ],
+   "trace": [
+    "k-companion-appstate"
+   ],
+   "engineer": "So where does history live? On the devices. When you link a new device, the phone sends it an encrypted bundle of recent messages, and the key arrives in an end-to-end encrypted message and is deleted after import. From then on each device keeps its own local database. The one shared server-side copy is app state, like contacts, archived and starred chats, encrypted with keys only your devices hold. The cache, in effect, is your phone.",
+   "executive": "Chat history lives on your devices, not on WhatsApp's servers; new devices get it straight from your phone, encrypted."
+  },
+  {
+   "id": "w-growth",
+   "chapter": "growth",
+   "card": {
+    "heading": "How it got here, from public sources",
+    "kind": "compare",
+    "points": [
+     "Year | Change",
+     "2012 | Erlang Factory talk: from ~200K to 2M connections per server by removing contention",
+     "2014 | Talk: 465M monthly users, ~550 servers, small Erlang team (~10); Facebook agrees to buy WhatsApp",
+     "2016 | End-to-end encryption on by default, built on the Signal Protocol",
+     "2020 | More than two billion users",
+     "2021 | Multi-device beta: phone plus up to four linked devices, each with its own keys",
+     "Today | More than three billion people, 180+ countries"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "How it grew. In 2012 WhatsApp described taking a chat server from two hundred thousand connections to two million. In March 2014 it reported four hundred and sixty-five million monthly users on about five hundred and fifty servers, with roughly ten engineers on the Erlang side; that February, Facebook had agreed to buy it. In April 2016 end-to-end encryption became the default. Two billion users came in 2020, multi-device in 2021, and today over three billion.",
+   "executive": "A small team scaled a lean design to hundreds of millions, then added encryption for everyone and support for several devices."
+  },
+  {
+   "id": "w-failures",
+   "chapter": "failures",
+   "card": {
+    "heading": "What fails, and what users see",
+    "kind": "compare",
+    "points": [
+     "Failure | What protects them",
+     "Recipient offline for days | Store and forward, 30-day queue, push to wake (published)",
+     "Sender's network drops mid-send | Client retries with the same message id; duplicates dropped (our design)",
+     "Surge on a big event | Write-back cache absorbs it; queue alerts at ~500K (2014 talk)",
+     "Cluster becomes unstable | Feb 2014: router glitch, mass reconnect, full restart (2014 talk)",
+     "Device list changes mid-chat | Sender's device list is stale | Server compares device-list hashes; sender backfills the missed devices (whitepaper)"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Failure modes, with sources marked. Offline recipients are the normal case, handled by store and forward. A dropped network mid-send is handled, in our design, by retrying with the same message id so duplicates are dropped. Surges on big events are absorbed by the write-back cache, and queues are watched. The 2014 talk is candid about one outage: a router glitch caused a mass disconnect and reconnect, and the cluster had to be fully restarted, the first time in years.",
+   "executive": "Offline phones, dropped networks and traffic surges are all expected. WhatsApp has also described an outage that needed a full restart."
+  },
+  {
+   "id": "w-patterns",
+   "chapter": "patterns",
+   "card": {
+    "heading": "Patterns used",
+    "points": [
+     "Store and forward: queue ciphertext until the device collects it",
+     "Sharding: partitioned services and Mnesia fragments, one node per record",
+     "Backpressure: write-back cache, queue-length alerts, push instead of polling",
+     "Retry with idempotency: client message ids make resends safe (see Retry and Idempotency)",
+     "Timeouts on every call, as the 2014 talk recommends (see Timeout)"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The named patterns. Store and forward is the heart of it. Sharding: services split into partitions, and database records hashed so each lives on one node. Backpressure: absorb bursts in a write-back cache, watch queue lengths, and let the push service wake phones instead of having them poll. Retries made safe by idempotency, since every message carries an id chosen by the sender. And timeouts on every call between services, which the 2014 talk lists explicitly. Each has its own walkthrough.",
+   "executive": "A few classic patterns: hold messages until collected, split the work by key, protect against overload, and make retries safe."
+  },
+  {
+   "id": "w-decisions",
+   "chapter": "decisions",
+   "card": {
+    "heading": "Key decisions",
+    "kind": "compare",
+    "points": [
+     "Decision | Why, and what it cost",
+     "Erlang on FreeBSD | Cheap processes, SMP scaling, non-stop running; but runtime patches were needed",
+     "Server as relay, not archive | Less to store and to leak; history and backup become the client's problem",
+     "End-to-end by default (2016) | Nobody can read messages in transit; server-side search and moderation become impossible",
+     "Client fan-out per device (2021) | No shared device key; the sender does N encryptions per message",
+     "Server fan-out for groups | One upload per message via sender keys; everyone re-keys when a member leaves"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The decisions that shaped it, and what each cost. Erlang on FreeBSD gave cheap processes and non-stop operation, at the price of patching the runtime. Treating the server as a relay meant less to store and less to leak, but pushed history and backups onto the client. Encryption by default means nobody can read messages in transit, and also rules out server-side search. Per-device fan-out avoids sharing keys, but costs the sender extra work. Group sender keys save uploads, but everyone re-keys when a member leaves.",
+   "executive": "Each choice traded something: simplicity for runtime work, privacy for server features, security for extra effort on the phone."
+  },
+  {
+   "id": "w-mvp",
+   "chapter": "mvp",
+   "card": {
+    "heading": "What we would build first (our recommendation)",
+    "points": [
+     "One connection per device: WebSocket over TLS, one lightweight process or task each",
+     "Postgres for accounts, devices and public prekeys",
+     "A per-device queue for undelivered messages, deleted on delivery receipt",
+     "Client-chosen message ids; receipts for sent, delivered and read",
+     "libsignal for X3DH and the Double Ratchet: never roll your own crypto",
+     "Media to object storage as encrypted blobs; groups and multi-device later"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "If we built a small version today, this is our recommendation, not WhatsApp's. One connection per device, WebSocket over TLS, handled by a lightweight process or task. Postgres for accounts, devices and public prekeys. A queue per device for undelivered messages, deleted on the delivery receipt. Message ids chosen by the client, and receipts for sent, delivered and read. Use the libsignal library rather than writing any cryptography yourself. Encrypted media in object storage. Groups and multi-device later.",
+   "executive": "Start with one connection per phone, a queue for offline messages, and a proven encryption library; add groups and extra devices later."
+  },
+  {
+   "id": "w18",
+   "chapter": "mvp",
+   "diagram": "containers",
+   "focus": [],
+   "trace": [],
+   "engineer": "A word on accuracy. Current figures come from WhatsApp's own website, blog, privacy policy, encryption whitepaper and engineering posts. Server details come from conference talks in 2012 and 2014 and are marked as dated; WhatsApp has not published a current picture of its servers. The often-repeated claim that its wire protocol is a modified XMPP comes from reverse engineering, not from WhatsApp, so we have left it out. The source matrix lists every claim.",
+   "executive": "Every fact here is checked against WhatsApp's own publications; older server details are marked as dated."
+  }
+ ],
+ "meta": {
+  "kind": "company",
+  "category": "Messaging",
+  "level": "intermediate",
+  "uses": [
+   "backpressure",
+   "sharding",
+   "retry",
+   "idempotency",
+   "timeout"
+  ],
+  "related": [],
+  "blurb": "Store and forward for billions: Erlang chat servers, offline queues, and Signal encryption on every device.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14",
+  "changelog": [
+   {
+    "date": "2026-10-14",
+    "note": "First version."
+   }
+  ]
+ }
+}

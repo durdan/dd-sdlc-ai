@@ -1,0 +1,565 @@
+{
+ "id": "discord",
+ "title": "Discord chat",
+ "subtitle": "Company case study",
+ "voice": "en-GB-SoniaNeural",
+ "template": "case-study",
+ "meta": {
+  "kind": "company",
+  "category": "Social",
+  "level": "intermediate",
+  "uses": ["consistent-hashing", "sharding", "backpressure", "rate-limiting"],
+  "related": [],
+  "blurb": "One Elixir process per server, relays for fan-out, Rust data services and trillions of messages on ScyllaDB.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14",
+  "changelog": [{ "date": "2026-10-14", "note": "First version." }]
+ },
+ "diagrams": [
+  {
+   "id": "context",
+   "kind": "c4",
+   "title": "Level 1 · Context",
+   "direction": "DOWN",
+   "legend": [
+    { "style": "solid", "tone": "core", "label": "request · response" },
+    { "style": "dashed", "tone": "stream", "label": "pushed events" },
+    { "style": "dotted", "tone": "data", "label": "voice media" }
+   ],
+   "elements": [
+    { "id": "user", "kind": "person", "label": "Member", "sub": "desktop, mobile or browser" },
+    { "id": "bot", "kind": "external", "label": "Bot or app", "sub": "a developer's code" },
+    { "id": "discord", "kind": "system", "label": "Discord", "sub": "gateway, API, guilds, storage, voice" },
+    { "id": "push", "kind": "external", "label": "Push services", "sub": "phone notifications · illustrative" }
+   ],
+   "edges": [
+    { "id": "c-user-api", "from": "user", "to": "discord", "label": "REST: send, fetch history", "style": "solid" },
+    { "id": "c-gw-user", "from": "discord", "to": "user", "label": "WebSocket: live events", "style": "dashed" },
+    { "id": "c-voice", "from": "user", "to": "discord", "label": "voice over UDP", "style": "dotted" },
+    { "id": "c-bot-api", "from": "bot", "to": "discord", "label": "REST, rate-limited", "style": "solid" },
+    { "id": "c-gw-bot", "from": "discord", "to": "bot", "label": "sharded gateway events", "style": "dashed" },
+    { "id": "c-push", "from": "discord", "to": "push", "label": "when the app is closed", "style": "dashed" },
+    { "id": "c-push-user", "from": "push", "to": "user", "label": "notification", "style": "dashed" }
+   ]
+  },
+  {
+   "id": "containers",
+   "kind": "c4",
+   "title": "Level 2 · Containers (our reconstruction)",
+   "direction": "DOWN",
+   "groups": [
+    { "id": "realtime", "label": "Real time · Elixir", "tone": "stream" },
+    { "id": "store", "label": "Storage · Rust services", "tone": "data" },
+    { "id": "voiceg", "label": "Voice", "tone": "core" }
+   ],
+   "legend": [
+    { "style": "solid", "tone": "core", "label": "request · control" },
+    { "style": "dashed", "tone": "stream", "label": "events pushed" },
+    { "style": "dotted", "tone": "data", "label": "storage · discovery" }
+   ],
+   "elements": [
+    { "id": "client", "kind": "container", "label": "Discord app", "sub": "desktop, mobile, web", "tone": "neutral", "rank": 0 },
+    { "id": "bot", "kind": "external", "label": "Bot", "sub": "public API and gateway", "rank": 0 },
+    { "id": "api", "kind": "container", "label": "API", "sub": "the API monolith · REST", "tone": "core", "rank": 1 },
+    { "id": "gateway", "kind": "container", "label": "Gateway", "sub": "WebSocket · one session process each", "group": "realtime", "rank": 1 },
+    { "id": "guilds", "kind": "container", "label": "Guilds", "sub": "one process per server", "group": "realtime", "rank": 2 },
+    { "id": "relays", "kind": "container", "label": "Relays", "sub": "fan-out, permission checks", "group": "realtime", "rank": 2 },
+    { "id": "data", "kind": "container", "label": "Data services", "sub": "Rust · request coalescing", "group": "store", "rank": 3 },
+    { "id": "readstates", "kind": "container", "label": "Read States", "sub": "Rust · what you have read", "group": "store", "rank": 3 },
+    { "id": "scylla", "kind": "store", "label": "ScyllaDB", "sub": "messages · 72 nodes (2023)", "group": "store", "rank": 4 },
+    { "id": "rsdb", "kind": "store", "label": "Cassandra", "sub": "read states", "group": "store", "rank": 4 },
+    { "id": "voicesig", "kind": "container", "label": "Voice signalling", "sub": "Elixir · keys, speaking", "group": "voiceg", "rank": 3 },
+    { "id": "sfu", "kind": "container", "label": "SFU", "sub": "C++ · forwards audio, video", "group": "voiceg", "rank": 4 },
+    { "id": "etcd", "kind": "store", "label": "Service discovery", "sub": "etcd · health and load", "group": "voiceg", "rank": 4 }
+   ],
+   "edges": [
+    { "id": "k-cl-gw", "from": "client", "to": "gateway", "label": "Identify, heartbeats", "style": "solid" },
+    { "id": "k-gw-guild", "from": "gateway", "to": "guilds", "label": "join each server", "style": "solid" },
+    { "id": "k-cl-api", "from": "client", "to": "api", "label": "POST message", "style": "solid" },
+    { "id": "k-bot-api", "from": "bot", "to": "api", "label": "REST, rate-limited", "style": "solid" },
+    { "id": "k-bot-gw", "from": "bot", "to": "gateway", "label": "sharded connections", "style": "solid" },
+    { "id": "k-api-data", "from": "api", "to": "data", "label": "gRPC", "style": "solid" },
+    { "id": "k-data-scylla", "from": "data", "to": "scylla", "label": "read, write", "style": "dotted" },
+    { "id": "k-api-guild", "from": "api", "to": "guilds", "label": "publish · our simplification", "style": "dashed" },
+    { "id": "k-guild-relay", "from": "guilds", "to": "relays", "label": "event, in order", "style": "dashed" },
+    { "id": "k-relay-gw", "from": "relays", "to": "gateway", "label": "to permitted sessions", "style": "dashed" },
+    { "id": "k-gw-cl", "from": "gateway", "to": "client", "label": "MESSAGE_CREATE", "style": "dashed" },
+    { "id": "k-api-rs", "from": "api", "to": "readstates", "label": "mark read", "style": "solid" },
+    { "id": "k-rs-db", "from": "readstates", "to": "rsdb", "label": "commit after 30 s", "style": "dotted" },
+    { "id": "k-vs-etcd", "from": "voicesig", "to": "etcd", "label": "report load", "style": "dotted" },
+    { "id": "k-guild-etcd", "from": "guilds", "to": "etcd", "label": "watch", "style": "dotted" },
+    { "id": "k-guild-vs", "from": "guilds", "to": "voicesig", "label": "assign least loaded", "style": "solid" },
+    { "id": "k-cl-vs", "from": "client", "to": "voicesig", "label": "voice WebSocket", "style": "solid" },
+    { "id": "k-vs-sfu", "from": "voicesig", "to": "sfu", "label": "control", "style": "solid" },
+    { "id": "k-cl-sfu", "from": "client", "to": "sfu", "label": "UDP media", "style": "dotted" }
+   ]
+  },
+  {
+   "id": "guild",
+   "kind": "c4",
+   "title": "Level 3 · Inside the guild layer (our drawing of Discord's posts)",
+   "direction": "DOWN",
+   "groups": [
+    { "id": "guildnode", "label": "Guild node · Erlang VM", "tone": "stream" }
+   ],
+   "legend": [
+    { "style": "solid", "tone": "core", "label": "call · lookup" },
+    { "style": "dashed", "tone": "stream", "label": "event fan-out" },
+    { "style": "dotted", "tone": "data", "label": "shared memory" }
+   ],
+   "elements": [
+    { "id": "sess", "kind": "component", "label": "Session process", "sub": "one per connection", "rank": 0 },
+    { "id": "ring", "kind": "component", "label": "Hash ring", "sub": "ExHashRing in FastGlobal", "tone": "core", "rank": 0 },
+    { "id": "registry", "kind": "component", "label": "Guild registry", "sub": "semaphore-guarded", "group": "guildnode", "rank": 1 },
+    { "id": "guild", "kind": "component", "label": "Guild process", "sub": "one per server · orders events", "group": "guildnode", "rank": 2 },
+    { "id": "ets", "kind": "store", "label": "Member list", "sub": "ETS table", "group": "guildnode", "rank": 3 },
+    { "id": "workers", "kind": "component", "label": "Worker processes", "sub": "@everyone, hand-offs", "group": "guildnode", "rank": 3 },
+    { "id": "relay", "kind": "component", "label": "Relays", "sub": "up to 15,000 sessions each", "tone": "stream", "rank": 4 },
+    { "id": "manifold", "kind": "component", "label": "Manifold", "sub": "one send per remote node", "tone": "stream", "rank": 5 },
+    { "id": "active", "kind": "component", "label": "Active sessions", "sub": "get every event", "rank": 6 },
+    { "id": "passive", "kind": "component", "label": "Passive sessions", "sub": "~90% in big servers", "rank": 6 }
+   ],
+   "edges": [
+    { "id": "g-sess-ring", "from": "sess", "to": "ring", "label": "which node?", "style": "solid" },
+    { "id": "g-sess-reg", "from": "sess", "to": "registry", "label": "join", "style": "solid" },
+    { "id": "g-reg-guild", "from": "registry", "to": "guild", "label": "find or start", "style": "solid" },
+    { "id": "g-guild-ets", "from": "guild", "to": "ets", "label": "update", "style": "dotted" },
+    { "id": "g-guild-workers", "from": "guild", "to": "workers", "label": "heavy jobs", "style": "solid" },
+    { "id": "g-workers-ets", "from": "workers", "to": "ets", "label": "read members", "style": "dotted" },
+    { "id": "g-guild-relay", "from": "guild", "to": "relay", "label": "event", "style": "dashed" },
+    { "id": "g-relay-man", "from": "relay", "to": "manifold", "label": "batch by node", "style": "dashed" },
+    { "id": "g-man-active", "from": "manifold", "to": "active", "label": "deliver", "style": "dashed" },
+    { "id": "g-man-passive", "from": "manifold", "to": "passive", "label": "much less", "style": "dashed" }
+   ]
+  },
+  {
+   "id": "send",
+   "kind": "sequence",
+   "title": "Send a message in a busy server",
+   "participants": [
+    { "id": "q-a", "label": "Sender's app" },
+    { "id": "q-api", "label": "API" },
+    { "id": "q-store", "label": "Message store" },
+    { "id": "q-guild", "label": "Guild process" },
+    { "id": "q-relay", "label": "Relays" },
+    { "id": "q-b", "label": "Members' apps" }
+   ],
+   "messages": [
+    { "id": "m1", "from": "q-a", "to": "q-api", "label": "POST message, nonce", "style": "solid" },
+    { "id": "m2", "from": "q-api", "to": "q-store", "label": "insert: channel, bucket, Snowflake ID", "style": "solid" },
+    { "id": "m3", "from": "q-store", "to": "q-api", "label": "stored", "style": "dashed" },
+    { "id": "m4", "from": "q-api", "to": "q-a", "label": "200, message object", "style": "dashed" },
+    { "id": "m5", "from": "q-api", "to": "q-guild", "label": "publish · our simplification", "style": "solid" },
+    { "id": "m6", "from": "q-guild", "to": "q-relay", "label": "MESSAGE_CREATE, in order", "style": "dashed" },
+    { "id": "m7", "from": "q-relay", "to": "q-b", "label": "to permitted sessions", "style": "dashed" },
+    { "id": "m8", "from": "q-relay", "to": "q-a", "label": "own copy, same nonce", "style": "dashed" }
+   ]
+  },
+  {
+   "id": "history",
+   "kind": "sequence",
+   "title": "Read message history",
+   "participants": [
+    { "id": "h-app", "label": "App" },
+    { "id": "h-api", "label": "API" },
+    { "id": "h-ds", "label": "Data service" },
+    { "id": "h-db", "label": "ScyllaDB" },
+    { "id": "h-rs", "label": "Read States" }
+   ],
+   "messages": [
+    { "id": "h1", "from": "h-app", "to": "h-api", "label": "GET messages, before, limit 50", "style": "solid" },
+    { "id": "h2", "from": "h-api", "to": "h-ds", "label": "routed by channel ID", "style": "solid" },
+    { "id": "h3", "from": "h-ds", "to": "h-db", "label": "one query for identical requests", "style": "solid" },
+    { "id": "h4", "from": "h-db", "to": "h-ds", "label": "rows, newest first", "style": "dashed" },
+    { "id": "h5", "from": "h-ds", "to": "h-api", "label": "messages", "style": "dashed" },
+    { "id": "h6", "from": "h-api", "to": "h-app", "label": "up to 50 messages", "style": "dashed" },
+    { "id": "h7", "from": "h-app", "to": "h-api", "label": "mark channel read", "style": "solid" },
+    { "id": "h8", "from": "h-api", "to": "h-rs", "label": "update read state", "style": "solid" }
+   ]
+  },
+  {
+   "id": "storage",
+   "kind": "c4",
+   "title": "Level 3 · The message storage stack",
+   "direction": "DOWN",
+   "groups": [
+    { "id": "dsg", "label": "Data service instance · Rust", "tone": "core" }
+   ],
+   "legend": [
+    { "style": "solid", "tone": "core", "label": "query" },
+    { "style": "dashed", "tone": "stream", "label": "migration, 2022" },
+    { "style": "dotted", "tone": "data", "label": "replication" }
+   ],
+   "elements": [
+    { "id": "api", "kind": "container", "label": "API", "sub": "message reads and writes", "rank": 0 },
+    { "id": "route", "kind": "component", "label": "Consistent-hash routing", "sub": "key: channel ID", "tone": "core", "rank": 1 },
+    { "id": "ds", "kind": "component", "label": "gRPC endpoint", "sub": "one per query, no business logic", "group": "dsg", "rank": 2 },
+    { "id": "coalesce", "kind": "component", "label": "Request coalescing", "sub": "one query per hot row", "group": "dsg", "rank": 3 },
+    { "id": "old", "kind": "store", "label": "Cassandra", "sub": "177 nodes · retired 2022", "tone": "neutral", "rank": 3 },
+    { "id": "migrator", "kind": "component", "label": "Rust migrator", "sub": "up to 3.2M messages/s", "tone": "stream", "rank": 4 },
+    { "id": "scylla", "kind": "store", "label": "ScyllaDB", "sub": "72 nodes", "tone": "data", "rank": 5 },
+    { "id": "part", "kind": "store", "label": "Partition", "sub": "(channel ID, bucket) · sorted by message ID", "tone": "data", "rank": 6 }
+   ],
+   "edges": [
+    { "id": "s-api-route", "from": "api", "to": "route", "label": "request", "style": "solid" },
+    { "id": "s-route-ds", "from": "route", "to": "ds", "label": "same channel, same instance", "style": "solid" },
+    { "id": "s-ds-co", "from": "ds", "to": "coalesce", "style": "solid" },
+    { "id": "s-co-scylla", "from": "coalesce", "to": "scylla", "label": "single query", "style": "solid" },
+    { "id": "s-scylla-part", "from": "scylla", "to": "part", "label": "3 replicas", "style": "dotted" },
+    { "id": "s-old-mig", "from": "old", "to": "migrator", "label": "token ranges", "style": "dashed" },
+    { "id": "s-mig-scylla", "from": "migrator", "to": "scylla", "label": "9 days", "style": "dashed" }
+   ]
+  }
+ ],
+ "chapters": [
+  { "id": "overview", "title": "Overview" },
+  { "id": "requirements", "title": "Requirements and scale" },
+  { "id": "context", "title": "Context" },
+  { "id": "containers", "title": "Containers" },
+  { "id": "deep-dive", "title": "Deep dive" },
+  { "id": "flows", "title": "Core flows" },
+  { "id": "data", "title": "Data and caching" },
+  { "id": "growth", "title": "Growth" },
+  { "id": "failures", "title": "Failure modes" },
+  { "id": "patterns", "title": "Patterns used" },
+  { "id": "decisions", "title": "Key decisions" },
+  { "id": "mvp", "title": "What we would build first" }
+ ],
+ "shots": [
+  {
+   "id": "s01",
+   "chapter": "overview",
+   "diagram": "context",
+   "focus": [],
+   "trace": [],
+   "engineer": "This is Discord, seen from the outside. People join servers, which Discord's code calls guilds, and talk in text channels, voice channels and direct messages, on desktop, mobile and the web. Bots join too, through a public API. The one idea everything depends on is a long-lived connection for each user: once you are online, every message, typing indicator and presence change in your servers is pushed to you as it happens, in the order it happened.",
+   "executive": "Discord is group chat and voice for communities. Every online user holds an open connection, and each event is pushed to everyone who should see it, in order."
+  },
+  {
+   "id": "s02",
+   "chapter": "requirements",
+   "card": {
+    "heading": "Scale, from Discord's own pages",
+    "kind": "numbers",
+    "points": [
+     "90M+ | daily active users (end of 2025)",
+     "~5M | concurrent users (2017, dated)",
+     "2.5M+ | concurrent voice users (2018, dated)",
+     "Trillions | of stored messages (2023)",
+     "10M+ | members in the largest server, 1M+ online (2023)"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "First, scale, from Discord's own pages. Discord reports more than ninety million daily active users, as of the end of 2025. Older figures are dated, but they show the shape of the problem: nearly five million concurrent users in 2017, more than two and a half million people in voice at once in 2018, and trillions of stored messages by 2023. Its largest server, Midjourney, passed ten million members, with over a million online at any time.",
+   "executive": "Over ninety million people use Discord every day, and its largest server has more than ten million members."
+  },
+  {
+   "id": "s03",
+   "chapter": "requirements",
+   "card": {
+    "heading": "What the system must do (our list)",
+    "points": [
+     "Every online member who may see a message gets it, in order",
+     "A dropped connection picks up where it left off",
+     "Any channel's history loads fast, however old",
+     "One giant server cannot hurt everyone else",
+     "Voice feels instant, wherever you are",
+     "Bots cannot swamp the platform"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The requirements are ours, written from the product. A message reaches every online member allowed to see it, in the order it was sent. A phone that drops off for a moment picks up where it left off. History loads quickly, whether it was sent a minute or years ago. One giant server cannot hurt everyone else. Voice feels instant. And bots cannot swamp the platform. The hard part is fan-out: Discord notes that a thousand people online, each sending one message, means a million deliveries.",
+   "executive": "Every message reaches the right people in order, history loads fast, voice is instant, and no single server or bot can overwhelm the rest."
+  },
+  {
+   "id": "s04",
+   "title": "Members",
+   "chapter": "context",
+   "diagram": "context",
+   "focus": ["user", "discord", "push"],
+   "trace": ["c-user-api", "c-gw-user", "c-voice", "c-push", "c-push-user"],
+   "engineer": "A member's app does two things at once. It calls a REST API to send messages and fetch history. And it keeps a WebSocket open to the gateway, over which Discord pushes events as they happen. Voice goes separately, to voice servers, over UDP. When the app is closed, a phone notification brings the person back. The push services box is our illustration; the engineering posts we used do not describe it.",
+   "executive": "Members' apps send through an API and receive everything live over one open connection; voice travels separately."
+  },
+  {
+   "id": "s05",
+   "title": "Bots",
+   "chapter": "context",
+   "diagram": "context",
+   "focus": ["bot", "discord"],
+   "trace": ["c-bot-api", "c-gw-bot"],
+   "engineer": "Bots use the same two doors, under published rules. On the REST side, a bot may make fifty requests a second overall, with separate limits per route and per channel or server; going over returns a 429 with a retry after value. On the gateway, each connection may send a hundred and twenty events a minute. Bots in more than two and a half thousand servers must shard, and a server's shard is its ID shifted right by twenty-two bits, modulo the number of shards.",
+   "executive": "Bots connect the same way, but under published limits, and big bots split their connections across shards."
+  },
+  {
+   "id": "s06",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [],
+   "trace": [],
+   "engineer": "One level in. Discord has not published a container diagram, so this layout is ours, built from its engineering posts. The gateway holds every WebSocket, with one Elixir process per connection. Guild processes, also in Elixir, one per server, decide who hears what, and relays do the fan-out. An API monolith takes REST calls. Rust data services sit in front of the ScyllaDB message store, and a Rust Read States service tracks what you have read. Voice has its own signalling and media servers.",
+   "executive": "Inside: a connection layer, one process per community, an API, a message store and separate voice servers. The layout is our reconstruction."
+  },
+  {
+   "id": "s07",
+   "title": "Come online",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": ["client", "gateway", "guilds"],
+   "trace": ["k-cl-gw", "k-gw-guild"],
+   "engineer": "First path: coming online. The app opens a WebSocket to the gateway. Discord sends Hello, with a heartbeat interval, and the app starts heartbeating and sends Identify with its token. Discord replies Ready, with a session ID and a URL to resume on. Behind that, a session process starts and joins the guild process of each server the user belongs to. In 2017 Discord said the average user was in five servers.",
+   "executive": "The app opens one connection, proves who it is, and is subscribed to every server it belongs to."
+  },
+  {
+   "id": "s08",
+   "title": "Send",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": ["client", "api", "data", "scylla", "guilds"],
+   "trace": ["k-cl-api", "k-api-data", "k-data-scylla", "k-api-guild"],
+   "engineer": "Second path: sending a message. Sends go over REST, not the WebSocket. The API checks the user may post, accepts up to two thousand characters, and the message gets a Snowflake ID: a sixty-four-bit number that starts with a millisecond timestamp, so IDs sort by time. It is written through a Rust data service to ScyllaDB, and the event is handed to the server's guild process. That last hand-off is our simplification; the posts do not spell out the wiring.",
+   "executive": "A message is sent through the API, stored, and then passed to the server's own process to share."
+  },
+  {
+   "id": "s09",
+   "title": "Fan out",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": ["guilds", "relays", "gateway", "client"],
+   "trace": ["k-guild-relay", "k-relay-gw", "k-gw-cl"],
+   "engineer": "Third path: fan-out. The guild process is the single point that orders events for its server, because Discord's clients rely on seeing them in order. It passes each event to relays. Each relay looks after up to fifteen thousand connected sessions, checks who may see the channel, and sends the event on. The session process writes it down that member's WebSocket as a message create event. The sender's own app gets a copy too.",
+   "executive": "Each server's process hands the message to relays, which check permissions and push it to every online member."
+  },
+  {
+   "id": "s10",
+   "title": "Join voice",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": ["guilds", "etcd", "voicesig", "sfu", "client"],
+   "trace": ["k-vs-etcd", "k-guild-etcd", "k-guild-vs", "k-cl-vs", "k-vs-sfu", "k-cl-sfu"],
+   "engineer": "Fourth path: voice. Each voice server reports its health and load to etcd. When a channel needs a voice server, the guild service picks the least-loaded one in the server's region. The app opens a voice WebSocket to its signalling part, written in Elixir, then sends audio over UDP to its selective forwarding unit, written in C++, which relays each stream to everyone else in the channel. In 2018 Discord ran more than eight hundred and fifty voice servers in thirteen regions.",
+   "executive": "Voice goes to a voice server chosen by load, which forwards each speaker's audio to the others."
+  },
+  {
+   "id": "s11",
+   "chapter": "deep-dive",
+   "diagram": "guild",
+   "focus": [],
+   "trace": [],
+   "engineer": "Inside the guild layer, from Discord's posts of 2017 and 2023. The arrangement on screen is our drawing of what they describe. A session process finds the guild's node using a consistent hash ring, and joins through that node's guild registry. The guild process is the hub. It keeps the member list, hands heavy jobs to worker processes, and sends each event to relays, which deliver to sessions through a library called Manifold.",
+   "executive": "Every community is one process that keeps order; helpers and relays share the heavy work so that process stays responsive."
+  },
+  {
+   "id": "s12",
+   "title": "Find the guild",
+   "chapter": "deep-dive",
+   "diagram": "guild",
+   "focus": ["sess", "ring", "registry", "guild"],
+   "trace": ["g-sess-ring", "g-sess-reg", "g-reg-guild"],
+   "engineer": "Finding the guild. Discord places guilds on nodes with consistent hashing. In 2017, restarting a session node meant up to half a million sessions each looking up about five guilds; at twelve microseconds a call, that was thirty seconds of lookups. Keeping the ring as shared, read-only data with FastGlobal cut a lookup to about a third of a microsecond. Separately, a semaphore lets sessions give up early when a registry is overloaded, instead of queueing until memory runs out.",
+   "executive": "Each connection finds its community's machine with a hash ring, and backs off when that machine is busy rather than piling on."
+  },
+  {
+   "id": "s13",
+   "title": "Fan-out",
+   "chapter": "deep-dive",
+   "diagram": "guild",
+   "focus": ["guild", "relay", "manifold", "active", "passive"],
+   "trace": ["g-guild-relay", "g-relay-man", "g-man-active", "g-man-passive"],
+   "engineer": "Fan-out is the expensive part. In 2017 one send between Erlang processes cost thirty to seventy microseconds, and publishing one event in a big server could take up to two seconds. Manifold fixed that by sending once per remote node, where a partitioner splits the work across cores. In 2023 Discord described passive sessions: in large servers about ninety per cent of connections are passive, and fan-out to them is about ninety per cent cheaper. Relays feeding Manifold is our simplification.",
+   "executive": "Messages are batched per machine, and members who are not actively watching a server cost far less to serve."
+  },
+  {
+   "id": "s14",
+   "title": "Workers",
+   "chapter": "deep-dive",
+   "diagram": "guild",
+   "focus": ["guild", "ets", "workers"],
+   "trace": ["g-guild-ets", "g-guild-workers", "g-workers-ets"],
+   "engineer": "Midjourney's server pushed this further. Moving a huge guild between machines used to stall it for minutes. So the member list now lives in an ETS table, a shared in-memory store, with recent changes kept on the guild's own heap. Worker processes read that table to do expensive jobs, such as working out who an at-everyone ping reaches, or copying gigabytes of members during a hand-off, while the guild process carries on serving events.",
+   "executive": "Big jobs, like notifying everyone in a ten-million-member server, run on helper processes so the community never freezes."
+  },
+  {
+   "id": "s15",
+   "title": "Store",
+   "chapter": "flows",
+   "diagram": "send",
+   "focus": ["q-a", "q-api", "q-store"],
+   "trace": ["m1", "m2", "m3", "m4"],
+   "engineer": "Now step by step: sending a message in a busy server. The sender's app posts to the channel's messages endpoint, with a nonce. If the request also sets enforce nonce, a repeat with the same nonce within a few minutes returns the original message instead of making a duplicate, so a retry is safe. The message is stored under its channel, its time bucket and its Snowflake ID, and the API answers with the full message object.",
+   "executive": "The app sends the message with a unique tag, so a retry never posts it twice; it is stored, then confirmed."
+  },
+  {
+   "id": "s16",
+   "title": "Deliver",
+   "chapter": "flows",
+   "diagram": "send",
+   "focus": ["q-guild", "q-relay", "q-b", "q-a"],
+   "trace": ["m5", "m6", "m7", "m8"],
+   "engineer": "Then the fan-out. The event goes to the guild process, which keeps the server's order. The guild passes it to its relays. Each relay checks which of its sessions may read that channel and pushes the event to them, with passive sessions doing far less work. The sender's own app receives the same event carrying its nonce, so it can match it to the message it already showed. Members who cannot see the channel never receive it at all.",
+   "executive": "The server's process sends the message to everyone allowed to see it, and the sender's own screen confirms it."
+  },
+  {
+   "id": "s17",
+   "title": "Load history",
+   "chapter": "flows",
+   "diagram": "history",
+   "focus": ["h-app", "h-api", "h-ds", "h-db"],
+   "trace": ["h1", "h2", "h3", "h4", "h5", "h6"],
+   "engineer": "Second flow: opening a channel and scrolling back. The app asks for messages before a given ID, fifty by default and a hundred at most. The API calls the data service that owns this channel, because requests are routed by channel ID with consistent hashing. If many people ask for the same rows at once, say after an at-everyone announcement, the service runs one query and shares the answer. The rows come back already sorted by message ID.",
+   "executive": "History is fetched a page at a time, and identical requests from many people are answered with a single database read."
+  },
+  {
+   "id": "s18",
+   "title": "Mark read",
+   "chapter": "flows",
+   "diagram": "history",
+   "focus": ["h-app", "h-api", "h-rs"],
+   "trace": ["h7", "h8"],
+   "engineer": "Last, the app marks the channel as read. That goes to Read States, which tracks what each user has read in each channel; there are billions of them, and the service is hit on every connect, send and read. Discord ported it from Go to Rust in 2019, because Go forces a garbage collection at least every two minutes, and scanning a huge cache caused latency spikes. Updates are written to Cassandra thirty seconds later.",
+   "executive": "What each person has read is tracked in a fast in-memory service, rewritten in Rust to remove periodic slowdowns."
+  },
+  {
+   "id": "s19",
+   "title": "Data services",
+   "chapter": "data",
+   "diagram": "storage",
+   "focus": ["api", "route", "ds", "coalesce", "scylla"],
+   "trace": ["s-api-route", "s-route-ds", "s-ds-co", "s-co-scylla"],
+   "engineer": "Where messages live. The API does not query the database directly. Rust data services sit in between, with roughly one gRPC endpoint per query and no business logic. Requests are routed by channel ID, so one channel always reaches the same instance, which makes request coalescing work. Behind them is a ScyllaDB cluster of seventy-two nodes, down from a hundred and seventy-seven Cassandra nodes. Slowest-percentile history reads dropped from up to a hundred and twenty-five milliseconds to fifteen.",
+   "executive": "A thin Rust layer guards the database by merging identical reads; the message cluster shrank from 177 machines to 72."
+  },
+  {
+   "id": "s20",
+   "title": "Keys and state",
+   "chapter": "data",
+   "diagram": "storage",
+   "focus": ["scylla", "part"],
+   "trace": ["s-scylla-part"],
+   "engineer": "Inside the store, the partition key is channel ID plus a time bucket; in 2017 a bucket was about ten days, to keep partitions small. Rows sort by message ID, so recent history is one read, and each partition has three replicas. Read states live in their own service and Cassandra cluster. Presence and member lists live in process memory. One lesson from 2017: do not write nulls, because each one becomes a tombstone that later reads must skip.",
+   "executive": "Messages are grouped by channel and time, so a page of history is one read; live state such as who is online stays in memory."
+  },
+  {
+   "id": "s21",
+   "chapter": "growth",
+   "card": {
+    "heading": "How it got here, from Discord's own posts",
+    "kind": "compare",
+    "points": [
+     "Year | Change",
+     "2015 | Launches on Elixir and one MongoDB replica set",
+     "2015 | 100M stored messages no longer fit in RAM",
+     "2017 | 12 Cassandra nodes; ~5M concurrent users; Manifold, FastGlobal",
+     "2018 | 850+ voice servers in 13 regions",
+     "2019 | Read States ported from Go to Rust",
+     "2022 | 177 Cassandra nodes move to 72 ScyllaDB nodes",
+     "2023 | Relays, passive sessions; 1M+ online in one server",
+     "2025 | 90M+ daily active users"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "How it grew. Discord launched in 2015 on Elixir and a single MongoDB replica set, which ran out of memory at a hundred million stored messages. By 2017 messages lived on twelve Cassandra nodes, with nearly five million concurrent users. Voice reached eight hundred and fifty servers in 2018. Read States moved to Rust in 2019. By 2022 Cassandra had grown to a hundred and seventy-seven nodes, and moved to ScyllaDB. In 2023, relays and passive sessions carried single servers past a million online.",
+   "executive": "From one MongoDB database in 2015 to trillions of messages on ScyllaDB, the same process-per-server design scaled by adding relays and helpers."
+  },
+  {
+   "id": "s22",
+   "title": "The big migration",
+   "chapter": "growth",
+   "diagram": "storage",
+   "focus": ["old", "migrator", "scylla"],
+   "trace": ["s-old-mig", "s-mig-scylla"],
+   "engineer": "The biggest move was the message store. Discord's first plan, a Spark-based migrator, was estimated at three months. Instead it extended its data service library into a Rust migrator, written in an afternoon, which copied token ranges at up to three point two million messages a second and finished in nine days. Near the very end it stalled on uncompacted tombstones, until those ranges were compacted. Sample reads were compared across both databases, and the switch happened in May 2022.",
+   "executive": "Trillions of messages moved to a new database in nine days, checked against the old one before the switch."
+  },
+  {
+   "id": "s23",
+   "chapter": "failures",
+   "card": {
+    "heading": "What fails, and what protects users",
+    "kind": "compare",
+    "points": [
+     "Failure | Protection",
+     "Connection drops | Resume with session ID and last sequence; missed events replay",
+     "Reconnect storm | Semaphore: sessions give up early, not queue (2017)",
+     "Giant server | Relays, passive sessions, worker processes",
+     "Hot channel | Data services coalesce identical reads",
+     "Misbehaving bot | Per-route and global limits; 429 with retry_after",
+     "10,000+ invalid requests in 10 min | Address temporarily blocked"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "What breaks, and what protects people. A connection drops: the app resumes with its session ID and last sequence number, and missed events replay. A burst of reconnects: sessions give up early instead of queueing; Discord chose this over a circuit breaker, which would have stopped all attempts. A giant server: relays, passive sessions and workers. A hot channel: coalesced reads. A misbehaving bot: limits and 429s, and more than ten thousand invalid requests in ten minutes gets its address temporarily blocked.",
+   "executive": "Dropped connections resume, overloaded parts push back early, hot data is read once, and misbehaving bots are slowed or blocked."
+  },
+  {
+   "id": "s24",
+   "title": "Voice server lost",
+   "chapter": "failures",
+   "diagram": "containers",
+   "focus": ["voicesig", "sfu", "etcd", "guilds", "client"],
+   "trace": ["k-vs-etcd", "k-guild-etcd", "k-guild-vs", "k-cl-vs"],
+   "engineer": "One failure in detail: a voice server dies, or comes under a denial-of-service attack. It fails its health pings and is removed from service discovery. The app sees its voice WebSocket close and asks, through the gateway, for a new server. The guild service confirms the failure, assigns another voice server, pushes the channel's voice state to it, and clients reconnect. If only the forwarding unit crashes, signalling restarts it and rebuilds its state; users lose a few packets.",
+   "executive": "If a voice server fails, everyone in the call is moved to another one automatically."
+  },
+  {
+   "id": "s25",
+   "chapter": "patterns",
+   "card": {
+    "heading": "Patterns used",
+    "points": [
+     "Consistent hashing: guilds to nodes; channels to data service instances",
+     "Sharding: messages by (channel, time bucket); bot gateway shards",
+     "Backpressure: semaphore-guarded registries; less work for passive sessions",
+     "Rate limiting: global, per-route and gateway limits, with headers"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The named patterns, each with its own walkthrough. Consistent hashing, twice: to place guilds on nodes, and to send each channel's requests to one data service instance. Sharding: messages by channel and time bucket, and bot gateway connections by server ID. Backpressure: the semaphore that makes sessions give up early, and doing less work for passive sessions. And rate limiting, published in detail for bots, with headers that tell clients exactly how long to wait.",
+   "executive": "Four well-known patterns: hashing work to the right machine, splitting data, pushing back under load and limiting request rates."
+  },
+  {
+   "id": "s26",
+   "chapter": "decisions",
+   "card": {
+    "heading": "Key decisions",
+    "kind": "compare",
+    "points": [
+     "Decision | Why",
+     "Elixir on the Erlang VM for real time | A process per server and per connection is cheap",
+     "One guild process orders each server | Clients rely on order; add helpers, don't split it",
+     "Cassandra, then ScyllaDB, for messages | Linear scale; keyed for the main read",
+     "Rust where pauses hurt | Read States, data services: steady latency",
+     "Own SFU, lighter signalling | Native clients use Salsa20, not DTLS/SRTP"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The decisions that shaped it. Elixir on the Erlang VM for everything real time, because a process per server and per connection is cheap; the price was years of tuning. One guild process as each server's ordering point, with helpers added around it rather than splitting it. Cassandra and then ScyllaDB for messages, keyed for the main read. Rust where garbage collection pauses hurt. And its own forwarding unit for voice, with lighter signalling and Salsa20 encryption for native apps.",
+   "executive": "Elixir for real-time connections, one process per community, a wide-column store for messages, Rust where pauses hurt, and in-house voice servers."
+  },
+  {
+   "id": "s27",
+   "chapter": "mvp",
+   "card": {
+    "heading": "What we would build first",
+    "points": [
+     "A WebSocket gateway on an actor runtime: a process per connection and per server",
+     "Postgres messages keyed by (channel, Snowflake-style ID); plan the time bucket now",
+     "Client nonces for safe retries; sequence numbers so sessions can resume",
+     "Token-bucket limits per user and per route, with headers",
+     "An open-source SFU for voice, not our own"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "If we built a community chat app today, this is where we would start. A WebSocket gateway on an actor runtime, with one process per connection and one per server. Messages in Postgres, keyed by channel and a Snowflake-style ID, with a time bucket planned in from the start. Client nonces for safe retries, and sequence numbers so a dropped connection can resume. Token-bucket limits per user and per route. And an open-source forwarding unit for voice, rather than our own.",
+   "executive": "Start with one connection layer, one database and an off-the-shelf voice server, but design the message key, safe retries and resume from day one."
+  }
+ ]
+}

@@ -1,0 +1,1016 @@
+{
+ "id": "event-streaming",
+ "title": "Event streaming",
+ "subtitle": "Design pattern",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "meta": {
+  "kind": "pattern",
+  "category": "Messaging",
+  "level": "intermediate",
+  "uses": [
+   "idempotency",
+   "backpressure"
+  ],
+  "related": [
+   "outbox",
+   "event-sourcing",
+   "cqrs",
+   "backpressure"
+  ],
+  "blurb": "Producers append once to a durable, partitioned log; every consumer reads it at its own offset, and can replay.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ },
+ "diagrams": [
+  {
+   "id": "spaghetti",
+   "kind": "c4",
+   "title": "One service calls every consumer directly",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "user",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Customer",
+     "sub": "places an order"
+    },
+    {
+     "id": "orders",
+     "kind": "container",
+     "tone": "core",
+     "label": "Order service",
+     "sub": "knows every consumer"
+    },
+    {
+     "id": "shipping",
+     "kind": "container",
+     "tone": "core",
+     "label": "Shipping",
+     "sub": "REST call"
+    },
+    {
+     "id": "invoicing",
+     "kind": "container",
+     "tone": "core",
+     "label": "Invoicing",
+     "sub": "REST call"
+    },
+    {
+     "id": "email",
+     "kind": "container",
+     "tone": "core",
+     "label": "Email",
+     "sub": "REST call"
+    },
+    {
+     "id": "analytics",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Analytics",
+     "sub": "slow today: 8 s"
+    },
+    {
+     "id": "search",
+     "kind": "container",
+     "tone": "core",
+     "label": "Search index",
+     "sub": "added last month"
+    }
+   ],
+   "edges": [
+    {
+     "id": "p1",
+     "from": "user",
+     "to": "orders",
+     "style": "solid",
+     "label": "place order"
+    },
+    {
+     "id": "p2",
+     "from": "orders",
+     "to": "shipping",
+     "style": "solid",
+     "label": "1 · ship it"
+    },
+    {
+     "id": "p3",
+     "from": "orders",
+     "to": "invoicing",
+     "style": "solid",
+     "label": "2 · invoice it"
+    },
+    {
+     "id": "p4",
+     "from": "orders",
+     "to": "email",
+     "style": "solid",
+     "label": "3 · confirm"
+    },
+    {
+     "id": "p5",
+     "from": "orders",
+     "to": "analytics",
+     "style": "dashed",
+     "label": "4 · record · waits 8 s"
+    },
+    {
+     "id": "p6",
+     "from": "orders",
+     "to": "search",
+     "style": "solid",
+     "label": "5 · new call, new deploy"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "synchronous call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "slow or failing"
+    }
+   ]
+  },
+  {
+   "id": "queues",
+   "kind": "c4",
+   "title": "A queue per consumer",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "orders",
+     "kind": "container",
+     "tone": "core",
+     "label": "Order service",
+     "sub": "sends three copies"
+    },
+    {
+     "id": "q1",
+     "kind": "store",
+     "tone": "data",
+     "label": "shipping queue",
+     "sub": "gone once acked"
+    },
+    {
+     "id": "q2",
+     "kind": "store",
+     "tone": "data",
+     "label": "invoicing queue",
+     "sub": "gone once acked"
+    },
+    {
+     "id": "q3",
+     "kind": "store",
+     "tone": "data",
+     "label": "analytics queue",
+     "sub": "gone once acked"
+    },
+    {
+     "id": "shipping",
+     "kind": "container",
+     "tone": "core",
+     "label": "Shipping"
+    },
+    {
+     "id": "invoicing",
+     "kind": "container",
+     "tone": "core",
+     "label": "Invoicing"
+    },
+    {
+     "id": "analytics",
+     "kind": "container",
+     "tone": "core",
+     "label": "Analytics"
+    },
+    {
+     "id": "search",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Search index",
+     "sub": "wants last year"
+    }
+   ],
+   "edges": [
+    {
+     "id": "q1e",
+     "from": "orders",
+     "to": "q1",
+     "style": "solid",
+     "label": "copy 1"
+    },
+    {
+     "id": "q2e",
+     "from": "orders",
+     "to": "q2",
+     "style": "solid",
+     "label": "copy 2"
+    },
+    {
+     "id": "q3e",
+     "from": "orders",
+     "to": "q3",
+     "style": "solid",
+     "label": "copy 3"
+    },
+    {
+     "id": "q4e",
+     "from": "q1",
+     "to": "shipping",
+     "style": "solid",
+     "label": "read, delete"
+    },
+    {
+     "id": "q5e",
+     "from": "q2",
+     "to": "invoicing",
+     "style": "solid",
+     "label": "read, delete"
+    },
+    {
+     "id": "q6e",
+     "from": "q3",
+     "to": "analytics",
+     "style": "solid",
+     "label": "read, delete"
+    },
+    {
+     "id": "q7e",
+     "from": "search",
+     "to": "orders",
+     "style": "dashed",
+     "label": "4th copy? no history"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "send or receive"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "cannot be served"
+    }
+   ]
+  },
+  {
+   "id": "log",
+   "kind": "c4",
+   "title": "Append once, read many times",
+   "direction": "RIGHT",
+   "groups": [
+    {
+     "id": "topic",
+     "label": "orders topic [durable, replicated, append-only]",
+     "tone": "stream"
+    }
+   ],
+   "elements": [
+    {
+     "id": "orders",
+     "kind": "container",
+     "tone": "core",
+     "label": "Order service",
+     "sub": "producer"
+    },
+    {
+     "id": "payments",
+     "kind": "container",
+     "tone": "core",
+     "label": "Payments service",
+     "sub": "producer"
+    },
+    {
+     "id": "p0",
+     "kind": "store",
+     "tone": "stream",
+     "label": "Partition 0",
+     "sub": "offsets 0 … 980",
+     "group": "topic"
+    },
+    {
+     "id": "pp1",
+     "kind": "store",
+     "tone": "stream",
+     "label": "Partition 1",
+     "sub": "offsets 0 … 1207",
+     "group": "topic"
+    },
+    {
+     "id": "p2",
+     "kind": "store",
+     "tone": "stream",
+     "label": "Partition 2",
+     "sub": "offsets 0 … 1102",
+     "group": "topic"
+    },
+    {
+     "id": "shipping",
+     "kind": "container",
+     "tone": "core",
+     "label": "Shipping group",
+     "sub": "at 1208 on P1"
+    },
+    {
+     "id": "invoicing",
+     "kind": "container",
+     "tone": "core",
+     "label": "Invoicing group",
+     "sub": "at 1208 on P1"
+    },
+    {
+     "id": "analytics",
+     "kind": "container",
+     "tone": "core",
+     "label": "Analytics group",
+     "sub": "at 1180 on P1 · lag 28"
+    },
+    {
+     "id": "search",
+     "kind": "container",
+     "tone": "neutral",
+     "label": "Search group",
+     "sub": "new · starts at earliest"
+    }
+   ],
+   "edges": [
+    {
+     "id": "l1",
+     "from": "orders",
+     "to": "pp1",
+     "style": "solid",
+     "label": "key order-42 → P1"
+    },
+    {
+     "id": "l2",
+     "from": "orders",
+     "to": "p0",
+     "style": "solid",
+     "label": "key order-7 → P0"
+    },
+    {
+     "id": "l3",
+     "from": "payments",
+     "to": "pp1",
+     "style": "solid",
+     "label": "key order-42 → P1"
+    },
+    {
+     "id": "l4",
+     "from": "pp1",
+     "to": "shipping",
+     "style": "solid",
+     "label": "read at own offset"
+    },
+    {
+     "id": "l5",
+     "from": "pp1",
+     "to": "invoicing",
+     "style": "solid",
+     "label": "read at own offset"
+    },
+    {
+     "id": "l6",
+     "from": "pp1",
+     "to": "analytics",
+     "style": "dashed",
+     "label": "behind, catching up"
+    },
+    {
+     "id": "l7",
+     "from": "p2",
+     "to": "search",
+     "style": "dotted",
+     "label": "replay from offset 0"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "append or read"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "lagging"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "replay"
+    }
+   ]
+  },
+  {
+   "id": "flow",
+   "kind": "sequence",
+   "title": "Produce, replicate, consume, commit",
+   "participants": [
+    {
+     "id": "producer",
+     "label": "Order service"
+    },
+    {
+     "id": "leader",
+     "label": "P1 leader broker"
+    },
+    {
+     "id": "follower",
+     "label": "P1 followers"
+    },
+    {
+     "id": "shipping",
+     "label": "Shipping consumer"
+    },
+    {
+     "id": "coord",
+     "label": "Group coordinator"
+    }
+   ],
+   "messages": [
+    {
+     "id": "h1",
+     "from": "producer",
+     "to": "leader",
+     "style": "solid",
+     "label": "produce key order-42 · producer id + seq"
+    },
+    {
+     "id": "h2",
+     "from": "follower",
+     "to": "leader",
+     "style": "dotted",
+     "label": "fetch · copy offset 1207"
+    },
+    {
+     "id": "h3",
+     "from": "leader",
+     "to": "producer",
+     "style": "solid",
+     "label": "ack (acks=all) · offset 1207"
+    },
+    {
+     "id": "h4",
+     "from": "shipping",
+     "to": "leader",
+     "style": "solid",
+     "label": "fetch P1 from offset 1207"
+    },
+    {
+     "id": "h5",
+     "from": "leader",
+     "to": "shipping",
+     "style": "solid",
+     "label": "records 1207 …"
+    },
+    {
+     "id": "h6",
+     "from": "shipping",
+     "to": "coord",
+     "style": "solid",
+     "label": "after processing: commit 1208"
+    }
+   ]
+  },
+  {
+   "id": "rebalance",
+   "kind": "sequence",
+   "title": "A consumer dies before it commits",
+   "participants": [
+    {
+     "id": "part",
+     "label": "Partition 1"
+    },
+    {
+     "id": "ca",
+     "label": "Shipping consumer A"
+    },
+    {
+     "id": "coord",
+     "label": "Group coordinator"
+    },
+    {
+     "id": "cb",
+     "label": "Shipping consumer B"
+    },
+    {
+     "id": "db",
+     "label": "Shipping database"
+    }
+   ],
+   "messages": [
+    {
+     "id": "r1",
+     "from": "part",
+     "to": "ca",
+     "style": "solid",
+     "label": "records 1208 … 1300"
+    },
+    {
+     "id": "r2",
+     "from": "ca",
+     "to": "db",
+     "style": "solid",
+     "label": "ship orders 1208 … 1250"
+    },
+    {
+     "id": "r3",
+     "from": "ca",
+     "to": "coord",
+     "style": "dashed",
+     "label": "crash · last commit was 1208"
+    },
+    {
+     "id": "r4",
+     "from": "coord",
+     "to": "cb",
+     "style": "solid",
+     "label": "rebalance · P1 is yours"
+    },
+    {
+     "id": "r5",
+     "from": "coord",
+     "to": "cb",
+     "style": "dotted",
+     "label": "committed offset: 1208"
+    },
+    {
+     "id": "r6",
+     "from": "part",
+     "to": "cb",
+     "style": "solid",
+     "label": "records 1208 … again"
+    },
+    {
+     "id": "r7",
+     "from": "cb",
+     "to": "db",
+     "style": "dashed",
+     "label": "1208 … 1250 already shipped · skip"
+    }
+   ]
+  },
+  {
+   "id": "poison",
+   "kind": "sequence",
+   "title": "A poison message blocks its partition",
+   "participants": [
+    {
+     "id": "part",
+     "label": "Partition 1"
+    },
+    {
+     "id": "cons",
+     "label": "Shipping consumer"
+    },
+    {
+     "id": "dlt",
+     "label": "orders.dlt topic"
+    },
+    {
+     "id": "coord",
+     "label": "Group coordinator"
+    },
+    {
+     "id": "ops",
+     "label": "On-call engineer"
+    }
+   ],
+   "messages": [
+    {
+     "id": "x1",
+     "from": "part",
+     "to": "cons",
+     "style": "solid",
+     "label": "offset 500 · malformed payload"
+    },
+    {
+     "id": "x2",
+     "from": "cons",
+     "to": "part",
+     "style": "dashed",
+     "label": "fails · seek back to 500 · retry"
+    },
+    {
+     "id": "x3",
+     "from": "part",
+     "to": "cons",
+     "style": "dashed",
+     "label": "500 again · fails · lag grows"
+    },
+    {
+     "id": "x4",
+     "from": "cons",
+     "to": "dlt",
+     "style": "solid",
+     "label": "after 3 tries: copy 500 + error headers"
+    },
+    {
+     "id": "x5",
+     "from": "cons",
+     "to": "coord",
+     "style": "solid",
+     "label": "commit 501"
+    },
+    {
+     "id": "x6",
+     "from": "part",
+     "to": "cons",
+     "style": "solid",
+     "label": "501, 502 … flowing again"
+    },
+    {
+     "id": "x7",
+     "from": "ops",
+     "to": "dlt",
+     "style": "dotted",
+     "label": "inspect, fix, replay"
+    }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "essay",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "“The Log”",
+     "sub": "Jay Kreps · LinkedIn · 2013"
+    },
+    {
+     "id": "kafka",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Apache Kafka",
+     "sub": "partitions · consumer groups · offsets"
+    },
+    {
+     "id": "kinesis",
+     "kind": "external",
+     "tone": "external",
+     "label": "Amazon Kinesis Data Streams",
+     "sub": "shards · partition keys"
+    },
+    {
+     "id": "pulsar",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Apache Pulsar",
+     "sub": "stateless brokers · BookKeeper"
+    },
+    {
+     "id": "redpanda",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Redpanda",
+     "sub": "C++ · Raft · Kafka API"
+    }
+   ],
+   "edges": [
+    {
+     "id": "w1",
+     "from": "essay",
+     "to": "kafka",
+     "style": "solid",
+     "label": "built at LinkedIn"
+    },
+    {
+     "id": "w2",
+     "from": "essay",
+     "to": "kinesis",
+     "style": "dotted",
+     "label": "“very very similar”"
+    },
+    {
+     "id": "w3",
+     "from": "redpanda",
+     "to": "kafka",
+     "style": "solid",
+     "label": "speaks its API"
+    },
+    {
+     "id": "w4",
+     "from": "pulsar",
+     "to": "kafka",
+     "style": "dotted",
+     "label": "alternative design"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "lineage or compatibility"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "comparison"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "problem",
+   "title": "The problem"
+  },
+  {
+   "id": "naive",
+   "title": "The naive fix"
+  },
+  {
+   "id": "pattern",
+   "title": "The pattern"
+  },
+  {
+   "id": "how",
+   "title": "How it works"
+  },
+  {
+   "id": "failure",
+   "title": "When it goes wrong"
+  },
+  {
+   "id": "tradeoffs",
+   "title": "Trade-offs"
+  },
+  {
+   "id": "wild",
+   "title": "In the wild"
+  },
+  {
+   "id": "related",
+   "title": "Related patterns"
+  },
+  {
+   "id": "recap",
+   "title": "Recap"
+  }
+ ],
+ "shots": [
+  {
+   "id": "es-problem",
+   "chapter": "problem",
+   "title": "Spaghetti",
+   "diagram": "spaghetti",
+   "focus": [],
+   "trace": [
+    "p1",
+    "p2",
+    "p3",
+    "p4",
+    "p5",
+    "p6"
+   ],
+   "engineer": "A customer places an order. The order service then calls shipping, invoicing, email and analytics, one after another, and waits for each. Today analytics is slow, taking eight seconds, so every order now takes eight seconds, and threads pile up. When the search team needs orders too, the order service has to add a call and redeploy. The producer knows every consumer, and the slowest one sets the pace for all of them.",
+   "executive": "One service tells every other team about each order directly. It is tied to all of them, and the slowest one slows everybody down."
+  },
+  {
+   "id": "es-naive",
+   "chapter": "naive",
+   "title": "Queues",
+   "diagram": "queues",
+   "focus": [],
+   "trace": [
+    "q1e",
+    "q2e",
+    "q3e",
+    "q4e",
+    "q5e",
+    "q6e",
+    "q7e"
+   ],
+   "engineer": "The obvious fix is a message queue. Now the order service no longer waits; it sends a copy to a queue for each consumer. That fixes the slow call, but not the coupling. The producer still keeps a list of queues, one per team. And a queue deletes each message once it has been acknowledged. So when search arrives and wants a year of history to build its index, there is nothing left to read.",
+   "executive": "Putting a queue in front of each team stops the waiting, but the sender still has to know every team, and old messages are gone once read."
+  },
+  {
+   "id": "es-log",
+   "chapter": "pattern",
+   "title": "Append",
+   "diagram": "log",
+   "focus": [
+    "orders",
+    "payments",
+    "p0",
+    "pp1",
+    "p2"
+   ],
+   "trace": [
+    "l1",
+    "l2",
+    "l3"
+   ],
+   "engineer": "Event streaming replaces the queues with a log. A topic is a durable, replicated, append-only log of events, split into partitions. Producers append each event once, and the broker gives it the next offset in its partition. The key decides the partition: every event for order forty-two, from orders or from payments, lands in partition one. Within a partition, order is guaranteed. Across partitions there is no global order, and that is what lets the topic scale out.",
+   "executive": "Every team writes its events once, to one shared, permanent record, split into lanes. Events for the same order always go in the same lane, in order."
+  },
+  {
+   "id": "es-groups",
+   "chapter": "pattern",
+   "title": "Read",
+   "diagram": "log",
+   "focus": [
+    "pp1",
+    "shipping",
+    "invoicing",
+    "analytics"
+   ],
+   "trace": [
+    "l4",
+    "l5",
+    "l6"
+   ],
+   "engineer": "Reading does not remove anything. Each consumer group keeps its own position, its offset, which is a single number per partition. Shipping and invoicing are both at twelve oh eight. Analytics is slow today, so it sits at eleven eighty, twenty-eight events behind; that gap is called consumer lag. But the slow reader no longer slows anyone else down. Within a group, each partition goes to one member, so a group can run as many busy members as there are partitions.",
+   "executive": "Each team reads at its own pace and keeps its own bookmark. A slow team falls behind without holding anyone else up."
+  },
+  {
+   "id": "es-how",
+   "chapter": "how",
+   "title": "Sequence",
+   "diagram": "flow",
+   "focus": [],
+   "trace": [
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6"
+   ],
+   "engineer": "Step by step. The order service produces an event keyed by order forty-two, with a producer id and a sequence number, so a retried send is not written twice. It goes to the leader for partition one. The followers fetch it, and with acks set to all, the leader acknowledges once the in-sync replicas have it, at offset twelve oh seven. Shipping fetches from twelve oh seven, processes the record, and only then commits twelve oh eight, the next offset to read.",
+   "executive": "An event is written, copied for safety, then confirmed. Each reader fetches it, does its work, and then moves its bookmark on."
+  },
+  {
+   "id": "es-replay",
+   "chapter": "how",
+   "title": "Replay",
+   "diagram": "log",
+   "focus": [
+    "p2",
+    "search"
+   ],
+   "trace": [
+    "l7"
+   ],
+   "engineer": "Because events stay after they are read, a new consumer can start from the beginning. Kafka keeps events for a configurable time or size; the default is seven days, and it can be much longer. The new search group sets its offset reset to earliest, since the default is latest, and replays the topic to build its index. A consumer with a bug can rewind and reprocess too. For keyed state, log compaction keeps at least the last value for every key.",
+   "executive": "Events are kept for days or longer, so a new team can read the whole history, and a team that made a mistake can read it again."
+  },
+  {
+   "id": "es-rebalance",
+   "chapter": "failure",
+   "title": "Rebalance",
+   "diagram": "rebalance",
+   "focus": [],
+   "trace": [
+    "r1",
+    "r2",
+    "r3",
+    "r4",
+    "r5",
+    "r6",
+    "r7"
+   ],
+   "engineer": "Consumer A reads up to offset thirteen hundred and ships orders up to twelve fifty. Then it crashes before committing. Its last commit was twelve oh eight. The group coordinator rebalances, and partition one moves to consumer B, which asks for the committed offset and starts again at twelve oh eight. Orders twelve oh eight to twelve fifty arrive a second time. This is at-least-once delivery, Kafka's default, so consumers must be idempotent: shipping checks the order id and skips work already done.",
+   "executive": "If a reader fails mid-batch, another picks up from its last bookmark and some events arrive twice. Readers must spot and ignore repeats."
+  },
+  {
+   "id": "es-semantics",
+   "chapter": "failure",
+   "card": {
+    "heading": "What Kafka actually promises",
+    "kind": "compare",
+    "points": [
+     "Guarantee | How you get it",
+     "At least once (default) | Commit offsets after processing",
+     "At most once | No producer retries; commit before processing",
+     "No duplicates in the log | Idempotent producer (on by default)",
+     "Exactly once, Kafka to Kafka | Transactions + read_committed, or Kafka Streams",
+     "Exactly once to other systems | Needs that system's cooperation"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Be precise about exactly once. Kafka's design documents say it guarantees at-least-once delivery by default. The idempotent producer stops retries from writing duplicates into the log. Transactions let a producer write output and the consumer's offsets atomically, so reading, processing and writing Kafka topics, as Kafka Streams does, can be exactly once, with consumers set to read committed. But for an external database or an email, exactly once needs that system's cooperation; usually that means idempotent writes.",
+   "executive": "By default every event arrives at least once. True exactly-once only holds inside the streaming platform; anything outside it must handle repeats."
+  },
+  {
+   "id": "es-poison",
+   "chapter": "failure",
+   "title": "Poison",
+   "diagram": "poison",
+   "focus": [],
+   "trace": [
+    "x1",
+    "x2",
+    "x3",
+    "x4",
+    "x5",
+    "x6",
+    "x7"
+   ],
+   "engineer": "Now a single malformed event arrives at offset five hundred. The consumer fails, seeks back and retries, and fails again. Because a partition is read in order, nothing behind it moves, and lag climbs. The fix is a dead-letter topic: after a few attempts, copy the event there with the error in its headers, commit five oh one, and move on. Kafka Connect has this built in. Someone then inspects the dead letters, fixes the cause and replays them.",
+   "executive": "One bad event can block everything queued behind it. After a few failed tries, move it aside for a person to look at, and carry on."
+  },
+  {
+   "id": "es-logqueue",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "Log or queue?",
+    "kind": "compare",
+    "points": [
+     "Log (Kafka, Kinesis) | Queue (SQS, RabbitMQ queue)",
+     "Many independent readers | Work shared out, one reader per message",
+     "Kept after reading; replay | Deleted once acknowledged",
+     "Order per partition or shard | Order only with FIFO or groups",
+     "Parallelism capped by partitions | Add consumers freely",
+     "One bad record blocks a partition | Per-message retry and DLQ"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "A log is not always the right tool. Choose a log when many teams need the same events, when order per key matters, or when you need to replay. Choose a queue, such as SQS or a RabbitMQ queue, for a pool of workers sharing jobs: messages are acknowledged one by one, failures are retried individually, and you add workers without repartitioning. The lines are blurring: RabbitMQ has streams, Pulsar offers both models, and Kafka has added share groups for queue-style consumption.",
+   "executive": "Use a stream when many teams need the same history. Use a queue when workers are simply sharing out jobs."
+  },
+  {
+   "id": "es-costs",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "What it costs",
+    "points": [
+     "A cluster to run, or a managed service to pay for",
+     "Eventual consistency: readers are always a little behind",
+     "Choose keys and partition counts up front",
+     "Schemas become a contract: use a registry"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The costs. You run a cluster, or pay for a managed one. Every reader is eventually consistent, a little behind the writer. Partition count caps parallelism and changing it moves keys, so choose keys and counts early. And the event format becomes a public contract read by teams you have never met. A schema registry, such as Confluent's, checks each new version for compatibility. Its default is backward compatible, which means upgrading consumers before producers.",
+   "executive": "It adds infrastructure, readers are slightly behind, and the event format becomes a contract that has to be managed carefully."
+  },
+  {
+   "id": "es-wild",
+   "chapter": "wild",
+   "title": "Lineage",
+   "diagram": "wild",
+   "focus": [],
+   "trace": [
+    "w1",
+    "w2",
+    "w3",
+    "w4"
+   ],
+   "engineer": "In the wild. Jay Kreps' 2013 essay, The Log, describes LinkedIn heading towards order N squared point-to-point pipelines, and building Kafka as one central log instead. He reported over sixty billion unique message writes a day. Amazon Kinesis Data Streams uses shards and partition keys, and keeps data for twenty-four hours by default, up to a year. Apache Pulsar separates stateless brokers from BookKeeper storage. Redpanda, written in C plus plus, is compatible with the Kafka API.",
+   "executive": "The idea came from LinkedIn's Kafka, and is now offered by Amazon, by Apache Pulsar, and by Kafka-compatible products such as Redpanda."
+  },
+  {
+   "id": "es-related",
+   "chapter": "related",
+   "card": {
+    "heading": "Its neighbours",
+    "kind": "compare",
+    "points": [
+     "Pattern | Relationship",
+     "Transactional outbox | Publishes to the log reliably",
+     "Idempotent consumer | Absorbs at-least-once duplicates",
+     "Event sourcing | The log is the source of truth",
+     "CQRS | Read models built from the stream",
+     "Backpressure | Lag is the signal; consumers pull"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Its neighbours. The transactional outbox is how a service publishes to the log without a dual write. Idempotent consumers absorb the duplicates that at-least-once delivery brings. Event sourcing goes further, making the event log the source of truth itself. CQRS builds read models from the stream, and replay lets you rebuild them. And because consumers pull at their own pace, the log gives you backpressure for free: lag is the signal.",
+   "executive": "It pairs with reliable publishing, duplicate-safe readers, event-based records, and read models built from the events."
+  },
+  {
+   "id": "es-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "Append once; every consumer reads at its own offset",
+     "Key by entity: order per partition, not per topic",
+     "At least once by default: make consumers idempotent"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. Producers append each event once to a durable log, and every consumer group reads at its own offset, so teams are decoupled and can replay. Order is per partition, so key events by the entity whose order matters. And delivery is at least once by default: make consumers idempotent, and send poison messages to a dead-letter topic.",
+   "executive": "Write once, read many times. Keep each customer's or order's events in one lane. Expect repeats, and set bad events aside."
+  }
+ ]
+}

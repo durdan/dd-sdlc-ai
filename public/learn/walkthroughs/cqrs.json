@@ -1,0 +1,1006 @@
+{
+ "id": "cqrs",
+ "title": "CQRS",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "diagrams": [
+  {
+   "id": "single",
+   "kind": "c4",
+   "title": "One model for searching, ordering and reporting",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "shopper",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Shoppers",
+     "sub": "search, browse, place orders"
+    },
+    {
+     "id": "analysts",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Analysts",
+     "sub": "daily sales reports"
+    },
+    {
+     "id": "app",
+     "kind": "container",
+     "tone": "core",
+     "label": "Shop service",
+     "sub": "one Product and Order model"
+    },
+    {
+     "id": "db",
+     "kind": "store",
+     "tone": "data",
+     "label": "Shop database",
+     "sub": "normalised tables · row locks"
+    }
+   ],
+   "edges": [
+    {
+     "id": "sp1",
+     "from": "shopper",
+     "to": "app",
+     "style": "solid",
+     "label": "search 'red trainers'"
+    },
+    {
+     "id": "sp2",
+     "from": "app",
+     "to": "db",
+     "style": "dashed",
+     "label": "6-table join + wildcard match"
+    },
+    {
+     "id": "sp3",
+     "from": "shopper",
+     "to": "app",
+     "style": "solid",
+     "label": "place order"
+    },
+    {
+     "id": "sp4",
+     "from": "app",
+     "to": "db",
+     "style": "dashed",
+     "label": "update stock · locks rows"
+    },
+    {
+     "id": "sp5",
+     "from": "analysts",
+     "to": "db",
+     "style": "dashed",
+     "label": "report · full table scans"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "command or query"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "slow or contended"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "event or change feed"
+    }
+   ]
+  },
+  {
+   "id": "naive",
+   "kind": "c4",
+   "title": "Tune the one model: more indexes, a read replica",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "shopper",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Shoppers",
+     "sub": "search and order"
+    },
+    {
+     "id": "app",
+     "kind": "container",
+     "tone": "core",
+     "label": "Shop service",
+     "sub": "same model, more indexes"
+    },
+    {
+     "id": "primary",
+     "kind": "store",
+     "tone": "data",
+     "label": "Primary database",
+     "sub": "12 indexes, each updated on every write"
+    },
+    {
+     "id": "replica",
+     "kind": "store",
+     "tone": "data",
+     "label": "Read replica",
+     "sub": "same schema · a little behind"
+    }
+   ],
+   "edges": [
+    {
+     "id": "n1",
+     "from": "shopper",
+     "to": "app",
+     "style": "solid",
+     "label": "place order"
+    },
+    {
+     "id": "n2",
+     "from": "app",
+     "to": "primary",
+     "style": "dashed",
+     "label": "insert + update 12 indexes"
+    },
+    {
+     "id": "n3",
+     "from": "primary",
+     "to": "replica",
+     "style": "dotted",
+     "label": "replicate"
+    },
+    {
+     "id": "n4",
+     "from": "shopper",
+     "to": "app",
+     "style": "solid",
+     "label": "search"
+    },
+    {
+     "id": "n5",
+     "from": "app",
+     "to": "replica",
+     "style": "dashed",
+     "label": "the same 6-table join"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "command or query"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "slow or contended"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "event or change feed"
+    }
+   ]
+  },
+  {
+   "id": "parts",
+   "kind": "c4",
+   "title": "One command model, many read models",
+   "direction": "RIGHT",
+   "groups": [
+    {
+     "id": "cmd",
+     "label": "Command side [write model]",
+     "tone": "core"
+    },
+    {
+     "id": "qry",
+     "label": "Query side [read models]",
+     "tone": "neutral"
+    }
+   ],
+   "elements": [
+    {
+     "id": "client",
+     "kind": "container",
+     "tone": "neutral",
+     "label": "Shop front end",
+     "sub": "sends commands, asks queries"
+    },
+    {
+     "id": "handler",
+     "kind": "component",
+     "tone": "core",
+     "label": "Command handler",
+     "sub": "domain rules: stock, payment",
+     "group": "cmd"
+    },
+    {
+     "id": "wstore",
+     "kind": "store",
+     "tone": "data",
+     "label": "Write store",
+     "sub": "normalised, transactional",
+     "group": "cmd"
+    },
+    {
+     "id": "proj",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Projectors",
+     "sub": "build views from events",
+     "group": "qry"
+    },
+    {
+     "id": "search",
+     "kind": "store",
+     "tone": "data",
+     "label": "Search index",
+     "sub": "full text and facets",
+     "group": "qry"
+    },
+    {
+     "id": "cache",
+     "kind": "store",
+     "tone": "data",
+     "label": "Order view store",
+     "sub": "key-value, one document per order",
+     "group": "qry"
+    },
+    {
+     "id": "report",
+     "kind": "store",
+     "tone": "data",
+     "label": "Reporting database",
+     "sub": "for analysts",
+     "group": "qry"
+    },
+    {
+     "id": "qapi",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Query API",
+     "sub": "returns ready-made views",
+     "group": "qry"
+    }
+   ],
+   "edges": [
+    {
+     "id": "p1",
+     "from": "client",
+     "to": "handler",
+     "style": "solid",
+     "label": "PlaceOrder"
+    },
+    {
+     "id": "p2",
+     "from": "handler",
+     "to": "wstore",
+     "style": "solid",
+     "label": "state + event"
+    },
+    {
+     "id": "p3",
+     "from": "wstore",
+     "to": "proj",
+     "style": "dotted",
+     "label": "OrderPlaced"
+    },
+    {
+     "id": "p5",
+     "from": "proj",
+     "to": "search",
+     "style": "dotted",
+     "label": "update stock"
+    },
+    {
+     "id": "p6",
+     "from": "proj",
+     "to": "cache",
+     "style": "dotted",
+     "label": "upsert view"
+    },
+    {
+     "id": "p7",
+     "from": "proj",
+     "to": "report",
+     "style": "dotted",
+     "label": "add sales row"
+    },
+    {
+     "id": "p8",
+     "from": "client",
+     "to": "qapi",
+     "style": "solid",
+     "label": "search, my orders"
+    },
+    {
+     "id": "p9",
+     "from": "qapi",
+     "to": "search",
+     "style": "solid",
+     "label": "read"
+    },
+    {
+     "id": "p10",
+     "from": "qapi",
+     "to": "cache",
+     "style": "solid",
+     "label": "read"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "command or query"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "slow or contended"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "event or change feed"
+    }
+   ]
+  },
+  {
+   "id": "flow",
+   "kind": "sequence",
+   "title": "Write now, project moments later",
+   "participants": [
+    {
+     "id": "fe",
+     "label": "Front end"
+    },
+    {
+     "id": "cmd",
+     "label": "Command handler"
+    },
+    {
+     "id": "wdb",
+     "label": "Write store"
+    },
+    {
+     "id": "feed",
+     "label": "Change feed"
+    },
+    {
+     "id": "proj",
+     "label": "Projector"
+    },
+    {
+     "id": "view",
+     "label": "Read store"
+    },
+    {
+     "id": "qapi",
+     "label": "Query API"
+    }
+   ],
+   "messages": [
+    {
+     "id": "h1",
+     "from": "fe",
+     "to": "cmd",
+     "style": "solid",
+     "label": "PlaceOrder (order 81)"
+    },
+    {
+     "id": "h2",
+     "from": "cmd",
+     "to": "wdb",
+     "style": "solid",
+     "label": "check stock · save order + OrderPlaced, one transaction"
+    },
+    {
+     "id": "h3",
+     "from": "cmd",
+     "to": "fe",
+     "style": "solid",
+     "label": "accepted · version 42"
+    },
+    {
+     "id": "h4",
+     "from": "wdb",
+     "to": "feed",
+     "style": "solid",
+     "label": "publish OrderPlaced"
+    },
+    {
+     "id": "h5",
+     "from": "feed",
+     "to": "proj",
+     "style": "solid",
+     "label": "deliver"
+    },
+    {
+     "id": "h6",
+     "from": "proj",
+     "to": "view",
+     "style": "solid",
+     "label": "upsert order 81 view · stock −1"
+    },
+    {
+     "id": "h7",
+     "from": "fe",
+     "to": "qapi",
+     "style": "solid",
+     "label": "GET my orders"
+    },
+    {
+     "id": "h8",
+     "from": "qapi",
+     "to": "view",
+     "style": "solid",
+     "label": "read one document"
+    },
+    {
+     "id": "h9",
+     "from": "qapi",
+     "to": "fe",
+     "style": "solid",
+     "label": "order 81, ready-made view"
+    }
+   ]
+  },
+  {
+   "id": "ryow",
+   "kind": "sequence",
+   "title": "Reading your own writes",
+   "participants": [
+    {
+     "id": "fe",
+     "label": "Front end"
+    },
+    {
+     "id": "cmd",
+     "label": "Command side"
+    },
+    {
+     "id": "proj",
+     "label": "Projector"
+    },
+    {
+     "id": "view",
+     "label": "Query side"
+    }
+   ],
+   "messages": [
+    {
+     "id": "y1",
+     "from": "fe",
+     "to": "cmd",
+     "style": "solid",
+     "label": "PlaceOrder"
+    },
+    {
+     "id": "y2",
+     "from": "cmd",
+     "to": "fe",
+     "style": "solid",
+     "label": "OK · version 42"
+    },
+    {
+     "id": "y3",
+     "from": "fe",
+     "to": "view",
+     "style": "solid",
+     "label": "GET my orders, straight away"
+    },
+    {
+     "id": "y4",
+     "from": "view",
+     "to": "fe",
+     "style": "solid",
+     "label": "no order 81: still at version 41"
+    },
+    {
+     "id": "y5",
+     "from": "fe",
+     "to": "view",
+     "style": "solid",
+     "label": "GET my orders, at least version 42"
+    },
+    {
+     "id": "y6",
+     "from": "cmd",
+     "to": "proj",
+     "style": "solid",
+     "label": "OrderPlaced arrives"
+    },
+    {
+     "id": "y7",
+     "from": "proj",
+     "to": "view",
+     "style": "solid",
+     "label": "applied: now at version 42"
+    },
+    {
+     "id": "y8",
+     "from": "view",
+     "to": "fe",
+     "style": "solid",
+     "label": "order 81, after a short wait"
+    }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "meyer",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Bertrand Meyer",
+     "sub": "command-query separation, for methods"
+    },
+    {
+     "id": "young",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Greg Young",
+     "sub": "CQRS: one object becomes two"
+    },
+    {
+     "id": "fowler",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Martin Fowler",
+     "sub": "bliki article, 2011 · use with caution"
+    },
+    {
+     "id": "ms",
+     "kind": "container",
+     "tone": "core",
+     "label": "Microsoft Azure Architecture Center",
+     "sub": "CQRS pattern page"
+    },
+    {
+     "id": "aws",
+     "kind": "container",
+     "tone": "core",
+     "label": "AWS Prescriptive Guidance",
+     "sub": "DynamoDB stream → Lambda → Aurora"
+    },
+    {
+     "id": "axon",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Axon Framework",
+     "sub": "open-source Java · CQRS + event sourcing"
+    }
+   ],
+   "edges": [
+    {
+     "id": "w1",
+     "from": "meyer",
+     "to": "young",
+     "style": "solid",
+     "label": "from methods to objects"
+    },
+    {
+     "id": "w2",
+     "from": "young",
+     "to": "fowler",
+     "style": "solid",
+     "label": "first heard described by"
+    },
+    {
+     "id": "w3",
+     "from": "young",
+     "to": "ms",
+     "style": "dotted",
+     "label": "documented"
+    },
+    {
+     "id": "w4",
+     "from": "young",
+     "to": "aws",
+     "style": "dotted",
+     "label": "documented"
+    },
+    {
+     "id": "w5",
+     "from": "young",
+     "to": "axon",
+     "style": "dotted",
+     "label": "built into a framework"
+    }
+   ]
+  },
+  {
+   "id": "related",
+   "kind": "c4",
+   "title": "Related patterns",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "cqrs",
+     "kind": "container",
+     "tone": "core",
+     "label": "CQRS",
+     "sub": "separate write and read models"
+    },
+    {
+     "id": "es",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Event sourcing",
+     "sub": "the event log is the write store"
+    },
+    {
+     "id": "outbox",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Transactional outbox",
+     "sub": "save state and event atomically"
+    },
+    {
+     "id": "idem",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Idempotent consumer",
+     "sub": "projectors tolerate duplicates"
+    },
+    {
+     "id": "mv",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Materialised view",
+     "sub": "what each read model is"
+    },
+    {
+     "id": "saga",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Saga",
+     "sub": "commands across several services"
+    },
+    {
+     "id": "rdb",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Reporting database",
+     "sub": "the lighter alternative"
+    }
+   ],
+   "edges": [
+    {
+     "id": "rl1",
+     "from": "es",
+     "to": "cqrs",
+     "style": "solid",
+     "label": "common write side"
+    },
+    {
+     "id": "rl2",
+     "from": "outbox",
+     "to": "cqrs",
+     "style": "solid",
+     "label": "reliable change feed"
+    },
+    {
+     "id": "rl3",
+     "from": "cqrs",
+     "to": "idem",
+     "style": "solid",
+     "label": "projectors must be"
+    },
+    {
+     "id": "rl4",
+     "from": "cqrs",
+     "to": "mv",
+     "style": "solid",
+     "label": "read side builds"
+    },
+    {
+     "id": "rl5",
+     "from": "saga",
+     "to": "cqrs",
+     "style": "solid",
+     "label": "coordinates its commands"
+    },
+    {
+     "id": "rl6",
+     "from": "rdb",
+     "to": "cqrs",
+     "style": "dotted",
+     "label": "try this first"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "problem",
+   "title": "The problem"
+  },
+  {
+   "id": "naive",
+   "title": "The naive fix"
+  },
+  {
+   "id": "pattern",
+   "title": "The pattern"
+  },
+  {
+   "id": "how",
+   "title": "How it works"
+  },
+  {
+   "id": "failure",
+   "title": "When it goes wrong"
+  },
+  {
+   "id": "tradeoffs",
+   "title": "Trade-offs"
+  },
+  {
+   "id": "wild",
+   "title": "In the wild"
+  },
+  {
+   "id": "related",
+   "title": "Related patterns"
+  },
+  {
+   "id": "recap",
+   "title": "Recap"
+  }
+ ],
+ "shots": [
+  {
+   "id": "cqrs-problem",
+   "chapter": "problem",
+   "diagram": "single",
+   "focus": [],
+   "trace": [],
+   "engineer": "Here is an online shop. Shoppers search the catalogue and place orders; analysts run daily sales reports. One shop service, one model and one database serve all three. Placing an order is a write with real rules: check stock, take payment, never oversell. Searching is a read of a completely different shape: fast, fuzzy, filtered, and far more frequent. Nothing is broken yet.",
+   "executive": "One shop system handles searching, ordering and reporting, all through the same data model."
+  },
+  {
+   "id": "cqrs-compromise",
+   "title": "Compromise",
+   "chapter": "problem",
+   "diagram": "single",
+   "focus": [],
+   "trace": [
+    "sp1",
+    "sp2",
+    "sp3",
+    "sp4",
+    "sp5"
+   ],
+   "engineer": "Now watch the traffic. A search for red trainers becomes a six-table join with a wildcard match, because the tables are shaped for orders, not for search. Placing an order updates stock and locks rows, and those locks slow the searches that touch the same products. The nightly report scans whole tables. Every change to the model has to suit all three, so it suits none of them well. The model has become a compromise.",
+   "executive": "Reads and writes want different shapes of data, so one shared model ends up slowing both and pleasing neither."
+  },
+  {
+   "id": "cqrs-naive",
+   "title": "Replica",
+   "chapter": "naive",
+   "diagram": "naive",
+   "focus": [],
+   "trace": [
+    "n1",
+    "n2",
+    "n3",
+    "n4",
+    "n5"
+   ],
+   "engineer": "The obvious fix is to tune the one model. Add an index for every search, and a read replica for the queries. But every index is updated on every write, so orders get slower. The replica copies the same schema, so the search is still a six-table join, just on another machine. And the replica lags a little behind, so you already have stale reads, without having designed for them.",
+   "executive": "More indexes and a copy of the database spread the load, but keep the same awkward shape and slow down orders."
+  },
+  {
+   "id": "cqrs-pattern",
+   "title": "Split",
+   "chapter": "pattern",
+   "diagram": "parts",
+   "focus": [],
+   "trace": [
+    "p1",
+    "p2",
+    "p3",
+    "p8"
+   ],
+   "engineer": "Command Query Responsibility Segregation, or CQRS, splits the model in two. The command side handles writes. Commands are business tasks, like place order, not low-level updates like set status. A handler checks the rules against a normalised, transactional write store, and records what changed as an event on a change feed. The query side never changes data. It returns ready-made views, shaped for each screen, with no domain logic.",
+   "executive": "Split the system in two: one side changes data and enforces the rules; the other only answers questions, fast."
+  },
+  {
+   "id": "cqrs-readmodels",
+   "title": "Read models",
+   "chapter": "pattern",
+   "diagram": "parts",
+   "focus": [],
+   "trace": [
+    "p3",
+    "p5",
+    "p6",
+    "p7",
+    "p9",
+    "p10"
+   ],
+   "engineer": "Projectors subscribe to the change feed and keep the read models up to date. There can be as many as you need, each in the store that suits it: a search index for full text and facets, a key-value store with one document per order, and a reporting database for analysts. The query API reads from them directly. There are no joins at read time: the work was done once, when the data changed.",
+   "executive": "Each kind of question gets its own copy of the data, shaped and stored for that question, and kept up to date from the changes."
+  },
+  {
+   "id": "cqrs-how",
+   "title": "Sequence",
+   "chapter": "how",
+   "diagram": "flow",
+   "focus": [],
+   "trace": [
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "h7",
+    "h8",
+    "h9"
+   ],
+   "engineer": "Step by step. The front end sends PlaceOrder. The command handler checks stock and saves the order, together with an OrderPlaced event, in one transaction. It replies straight away: accepted, version forty-two. Then, asynchronously, the change feed delivers the event, and the projector updates the order view and the product's stock. Later, the shopper asks for their orders, and the query API reads one ready-made document. No joins.",
+   "executive": "The order is saved and confirmed first; the read copies are updated moments later, and questions are answered from those copies."
+  },
+  {
+   "id": "cqrs-stale",
+   "title": "Stale read",
+   "chapter": "failure",
+   "diagram": "ryow",
+   "focus": [],
+   "trace": [
+    "y1",
+    "y2",
+    "y3",
+    "y4"
+   ],
+   "engineer": "Here is the catch. The read models are eventually consistent. The shopper places an order and gets an OK. The app opens My orders, and the query runs before the projector has caught up: the read side is still at version forty-one, so the new order is missing. The shopper thinks it failed, and orders again. This is the read-your-own-writes problem, and it is the first thing users notice.",
+   "executive": "Because the read copies update a moment later, a user can place an order and not see it on the next page."
+  },
+  {
+   "id": "cqrs-ryow",
+   "title": "Read your writes",
+   "chapter": "failure",
+   "diagram": "ryow",
+   "focus": [],
+   "trace": [
+    "y2",
+    "y5",
+    "y6",
+    "y7",
+    "y8"
+   ],
+   "engineer": "There are a few common fixes. The command returns a version number; the next query asks for at least that version, and the read side waits briefly until it has caught up. Or the client shows the result of its own command without asking again. Or, for a short time after a write, that user's reads go to the write model. Choose per screen: most pages can live with a second of lag.",
+   "executive": "Remember what the user just did, and either wait for the read copy to catch up or show the change directly."
+  },
+  {
+   "id": "cqrs-edges",
+   "chapter": "failure",
+   "card": {
+    "heading": "Where it still goes wrong",
+    "points": [
+     "Lost events: save state and event together (outbox)",
+     "Duplicate events: make projectors idempotent",
+     "A buggy projector: fix it, then rebuild the view",
+     "Commands from stale screens: validate on the write side"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Four more things go wrong. If the database commits but the event is never published, a read model silently misses a change; Microsoft's guidance is to save the state and the event atomically, with a transactional outbox. Messages can arrive twice, so projectors must be idempotent. A buggy projector corrupts a view, so be able to rebuild it from scratch. And users act on stale screens, so the command side must check every rule again.",
+   "executive": "No change may be lost or applied twice, every read copy must be rebuildable, and the rules are always checked again on write."
+  },
+  {
+   "id": "cqrs-es",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "With or without event sourcing",
+    "kind": "compare",
+    "points": [
+     "Without event sourcing | With event sourcing",
+     "Write store holds current state | Write store is the event log",
+     "Publish an event with each change | The events are the source of truth",
+     "Rebuild views from current tables | Replay history to build any new view",
+     "Fewer moving parts | More power, much more complexity"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "CQRS does not need event sourcing. The write side can keep current state in ordinary tables and publish a change event alongside each update. With event sourcing, the event log is the write store and the single source of truth, so you can replay history to build any new read model. Greg Young calls the two symbiotic. Microsoft warns that the combination adds significant complexity, and that long histories need snapshots.",
+   "executive": "You can split reads from writes using ordinary tables. Storing every change as an event adds power, and a lot of complexity."
+  },
+  {
+   "id": "cqrs-whennot",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "When not to use it",
+    "points": [
+     "Simple domain and rules: plain CRUD is enough",
+     "Across a whole system: keep it to one bounded context",
+     "When every read must be up to date",
+     "Before trying a reporting database"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "When not to use it. Martin Fowler's caution is blunt: for most systems, CQRS adds risky complexity. Use it only on the parts that need it, a single bounded context, never the whole system. Microsoft agrees: skip it when the domain and its rules are simple, and plain create, read, update and delete is enough. Skip it when every read must be up to date. And try a reporting database first.",
+   "executive": "For most systems it is more complexity than it is worth. Use it only where reads and writes truly pull in different directions."
+  },
+  {
+   "id": "cqrs-wild",
+   "title": "Lineage",
+   "chapter": "wild",
+   "diagram": "wild",
+   "focus": [],
+   "trace": [
+    "w1",
+    "w2",
+    "w3",
+    "w4",
+    "w5"
+   ],
+   "engineer": "In the wild. The idea starts with Bertrand Meyer's command-query separation: a method should either change state or return an answer, not both. Greg Young applied it to whole objects, splitting one into two, one for commands and one for queries. Martin Fowler wrote it up in 2011. Microsoft and AWS both document the pattern; AWS shows a DynamoDB stream feeding a Lambda function that updates Aurora. And Axon Framework is an open-source Java framework for CQRS and event sourcing.",
+   "executive": "The idea comes from an older programming principle; today the big cloud providers document it and open-source frameworks implement it."
+  },
+  {
+   "id": "cqrs-related",
+   "title": "Neighbours",
+   "chapter": "related",
+   "diagram": "related",
+   "focus": [],
+   "trace": [
+    "rl1",
+    "rl2",
+    "rl3",
+    "rl4",
+    "rl5",
+    "rl6"
+   ],
+   "engineer": "Its neighbours. Event sourcing is the most common partner: the event log becomes the write store. A transactional outbox makes the change feed reliable. Projectors are idempotent consumers, safe to run twice. Each read model is a materialised view. A saga coordinates commands that span several services, each with its own write model. And a reporting database is the lighter alternative to try first.",
+   "executive": "CQRS often pairs with event sourcing, an outbox and sagas; a simple reporting database is the lighter alternative."
+  },
+  {
+   "id": "cqrs-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "Writes and reads want different models",
+     "Read models are copies, kept current by events",
+     "Design for stale reads, and use it sparingly"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. Writes and reads have different jobs, so give them different models. Read models are copies, shaped for each question and kept up to date from the stream of changes, which means they lag behind. Design for that lag, especially when users read their own writes, and use CQRS only where the split earns its complexity; most of a system does not need it.",
+   "executive": "Give writes and reads their own models. Read copies lag, so design for it. Use it sparingly."
+  }
+ ],
+ "subtitle": "Design pattern",
+ "meta": {
+  "kind": "pattern",
+  "category": "Data",
+  "level": "intermediate",
+  "uses": [
+   "event-sourcing"
+  ],
+  "related": [
+   "event-sourcing",
+   "outbox",
+   "saga"
+  ],
+  "blurb": "Separate the model that changes data from the models that answer questions, and design for the lag between them.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ }
+}

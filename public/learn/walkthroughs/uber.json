@@ -1,0 +1,1234 @@
+{
+  "id": "uber",
+  "title": "Uber rides: from request to live trip",
+  "subtitle": "A C4 walkthrough of the case study, fact-checked against public sources",
+  "voice": "en-GB-SoniaNeural",
+  "diagrams": [
+    {
+      "id": "context",
+      "kind": "c4",
+      "title": "Level 1 · Context",
+      "direction": "DOWN",
+      "legend": [
+        {
+          "style": "solid",
+          "tone": "core",
+          "label": "request · response"
+        },
+        {
+          "style": "dashed",
+          "tone": "stream",
+          "label": "real-time · push"
+        },
+        {
+          "style": "dotted",
+          "tone": "data",
+          "label": "third-party service"
+        }
+      ],
+      "elements": [
+        {
+          "id": "rider",
+          "kind": "person",
+          "label": "Rider",
+          "sub": "requests and tracks a trip"
+        },
+        {
+          "id": "driver",
+          "kind": "person",
+          "label": "Driver",
+          "sub": "accepts offers, drives"
+        },
+        {
+          "id": "uber",
+          "kind": "system",
+          "label": "Uber rides platform",
+          "sub": "matches, prices, tracks, charges"
+        },
+        {
+          "id": "maps",
+          "kind": "external",
+          "label": "Maps platforms",
+          "sub": "Uber maps + Google Maps Platform"
+        },
+        {
+          "id": "psp",
+          "kind": "external",
+          "label": "Payment networks",
+          "sub": "cards, wallets · illustrative"
+        },
+        {
+          "id": "notify",
+          "kind": "external",
+          "label": "Push and SMS",
+          "sub": "APNs, FCM, SMS · illustrative"
+        }
+      ],
+      "edges": [
+        {
+          "id": "c-rider",
+          "from": "rider",
+          "to": "uber",
+          "label": "request, track, pay",
+          "style": "solid"
+        },
+        {
+          "id": "c-driver",
+          "from": "driver",
+          "to": "uber",
+          "label": "location, accept, complete",
+          "style": "dashed"
+        },
+        {
+          "id": "c-maps",
+          "from": "uber",
+          "to": "maps",
+          "label": "routes, ETAs, map data",
+          "style": "dotted"
+        },
+        {
+          "id": "c-psp",
+          "from": "uber",
+          "to": "psp",
+          "label": "charge, payout",
+          "style": "dotted"
+        },
+        {
+          "id": "c-notify",
+          "from": "uber",
+          "to": "notify",
+          "label": "offers, updates",
+          "style": "dotted"
+        }
+      ]
+    },
+    {
+      "id": "containers",
+      "kind": "c4",
+      "title": "Level 2 · Containers",
+      "direction": "DOWN",
+      "legend": [
+        {
+          "style": "solid",
+          "tone": "core",
+          "label": "request · response"
+        },
+        {
+          "style": "dashed",
+          "tone": "stream",
+          "label": "events · streamed"
+        },
+        {
+          "style": "dotted",
+          "tone": "data",
+          "label": "storage"
+        }
+      ],
+      "groups": [
+        {
+          "id": "rides",
+          "label": "Rides domain",
+          "tone": "core"
+        },
+        {
+          "id": "geo",
+          "label": "Location",
+          "tone": "stream"
+        },
+        {
+          "id": "platform",
+          "label": "Platform · shared by every domain",
+          "tone": "data"
+        }
+      ],
+      "elements": [
+        {
+          "id": "riderapp",
+          "kind": "container",
+          "label": "Rider app",
+          "sub": "Swift, Kotlin · RIBs",
+          "tone": "neutral",
+          "rank": 0
+        },
+        {
+          "id": "driverapp",
+          "kind": "container",
+          "label": "Driver app",
+          "sub": "Swift, Kotlin · RIBs",
+          "tone": "neutral",
+          "rank": 0
+        },
+        {
+          "id": "gateway",
+          "kind": "container",
+          "label": "Edge gateway",
+          "sub": "auth, rate limits, routing",
+          "tone": "core",
+          "rank": 1
+        },
+        {
+          "id": "pricing",
+          "kind": "container",
+          "label": "Pricing",
+          "sub": "upfront fare, surge per area",
+          "group": "rides",
+          "rank": 2
+        },
+        {
+          "id": "dispatch",
+          "kind": "container",
+          "label": "Dispatch",
+          "sub": "match riders and drivers",
+          "group": "rides",
+          "rank": 2
+        },
+        {
+          "id": "trip",
+          "kind": "container",
+          "label": "Trip",
+          "sub": "lifecycle, state machine",
+          "group": "rides",
+          "rank": 3
+        },
+        {
+          "id": "eta",
+          "kind": "container",
+          "label": "ETA",
+          "sub": "road-based arrival times",
+          "group": "rides",
+          "rank": 3
+        },
+        {
+          "id": "ingest",
+          "kind": "container",
+          "label": "Location ingest",
+          "sub": "driver GPS updates",
+          "group": "geo",
+          "tone": "stream",
+          "rank": 2
+        },
+        {
+          "id": "supply",
+          "kind": "container",
+          "label": "Supply index",
+          "sub": "drivers by H3 cell",
+          "group": "geo",
+          "tone": "stream",
+          "rank": 3
+        },
+        {
+          "id": "kafka",
+          "kind": "store",
+          "label": "Kafka",
+          "sub": "trillions of messages a day",
+          "group": "platform",
+          "rank": 4
+        },
+        {
+          "id": "docstore",
+          "kind": "store",
+          "label": "Docstore",
+          "sub": "on MySQL · trips, accounts",
+          "group": "platform",
+          "rank": 4
+        },
+        {
+          "id": "cadence",
+          "kind": "store",
+          "label": "Cadence",
+          "sub": "durable workflows",
+          "group": "platform",
+          "rank": 4
+        },
+        {
+          "id": "payments",
+          "kind": "container",
+          "label": "Payments",
+          "sub": "charge at trip end",
+          "tone": "core",
+          "rank": 5
+        }
+      ],
+      "edges": [
+        {
+          "id": "k-rider-gw",
+          "from": "riderapp",
+          "to": "gateway",
+          "style": "solid"
+        },
+        {
+          "id": "k-driver-gw",
+          "from": "driverapp",
+          "to": "gateway",
+          "style": "solid"
+        },
+        {
+          "id": "k-gw-pricing",
+          "from": "gateway",
+          "to": "pricing",
+          "label": "quote",
+          "style": "solid"
+        },
+        {
+          "id": "k-gw-dispatch",
+          "from": "gateway",
+          "to": "dispatch",
+          "label": "request ride",
+          "style": "solid"
+        },
+        {
+          "id": "k-gw-ingest",
+          "from": "gateway",
+          "to": "ingest",
+          "label": "location",
+          "style": "dashed"
+        },
+        {
+          "id": "k-ingest-supply",
+          "from": "ingest",
+          "to": "supply",
+          "label": "update cells (via Kafka)",
+          "style": "dashed"
+        },
+        {
+          "id": "k-ingest-kafka",
+          "from": "ingest",
+          "to": "kafka",
+          "label": "location events",
+          "style": "dashed"
+        },
+        {
+          "id": "k-dispatch-supply",
+          "from": "dispatch",
+          "to": "supply",
+          "label": "nearby drivers",
+          "style": "solid"
+        },
+        {
+          "id": "k-dispatch-eta",
+          "from": "dispatch",
+          "to": "eta",
+          "label": "rank by ETA",
+          "style": "solid"
+        },
+        {
+          "id": "k-dispatch-trip",
+          "from": "dispatch",
+          "to": "trip",
+          "label": "create trip",
+          "style": "solid"
+        },
+        {
+          "id": "k-trip-docstore",
+          "from": "trip",
+          "to": "docstore",
+          "style": "dotted"
+        },
+        {
+          "id": "k-trip-cadence",
+          "from": "trip",
+          "to": "cadence",
+          "label": "end-of-trip workflow",
+          "style": "solid"
+        },
+        {
+          "id": "k-cadence-pay",
+          "from": "cadence",
+          "to": "payments",
+          "label": "charge",
+          "style": "solid"
+        },
+        {
+          "id": "k-trip-kafka",
+          "from": "trip",
+          "to": "kafka",
+          "label": "trip events",
+          "style": "dashed"
+        }
+      ]
+    },
+    {
+      "id": "dispatch",
+      "kind": "c4",
+      "title": "Level 3 · Inside dispatch",
+      "direction": "DOWN",
+      "legend": [
+        {
+          "style": "solid",
+          "tone": "core",
+          "label": "call"
+        },
+        {
+          "style": "dashed",
+          "tone": "stream",
+          "label": "offer · timeout loop"
+        }
+      ],
+      "groups": [
+        {
+          "id": "disp",
+          "label": "Dispatch · sharded by area (Ringpop)",
+          "tone": "core"
+        }
+      ],
+      "elements": [
+        {
+          "id": "demand",
+          "kind": "component",
+          "label": "Demand intake",
+          "sub": "rider request, pickup cell",
+          "group": "disp"
+        },
+        {
+          "id": "search",
+          "kind": "component",
+          "label": "Candidate search",
+          "sub": "H3 k-ring around pickup",
+          "group": "disp"
+        },
+        {
+          "id": "ranker",
+          "kind": "component",
+          "label": "ETA ranker",
+          "sub": "road ETA, not distance",
+          "group": "disp"
+        },
+        {
+          "id": "matcher",
+          "kind": "component",
+          "label": "Matcher",
+          "sub": "best pairing · illustrative",
+          "group": "disp"
+        },
+        {
+          "id": "offers",
+          "kind": "component",
+          "label": "Offer manager",
+          "sub": "offer, timeout, next driver",
+          "group": "disp"
+        },
+        {
+          "id": "supplyidx",
+          "kind": "store",
+          "label": "Supply index",
+          "sub": "drivers by H3 cell",
+          "tone": "stream"
+        },
+        {
+          "id": "etasvc",
+          "kind": "container",
+          "label": "ETA service",
+          "sub": "routing engine"
+        },
+        {
+          "id": "drv",
+          "kind": "person",
+          "label": "Driver app"
+        }
+      ],
+      "edges": [
+        {
+          "id": "d-demand-search",
+          "from": "demand",
+          "to": "search",
+          "style": "solid"
+        },
+        {
+          "id": "d-search-supply",
+          "from": "search",
+          "to": "supplyidx",
+          "label": "cells → drivers",
+          "style": "solid"
+        },
+        {
+          "id": "d-search-ranker",
+          "from": "search",
+          "to": "ranker",
+          "style": "solid"
+        },
+        {
+          "id": "d-ranker-eta",
+          "from": "ranker",
+          "to": "etasvc",
+          "label": "road ETAs",
+          "style": "solid"
+        },
+        {
+          "id": "d-ranker-matcher",
+          "from": "ranker",
+          "to": "matcher",
+          "style": "solid"
+        },
+        {
+          "id": "d-matcher-offers",
+          "from": "matcher",
+          "to": "offers",
+          "style": "solid"
+        },
+        {
+          "id": "d-offers-driver",
+          "from": "offers",
+          "to": "drv",
+          "label": "offer",
+          "style": "dashed"
+        },
+        {
+          "id": "d-offers-matcher",
+          "from": "offers",
+          "to": "matcher",
+          "label": "declined · timed out",
+          "style": "dashed"
+        }
+      ]
+    },
+    {
+      "id": "request",
+      "kind": "sequence",
+      "title": "One ride request, start to finish",
+      "participants": [
+        {
+          "id": "q-rider",
+          "label": "Rider app"
+        },
+        {
+          "id": "q-gw",
+          "label": "Edge gateway"
+        },
+        {
+          "id": "q-price",
+          "label": "Pricing"
+        },
+        {
+          "id": "q-disp",
+          "label": "Dispatch"
+        },
+        {
+          "id": "q-supply",
+          "label": "Supply index"
+        },
+        {
+          "id": "q-eta",
+          "label": "ETA"
+        },
+        {
+          "id": "q-driver",
+          "label": "Driver app"
+        },
+        {
+          "id": "q-trip",
+          "label": "Trip"
+        }
+      ],
+      "messages": [
+        {
+          "id": "r1",
+          "from": "q-rider",
+          "to": "q-gw",
+          "label": "choose product, ask for fare"
+        },
+        {
+          "id": "r2",
+          "from": "q-gw",
+          "to": "q-price",
+          "label": "upfront fare incl. surge"
+        },
+        {
+          "id": "r3",
+          "from": "q-rider",
+          "to": "q-gw",
+          "label": "confirm request"
+        },
+        {
+          "id": "r4",
+          "from": "q-gw",
+          "to": "q-disp",
+          "label": "request ride"
+        },
+        {
+          "id": "r5",
+          "from": "q-disp",
+          "to": "q-supply",
+          "label": "drivers in nearby cells"
+        },
+        {
+          "id": "r6",
+          "from": "q-disp",
+          "to": "q-eta",
+          "label": "road ETA per candidate"
+        },
+        {
+          "id": "r7",
+          "from": "q-disp",
+          "to": "q-driver",
+          "label": "offer to best driver",
+          "style": "dashed"
+        },
+        {
+          "id": "r8",
+          "from": "q-driver",
+          "to": "q-disp",
+          "label": "accept",
+          "style": "dashed"
+        },
+        {
+          "id": "r9",
+          "from": "q-disp",
+          "to": "q-trip",
+          "label": "create trip"
+        },
+        {
+          "id": "r10",
+          "from": "q-trip",
+          "to": "q-rider",
+          "label": "driver assigned, ETA",
+          "style": "dashed"
+        }
+      ]
+    },
+    {
+      "id": "tracking",
+      "kind": "sequence",
+      "title": "Live trip: location in, map out",
+      "participants": [
+        {
+          "id": "t-driver",
+          "label": "Driver app"
+        },
+        {
+          "id": "t-gw",
+          "label": "Edge gateway"
+        },
+        {
+          "id": "t-ingest",
+          "label": "Location ingest"
+        },
+        {
+          "id": "t-kafka",
+          "label": "Kafka"
+        },
+        {
+          "id": "t-supply",
+          "label": "Supply index"
+        },
+        {
+          "id": "t-trip",
+          "label": "Trip"
+        },
+        {
+          "id": "t-rider",
+          "label": "Rider app"
+        }
+      ],
+      "messages": [
+        {
+          "id": "l1",
+          "from": "t-driver",
+          "to": "t-gw",
+          "label": "GPS point every few seconds",
+          "style": "dashed"
+        },
+        {
+          "id": "l2",
+          "from": "t-gw",
+          "to": "t-ingest",
+          "label": "validate, snap to road",
+          "style": "dashed"
+        },
+        {
+          "id": "l3",
+          "from": "t-ingest",
+          "to": "t-kafka",
+          "label": "location event",
+          "style": "dashed"
+        },
+        {
+          "id": "l4",
+          "from": "t-kafka",
+          "to": "t-supply",
+          "label": "move driver to new cell",
+          "style": "dashed"
+        },
+        {
+          "id": "l5",
+          "from": "t-kafka",
+          "to": "t-trip",
+          "label": "on-trip position",
+          "style": "dashed"
+        },
+        {
+          "id": "l6",
+          "from": "t-trip",
+          "to": "t-rider",
+          "label": "push position, new ETA",
+          "style": "dashed"
+        },
+        {
+          "id": "l7",
+          "from": "t-driver",
+          "to": "t-trip",
+          "label": "complete trip"
+        },
+        {
+          "id": "l8",
+          "from": "t-trip",
+          "to": "t-kafka",
+          "label": "trip completed event",
+          "style": "dashed"
+        }
+      ]
+    }
+  ],
+  "chapters": [
+    {
+      "id": "overview",
+      "title": "Overview"
+    },
+    {
+      "id": "requirements",
+      "title": "Requirements and scale"
+    },
+    {
+      "id": "context",
+      "title": "Context"
+    },
+    {
+      "id": "containers",
+      "title": "Containers"
+    },
+    {
+      "id": "deep-dive",
+      "title": "Inside dispatch"
+    },
+    {
+      "id": "flows",
+      "title": "Core flows"
+    },
+    {
+      "id": "data",
+      "title": "Data and caching"
+    },
+    {
+      "id": "growth",
+      "title": "Growth"
+    },
+    {
+      "id": "failures",
+      "title": "Failure modes"
+    },
+    {
+      "id": "patterns",
+      "title": "Patterns used"
+    },
+    {
+      "id": "decisions",
+      "title": "Key decisions"
+    },
+    {
+      "id": "mvp",
+      "title": "What we would build first"
+    }
+  ],
+  "shots": [
+    {
+      "id": "u01",
+      "chapter": "overview",
+      "diagram": "context",
+      "focus": [],
+      "trace": [],
+      "engineer": "This is Uber's rides platform, seen from the outside. In the fourth quarter of 2024 Uber reported about 33 million trips a day across mobility and delivery, for 171 million monthly active consumers.",
+      "executive": "This is how an Uber ride works behind the scenes. Uber handles about 33 million trips a day."
+    },
+    {
+      "id": "u-req-scale",
+      "chapter": "requirements",
+      "card": {
+        "heading": "Scale, from Uber's own reports",
+        "points": [
+          "~33M | trips a day, Q4 2024 (mobility and delivery)",
+          "171M | monthly active platform consumers, Q4 2024",
+          "$44.0B | revenue, full year 2024",
+          "~380/s | trips started per second on average (33M ÷ 86,400)"
+        ],
+        "kind": "numbers"
+      },
+      "focus": [],
+      "trace": [],
+      "engineer": "First, the scale, from Uber's own results. About thirty-three million trips a day in the fourth quarter of 2024, across mobility and delivery. A hundred and seventy-one million monthly active consumers. Forty-four billion dollars of revenue for the year. Divide the trips by the seconds in a day and you get roughly three hundred and eighty trips starting every second, on average; peaks are several times that.",
+      "executive": "Tens of millions of trips a day, which means hundreds of new trips every second."
+    },
+    {
+      "id": "u-req-needs",
+      "chapter": "requirements",
+      "card": {
+        "heading": "What the system must do",
+        "points": [
+          "Rider sees an upfront fare before requesting",
+          "A nearby driver is matched within seconds",
+          "Both sides see each other move, live",
+          "Nobody is charged twice, or charged an unquoted fare",
+          "A failed region or service never strands a trip in progress"
+        ]
+      },
+      "focus": [],
+      "trace": [],
+      "engineer": "Then the requirements. These are ours, written from the product rather than from an Uber document. A rider sees an upfront fare before requesting. A nearby driver is matched within seconds. Both sides see each other move, live. Nobody is charged twice, or charged a fare they were not quoted. And a failure somewhere never strands a trip that is already under way.",
+      "executive": "Fair price up front, a driver in seconds, live tracking, correct charges, and trips that survive failures."
+    },
+    {
+      "id": "u02",
+      "chapter": "context",
+      "diagram": "context",
+      "focus": [
+        "rider",
+        "driver",
+        "uber"
+      ],
+      "trace": [
+        "c-rider",
+        "c-driver"
+      ],
+      "engineer": "Two kinds of people use it. Riders ask for a fare, request, track and pay. Drivers stream their location, accept offers and complete trips. The driver side is a constant real-time stream, not occasional requests.",
+      "executive": "Riders request and pay. Drivers share their location all the time and accept trips.",
+      "title": "Riders and drivers"
+    },
+    {
+      "id": "u03",
+      "chapter": "context",
+      "diagram": "context",
+      "focus": [
+        "uber",
+        "maps",
+        "psp",
+        "notify"
+      ],
+      "trace": [
+        "c-maps",
+        "c-psp",
+        "c-notify"
+      ],
+      "engineer": "It leans on outside services for maps and routing data, for card payments, and for push notifications. Uber runs its own mapping, and its 2023 cloud deal included Google Maps Platform. The payment and notification providers here are our illustration, not a published list.",
+      "executive": "It relies on outside services for maps, payments and notifications.",
+      "title": "Outside services"
+    },
+    {
+      "id": "u04",
+      "chapter": "containers",
+      "diagram": "containers",
+      "focus": [],
+      "trace": [],
+      "engineer": "One level in. The rides domain sits behind an edge gateway, with location handled separately, and a shared platform underneath. Uber reports running thousands of microservices; this picture keeps only the ones a ride touches.",
+      "executive": "Inside, a few groups of services do the work, on top of a shared platform."
+    },
+    {
+      "id": "u05",
+      "chapter": "containers",
+      "diagram": "containers",
+      "focus": [
+        "riderapp",
+        "gateway",
+        "pricing",
+        "dispatch"
+      ],
+      "trace": [
+        "k-rider-gw",
+        "k-gw-pricing",
+        "k-gw-dispatch"
+      ],
+      "engineer": "A rider's request goes through the gateway twice: first for an upfront fare from Pricing, which includes surge for that area, then to Dispatch to find a driver.",
+      "executive": "The rider first gets a price, then the request goes to find a driver.",
+      "title": "Quote and request"
+    },
+    {
+      "id": "u06",
+      "chapter": "containers",
+      "diagram": "containers",
+      "focus": [
+        "driverapp",
+        "ingest",
+        "kafka",
+        "supply"
+      ],
+      "trace": [
+        "k-driver-gw",
+        "k-gw-ingest",
+        "k-ingest-kafka",
+        "k-ingest-supply"
+      ],
+      "engineer": "Location is the busiest path. Driver updates flow through ingest into Kafka, which Uber describes as handling trillions of messages a day, and keep the supply index current: which drivers are in which H3 cell.",
+      "executive": "Drivers' locations stream in constantly and keep a live map of who is where.",
+      "title": "Location stream"
+    },
+    {
+      "id": "u07",
+      "chapter": "containers",
+      "diagram": "containers",
+      "focus": [
+        "trip",
+        "docstore",
+        "cadence",
+        "payments"
+      ],
+      "trace": [
+        "k-dispatch-trip",
+        "k-trip-docstore",
+        "k-trip-cadence",
+        "k-cadence-pay"
+      ],
+      "engineer": "Once matched, a trip is stored in Docstore, Uber's transactional database built on MySQL. Work that must survive failures, like charging at the end of a trip, runs as a durable Cadence workflow.",
+      "executive": "Each trip is saved safely, and payment runs as a step that cannot get lost.",
+      "title": "Trip, storage, payment"
+    },
+    {
+      "id": "u08",
+      "chapter": "deep-dive",
+      "diagram": "dispatch",
+      "focus": [],
+      "trace": [],
+      "engineer": "Inside dispatch. Uber has described its dispatch system and H3, but not every internal component, so this level is partly our own design, labelled illustrative where it is.",
+      "executive": "Here is how a driver gets chosen. Part of this is our own reconstruction."
+    },
+    {
+      "id": "u09",
+      "chapter": "deep-dive",
+      "diagram": "dispatch",
+      "focus": [
+        "demand",
+        "search",
+        "supplyidx"
+      ],
+      "trace": [
+        "d-demand-search",
+        "d-search-supply"
+      ],
+      "engineer": "The pickup point is turned into an H3 cell. Candidate search reads the drivers in that cell and the rings of cells around it, which is cheap because hexagons have uniform neighbours.",
+      "executive": "First it finds drivers in the hexagons around the pickup.",
+      "title": "Find candidates"
+    },
+    {
+      "id": "u10",
+      "chapter": "deep-dive",
+      "diagram": "dispatch",
+      "focus": [
+        "search",
+        "ranker",
+        "etasvc",
+        "matcher"
+      ],
+      "trace": [
+        "d-search-ranker",
+        "d-ranker-eta",
+        "d-ranker-matcher"
+      ],
+      "engineer": "Candidates are ranked by road ETA, not straight-line distance: a driver across a river can be close and still far away. The matcher then picks the pairing.",
+      "executive": "Drivers are ranked by how long they would take to arrive, not by distance.",
+      "title": "Rank by ETA"
+    },
+    {
+      "id": "u11",
+      "chapter": "deep-dive",
+      "diagram": "dispatch",
+      "focus": [
+        "matcher",
+        "offers",
+        "drv"
+      ],
+      "trace": [
+        "d-matcher-offers",
+        "d-offers-driver",
+        "d-offers-matcher"
+      ],
+      "engineer": "The offer manager sends the trip to one driver and waits. If the driver declines or the offer times out, the loop goes back to the matcher for the next best driver.",
+      "executive": "If the first driver says no, the next best driver gets the offer.",
+      "title": "Offer loop"
+    },
+    {
+      "id": "u12",
+      "chapter": "flows",
+      "diagram": "request",
+      "focus": [
+        "q-rider",
+        "q-gw",
+        "q-price"
+      ],
+      "trace": [
+        "r1",
+        "r2"
+      ],
+      "engineer": "Step by step. The rider picks a product and gets an upfront fare. Uber's own description says surge is set per area, when requests outpace available drivers.",
+      "executive": "Step one: the rider sees the price, including any surge.",
+      "title": "Fare"
+    },
+    {
+      "id": "u13",
+      "chapter": "flows",
+      "diagram": "request",
+      "focus": [
+        "q-rider",
+        "q-gw",
+        "q-disp",
+        "q-supply",
+        "q-eta"
+      ],
+      "trace": [
+        "r3",
+        "r4",
+        "r5",
+        "r6"
+      ],
+      "engineer": "On confirm, dispatch looks up drivers in the nearby cells and asks for a road ETA for each candidate.",
+      "executive": "Once they confirm, nearby drivers are found and compared.",
+      "title": "Find drivers"
+    },
+    {
+      "id": "u14",
+      "chapter": "flows",
+      "diagram": "request",
+      "focus": [
+        "q-disp",
+        "q-driver",
+        "q-trip",
+        "q-rider"
+      ],
+      "trace": [
+        "r7",
+        "r8",
+        "r9",
+        "r10"
+      ],
+      "engineer": "The best driver gets an offer. On accept, a trip is created and the rider is told who is coming and when.",
+      "executive": "A driver accepts, and the rider sees who is coming.",
+      "title": "Offer and accept"
+    },
+    {
+      "id": "u15",
+      "chapter": "flows",
+      "diagram": "tracking",
+      "focus": [
+        "t-driver",
+        "t-gw",
+        "t-ingest",
+        "t-kafka"
+      ],
+      "trace": [
+        "l1",
+        "l2",
+        "l3"
+      ],
+      "engineer": "During the trip the driver app keeps sending GPS points. Third-party write-ups often quote every four seconds; Uber has not published the interval, so treat that as an assumption.",
+      "executive": "During the ride, the driver's phone keeps sending its position.",
+      "title": "GPS in"
+    },
+    {
+      "id": "u16",
+      "chapter": "flows",
+      "diagram": "tracking",
+      "focus": [
+        "t-kafka",
+        "t-supply",
+        "t-trip",
+        "t-rider"
+      ],
+      "trace": [
+        "l4",
+        "l5",
+        "l6"
+      ],
+      "engineer": "Each location event updates the supply index and the trip, and the rider's map and ETA are pushed, not polled.",
+      "executive": "The rider's map updates live.",
+      "title": "Map out"
+    },
+    {
+      "id": "u17",
+      "chapter": "flows",
+      "diagram": "tracking",
+      "focus": [
+        "t-driver",
+        "t-trip",
+        "t-kafka"
+      ],
+      "trace": [
+        "l7",
+        "l8"
+      ],
+      "engineer": "On completion, the trip publishes a completed event. Billing, receipts and analytics all start from that one event.",
+      "executive": "When the ride ends, payment and receipts follow automatically.",
+      "title": "Trip completed"
+    },
+    {
+      "id": "u-data",
+      "chapter": "data",
+      "diagram": "containers",
+      "title": "Stores",
+      "focus": [
+        "docstore",
+        "kafka",
+        "supply"
+      ],
+      "trace": [
+        "k-ingest-supply",
+        "k-trip-docstore",
+        "k-trip-kafka"
+      ],
+      "engineer": "Three kinds of data, three kinds of store. Trips and other transactional records live in Docstore, the database Uber built on MySQL. Things that happened, like a trip completing or a driver moving, are events on Kafka, which many consumers read independently. And where every driver is right now is short-lived and constantly overwritten, so in our design it lives in an in-memory supply index keyed by H3 cell, rebuilt from the location stream rather than stored for good.",
+      "executive": "Trips go in a database, events go on a stream, and live driver positions are kept in memory because they change every few seconds."
+    },
+    {
+      "id": "u-data-events",
+      "chapter": "data",
+      "diagram": "containers",
+      "title": "Hand-off",
+      "focus": [
+        "kafka"
+      ],
+      "trace": [
+        "k-trip-kafka"
+      ],
+      "engineer": "One rule ties the stores together in our design. A completed trip is handed on as an event, not as a query. Billing, receipts and analytics each read the trip-completed event from Kafka; none of them reads the trip database directly. That keeps the trip store small and fast, and a new consumer can be added without touching it. Uber describes Kafka as its event backbone, but this exact split is ours, not a published diagram.",
+      "executive": "Other teams learn about a finished trip from one shared event, so the trip system stays fast and new uses need no changes to it."
+    },
+    {
+      "id": "u-growth",
+      "chapter": "growth",
+      "card": {
+        "heading": "How it got here, from public sources",
+        "points": [
+          "Year | Change",
+          "2015 | Dispatch described publicly: geo-indexed supply, ETA ranking, Ringpop consistent hashing",
+          "2018 | H3 hexagonal grid open-sourced",
+          "2023 | Seven-year deals to move most data-centre workloads to Oracle Cloud and Google Cloud",
+          "2024 | Stateless and batch workloads moved from Mesos to Kubernetes"
+        ],
+        "kind": "compare"
+      },
+      "focus": [],
+      "trace": [],
+      "engineer": "How it grew. In 2015 Uber described its dispatch system publicly: supply indexed by location, candidates ranked by ETA, and work spread across nodes with consistent hashing. In 2018 it open-sourced H3, its hexagonal grid. In 2023 it signed seven-year deals to move most of its data-centre workloads to Oracle Cloud and Google Cloud. And in 2024 it finished moving its stateless and batch workloads from Mesos to Kubernetes. The shape stayed; what changed is how many, and where they run.",
+      "executive": "Same basic design for a decade; the scale, the infrastructure and the cloud underneath it changed."
+    },
+    {
+      "id": "u-failures",
+      "chapter": "failures",
+      "card": {
+        "heading": "What fails, and what the rider sees (our design)",
+        "points": [
+          "Failure | Fallback",
+          "ETA service slow | Rank by straight-line distance, capped; show the ETA as approximate",
+          "Driver ignores the offer | Time out, offer the next candidate; after a few, tell the rider",
+          "Pricing unavailable | Never accept a request without a quote; ask the rider to retry",
+          "Payment down at trip end | A durable workflow retries; the trip still completes",
+          "Location stream lags | Ignore stale positions; widen the search ring"
+        ],
+        "kind": "compare"
+      },
+      "focus": [],
+      "trace": [],
+      "engineer": "Failure modes. Uber does not publish these, so this is our design, labelled as such. If the ETA service is slow, rank by straight-line distance with a cap and show the ETA as approximate; that is a circuit breaker with a fallback. If a driver ignores an offer, time out and offer the next. If pricing is down, never accept an unquoted request. If payments are down at trip end, a durable workflow keeps retrying while the trip completes. And if the location stream lags, ignore stale positions and widen the search.",
+      "executive": "Each failure has a planned fallback, so a rider might wait slightly longer, but is never stuck or wrongly charged."
+    },
+    {
+      "id": "u-fail-signal",
+      "chapter": "failures",
+      "diagram": "tracking",
+      "title": "Lost signal",
+      "focus": [],
+      "trace": [
+        "l1",
+        "l2",
+        "l3"
+      ],
+      "engineer": "One failure happens all day long: a driver's phone loses signal in a tunnel. In our design the trip keeps the last known position and the rider's map shows it as approximate rather than frozen. The phone keeps recording points, and when it reconnects it uploads what it buffered, so the trip catches up and the fare still reflects the real route. Uber has not published how it handles this, so treat it as our design.",
+      "executive": "When a driver's phone drops signal, the map shows an approximate position and catches up as soon as the phone reconnects."
+    },
+    {
+      "id": "u-patterns",
+      "chapter": "patterns",
+      "card": {
+        "heading": "Patterns used",
+        "points": [
+          "Geospatial index: H3 hexagons for supply and pricing",
+          "Event streaming: publish once, many consumers (Kafka)",
+          "Durable workflows: steps that must finish (Cadence)",
+          "Consistent hashing: spread dispatch work across nodes (Ringpop, 2015)",
+          "Circuit breaker with fallback: around ETA and payments (see the Circuit breaker walkthrough)"
+        ]
+      },
+      "focus": [],
+      "trace": [],
+      "engineer": "The named patterns in this design. A geospatial index, H3, for supply and pricing. Event streaming, so a completed trip is published once and billing, receipts and analytics each read it. Durable workflows for steps that must finish even if a machine dies. Consistent hashing to spread dispatch work, as described in 2015. And circuit breakers with fallbacks around ETA and payments, which has its own walkthrough.",
+      "executive": "A handful of well-known patterns: a map grid, an event stream, durable workflows, and protection against failing services."
+    },
+    {
+      "id": "u-decisions",
+      "chapter": "decisions",
+      "card": {
+        "heading": "Key decisions",
+        "points": [
+          "Decision | Why",
+          "Hexagons (H3), not squares | Every neighbour is the same distance away, so rings around a pickup are even",
+          "Upfront fare before matching | The rider accepts a price; surge is set per area when demand outpaces drivers",
+          "Rank by road ETA, not distance | A driver across a river is near on the map and far by road",
+          "Build Docstore on MySQL | Transactional data with Uber's own sharding and API on a proven engine",
+          "Move to public cloud (2023) | Oracle and Google Cloud deals for most data-centre workloads"
+        ],
+        "kind": "compare"
+      },
+      "focus": [],
+      "trace": [],
+      "engineer": "The decisions that shaped it. Hexagons rather than squares, because every neighbouring hexagon is the same distance away, so search rings around a pickup are even. An upfront fare before matching, with surge set per area when requests outpace drivers. Ranking by road ETA rather than distance. Building Docstore on top of MySQL for transactional data. And, in 2023, moving most data-centre workloads to the public cloud.",
+      "executive": "Hexagon map grid, prices agreed up front, matching by real travel time, its own database on a proven engine, and a move to the public cloud."
+    },
+    {
+      "id": "u-mvp",
+      "chapter": "mvp",
+      "card": {
+        "heading": "What we would build first",
+        "points": [
+          "One modular service, split later when load or team demands it",
+          "Postgres for accounts, quotes and trips",
+          "H3 cells and an in-memory supply index for live drivers",
+          "Upfront quotes valid for two minutes",
+          "Greedy match by ETA, 15-second offer timeout",
+          "Transactional outbox, a stream now and Kafka later"
+        ]
+      },
+      "focus": [],
+      "trace": [],
+      "engineer": "If we built a small version today: one modular service, not four thousand. Postgres for accounts, quotes and trips. H3 cells and an in-memory index for live drivers. Upfront quotes valid for two minutes. A greedy match by ETA with a fifteen-second offer timeout. And a transactional outbox, so events are never lost, with a simple stream now and Kafka later. The build guide walks through it screen by screen.",
+      "executive": "Start with one service and a single database, and keep the parts Uber made famous, the hexagon grid and upfront prices."
+    },
+    {
+      "id": "u18",
+      "chapter": "mvp",
+      "diagram": "containers",
+      "focus": [],
+      "trace": [],
+      "engineer": "A word on accuracy. The case study we started from had dated numbers, such as 118 million users and a 31.8 billion dollar revenue, and some errors, like describing Temporal as Cadence open-sourced. Everything stated here is checked against public sources; the source matrix lists each one.",
+      "executive": "We checked the original numbers and corrected the outdated ones. Every claim here has a source."
+    }
+  ],
+  "template": "case-study",
+  "meta": {
+    "kind": "company",
+    "category": "Mobility",
+    "level": "intermediate",
+    "uses": [
+      "circuit-breaker",
+      "outbox",
+      "consistent-hashing",
+      "geospatial-index",
+      "event-streaming",
+      "durable-workflows"
+    ],
+    "related": [],
+    "blurb": "From ride request to live trip: H3 dispatch, upfront pricing, live tracking.",
+    "created": "2026-10-14",
+    "updated": "2026-10-14",
+    "factsChecked": "2026-10-14",
+    "changelog": [
+      {
+        "date": "2026-10-14",
+        "note": "Fact-checked against Uber's 2024 results; moved onto the case-study template."
+      }
+    ]
+  }
+}

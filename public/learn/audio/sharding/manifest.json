@@ -1,0 +1,142 @@
+{
+ "sh-problem-engineer": {
+  "file": "/audio/sharding/sh-problem-engineer.mp3",
+  "ms": 27216,
+  "hash": "62c1a7096b83"
+ },
+ "sh-problem-executive": {
+  "file": "/audio/sharding/sh-problem-executive.mp3",
+  "ms": 8616,
+  "hash": "f90442d87a82"
+ },
+ "sh-naive-engineer": {
+  "file": "/audio/sharding/sh-naive-engineer.mp3",
+  "ms": 27408,
+  "hash": "3cbe9a31097a"
+ },
+ "sh-naive-executive": {
+  "file": "/audio/sharding/sh-naive-executive.mp3",
+  "ms": 8232,
+  "hash": "42ecaeb1d93a"
+ },
+ "sh-structure-engineer": {
+  "file": "/audio/sharding/sh-structure-engineer.mp3",
+  "ms": 30120,
+  "hash": "e1ce9822d5a2"
+ },
+ "sh-structure-executive": {
+  "file": "/audio/sharding/sh-structure-executive.mp3",
+  "ms": 9384,
+  "hash": "f310d7d7efc6"
+ },
+ "sh-strategies-engineer": {
+  "file": "/audio/sharding/sh-strategies-engineer.mp3",
+  "ms": 31944,
+  "hash": "4cff2bbb7705"
+ },
+ "sh-strategies-executive": {
+  "file": "/audio/sharding/sh-strategies-executive.mp3",
+  "ms": 9168,
+  "hash": "2f132af56a76"
+ },
+ "sh-key-engineer": {
+  "file": "/audio/sharding/sh-key-engineer.mp3",
+  "ms": 28608,
+  "hash": "97c9a0f049ef"
+ },
+ "sh-key-executive": {
+  "file": "/audio/sharding/sh-key-executive.mp3",
+  "ms": 7440,
+  "hash": "3af0b809654a"
+ },
+ "sh-how-engineer": {
+  "file": "/audio/sharding/sh-how-engineer.mp3",
+  "ms": 31104,
+  "hash": "ea35403ca71e"
+ },
+ "sh-how-executive": {
+  "file": "/audio/sharding/sh-how-executive.mp3",
+  "ms": 8568,
+  "hash": "3c84aedecdc6"
+ },
+ "sh-scatter-engineer": {
+  "file": "/audio/sharding/sh-scatter-engineer.mp3",
+  "ms": 29904,
+  "hash": "01d9565b79a9"
+ },
+ "sh-scatter-executive": {
+  "file": "/audio/sharding/sh-scatter-executive.mp3",
+  "ms": 9624,
+  "hash": "4295e2da88fa"
+ },
+ "sh-hot-engineer": {
+  "file": "/audio/sharding/sh-hot-engineer.mp3",
+  "ms": 27600,
+  "hash": "8682f80b49d1"
+ },
+ "sh-hot-executive": {
+  "file": "/audio/sharding/sh-hot-executive.mp3",
+  "ms": 9840,
+  "hash": "06493f2d1b16"
+ },
+ "sh-reshard-engineer": {
+  "file": "/audio/sharding/sh-reshard-engineer.mp3",
+  "ms": 31080,
+  "hash": "ef87924f61d0"
+ },
+ "sh-reshard-executive": {
+  "file": "/audio/sharding/sh-reshard-executive.mp3",
+  "ms": 10440,
+  "hash": "143251233db3"
+ },
+ "sh-tradeoffs-engineer": {
+  "file": "/audio/sharding/sh-tradeoffs-engineer.mp3",
+  "ms": 28848,
+  "hash": "74aebe4e177d"
+ },
+ "sh-tradeoffs-executive": {
+  "file": "/audio/sharding/sh-tradeoffs-executive.mp3",
+  "ms": 9096,
+  "hash": "109f965dd6fd"
+ },
+ "sh-whennot-engineer": {
+  "file": "/audio/sharding/sh-whennot-engineer.mp3",
+  "ms": 31560,
+  "hash": "f237a33906e5"
+ },
+ "sh-whennot-executive": {
+  "file": "/audio/sharding/sh-whennot-executive.mp3",
+  "ms": 7488,
+  "hash": "7ecb1d0d1d2a"
+ },
+ "sh-wild-engineer": {
+  "file": "/audio/sharding/sh-wild-engineer.mp3",
+  "ms": 31824,
+  "hash": "0aa3b57ec6e9"
+ },
+ "sh-wild-executive": {
+  "file": "/audio/sharding/sh-wild-executive.mp3",
+  "ms": 11376,
+  "hash": "c07283081617"
+ },
+ "sh-related-engineer": {
+  "file": "/audio/sharding/sh-related-engineer.mp3",
+  "ms": 30288,
+  "hash": "1856bc819b98"
+ },
+ "sh-related-executive": {
+  "file": "/audio/sharding/sh-related-executive.mp3",
+  "ms": 9624,
+  "hash": "2dbf34501c69"
+ },
+ "sh-recap-engineer": {
+  "file": "/audio/sharding/sh-recap-engineer.mp3",
+  "ms": 24648,
+  "hash": "aab8b6bd7f02"
+ },
+ "sh-recap-executive": {
+  "file": "/audio/sharding/sh-recap-executive.mp3",
+  "ms": 7632,
+  "hash": "251aa2b69920"
+ }
+}

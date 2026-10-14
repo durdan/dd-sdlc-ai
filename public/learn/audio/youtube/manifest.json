@@ -1,0 +1,262 @@
+{
+ "y01-engineer": {
+  "file": "/audio/youtube/y01-engineer.mp3",
+  "ms": 27984,
+  "hash": "cf9076a48f6e"
+ },
+ "y01-executive": {
+  "file": "/audio/youtube/y01-executive.mp3",
+  "ms": 7392,
+  "hash": "49394cc7e3d1"
+ },
+ "y02-engineer": {
+  "file": "/audio/youtube/y02-engineer.mp3",
+  "ms": 30648,
+  "hash": "c9d55563c8cd"
+ },
+ "y02-executive": {
+  "file": "/audio/youtube/y02-executive.mp3",
+  "ms": 6216,
+  "hash": "e4966aa1f166"
+ },
+ "y03-engineer": {
+  "file": "/audio/youtube/y03-engineer.mp3",
+  "ms": 31200,
+  "hash": "e343f23e9fab"
+ },
+ "y03-executive": {
+  "file": "/audio/youtube/y03-executive.mp3",
+  "ms": 7464,
+  "hash": "52cd8f4f1ad9"
+ },
+ "y04-engineer": {
+  "file": "/audio/youtube/y04-engineer.mp3",
+  "ms": 30720,
+  "hash": "c239927a48b7"
+ },
+ "y04-executive": {
+  "file": "/audio/youtube/y04-executive.mp3",
+  "ms": 7320,
+  "hash": "d9e41c2f23e2"
+ },
+ "y05-engineer": {
+  "file": "/audio/youtube/y05-engineer.mp3",
+  "ms": 26352,
+  "hash": "0e37816b9b3f"
+ },
+ "y05-executive": {
+  "file": "/audio/youtube/y05-executive.mp3",
+  "ms": 7200,
+  "hash": "fb161865ce5c"
+ },
+ "y06-engineer": {
+  "file": "/audio/youtube/y06-engineer.mp3",
+  "ms": 34800,
+  "hash": "acaa61f1bce6"
+ },
+ "y06-executive": {
+  "file": "/audio/youtube/y06-executive.mp3",
+  "ms": 8784,
+  "hash": "69ee8b283c60"
+ },
+ "y07-engineer": {
+  "file": "/audio/youtube/y07-engineer.mp3",
+  "ms": 31200,
+  "hash": "fed117a73297"
+ },
+ "y07-executive": {
+  "file": "/audio/youtube/y07-executive.mp3",
+  "ms": 6048,
+  "hash": "716e950518a4"
+ },
+ "y08-engineer": {
+  "file": "/audio/youtube/y08-engineer.mp3",
+  "ms": 28656,
+  "hash": "831bc6a94d65"
+ },
+ "y08-executive": {
+  "file": "/audio/youtube/y08-executive.mp3",
+  "ms": 6048,
+  "hash": "c5e10a7081f1"
+ },
+ "y09-engineer": {
+  "file": "/audio/youtube/y09-engineer.mp3",
+  "ms": 30240,
+  "hash": "21451a6b2c6a"
+ },
+ "y09-executive": {
+  "file": "/audio/youtube/y09-executive.mp3",
+  "ms": 7008,
+  "hash": "8af502418b66"
+ },
+ "y10-engineer": {
+  "file": "/audio/youtube/y10-engineer.mp3",
+  "ms": 31032,
+  "hash": "1cf4c59c4f11"
+ },
+ "y10-executive": {
+  "file": "/audio/youtube/y10-executive.mp3",
+  "ms": 7440,
+  "hash": "fd179910ce94"
+ },
+ "y11-engineer": {
+  "file": "/audio/youtube/y11-engineer.mp3",
+  "ms": 29064,
+  "hash": "d7b02470dcb1"
+ },
+ "y11-executive": {
+  "file": "/audio/youtube/y11-executive.mp3",
+  "ms": 7680,
+  "hash": "bb6e371051b6"
+ },
+ "y12-engineer": {
+  "file": "/audio/youtube/y12-engineer.mp3",
+  "ms": 30384,
+  "hash": "f72ec14318fb"
+ },
+ "y12-executive": {
+  "file": "/audio/youtube/y12-executive.mp3",
+  "ms": 7776,
+  "hash": "93b585d47b40"
+ },
+ "y13-engineer": {
+  "file": "/audio/youtube/y13-engineer.mp3",
+  "ms": 31800,
+  "hash": "bf0547075b54"
+ },
+ "y13-executive": {
+  "file": "/audio/youtube/y13-executive.mp3",
+  "ms": 7896,
+  "hash": "71bd62dcfedb"
+ },
+ "y14-engineer": {
+  "file": "/audio/youtube/y14-engineer.mp3",
+  "ms": 32256,
+  "hash": "fb253871dfbb"
+ },
+ "y14-executive": {
+  "file": "/audio/youtube/y14-executive.mp3",
+  "ms": 6504,
+  "hash": "2051b4e379e0"
+ },
+ "y15-engineer": {
+  "file": "/audio/youtube/y15-engineer.mp3",
+  "ms": 33024,
+  "hash": "a95d005458df"
+ },
+ "y15-executive": {
+  "file": "/audio/youtube/y15-executive.mp3",
+  "ms": 8184,
+  "hash": "55a837baa534"
+ },
+ "y16-engineer": {
+  "file": "/audio/youtube/y16-engineer.mp3",
+  "ms": 29376,
+  "hash": "75c9d6aeb692"
+ },
+ "y16-executive": {
+  "file": "/audio/youtube/y16-executive.mp3",
+  "ms": 5712,
+  "hash": "96447f7f1eca"
+ },
+ "y17-engineer": {
+  "file": "/audio/youtube/y17-engineer.mp3",
+  "ms": 30384,
+  "hash": "2bb997cacbd8"
+ },
+ "y17-executive": {
+  "file": "/audio/youtube/y17-executive.mp3",
+  "ms": 6864,
+  "hash": "c7625bcebd82"
+ },
+ "y18-engineer": {
+  "file": "/audio/youtube/y18-engineer.mp3",
+  "ms": 32352,
+  "hash": "3e63f7468b19"
+ },
+ "y18-executive": {
+  "file": "/audio/youtube/y18-executive.mp3",
+  "ms": 7152,
+  "hash": "0bb2b799f28b"
+ },
+ "y19-engineer": {
+  "file": "/audio/youtube/y19-engineer.mp3",
+  "ms": 28656,
+  "hash": "c991d25dbcc9"
+ },
+ "y19-executive": {
+  "file": "/audio/youtube/y19-executive.mp3",
+  "ms": 7416,
+  "hash": "74cc0c6133c8"
+ },
+ "y20-engineer": {
+  "file": "/audio/youtube/y20-engineer.mp3",
+  "ms": 32592,
+  "hash": "bd92192d3fb6"
+ },
+ "y20-executive": {
+  "file": "/audio/youtube/y20-executive.mp3",
+  "ms": 7728,
+  "hash": "26a3d5452bfa"
+ },
+ "y21-engineer": {
+  "file": "/audio/youtube/y21-engineer.mp3",
+  "ms": 28152,
+  "hash": "b5ffae551305"
+ },
+ "y21-executive": {
+  "file": "/audio/youtube/y21-executive.mp3",
+  "ms": 7128,
+  "hash": "60350764c3e8"
+ },
+ "y22-engineer": {
+  "file": "/audio/youtube/y22-engineer.mp3",
+  "ms": 37128,
+  "hash": "0c2873b97112"
+ },
+ "y22-executive": {
+  "file": "/audio/youtube/y22-executive.mp3",
+  "ms": 8304,
+  "hash": "fc317810ba75"
+ },
+ "y23-engineer": {
+  "file": "/audio/youtube/y23-engineer.mp3",
+  "ms": 35040,
+  "hash": "91591a6f2082"
+ },
+ "y23-executive": {
+  "file": "/audio/youtube/y23-executive.mp3",
+  "ms": 8712,
+  "hash": "10f52becd2d2"
+ },
+ "y24-engineer": {
+  "file": "/audio/youtube/y24-engineer.mp3",
+  "ms": 28680,
+  "hash": "7e7b869c6270"
+ },
+ "y24-executive": {
+  "file": "/audio/youtube/y24-executive.mp3",
+  "ms": 9144,
+  "hash": "b1aedff642d5"
+ },
+ "y25-engineer": {
+  "file": "/audio/youtube/y25-engineer.mp3",
+  "ms": 34224,
+  "hash": "a70d6a774f0a"
+ },
+ "y25-executive": {
+  "file": "/audio/youtube/y25-executive.mp3",
+  "ms": 7392,
+  "hash": "fa79d716c2f3"
+ },
+ "y26-engineer": {
+  "file": "/audio/youtube/y26-engineer.mp3",
+  "ms": 34344,
+  "hash": "a1d4eb37d2d0"
+ },
+ "y26-executive": {
+  "file": "/audio/youtube/y26-executive.mp3",
+  "ms": 9408,
+  "hash": "6085ce3ba242"
+ }
+}

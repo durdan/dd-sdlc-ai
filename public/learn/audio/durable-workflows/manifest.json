@@ -1,0 +1,142 @@
+{
+ "dw-half-done-engineer": {
+  "file": "/audio/durable-workflows/dw-half-done-engineer.mp3",
+  "ms": 26208,
+  "hash": "8ca8440af8f8"
+ },
+ "dw-half-done-executive": {
+  "file": "/audio/durable-workflows/dw-half-done-executive.mp3",
+  "ms": 9720,
+  "hash": "3eaf4f183210"
+ },
+ "dw-naive-engineer": {
+  "file": "/audio/durable-workflows/dw-naive-engineer.mp3",
+  "ms": 28320,
+  "hash": "5a23c82f84a0"
+ },
+ "dw-naive-executive": {
+  "file": "/audio/durable-workflows/dw-naive-executive.mp3",
+  "ms": 9096,
+  "hash": "923e8fbac524"
+ },
+ "dw-structure-engineer": {
+  "file": "/audio/durable-workflows/dw-structure-engineer.mp3",
+  "ms": 30624,
+  "hash": "2305d5f63303"
+ },
+ "dw-structure-executive": {
+  "file": "/audio/durable-workflows/dw-structure-executive.mp3",
+  "ms": 8400,
+  "hash": "cceec825d834"
+ },
+ "dw-code-engineer": {
+  "file": "/audio/durable-workflows/dw-code-engineer.mp3",
+  "ms": 28728,
+  "hash": "29717e98b594"
+ },
+ "dw-code-executive": {
+  "file": "/audio/durable-workflows/dw-code-executive.mp3",
+  "ms": 8376,
+  "hash": "9b2d6af1d778"
+ },
+ "dw-how-engineer": {
+  "file": "/audio/durable-workflows/dw-how-engineer.mp3",
+  "ms": 32232,
+  "hash": "aabc04ad4d9b"
+ },
+ "dw-how-executive": {
+  "file": "/audio/durable-workflows/dw-how-executive.mp3",
+  "ms": 8688,
+  "hash": "b32c8ed7c48f"
+ },
+ "dw-crash-engineer": {
+  "file": "/audio/durable-workflows/dw-crash-engineer.mp3",
+  "ms": 30504,
+  "hash": "ba0ae2635173"
+ },
+ "dw-crash-executive": {
+  "file": "/audio/durable-workflows/dw-crash-executive.mp3",
+  "ms": 7944,
+  "hash": "1b4eed6a02e1"
+ },
+ "dw-rules-engineer": {
+  "file": "/audio/durable-workflows/dw-rules-engineer.mp3",
+  "ms": 29952,
+  "hash": "f1f5911cadd2"
+ },
+ "dw-rules-executive": {
+  "file": "/audio/durable-workflows/dw-rules-executive.mp3",
+  "ms": 7872,
+  "hash": "60b9755bc8a1"
+ },
+ "dw-edges-engineer": {
+  "file": "/audio/durable-workflows/dw-edges-engineer.mp3",
+  "ms": 31440,
+  "hash": "39c41a03b4b4"
+ },
+ "dw-edges-executive": {
+  "file": "/audio/durable-workflows/dw-edges-executive.mp3",
+  "ms": 8856,
+  "hash": "5a1d6e88e455"
+ },
+ "dw-tradeoffs-engineer": {
+  "file": "/audio/durable-workflows/dw-tradeoffs-engineer.mp3",
+  "ms": 26304,
+  "hash": "29302512e71e"
+ },
+ "dw-tradeoffs-executive": {
+  "file": "/audio/durable-workflows/dw-tradeoffs-executive.mp3",
+  "ms": 10056,
+  "hash": "9e5f525d36ce"
+ },
+ "dw-whennot-engineer": {
+  "file": "/audio/durable-workflows/dw-whennot-engineer.mp3",
+  "ms": 26616,
+  "hash": "704f1b4d70d3"
+ },
+ "dw-whennot-executive": {
+  "file": "/audio/durable-workflows/dw-whennot-executive.mp3",
+  "ms": 9600,
+  "hash": "833fdeba5935"
+ },
+ "dw-wild-engineer": {
+  "file": "/audio/durable-workflows/dw-wild-engineer.mp3",
+  "ms": 31656,
+  "hash": "30f043bb882d"
+ },
+ "dw-wild-executive": {
+  "file": "/audio/durable-workflows/dw-wild-executive.mp3",
+  "ms": 9696,
+  "hash": "c16b31e52014"
+ },
+ "dw-stepfn-engineer": {
+  "file": "/audio/durable-workflows/dw-stepfn-engineer.mp3",
+  "ms": 29400,
+  "hash": "f2319d7411cd"
+ },
+ "dw-stepfn-executive": {
+  "file": "/audio/durable-workflows/dw-stepfn-executive.mp3",
+  "ms": 8376,
+  "hash": "c4823300ac85"
+ },
+ "dw-related-engineer": {
+  "file": "/audio/durable-workflows/dw-related-engineer.mp3",
+  "ms": 28656,
+  "hash": "af9a6841ef06"
+ },
+ "dw-related-executive": {
+  "file": "/audio/durable-workflows/dw-related-executive.mp3",
+  "ms": 9792,
+  "hash": "67a714359f03"
+ },
+ "dw-recap-engineer": {
+  "file": "/audio/durable-workflows/dw-recap-engineer.mp3",
+  "ms": 20160,
+  "hash": "b7185912ce36"
+ },
+ "dw-recap-executive": {
+  "file": "/audio/durable-workflows/dw-recap-executive.mp3",
+  "ms": 7728,
+  "hash": "e167d32f47bb"
+ }
+}

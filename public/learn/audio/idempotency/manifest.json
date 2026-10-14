@@ -1,0 +1,142 @@
+{
+ "idem-problem-engineer": {
+  "file": "/audio/idempotency/idem-problem-engineer.mp3",
+  "ms": 25872,
+  "hash": "4b0b30be7f54"
+ },
+ "idem-problem-executive": {
+  "file": "/audio/idempotency/idem-problem-executive.mp3",
+  "ms": 7752,
+  "hash": "9ece38b9708a"
+ },
+ "idem-methods-engineer": {
+  "file": "/audio/idempotency/idem-methods-engineer.mp3",
+  "ms": 31656,
+  "hash": "15fe1c285b6f"
+ },
+ "idem-methods-executive": {
+  "file": "/audio/idempotency/idem-methods-executive.mp3",
+  "ms": 7944,
+  "hash": "56b11307e55e"
+ },
+ "idem-naive-engineer": {
+  "file": "/audio/idempotency/idem-naive-engineer.mp3",
+  "ms": 25512,
+  "hash": "e4a99d08ff49"
+ },
+ "idem-naive-executive": {
+  "file": "/audio/idempotency/idem-naive-executive.mp3",
+  "ms": 6816,
+  "hash": "ca80afce3f4a"
+ },
+ "idem-structure-engineer": {
+  "file": "/audio/idempotency/idem-structure-engineer.mp3",
+  "ms": 28992,
+  "hash": "24021c63e951"
+ },
+ "idem-structure-executive": {
+  "file": "/audio/idempotency/idem-structure-executive.mp3",
+  "ms": 8736,
+  "hash": "b284f4906a34"
+ },
+ "idem-first-engineer": {
+  "file": "/audio/idempotency/idem-first-engineer.mp3",
+  "ms": 30624,
+  "hash": "bb31cb587385"
+ },
+ "idem-first-executive": {
+  "file": "/audio/idempotency/idem-first-executive.mp3",
+  "ms": 7152,
+  "hash": "19cf7ca82b7b"
+ },
+ "idem-replay-engineer": {
+  "file": "/audio/idempotency/idem-replay-engineer.mp3",
+  "ms": 28512,
+  "hash": "b216845ef1a9"
+ },
+ "idem-replay-executive": {
+  "file": "/audio/idempotency/idem-replay-executive.mp3",
+  "ms": 6120,
+  "hash": "b6f57edcde3c"
+ },
+ "idem-concurrent-engineer": {
+  "file": "/audio/idempotency/idem-concurrent-engineer.mp3",
+  "ms": 26880,
+  "hash": "b308d8c714e6"
+ },
+ "idem-concurrent-executive": {
+  "file": "/audio/idempotency/idem-concurrent-executive.mp3",
+  "ms": 5568,
+  "hash": "9f1b4c3cc335"
+ },
+ "idem-mismatch-engineer": {
+  "file": "/audio/idempotency/idem-mismatch-engineer.mp3",
+  "ms": 28104,
+  "hash": "81c55010526c"
+ },
+ "idem-mismatch-executive": {
+  "file": "/audio/idempotency/idem-mismatch-executive.mp3",
+  "ms": 7968,
+  "hash": "b7078314baa2"
+ },
+ "idem-edges-engineer": {
+  "file": "/audio/idempotency/idem-edges-engineer.mp3",
+  "ms": 27528,
+  "hash": "d73f61c21777"
+ },
+ "idem-edges-executive": {
+  "file": "/audio/idempotency/idem-edges-executive.mp3",
+  "ms": 7392,
+  "hash": "79704feefbdc"
+ },
+ "idem-tradeoffs-engineer": {
+  "file": "/audio/idempotency/idem-tradeoffs-engineer.mp3",
+  "ms": 28224,
+  "hash": "c2a2d497975e"
+ },
+ "idem-tradeoffs-executive": {
+  "file": "/audio/idempotency/idem-tradeoffs-executive.mp3",
+  "ms": 7752,
+  "hash": "a90cbf46b820"
+ },
+ "idem-messaging-engineer": {
+  "file": "/audio/idempotency/idem-messaging-engineer.mp3",
+  "ms": 29448,
+  "hash": "8bfd07b3cfa6"
+ },
+ "idem-messaging-executive": {
+  "file": "/audio/idempotency/idem-messaging-executive.mp3",
+  "ms": 7128,
+  "hash": "4ee222b6a344"
+ },
+ "idem-wild-engineer": {
+  "file": "/audio/idempotency/idem-wild-engineer.mp3",
+  "ms": 33600,
+  "hash": "cfd2201e383a"
+ },
+ "idem-wild-executive": {
+  "file": "/audio/idempotency/idem-wild-executive.mp3",
+  "ms": 9336,
+  "hash": "26a230545122"
+ },
+ "idem-related-engineer": {
+  "file": "/audio/idempotency/idem-related-engineer.mp3",
+  "ms": 26928,
+  "hash": "3b47cb44e539"
+ },
+ "idem-related-executive": {
+  "file": "/audio/idempotency/idem-related-executive.mp3",
+  "ms": 7968,
+  "hash": "c1f948f8fdca"
+ },
+ "idem-recap-engineer": {
+  "file": "/audio/idempotency/idem-recap-engineer.mp3",
+  "ms": 21888,
+  "hash": "620b1eb55211"
+ },
+ "idem-recap-executive": {
+  "file": "/audio/idempotency/idem-recap-executive.mp3",
+  "ms": 7656,
+  "hash": "61791415a88d"
+ }
+}

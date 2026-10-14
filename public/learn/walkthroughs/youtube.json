@@ -1,0 +1,1590 @@
+{
+ "id": "youtube",
+ "title": "YouTube video",
+ "subtitle": "Company case study",
+ "voice": "en-GB-SoniaNeural",
+ "template": "case-study",
+ "meta": {
+  "kind": "company",
+  "category": "Streaming",
+  "level": "intermediate",
+  "uses": [
+   "sharding",
+   "backpressure",
+   "rate-limiting",
+   "retry"
+  ],
+  "related": [
+   "netflix"
+  ],
+  "blurb": "From upload to play: resumable uploads, transcoding on custom chips, Vitess-sharded metadata and video served from caches inside your ISP.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14",
+  "changelog": [
+   {
+    "date": "2026-10-14",
+    "note": "First version."
+   }
+  ]
+ },
+ "diagrams": [
+  {
+   "id": "context",
+   "kind": "c4",
+   "title": "Level 1 · Context",
+   "direction": "DOWN",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request · upload"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "video · payouts · claims"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "cache fill"
+    }
+   ],
+   "elements": [
+    {
+     "id": "creator",
+     "kind": "person",
+     "label": "Creator",
+     "sub": "uploads, edits, earns",
+     "rank": 0
+    },
+    {
+     "id": "viewer",
+     "kind": "person",
+     "label": "Viewer",
+     "sub": "phone, browser, TV",
+     "rank": 0
+    },
+    {
+     "id": "advertiser",
+     "kind": "external",
+     "label": "Advertiser",
+     "sub": "campaigns and budgets",
+     "rank": 0
+    },
+    {
+     "id": "youtube",
+     "kind": "system",
+     "label": "YouTube",
+     "sub": "upload, processing, discovery, playback",
+     "rank": 1
+    },
+    {
+     "id": "rights",
+     "kind": "external",
+     "label": "Rights holders",
+     "sub": "reference files for Content ID",
+     "rank": 1
+    },
+    {
+     "id": "edge",
+     "kind": "system",
+     "label": "Google edge network",
+     "sub": "edge PoPs and Global Cache nodes in ISPs",
+     "tone": "stream",
+     "rank": 2
+    },
+    {
+     "id": "isp",
+     "kind": "external",
+     "label": "Viewer's ISP",
+     "sub": "hosts Google Global Cache",
+     "rank": 3
+    }
+   ],
+   "edges": [
+    {
+     "id": "c-creator-yt",
+     "from": "creator",
+     "to": "youtube",
+     "label": "upload, title, thumbnail",
+     "style": "solid"
+    },
+    {
+     "id": "c-viewer-yt",
+     "from": "viewer",
+     "to": "youtube",
+     "label": "browse, search, press play",
+     "style": "solid"
+    },
+    {
+     "id": "c-yt-edge",
+     "from": "youtube",
+     "to": "edge",
+     "label": "popular video",
+     "style": "dotted"
+    },
+    {
+     "id": "c-edge-isp",
+     "from": "edge",
+     "to": "isp",
+     "label": "cached in the ISP",
+     "style": "dotted"
+    },
+    {
+     "id": "c-isp-viewer",
+     "from": "isp",
+     "to": "viewer",
+     "label": "video segments",
+     "style": "dashed"
+    },
+    {
+     "id": "c-adv-yt",
+     "from": "advertiser",
+     "to": "youtube",
+     "label": "ads, targeting",
+     "style": "solid"
+    },
+    {
+     "id": "c-rights-yt",
+     "from": "rights",
+     "to": "youtube",
+     "label": "reference files",
+     "style": "solid"
+    },
+    {
+     "id": "c-yt-rights",
+     "from": "youtube",
+     "to": "rights",
+     "label": "claims: block, monetise, track",
+     "style": "dashed"
+    },
+    {
+     "id": "c-yt-creator",
+     "from": "youtube",
+     "to": "creator",
+     "label": "analytics, revenue share",
+     "style": "dashed"
+    }
+   ]
+  },
+  {
+   "id": "containers",
+   "kind": "c4",
+   "title": "Level 2 · Containers (our design)",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "ingest",
+     "label": "Upload and processing",
+     "tone": "stream"
+    },
+    {
+     "id": "serve",
+     "label": "Watch and discovery",
+     "tone": "core"
+    },
+    {
+     "id": "store",
+     "label": "Data",
+     "tone": "data"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request · response"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "jobs · events · video"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "storage"
+    }
+   ],
+   "elements": [
+    {
+     "id": "studio",
+     "kind": "external",
+     "label": "Creator app",
+     "sub": "YouTube Studio, mobile, Data API",
+     "rank": 0
+    },
+    {
+     "id": "player",
+     "kind": "container",
+     "label": "Player",
+     "sub": "web, app, TV · adaptive bitrate",
+     "tone": "neutral",
+     "rank": 0
+    },
+    {
+     "id": "front",
+     "kind": "container",
+     "label": "API front end",
+     "sub": "auth, quotas, routing",
+     "tone": "core",
+     "rank": 1
+    },
+    {
+     "id": "upload",
+     "kind": "container",
+     "label": "Upload service",
+     "sub": "resumable sessions",
+     "group": "ingest",
+     "rank": 2
+    },
+    {
+     "id": "transcode",
+     "kind": "container",
+     "label": "Transcoding",
+     "sub": "VCU chips · H.264, VP9, AV1",
+     "group": "ingest",
+     "rank": 3
+    },
+    {
+     "id": "contentid",
+     "kind": "container",
+     "label": "Content ID",
+     "sub": "match against reference files",
+     "group": "ingest",
+     "rank": 3
+    },
+    {
+     "id": "watch",
+     "kind": "container",
+     "label": "Watch service",
+     "sub": "metadata, formats, stream URLs",
+     "group": "serve",
+     "rank": 2
+    },
+    {
+     "id": "recs",
+     "kind": "container",
+     "label": "Recommendations",
+     "sub": "candidates, then ranking",
+     "group": "serve",
+     "rank": 3
+    },
+    {
+     "id": "comments",
+     "kind": "container",
+     "label": "Comments",
+     "sub": "threads, likes, moderation",
+     "group": "serve",
+     "rank": 2
+    },
+    {
+     "id": "blob",
+     "kind": "store",
+     "label": "Video storage",
+     "sub": "originals and renditions",
+     "group": "store",
+     "rank": 4
+    },
+    {
+     "id": "meta",
+     "kind": "store",
+     "label": "Metadata",
+     "sub": "sharded MySQL, Vitess (historically)",
+     "group": "store",
+     "rank": 4
+    },
+    {
+     "id": "signals",
+     "kind": "store",
+     "label": "Watch signals",
+     "sub": "history, watch time, surveys",
+     "group": "store",
+     "rank": 4
+    },
+    {
+     "id": "edge",
+     "kind": "container",
+     "label": "Edge caches",
+     "sub": "Google Global Cache in ISPs",
+     "tone": "stream",
+     "rank": 5
+    }
+   ],
+   "edges": [
+    {
+     "id": "k-studio-front",
+     "from": "studio",
+     "to": "front",
+     "label": "upload",
+     "style": "solid"
+    },
+    {
+     "id": "k-front-upload",
+     "from": "front",
+     "to": "upload",
+     "style": "solid"
+    },
+    {
+     "id": "k-upload-blob",
+     "from": "upload",
+     "to": "blob",
+     "label": "original",
+     "style": "dotted"
+    },
+    {
+     "id": "k-upload-tx",
+     "from": "upload",
+     "to": "transcode",
+     "label": "job",
+     "style": "dashed"
+    },
+    {
+     "id": "k-upload-cid",
+     "from": "upload",
+     "to": "contentid",
+     "label": "fingerprint",
+     "style": "dashed"
+    },
+    {
+     "id": "k-tx-blob",
+     "from": "transcode",
+     "to": "blob",
+     "label": "renditions",
+     "style": "dotted"
+    },
+    {
+     "id": "k-tx-meta",
+     "from": "transcode",
+     "to": "meta",
+     "label": "formats ready",
+     "style": "dashed"
+    },
+    {
+     "id": "k-cid-meta",
+     "from": "contentid",
+     "to": "meta",
+     "label": "claim policy",
+     "style": "dashed"
+    },
+    {
+     "id": "k-player-front",
+     "from": "player",
+     "to": "front",
+     "label": "watch, home, comments",
+     "style": "solid"
+    },
+    {
+     "id": "k-front-watch",
+     "from": "front",
+     "to": "watch",
+     "style": "solid"
+    },
+    {
+     "id": "k-watch-meta",
+     "from": "watch",
+     "to": "meta",
+     "label": "video, policy",
+     "style": "dotted"
+    },
+    {
+     "id": "k-player-edge",
+     "from": "player",
+     "to": "edge",
+     "label": "segments",
+     "style": "dashed"
+    },
+    {
+     "id": "k-edge-blob",
+     "from": "edge",
+     "to": "blob",
+     "label": "miss: fill",
+     "style": "dotted"
+    },
+    {
+     "id": "k-front-recs",
+     "from": "front",
+     "to": "recs",
+     "label": "home, up next",
+     "style": "solid"
+    },
+    {
+     "id": "k-recs-signals",
+     "from": "recs",
+     "to": "signals",
+     "label": "history",
+     "style": "dotted"
+    },
+    {
+     "id": "k-recs-meta",
+     "from": "recs",
+     "to": "meta",
+     "label": "video features",
+     "style": "dotted"
+    },
+    {
+     "id": "k-front-signals",
+     "from": "front",
+     "to": "signals",
+     "label": "watch events",
+     "style": "dashed"
+    },
+    {
+     "id": "k-front-comments",
+     "from": "front",
+     "to": "comments",
+     "style": "solid"
+    },
+    {
+     "id": "k-comments-meta",
+     "from": "comments",
+     "to": "meta",
+     "label": "keyed by video",
+     "style": "dotted"
+    }
+   ]
+  },
+  {
+   "id": "transcode",
+   "kind": "c4",
+   "title": "Level 3 · The transcoding pipeline (our design around the VCU)",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "pipe",
+     "label": "Transcoding · our design; the VCU is published",
+     "tone": "stream"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "work"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "signal · back-pressure"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "storage"
+    }
+   ],
+   "elements": [
+    {
+     "id": "orig",
+     "kind": "store",
+     "label": "Original upload",
+     "sub": "one file, any format",
+     "tone": "data",
+     "rank": 0
+    },
+    {
+     "id": "split",
+     "kind": "component",
+     "label": "Splitter",
+     "sub": "cut into chunks at keyframes",
+     "group": "pipe",
+     "rank": 1
+    },
+    {
+     "id": "queue",
+     "kind": "component",
+     "label": "Work queue",
+     "sub": "priority: low resolutions first",
+     "group": "pipe",
+     "rank": 1
+    },
+    {
+     "id": "vcu",
+     "kind": "container",
+     "label": "VCU fleet",
+     "sub": "hardware encode · 20–33× efficiency",
+     "group": "pipe",
+     "rank": 2
+    },
+    {
+     "id": "cpu",
+     "kind": "container",
+     "label": "Software encoders",
+     "sub": "CPU fallback and new codecs",
+     "group": "pipe",
+     "rank": 2
+    },
+    {
+     "id": "stitch",
+     "kind": "component",
+     "label": "Assemble and check",
+     "sub": "stitch chunks, verify quality",
+     "group": "pipe",
+     "rank": 3
+    },
+    {
+     "id": "pkg",
+     "kind": "component",
+     "label": "Packager",
+     "sub": "DASH segments and formats",
+     "group": "pipe",
+     "rank": 3
+    },
+    {
+     "id": "rend",
+     "kind": "store",
+     "label": "Renditions",
+     "sub": "per resolution and codec",
+     "tone": "data",
+     "rank": 4
+    },
+    {
+     "id": "status",
+     "kind": "store",
+     "label": "Video metadata",
+     "sub": "processing → SD ready → HD ready",
+     "tone": "data",
+     "rank": 4
+    }
+   ],
+   "edges": [
+    {
+     "id": "t-orig-split",
+     "from": "orig",
+     "to": "split",
+     "label": "read",
+     "style": "solid"
+    },
+    {
+     "id": "t-split-queue",
+     "from": "split",
+     "to": "queue",
+     "label": "chunk × rendition tasks",
+     "style": "solid"
+    },
+    {
+     "id": "t-queue-vcu",
+     "from": "queue",
+     "to": "vcu",
+     "label": "H.264, VP9",
+     "style": "solid"
+    },
+    {
+     "id": "t-queue-cpu",
+     "from": "queue",
+     "to": "cpu",
+     "label": "overflow, other codecs",
+     "style": "solid"
+    },
+    {
+     "id": "t-vcu-queue",
+     "from": "vcu",
+     "to": "queue",
+     "label": "full: slow intake",
+     "style": "dashed"
+    },
+    {
+     "id": "t-vcu-stitch",
+     "from": "vcu",
+     "to": "stitch",
+     "style": "solid"
+    },
+    {
+     "id": "t-cpu-stitch",
+     "from": "cpu",
+     "to": "stitch",
+     "style": "solid"
+    },
+    {
+     "id": "t-stitch-pkg",
+     "from": "stitch",
+     "to": "pkg",
+     "style": "solid"
+    },
+    {
+     "id": "t-pkg-rend",
+     "from": "pkg",
+     "to": "rend",
+     "label": "write",
+     "style": "dotted"
+    },
+    {
+     "id": "t-pkg-status",
+     "from": "pkg",
+     "to": "status",
+     "label": "format ready",
+     "style": "dashed"
+    }
+   ]
+  },
+  {
+   "id": "recs",
+   "kind": "c4",
+   "title": "Level 3 · The recommendation funnel (2016 paper)",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "funnel",
+     "label": "Two neural networks",
+     "tone": "core"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "candidates"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "inputs"
+    }
+   ],
+   "elements": [
+    {
+     "id": "corpus",
+     "kind": "store",
+     "label": "Video corpus",
+     "sub": "millions of videos",
+     "tone": "data",
+     "rank": 0
+    },
+    {
+     "id": "history",
+     "kind": "store",
+     "label": "User history and context",
+     "sub": "watches, searches, region, device",
+     "tone": "data",
+     "rank": 0
+    },
+    {
+     "id": "cand",
+     "kind": "component",
+     "label": "Candidate generation",
+     "sub": "nearest neighbours in embedding space",
+     "group": "funnel",
+     "rank": 1
+    },
+    {
+     "id": "other",
+     "kind": "component",
+     "label": "Other candidate sources",
+     "sub": "for example subscriptions",
+     "rank": 1
+    },
+    {
+     "id": "rank",
+     "kind": "component",
+     "label": "Ranking",
+     "sub": "predicts expected watch time",
+     "group": "funnel",
+     "rank": 2
+    },
+    {
+     "id": "features",
+     "kind": "store",
+     "label": "Video features",
+     "sub": "topic, language, age, …",
+     "tone": "data",
+     "rank": 2
+    },
+    {
+     "id": "home",
+     "kind": "container",
+     "label": "Home and Up next",
+     "sub": "a few dozen shown",
+     "tone": "neutral",
+     "rank": 3
+    }
+   ],
+   "edges": [
+    {
+     "id": "r-corpus-cand",
+     "from": "corpus",
+     "to": "cand",
+     "label": "millions",
+     "style": "solid"
+    },
+    {
+     "id": "r-hist-cand",
+     "from": "history",
+     "to": "cand",
+     "style": "dotted"
+    },
+    {
+     "id": "r-cand-rank",
+     "from": "cand",
+     "to": "rank",
+     "label": "hundreds",
+     "style": "solid"
+    },
+    {
+     "id": "r-other-rank",
+     "from": "other",
+     "to": "rank",
+     "style": "solid"
+    },
+    {
+     "id": "r-hist-rank",
+     "from": "history",
+     "to": "rank",
+     "style": "dotted"
+    },
+    {
+     "id": "r-feat-rank",
+     "from": "features",
+     "to": "rank",
+     "style": "dotted"
+    },
+    {
+     "id": "r-rank-home",
+     "from": "rank",
+     "to": "home",
+     "label": "dozens",
+     "style": "solid"
+    }
+   ]
+  },
+  {
+   "id": "upload",
+   "kind": "sequence",
+   "title": "Upload to watchable",
+   "participants": [
+    {
+     "id": "u-app",
+     "label": "Creator app"
+    },
+    {
+     "id": "u-api",
+     "label": "Upload API"
+    },
+    {
+     "id": "u-store",
+     "label": "Video storage"
+    },
+    {
+     "id": "u-tx",
+     "label": "Transcoding"
+    },
+    {
+     "id": "u-cid",
+     "label": "Content ID"
+    },
+    {
+     "id": "u-meta",
+     "label": "Metadata"
+    }
+   ],
+   "messages": [
+    {
+     "id": "u1",
+     "from": "u-app",
+     "to": "u-api",
+     "label": "start resumable session, title",
+     "style": "solid"
+    },
+    {
+     "id": "u2",
+     "from": "u-api",
+     "to": "u-app",
+     "label": "session URI",
+     "style": "dashed"
+    },
+    {
+     "id": "u3",
+     "from": "u-app",
+     "to": "u-api",
+     "label": "PUT bytes … connection drops",
+     "style": "solid"
+    },
+    {
+     "id": "u4",
+     "from": "u-app",
+     "to": "u-api",
+     "label": "status? Content-Range: bytes */total",
+     "style": "solid"
+    },
+    {
+     "id": "u5",
+     "from": "u-api",
+     "to": "u-app",
+     "label": "308 Resume Incomplete, Range",
+     "style": "dashed"
+    },
+    {
+     "id": "u6",
+     "from": "u-app",
+     "to": "u-api",
+     "label": "PUT remaining bytes",
+     "style": "solid"
+    },
+    {
+     "id": "u7",
+     "from": "u-api",
+     "to": "u-store",
+     "label": "save original",
+     "style": "solid"
+    },
+    {
+     "id": "u8",
+     "from": "u-api",
+     "to": "u-tx",
+     "label": "transcode job",
+     "style": "dashed"
+    },
+    {
+     "id": "u9",
+     "from": "u-api",
+     "to": "u-cid",
+     "label": "match against references",
+     "style": "dashed"
+    },
+    {
+     "id": "u10",
+     "from": "u-tx",
+     "to": "u-meta",
+     "label": "low quality ready: watchable",
+     "style": "dashed"
+    },
+    {
+     "id": "u11",
+     "from": "u-cid",
+     "to": "u-meta",
+     "label": "claim: block, monetise or track",
+     "style": "dashed"
+    },
+    {
+     "id": "u12",
+     "from": "u-tx",
+     "to": "u-meta",
+     "label": "HD and 4K ready, later",
+     "style": "dashed"
+    }
+   ]
+  },
+  {
+   "id": "play",
+   "kind": "sequence",
+   "title": "Press play, with adaptive bitrate",
+   "participants": [
+    {
+     "id": "p-player",
+     "label": "Player"
+    },
+    {
+     "id": "p-front",
+     "label": "YouTube front end"
+    },
+    {
+     "id": "p-meta",
+     "label": "Metadata"
+    },
+    {
+     "id": "p-cache",
+     "label": "Cache in the ISP"
+    },
+    {
+     "id": "p-origin",
+     "label": "Upstream storage"
+    }
+   ],
+   "messages": [
+    {
+     "id": "w1",
+     "from": "p-player",
+     "to": "p-front",
+     "label": "watch video id",
+     "style": "solid"
+    },
+    {
+     "id": "w2",
+     "from": "p-front",
+     "to": "p-meta",
+     "label": "title, policy, formats",
+     "style": "solid"
+    },
+    {
+     "id": "w3",
+     "from": "p-front",
+     "to": "p-player",
+     "label": "formats and stream URLs",
+     "style": "dashed"
+    },
+    {
+     "id": "w4",
+     "from": "p-player",
+     "to": "p-cache",
+     "label": "first segments, modest bitrate",
+     "style": "solid"
+    },
+    {
+     "id": "w5",
+     "from": "p-cache",
+     "to": "p-origin",
+     "label": "miss: fetch and keep",
+     "style": "solid"
+    },
+    {
+     "id": "w6",
+     "from": "p-cache",
+     "to": "p-player",
+     "label": "segments",
+     "style": "dashed"
+    },
+    {
+     "id": "w7",
+     "from": "p-player",
+     "to": "p-cache",
+     "label": "buffer healthy: step up to 1080p",
+     "style": "solid"
+    },
+    {
+     "id": "w8",
+     "from": "p-player",
+     "to": "p-cache",
+     "label": "throughput drops: step down",
+     "style": "solid"
+    },
+    {
+     "id": "w9",
+     "from": "p-cache",
+     "to": "p-player",
+     "label": "smaller segments, no stall",
+     "style": "dashed"
+    },
+    {
+     "id": "w10",
+     "from": "p-player",
+     "to": "p-front",
+     "label": "watch-time events",
+     "style": "dashed"
+    }
+   ]
+  },
+  {
+   "id": "edgecache",
+   "kind": "c4",
+   "title": "Where video is served from",
+   "direction": "DOWN",
+   "legend": [
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "video to the viewer"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "cache miss, fill"
+    }
+   ],
+   "elements": [
+    {
+     "id": "e-viewer",
+     "kind": "person",
+     "label": "Viewer",
+     "sub": "player picks bitrate"
+    },
+    {
+     "id": "e-ggc",
+     "kind": "container",
+     "label": "Edge node · Google Global Cache",
+     "sub": "Google servers inside the ISP",
+     "tone": "stream"
+    },
+    {
+     "id": "e-pop",
+     "kind": "container",
+     "label": "Edge point of presence",
+     "sub": "where Google peers with networks",
+     "tone": "core"
+    },
+    {
+     "id": "e-dc",
+     "kind": "store",
+     "label": "Google data centres",
+     "sub": "all renditions, compute",
+     "tone": "data"
+    }
+   ],
+   "edges": [
+    {
+     "id": "e-ggc-viewer",
+     "from": "e-ggc",
+     "to": "e-viewer",
+     "label": "most popular video",
+     "style": "dashed"
+    },
+    {
+     "id": "e-ggc-pop",
+     "from": "e-ggc",
+     "to": "e-pop",
+     "label": "miss",
+     "style": "dotted"
+    },
+    {
+     "id": "e-pop-dc",
+     "from": "e-pop",
+     "to": "e-dc",
+     "label": "miss",
+     "style": "dotted"
+    },
+    {
+     "id": "e-pop-viewer",
+     "from": "e-pop",
+     "to": "e-viewer",
+     "label": "less popular video",
+     "style": "dashed"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "overview",
+   "title": "Overview"
+  },
+  {
+   "id": "requirements",
+   "title": "Requirements and scale"
+  },
+  {
+   "id": "context",
+   "title": "Context"
+  },
+  {
+   "id": "containers",
+   "title": "Containers"
+  },
+  {
+   "id": "deep-dive",
+   "title": "Deep dive"
+  },
+  {
+   "id": "flows",
+   "title": "Core flows"
+  },
+  {
+   "id": "data",
+   "title": "Data and caching"
+  },
+  {
+   "id": "growth",
+   "title": "Growth"
+  },
+  {
+   "id": "failures",
+   "title": "Failure modes"
+  },
+  {
+   "id": "patterns",
+   "title": "Patterns used"
+  },
+  {
+   "id": "decisions",
+   "title": "Key decisions"
+  },
+  {
+   "id": "mvp",
+   "title": "What we would build first"
+  }
+ ],
+ "shots": [
+  {
+   "id": "y01",
+   "chapter": "overview",
+   "diagram": "context",
+   "focus": [],
+   "trace": [],
+   "engineer": "This is YouTube, seen from the outside. Creators upload videos, viewers watch them on phones, browsers and televisions, advertisers pay for the ads in between, and rights holders protect their music and films. The one idea everything depends on is that every video is prepared once, in many sizes and formats, and then served many times from caches close to the viewer. Upload is rare and expensive; playback is constant and must be cheap.",
+   "executive": "YouTube prepares each video once, in many formats, then plays it millions of times from servers close to viewers."
+  },
+  {
+   "id": "y02",
+   "chapter": "requirements",
+   "card": {
+    "heading": "Scale, from YouTube and Google publications",
+    "kind": "numbers",
+    "points": [
+     "20M+ | videos uploaded a day on average (YouTube press page)",
+     "500+ | hours of video uploaded every minute (2021)",
+     "200B+ | Shorts views a day on average (June 2025)",
+     "1B+ | hours watched on TVs every day (June 2025)",
+     "~230 | uploads a second on average (20M ÷ 86,400 s)"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "First, the scale, from YouTube's own publications. Its press page says more than twenty million videos are uploaded every day on average. In 2021 YouTube wrote that more than five hundred hours of video arrive every minute; that figure is dated. In June 2025 its chief executive said Shorts average over two hundred billion views a day, and that people watch over a billion hours a day on televisions. Twenty million a day is about two hundred and thirty uploads every second.",
+   "executive": "Hundreds of uploads arrive every second, and Shorts alone draw over two hundred billion views a day."
+  },
+  {
+   "id": "y03",
+   "chapter": "requirements",
+   "card": {
+    "heading": "What the system must do (our list)",
+    "points": [
+     "An upload survives a dropped connection without starting again",
+     "A new video is watchable within minutes, in some quality",
+     "Playback starts fast and never stalls, even on a weak network",
+     "Every device gets a format it can decode",
+     "Most bytes come from a cache near the viewer",
+     "Copyright is checked on every upload"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Then the requirements. These are ours, written from the product rather than from a YouTube document. An upload must survive a dropped connection without starting again. A new video should be watchable within minutes, in at least some quality. Playback must start fast and keep going on a weak network. Every device, from an old phone to a 4K television, needs a format it can decode. Most bytes should come from a cache near the viewer. And every upload is checked for copyright.",
+   "executive": "Uploads that resume, videos ready in minutes, playback that never stalls, and copyright checked on every upload."
+  },
+  {
+   "id": "y04",
+   "title": "Creators and viewers",
+   "chapter": "context",
+   "diagram": "context",
+   "focus": [
+    "creator",
+    "viewer",
+    "youtube",
+    "edge",
+    "isp"
+   ],
+   "trace": [
+    "c-creator-yt",
+    "c-viewer-yt",
+    "c-yt-edge",
+    "c-edge-isp",
+    "c-isp-viewer",
+    "c-yt-creator"
+   ],
+   "engineer": "Two kinds of user meet here. The creator uploads a file with a title and thumbnail, and later sees analytics and a share of revenue. The viewer browses, searches and presses play. The video itself takes a different road: Google's edge network, and especially Google Global Cache, which is Google's own servers placed inside internet service providers. Google says popular static content, including YouTube, is cached there, so many viewers are served without leaving their own ISP.",
+   "executive": "Creators upload to YouTube; viewers mostly receive the video from Google servers inside their own internet provider."
+  },
+  {
+   "id": "y05",
+   "title": "Advertisers and rights",
+   "chapter": "context",
+   "diagram": "context",
+   "focus": [
+    "advertiser",
+    "rights",
+    "youtube"
+   ],
+   "trace": [
+    "c-adv-yt",
+    "c-rights-yt",
+    "c-yt-rights"
+   ],
+   "engineer": "Two more parties pay for and police the platform. Advertisers buy campaigns, and their ads run in and around videos. Rights holders give YouTube reference files of their audio and video. Content ID scans every upload against that database, and when it finds a match the owner's policy decides what happens: block the video, monetise it with ads, or just track who watches. Those choices can differ by country.",
+   "executive": "Advertisers fund the platform, and rights holders choose whether matching uploads are blocked, monetised or tracked."
+  },
+  {
+   "id": "y06",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [],
+   "trace": [],
+   "engineer": "One level in. YouTube has not published a container diagram, so this is our design, built from what YouTube and Google have said in public. A front end handles authentication, quotas and routing. On the left, upload and processing: an upload service, transcoding on custom chips, and Content ID. On the right, watching and discovery: a watch service, recommendations and comments. Underneath, video storage, metadata and watch signals. And at the bottom, the edge caches that carry the video.",
+   "executive": "Inside, an upload side, a watching side, shared data stores, and caches at the edge. The layout is our reconstruction."
+  },
+  {
+   "id": "y07",
+   "title": "Upload and transcode",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "studio",
+    "front",
+    "upload",
+    "transcode",
+    "contentid",
+    "blob",
+    "meta"
+   ],
+   "trace": [
+    "k-studio-front",
+    "k-front-upload",
+    "k-upload-blob",
+    "k-upload-tx",
+    "k-upload-cid",
+    "k-tx-blob",
+    "k-tx-meta",
+    "k-cid-meta"
+   ],
+   "engineer": "The upload path. The creator's app sends the file through the front end to an upload service, which supports resumable sessions. The original is stored first. Then two jobs start side by side: transcoding, which turns one file into many resolutions and codecs, and Content ID, which fingerprints it and looks for matches. Transcoding writes its renditions to storage and marks formats as ready in the metadata. Content ID records any claim policy against the video.",
+   "executive": "An upload is stored, then converted into many formats and checked for copyright at the same time."
+  },
+  {
+   "id": "y08",
+   "title": "Watch",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "player",
+    "front",
+    "watch",
+    "meta",
+    "edge",
+    "blob"
+   ],
+   "trace": [
+    "k-player-front",
+    "k-front-watch",
+    "k-watch-meta",
+    "k-player-edge",
+    "k-edge-blob"
+   ],
+   "engineer": "The watch path, which carries most of the traffic. The player asks the front end for a video. The watch service reads the title, the rights policy and the list of available formats, and returns stream addresses. From then on, the player fetches the video in short segments straight from an edge cache. If the cache does not have a segment, it fills from upstream storage and keeps a copy for the next viewer. The application servers never carry the video bytes.",
+   "executive": "The player gets a list of formats from YouTube, then pulls the video itself from a nearby cache."
+  },
+  {
+   "id": "y09",
+   "title": "Recommendations",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "player",
+    "front",
+    "recs",
+    "signals",
+    "meta"
+   ],
+   "trace": [
+    "k-player-front",
+    "k-front-recs",
+    "k-recs-signals",
+    "k-recs-meta",
+    "k-front-signals"
+   ],
+   "engineer": "The discovery path. The home page and the Up next panel come from recommendations. In 2021 YouTube wrote that recommendations drive more viewing than subscriptions or search. The service reads a user's history and features of candidate videos. In return, the player reports what was actually watched and for how long, and YouTube says it also uses survey answers, shares, likes and dislikes. Those signals feed the next recommendation, which closes the loop.",
+   "executive": "Recommendations, which drive most viewing, learn from what each person actually watches and how much they valued it."
+  },
+  {
+   "id": "y10",
+   "title": "Comments and metadata",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "front",
+    "comments",
+    "meta"
+   ],
+   "trace": [
+    "k-front-comments",
+    "k-comments-meta"
+   ],
+   "engineer": "The last path is ordinary reads and writes: comments, likes, titles and descriptions, all keyed by video. This is where YouTube's best-known data story lives. Vitess began at YouTube in 2010, when MySQL could no longer keep up. YouTube had added read replicas, then had to shard, and every query had to know its shard. Vitess moved that routing out of the application into a proxy layer. What YouTube runs today for this data is not public.",
+   "executive": "Comments and video details live in a sharded database; YouTube built the Vitess sharding system for exactly this."
+  },
+  {
+   "id": "y11",
+   "chapter": "deep-dive",
+   "diagram": "transcode",
+   "focus": [],
+   "trace": [],
+   "engineer": "Inside transcoding. YouTube has published the chip at its heart, the Video Coding Unit, in a 2021 blog post and an ASPLOS paper, but not the pipeline around it, so the pipeline is our design. An original file is cut into chunks. Each chunk becomes several tasks, one per rendition, on a work queue. Chips or software encoders do the work, the pieces are stitched and checked, and a packager writes streaming segments and marks each format ready.",
+   "executive": "Each upload is cut into pieces, encoded in parallel on custom chips, then reassembled into streamable formats."
+  },
+  {
+   "id": "y12",
+   "title": "Split and queue",
+   "chapter": "deep-dive",
+   "diagram": "transcode",
+   "focus": [
+    "orig",
+    "split",
+    "queue",
+    "vcu",
+    "cpu"
+   ],
+   "trace": [
+    "t-orig-split",
+    "t-split-queue",
+    "t-queue-vcu",
+    "t-queue-cpu",
+    "t-vcu-queue"
+   ],
+   "engineer": "Splitting is what makes this fast. Cut at keyframes, a one-hour video becomes hundreds of independent pieces that can be encoded at once. The queue decides the order. In our design, low resolutions go first, which matches YouTube's help page: a new upload is processed in low quality first, and higher qualities appear later. When the chips are busy, the queue applies back-pressure, slowing intake and sending overflow to software encoders, rather than letting work pile up without limit.",
+   "executive": "Breaking a video into pieces lets many machines encode it at once; low quality is done first so it can be watched sooner."
+  },
+  {
+   "id": "y13",
+   "title": "The VCU",
+   "chapter": "deep-dive",
+   "diagram": "transcode",
+   "focus": [
+    "vcu",
+    "cpu",
+    "queue"
+   ],
+   "trace": [
+    "t-queue-vcu",
+    "t-vcu-stitch",
+    "t-cpu-stitch"
+   ],
+   "engineer": "Why a custom chip? YouTube's 2021 post explains that VP9 looks better than the older H.264 codec but takes five times the computing to encode, and AV1 takes more again. Work on the chip began in 2015. The paper reports twenty to thirty-three times better efficiency than YouTube's tuned software system, in real data-centre jobs. YouTube said videos became available promptly after upload, even during surges, and that the next-generation chip would add AV1.",
+   "executive": "Better video codecs cost far more computing, so YouTube built its own chip that does the work twenty to thirty times more efficiently."
+  },
+  {
+   "id": "y14",
+   "title": "Package and publish",
+   "chapter": "deep-dive",
+   "diagram": "transcode",
+   "focus": [
+    "stitch",
+    "pkg",
+    "rend",
+    "status"
+   ],
+   "trace": [
+    "t-stitch-pkg",
+    "t-pkg-rend",
+    "t-pkg-status"
+   ],
+   "engineer": "Last, packaging. Google's HTML5 case study says YouTube serves H.264 and VP9 through MPEG-DASH, the standard for adaptive streaming. Each rendition is written as short segments, so the player can switch quality between them. As each format finishes, the metadata moves on: processing, then watchable in low quality, then high definition. YouTube's help page says a one-hour 4K video at thirty frames a second can take up to four hours for high-resolution processing.",
+   "executive": "Each format is saved in short pieces the player can switch between, and is published as soon as it is ready."
+  },
+  {
+   "id": "y15",
+   "title": "Recommendation funnel",
+   "chapter": "deep-dive",
+   "diagram": "recs",
+   "focus": [],
+   "trace": [
+    "r-corpus-cand",
+    "r-hist-cand",
+    "r-cand-rank",
+    "r-other-rank",
+    "r-feat-rank",
+    "r-rank-home"
+   ],
+   "engineer": "The other interesting component is recommendations, described in Google's 2016 RecSys paper. It uses two neural networks as a funnel. Candidate generation takes a user's watch and search history and picks hundreds of videos from millions, served as a nearest-neighbour search. Ranking scores those hundreds, plus candidates from other sources, with many more features, and predicts expected watch time rather than clicks. A few dozen reach the screen. The paper describes 2016; today's system has moved on.",
+   "executive": "Recommendations narrow millions of videos to hundreds, then rank those to show a few dozen, aiming for time well spent rather than clicks."
+  },
+  {
+   "id": "y16",
+   "title": "Resumable upload",
+   "chapter": "flows",
+   "diagram": "upload",
+   "focus": [
+    "u-app",
+    "u-api"
+   ],
+   "trace": [
+    "u1",
+    "u2",
+    "u3",
+    "u4",
+    "u5",
+    "u6"
+   ],
+   "engineer": "Now step by step: from upload to watchable. This part follows YouTube's public Data API. The app starts a resumable session and gets back a session address. It sends the bytes, and the connection drops. Rather than start again, it asks how much arrived, by sending an empty request with a content range of star over the total size. The server answers three-oh-eight, Resume Incomplete, with the range it holds, and the app sends only the rest.",
+   "executive": "If a connection drops mid-upload, the app asks how much arrived and sends only the rest."
+  },
+  {
+   "id": "y17",
+   "title": "Processing",
+   "chapter": "flows",
+   "diagram": "upload",
+   "focus": [
+    "u-api",
+    "u-store",
+    "u-tx",
+    "u-cid",
+    "u-meta"
+   ],
+   "trace": [
+    "u7",
+    "u8",
+    "u9",
+    "u10",
+    "u11",
+    "u12"
+   ],
+   "engineer": "Once the bytes are in, the original is stored and work fans out. In our design, the transcode job and the Content ID match are queued in parallel, so neither waits for the other. Low quality is ready first and the video becomes watchable, as YouTube's help page describes. Content ID applies the owner's policy if it finds a match. High definition and 4K arrive later. Every step is a queued job that can be retried, so a failed worker only delays a video.",
+   "executive": "The video is checked and converted in parallel; a low-quality version goes live first and HD follows."
+  },
+  {
+   "id": "y18",
+   "title": "Start playback",
+   "chapter": "flows",
+   "diagram": "play",
+   "focus": [
+    "p-player",
+    "p-front",
+    "p-meta",
+    "p-cache",
+    "p-origin"
+   ],
+   "trace": [
+    "w1",
+    "w2",
+    "w3",
+    "w4",
+    "w5",
+    "w6"
+   ],
+   "engineer": "The second flow: pressing play. The internal message names are ours. The player asks the front end for the video. The front end reads the metadata, checks policy, and returns the list of formats with stream addresses. The player then requests its first segments from the cache inside the viewer's ISP, at a modest bitrate so the picture appears quickly. If the cache misses, it fetches from upstream and keeps a copy. Google says such caches typically serve seventy to ninety per cent of cacheable traffic.",
+   "executive": "The player gets the list of formats, then starts with modest quality from a nearby cache so the picture appears fast."
+  },
+  {
+   "id": "y19",
+   "title": "Adapt",
+   "chapter": "flows",
+   "diagram": "play",
+   "focus": [
+    "p-player",
+    "p-cache",
+    "p-front"
+   ],
+   "trace": [
+    "w7",
+    "w8",
+    "w9",
+    "w10"
+   ],
+   "engineer": "Then the player adapts. It watches its buffer and the download speed for each segment. With a healthy buffer it steps up, perhaps to 1080p; when throughput falls it steps down to smaller segments rather than stall. Google's case study says HTML5 adaptive bitrate with VP9 cut buffering by more than half globally, and by up to eighty per cent on congested networks. Meanwhile the player reports watch-time events, which feed recommendations.",
+   "executive": "The player raises or lowers quality from moment to moment, which halved buffering when YouTube introduced it with VP9."
+  },
+  {
+   "id": "y20",
+   "title": "Edge caching",
+   "chapter": "data",
+   "diagram": "edgecache",
+   "focus": [],
+   "trace": [
+    "e-ggc-viewer",
+    "e-ggc-pop",
+    "e-pop-dc",
+    "e-pop-viewer"
+   ],
+   "engineer": "Where the bytes live. Google describes three tiers. Data centres for computing and storage. Edge points of presence, at more than a hundred interconnection facilities, where Google peers with other networks. And edge nodes, Google Global Cache, hosted by network operators. Google supplies the hardware; the ISP gives rack space, power and a connection. Popular video is held temporarily at the edge node; less popular video comes from further back, and every miss fills on the way.",
+   "executive": "Popular videos sit in Google servers inside internet providers; rarer ones come from Google's own network further back."
+  },
+  {
+   "id": "y21",
+   "title": "What is stored where",
+   "chapter": "data",
+   "diagram": "containers",
+   "focus": [
+    "blob",
+    "meta",
+    "signals",
+    "edge"
+   ],
+   "trace": [
+    "k-tx-blob",
+    "k-edge-blob",
+    "k-watch-meta",
+    "k-front-signals"
+   ],
+   "engineer": "The rest of the data, in our design. Originals and every rendition are kept in video storage; edge caches hold only copies, and evict them when they cool. Metadata, comments and policy live in a sharded database, the kind Vitess was built for, where each query is routed to the shard that owns the video. Watch signals are an append-only stream feeding recommendations. Ads and payments are separate systems, and not part of this picture.",
+   "executive": "Video files are kept centrally and copied to the edge on demand; details and comments live in a sharded database."
+  },
+  {
+   "id": "y22",
+   "chapter": "growth",
+   "card": {
+    "heading": "How it got here, from public sources",
+    "kind": "compare",
+    "points": [
+     "Year | Change",
+     "2005 | YouTube founded",
+     "2006 | Google agrees to buy it for $1.65B",
+     "2010 | Vitess created at YouTube to scale MySQL",
+     "2012 | Recommendations start optimising for watch time",
+     "2015 | HTML5 by default: MPEG-DASH, VP9; VCU work begins",
+     "2016 | Deep-learning recommender paper (RecSys)",
+     "2019 | Vitess graduates from the CNCF",
+     "2021 | VCU published: 20–33× compute efficiency",
+     "2025 | Shorts average 200B+ daily views"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "How it grew. YouTube was founded in 2005, and Google agreed to buy it in 2006. By 2010 MySQL could no longer keep up, and Vitess was born. In 2012 recommendations began to weigh watch time, not just clicks. In 2015 HTML5 became the default, with DASH and VP9, and work on a custom chip began. The recommender paper came in 2016, Vitess graduated from the CNCF in 2019, the chip was published in 2021, and Shorts passed two hundred billion daily views in 2025.",
+   "executive": "Each era of growth brought a new layer: a sharded database, smarter recommendations, better codecs, then custom chips."
+  },
+  {
+   "id": "y23",
+   "chapter": "failures",
+   "card": {
+    "heading": "What fails, and what protects users",
+    "kind": "compare",
+    "points": [
+     "Failure | Protection",
+     "Upload connection drops | Resumable session: ask what arrived, send the rest",
+     "API returns 5xx | Client retries with exponential backoff",
+     "Upload surge | Queue back-pressure; low quality first, HD later",
+     "Viewer's network slows | Adaptive bitrate steps down instead of stalling",
+     "Edge node fails | Served from another location, transparently",
+     "One client floods the API | Per-project daily quota (Data API)"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "What breaks, and what protects people. An upload connection drops: the session resumes from the last byte received. The API returns a server error: YouTube's documentation says to retry with exponential backoff. An upload surge: in our design, the transcoding queue pushes back and low quality still goes first. A viewer's network slows: the player steps down a bitrate. A cache node fails: Google says users are served from the best available location. And the public API meters each project with a daily quota.",
+   "executive": "Uploads resume, retries back off, busy periods slow HD rather than block videos, and playback lowers quality instead of stopping."
+  },
+  {
+   "id": "y24",
+   "chapter": "patterns",
+   "card": {
+    "heading": "Patterns used",
+    "points": [
+     "Sharding: Vitess, born at YouTube to split MySQL",
+     "Retry with backoff: resumable uploads and 5xx errors",
+     "Back-pressure: a bounded transcoding queue (our design)",
+     "Rate limiting: daily quotas on the public Data API"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The named patterns, each with its own walkthrough. Sharding, through Vitess, which YouTube built to split MySQL and route each query to the right shard. Retry with exponential backoff, which YouTube's upload guide asks clients to use, combined with resumable sessions so a retry never resends what already arrived. Back-pressure on the transcoding queue, which is our design. And rate limiting, through daily quotas on the public Data API.",
+   "executive": "Four well-known patterns: splitting data across servers, retrying politely, pushing back when busy, and limiting how fast clients can call."
+  },
+  {
+   "id": "y25",
+   "chapter": "decisions",
+   "card": {
+    "heading": "Key decisions",
+    "kind": "compare",
+    "points": [
+     "Decision | Why",
+     "Encode once, serve many times | Upload is rare; playback is constant",
+     "Caches inside ISPs | Bytes travel less; ISPs save transit",
+     "Own transcoding chip | VP9 and AV1 cost far more to encode",
+     "Adaptive streaming in segments | Quality follows the network; fewer stalls",
+     "Shard MySQL behind a proxy | Apps stop knowing which shard holds what",
+     "Rank for watch time and surveys | Clicks alone rewarded misleading videos"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The decisions that shaped it. Encode each video once into many formats, because playback vastly outnumbers uploads. Put caches inside ISPs, so bytes travel less and providers save on transit. Build a custom chip, because better codecs cost far more to encode in software. Stream in short segments, so quality follows the network. Shard MySQL behind a proxy, so applications stop tracking shards. And rank for watch time and survey answers, because clicks alone rewarded misleading videos.",
+   "executive": "Encode once, serve from nearby, build hardware for the costly part, and measure satisfaction rather than clicks."
+  },
+  {
+   "id": "y26",
+   "chapter": "mvp",
+   "card": {
+    "heading": "What we would build first",
+    "points": [
+     "Resumable uploads straight to object storage",
+     "A queue of transcode jobs: three H.264 sizes, low first",
+     "HLS or DASH segments behind a commercial CDN",
+     "Postgres for videos and comments, keyed by video id",
+     "Recommendations: subscriptions and popular-this-week",
+     "Per-user upload limits from day one"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "If we built a small video platform today, this is where we would start. Resumable uploads straight into object storage. A queue of transcode jobs producing three H.264 sizes, smallest first, on ordinary machines. Segments in HLS or DASH behind a commercial CDN, not our own caches. Postgres for videos and comments, keyed by video id so it can be sharded later. Simple recommendations: subscriptions and what is popular this week. And upload limits per user from the first day.",
+   "executive": "Start with resumable uploads, a simple encoding queue, a rented CDN and one database; add chips and edge caches only at enormous scale."
+  }
+ ]
+}

@@ -1,0 +1,381 @@
+{
+ "id": "geospatial-index",
+ "title": "Geospatial index",
+ "subtitle": "Design pattern",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "diagrams": [
+  {
+   "id": "naive",
+   "kind": "c4",
+   "title": "Finding what is near me without a spatial index",
+   "direction": "DOWN",
+   "elements": [
+    { "id": "rider", "kind": "person", "tone": "neutral", "label": "Rider", "sub": "drivers within 1 km of me?" },
+    { "id": "app", "kind": "container", "tone": "core", "label": "Nearby service", "sub": "plain SQL over lat, lng columns" },
+    { "id": "table", "kind": "store", "tone": "data", "label": "Locations table", "sub": "every driver and shop on Earth" },
+    { "id": "latidx", "kind": "store", "tone": "data", "label": "B-tree on latitude", "sub": "one dimension at a time" },
+    { "id": "strip", "kind": "component", "tone": "stream", "label": "Latitude strip", "sub": "a band right round the planet" }
+   ],
+   "edges": [
+    { "id": "q1", "from": "rider", "to": "app", "style": "solid", "label": "find nearby" },
+    { "id": "q2", "from": "app", "to": "table", "style": "dashed", "label": "distance to every row, then sort" },
+    { "id": "q3", "from": "app", "to": "latidx", "style": "solid", "label": "lat BETWEEN a AND b" },
+    { "id": "q4", "from": "latidx", "to": "strip", "style": "dashed", "label": "every row in the band, all longitudes" },
+    { "id": "q5", "from": "strip", "to": "app", "style": "dashed", "label": "filter longitude afterwards" }
+   ],
+   "legend": [
+    { "style": "solid", "tone": "core", "label": "call" },
+    { "style": "dashed", "tone": "stream", "label": "slow or wasteful" },
+    { "style": "dotted", "tone": "data", "label": "index or metadata" }
+   ]
+  },
+  {
+   "id": "cells",
+   "kind": "c4",
+   "title": "Turn a 2-D point into a 1-D cell key",
+   "direction": "DOWN",
+   "elements": [
+    { "id": "loc", "kind": "component", "tone": "neutral", "label": "Location", "sub": "latitude, longitude", "group": "write" },
+    { "id": "enc", "kind": "component", "tone": "core", "label": "Cell function", "sub": "geohash · S2 · H3 at a chosen resolution", "group": "write" },
+    { "id": "index", "kind": "store", "tone": "data", "label": "Cell index", "sub": "cell id → objects in it; an ordinary index" },
+    { "id": "query", "kind": "component", "tone": "neutral", "label": "Query point", "sub": "me, plus a radius", "group": "read" },
+    { "id": "ring", "kind": "component", "tone": "core", "label": "Cell + neighbour rings", "sub": "the few cells the radius can touch", "group": "read" },
+    { "id": "filter", "kind": "component", "tone": "core", "label": "Exact distance filter", "sub": "drop candidates outside the radius; sort", "group": "read" }
+   ],
+   "edges": [
+    { "id": "c1", "from": "loc", "to": "enc", "style": "solid", "label": "encode" },
+    { "id": "c2", "from": "enc", "to": "index", "style": "dotted", "label": "store under the cell id" },
+    { "id": "c3", "from": "query", "to": "ring", "style": "solid", "label": "my cell, then its neighbours" },
+    { "id": "c4", "from": "ring", "to": "index", "style": "solid", "label": "look up a handful of keys" },
+    { "id": "c5", "from": "index", "to": "filter", "style": "solid", "label": "candidates only" }
+   ],
+   "groups": [
+    { "id": "write", "label": "Write path", "tone": "core" },
+    { "id": "read", "label": "Read path", "tone": "core" }
+   ],
+   "legend": [
+    { "style": "solid", "tone": "core", "label": "call" },
+    { "style": "dashed", "tone": "stream", "label": "slow or wasteful" },
+    { "style": "dotted", "tone": "data", "label": "index or metadata" }
+   ]
+  },
+  {
+   "id": "families",
+   "kind": "c4",
+   "title": "Four ways to cut up the globe",
+   "direction": "DOWN",
+   "elements": [
+    { "id": "globe", "kind": "component", "tone": "neutral", "label": "Points and shapes on Earth" },
+    { "id": "geohash", "kind": "component", "tone": "core", "label": "Geohash", "sub": "base-32 string; longer shared prefix = closer" },
+    { "id": "tree", "kind": "component", "tone": "core", "label": "R-tree / quadtree", "sub": "nested boxes in a tree; PostGIS GiST" },
+    { "id": "s2", "kind": "component", "tone": "core", "label": "S2", "sub": "cube faces + Hilbert curve; 64-bit ids" },
+    { "id": "h3", "kind": "component", "tone": "core", "label": "H3", "sub": "hexagons; 16 resolutions; rings" },
+    { "id": "store", "kind": "store", "tone": "data", "label": "Ordinary index", "sub": "B-tree, sorted set or hash map on the key" }
+   ],
+   "edges": [
+    { "id": "f1", "from": "globe", "to": "geohash", "style": "solid", "label": "interleave bits" },
+    { "id": "f2", "from": "globe", "to": "tree", "style": "solid", "label": "bounding boxes" },
+    { "id": "f3", "from": "globe", "to": "s2", "style": "solid", "label": "project onto a cube" },
+    { "id": "f4", "from": "globe", "to": "h3", "style": "solid", "label": "project onto an icosahedron" },
+    { "id": "f5", "from": "geohash", "to": "store", "style": "dotted", "label": "string or 52-bit score" },
+    { "id": "f6", "from": "s2", "to": "store", "style": "dotted", "label": "cell id ranges" },
+    { "id": "f7", "from": "h3", "to": "store", "style": "dotted", "label": "cell id keys" }
+   ],
+   "legend": [
+    { "style": "solid", "tone": "core", "label": "call" },
+    { "style": "dashed", "tone": "stream", "label": "slow or wasteful" },
+    { "style": "dotted", "tone": "data", "label": "index or metadata" }
+   ]
+  },
+  {
+   "id": "nearby",
+   "kind": "sequence",
+   "title": "A nearby query: cell, rings, exact filter",
+   "participants": [
+    { "id": "app", "label": "Rider app" },
+    { "id": "svc", "label": "Nearby service" },
+    { "id": "lib", "label": "Cell library" },
+    { "id": "idx", "label": "Cell index" }
+   ],
+   "messages": [
+    { "id": "n1", "from": "app", "to": "svc", "style": "solid", "label": "drivers within 1 km of me" },
+    { "id": "n2", "from": "svc", "to": "lib", "style": "solid", "label": "cell of my point at resolution 8" },
+    { "id": "n3", "from": "lib", "to": "svc", "style": "solid", "label": "cell X" },
+    { "id": "n4", "from": "svc", "to": "lib", "style": "solid", "label": "gridDisk(X, k = 1)" },
+    { "id": "n5", "from": "lib", "to": "svc", "style": "solid", "label": "X plus six neighbours" },
+    { "id": "n6", "from": "svc", "to": "idx", "style": "dotted", "label": "who is in these seven cells?" },
+    { "id": "n7", "from": "idx", "to": "svc", "style": "dotted", "label": "candidates" },
+    { "id": "n8", "from": "svc", "to": "svc", "style": "solid", "label": "exact distance: drop beyond 1 km, sort" },
+    { "id": "n9", "from": "svc", "to": "app", "style": "solid", "label": "nearest drivers" }
+   ]
+  },
+  {
+   "id": "moving",
+   "kind": "sequence",
+   "title": "Moving objects: frequent writes, kept in memory",
+   "participants": [
+    { "id": "driver", "label": "Driver app" },
+    { "id": "ingest", "label": "Location ingest" },
+    { "id": "mem", "label": "In-memory cell map" },
+    { "id": "svc", "label": "Nearby service" }
+   ],
+   "messages": [
+    { "id": "m1", "from": "driver", "to": "ingest", "style": "solid", "label": "position every few seconds" },
+    { "id": "m2", "from": "ingest", "to": "ingest", "style": "solid", "label": "compute cell id" },
+    { "id": "m3", "from": "ingest", "to": "mem", "style": "solid", "label": "same cell: update the point only" },
+    { "id": "m4", "from": "ingest", "to": "mem", "style": "solid", "label": "new cell: remove from old, add to new" },
+    { "id": "m5", "from": "mem", "to": "mem", "style": "dotted", "label": "expire drivers who go silent" },
+    { "id": "m6", "from": "svc", "to": "mem", "style": "solid", "label": "read the rings for a query" }
+   ]
+  },
+  {
+   "id": "edges",
+   "kind": "c4",
+   "title": "Edges, hot cells and empty cells",
+   "direction": "DOWN",
+   "elements": [
+    { "id": "me", "kind": "person", "tone": "neutral", "label": "You", "sub": "standing near a cell edge" },
+    { "id": "prefix", "kind": "component", "tone": "external", "label": "Prefix-only search", "sub": "only my geohash prefix" },
+    { "id": "own", "kind": "store", "tone": "data", "label": "Your cell", "sub": "the shops it holds are found" },
+    { "id": "nb", "kind": "store", "tone": "data", "label": "Next cell", "sub": "50 m away, different prefix" },
+    { "id": "query", "kind": "component", "tone": "core", "label": "Ring query", "sub": "cell + neighbours" },
+    { "id": "hot", "kind": "store", "tone": "stream", "label": "Hot cell", "sub": "city centre at rush hour" },
+    { "id": "sparse", "kind": "store", "tone": "neutral", "label": "Empty cell", "sub": "countryside: nothing in ring 1" },
+    { "id": "split", "kind": "component", "tone": "core", "label": "Finer cells or more rings", "sub": "adapt resolution to density" }
+   ],
+   "edges": [
+    { "id": "e1", "from": "me", "to": "prefix", "style": "solid", "label": "search my prefix" },
+    { "id": "e2", "from": "prefix", "to": "own", "style": "solid", "label": "matched" },
+    { "id": "e3", "from": "prefix", "to": "nb", "style": "dashed", "label": "missed: the nearest shop" },
+    { "id": "e4", "from": "query", "to": "hot", "style": "dashed", "label": "thousands of candidates, one shard" },
+    { "id": "e5", "from": "query", "to": "sparse", "style": "dashed", "label": "zero results" },
+    { "id": "e6", "from": "hot", "to": "split", "style": "dotted", "label": "go finer, split the key" },
+    { "id": "e7", "from": "sparse", "to": "split", "style": "dotted", "label": "grow k until enough" }
+   ],
+   "legend": [
+    { "style": "solid", "tone": "core", "label": "call" },
+    { "style": "dashed", "tone": "stream", "label": "slow or wasteful" },
+    { "style": "dotted", "tone": "data", "label": "index or metadata" }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    { "id": "idea", "kind": "system", "tone": "neutral", "label": "Cells or trees over space", "sub": "then an exact filter", "rank": 0 },
+    { "id": "h3", "kind": "container", "tone": "core", "label": "Uber H3", "sub": "hexagons · C core · Apache 2.0", "group": "libs", "rank": 1 },
+    { "id": "s2", "kind": "container", "tone": "core", "label": "Google S2 Geometry", "sub": "cube + Hilbert curve · levels 0–30", "group": "libs", "rank": 1 },
+    { "id": "postgis", "kind": "store", "tone": "data", "label": "PostGIS", "sub": "R-tree on GiST · SP-GiST · BRIN", "group": "dbs", "rank": 2 },
+    { "id": "redis", "kind": "store", "tone": "data", "label": "Redis GEO", "sub": "52-bit geohash in a sorted set", "group": "dbs", "rank": 2 },
+    { "id": "es", "kind": "store", "tone": "data", "label": "Elasticsearch", "sub": "geo_point · geo_distance · grid aggs", "group": "dbs", "rank": 2 },
+    { "id": "mongo", "kind": "store", "tone": "data", "label": "MongoDB", "sub": "2dsphere index · $near", "group": "dbs", "rank": 2 }
+   ],
+   "edges": [
+    { "id": "x1", "from": "idea", "to": "h3", "style": "solid", "label": "pricing, dispatch" },
+    { "id": "x2", "from": "idea", "to": "s2", "style": "solid", "label": "region coverings" },
+    { "id": "x3", "from": "idea", "to": "postgis", "style": "dotted", "label": "box filter, then exact" },
+    { "id": "x4", "from": "idea", "to": "redis", "style": "dotted", "label": "check 1 + 8 areas" },
+    { "id": "x5", "from": "idea", "to": "es", "style": "dotted", "label": "distance and box queries" },
+    { "id": "x6", "from": "idea", "to": "mongo", "style": "dotted", "label": "nearest to farthest" }
+   ],
+   "groups": [
+    { "id": "libs", "label": "Cell libraries", "tone": "core" },
+    { "id": "dbs", "label": "Databases with spatial indexes", "tone": "data" }
+   ],
+   "legend": [
+    { "style": "solid", "tone": "core", "label": "call" },
+    { "style": "dashed", "tone": "stream", "label": "slow or wasteful" },
+    { "style": "dotted", "tone": "data", "label": "index or metadata" }
+   ]
+  }
+ ],
+ "chapters": [
+  { "id": "problem", "title": "The problem" },
+  { "id": "naive", "title": "The naive fix" },
+  { "id": "pattern", "title": "The pattern" },
+  { "id": "how", "title": "How it works" },
+  { "id": "failure", "title": "When it goes wrong" },
+  { "id": "tradeoffs", "title": "Trade-offs" },
+  { "id": "wild", "title": "In the wild" },
+  { "id": "related", "title": "Related patterns" },
+  { "id": "recap", "title": "Recap" }
+ ],
+ "shots": [
+  {
+   "id": "gi-problem",
+   "chapter": "problem",
+   "title": "Scan everything",
+   "diagram": "naive",
+   "focus": ["rider", "app", "table"],
+   "trace": ["q1", "q2"],
+   "engineer": "A rider opens the app and asks: which drivers are within a kilometre of me? Or a shopper asks for the nearest open shop. The simplest answer is to work out the distance from the rider to every driver in the table, sort, and keep the closest. That is fine for a hundred rows. With every driver in every city, it means reading the whole table and doing the maths for each row, on every request, many times a second.",
+   "executive": "Answering \"what is near me\" by measuring the distance to everything works for a small list, but becomes far too slow once there are millions of places."
+  },
+  {
+   "id": "gi-naive",
+   "chapter": "naive",
+   "title": "Index latitude",
+   "diagram": "naive",
+   "focus": ["latidx", "strip"],
+   "trace": ["q3", "q4", "q5"],
+   "engineer": "The obvious fix is an ordinary index on latitude, and maybe another on longitude, then a bounding box: latitude between a and b, longitude between c and d. But a B-tree sorts by one column at a time. The latitude index returns a thin strip that runs right round the planet, every driver in that band, from London to Calgary. The database then throws most of them away on longitude. Two separate indexes do not combine into a two-dimensional one.",
+   "executive": "Indexing latitude and longitude separately still pulls in a whole band around the world and throws most of it away."
+  },
+  {
+   "id": "gi-cells",
+   "chapter": "pattern",
+   "title": "Cells",
+   "diagram": "cells",
+   "focus": [],
+   "trace": ["c1", "c2", "c3", "c4", "c5"],
+   "engineer": "The pattern is to turn two dimensions into one. Divide the surface into cells, give each cell an id, and store every object under the id of the cell it sits in. Now an ordinary index works again. To search, find the cell containing the query point, add its neighbouring cells so the radius is covered, and look up just those few keys. That returns candidates, not answers, so a final exact distance check drops anything outside the radius and sorts the rest.",
+   "executive": "Divide the map into numbered cells and file everything by cell. To search, look in your cell and the ones around it, then measure only those."
+  },
+  {
+   "id": "gi-families",
+   "chapter": "pattern",
+   "title": "Geohash, trees, S2, H3",
+   "diagram": "families",
+   "focus": [],
+   "trace": ["f1", "f5", "f2", "f3", "f6", "f4", "f7"],
+   "engineer": "There are four common ways to cut the globe. Geohash interleaves latitude and longitude bits into a base-32 string; a longer shared prefix means closer. Trees, such as the R-tree PostGIS builds on GiST, nest bounding boxes. Google's S2 projects the Earth onto a cube and numbers cells along a Hilbert curve, with sixty-four-bit ids and levels from nought to thirty. Uber's H3 uses hexagons on an icosahedron, with sixteen resolutions, each with about a seventh of the area of the one above.",
+   "executive": "Geohash, tree indexes, Google's S2 and Uber's H3 are four ways to cut up the map. They differ in cell shape and how neighbours are found."
+  },
+  {
+   "id": "gi-how",
+   "chapter": "how",
+   "title": "Nearby query",
+   "diagram": "nearby",
+   "focus": [],
+   "trace": ["n1", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9"],
+   "engineer": "Step by step with H3. The rider asks for drivers within one kilometre. The service asks the library for the rider's cell at resolution eight, where an average hexagon is about seven tenths of a square kilometre. Then it asks for a grid disk of radius one: that cell plus its six neighbours. It looks up who is in those seven cells, gets a list of candidates, computes the true distance to each, drops anything beyond a kilometre, sorts, and returns the nearest.",
+   "executive": "The service finds your hexagon and the six around it, collects everyone in them, then measures the real distance to each and returns the closest."
+  },
+  {
+   "id": "gi-moving",
+   "chapter": "how",
+   "title": "Moving objects",
+   "diagram": "moving",
+   "focus": [],
+   "trace": ["m1", "m2", "m3", "m4", "m5", "m6"],
+   "engineer": "Shops do not move, but drivers do. If each one reports its position every few seconds, the index takes far more writes than reads, so it is usually kept in memory, keyed by cell. Each update computes the cell id. If the driver is still in the same cell, only the point changes. If they have crossed into a new cell, remove them from the old one and add them to the new. Drivers who stop reporting expire, so the map never shows ghosts.",
+   "executive": "For things that move, keep the cell map in memory, move each driver between cells as they report in, and drop anyone who goes quiet."
+  },
+  {
+   "id": "gi-edge",
+   "chapter": "failure",
+   "title": "Cell edges",
+   "diagram": "edges",
+   "focus": ["me", "prefix", "own", "nb"],
+   "trace": ["e1", "e2", "e3"],
+   "engineer": "The first trap is the cell edge. A shared geohash prefix means two points are close, but the reverse is not true. Stand near the edge of your cell and the nearest shop may sit fifty metres away in the next cell, with a completely different prefix. Points either side of the Equator, the Greenwich meridian or the hundred-and-eightieth meridian can share no prefix at all. A prefix-only search misses them. The fix is always the same: search the neighbouring cells too.",
+   "executive": "Something just across a cell border can be very close yet look far away by its code. Always search the neighbouring cells as well."
+  },
+  {
+   "id": "gi-hot",
+   "chapter": "failure",
+   "title": "Hot and empty cells",
+   "diagram": "edges",
+   "focus": ["query", "hot", "sparse", "split"],
+   "trace": ["e4", "e5", "e6", "e7"],
+   "engineer": "The second trap is density. People are not spread evenly. A city centre at rush hour can put thousands of drivers in one cell, so every query there drags back a long candidate list, and if you shard by cell, one shard takes the load. Use finer cells where it is dense, or split a hot cell's key further. The countryside has the opposite problem: ring one is empty. Grow the ring step by step until you have enough results or reach a sensible limit.",
+   "executive": "Busy city cells hold too much and quiet rural cells hold nothing. Use smaller cells where it is crowded and search further out where it is empty."
+  },
+  {
+   "id": "gi-tradeoffs",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "Which grid?",
+    "kind": "compare",
+    "points": [
+     "Scheme | Good at · costs you",
+     "Geohash | A string; prefix ranges in any index · uneven cells, seams at edges",
+     "R-tree (PostGIS GiST) | Any shape, exact queries in SQL · tree updates on every move",
+     "S2 | Square cells, 4 children each, levels 0–30, region coverings · neighbours at two distances",
+     "H3 | Equal-distance neighbours, rings · children only roughly fit parents; 12 pentagons"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Comparing them. Geohash is just a string, so any database can index it, but cells change shape with latitude and the seams cause the edge problem. An R-tree, like PostGIS GiST, handles any shape with exact SQL queries, at the cost of tree updates on every write. S2 gives square cells that split cleanly into four children, and good region coverings. H3's hexagons have every neighbour at the same distance, which makes rings natural, but children only roughly fit their parents, and there are twelve pentagons.",
+   "executive": "Geohash is simplest, tree indexes suit databases and shapes, S2 suits covering regions, and H3 suits rings of equal neighbours."
+  },
+  {
+   "id": "gi-resolution",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "Choosing a resolution",
+    "points": [
+     "Cell about the size of a typical search radius",
+     "Too coarse: long candidate lists to filter",
+     "Too fine: many cells to look up per query",
+     "Dense areas may need finer cells than rural ones",
+     "Skip the index when the data fits in memory and a scan is fast enough"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Choosing a resolution is the main tuning decision. A good starting point is a cell about the size of your typical search radius, so one ring covers it. Too coarse, and every query returns a long list to filter. Too fine, and each query must look up many cells. Dense areas may want finer cells than rural ones. And when not to bother: if you have a few thousand points that fit in memory, a plain scan is simple and fast enough.",
+   "executive": "Pick cells about the size of a typical search. Too big wastes filtering, too small wastes lookups, and small datasets may not need an index at all."
+  },
+  {
+   "id": "gi-wild",
+   "chapter": "wild",
+   "title": "Implementations",
+   "diagram": "wild",
+   "focus": [],
+   "trace": ["x1", "x2", "x3", "x4", "x5", "x6"],
+   "engineer": "In the wild. Uber open-sourced H3 in twenty eighteen and uses it for pricing and dispatch; the core is a C library under Apache two. Google's S2 Geometry library is Apache licensed too. PostGIS builds an R-tree on GiST, filters by bounding box, then runs the exact test. Redis stores a fifty-two-bit geohash as a sorted-set score and checks nine areas per search. Elasticsearch has geo point fields and geohash grid aggregations, and MongoDB's two-d-sphere index returns results nearest first.",
+   "executive": "Uber's H3 and Google's S2 are open-source cell libraries. PostGIS, Redis, Elasticsearch and MongoDB all build spatial indexes into the database."
+  },
+  {
+   "id": "gi-related",
+   "chapter": "related",
+   "card": {
+    "heading": "Neighbours",
+    "kind": "compare",
+    "points": [
+     "Pattern | How it relates",
+     "Sharding | Cell id makes a natural shard key; watch hot cities",
+     "Consistent hashing | Spreads cells over nodes so few move when you add one",
+     "Event streaming | Carries the flood of position updates into the index",
+     "Caching | Popular cells' results reused for a few seconds"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Its neighbours. Sharding: a coarse cell id makes a natural shard key, keeping a neighbourhood on one machine, but dense cities become hot shards. Consistent hashing spreads cells across nodes so that adding a node moves only a few. Event streaming carries the flood of position updates from phones into the in-memory index. And a short cache in front of popular cells lets many riders in the same area share one lookup for a few seconds.",
+   "executive": "A geospatial index often sits on sharding, uses consistent hashing to spread cells, and is fed by a stream of location updates."
+  },
+  {
+   "id": "gi-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "Turn 2-D location into 1-D cell ids, then use an ordinary index",
+     "Query your cell plus its neighbours, then filter by exact distance",
+     "Pick a resolution to match your radius and density"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. Turn two-dimensional location into one-dimensional cell ids, with geohash, S2, H3 or a spatial tree, so an ordinary index can do the work. Always query your own cell plus its neighbours, because the nearest thing may be just across a border, and finish with an exact distance check. And choose the resolution to match your search radius and your density, adapting where cities crowd and the countryside empties.",
+   "executive": "File places by map cell. Search your cell and its neighbours, then measure. Size the cells to fit the search."
+  }
+ ],
+ "meta": {
+  "kind": "pattern",
+  "category": "Data",
+  "level": "intermediate",
+  "uses": ["sharding"],
+  "related": ["sharding", "consistent-hashing", "event-streaming"],
+  "blurb": "File locations by map cell so \"what is near me\" looks up a few cells instead of scanning the world.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ }
+}

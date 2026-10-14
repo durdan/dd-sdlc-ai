@@ -1,0 +1,377 @@
+{
+ "id": "leader-election",
+ "title": "Leader election",
+ "subtitle": "Design pattern",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "diagrams": [
+  {
+   "id": "replicas",
+   "kind": "c4",
+   "title": "Three replicas, one nightly job",
+   "direction": "RIGHT",
+   "elements": [
+    { "id": "r1", "kind": "container", "tone": "core", "label": "Scheduler 1", "sub": "replica · id 1", "group": "svc" },
+    { "id": "r2", "kind": "container", "tone": "core", "label": "Scheduler 2", "sub": "replica · id 2", "group": "svc" },
+    { "id": "r3", "kind": "container", "tone": "core", "label": "Scheduler 3", "sub": "replica · id 3", "group": "svc" },
+    { "id": "lockdb", "kind": "store", "tone": "data", "label": "Database", "sub": "one lock row, no expiry" },
+    { "id": "email", "kind": "external", "tone": "external", "label": "Email provider", "sub": "renewal reminders" },
+    { "id": "pay", "kind": "external", "tone": "external", "label": "Payment provider", "sub": "monthly charges" }
+   ],
+   "edges": [
+    { "id": "d1", "from": "r1", "to": "pay", "style": "solid", "label": "02:00 charge everyone" },
+    { "id": "d2", "from": "r2", "to": "pay", "style": "dashed", "label": "02:00 charge again" },
+    { "id": "d3", "from": "r3", "to": "email", "style": "dashed", "label": "02:00 email again" },
+    { "id": "n1", "from": "r1", "to": "lockdb", "style": "solid", "label": "take lock · then crash" },
+    { "id": "n2", "from": "r2", "to": "lockdb", "style": "dashed", "label": "lock held by a dead replica" },
+    { "id": "n3", "from": "r2", "to": "r1", "style": "dashed", "label": "ping lost: partition" },
+    { "id": "n4", "from": "r2", "to": "pay", "style": "dashed", "label": "lowest id I can see: run job" },
+    { "id": "n5", "from": "r1", "to": "pay", "style": "solid", "label": "lowest id overall: run job" }
+   ],
+   "groups": [
+    { "id": "svc", "label": "Billing scheduler [3 identical replicas]", "tone": "core" }
+   ],
+   "legend": [
+    { "style": "solid", "tone": "core", "label": "call" },
+    { "style": "dashed", "tone": "stream", "label": "duplicate or failure" },
+    { "style": "dotted", "tone": "data", "label": "signal" }
+   ]
+  },
+  {
+   "id": "structure",
+   "kind": "c4",
+   "title": "Candidates, a lease, a leader, and a fenced resource",
+   "direction": "RIGHT",
+   "elements": [
+    { "id": "c1", "kind": "container", "tone": "core", "label": "Replica 1", "sub": "leader · runs the job", "group": "cands" },
+    { "id": "c2", "kind": "container", "tone": "neutral", "label": "Replica 2", "sub": "follower · standing by", "group": "cands" },
+    { "id": "c3", "kind": "container", "tone": "neutral", "label": "Replica 3", "sub": "follower · standing by", "group": "cands" },
+    { "id": "lease", "kind": "store", "tone": "data", "label": "Lease record", "sub": "holder · expiry · token", "group": "coord" },
+    { "id": "quorum", "kind": "component", "tone": "data", "label": "Consensus", "sub": "majority of 3 or 5 nodes", "group": "coord" },
+    { "id": "res", "kind": "external", "tone": "external", "label": "Protected resource", "sub": "rejects old tokens" }
+   ],
+   "edges": [
+    { "id": "s1", "from": "c1", "to": "lease", "style": "solid", "label": "acquire · then renew" },
+    { "id": "s2", "from": "c2", "to": "lease", "style": "dotted", "label": "watch · try when expired" },
+    { "id": "s3", "from": "c3", "to": "lease", "style": "dotted", "label": "watch · try when expired" },
+    { "id": "s4", "from": "lease", "to": "quorum", "style": "solid", "label": "every change agreed by a majority" },
+    { "id": "s5", "from": "c1", "to": "res", "style": "solid", "label": "work + fencing token 34" }
+   ],
+   "groups": [
+    { "id": "cands", "label": "Candidates [same code, any can lead]", "tone": "core" },
+    { "id": "coord", "label": "Coordination service [etcd, ZooKeeper, Kubernetes API]", "tone": "data" }
+   ],
+   "legend": [
+    { "style": "solid", "tone": "core", "label": "call" },
+    { "style": "dashed", "tone": "stream", "label": "duplicate or failure" },
+    { "style": "dotted", "tone": "data", "label": "signal" }
+   ]
+  },
+  {
+   "id": "lease-flow",
+   "kind": "sequence",
+   "title": "Acquire, renew, expire, take over",
+   "participants": [
+    { "id": "a", "label": "Replica A" },
+    { "id": "store", "label": "Lease store" },
+    { "id": "b", "label": "Replica B" },
+    { "id": "res", "label": "Payment provider" }
+   ],
+   "messages": [
+    { "id": "h1", "from": "a", "to": "store", "style": "solid", "label": "acquire lease · 15 s" },
+    { "id": "h2", "from": "store", "to": "a", "style": "solid", "label": "granted · token 33" },
+    { "id": "h3", "from": "b", "to": "store", "style": "solid", "label": "acquire?" },
+    { "id": "h4", "from": "store", "to": "b", "style": "solid", "label": "held by A · retry in 2 s" },
+    { "id": "h5", "from": "a", "to": "res", "style": "solid", "label": "run nightly charges · token 33" },
+    { "id": "h6", "from": "a", "to": "store", "style": "solid", "label": "renew · well before expiry" },
+    { "id": "h7", "from": "a", "to": "store", "style": "dashed", "label": "A crashes: renewals stop" },
+    { "id": "h8", "from": "b", "to": "store", "style": "solid", "label": "acquire? (lease expired)" },
+    { "id": "h9", "from": "store", "to": "b", "style": "solid", "label": "granted · token 34" },
+    { "id": "h10", "from": "b", "to": "res", "style": "solid", "label": "resume the job · token 34" }
+   ]
+  },
+  {
+   "id": "raft",
+   "kind": "sequence",
+   "title": "Raft: a majority vote per term",
+   "participants": [
+    { "id": "s1", "label": "Server 1" },
+    { "id": "s2", "label": "Server 2" },
+    { "id": "s3", "label": "Server 3" },
+    { "id": "s4", "label": "Server 4" },
+    { "id": "s5", "label": "Server 5 (old leader)" }
+   ],
+   "messages": [
+    { "id": "v1", "from": "s3", "to": "s1", "style": "solid", "label": "no heartbeat: RequestVote · term 5" },
+    { "id": "v2", "from": "s1", "to": "s3", "style": "solid", "label": "vote granted" },
+    { "id": "v3", "from": "s3", "to": "s2", "style": "solid", "label": "RequestVote · term 5" },
+    { "id": "v4", "from": "s2", "to": "s3", "style": "solid", "label": "vote granted · 3 of 5: leader" },
+    { "id": "v5", "from": "s3", "to": "s4", "style": "solid", "label": "heartbeat · term 5" },
+    { "id": "v6", "from": "s5", "to": "s4", "style": "dashed", "label": "partition heals: AppendEntries · term 4" },
+    { "id": "v7", "from": "s4", "to": "s5", "style": "dashed", "label": "rejected: stale term · I am on 5" },
+    { "id": "v8", "from": "s3", "to": "s5", "style": "solid", "label": "heartbeat · term 5 → step down" }
+   ]
+  },
+  {
+   "id": "fencing",
+   "kind": "sequence",
+   "title": "A paused leader is fenced off",
+   "participants": [
+    { "id": "a", "label": "Replica A" },
+    { "id": "store", "label": "Lease store" },
+    { "id": "b", "label": "Replica B" },
+    { "id": "res", "label": "Storage" }
+   ],
+   "messages": [
+    { "id": "f1", "from": "store", "to": "a", "style": "solid", "label": "lease granted · token 33" },
+    { "id": "f2", "from": "a", "to": "store", "style": "dashed", "label": "long GC pause: no renewals" },
+    { "id": "f3", "from": "store", "to": "b", "style": "solid", "label": "lease expired · granted to B · token 34" },
+    { "id": "f4", "from": "b", "to": "res", "style": "solid", "label": "write · token 34 → ok" },
+    { "id": "f5", "from": "a", "to": "res", "style": "dashed", "label": "A wakes, still thinks it leads: write · token 33" },
+    { "id": "f6", "from": "res", "to": "a", "style": "solid", "label": "rejected: already saw 34" }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    { "id": "raftp", "kind": "system", "tone": "neutral", "label": "Raft paper", "sub": "Ongaro and Ousterhout · USENIX ATC 2014" },
+    { "id": "kleppmann", "kind": "system", "tone": "neutral", "label": "Martin Kleppmann", "sub": "How to do distributed locking · 2016" },
+    { "id": "ms", "kind": "system", "tone": "neutral", "label": "Microsoft Leader Election pattern", "sub": "blob lease as a mutex" },
+    { "id": "etcd", "kind": "container", "tone": "core", "label": "etcd election API", "sub": "Campaign · Proclaim · Resign" },
+    { "id": "zk", "kind": "container", "tone": "core", "label": "ZooKeeper recipe", "sub": "ephemeral sequential znodes" },
+    { "id": "k8s", "kind": "container", "tone": "stream", "label": "Kubernetes Lease + client-go", "sub": "15 s lease · 10 s renew · 2 s retry" }
+   ],
+   "edges": [
+    { "id": "w1", "from": "raftp", "to": "etcd", "style": "solid", "label": "etcd is a Raft cluster" },
+    { "id": "w2", "from": "etcd", "to": "k8s", "style": "solid", "label": "same lease idea, via the API" },
+    { "id": "w3", "from": "kleppmann", "to": "zk", "style": "dotted", "label": "zxid or znode version as a token" },
+    { "id": "w4", "from": "kleppmann", "to": "k8s", "style": "dotted", "label": "client-go: no fencing guarantee" },
+    { "id": "w5", "from": "ms", "to": "zk", "style": "dotted", "label": "or use ZooKeeper instead" }
+   ],
+   "legend": [
+    { "style": "solid", "tone": "core", "label": "builds on" },
+    { "style": "dotted", "tone": "data", "label": "points to" }
+   ]
+  },
+  {
+   "id": "related",
+   "kind": "c4",
+   "title": "Related patterns",
+   "direction": "DOWN",
+   "elements": [
+    { "id": "le", "kind": "container", "tone": "core", "label": "Leader election", "sub": "exactly one instance does the work" },
+    { "id": "lock", "kind": "component", "tone": "neutral", "label": "Distributed lock", "sub": "same lease, held briefly" },
+    { "id": "timeout", "kind": "component", "tone": "neutral", "label": "Timeout", "sub": "a lease is a timeout on leadership" },
+    { "id": "idem", "kind": "component", "tone": "neutral", "label": "Idempotency", "sub": "a duplicate run does no harm" },
+    { "id": "shard", "kind": "component", "tone": "neutral", "label": "Sharding", "sub": "one leader per shard" },
+    { "id": "ch", "kind": "component", "tone": "neutral", "label": "Consistent hashing", "sub": "split work without a leader" }
+   ],
+   "edges": [
+    { "id": "r1", "from": "lock", "to": "le", "style": "solid", "label": "same machinery" },
+    { "id": "r2", "from": "timeout", "to": "le", "style": "solid", "label": "detects a dead leader" },
+    { "id": "r3", "from": "le", "to": "idem", "style": "dotted", "label": "backstop for the overlap" },
+    { "id": "r4", "from": "le", "to": "shard", "style": "solid", "label": "scale out: many leaders" },
+    { "id": "r5", "from": "shard", "to": "ch", "style": "dotted", "label": "assign keys to owners" }
+   ]
+  }
+ ],
+ "chapters": [
+  { "id": "problem", "title": "The problem" },
+  { "id": "naive", "title": "The naive fix" },
+  { "id": "pattern", "title": "The pattern" },
+  { "id": "how", "title": "How it works" },
+  { "id": "failure", "title": "When it goes wrong" },
+  { "id": "tradeoffs", "title": "Trade-offs" },
+  { "id": "wild", "title": "In the wild" },
+  { "id": "related", "title": "Related patterns" },
+  { "id": "recap", "title": "Recap" }
+ ],
+ "shots": [
+  {
+   "id": "le-problem",
+   "chapter": "problem",
+   "title": "Duplicates",
+   "diagram": "replicas",
+   "focus": ["r1", "r2", "r3", "pay", "email"],
+   "trace": ["d1", "d2", "d3"],
+   "engineer": "Here is a billing scheduler. We run three identical replicas so that one crash does not stop billing. Every night at two o'clock it charges subscribers and emails renewal reminders. But all three replicas have the same timer and the same code. So at two o'clock, all three run the job. Customers are charged three times and get three emails. Redundancy made the service available, and also made it wrong.",
+   "executive": "We run several copies of a service for safety, but a scheduled job then runs once per copy: customers are charged and emailed several times."
+  },
+  {
+   "id": "le-naive-lock",
+   "chapter": "naive",
+   "title": "Dead holder",
+   "diagram": "replicas",
+   "focus": ["r1", "r2", "lockdb"],
+   "trace": ["n1", "n2"],
+   "engineer": "The obvious fix is a lock row in the database. Whoever sets it first runs the job. That works until the holder dies. Scheduler one takes the lock, then crashes before releasing it. The row still says it is held, by a process that no longer exists. Scheduler two waits forever, and nobody is billed. A lock with no expiry trades duplicate work for no work at all, and the database is now a single point of failure.",
+   "executive": "A simple lock in the database stops duplicates, but if the holder crashes the lock is never released and the job stops running."
+  },
+  {
+   "id": "le-naive-lowest",
+   "chapter": "naive",
+   "title": "Partition",
+   "diagram": "replicas",
+   "focus": ["r1", "r2", "pay"],
+   "trace": ["n3", "n4", "n5"],
+   "engineer": "Another obvious fix: the replica with the lowest id is in charge, and the others ping it. Now the network splits. Scheduler two can no longer reach scheduler one, so it concludes one is dead and that it is now the lowest id it can see. But one is alive and still running the job. Both act as leader. This is split brain. A replica cannot tell a dead peer from an unreachable one; it only sees silence.",
+   "executive": "Picking the lowest-numbered server fails when the network splits: each side thinks it is in charge, and both do the work."
+  },
+  {
+   "id": "le-pattern",
+   "chapter": "pattern",
+   "title": "Parts",
+   "diagram": "structure",
+   "focus": [],
+   "trace": ["s1", "s2", "s3", "s4", "s5"],
+   "engineer": "Leader election has four parts. Candidates: identical replicas, any of which can lead. A lease: a record of who holds leadership, until when, with a number that goes up on every change. The leader must renew it before it expires; the followers watch it and try to take it once it lapses. The lease lives in a coordination service where a majority of nodes agree every change, so the record itself survives a crash. And the resource the leader writes to checks that number.",
+   "executive": "Replicas compete for a time-limited lease kept in a highly available store. Whoever holds it is the leader; if it stops renewing, another replica takes over."
+  },
+  {
+   "id": "le-how",
+   "chapter": "how",
+   "title": "Lease",
+   "diagram": "lease-flow",
+   "focus": [],
+   "trace": ["h1", "h2", "h3", "h4", "h5", "h6", "h7", "h8", "h9", "h10"],
+   "engineer": "Step by step. Replica A asks for a fifteen second lease and gets it, with token thirty-three. Replica B asks too, is told the lease is held, and retries every two seconds. A runs the nightly charges and keeps renewing well before expiry. Then A crashes and renewals stop. Once the lease expires, B's next attempt succeeds, with token thirty-four, and B resumes the job. Those timings are Kubernetes client-go's defaults: fifteen second lease, ten second renew deadline, two second retry.",
+   "executive": "The leader holds a short lease and keeps renewing it. If it dies, the lease runs out and a standby takes over within seconds."
+  },
+  {
+   "id": "le-raft",
+   "chapter": "how",
+   "title": "Vote",
+   "diagram": "raft",
+   "focus": ["s1", "s2", "s3"],
+   "trace": ["v1", "v2", "v3", "v4", "v5"],
+   "engineer": "Underneath, the coordination service elects its own leader with consensus. In Raft, time is divided into numbered terms. When a server hears no heartbeat before its randomised election timeout, typically a hundred and fifty to three hundred milliseconds, it starts a new term and asks for votes. Each server votes for at most one candidate per term. Server three gets votes from two others plus itself: three of five, a majority. It becomes leader and starts sending heartbeats.",
+   "executive": "The store itself picks a leader by majority vote, so two leaders can never be chosen in the same round."
+  },
+  {
+   "id": "le-recipes",
+   "chapter": "how",
+   "card": {
+    "heading": "Three ways to hold leadership",
+    "kind": "compare",
+    "points": [
+     "Building block | How leadership is held",
+     "Lease object (Kubernetes, blob lease) | Holder and expiry; renew or lose it",
+     "ZooKeeper | Smallest ephemeral sequential znode wins",
+     "etcd election | Campaign with a lease; resign or let it expire",
+     "Raft itself | Majority vote per term, kept by heartbeats"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "You rarely write the election yourself. With a lease object, as in Kubernetes or an Azure blob lease, you hold it while you renew it. In ZooKeeper, each candidate creates an ephemeral sequential node; the smallest number leads, and each candidate watches only the node just before its own, so one failure wakes one client, not all of them. etcd's election API campaigns with a lease; if the lease expires, leadership passes to the next campaigner.",
+   "executive": "Off-the-shelf tools already do this: Kubernetes leases, ZooKeeper, and etcd each offer a ready-made way to pick one leader."
+  },
+  {
+   "id": "le-fencing",
+   "chapter": "failure",
+   "title": "Fencing",
+   "diagram": "fencing",
+   "focus": [],
+   "trace": ["f1", "f2", "f3", "f4", "f5", "f6"],
+   "engineer": "Leases have a nasty edge case, described by Martin Kleppmann. Replica A holds the lease with token thirty-three, then stops for a long garbage collection pause. Its lease expires and B becomes leader with token thirty-four, and writes. Then A wakes up, still believing it leads, and writes too. The fix is a fencing token: a number that goes up on every grant. The storage remembers it has seen thirty-four, and rejects thirty-three.",
+   "executive": "A frozen old leader can wake up and act after it was replaced. Numbering each leadership term lets the data store refuse the stale one."
+  },
+  {
+   "id": "le-stale",
+   "chapter": "failure",
+   "title": "Stale term",
+   "diagram": "raft",
+   "focus": ["s3", "s4", "s5"],
+   "trace": ["v6", "v7", "v8"],
+   "engineer": "Raft uses the same idea for its own servers. Server five was leader in term four, then got cut off. When the partition heals, it sends its old term. Server four rejects the request, because its term is already five. And as soon as server five sees the higher term in server three's heartbeat, it steps down to follower. Terms are Raft's fencing token. Note that Kubernetes client-go says plainly that it does not guarantee fencing; that is your job.",
+   "executive": "An old leader returning from a network split is told it is out of date and steps down. Some popular libraries leave this protection to you."
+  },
+  {
+   "id": "le-quorum",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "Quorum needs a majority",
+    "kind": "numbers",
+    "points": [
+     "3 nodes | majority 2 · survives 1 failure",
+     "4 nodes | majority 3 · still survives 1",
+     "5 nodes | majority 3 · survives 2",
+     "7 nodes | majority 4 · survives 3"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Consensus costs nodes. A decision needs a majority, so a cluster of n tolerates fewer than half failing. Three nodes survive one failure; five survive two. A fourth node buys nothing: the majority rises to three, so it still survives only one, which is why clusters are odd-sized. And a minority side of a partition cannot elect anyone. That is the point: it is better to stop than to have two leaders.",
+   "executive": "The coordination store needs a majority of its servers alive, so it runs on three or five machines. An even number adds cost without adding safety."
+  },
+  {
+   "id": "le-tradeoffs",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "The knobs",
+    "kind": "compare",
+    "points": [
+     "Choice | Trade-off",
+     "Short lease | Fast failover; pauses cause false failovers",
+     "Long lease | Fewer false alarms; work stalls after a crash",
+     "Single leader | Simple; a bottleneck and a gap during failover",
+     "Lighter options | A natural singleton, or plain optimistic locking"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The trade-offs. A short lease fails over fast, but a long pause or slow network causes needless failovers. A long lease is calmer, but the job stalls for longer after a real crash. A single leader is simple, but it can become a bottleneck, and there is always a gap while a new one is chosen. Microsoft's guidance adds when to skip it: when there is a natural leader, or when optimistic or pessimistic locking on the shared resource is enough.",
+   "executive": "Shorter leases fail over faster but misfire more often. If simple locking or a single dedicated process would do, use that instead."
+  },
+  {
+   "id": "le-wild",
+   "chapter": "wild",
+   "title": "Lineage",
+   "diagram": "wild",
+   "focus": [],
+   "trace": ["w1", "w2", "w3", "w4", "w5"],
+   "engineer": "In the wild. The Raft paper by Diego Ongaro and John Ousterhout appeared at USENIX ATC in 2014 and won a best paper award. etcd is a Raft cluster and offers an election API. Kubernetes uses Lease objects so only one kube-scheduler and one kube-controller-manager are active in a highly available control plane. Martin Kleppmann's 2016 post on distributed locking explains fencing tokens, and notes ZooKeeper's zxid or znode version can serve as one. Microsoft documents the pattern with a blob lease.",
+   "executive": "Kubernetes, etcd and ZooKeeper all ship this pattern, and the Raft paper is the standard reference for doing it safely."
+  },
+  {
+   "id": "le-related",
+   "chapter": "related",
+   "title": "Neighbours",
+   "diagram": "related",
+   "focus": [],
+   "trace": ["r1", "r2", "r3", "r4", "r5"],
+   "engineer": "Its neighbours. A distributed lock is the same machinery, held for one operation instead of indefinitely. A timeout is how a dead leader is noticed; a lease is a timeout on leadership. Idempotency is the backstop: even with fencing, make the job safe to run twice. Sharding scales it out, with one leader per shard rather than one for everything. And consistent hashing can split work between replicas with no leader at all.",
+   "executive": "It is close to distributed locking, depends on timeouts, and works best alongside idempotent jobs. For more scale, give each shard its own leader."
+  },
+  {
+   "id": "le-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "Leadership is a lease: renew it or lose it",
+     "Silence is not death: fence the old leader with a token",
+     "Elect by majority, on an odd number of nodes"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. Leadership is a lease, not a title: renew it or lose it, so a dead leader is replaced in seconds. Silence is not death: a paused or partitioned leader may come back, so fence it with a token that only goes up. And let a majority decide, on an odd number of nodes, so two leaders can never be chosen at once.",
+   "executive": "Leadership is a renewable lease. Old leaders must be fenced off. A majority vote prevents two leaders."
+  }
+ ],
+ "meta": {
+  "kind": "pattern",
+  "category": "Scaling",
+  "level": "advanced",
+  "uses": ["timeout"],
+  "related": ["sharding", "consistent-hashing", "idempotency"],
+  "blurb": "Let exactly one replica do the work: a renewable lease, a majority vote, and fencing tokens for the leader that comes back.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ }
+}

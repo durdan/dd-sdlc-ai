@@ -1,0 +1,383 @@
+{
+ "id": "bulkhead",
+ "title": "Bulkhead",
+ "subtitle": "Design pattern",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "diagrams": [
+  {
+   "id": "shared",
+   "kind": "c4",
+   "title": "One shared pool, one slow dependency",
+   "direction": "RIGHT",
+   "groups": [
+    { "id": "app", "label": "Web app [one process]", "tone": "core" }
+   ],
+   "elements": [
+    { "id": "user", "kind": "person", "tone": "neutral", "label": "Users", "sub": "checkout and browsing" },
+    { "id": "pool", "kind": "component", "tone": "core", "label": "Shared pool", "sub": "200 threads for every call", "group": "app" },
+    { "id": "payments", "kind": "external", "tone": "external", "label": "Payment service", "sub": "slow: answers in 30 s" },
+    { "id": "catalogue", "kind": "container", "tone": "core", "label": "Catalogue service", "sub": "healthy" },
+    { "id": "recs", "kind": "container", "tone": "core", "label": "Recommendations", "sub": "healthy" }
+   ],
+   "edges": [
+    { "id": "sh1", "from": "user", "to": "pool", "style": "solid", "label": "checkout" },
+    { "id": "sh2", "from": "pool", "to": "payments", "style": "dashed", "label": "charge · each thread waits 30 s" },
+    { "id": "sh3", "from": "user", "to": "pool", "style": "solid", "label": "browse" },
+    { "id": "sh4", "from": "pool", "to": "catalogue", "style": "dashed", "label": "stuck: no free thread" },
+    { "id": "sh5", "from": "pool", "to": "recs", "style": "dashed", "label": "stuck: no free thread" }
+   ],
+   "legend": [
+    { "style": "solid", "tone": "core", "label": "call" },
+    { "style": "dashed", "tone": "stream", "label": "failure or slow" },
+    { "style": "dotted", "tone": "data", "label": "signal" }
+   ]
+  },
+  {
+   "id": "bigger",
+   "kind": "sequence",
+   "title": "Make the pool bigger",
+   "participants": [
+    { "id": "users", "label": "Users" },
+    { "id": "pool", "label": "Shared pool (1,000 threads)" },
+    { "id": "payments", "label": "Payment service" },
+    { "id": "catalogue", "label": "Catalogue service" }
+   ],
+   "messages": [
+    { "id": "bg1", "from": "users", "to": "pool", "style": "solid", "label": "100 checkouts a second" },
+    { "id": "bg2", "from": "pool", "to": "payments", "style": "solid", "label": "charge · each waits 30 s" },
+    { "id": "bg3", "from": "pool", "to": "payments", "style": "solid", "label": "more threads → more calls piling on" },
+    { "id": "bg4", "from": "payments", "to": "pool", "style": "solid", "label": "1,000 threads busy after 10 s" },
+    { "id": "bg5", "from": "users", "to": "pool", "style": "solid", "label": "browse" },
+    { "id": "bg6", "from": "pool", "to": "catalogue", "style": "solid", "label": "never sent: no free thread" },
+    { "id": "bg7", "from": "pool", "to": "users", "style": "solid", "label": "error, ten seconds later than before" }
+   ]
+  },
+  {
+   "id": "structure",
+   "kind": "c4",
+   "title": "One pool per dependency",
+   "direction": "RIGHT",
+   "groups": [
+    { "id": "bh", "label": "Bulkheads [one per dependency]", "tone": "core" }
+   ],
+   "elements": [
+    { "id": "web", "kind": "container", "tone": "neutral", "label": "Web app", "sub": "the caller" },
+    { "id": "paypool", "kind": "component", "tone": "neutral", "label": "Payments bulkhead", "sub": "25 permits", "group": "bh" },
+    { "id": "catpool", "kind": "component", "tone": "neutral", "label": "Catalogue bulkhead", "sub": "50 permits", "group": "bh" },
+    { "id": "recpool", "kind": "component", "tone": "neutral", "label": "Recommendations bulkhead", "sub": "10 permits", "group": "bh" },
+    { "id": "payments", "kind": "external", "tone": "external", "label": "Payment service", "sub": "the slow one" },
+    { "id": "catalogue", "kind": "container", "tone": "core", "label": "Catalogue service", "sub": "healthy" },
+    { "id": "recs", "kind": "container", "tone": "core", "label": "Recommendations", "sub": "healthy" },
+    { "id": "fallback", "kind": "component", "tone": "neutral", "label": "Fallback", "sub": "\"payment pending\", cached, or a clear error" },
+    { "id": "metrics", "kind": "store", "tone": "data", "label": "Metrics and alerts", "sub": "in use, rejected, per bulkhead" }
+   ],
+   "edges": [
+    { "id": "b1", "from": "web", "to": "paypool", "style": "solid", "label": "charge" },
+    { "id": "b2", "from": "paypool", "to": "payments", "style": "solid", "label": "at most 25 at once" },
+    { "id": "b3", "from": "web", "to": "catpool", "style": "solid", "label": "browse" },
+    { "id": "b4", "from": "catpool", "to": "catalogue", "style": "solid", "label": "at most 50 at once" },
+    { "id": "b5", "from": "web", "to": "recpool", "style": "solid", "label": "suggest" },
+    { "id": "b6", "from": "recpool", "to": "recs", "style": "solid", "label": "at most 10 at once" },
+    { "id": "b7", "from": "paypool", "to": "fallback", "style": "dashed", "label": "full → reject at once" },
+    { "id": "b8", "from": "paypool", "to": "metrics", "style": "dotted", "label": "rejections" }
+   ],
+   "legend": [
+    { "style": "solid", "tone": "core", "label": "call" },
+    { "style": "dashed", "tone": "stream", "label": "failure or slow" },
+    { "style": "dotted", "tone": "data", "label": "signal" }
+   ]
+  },
+  {
+   "id": "flow",
+   "kind": "sequence",
+   "title": "Take a permit, call, give it back",
+   "participants": [
+    { "id": "caller", "label": "Web app" },
+    { "id": "bh", "label": "Payments bulkhead (25)" },
+    { "id": "fb", "label": "Fallback" },
+    { "id": "dep", "label": "Payment service" }
+   ],
+   "messages": [
+    { "id": "f1", "from": "caller", "to": "bh", "style": "solid", "label": "take a permit (24 left)" },
+    { "id": "f2", "from": "bh", "to": "dep", "style": "solid", "label": "charge, with a 2 s timeout" },
+    { "id": "f3", "from": "dep", "to": "bh", "style": "solid", "label": "200 OK" },
+    { "id": "f4", "from": "bh", "to": "caller", "style": "solid", "label": "result · permit returned" },
+    { "id": "f5", "from": "caller", "to": "bh", "style": "solid", "label": "26th call while 25 are in flight" },
+    { "id": "f6", "from": "bh", "to": "fb", "style": "solid", "label": "no permit: rejected at once" },
+    { "id": "f7", "from": "fb", "to": "caller", "style": "solid", "label": "\"payment pending, we'll confirm by email\"" }
+   ]
+  },
+  {
+   "id": "cells",
+   "kind": "c4",
+   "title": "Bulkheads at infrastructure scale",
+   "direction": "RIGHT",
+   "elements": [
+    { "id": "custa", "kind": "person", "tone": "neutral", "label": "Customer A", "sub": "sends a poison request" },
+    { "id": "custb", "kind": "person", "tone": "neutral", "label": "Customer B", "sub": "business as usual" },
+    { "id": "router", "kind": "component", "tone": "core", "label": "Cell router", "sub": "thin: routes by customer ID" },
+    { "id": "cell1", "kind": "container", "tone": "stream", "label": "Cell 1", "sub": "complete stack · failing" },
+    { "id": "cell2", "kind": "container", "tone": "core", "label": "Cell 2", "sub": "complete stack · healthy" },
+    { "id": "cell3", "kind": "container", "tone": "core", "label": "Cell 3", "sub": "complete stack · healthy" },
+    { "id": "control", "kind": "system", "tone": "data", "label": "Control plane", "sub": "creates cells, moves customers" }
+   ],
+   "edges": [
+    { "id": "c1", "from": "custa", "to": "router", "style": "solid", "label": "request" },
+    { "id": "c2", "from": "router", "to": "cell1", "style": "dashed", "label": "only cell 1 is hurt" },
+    { "id": "c3", "from": "custb", "to": "router", "style": "solid", "label": "request" },
+    { "id": "c4", "from": "router", "to": "cell3", "style": "solid", "label": "served as normal" },
+    { "id": "c5", "from": "control", "to": "cell2", "style": "dotted", "label": "provision and migrate" }
+   ],
+   "legend": [
+    { "style": "solid", "tone": "core", "label": "call" },
+    { "style": "dashed", "tone": "stream", "label": "failure or slow" },
+    { "style": "dotted", "tone": "data", "label": "signal" }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    { "id": "idea", "kind": "system", "tone": "neutral", "label": "Bulkhead pattern", "sub": "Microsoft: also called cell-based architecture" },
+    { "id": "hystrix", "kind": "external", "tone": "external", "label": "Netflix Hystrix", "sub": "thread pools or semaphores · maintenance mode" },
+    { "id": "r4j", "kind": "container", "tone": "core", "label": "Resilience4j", "sub": "Bulkhead and ThreadPoolBulkhead" },
+    { "id": "polly", "kind": "container", "tone": "core", "label": "Polly v8", "sub": ".NET · ConcurrencyLimiter" },
+    { "id": "k8s", "kind": "container", "tone": "stream", "label": "Kubernetes", "sub": "container limits · namespace quotas" },
+    { "id": "aws", "kind": "container", "tone": "stream", "label": "AWS", "sub": "cells and shuffle sharding" }
+   ],
+   "edges": [
+    { "id": "w1", "from": "idea", "to": "hystrix", "style": "solid", "label": "per-dependency pools" },
+    { "id": "w2", "from": "hystrix", "to": "r4j", "style": "solid", "label": "Netflix points new projects here" },
+    { "id": "w3", "from": "idea", "to": "polly", "style": "solid", "label": "in-process limits" },
+    { "id": "w4", "from": "idea", "to": "k8s", "style": "dotted", "label": "per container and namespace" },
+    { "id": "w5", "from": "idea", "to": "aws", "style": "dotted", "label": "per customer, at fleet scale" }
+   ]
+  },
+  {
+   "id": "related",
+   "kind": "c4",
+   "title": "Related patterns",
+   "direction": "DOWN",
+   "elements": [
+    { "id": "bh", "kind": "container", "tone": "core", "label": "Bulkhead", "sub": "contain the damage" },
+    { "id": "timeout", "kind": "component", "tone": "neutral", "label": "Timeout", "sub": "gives the slot back" },
+    { "id": "cb", "kind": "component", "tone": "neutral", "label": "Circuit breaker", "sub": "stop calling what is failing" },
+    { "id": "retry", "kind": "component", "tone": "neutral", "label": "Retry with backoff", "sub": "for brief faults" },
+    { "id": "rate", "kind": "component", "tone": "neutral", "label": "Rate limiting", "sub": "caps requests per second" },
+    { "id": "fallback", "kind": "component", "tone": "neutral", "label": "Fallback", "sub": "what the user gets instead" }
+   ],
+   "edges": [
+    { "id": "r1", "from": "timeout", "to": "bh", "style": "solid", "label": "frees permits" },
+    { "id": "r2", "from": "bh", "to": "cb", "style": "solid", "label": "contains it while the breaker decides" },
+    { "id": "r3", "from": "retry", "to": "bh", "style": "solid", "label": "retries take permits too" },
+    { "id": "r4", "from": "bh", "to": "fallback", "style": "solid", "label": "when full" },
+    { "id": "r5", "from": "rate", "to": "bh", "style": "dotted", "label": "rate, not concurrency" }
+   ]
+  }
+ ],
+ "chapters": [
+  { "id": "problem", "title": "The problem" },
+  { "id": "naive", "title": "The naive fix" },
+  { "id": "pattern", "title": "The pattern" },
+  { "id": "how", "title": "How it works" },
+  { "id": "failure", "title": "When it goes wrong" },
+  { "id": "tradeoffs", "title": "Trade-offs" },
+  { "id": "wild", "title": "In the wild" },
+  { "id": "related", "title": "Related patterns" },
+  { "id": "recap", "title": "Recap" }
+ ],
+ "shots": [
+  {
+   "id": "bh-problem",
+   "chapter": "problem",
+   "diagram": "shared",
+   "focus": [],
+   "trace": [],
+   "engineer": "A ship's hull is divided by watertight walls called bulkheads. If the hull is holed, only one compartment floods, and the ship stays afloat. Software needs the same thing. Here is a web app that calls payments, the catalogue and recommendations. Every one of those calls runs on threads from a single shared pool of two hundred. Nothing is broken yet.",
+   "executive": "Ships are split into watertight compartments so one leak cannot sink them. This web app has no compartments: every call shares one pool of workers."
+  },
+  {
+   "id": "bh-exhaust",
+   "chapter": "problem",
+   "title": "Exhaustion",
+   "diagram": "shared",
+   "focus": [],
+   "trace": ["sh1", "sh2", "sh3", "sh4", "sh5"],
+   "engineer": "Now payments gets slow: thirty seconds per answer. At a hundred checkouts a second, each holding a thread for thirty seconds, you would need three thousand threads. The pool has two hundred, so it is gone in about two seconds. Now browsing fails, and recommendations fail, although both services are perfectly healthy. One slow dependency has drained a resource that everything shared.",
+   "executive": "When payments slows down, waiting checkouts use up every worker within seconds, and pages that never touch payments stop working too."
+  },
+  {
+   "id": "bh-naive",
+   "chapter": "naive",
+   "title": "Bigger pool",
+   "diagram": "bigger",
+   "focus": [],
+   "trace": ["bg1", "bg2", "bg3", "bg4", "bg5", "bg6", "bg7"],
+   "engineer": "The obvious fix is a bigger pool. Make it a thousand threads. But the arithmetic has not changed: a hundred checkouts a second, each waiting thirty seconds, still needs three thousand. A thousand threads are busy after ten seconds instead of two. Meanwhile every extra thread costs memory, and sends yet another call to the service that is already struggling. A bigger shared pool only delays the outage.",
+   "executive": "Adding more workers only buys a few seconds, costs memory, and piles more load on the struggling service."
+  },
+  {
+   "id": "bh-structure",
+   "chapter": "pattern",
+   "title": "Partition",
+   "diagram": "structure",
+   "focus": [],
+   "trace": ["b1", "b2", "b3", "b4", "b5", "b6"],
+   "engineer": "The bulkhead pattern gives each dependency its own compartment. Calls to payments may use at most twenty-five permits; the catalogue gets fifty; recommendations get ten. Each bulkhead is a limit on how many calls to that one dependency can be in flight at once. If payments slows down, it can only ever hold twenty-five of the caller's threads. The rest stay free for everything else.",
+   "executive": "Each dependency gets its own fixed share of workers, so trouble with one can only use up its own share."
+  },
+  {
+   "id": "bh-isolation",
+   "chapter": "pattern",
+   "card": {
+    "heading": "Two ways to build a compartment",
+    "kind": "compare",
+    "points": [
+     "Thread-pool isolation | Semaphore isolation",
+     "Call runs on the bulkhead's own threads | Call runs on the caller's thread",
+     "Caller can time out and walk away | Caller waits until the call returns",
+     "A thread hand-off: Hystrix measured about 9 ms at p99 | Almost free: just a counter",
+     "Resilience4j ThreadPoolBulkhead | Resilience4j Bulkhead, Polly ConcurrencyLimiter"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "There are two ways to build a compartment. Thread-pool isolation runs each call on the bulkhead's own small pool, so the caller can give up after a timeout and walk away. It costs a hand-off between threads: Netflix measured about nine milliseconds at the ninety-ninth percentile. Semaphore isolation is just a counter of permits. It is almost free, but the call runs on the caller's thread, so a stuck call keeps that thread until it returns.",
+   "executive": "A compartment can be its own small team of workers, which can abandon slow work, or a simple head count, which is cheaper but cannot."
+  },
+  {
+   "id": "bh-how",
+   "chapter": "how",
+   "title": "Permits",
+   "diagram": "flow",
+   "focus": [],
+   "trace": ["f1", "f2", "f3", "f4", "f5", "f6", "f7"],
+   "engineer": "Step by step. The web app takes a permit from the payments bulkhead, leaving twenty-four. The call goes out with its own timeout, payments answers, and the permit is returned. Now suppose twenty-five calls are already in flight. The twenty-sixth finds no permit and is rejected straight away, and the fallback tells the user their payment is pending. Twenty-five is Resilience4j's default limit, and its default wait for a permit is zero.",
+   "executive": "Each call takes a ticket and hands it back when done. When the tickets run out, new calls are turned away at once with a sensible fallback."
+  },
+  {
+   "id": "bh-full",
+   "chapter": "failure",
+   "title": "Payments full",
+   "diagram": "structure",
+   "focus": [],
+   "trace": ["b1", "b2", "b7", "b8", "b3", "b4"],
+   "engineer": "Now replay the outage. Payments slows to thirty seconds. Its twenty-five permits fill within a fraction of a second, and every further charge is rejected and sent to the fallback. Rejections show up in the metrics, so operators see the compartment flooding. Meanwhile browsing still goes through the catalogue bulkhead, which is untouched. Checkout is degraded; the rest of the site is fine.",
+   "executive": "When payments slows down, only checkout is affected and users get a clear message. Browsing and everything else keep working."
+  },
+  {
+   "id": "bh-full-card",
+   "chapter": "failure",
+   "card": {
+    "heading": "When a bulkhead is full",
+    "points": [
+     "Reject fast: fail in microseconds, not in thirty seconds",
+     "Or queue, with a small bound, to absorb a short burst",
+     "Answer from a fallback the user can live with",
+     "Put a timeout inside it, or permits never come back"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "When a bulkhead is full you have three choices. Reject straight away, which is fast and honest. Queue the call, but only in a small, bounded queue that absorbs a short burst; an unbounded queue is just a slower way to run out of memory. And answer from a fallback the user can accept. One more trap: the call inside the bulkhead needs a timeout, or a hung dependency keeps its permits for ever.",
+   "executive": "A full compartment should say no quickly, queue only a little, and give users a sensible fallback. Without timeouts, it never empties."
+  },
+  {
+   "id": "bh-sizing",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "Sizing a bulkhead: Little's law",
+    "kind": "numbers",
+    "points": [
+     "100 / s | peak calls when healthy",
+     "0.2 s | 99th-percentile latency",
+     "20 | calls in flight (100 × 0.2)",
+     "25 | with breathing room"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "How big should each compartment be? Little's law says the average number of calls in flight equals the arrival rate times the time each one takes. Hystrix's guidance turns that into a rule: peak requests per second when healthy, times ninety-ninth percentile latency in seconds, plus some breathing room. So a hundred calls a second at two hundred milliseconds is twenty in flight; call it twenty-five. Keep it as small as that, because a small pool is what sheds load.",
+   "executive": "Size each compartment from how busy the dependency is and how long it normally takes, plus a little headroom, and no more."
+  },
+  {
+   "id": "bh-tradeoffs",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "What it costs",
+    "kind": "compare",
+    "points": [
+     "Choice | Trade-off",
+     "Small or large pool | Small sheds load early; large leaves idle capacity",
+     "Reject or queue | Rejecting is fast; a bounded queue absorbs bursts but adds wait",
+     "Per dependency or per tenant | Dependency stops slow services; tenant stops noisy neighbours",
+     "Many pools | Each is another number to tune, watch and revisit"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Bulkheads cost something. Capacity reserved for one compartment sits idle while another is starved, so you use resources less efficiently. Every pool is another number to tune, monitor and revisit as traffic changes. You choose what to partition by: per dependency stops a slow service; per tenant or per customer stops a noisy neighbour. Microsoft's advice is to skip the pattern when that inefficiency or the added complexity is not worth it.",
+   "executive": "Compartments waste some capacity and add settings to manage. Use them where one failure spreading would really hurt."
+  },
+  {
+   "id": "bh-cells",
+   "chapter": "tradeoffs",
+   "title": "Cells",
+   "diagram": "cells",
+   "focus": [],
+   "trace": ["c1", "c2", "c3", "c4", "c5"],
+   "engineer": "The same idea scales up to whole systems. In a cell-based architecture, each cell is a complete copy of the workload, and a thin router sends each customer to one cell. A poison request from customer A only hurts cell one; customer B carries on. Shuffle sharding goes further: give each customer a random pair of eight workers, and there are twenty-eight different pairs, so one bad customer affects about one twenty-eighth of the others.",
+   "executive": "Large platforms split whole systems into independent cells, so a bad customer or a bad release only affects a small slice of users."
+  },
+  {
+   "id": "bh-wild",
+   "chapter": "wild",
+   "title": "Implementations",
+   "diagram": "wild",
+   "focus": [],
+   "trace": ["w1", "w2", "w3", "w4", "w5"],
+   "engineer": "In the wild. Netflix's Hystrix made per-dependency thread pools famous; it is now in maintenance mode, and Netflix points new projects to Resilience4j, which offers a semaphore Bulkhead and a ThreadPoolBulkhead. In dotnet, Polly version eight replaced its bulkhead with a concurrency limiter. Kubernetes gives each container CPU and memory limits, and each namespace a resource quota. And Amazon's Route fifty-three gives each domain its own shuffle shard of four virtual name servers out of two thousand and forty-eight.",
+   "executive": "Every major platform has bulkheads, from Java and dotnet libraries to Kubernetes limits and Amazon's cell-based services."
+  },
+  {
+   "id": "bh-related",
+   "chapter": "related",
+   "title": "Neighbours",
+   "diagram": "related",
+   "focus": [],
+   "trace": ["r1", "r2", "r3", "r4", "r5"],
+   "engineer": "Its neighbours. A timeout is what gives a permit back when a call hangs. A circuit breaker stops calling a failing dependency; the bulkhead contains the damage while the breaker is still counting failures. Retries take permits too, so they must respect the limit. A fallback is what the user sees when the compartment is full. And rate limiting is easily confused with it: a rate limiter caps requests per second, a bulkhead caps calls in flight at once.",
+   "executive": "Bulkheads work with timeouts, circuit breakers and fallbacks. Rate limiting caps how often; a bulkhead caps how many at once."
+  },
+  {
+   "id": "bh-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "Partition resources so one failure cannot drain them all",
+     "Size each compartment: throughput × latency, plus headroom",
+     "When full, reject fast and fall back; never wait for ever"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. Partition your threads, connections and capacity, so one slow dependency or one noisy customer cannot drain what everyone shares. Size each compartment from throughput times latency, plus a little headroom, and no bigger. And when a compartment is full, reject fast and fall back, rather than letting callers wait for ever.",
+   "executive": "Split resources into compartments. Size them deliberately. When one fills, say no quickly and fall back."
+  }
+ ],
+ "meta": {
+  "kind": "pattern",
+  "category": "Resilience",
+  "level": "intermediate",
+  "uses": ["timeout"],
+  "related": ["circuit-breaker", "timeout", "rate-limiting"],
+  "blurb": "Partition threads, connections and capacity so one failing dependency or tenant cannot sink the rest.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ }
+}

@@ -1,0 +1,142 @@
+{
+ "bh-problem-engineer": {
+  "file": "/audio/bulkhead/bh-problem-engineer.mp3",
+  "ms": 23160,
+  "hash": "61aafaf53d91"
+ },
+ "bh-problem-executive": {
+  "file": "/audio/bulkhead/bh-problem-executive.mp3",
+  "ms": 9648,
+  "hash": "ba9189f7aebb"
+ },
+ "bh-exhaust-engineer": {
+  "file": "/audio/bulkhead/bh-exhaust-engineer.mp3",
+  "ms": 24576,
+  "hash": "3d2177327cb1"
+ },
+ "bh-exhaust-executive": {
+  "file": "/audio/bulkhead/bh-exhaust-executive.mp3",
+  "ms": 8088,
+  "hash": "d44495997a36"
+ },
+ "bh-naive-engineer": {
+  "file": "/audio/bulkhead/bh-naive-engineer.mp3",
+  "ms": 25848,
+  "hash": "c6a5ac17eab9"
+ },
+ "bh-naive-executive": {
+  "file": "/audio/bulkhead/bh-naive-executive.mp3",
+  "ms": 6816,
+  "hash": "cb2f3809c78e"
+ },
+ "bh-structure-engineer": {
+  "file": "/audio/bulkhead/bh-structure-engineer.mp3",
+  "ms": 24624,
+  "hash": "d7b9f8ab4e6d"
+ },
+ "bh-structure-executive": {
+  "file": "/audio/bulkhead/bh-structure-executive.mp3",
+  "ms": 6336,
+  "hash": "b7f4a19cce54"
+ },
+ "bh-isolation-engineer": {
+  "file": "/audio/bulkhead/bh-isolation-engineer.mp3",
+  "ms": 27048,
+  "hash": "671416bda8a8"
+ },
+ "bh-isolation-executive": {
+  "file": "/audio/bulkhead/bh-isolation-executive.mp3",
+  "ms": 8064,
+  "hash": "051b72155213"
+ },
+ "bh-how-engineer": {
+  "file": "/audio/bulkhead/bh-how-engineer.mp3",
+  "ms": 28080,
+  "hash": "108937d84623"
+ },
+ "bh-how-executive": {
+  "file": "/audio/bulkhead/bh-how-executive.mp3",
+  "ms": 8712,
+  "hash": "e8667603b17f"
+ },
+ "bh-full-engineer": {
+  "file": "/audio/bulkhead/bh-full-engineer.mp3",
+  "ms": 25320,
+  "hash": "69fda208ad08"
+ },
+ "bh-full-executive": {
+  "file": "/audio/bulkhead/bh-full-executive.mp3",
+  "ms": 8280,
+  "hash": "24349631b7da"
+ },
+ "bh-full-card-engineer": {
+  "file": "/audio/bulkhead/bh-full-card-engineer.mp3",
+  "ms": 25272,
+  "hash": "7b420c02ed16"
+ },
+ "bh-full-card-executive": {
+  "file": "/audio/bulkhead/bh-full-card-executive.mp3",
+  "ms": 9048,
+  "hash": "995e7ff13a7d"
+ },
+ "bh-sizing-engineer": {
+  "file": "/audio/bulkhead/bh-sizing-engineer.mp3",
+  "ms": 28872,
+  "hash": "b3a6f87a695f"
+ },
+ "bh-sizing-executive": {
+  "file": "/audio/bulkhead/bh-sizing-executive.mp3",
+  "ms": 7440,
+  "hash": "a8886f41fded"
+ },
+ "bh-tradeoffs-engineer": {
+  "file": "/audio/bulkhead/bh-tradeoffs-engineer.mp3",
+  "ms": 28368,
+  "hash": "a8a5222349bb"
+ },
+ "bh-tradeoffs-executive": {
+  "file": "/audio/bulkhead/bh-tradeoffs-executive.mp3",
+  "ms": 7632,
+  "hash": "1a3a5704c97c"
+ },
+ "bh-cells-engineer": {
+  "file": "/audio/bulkhead/bh-cells-engineer.mp3",
+  "ms": 26496,
+  "hash": "05d423b398fb"
+ },
+ "bh-cells-executive": {
+  "file": "/audio/bulkhead/bh-cells-executive.mp3",
+  "ms": 8400,
+  "hash": "70418b1ac190"
+ },
+ "bh-wild-engineer": {
+  "file": "/audio/bulkhead/bh-wild-engineer.mp3",
+  "ms": 32400,
+  "hash": "5420c9e7d805"
+ },
+ "bh-wild-executive": {
+  "file": "/audio/bulkhead/bh-wild-executive.mp3",
+  "ms": 8016,
+  "hash": "ee8ac6ff5b43"
+ },
+ "bh-related-engineer": {
+  "file": "/audio/bulkhead/bh-related-engineer.mp3",
+  "ms": 28752,
+  "hash": "9d9bd27e6b4f"
+ },
+ "bh-related-executive": {
+  "file": "/audio/bulkhead/bh-related-executive.mp3",
+  "ms": 9144,
+  "hash": "1cc72791deca"
+ },
+ "bh-recap-engineer": {
+  "file": "/audio/bulkhead/bh-recap-engineer.mp3",
+  "ms": 22584,
+  "hash": "5fd77032d82a"
+ },
+ "bh-recap-executive": {
+  "file": "/audio/bulkhead/bh-recap-executive.mp3",
+  "ms": 8304,
+  "hash": "2c16e157abc0"
+ }
+}

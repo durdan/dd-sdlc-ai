@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
+import { PRODUCT_ROUTES, SDLC_PRODUCT } from '@/lib/product';
 
 // Rate limiting map for anonymous users
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
@@ -77,6 +78,11 @@ setInterval(() => {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // The SDLC.dev product is hidden for now (see lib/product.ts): its pages go to the home page.
+  if (!SDLC_PRODUCT && PRODUCT_ROUTES.test(pathname)) {
+    return NextResponse.redirect(new URL('/', request.url));
+  }
   
   // Get client IP for rate limiting
   const clientIP = request.headers.get('x-forwarded-for')?.split(',')[0] || 
@@ -217,6 +223,7 @@ export const config = {
      * - favicon.ico (favicon file)
      * - public folder
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    // Also skip the learning library's static files (walkthroughs, audio, thumbnails, docs).
+    '/((?!_next/static|_next/image|favicon.ico|learn/(?:audio|thumbs|docs|walkthroughs)/|learn/catalog\\.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

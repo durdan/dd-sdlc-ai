@@ -1,0 +1,142 @@
+{
+ "retry-problem-engineer": {
+  "file": "/audio/retry/retry-problem-engineer.mp3",
+  "ms": 23304,
+  "hash": "34ae9c9b7a69"
+ },
+ "retry-problem-executive": {
+  "file": "/audio/retry/retry-problem-executive.mp3",
+  "ms": 6408,
+  "hash": "0607cf0d46a9"
+ },
+ "retry-transient-engineer": {
+  "file": "/audio/retry/retry-transient-engineer.mp3",
+  "ms": 29952,
+  "hash": "65e42e82be8b"
+ },
+ "retry-transient-executive": {
+  "file": "/audio/retry/retry-transient-executive.mp3",
+  "ms": 8088,
+  "hash": "cefccf171939"
+ },
+ "retry-naive-engineer": {
+  "file": "/audio/retry/retry-naive-engineer.mp3",
+  "ms": 26304,
+  "hash": "e0abb14e8e10"
+ },
+ "retry-naive-executive": {
+  "file": "/audio/retry/retry-naive-executive.mp3",
+  "ms": 6624,
+  "hash": "faf4c99c47c1"
+ },
+ "retry-layers-engineer": {
+  "file": "/audio/retry/retry-layers-engineer.mp3",
+  "ms": 26424,
+  "hash": "6a9662df4628"
+ },
+ "retry-layers-executive": {
+  "file": "/audio/retry/retry-layers-executive.mp3",
+  "ms": 6456,
+  "hash": "42ab028f9685"
+ },
+ "retry-pattern-engineer": {
+  "file": "/audio/retry/retry-pattern-engineer.mp3",
+  "ms": 28512,
+  "hash": "3b9845d85f4d"
+ },
+ "retry-pattern-executive": {
+  "file": "/audio/retry/retry-pattern-executive.mp3",
+  "ms": 9696,
+  "hash": "7e386aec89fc"
+ },
+ "retry-jitter-engineer": {
+  "file": "/audio/retry/retry-jitter-engineer.mp3",
+  "ms": 31056,
+  "hash": "510bb15d8c7a"
+ },
+ "retry-jitter-executive": {
+  "file": "/audio/retry/retry-jitter-executive.mp3",
+  "ms": 8496,
+  "hash": "a7c8630966eb"
+ },
+ "retry-how-engineer": {
+  "file": "/audio/retry/retry-how-engineer.mp3",
+  "ms": 28440,
+  "hash": "43d9ecbe6900"
+ },
+ "retry-how-executive": {
+  "file": "/audio/retry/retry-how-executive.mp3",
+  "ms": 8640,
+  "hash": "783c76beb885"
+ },
+ "retry-retry-after-engineer": {
+  "file": "/audio/retry/retry-retry-after-engineer.mp3",
+  "ms": 27264,
+  "hash": "266740b3acd7"
+ },
+ "retry-retry-after-executive": {
+  "file": "/audio/retry/retry-retry-after-executive.mp3",
+  "ms": 4632,
+  "hash": "2fad6167287a"
+ },
+ "retry-budget-engineer": {
+  "file": "/audio/retry/retry-budget-engineer.mp3",
+  "ms": 27336,
+  "hash": "65ddb334d604"
+ },
+ "retry-budget-executive": {
+  "file": "/audio/retry/retry-budget-executive.mp3",
+  "ms": 7608,
+  "hash": "94e24fcebdcd"
+ },
+ "retry-knobs-engineer": {
+  "file": "/audio/retry/retry-knobs-engineer.mp3",
+  "ms": 25920,
+  "hash": "e50788e40ac3"
+ },
+ "retry-knobs-executive": {
+  "file": "/audio/retry/retry-knobs-executive.mp3",
+  "ms": 8640,
+  "hash": "737498b26a07"
+ },
+ "retry-whennot-engineer": {
+  "file": "/audio/retry/retry-whennot-engineer.mp3",
+  "ms": 27168,
+  "hash": "986031dd9f83"
+ },
+ "retry-whennot-executive": {
+  "file": "/audio/retry/retry-whennot-executive.mp3",
+  "ms": 7944,
+  "hash": "bdc942d48c3b"
+ },
+ "retry-wild-engineer": {
+  "file": "/audio/retry/retry-wild-engineer.mp3",
+  "ms": 33216,
+  "hash": "e68d8fec1b05"
+ },
+ "retry-wild-executive": {
+  "file": "/audio/retry/retry-wild-executive.mp3",
+  "ms": 10656,
+  "hash": "919606ad4f96"
+ },
+ "retry-related-engineer": {
+  "file": "/audio/retry/retry-related-engineer.mp3",
+  "ms": 28848,
+  "hash": "e5f7e0449630"
+ },
+ "retry-related-executive": {
+  "file": "/audio/retry/retry-related-executive.mp3",
+  "ms": 8568,
+  "hash": "6d8c00111696"
+ },
+ "retry-recap-engineer": {
+  "file": "/audio/retry/retry-recap-engineer.mp3",
+  "ms": 23520,
+  "hash": "121c1f1e35c2"
+ },
+ "retry-recap-executive": {
+  "file": "/audio/retry/retry-recap-executive.mp3",
+  "ms": 10176,
+  "hash": "e6da06e51102"
+ }
+}

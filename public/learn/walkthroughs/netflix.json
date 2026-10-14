@@ -1,0 +1,1275 @@
+{
+ "id": "netflix",
+ "title": "Netflix streaming",
+ "subtitle": "Company case study",
+ "template": "case-study",
+ "voice": "en-GB-SoniaNeural",
+ "meta": {
+  "kind": "company",
+  "category": "Streaming",
+  "level": "intermediate",
+  "uses": [
+   "circuit-breaker",
+   "bulkhead",
+   "retry",
+   "timeout",
+   "consistent-hashing",
+   "rate-limiting"
+  ],
+  "related": [],
+  "blurb": "A control plane in AWS steers every play to Open Connect servers inside your ISP.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14",
+  "changelog": [
+   {
+    "date": "2026-10-14",
+    "note": "First version."
+   }
+  ]
+ },
+ "diagrams": [
+  {
+   "id": "context",
+   "kind": "c4",
+   "title": "Level 1 · Context",
+   "direction": "DOWN",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request · response"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "video bytes · fill"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "storage · reports"
+    }
+   ],
+   "elements": [
+    {
+     "id": "member",
+     "kind": "person",
+     "label": "Member",
+     "sub": "browses and watches on a TV, phone or laptop",
+     "rank": 0
+    },
+    {
+     "id": "studios",
+     "kind": "external",
+     "label": "Studios and partners",
+     "sub": "deliver finished films and episodes",
+     "tone": "external",
+     "rank": 0
+    },
+    {
+     "id": "netflix",
+     "kind": "system",
+     "label": "Netflix streaming",
+     "sub": "control plane + Open Connect CDN",
+     "tone": "core",
+     "rank": 1
+    },
+    {
+     "id": "aws",
+     "kind": "external",
+     "label": "AWS",
+     "sub": "cloud regions for the control plane",
+     "tone": "external",
+     "rank": 2
+    },
+    {
+     "id": "isp",
+     "kind": "external",
+     "label": "ISPs and internet exchanges",
+     "sub": "host Open Connect appliances",
+     "tone": "external",
+     "rank": 2
+    }
+   ],
+   "edges": [
+    {
+     "id": "c-member",
+     "from": "member",
+     "to": "netflix",
+     "style": "solid",
+     "label": "browse, press play"
+    },
+    {
+     "id": "c-studios",
+     "from": "studios",
+     "to": "netflix",
+     "style": "dashed",
+     "label": "source masters"
+    },
+    {
+     "id": "c-aws",
+     "from": "netflix",
+     "to": "aws",
+     "style": "solid",
+     "label": "runs the control plane on"
+    },
+    {
+     "id": "c-isp",
+     "from": "netflix",
+     "to": "isp",
+     "style": "dashed",
+     "label": "places appliances in, fills nightly"
+    },
+    {
+     "id": "c-video",
+     "from": "isp",
+     "to": "member",
+     "style": "dashed",
+     "label": "video bytes, from nearby"
+    }
+   ]
+  },
+  {
+   "id": "containers",
+   "kind": "c4",
+   "title": "Level 2 · Containers",
+   "direction": "DOWN",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request · response"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "video bytes · fill"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "storage · reports"
+    }
+   ],
+   "groups": [
+    {
+     "id": "cp",
+     "label": "Control plane · AWS",
+     "tone": "core"
+    },
+    {
+     "id": "store",
+     "label": "State · AWS",
+     "tone": "data"
+    },
+    {
+     "id": "oc",
+     "label": "Data plane · Open Connect",
+     "tone": "stream"
+    }
+   ],
+   "elements": [
+    {
+     "id": "app",
+     "kind": "container",
+     "label": "Netflix app",
+     "sub": "TV, mobile, web · adaptive player",
+     "tone": "neutral",
+     "rank": 0
+    },
+    {
+     "id": "zuul",
+     "kind": "container",
+     "label": "Zuul gateway",
+     "sub": "front door: auth, routing, throttling",
+     "group": "cp",
+     "rank": 1
+    },
+    {
+     "id": "discovery",
+     "kind": "container",
+     "label": "Browse services",
+     "sub": "home page, search, personalisation",
+     "group": "cp",
+     "rank": 2
+    },
+    {
+     "id": "playback",
+     "kind": "container",
+     "label": "Playback services",
+     "sub": "rights, streams, licence",
+     "group": "cp",
+     "rank": 2
+    },
+    {
+     "id": "steering",
+     "kind": "container",
+     "label": "Steering",
+     "sub": "picks OCAs, builds URLs",
+     "group": "cp",
+     "rank": 3
+    },
+    {
+     "id": "cachectl",
+     "kind": "container",
+     "label": "Cache control",
+     "sub": "OCA health, routes, files",
+     "group": "cp",
+     "rank": 3
+    },
+    {
+     "id": "encode",
+     "kind": "container",
+     "label": "Encoding pipeline",
+     "sub": "per-title, shot-based encodes",
+     "group": "cp",
+     "rank": 3
+    },
+    {
+     "id": "evcache",
+     "kind": "store",
+     "label": "EVCache",
+     "sub": "memcached-based cache",
+     "group": "store",
+     "rank": 4
+    },
+    {
+     "id": "cassandra",
+     "kind": "store",
+     "label": "Cassandra",
+     "sub": "member data, replicated across regions",
+     "group": "store",
+     "rank": 4
+    },
+    {
+     "id": "s3",
+     "kind": "store",
+     "label": "S3",
+     "sub": "encoded files, ready to fill",
+     "group": "store",
+     "rank": 4
+    },
+    {
+     "id": "oca",
+     "kind": "container",
+     "label": "Open Connect Appliances",
+     "sub": "in ISPs and at exchanges",
+     "tone": "stream",
+     "group": "oc",
+     "rank": 5
+    }
+   ],
+   "edges": [
+    {
+     "id": "k-app-zuul",
+     "from": "app",
+     "to": "zuul",
+     "style": "solid",
+     "label": "API calls"
+    },
+    {
+     "id": "k-zuul-disc",
+     "from": "zuul",
+     "to": "discovery",
+     "style": "solid",
+     "label": "browse"
+    },
+    {
+     "id": "k-zuul-play",
+     "from": "zuul",
+     "to": "playback",
+     "style": "solid",
+     "label": "play"
+    },
+    {
+     "id": "k-disc-evc",
+     "from": "discovery",
+     "to": "evcache",
+     "style": "dotted",
+     "label": "read"
+    },
+    {
+     "id": "k-evc-cas",
+     "from": "evcache",
+     "to": "cassandra",
+     "style": "dotted",
+     "label": "on miss"
+    },
+    {
+     "id": "k-play-steer",
+     "from": "playback",
+     "to": "steering",
+     "style": "solid",
+     "label": "which OCAs?"
+    },
+    {
+     "id": "k-steer-cc",
+     "from": "steering",
+     "to": "cachectl",
+     "style": "solid",
+     "label": "who has the files"
+    },
+    {
+     "id": "k-oca-cc",
+     "from": "oca",
+     "to": "cachectl",
+     "style": "dotted",
+     "label": "health, routes, files"
+    },
+    {
+     "id": "k-app-oca",
+     "from": "app",
+     "to": "oca",
+     "style": "dashed",
+     "label": "stream segments"
+    },
+    {
+     "id": "k-enc-s3",
+     "from": "encode",
+     "to": "s3",
+     "style": "dotted",
+     "label": "encoded assets"
+    },
+    {
+     "id": "k-s3-oca",
+     "from": "s3",
+     "to": "oca",
+     "style": "dashed",
+     "label": "nightly fill"
+    }
+   ]
+  },
+  {
+   "id": "steering",
+   "kind": "c4",
+   "title": "Level 3 · Inside Open Connect steering and fill",
+   "direction": "DOWN",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request · response"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "video bytes · fill"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "storage · reports"
+    }
+   ],
+   "groups": [
+    {
+     "id": "ocp",
+     "label": "Open Connect control plane · AWS",
+     "tone": "core"
+    },
+    {
+     "id": "ispnet",
+     "label": "ISP network",
+     "tone": "stream"
+    }
+   ],
+   "elements": [
+    {
+     "id": "pb",
+     "kind": "container",
+     "label": "Playback services",
+     "sub": "rights checked, files chosen",
+     "tone": "neutral",
+     "rank": 0
+    },
+    {
+     "id": "st",
+     "kind": "component",
+     "label": "Steering service",
+     "sub": "ranks OCAs, generates URLs",
+     "group": "ocp",
+     "rank": 1
+    },
+    {
+     "id": "cc",
+     "kind": "component",
+     "label": "Cache control",
+     "sub": "health, BGP routes, file lists",
+     "group": "ocp",
+     "rank": 1
+    },
+    {
+     "id": "pop",
+     "kind": "component",
+     "label": "Popularity and fill planner",
+     "sub": "manifests, fill sources · our grouping",
+     "group": "ocp",
+     "rank": 2
+    },
+    {
+     "id": "rtr",
+     "kind": "external",
+     "label": "ISP router",
+     "sub": "BGP session with the OCA",
+     "tone": "external",
+     "group": "ispnet",
+     "rank": 3
+    },
+    {
+     "id": "eoca",
+     "kind": "container",
+     "label": "Embedded OCA",
+     "sub": "free to qualifying ISPs",
+     "tone": "stream",
+     "group": "ispnet",
+     "rank": 4
+    },
+    {
+     "id": "ixoca",
+     "kind": "container",
+     "label": "Exchange OCA",
+     "sub": "at an IXP · peering and fallback",
+     "tone": "stream",
+     "rank": 4
+    },
+    {
+     "id": "dev",
+     "kind": "person",
+     "label": "Member's device",
+     "sub": "player with adaptive bitrate",
+     "rank": 5
+    }
+   ],
+   "edges": [
+    {
+     "id": "d-pb-st",
+     "from": "pb",
+     "to": "st",
+     "style": "solid",
+     "label": "files for this client"
+    },
+    {
+     "id": "d-st-cc",
+     "from": "st",
+     "to": "cc",
+     "style": "solid",
+     "label": "who has them, healthy, near?"
+    },
+    {
+     "id": "d-st-pb",
+     "from": "st",
+     "to": "pb",
+     "style": "solid",
+     "label": "ranked OCA URLs"
+    },
+    {
+     "id": "d-rtr-eoca",
+     "from": "rtr",
+     "to": "eoca",
+     "style": "dotted",
+     "label": "BGP: client prefixes"
+    },
+    {
+     "id": "d-eoca-cc",
+     "from": "eoca",
+     "to": "cc",
+     "style": "dotted",
+     "label": "health, routes, files"
+    },
+    {
+     "id": "d-pop-eoca",
+     "from": "pop",
+     "to": "eoca",
+     "style": "solid",
+     "label": "manifest + fill sources"
+    },
+    {
+     "id": "d-ix-eoca",
+     "from": "ixoca",
+     "to": "eoca",
+     "style": "dashed",
+     "label": "off-peak fill from a peer"
+    },
+    {
+     "id": "d-eoca-dev",
+     "from": "eoca",
+     "to": "dev",
+     "style": "dashed",
+     "label": "segments over HTTPS"
+    },
+    {
+     "id": "d-ix-dev",
+     "from": "ixoca",
+     "to": "dev",
+     "style": "dashed",
+     "label": "fallback if embedded is down"
+    }
+   ]
+  },
+  {
+   "id": "play",
+   "kind": "sequence",
+   "title": "Press play",
+   "participants": [
+    {
+     "id": "q-app",
+     "label": "Netflix app"
+    },
+    {
+     "id": "q-zuul",
+     "label": "Zuul"
+    },
+    {
+     "id": "q-pb",
+     "label": "Playback"
+    },
+    {
+     "id": "q-st",
+     "label": "Steering"
+    },
+    {
+     "id": "q-cc",
+     "label": "Cache control"
+    },
+    {
+     "id": "q-oca",
+     "label": "Nearby OCA"
+    }
+   ],
+   "messages": [
+    {
+     "id": "p1",
+     "from": "q-oca",
+     "to": "q-cc",
+     "style": "dotted",
+     "label": "periodically: health, routes, files"
+    },
+    {
+     "id": "p2",
+     "from": "q-app",
+     "to": "q-zuul",
+     "style": "solid",
+     "label": "play title · device capabilities"
+    },
+    {
+     "id": "p3",
+     "from": "q-zuul",
+     "to": "q-pb",
+     "style": "solid",
+     "label": "route to playback"
+    },
+    {
+     "id": "p4",
+     "from": "q-pb",
+     "to": "q-st",
+     "style": "solid",
+     "label": "rights OK · these streams, this client"
+    },
+    {
+     "id": "p5",
+     "from": "q-st",
+     "to": "q-cc",
+     "style": "solid",
+     "label": "which OCAs hold them, healthy, near?"
+    },
+    {
+     "id": "p6",
+     "from": "q-st",
+     "to": "q-pb",
+     "style": "solid",
+     "label": "ranked OCA URLs"
+    },
+    {
+     "id": "p7",
+     "from": "q-pb",
+     "to": "q-app",
+     "style": "solid",
+     "label": "manifest, OCA URLs, licence"
+    },
+    {
+     "id": "p8",
+     "from": "q-app",
+     "to": "q-oca",
+     "style": "dashed",
+     "label": "fetch segments over HTTPS"
+    },
+    {
+     "id": "p9",
+     "from": "q-oca",
+     "to": "q-app",
+     "style": "dashed",
+     "label": "video bytes · player adapts bitrate"
+    },
+    {
+     "id": "p10",
+     "from": "q-app",
+     "to": "q-zuul",
+     "style": "solid",
+     "label": "playback telemetry"
+    }
+   ]
+  },
+  {
+   "id": "fill",
+   "kind": "sequence",
+   "title": "A new title gets onto the CDN",
+   "participants": [
+    {
+     "id": "f-studio",
+     "label": "Studio"
+    },
+    {
+     "id": "f-enc",
+     "label": "Content ops + encoding"
+    },
+    {
+     "id": "f-s3",
+     "label": "S3"
+    },
+    {
+     "id": "f-cp",
+     "label": "Open Connect control plane"
+    },
+    {
+     "id": "f-master",
+     "label": "Fill master OCA"
+    },
+    {
+     "id": "f-oca",
+     "label": "Other OCAs"
+    }
+   ],
+   "messages": [
+    {
+     "id": "f1",
+     "from": "f-studio",
+     "to": "f-enc",
+     "style": "dashed",
+     "label": "source master"
+    },
+    {
+     "id": "f2",
+     "from": "f-enc",
+     "to": "f-s3",
+     "style": "dotted",
+     "label": "QC, encode, package: every bitrate, subtitles"
+    },
+    {
+     "id": "f3",
+     "from": "f-master",
+     "to": "f-cp",
+     "style": "solid",
+     "label": "manifest? what should I hold"
+    },
+    {
+     "id": "f4",
+     "from": "f-cp",
+     "to": "f-master",
+     "style": "solid",
+     "label": "new title · ranked fill sources"
+    },
+    {
+     "id": "f5",
+     "from": "f-master",
+     "to": "f-s3",
+     "style": "dashed",
+     "label": "download in the off-peak fill window"
+    },
+    {
+     "id": "f6",
+     "from": "f-master",
+     "to": "f-cp",
+     "style": "dotted",
+     "label": "I now have it"
+    },
+    {
+     "id": "f7",
+     "from": "f-oca",
+     "to": "f-cp",
+     "style": "solid",
+     "label": "fill source for this title?"
+    },
+    {
+     "id": "f8",
+     "from": "f-cp",
+     "to": "f-oca",
+     "style": "solid",
+     "label": "the fill master, nearby"
+    },
+    {
+     "id": "f9",
+     "from": "f-oca",
+     "to": "f-master",
+     "style": "dashed",
+     "label": "copy from the peer, tier by tier"
+    },
+    {
+     "id": "f10",
+     "from": "f-cp",
+     "to": "f-enc",
+     "style": "dotted",
+     "label": "enough copies: title is live for serving"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "overview",
+   "title": "Overview"
+  },
+  {
+   "id": "requirements",
+   "title": "Requirements and scale"
+  },
+  {
+   "id": "context",
+   "title": "Context"
+  },
+  {
+   "id": "containers",
+   "title": "Containers"
+  },
+  {
+   "id": "deep-dive",
+   "title": "Inside Open Connect"
+  },
+  {
+   "id": "flows",
+   "title": "Core flows"
+  },
+  {
+   "id": "data",
+   "title": "Data and caching"
+  },
+  {
+   "id": "growth",
+   "title": "Growth"
+  },
+  {
+   "id": "failures",
+   "title": "Failure modes"
+  },
+  {
+   "id": "patterns",
+   "title": "Patterns used"
+  },
+  {
+   "id": "decisions",
+   "title": "Key decisions"
+  },
+  {
+   "id": "mvp",
+   "title": "What we would build first"
+  }
+ ],
+ "shots": [
+  {
+   "id": "n01",
+   "chapter": "overview",
+   "diagram": "context",
+   "focus": [],
+   "trace": [],
+   "engineer": "This is Netflix streaming, seen from the outside. In January 2026 Netflix told shareholders it had passed three hundred and twenty-five million paid memberships, and that members watched ninety-six billion hours in the second half of 2025. Every one of those hours starts with somebody pressing play on a television, a phone or a laptop, and ends with video arriving from a server that is usually very close to them.",
+   "executive": "This is how Netflix gets a film onto your screen. It serves more than three hundred and twenty-five million paid memberships."
+  },
+  {
+   "id": "n02",
+   "chapter": "overview",
+   "title": "Two planes",
+   "diagram": "context",
+   "focus": [
+    "netflix",
+    "aws",
+    "isp"
+   ],
+   "trace": [
+    "c-aws",
+    "c-isp",
+    "c-video"
+   ],
+   "engineer": "The one idea everything depends on is a split into two planes. The control plane, everything that decides, runs in Amazon Web Services: sign-in, browsing, recommendations, and choosing where your video should come from. The data plane, which moves the actual video bytes, is Netflix's own content delivery network, Open Connect, made of appliances placed inside internet providers and at internet exchanges. Decisions happen in the cloud; the heavy traffic never touches it.",
+   "executive": "Netflix splits the work: the cloud decides what you get, and its own servers inside your internet provider deliver the video."
+  },
+  {
+   "id": "n03",
+   "chapter": "requirements",
+   "card": {
+    "heading": "Scale, from Netflix's own reports",
+    "kind": "numbers",
+    "points": [
+     "325M+ | paid memberships, passed in Q4 2025",
+     "97B+ | hours watched in H1 2026",
+     "$45.2B | revenue, full year 2025",
+     "~22M | streams playing at any moment, on average (our arithmetic)",
+     "6,000+ | Open Connect locations (2025)"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The numbers, from Netflix's shareholder letters. More than three hundred and twenty-five million paid memberships. More than ninety-seven billion hours watched in the first half of 2026. Forty-five point two billion dollars of revenue in 2025. Divide those hours by the hours in half a year and you get about twenty-two million streams playing at any moment, on average; that is our arithmetic, and evening peaks are far higher. Open Connect itself sits in more than six thousand locations.",
+   "executive": "Hundreds of millions of members, billions of hours, and tens of millions of streams playing at once."
+  },
+  {
+   "id": "n04",
+   "chapter": "requirements",
+   "card": {
+    "heading": "What the system must do (our requirements)",
+    "points": [
+     "Video starts within a couple of seconds of pressing play",
+     "No stalls: quality drops before playback stops",
+     "Works on thousands of device types, old and new",
+     "Bytes travel the shortest network distance possible",
+     "A failed server, zone or cloud region never stops playback",
+     "Browsing degrades gracefully when a service is down"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Then the requirements. These are ours, written from the product, not from a Netflix document. Video should start within a couple of seconds. It should never stall; picture quality drops first. It must work on thousands of kinds of device, old and new. The bytes should travel the shortest network distance possible, which is kind to internet providers too. And a failed server, zone or whole cloud region should not stop anyone watching.",
+   "executive": "Fast starts, no buffering, every device, delivered from nearby, and resilient to failures."
+  },
+  {
+   "id": "n05",
+   "chapter": "context",
+   "title": "Members",
+   "diagram": "context",
+   "focus": [
+    "member",
+    "netflix"
+   ],
+   "trace": [
+    "c-member"
+   ],
+   "engineer": "At level one there is one kind of person, the member, using a Netflix app. The app does two very different things. It makes small, frequent calls to browse, search and press play, which go to the control plane. And once playback starts, it pulls a steady stream of video segments, which come from somewhere else entirely. Those two kinds of traffic differ in size by orders of magnitude, so they get different homes.",
+   "executive": "Members use the Netflix app to browse and to watch; those are two very different kinds of traffic."
+  },
+  {
+   "id": "n06",
+   "chapter": "context",
+   "title": "Outside parties",
+   "diagram": "context",
+   "focus": [
+    "netflix",
+    "studios",
+    "aws",
+    "isp"
+   ],
+   "trace": [
+    "c-studios",
+    "c-aws",
+    "c-isp",
+    "c-video"
+   ],
+   "engineer": "Netflix leans on three outside parties. Studios and production partners deliver finished masters, which Netflix processes and encodes. Amazon Web Services runs the control plane; Netflix finished moving its streaming service there in January 2016, after a database corruption in 2008 started the move. And internet providers and exchanges host the Open Connect appliances. Qualifying providers get them free of charge, supplying only power, space and connectivity.",
+   "executive": "Studios supply the shows, Amazon's cloud runs the brains, and internet providers host Netflix's video servers."
+  },
+  {
+   "id": "n07",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [],
+   "trace": [],
+   "engineer": "One level in. The control plane sits behind the Zuul gateway, with browse services, playback services, steering and cache control. State lives in EVCache and Cassandra, and encoded files in S3. Below them, the data plane: thousands of Open Connect appliances. Netflix runs many more microservices than this; the picture keeps only the ones a play touches, and the grouping of browse and playback services is our simplification.",
+   "executive": "Inside, a set of cloud services decides, and a fleet of video servers delivers."
+  },
+  {
+   "id": "n08",
+   "chapter": "containers",
+   "title": "Browse",
+   "diagram": "containers",
+   "focus": [
+    "app",
+    "zuul",
+    "discovery",
+    "evcache",
+    "cassandra"
+   ],
+   "trace": [
+    "k-app-zuul",
+    "k-zuul-disc",
+    "k-disc-evc",
+    "k-evc-cas"
+   ],
+   "engineer": "Browsing first. Every request from the app enters through Zuul, which Netflix describes as the front door for all requests into its cloud. Zuul authenticates, routes and throttles. Browse services build the home page and search results, reading mostly from EVCache, a memcached-based cache, and falling back to Cassandra. Netflix has said it wants data-tier reads in the single-millisecond range, which is why the cache sits in front.",
+   "executive": "Browsing goes through a gateway to services that read mostly from fast caches."
+  },
+  {
+   "id": "n09",
+   "chapter": "containers",
+   "title": "Press play",
+   "diagram": "containers",
+   "focus": [
+    "app",
+    "zuul",
+    "playback",
+    "steering",
+    "cachectl"
+   ],
+   "trace": [
+    "k-app-zuul",
+    "k-zuul-play",
+    "k-play-steer",
+    "k-steer-cc"
+   ],
+   "engineer": "Pressing play takes a different route. Zuul hands the request to playback services, which check the member's rights to the title, and choose which encoded files suit this device and this network. Steering then picks which appliances should serve those files, using what cache control knows about every appliance. The answer goes back to the app as a list of URLs. No video has moved yet; this is all decision.",
+   "executive": "Pressing play asks the cloud which nearby server should send the video."
+  },
+  {
+   "id": "n10",
+   "chapter": "containers",
+   "title": "Stream",
+   "diagram": "containers",
+   "focus": [
+    "app",
+    "oca",
+    "cachectl"
+   ],
+   "trace": [
+    "k-app-oca",
+    "k-oca-cc"
+   ],
+   "engineer": "Now the heavy path. The app fetches video segments directly from an Open Connect appliance over HTTPS. The appliances are deliberately simple: Netflix says they only do two things. They serve files, and they report their health, the network routes they have learned, and which files they hold, back to cache control in AWS. They store no member data, no viewing history and no DRM information.",
+   "executive": "The video itself comes straight from a nearby Netflix server, which reports its health back to the cloud."
+  },
+  {
+   "id": "n11",
+   "chapter": "containers",
+   "title": "Fill",
+   "diagram": "containers",
+   "focus": [
+    "encode",
+    "s3",
+    "oca"
+   ],
+   "trace": [
+    "k-enc-s3",
+    "k-s3-oca"
+   ],
+   "engineer": "The last path runs ahead of time. The encoding pipeline turns each master into many encoded files and places them in S3. Open Connect then copies those files onto appliances during off-peak fill windows, mostly overnight local time. Netflix calls this proactive caching: because it can predict what members will watch, and when, it fills the caches before anyone asks, instead of waiting for a miss like a normal CDN.",
+   "executive": "New shows are copied to the servers overnight, before anyone asks for them."
+  },
+  {
+   "id": "n13",
+   "chapter": "deep-dive",
+   "title": "What appliances report",
+   "diagram": "steering",
+   "focus": [
+    "rtr",
+    "eoca",
+    "cc"
+   ],
+   "trace": [
+    "d-rtr-eoca",
+    "d-eoca-cc"
+   ],
+   "engineer": "Inside Open Connect, it starts with routing. An embedded appliance has a BGP session with the provider's router, so the provider decides which of its customers' addresses that appliance should serve. The appliance passes those routes up to cache control, along with its health and its list of files. A 2024 Netflix presentation says routes are synchronised about every five minutes. So the control plane holds a constantly updated map of who can serve whom.",
+   "executive": "Each server tells the cloud which customers it can reach, whether it is healthy, and what it holds."
+  },
+  {
+   "id": "n14",
+   "chapter": "deep-dive",
+   "title": "Steering",
+   "diagram": "steering",
+   "focus": [
+    "pb",
+    "st",
+    "cc"
+   ],
+   "trace": [
+    "d-pb-st",
+    "d-st-cc",
+    "d-st-pb"
+   ],
+   "engineer": "When playback services have chosen the files, steering asks cache control which appliances hold them, are healthy, and are closest to this client on the network. It ranks them, generates URLs and hands them back. Netflix's own description stops there. Public slides from Netflix engineers from 2018 add that BGP attributes, such as the longest matching prefix and the path length, drive the ranking, with embedded appliances preferred over peering.",
+   "executive": "The cloud picks the healthy server closest to you on the network and gives your app its address."
+  },
+  {
+   "id": "n15",
+   "chapter": "deep-dive",
+   "title": "Fill and fallback",
+   "diagram": "steering",
+   "focus": [
+    "pop",
+    "eoca",
+    "ixoca",
+    "dev"
+   ],
+   "trace": [
+    "d-pop-eoca",
+    "d-ix-eoca",
+    "d-eoca-dev",
+    "d-ix-dev"
+   ],
+   "engineer": "Two more paths. Fill: the planner, which is our grouping of several control-plane services, gives each appliance a manifest of what it should hold and a ranked list of fill sources, and appliances copy from each other off-peak, so little traffic crosses the internet backbone. Fallback: providers with embedded appliances also peer with Netflix at exchanges, and if the embedded site is down, clients are steered to other embedded sites or to exchange appliances instead.",
+   "executive": "Servers fill up from each other overnight, and if your provider's server fails, you are sent to the next nearest one. The planner box is our grouping."
+  },
+  {
+   "id": "n16",
+   "chapter": "flows",
+   "title": "Ask",
+   "diagram": "play",
+   "focus": [
+    "q-oca",
+    "q-cc",
+    "q-app",
+    "q-zuul",
+    "q-pb"
+   ],
+   "trace": [
+    "p1",
+    "p2",
+    "p3",
+    "p4"
+   ],
+   "engineer": "Step by step, pressing play. In the background, every appliance has already reported its health, routes and files. The app sends the play request with what the device can decode and display. Zuul routes it to playback services, which check that this member may watch this title in this country, then pick the set of streams: codecs, resolutions and bitrates that suit this device.",
+   "executive": "Your app asks to play; the cloud checks you are allowed and picks the right video formats for your device."
+  },
+  {
+   "id": "n17",
+   "chapter": "flows",
+   "title": "Steer",
+   "diagram": "play",
+   "focus": [
+    "q-pb",
+    "q-st",
+    "q-cc",
+    "q-app"
+   ],
+   "trace": [
+    "p5",
+    "p6",
+    "p7"
+   ],
+   "engineer": "Steering asks cache control which appliances can serve those files to this client, ranks them, and returns URLs. Playback services send the app a manifest, the list of streams, the appliance URLs and, in our sketch, the licence to decrypt the video. In our reading, returning more than one URL is what lets the app move to another appliance on its own if the first one struggles, without asking the cloud again.",
+   "executive": "The app receives a list of nearby servers and the key to unlock the video."
+  },
+  {
+   "id": "n18",
+   "chapter": "flows",
+   "title": "Stream and adapt",
+   "diagram": "play",
+   "focus": [
+    "q-app",
+    "q-oca",
+    "q-zuul"
+   ],
+   "trace": [
+    "p8",
+    "p9",
+    "p10"
+   ],
+   "engineer": "Now the app fetches segments from the appliance. As it plays, the player measures throughput and its buffer, and switches between bitrates: adaptive bitrate streaming. Quality drops before playback stalls. Netflix encodes each title with its own bitrate ladder, and in 2018 described tuning encodes shot by shot. Telemetry about the session flows back to the control plane, which is how Netflix sees quality problems before members report them.",
+   "executive": "The video adjusts its quality to your connection as it plays, so it keeps going instead of buffering."
+  },
+  {
+   "id": "n19",
+   "chapter": "flows",
+   "title": "Encode and first copy",
+   "diagram": "fill",
+   "focus": [
+    "f-studio",
+    "f-enc",
+    "f-s3",
+    "f-cp",
+    "f-master"
+   ],
+   "trace": [
+    "f1",
+    "f2",
+    "f3",
+    "f4",
+    "f5"
+   ],
+   "engineer": "The second flow: a new title reaching the network. The studio delivers a master. Content operations run quality control and encoding, then put every bitrate, subtitle and asset into S3. Appliances regularly ask the control plane for their manifest. A few appliances are elected fill masters; during their off-peak window they download the new title from S3, so only those few reach that far.",
+   "executive": "A new show is encoded in the cloud, then a few servers copy it first, overnight."
+  },
+  {
+   "id": "n20",
+   "chapter": "flows",
+   "title": "Spread and go live",
+   "diagram": "fill",
+   "focus": [
+    "f-master",
+    "f-cp",
+    "f-oca",
+    "f-enc"
+   ],
+   "trace": [
+    "f6",
+    "f7",
+    "f8",
+    "f9",
+    "f10"
+   ],
+   "engineer": "The fill master tells the control plane it has the title. When other appliances ask where to fill from, they are pointed at that master, and copy from it; then others copy from them, tier by tier, as the fill window moves west with the night. When enough clusters hold enough copies, the title counts as live for serving, and the app can show it from its release time.",
+   "executive": "Other servers copy it from their neighbours, and once enough have it, the show can go live."
+  },
+  {
+   "id": "n21",
+   "chapter": "data",
+   "title": "Stores",
+   "diagram": "containers",
+   "focus": [
+    "cassandra",
+    "evcache",
+    "s3",
+    "oca"
+   ],
+   "trace": [
+    "k-disc-evc",
+    "k-evc-cas",
+    "k-enc-s3",
+    "k-s3-oca"
+   ],
+   "engineer": "What lives where. Member and account data lives in Cassandra, replicated asynchronously between AWS regions, with EVCache in front for fast reads; some data exists only in the cache because it can be recalculated. Encoded video lives in S3 as the source of truth, and copies sit on appliance disks, chosen by popularity and spread across a cluster with consistent hashing. And what appliances never store: member data, viewing history, or DRM information.",
+   "executive": "Account data stays in the cloud; only video files are copied out to the servers near you."
+  },
+  {
+   "id": "n22",
+   "chapter": "data",
+   "card": {
+    "heading": "What gets stored for each title",
+    "kind": "compare",
+    "points": [
+     "Approach | What it means",
+     "Fixed ladder (2010) | Same bitrate steps for every title, up to 5,800 kbps at 1080p",
+     "Per-title (2015) | A ladder per title; Netflix's example cut the top step to 4,640 kbps",
+     "Shot-based (2018) | Settings tuned per shot, judged by VMAF",
+     "AV1 (2025) | About 30% of viewing; second most used codec"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The biggest thing stored per title is its encodes. In 2010 Netflix used one fixed bitrate ladder for everything, topping out at five thousand eight hundred kilobits a second for 1080p. In 2015 it moved to per-title encoding; in one example the top step fell to four thousand six hundred and forty, about twenty per cent less. In 2018 it described tuning encodes shot by shot, judged by its VMAF quality metric. And by late 2025 the AV1 codec carried about thirty per cent of viewing.",
+   "executive": "Each show is compressed in a way tuned to its own content, which saves bandwidth without losing quality."
+  },
+  {
+   "id": "n23",
+   "chapter": "growth",
+   "card": {
+    "heading": "How it got here, from public sources",
+    "kind": "compare",
+    "points": [
+     "Year | Change",
+     "2008 | Database corruption stops DVD shipping for three days; the move to AWS begins",
+     "2011 | Open Connect starts; Chaos Monkey and the Simian Army described",
+     "2013 | Active-active across two US AWS regions",
+     "2016 | Cloud migration complete; last streaming data-centre kit shut down",
+     "2018 | Zuul 2 and Titus open-sourced; shot-based encoding",
+     "2025 | Live events on Open Connect; AV1 at about 30% of viewing"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "How it grew. In 2008 a database corruption stopped DVD shipping for three days, and Netflix began moving to AWS. In 2011 it started Open Connect and described Chaos Monkey and the Simian Army. By 2013 it ran active-active across two American regions. The cloud move finished in January 2016. In 2018 it open-sourced Zuul 2 and its Titus container platform. And in 2025 it explained how live events ride the same Open Connect network.",
+   "executive": "From a database failure in 2008 to a cloud-plus-own-CDN design that now also carries live events."
+  },
+  {
+   "id": "n24",
+   "chapter": "failures",
+   "card": {
+    "heading": "What fails, and what members see",
+    "kind": "compare",
+    "points": [
+     "Failure | What protects members",
+     "An appliance or ISP site goes down | Steered to other sites or exchange appliances; app has spare URLs",
+     "Network gets congested | Adaptive bitrate: lower quality, no stall",
+     "A browse service fails | Fallback, e.g. a non-personalised row (our design)",
+     "A whole AWS region fails | Traffic evacuated to healthy regions; rehearsed with Chaos Kong",
+     "Members mass-retry after a glitch | Throttling at Zuul and retry budgets (our design for VOD)"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Failure modes. If an appliance or a provider's site fails, steering sends clients elsewhere, and the app already holds spare URLs. If the network is congested, adaptive bitrate lowers quality instead of stalling. If a browse service fails, our design shows a fallback, such as a row that is not personalised. If a whole region fails, Netflix moves traffic to healthy regions. And for live events Netflix has reported up to ten times the load from members restarting streams, so retries need budgets.",
+   "executive": "Each failure has a plan: switch server, lower quality, show a simpler page, or move to another region."
+  },
+  {
+   "id": "n25",
+   "chapter": "failures",
+   "card": {
+    "heading": "Breaking it on purpose",
+    "points": [
+     "Chaos Monkey (2011): randomly terminates production instances",
+     "Latency Monkey: injects delays between services",
+     "Chaos Gorilla: simulates losing a whole availability zone",
+     "Chaos Kong (2015): evacuates a whole AWS region",
+     "Live events: failure injection, from bad segments to a lost region"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Netflix is best known for testing all this by breaking things on purpose. Chaos Monkey, described in 2011, randomly terminates production instances. Latency Monkey injects delays, and Chaos Gorilla simulates the loss of an availability zone. Chaos Kong goes further and evacuates a whole AWS region; Netflix wrote that regular Kong exercises helped it sidestep the September 2015 DynamoDB outage in US-East-1. For live, it injects missing segments and lost regions too.",
+   "executive": "Netflix deliberately breaks its own systems in production, so real failures are already rehearsed."
+  },
+  {
+   "id": "n26",
+   "chapter": "patterns",
+   "card": {
+    "heading": "Patterns used",
+    "points": [
+     "Circuit breaker and fallback: Hystrix, now in maintenance mode",
+     "Bulkhead: Hystrix's thread and semaphore isolation",
+     "Timeout and retry: around every remote call; retry on another server",
+     "Rate limiting: throttling at the Zuul gateway",
+     "Consistent hashing: spreading files across appliances in a cluster",
+     "Active-active regions and proactive caching"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The named patterns. Circuit breakers with fallbacks, made famous by Netflix's Hystrix library, which is now in maintenance mode; Netflix points new projects to Resilience4j and adaptive concurrency limits. Bulkheads, through Hystrix's thread and semaphore isolation. Timeouts and retries, including Zuul retrying a failed request on another server. Rate limiting at the gateway. Consistent hashing to spread files across appliances. Each of the first four has its own walkthrough.",
+   "executive": "Well-known resilience patterns protect every call, and Netflix popularised several of them."
+  },
+  {
+   "id": "n27",
+   "chapter": "decisions",
+   "card": {
+    "heading": "Key decisions",
+    "kind": "compare",
+    "points": [
+     "Decision | Why, and the alternative",
+     "Own CDN, not only commercial CDNs | Proactive caching inside ISPs; costs hardware and operations",
+     "Control plane in AWS, not own data centres | Elastic capacity after the 2008 outage; depends on one provider",
+     "Fill off-peak, not on demand | Popularity is predictable; needs good forecasts",
+     "Active-active regions, not standby | Failover is rehearsed; data replication is asynchronous",
+     "Encode per title and per shot | Less bandwidth for the same quality; much more compute"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The decisions that shaped it. Building its own CDN rather than relying only on commercial ones, so it could fill caches proactively inside providers, at the cost of running hardware worldwide. Running the control plane in AWS rather than its own data centres. Filling off-peak instead of on demand, which only works because viewing is predictable. Active-active regions rather than a cold standby. And spending compute on encoding to save bandwidth on every stream.",
+   "executive": "Netflix built its own delivery network, rented its cloud, and spends compute up front to save bandwidth for every viewer."
+  },
+  {
+   "id": "n28",
+   "chapter": "mvp",
+   "card": {
+    "heading": "What we would build first",
+    "points": [
+     "A commercial CDN with signed URLs; our own appliances only at real scale",
+     "One API service for catalogue, rights and playback, behind a managed gateway",
+     "Postgres for accounts and rights; a cache in front of catalogue reads",
+     "Encode with a per-title ladder, packaged for HLS and DASH",
+     "Return two or three CDN URLs per play; let the player fail over",
+     "Timeouts, retries with backoff, and breakers on every remote call"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "If we built a small version today: start with a commercial CDN and signed URLs; Netflix's own appliances only made sense at enormous scale. One API service for catalogue, rights and playback, behind a managed gateway. Postgres for accounts and rights, with a cache for catalogue reads. Encode each title with its own ladder, packaged for HLS and DASH. Return more than one URL so the player can fail over. And put timeouts, retries and breakers on every remote call.",
+   "executive": "Start with a rented CDN and one service, but keep the two-plane split and the resilience habits from day one."
+  },
+  {
+   "id": "n29",
+   "chapter": "mvp",
+   "diagram": "containers",
+   "focus": [],
+   "trace": [],
+   "engineer": "A word on accuracy. Every number here comes from Netflix's shareholder letters, its engineering blog, its Open Connect documents or its open-source repositories, checked in October 2026. Older posts are dated as such: active-active from 2013 now likely spans more regions, and the latest letters do not give a quarterly membership count. Where Netflix has not said how something works, such as browse fallbacks, the narration says it is our design.",
+   "executive": "Every claim here is checked against Netflix's own public sources, and our own design is labelled."
+  }
+ ]
+}

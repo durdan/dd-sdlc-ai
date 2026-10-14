@@ -1,0 +1,1048 @@
+{
+ "id": "saga",
+ "title": "Saga",
+ "subtitle": "Design pattern",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "diagrams": [
+  {
+   "id": "problem",
+   "kind": "c4",
+   "title": "One order, four services, four databases",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "shopper",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Shopper",
+     "sub": "places an order"
+    },
+    {
+     "id": "orders",
+     "kind": "container",
+     "tone": "core",
+     "label": "Order service",
+     "sub": "owns the order"
+    },
+    {
+     "id": "payments",
+     "kind": "container",
+     "tone": "core",
+     "label": "Payment service",
+     "sub": "charges the card"
+    },
+    {
+     "id": "inventory",
+     "kind": "container",
+     "tone": "core",
+     "label": "Inventory service",
+     "sub": "reserves stock"
+    },
+    {
+     "id": "shipping",
+     "kind": "container",
+     "tone": "core",
+     "label": "Shipping service",
+     "sub": "books the courier"
+    },
+    {
+     "id": "odb",
+     "kind": "store",
+     "tone": "data",
+     "label": "Orders DB"
+    },
+    {
+     "id": "pdb",
+     "kind": "store",
+     "tone": "data",
+     "label": "Payments DB"
+    },
+    {
+     "id": "idb",
+     "kind": "store",
+     "tone": "data",
+     "label": "Inventory DB"
+    },
+    {
+     "id": "sdb",
+     "kind": "store",
+     "tone": "data",
+     "label": "Shipping DB"
+    }
+   ],
+   "edges": [
+    {
+     "id": "p1",
+     "from": "shopper",
+     "to": "orders",
+     "style": "solid",
+     "label": "place order"
+    },
+    {
+     "id": "p2",
+     "from": "orders",
+     "to": "odb",
+     "style": "solid",
+     "label": "order saved"
+    },
+    {
+     "id": "p3",
+     "from": "orders",
+     "to": "payments",
+     "style": "solid",
+     "label": "charge £40"
+    },
+    {
+     "id": "p4",
+     "from": "payments",
+     "to": "pdb",
+     "style": "solid",
+     "label": "charge committed"
+    },
+    {
+     "id": "p5",
+     "from": "orders",
+     "to": "inventory",
+     "style": "dashed",
+     "label": "reserve stock · fails"
+    },
+    {
+     "id": "p6",
+     "from": "orders",
+     "to": "shipping",
+     "style": "dashed",
+     "label": "never booked"
+    },
+    {
+     "id": "p7",
+     "from": "inventory",
+     "to": "idb",
+     "style": "solid",
+     "label": "stock levels"
+    },
+    {
+     "id": "p8",
+     "from": "shipping",
+     "to": "sdb",
+     "style": "solid",
+     "label": "bookings"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call or write"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or compensation"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "event or link"
+    }
+   ]
+  },
+  {
+   "id": "twopc",
+   "kind": "sequence",
+   "title": "Two-phase commit across services",
+   "participants": [
+    {
+     "id": "coord",
+     "label": "Coordinator"
+    },
+    {
+     "id": "payments",
+     "label": "Payment service"
+    },
+    {
+     "id": "inventory",
+     "label": "Inventory service"
+    },
+    {
+     "id": "shipping",
+     "label": "Shipping service"
+    }
+   ],
+   "messages": [
+    {
+     "id": "n1",
+     "from": "coord",
+     "to": "payments",
+     "style": "solid",
+     "label": "prepare: promise to commit"
+    },
+    {
+     "id": "n2",
+     "from": "coord",
+     "to": "inventory",
+     "style": "solid",
+     "label": "prepare"
+    },
+    {
+     "id": "n3",
+     "from": "coord",
+     "to": "shipping",
+     "style": "solid",
+     "label": "prepare"
+    },
+    {
+     "id": "n4",
+     "from": "payments",
+     "to": "coord",
+     "style": "solid",
+     "label": "yes · rows locked"
+    },
+    {
+     "id": "n5",
+     "from": "inventory",
+     "to": "coord",
+     "style": "solid",
+     "label": "yes · rows locked"
+    },
+    {
+     "id": "n6",
+     "from": "shipping",
+     "to": "coord",
+     "style": "dashed",
+     "label": "slow · everyone waits, locked"
+    },
+    {
+     "id": "n7",
+     "from": "coord",
+     "to": "inventory",
+     "style": "dashed",
+     "label": "coordinator crashes: no decision sent"
+    },
+    {
+     "id": "n8",
+     "from": "inventory",
+     "to": "coord",
+     "style": "dashed",
+     "label": "blocked: cannot commit or roll back alone"
+    }
+   ]
+  },
+  {
+   "id": "structure",
+   "kind": "c4",
+   "title": "Local transactions, each with a compensation",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "t1",
+     "kind": "component",
+     "tone": "core",
+     "label": "Create order",
+     "sub": "status PENDING"
+    },
+    {
+     "id": "t2",
+     "kind": "component",
+     "tone": "core",
+     "label": "Reserve stock",
+     "sub": "inventory DB"
+    },
+    {
+     "id": "t3",
+     "kind": "component",
+     "tone": "core",
+     "label": "Charge card",
+     "sub": "payments DB"
+    },
+    {
+     "id": "t4",
+     "kind": "component",
+     "tone": "external",
+     "label": "Hand to courier",
+     "sub": "pivot: no way back"
+    },
+    {
+     "id": "t5",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Confirm order",
+     "sub": "retryable until done"
+    },
+    {
+     "id": "c1",
+     "kind": "component",
+     "tone": "stream",
+     "label": "Cancel order",
+     "sub": "status CANCELLED"
+    },
+    {
+     "id": "c2",
+     "kind": "component",
+     "tone": "stream",
+     "label": "Release stock",
+     "sub": "add the units back"
+    },
+    {
+     "id": "c3",
+     "kind": "component",
+     "tone": "stream",
+     "label": "Refund",
+     "sub": "a new credit"
+    }
+   ],
+   "edges": [
+    {
+     "id": "f1",
+     "from": "t1",
+     "to": "t2",
+     "style": "solid"
+    },
+    {
+     "id": "f2",
+     "from": "t2",
+     "to": "t3",
+     "style": "solid"
+    },
+    {
+     "id": "f3",
+     "from": "t3",
+     "to": "t4",
+     "style": "solid"
+    },
+    {
+     "id": "f4",
+     "from": "t4",
+     "to": "t5",
+     "style": "solid"
+    },
+    {
+     "id": "u1",
+     "from": "t1",
+     "to": "c1",
+     "style": "dotted",
+     "label": "undo"
+    },
+    {
+     "id": "u2",
+     "from": "t2",
+     "to": "c2",
+     "style": "dotted",
+     "label": "undo"
+    },
+    {
+     "id": "u3",
+     "from": "t3",
+     "to": "c3",
+     "style": "dotted",
+     "label": "undo"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "next step"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "undone by"
+    }
+   ]
+  },
+  {
+   "id": "choreo",
+   "kind": "c4",
+   "title": "Choreography: services react to events",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "orders",
+     "kind": "container",
+     "tone": "core",
+     "label": "Order service",
+     "sub": "creates order PENDING"
+    },
+    {
+     "id": "broker",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Event broker",
+     "sub": "topics, at-least-once delivery"
+    },
+    {
+     "id": "inventory",
+     "kind": "container",
+     "tone": "core",
+     "label": "Inventory service"
+    },
+    {
+     "id": "payments",
+     "kind": "container",
+     "tone": "core",
+     "label": "Payment service"
+    },
+    {
+     "id": "shipping",
+     "kind": "container",
+     "tone": "core",
+     "label": "Shipping service"
+    }
+   ],
+   "edges": [
+    {
+     "id": "e1",
+     "from": "orders",
+     "to": "broker",
+     "style": "dotted",
+     "label": "OrderCreated"
+    },
+    {
+     "id": "e2",
+     "from": "broker",
+     "to": "inventory",
+     "style": "dotted",
+     "label": "OrderCreated"
+    },
+    {
+     "id": "e3",
+     "from": "inventory",
+     "to": "broker",
+     "style": "dotted",
+     "label": "StockReserved"
+    },
+    {
+     "id": "e4",
+     "from": "broker",
+     "to": "payments",
+     "style": "dotted",
+     "label": "StockReserved"
+    },
+    {
+     "id": "e5",
+     "from": "payments",
+     "to": "broker",
+     "style": "dotted",
+     "label": "PaymentCaptured"
+    },
+    {
+     "id": "e6",
+     "from": "broker",
+     "to": "shipping",
+     "style": "dotted",
+     "label": "PaymentCaptured"
+    },
+    {
+     "id": "e7",
+     "from": "shipping",
+     "to": "broker",
+     "style": "dotted",
+     "label": "ShipmentBooked"
+    },
+    {
+     "id": "e8",
+     "from": "broker",
+     "to": "orders",
+     "style": "dotted",
+     "label": "ShipmentBooked → CONFIRMED"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call or write"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or compensation"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "event"
+    }
+   ]
+  },
+  {
+   "id": "orch",
+   "kind": "sequence",
+   "title": "Orchestration: the happy path",
+   "participants": [
+    {
+     "id": "shopper",
+     "label": "Shopper"
+    },
+    {
+     "id": "orch",
+     "label": "Orchestrator"
+    },
+    {
+     "id": "inventory",
+     "label": "Inventory service"
+    },
+    {
+     "id": "payments",
+     "label": "Payment service"
+    },
+    {
+     "id": "shipping",
+     "label": "Shipping service"
+    }
+   ],
+   "messages": [
+    {
+     "id": "h1",
+     "from": "shopper",
+     "to": "orch",
+     "style": "solid",
+     "label": "place order · saga starts, order PENDING"
+    },
+    {
+     "id": "h2",
+     "from": "orch",
+     "to": "inventory",
+     "style": "solid",
+     "label": "ReserveStock(order 42)"
+    },
+    {
+     "id": "h3",
+     "from": "inventory",
+     "to": "orch",
+     "style": "solid",
+     "label": "StockReserved · state saved"
+    },
+    {
+     "id": "h4",
+     "from": "orch",
+     "to": "payments",
+     "style": "solid",
+     "label": "ChargeCard(order 42, £40)"
+    },
+    {
+     "id": "h5",
+     "from": "payments",
+     "to": "orch",
+     "style": "solid",
+     "label": "Charged · state saved"
+    },
+    {
+     "id": "h6",
+     "from": "orch",
+     "to": "shipping",
+     "style": "solid",
+     "label": "HandToCourier(order 42)"
+    },
+    {
+     "id": "h7",
+     "from": "shipping",
+     "to": "orch",
+     "style": "solid",
+     "label": "Collected · pivot passed"
+    },
+    {
+     "id": "h8",
+     "from": "orch",
+     "to": "shopper",
+     "style": "solid",
+     "label": "order CONFIRMED"
+    }
+   ]
+  },
+  {
+   "id": "compensate",
+   "kind": "sequence",
+   "title": "A step fails: compensate in reverse",
+   "participants": [
+    {
+     "id": "shopper",
+     "label": "Shopper"
+    },
+    {
+     "id": "orch",
+     "label": "Orchestrator"
+    },
+    {
+     "id": "inventory",
+     "label": "Inventory service"
+    },
+    {
+     "id": "payments",
+     "label": "Payment service"
+    },
+    {
+     "id": "shipping",
+     "label": "Shipping service"
+    }
+   ],
+   "messages": [
+    {
+     "id": "x1",
+     "from": "orch",
+     "to": "inventory",
+     "style": "solid",
+     "label": "ReserveStock(order 42)"
+    },
+    {
+     "id": "x2",
+     "from": "inventory",
+     "to": "orch",
+     "style": "solid",
+     "label": "StockReserved"
+    },
+    {
+     "id": "x3",
+     "from": "orch",
+     "to": "payments",
+     "style": "solid",
+     "label": "ChargeCard(order 42, £40)"
+    },
+    {
+     "id": "x4",
+     "from": "payments",
+     "to": "orch",
+     "style": "solid",
+     "label": "Charged"
+    },
+    {
+     "id": "x5",
+     "from": "orch",
+     "to": "shipping",
+     "style": "solid",
+     "label": "HandToCourier(order 42)"
+    },
+    {
+     "id": "x6",
+     "from": "shipping",
+     "to": "orch",
+     "style": "dashed",
+     "label": "rejected: address undeliverable"
+    },
+    {
+     "id": "x7",
+     "from": "orch",
+     "to": "payments",
+     "style": "dashed",
+     "label": "Refund(order 42) · retried until done"
+    },
+    {
+     "id": "x8",
+     "from": "orch",
+     "to": "inventory",
+     "style": "dashed",
+     "label": "ReleaseStock(order 42)"
+    },
+    {
+     "id": "x9",
+     "from": "orch",
+     "to": "shopper",
+     "style": "dashed",
+     "label": "order CANCELLED · refund on its way"
+    }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "paper",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Sagas (1987)",
+     "sub": "Garcia-Molina & Salem · SIGMOD"
+    },
+    {
+     "id": "msio",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "microservices.io",
+     "sub": "choreography and orchestration"
+    },
+    {
+     "id": "azure",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Microsoft Saga pattern",
+     "sub": "compensable, pivot, retryable"
+    },
+    {
+     "id": "aws",
+     "kind": "container",
+     "tone": "core",
+     "label": "AWS Step Functions",
+     "sub": "order, inventory, payment sample"
+    },
+    {
+     "id": "cadence",
+     "kind": "container",
+     "tone": "core",
+     "label": "Cadence",
+     "sub": "open-source workflow engine"
+    },
+    {
+     "id": "temporal",
+     "kind": "container",
+     "tone": "core",
+     "label": "Temporal",
+     "sub": "fork of Cadence · durable execution"
+    }
+   ],
+   "edges": [
+    {
+     "id": "w1",
+     "from": "paper",
+     "to": "msio",
+     "style": "solid",
+     "label": "same idea, one service per step"
+    },
+    {
+     "id": "w2",
+     "from": "paper",
+     "to": "azure",
+     "style": "solid",
+     "label": "named step types"
+    },
+    {
+     "id": "w3",
+     "from": "msio",
+     "to": "aws",
+     "style": "solid",
+     "label": "orchestrator as a state machine"
+    },
+    {
+     "id": "w4",
+     "from": "cadence",
+     "to": "temporal",
+     "style": "solid",
+     "label": "forked"
+    },
+    {
+     "id": "w5",
+     "from": "msio",
+     "to": "temporal",
+     "style": "dotted",
+     "label": "orchestrator as code"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "problem",
+   "title": "The problem"
+  },
+  {
+   "id": "naive",
+   "title": "The naive fix"
+  },
+  {
+   "id": "pattern",
+   "title": "The pattern"
+  },
+  {
+   "id": "how",
+   "title": "How it works"
+  },
+  {
+   "id": "failure",
+   "title": "When it goes wrong"
+  },
+  {
+   "id": "tradeoffs",
+   "title": "Trade-offs"
+  },
+  {
+   "id": "wild",
+   "title": "In the wild"
+  },
+  {
+   "id": "related",
+   "title": "Related patterns"
+  },
+  {
+   "id": "recap",
+   "title": "Recap"
+  }
+ ],
+ "shots": [
+  {
+   "id": "saga-problem",
+   "chapter": "problem",
+   "diagram": "problem",
+   "focus": [],
+   "trace": [],
+   "engineer": "Here is an online shop split into services. One order touches four of them: orders, payments, inventory and shipping. Each service owns its own database, and nobody else may write to it. That is what lets each team change its schema and scale on its own. But placing one order now means four separate commits in four separate databases, and there is no single transaction that covers them all.",
+   "executive": "Placing one order means changing four systems, each with its own database, and nothing makes those changes happen together."
+  },
+  {
+   "id": "saga-partial",
+   "chapter": "problem",
+   "title": "Half done",
+   "diagram": "problem",
+   "focus": [
+    "shopper",
+    "orders",
+    "odb",
+    "payments",
+    "pdb",
+    "inventory",
+    "shipping"
+   ],
+   "trace": [
+    "p1",
+    "p2",
+    "p3",
+    "p4",
+    "p5",
+    "p6"
+   ],
+   "engineer": "Watch what happens when one step fails. The order is saved. The card is charged forty pounds, and that charge is committed. Then inventory reports the item is out of stock. Shipping is never booked. Each database is perfectly consistent on its own, but together they tell a story no one wants: a customer who has paid for something they will never receive. Without a plan, someone fixes it by hand.",
+   "executive": "If the third step fails, the customer has been charged for an order that will never ship, and every system thinks it did its job."
+  },
+  {
+   "id": "saga-2pc",
+   "chapter": "naive",
+   "title": "Two-phase commit",
+   "diagram": "twopc",
+   "focus": [],
+   "trace": [
+    "n1",
+    "n2",
+    "n3",
+    "n4",
+    "n5",
+    "n6",
+    "n7",
+    "n8"
+   ],
+   "engineer": "The obvious fix is a distributed transaction: two-phase commit. A coordinator asks every service to prepare, and each one promises to commit, holding its locks. Only when all have said yes does it say commit. But one slow service keeps everyone waiting, locked. And if the coordinator crashes after the votes, the participants cannot decide alone; they stay blocked. Many data stores, including most NoSQL ones, do not support it at all, so in a database-per-service design it is usually not an option.",
+   "executive": "Locking all four systems until they agree is slow, and if the coordinator fails, everything stays locked. Most modern services cannot do it anyway."
+  },
+  {
+   "id": "saga-structure",
+   "chapter": "pattern",
+   "title": "Steps and undos",
+   "diagram": "structure",
+   "focus": [],
+   "trace": [
+    "f1",
+    "f2",
+    "f3",
+    "f4",
+    "u1",
+    "u2",
+    "u3"
+   ],
+   "engineer": "A saga replaces the one big transaction with a sequence of local ones. Create the order as pending, reserve stock, charge the card, hand the parcel to the courier, confirm. Each step commits in one service's own database. Each step before the point of no return has a compensating transaction: cancel the order, release the stock, refund the card. If a later step fails, the saga runs the compensations in reverse. The courier hand-off is the pivot. After it, steps only go forward, and are retried until they succeed.",
+   "executive": "A saga breaks the order into small steps, each with a matching undo. If a step fails, the earlier ones are undone in reverse order."
+  },
+  {
+   "id": "saga-semantic",
+   "chapter": "pattern",
+   "card": {
+    "heading": "Compensation is not rollback",
+    "kind": "compare",
+    "points": [
+     "Rollback | Compensation",
+     "The change never happened | The change happened and was seen",
+     "Database restores old values | Business action with the opposite effect",
+     "Charge disappears | Refund appears beside the charge",
+     "Automatic | You design, test and run it"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "A compensation is not a rollback. By the time it runs, the original step has committed and others may have seen it. So you cannot restore the old value; you apply a new action with the opposite business meaning. A refund sits next to the charge on the statement. Released stock is added back, not reset to what it was. The 1987 paper that named sagas says exactly this: the compensation undoes the step from a semantic point of view, without necessarily returning the database to its earlier state.",
+   "executive": "Undoing a step means doing a new, opposite action, such as a refund, rather than pretending the first one never happened."
+  },
+  {
+   "id": "saga-choreo",
+   "chapter": "pattern",
+   "title": "Choreography",
+   "diagram": "choreo",
+   "focus": [],
+   "trace": [
+    "e1",
+    "e2",
+    "e3",
+    "e4",
+    "e5",
+    "e6",
+    "e7",
+    "e8"
+   ],
+   "engineer": "There are two ways to coordinate the steps. The first is choreography. There is no one in charge. The order service saves the order and publishes Order Created. Inventory hears it, reserves stock, and publishes Stock Reserved. Payments hears that and charges the card; shipping hears Payment Captured and books the courier. Finally the order service hears Shipment Booked and confirms the order. Each service knows only which events it reacts to and which it emits. On failure, a service publishes a failure event and the others compensate.",
+   "executive": "In one style, each service listens for the previous step's announcement and does its part, with no central controller."
+  },
+  {
+   "id": "saga-how",
+   "chapter": "how",
+   "title": "Orchestration",
+   "diagram": "orch",
+   "focus": [],
+   "trace": [
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "h7",
+    "h8"
+   ],
+   "engineer": "The second way is orchestration. One orchestrator owns the saga and tells each service what to do. The shopper places order forty-two, and the orchestrator records it as pending. It sends Reserve Stock, and saves the reply before moving on. Then Charge Card, saved again. Then Hand to Courier. Once the parcel is collected, the pivot has passed and the saga can only go forward. Finally the order is confirmed. Because each step's outcome is saved, a restarted orchestrator carries on from where it stopped.",
+   "executive": "In the other style, one coordinator tells each service what to do in turn and records progress, so it can pick up again after a crash."
+  },
+  {
+   "id": "saga-compensate",
+   "chapter": "failure",
+   "title": "Compensate",
+   "diagram": "compensate",
+   "focus": [],
+   "trace": [
+    "x1",
+    "x2",
+    "x3",
+    "x4",
+    "x5",
+    "x6",
+    "x7",
+    "x8",
+    "x9"
+   ],
+   "engineer": "Now the courier rejects the parcel: the address is undeliverable. The pivot was never passed, so the orchestrator compensates, newest first. It refunds the card, then releases the stock, then tells the shopper the order is cancelled. A compensation must not give up. If the payment service is down, the refund is retried until it succeeds, because a saga that stops halfway through its undo leaves exactly the mess we started with. And messages may arrive twice, so every step and every compensation must be idempotent.",
+   "executive": "When a later step fails, the earlier steps are undone newest first, and each undo is retried until it works."
+  },
+  {
+   "id": "saga-isolation",
+   "chapter": "failure",
+   "card": {
+    "heading": "No isolation: and what to do about it",
+    "points": [
+     "Others can see a half-finished saga",
+     "Semantic lock: mark records PENDING",
+     "Commutative updates: order does not matter",
+     "Reread before writing; restart if it changed",
+     "Put risky updates after the pivot"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The deeper catch is isolation. Each step commits straight away, so other sagas can see half-finished work: stock reserved for an order that will be cancelled, or two sagas overwriting each other. Microsoft lists lost updates, dirty reads and non-repeatable reads. The countermeasures are design choices. A semantic lock marks the order pending, so others know it may change. Commutative updates, like adding and subtracting stock, work in any order. Reread values before writing. And move risky updates after the pivot, into retryable steps.",
+   "executive": "Other users can see a saga's work before it finishes, so designs mark records as pending and order steps carefully to avoid conflicts."
+  },
+  {
+   "id": "saga-styles",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "Choreography or orchestration",
+    "kind": "compare",
+    "points": [
+     "Choreography | Orchestration",
+     "No extra service to run | An orchestrator to build and keep up",
+     "Good for a few simple steps | Good for long or changing flows",
+     "Flow is spread across services | Flow is in one place",
+     "Risk of cyclic dependencies | Orchestrator is a point of failure",
+     "Hard to test end to end | Easier to trace and monitor"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Which style? Choreography needs no extra service and suits a few simple steps. But the flow lives nowhere: it is spread across event handlers, so adding a step is confusing, cyclic dependencies creep in, and testing needs every service running. Orchestration puts the flow in one place, which suits long or changing flows and is easier to monitor. The price is the orchestrator itself: more to build, and a component every saga depends on, so it must be durable and highly available.",
+   "executive": "Event-driven sagas are simple for short flows; a central coordinator is easier to follow and change as the flow grows, but must itself be reliable."
+  },
+  {
+   "id": "saga-whennot",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "The cost, and when not to use it",
+    "points": [
+     "Eventual consistency: users see PENDING",
+     "Every step needs a designed undo",
+     "Hard to debug as participants grow",
+     "Skip it inside one database: use a transaction",
+     "Skip it if steps are tightly coupled or cyclic"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The costs are real. Consistency is eventual: for a while, the order is pending, and the product and support teams must accept that. Every step needs a compensation that someone designs and tests, and compensations can fail too. Debugging gets harder as participants grow. So do not reach for a saga when the data lives in one database; use an ordinary transaction. Microsoft also warns against it when the steps are tightly coupled or depend on each other in a cycle.",
+   "executive": "Sagas trade instant consistency for independence. If everything lives in one database, a normal transaction is simpler."
+  },
+  {
+   "id": "saga-wild",
+   "chapter": "wild",
+   "title": "Lineage",
+   "diagram": "wild",
+   "focus": [],
+   "trace": [
+    "w1",
+    "w2",
+    "w3",
+    "w4",
+    "w5"
+   ],
+   "engineer": "The idea is old. Hector Garcia-Molina and Kenneth Salem named sagas at SIGMOD in 1987, for long-lived transactions inside one database. Microservices dot io describes the same idea across services, with choreography and orchestration. Microsoft's pattern page adds the vocabulary of compensable, pivot and retryable steps. AWS publishes a Step Functions sample that places an order, updates inventory and takes payment, with a revert step for each. And Temporal, a fork of Uber's Cadence, lets you write the orchestrator as ordinary code, running compensations in reverse.",
+   "executive": "Sagas date from a 1987 database paper. Today AWS Step Functions, Temporal and similar workflow engines run them for you."
+  },
+  {
+   "id": "saga-related",
+   "chapter": "related",
+   "card": {
+    "heading": "Related patterns",
+    "kind": "compare",
+    "points": [
+     "Pattern | How it relates",
+     "Transactional outbox | Commit a step and its event together",
+     "Idempotent consumer | A step that runs twice does no harm",
+     "Event sourcing | The events are the state, so publishing is built in",
+     "CQRS | Read models built from the saga's events",
+     "Two-phase commit | The atomic alternative sagas avoid"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Its neighbours. Each step must update its database and publish its event atomically, or a crash between the two loses the next step. The transactional outbox solves that, and so does event sourcing, where the events are the state. Idempotent consumers make duplicate messages harmless, which every saga needs. CQRS often builds read models from the same events, so the pending order shows up in the right places. And two-phase commit is the alternative a saga deliberately avoids.",
+   "executive": "Sagas lean on reliable event publishing and on steps that are safe to repeat, and they replace two-phase commit."
+  },
+  {
+   "id": "saga-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "One local transaction per service, in sequence",
+     "Undo with compensations: new actions, not rollback",
+     "No isolation: design for it, and make every step idempotent"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. A saga is a sequence of local transactions, one per service, instead of one transaction across them all. When a step fails, it undoes the earlier ones with compensations, which are new business actions like refunds, not a rollback. And a saga gives you no isolation, so design for it with pending states and a clear pivot, and make every step and every compensation safe to run twice.",
+   "executive": "Small local steps, undone by opposite actions, designed so others can see work in progress and repeats do no harm."
+  }
+ ],
+ "meta": {
+  "kind": "pattern",
+  "category": "Data",
+  "level": "advanced",
+  "uses": [
+   "outbox",
+   "idempotency"
+  ],
+  "related": [
+   "outbox",
+   "event-sourcing",
+   "cqrs"
+  ],
+  "blurb": "Keep data consistent across services with local transactions and compensating actions instead of one distributed transaction.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ }
+}

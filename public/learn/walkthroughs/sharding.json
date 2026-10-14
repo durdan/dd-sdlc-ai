@@ -1,0 +1,390 @@
+{
+ "id": "sharding",
+ "title": "Sharding",
+ "subtitle": "Design pattern",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "diagrams": [
+  {
+   "id": "single",
+   "kind": "c4",
+   "title": "One database on one machine",
+   "direction": "RIGHT",
+   "elements": [
+    { "id": "users", "kind": "person", "tone": "neutral", "label": "Users", "sub": "growing every month" },
+    { "id": "app", "kind": "container", "tone": "core", "label": "App servers", "sub": "stateless: add more at will" },
+    { "id": "primary", "kind": "store", "tone": "data", "label": "Primary database", "sub": "every write · all the data" },
+    { "id": "replica", "kind": "store", "tone": "data", "label": "Read replicas", "sub": "full copies of the primary" },
+    { "id": "bigger", "kind": "system", "tone": "external", "label": "Bigger machine", "sub": "the largest one you can buy" }
+   ],
+   "edges": [
+    { "id": "p1", "from": "users", "to": "app", "style": "solid", "label": "requests" },
+    { "id": "p2", "from": "app", "to": "primary", "style": "dashed", "label": "all writes: disk, CPU, I/O maxed" },
+    { "id": "p3", "from": "primary", "to": "bigger", "style": "dashed", "label": "scale up: until there is no bigger box" },
+    { "id": "p4", "from": "app", "to": "replica", "style": "solid", "label": "reads move here" },
+    { "id": "p5", "from": "primary", "to": "replica", "style": "dotted", "label": "every write is replayed on every copy" }
+   ],
+   "legend": [
+    { "style": "solid", "tone": "core", "label": "call" },
+    { "style": "dashed", "tone": "stream", "label": "overloaded or limited" },
+    { "style": "dotted", "tone": "data", "label": "replication or metadata" }
+   ]
+  },
+  {
+   "id": "structure",
+   "kind": "c4",
+   "title": "Split the rows by a shard key and route each request",
+   "direction": "DOWN",
+   "elements": [
+    { "id": "app", "kind": "container", "tone": "core", "label": "App servers", "sub": "query carries the shard key" },
+    { "id": "router", "kind": "component", "tone": "neutral", "label": "Router", "sub": "in the app, a proxy, or the database", "group": "routing" },
+    { "id": "map", "kind": "store", "tone": "data", "label": "Shard map", "sub": "key range → shard; cached", "group": "routing" },
+    { "id": "s1", "kind": "store", "tone": "data", "label": "Shard 1", "sub": "same schema · keys A–H", "group": "shards" },
+    { "id": "s2", "kind": "store", "tone": "data", "label": "Shard 2", "sub": "same schema · keys I–P", "group": "shards" },
+    { "id": "s3", "kind": "store", "tone": "data", "label": "Shard 3", "sub": "same schema · keys Q–Z", "group": "shards" },
+    { "id": "balancer", "kind": "component", "tone": "neutral", "label": "Balancer", "sub": "moves ranges between shards" }
+   ],
+   "edges": [
+    { "id": "t1", "from": "app", "to": "router", "style": "solid", "label": "query for customer Kim" },
+    { "id": "t2", "from": "router", "to": "map", "style": "dotted", "label": "who owns K?" },
+    { "id": "t3", "from": "router", "to": "s2", "style": "solid", "label": "route to shard 2 only" },
+    { "id": "t4", "from": "router", "to": "s1", "style": "solid", "label": "other keys" },
+    { "id": "t5", "from": "router", "to": "s3", "style": "solid", "label": "other keys" },
+    { "id": "t6", "from": "balancer", "to": "map", "style": "dotted", "label": "update ownership after a move" }
+   ],
+   "groups": [
+    { "id": "routing", "label": "Routing layer", "tone": "core" },
+    { "id": "shards", "label": "Shards [each its own server and replicas]", "tone": "data" }
+   ],
+   "legend": [
+    { "style": "solid", "tone": "core", "label": "call" },
+    { "style": "dashed", "tone": "stream", "label": "overloaded or limited" },
+    { "style": "dotted", "tone": "data", "label": "replication or metadata" }
+   ]
+  },
+  {
+   "id": "strategies",
+   "kind": "c4",
+   "title": "Three ways to map a key to a shard",
+   "direction": "DOWN",
+   "elements": [
+    { "id": "key", "kind": "component", "tone": "neutral", "label": "Shard key value", "sub": "e.g. customer_id 4217" },
+    { "id": "range", "kind": "component", "tone": "core", "label": "Range", "sub": "1–5,000 → shard 1; scans cheap, new keys pile up at the end" },
+    { "id": "hash", "kind": "component", "tone": "core", "label": "Hash", "sub": "hash(key) → shard; even spread, ranges fan out" },
+    { "id": "dir", "kind": "component", "tone": "core", "label": "Directory (lookup)", "sub": "a table says where; flexible, one more hop" },
+    { "id": "shards", "kind": "store", "tone": "data", "label": "Shards", "sub": "same schema, different rows" }
+   ],
+   "edges": [
+    { "id": "g1", "from": "key", "to": "range", "style": "solid", "label": "which range?" },
+    { "id": "g2", "from": "key", "to": "hash", "style": "solid", "label": "hash it" },
+    { "id": "g3", "from": "key", "to": "dir", "style": "solid", "label": "look it up" },
+    { "id": "g4", "from": "range", "to": "shards", "style": "solid", "label": "shard 1" },
+    { "id": "g5", "from": "hash", "to": "shards", "style": "solid", "label": "shard 3" },
+    { "id": "g6", "from": "dir", "to": "shards", "style": "dotted", "label": "whatever the table says" }
+   ],
+   "legend": [
+    { "style": "solid", "tone": "core", "label": "call" },
+    { "style": "dashed", "tone": "stream", "label": "overloaded or limited" },
+    { "style": "dotted", "tone": "data", "label": "replication or metadata" }
+   ]
+  },
+  {
+   "id": "write",
+   "kind": "sequence",
+   "title": "A single-shard write",
+   "participants": [
+    { "id": "app", "label": "App" },
+    { "id": "router", "label": "Router" },
+    { "id": "map", "label": "Shard map" },
+    { "id": "s2", "label": "Shard 2" }
+   ],
+   "messages": [
+    { "id": "w1", "from": "app", "to": "router", "style": "solid", "label": "insert order for customer 4217" },
+    { "id": "w2", "from": "router", "to": "map", "style": "dotted", "label": "who owns 4217? (usually cached)" },
+    { "id": "w3", "from": "map", "to": "router", "style": "dotted", "label": "shard 2" },
+    { "id": "w4", "from": "router", "to": "s2", "style": "solid", "label": "insert order + order lines" },
+    { "id": "w5", "from": "s2", "to": "s2", "style": "solid", "label": "local transaction commits" },
+    { "id": "w6", "from": "s2", "to": "router", "style": "solid", "label": "ok" },
+    { "id": "w7", "from": "router", "to": "app", "style": "solid", "label": "ok" },
+    { "id": "w8", "from": "app", "to": "router", "style": "solid", "label": "list orders for 4217" },
+    { "id": "w9", "from": "router", "to": "s2", "style": "solid", "label": "same key, same shard, one query" }
+   ]
+  },
+  {
+   "id": "scatter",
+   "kind": "sequence",
+   "title": "No shard key: ask every shard",
+   "participants": [
+    { "id": "app", "label": "App" },
+    { "id": "router", "label": "Router" },
+    { "id": "s1", "label": "Shard 1" },
+    { "id": "s2", "label": "Shard 2" },
+    { "id": "s3", "label": "Shard 3" }
+   ],
+   "messages": [
+    { "id": "f1", "from": "app", "to": "router", "style": "solid", "label": "top products this week" },
+    { "id": "f2", "from": "router", "to": "s1", "style": "solid", "label": "query" },
+    { "id": "f3", "from": "router", "to": "s2", "style": "solid", "label": "query" },
+    { "id": "f4", "from": "router", "to": "s3", "style": "solid", "label": "query" },
+    { "id": "f5", "from": "s1", "to": "router", "style": "solid", "label": "partial result" },
+    { "id": "f6", "from": "s2", "to": "router", "style": "solid", "label": "partial result" },
+    { "id": "f7", "from": "s3", "to": "router", "style": "dashed", "label": "slow: everyone waits for it" },
+    { "id": "f8", "from": "router", "to": "app", "style": "solid", "label": "merge, sort, return" }
+   ]
+  },
+  {
+   "id": "reshard",
+   "kind": "c4",
+   "title": "Hot shards and adding capacity",
+   "direction": "DOWN",
+   "elements": [
+    { "id": "router", "kind": "component", "tone": "neutral", "label": "Router + shard map", "sub": "1,024 virtual shards → machines" },
+    { "id": "m1", "kind": "store", "tone": "data", "label": "Machine 1", "sub": "virtual shards 0–340" },
+    { "id": "m2", "kind": "store", "tone": "stream", "label": "Machine 2", "sub": "hot: one celebrity key" },
+    { "id": "m3", "kind": "store", "tone": "data", "label": "Machine 3", "sub": "virtual shards 683–1,023" },
+    { "id": "m4", "kind": "store", "tone": "core", "label": "Machine 4 (new)", "sub": "takes some virtual shards" },
+    { "id": "mod", "kind": "component", "tone": "external", "label": "hash(key) mod N", "sub": "N from 3 to 4: about 3 in 4 keys move" }
+   ],
+   "edges": [
+    { "id": "h1", "from": "router", "to": "m1", "style": "solid", "label": "normal load" },
+    { "id": "h2", "from": "router", "to": "m2", "style": "dashed", "label": "a large share of all traffic" },
+    { "id": "h3", "from": "router", "to": "m3", "style": "solid", "label": "normal load" },
+    { "id": "h4", "from": "m2", "to": "m4", "style": "dotted", "label": "copy some virtual shards, catch up" },
+    { "id": "h5", "from": "m4", "to": "router", "style": "dotted", "label": "flip the map, then cut over" },
+    { "id": "h6", "from": "mod", "to": "router", "style": "dashed", "label": "the naive way: rehash nearly everything" }
+   ],
+   "legend": [
+    { "style": "solid", "tone": "core", "label": "call" },
+    { "style": "dashed", "tone": "stream", "label": "overloaded or limited" },
+    { "style": "dotted", "tone": "data", "label": "replication or metadata" }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    { "id": "azure", "kind": "system", "tone": "neutral", "label": "Microsoft Sharding pattern", "sub": "lookup · range · hash · geographic" },
+    { "id": "mongo", "kind": "container", "tone": "core", "label": "MongoDB", "sub": "shard key · chunks · balancer · mongos" },
+    { "id": "vitess", "kind": "container", "tone": "core", "label": "Vitess", "sub": "MySQL · VTGate proxy · live resharding" },
+    { "id": "citus", "kind": "container", "tone": "core", "label": "Citus", "sub": "PostgreSQL extension · coordinator + workers" },
+    { "id": "dynamo", "kind": "external", "tone": "external", "label": "DynamoDB", "sub": "hashed partition key · partitions managed for you" }
+   ],
+   "edges": [
+    { "id": "x1", "from": "azure", "to": "mongo", "style": "solid", "label": "router built into the database" },
+    { "id": "x2", "from": "azure", "to": "vitess", "style": "solid", "label": "proxy in front of MySQL" },
+    { "id": "x3", "from": "azure", "to": "citus", "style": "solid", "label": "coordinator routes or parallelises" },
+    { "id": "x4", "from": "azure", "to": "dynamo", "style": "dotted", "label": "fully managed: you pick only the key" }
+   ],
+   "legend": [
+    { "style": "solid", "tone": "core", "label": "call" },
+    { "style": "dashed", "tone": "stream", "label": "overloaded or limited" },
+    { "style": "dotted", "tone": "data", "label": "replication or metadata" }
+   ]
+  }
+ ],
+ "chapters": [
+  { "id": "problem", "title": "The problem" },
+  { "id": "naive", "title": "The naive fix" },
+  { "id": "pattern", "title": "The pattern" },
+  { "id": "how", "title": "How it works" },
+  { "id": "failure", "title": "When it goes wrong" },
+  { "id": "tradeoffs", "title": "Trade-offs" },
+  { "id": "wild", "title": "In the wild" },
+  { "id": "related", "title": "Related patterns" },
+  { "id": "recap", "title": "Recap" }
+ ],
+ "shots": [
+  {
+   "id": "sh-problem",
+   "chapter": "problem",
+   "title": "Outgrown",
+   "diagram": "single",
+   "focus": ["app", "primary"],
+   "trace": ["p1", "p2"],
+   "engineer": "Here is a typical application. Users hit a fleet of app servers, and that part scales easily: add more servers. But every one of them writes to a single primary database on a single machine. As the business grows, that machine runs out of something. Disk fills up. Writes queue behind each other. CPU and I/O sit at a hundred percent. The app tier can grow forever; the database cannot.",
+   "executive": "The application can add servers easily, but all the data lives on one database machine, and that machine eventually runs out of room and speed."
+  },
+  {
+   "id": "sh-naive",
+   "chapter": "naive",
+   "title": "Scale up, add replicas",
+   "diagram": "single",
+   "focus": ["primary", "replica", "bigger"],
+   "trace": ["p3", "p4", "p5"],
+   "engineer": "The obvious fixes come first, and you should try them. Scale up: buy a bigger machine. That works until there is no bigger machine to buy, and the price climbs steeply near the top. Then add read replicas and send reads to them. That helps a read-heavy system, but every replica is a full copy, so storage does not shrink, and every write still lands on the one primary, then gets replayed on every replica. Writes are still capped.",
+   "executive": "A bigger machine and read-only copies buy time, but every write still goes to one machine, and every copy still has to hold all the data."
+  },
+  {
+   "id": "sh-structure",
+   "chapter": "pattern",
+   "title": "Route",
+   "diagram": "structure",
+   "focus": [],
+   "trace": ["t1", "t2", "t3", "t6"],
+   "engineer": "Sharding splits the rows, not the columns. Every shard has the same schema but holds a different subset of rows, chosen by a shard key, here the customer. Each shard is its own database server, usually with its own replicas. A routing layer asks a shard map who owns this key, and sends the query to that shard only. The router can live in your app, in a proxy, or inside the database. A balancer moves data when shards get uneven, then updates the map.",
+   "executive": "Split the data across several databases by a key such as customer, and put a router in front that sends each request to the one database holding that customer."
+  },
+  {
+   "id": "sh-strategies",
+   "chapter": "pattern",
+   "title": "Range, hash, directory",
+   "diagram": "strategies",
+   "focus": [],
+   "trace": ["g1", "g4", "g2", "g5", "g3", "g6"],
+   "engineer": "There are three main ways to map a key to a shard. Range: customers one to five thousand on shard one, and so on. Range queries stay on one shard, but if keys keep increasing, every new row lands on the last shard. Hash: hash the key and let the hash pick the shard. Load spreads evenly, but a range query now touches every shard. Directory, or lookup: a table records where each key lives. That is the most flexible, at the cost of one more lookup, usually cached.",
+   "executive": "You can split by ranges of the key, by a hash that scatters keys evenly, or by a lookup table. Each makes a different kind of query cheap."
+  },
+  {
+   "id": "sh-key",
+   "chapter": "pattern",
+   "card": {
+    "heading": "Choosing the shard key",
+    "points": [
+     "High cardinality: many distinct values",
+     "Even load: no single value gets most of the traffic",
+     "Immutable: changing it means moving the row",
+     "Matches your main queries, so most hit one shard",
+     "Keeps related rows together: a customer and their orders"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The shard key is the decision you live with longest; Microsoft calls it the most critical one. You want many distinct values, so data can spread. You want load spread evenly, not one value taking most of the traffic. It should never change, or the row has to move. It should match your main queries, so most of them touch one shard. And it should keep related rows together: shard orders by customer, and a customer's orders sit beside the customer.",
+   "executive": "Pick a key with many values, even traffic, that never changes, and that keeps things you read together in the same place."
+  },
+  {
+   "id": "sh-how",
+   "chapter": "how",
+   "title": "Single-shard write",
+   "diagram": "write",
+   "focus": [],
+   "trace": ["w1", "w2", "w3", "w4", "w5", "w6", "w7", "w8", "w9"],
+   "engineer": "Step by step. The app inserts an order for customer forty-two seventeen. The router asks the shard map who owns that key; in practice the map is cached, so this costs almost nothing. The answer is shard two. The router sends the order and its order lines there, and shard two commits them in an ordinary local transaction. Later, listing that customer's orders uses the same key, reaches the same shard, and runs as one simple query. This is the happy path you design for.",
+   "executive": "Each request carries the customer, the router sends it to that customer's database, and everything for that customer is read and written in one place."
+  },
+  {
+   "id": "sh-scatter",
+   "chapter": "failure",
+   "title": "Scatter-gather",
+   "diagram": "scatter",
+   "focus": [],
+   "trace": ["f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8"],
+   "engineer": "Now a query without the shard key: top products this week. No single shard knows the answer, so the router asks all of them, then merges and sorts the partial results. MongoDB calls this a broadcast, or scatter-gather. Run in parallel, it is only as fast as the slowest shard. And it gets worse with every shard you add. A transaction that spans shards is harder still: two-phase commit adds latency and failure modes, so most sharded systems avoid it.",
+   "executive": "Questions that are not about one customer have to ask every database and wait for the slowest. Updates that span databases are slow and fragile."
+  },
+  {
+   "id": "sh-hot",
+   "chapter": "failure",
+   "title": "Hot shard",
+   "diagram": "reshard",
+   "focus": ["m2"],
+   "trace": ["h1", "h2", "h3"],
+   "engineer": "The second trap is a hot shard. The data may be spread evenly while the traffic is not. One celebrity account, one huge tenant, or today's date as the key, and a large share of all requests land on one machine while the others idle. Hashing does not help when it is one key that is hot. The fixes are to split that key further, for example by adding a suffix, as DynamoDB's guide describes, or to give the biggest tenant a shard of its own.",
+   "executive": "Even with data spread evenly, one very busy customer can overload a single database. You may need to split that customer further or give them their own."
+  },
+  {
+   "id": "sh-reshard",
+   "chapter": "failure",
+   "title": "Reshard",
+   "diagram": "reshard",
+   "focus": ["mod", "m4"],
+   "trace": ["h6", "h4", "h5"],
+   "engineer": "Third, growth means resharding. With hash of the key modulo the number of shards, going from three to four moves about three keys in every four. That is almost a full migration on a live system. Two ideas fix this. Consistent hashing arranges keys so only a small fraction move. Or create many virtual shards up front, say a thousand and twenty-four, and map them to a few machines. Adding a machine then means copying some virtual shards, catching up, and flipping the map.",
+   "executive": "Adding a database should move only a slice of the data. Splitting into many small pieces up front makes growth a matter of moving pieces, not reshuffling everything."
+  },
+  {
+   "id": "sh-tradeoffs",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "Range, hash or directory",
+    "kind": "compare",
+    "points": [
+     "Strategy | Good at | Costs you",
+     "Range | Range queries on one shard | Hot ends; hard to rebalance",
+     "Hash | Even load; no map needed | Ranges fan out; resharding without consistent hashing",
+     "Directory | Move any key; isolate big tenants | A lookup per request; the map must stay available"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Comparing the strategies. Range is simple and keeps range queries on one shard, but sequential keys pile onto one end and rebalancing is awkward. Hash spreads load and needs no map, but range queries fan out, and plain modulo hashing makes resharding painful. Directory lets you move any key and give a big tenant its own shard, at the cost of a lookup and a map that must stay available. Many systems combine them, such as hashed keys over virtual shards.",
+   "executive": "Ranges suit queries over a span, hashing suits even load, and a lookup table gives the most control. Real systems often mix them."
+  },
+  {
+   "id": "sh-whennot",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "When not to shard",
+    "points": [
+     "Your data and writes still fit on one machine",
+     "Your bottleneck is reads: use replicas and caches",
+     "Partitioning inside one database is enough",
+     "Your main queries join or aggregate across everything"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Sharding adds permanent complexity: every backup, schema change and incident now spans many databases. Microsoft's guidance lists when not to do it. If your data and throughput fit on one instance, even with growth, stay there. If the bottleneck is reads, replicas and caches are simpler. If table partitioning inside one database is enough, use that. And if your main queries join or aggregate across all the data, sharding makes exactly those queries expensive.",
+   "executive": "Shard only when one database truly cannot cope with your writes or data. It makes everything else harder for good."
+  },
+  {
+   "id": "sh-wild",
+   "chapter": "wild",
+   "title": "Implementations",
+   "diagram": "wild",
+   "focus": [],
+   "trace": ["x1", "x2", "x3", "x4"],
+   "engineer": "In the wild, the router lives in different places. MongoDB builds it in: mongos routers send queries by shard key, data is split into chunks, and a balancer migrates them. Vitess puts a proxy, VTGate, in front of MySQL; it began at YouTube and reshards with a few seconds of read-only cutover. Citus extends PostgreSQL: a coordinator routes each query to one worker or runs it across many. DynamoDB hashes the partition key and adds partitions for you.",
+   "executive": "MongoDB, Vitess for MySQL, Citus for PostgreSQL and DynamoDB all shard data. They differ mainly in where the routing happens and how much you manage."
+  },
+  {
+   "id": "sh-related",
+   "chapter": "related",
+   "card": {
+    "heading": "Neighbours",
+    "kind": "compare",
+    "points": [
+     "Pattern | How it relates",
+     "Consistent hashing | Lets you add shards without moving most keys",
+     "Read replicas | Copies for reads; shards split writes and storage",
+     "Index table | Find rows by a field that is not the shard key",
+     "CQRS | A separate read model for queries across all shards",
+     "Leader election | Each shard's replicas still need one primary"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Its neighbours. Consistent hashing is how you add shards without moving most keys. Read replicas are often confused with sharding: replicas copy everything to spread reads, while shards split the data to spread writes and storage. The index table pattern finds rows by a field that is not the shard key. CQRS gives you a separate read model for queries that span every shard. And leader election still matters inside each shard, which has its own primary and replicas.",
+   "executive": "Sharding works alongside replicas, smart hashing, separate read models and leader election. Replicas copy data; shards split it."
+  },
+  {
+   "id": "sh-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "Shard when writes or storage outgrow one machine",
+     "The shard key decides everything: choose it with care",
+     "Plan for growth: many virtual shards, small moves"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. Shard when writes or storage outgrow one machine, not before; replicas and caches solve reads more cheaply. The shard key decides everything: which queries are cheap, where the hot spots are, and what you can never easily change. And plan for growth from day one, with many small virtual shards, so adding capacity means moving a few pieces rather than reshuffling the lot.",
+   "executive": "Shard only when you must. Choose the key carefully. Split into many small pieces so growing is easy."
+  }
+ ],
+ "meta": {
+  "kind": "pattern",
+  "category": "Scaling",
+  "level": "intermediate",
+  "uses": [],
+  "related": ["consistent-hashing", "cqrs", "leader-election"],
+  "blurb": "Split rows across databases by a shard key, so writes and storage can grow past one machine.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ }
+}

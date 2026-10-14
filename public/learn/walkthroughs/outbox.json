@@ -1,0 +1,1039 @@
+{
+ "id": "outbox",
+ "title": "Transactional outbox",
+ "subtitle": "Design pattern",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "diagrams": [
+  {
+   "id": "dualwrite",
+   "kind": "c4",
+   "title": "Two writes, no shared transaction",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "user",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Customer",
+     "sub": "places an order"
+    },
+    {
+     "id": "orders",
+     "kind": "container",
+     "tone": "core",
+     "label": "Order service",
+     "sub": "writes twice"
+    },
+    {
+     "id": "db",
+     "kind": "store",
+     "tone": "data",
+     "label": "Orders database",
+     "sub": "write 1: the order"
+    },
+    {
+     "id": "broker",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Message broker",
+     "sub": "write 2: OrderPlaced"
+    },
+    {
+     "id": "shipping",
+     "kind": "container",
+     "tone": "core",
+     "label": "Shipping service",
+     "sub": "waits for OrderPlaced"
+    },
+    {
+     "id": "invoicing",
+     "kind": "container",
+     "tone": "core",
+     "label": "Invoicing service",
+     "sub": "waits for OrderPlaced"
+    }
+   ],
+   "edges": [
+    {
+     "id": "d1",
+     "from": "user",
+     "to": "orders",
+     "style": "solid",
+     "label": "place order"
+    },
+    {
+     "id": "d2",
+     "from": "orders",
+     "to": "db",
+     "style": "solid",
+     "label": "1 · commit order"
+    },
+    {
+     "id": "d3",
+     "from": "orders",
+     "to": "broker",
+     "style": "dashed",
+     "label": "2 · publish · crash first: lost"
+    },
+    {
+     "id": "d4",
+     "from": "broker",
+     "to": "shipping",
+     "style": "dashed",
+     "label": "never hears"
+    },
+    {
+     "id": "d5",
+     "from": "broker",
+     "to": "invoicing",
+     "style": "dashed",
+     "label": "never hears"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "write or call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "lost or failed"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "read or signal"
+    }
+   ]
+  },
+  {
+   "id": "publishfirst",
+   "kind": "sequence",
+   "title": "Publish inside the transaction",
+   "participants": [
+    {
+     "id": "orders",
+     "label": "Order service"
+    },
+    {
+     "id": "db",
+     "label": "Orders database"
+    },
+    {
+     "id": "broker",
+     "label": "Message broker"
+    },
+    {
+     "id": "shipping",
+     "label": "Shipping service"
+    }
+   ],
+   "messages": [
+    {
+     "id": "n1",
+     "from": "orders",
+     "to": "db",
+     "style": "solid",
+     "label": "BEGIN · insert order 42"
+    },
+    {
+     "id": "n2",
+     "from": "orders",
+     "to": "broker",
+     "style": "solid",
+     "label": "publish OrderPlaced 42"
+    },
+    {
+     "id": "n3",
+     "from": "broker",
+     "to": "shipping",
+     "style": "solid",
+     "label": "deliver OrderPlaced 42"
+    },
+    {
+     "id": "n4",
+     "from": "orders",
+     "to": "db",
+     "style": "dashed",
+     "label": "COMMIT fails · rolled back"
+    },
+    {
+     "id": "n5",
+     "from": "shipping",
+     "to": "db",
+     "style": "dashed",
+     "label": "look up order 42 · not found"
+    }
+   ]
+  },
+  {
+   "id": "structure",
+   "kind": "c4",
+   "title": "The event rides in the same transaction",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "svc",
+     "kind": "container",
+     "tone": "core",
+     "label": "Order service",
+     "sub": "business logic"
+    },
+    {
+     "id": "otable",
+     "kind": "store",
+     "tone": "data",
+     "label": "orders table",
+     "sub": "the business change",
+     "group": "db"
+    },
+    {
+     "id": "outbox",
+     "kind": "store",
+     "tone": "data",
+     "label": "outbox table",
+     "sub": "id · aggregate · type · payload",
+     "group": "db"
+    },
+    {
+     "id": "relay",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Message relay",
+     "sub": "separate process"
+    },
+    {
+     "id": "broker",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Message broker",
+     "sub": "topics or queues"
+    },
+    {
+     "id": "consumer",
+     "kind": "container",
+     "tone": "core",
+     "label": "Consumers",
+     "sub": "shipping, invoicing"
+    }
+   ],
+   "edges": [
+    {
+     "id": "s1",
+     "from": "svc",
+     "to": "otable",
+     "style": "solid",
+     "label": "insert order"
+    },
+    {
+     "id": "s2",
+     "from": "svc",
+     "to": "outbox",
+     "style": "solid",
+     "label": "insert OrderPlaced"
+    },
+    {
+     "id": "s3",
+     "from": "relay",
+     "to": "outbox",
+     "style": "dotted",
+     "label": "read committed rows"
+    },
+    {
+     "id": "s4",
+     "from": "relay",
+     "to": "broker",
+     "style": "solid",
+     "label": "publish"
+    },
+    {
+     "id": "s5",
+     "from": "broker",
+     "to": "consumer",
+     "style": "solid",
+     "label": "deliver"
+    },
+    {
+     "id": "s6",
+     "from": "relay",
+     "to": "outbox",
+     "style": "solid",
+     "label": "mark sent or delete"
+    }
+   ],
+   "groups": [
+    {
+     "id": "db",
+     "label": "Orders database [one local transaction]",
+     "tone": "data"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "write or call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "lost or failed"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "read or signal"
+    }
+   ]
+  },
+  {
+   "id": "flow",
+   "kind": "sequence",
+   "title": "Commit once, publish later",
+   "participants": [
+    {
+     "id": "client",
+     "label": "Client"
+    },
+    {
+     "id": "svc",
+     "label": "Order service"
+    },
+    {
+     "id": "db",
+     "label": "Orders database"
+    },
+    {
+     "id": "relay",
+     "label": "Relay"
+    },
+    {
+     "id": "broker",
+     "label": "Broker"
+    },
+    {
+     "id": "consumer",
+     "label": "Shipping"
+    }
+   ],
+   "messages": [
+    {
+     "id": "h1",
+     "from": "client",
+     "to": "svc",
+     "style": "solid",
+     "label": "place order"
+    },
+    {
+     "id": "h2",
+     "from": "svc",
+     "to": "db",
+     "style": "solid",
+     "label": "BEGIN · order + outbox row · COMMIT"
+    },
+    {
+     "id": "h3",
+     "from": "svc",
+     "to": "client",
+     "style": "solid",
+     "label": "201 Created"
+    },
+    {
+     "id": "h4",
+     "from": "relay",
+     "to": "db",
+     "style": "dotted",
+     "label": "fetch unsent rows, oldest first"
+    },
+    {
+     "id": "h5",
+     "from": "db",
+     "to": "relay",
+     "style": "solid",
+     "label": "row 1001: OrderPlaced 42"
+    },
+    {
+     "id": "h6",
+     "from": "relay",
+     "to": "broker",
+     "style": "solid",
+     "label": "publish · key = order 42"
+    },
+    {
+     "id": "h7",
+     "from": "broker",
+     "to": "relay",
+     "style": "solid",
+     "label": "ack"
+    },
+    {
+     "id": "h8",
+     "from": "relay",
+     "to": "db",
+     "style": "solid",
+     "label": "mark row 1001 sent"
+    },
+    {
+     "id": "h9",
+     "from": "broker",
+     "to": "consumer",
+     "style": "solid",
+     "label": "deliver OrderPlaced 42"
+    }
+   ]
+  },
+  {
+   "id": "duplicate",
+   "kind": "sequence",
+   "title": "Crash between publish and mark",
+   "participants": [
+    {
+     "id": "db",
+     "label": "Orders database"
+    },
+    {
+     "id": "relay",
+     "label": "Relay"
+    },
+    {
+     "id": "broker",
+     "label": "Broker"
+    },
+    {
+     "id": "consumer",
+     "label": "Shipping"
+    },
+    {
+     "id": "inbox",
+     "label": "Shipping inbox table"
+    }
+   ],
+   "messages": [
+    {
+     "id": "f1",
+     "from": "db",
+     "to": "relay",
+     "style": "solid",
+     "label": "row 1001"
+    },
+    {
+     "id": "f2",
+     "from": "relay",
+     "to": "broker",
+     "style": "solid",
+     "label": "publish 1001"
+    },
+    {
+     "id": "f3",
+     "from": "relay",
+     "to": "db",
+     "style": "dashed",
+     "label": "crash before 'mark sent'"
+    },
+    {
+     "id": "f4",
+     "from": "db",
+     "to": "relay",
+     "style": "solid",
+     "label": "restart · row 1001 still unsent"
+    },
+    {
+     "id": "f5",
+     "from": "relay",
+     "to": "broker",
+     "style": "solid",
+     "label": "publish 1001 again"
+    },
+    {
+     "id": "f6",
+     "from": "broker",
+     "to": "consumer",
+     "style": "solid",
+     "label": "deliver 1001 · twice"
+    },
+    {
+     "id": "f7",
+     "from": "consumer",
+     "to": "inbox",
+     "style": "solid",
+     "label": "first: insert id 1001 + ship, one transaction"
+    },
+    {
+     "id": "f8",
+     "from": "inbox",
+     "to": "consumer",
+     "style": "dashed",
+     "label": "second: id exists · skip"
+    }
+   ]
+  },
+  {
+   "id": "relays",
+   "kind": "c4",
+   "title": "Two ways to run the relay",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "outbox",
+     "kind": "store",
+     "tone": "data",
+     "label": "outbox table",
+     "sub": "rows from committed transactions"
+    },
+    {
+     "id": "poller",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Polling publisher",
+     "sub": "queries every N ms"
+    },
+    {
+     "id": "log",
+     "kind": "store",
+     "tone": "data",
+     "label": "Transaction log",
+     "sub": "Postgres WAL · MySQL binlog"
+    },
+    {
+     "id": "cdc",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Log tailer (CDC)",
+     "sub": "e.g. Debezium connector"
+    },
+    {
+     "id": "broker",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Message broker",
+     "sub": "Kafka, SQS, Service Bus…"
+    }
+   ],
+   "edges": [
+    {
+     "id": "r1",
+     "from": "poller",
+     "to": "outbox",
+     "style": "dotted",
+     "label": "SELECT unsent"
+    },
+    {
+     "id": "r2",
+     "from": "poller",
+     "to": "broker",
+     "style": "solid",
+     "label": "publish"
+    },
+    {
+     "id": "r3",
+     "from": "outbox",
+     "to": "log",
+     "style": "dotted",
+     "label": "every insert is logged"
+    },
+    {
+     "id": "r4",
+     "from": "cdc",
+     "to": "log",
+     "style": "dotted",
+     "label": "tail"
+    },
+    {
+     "id": "r5",
+     "from": "cdc",
+     "to": "broker",
+     "style": "solid",
+     "label": "publish"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "write or call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "lost or failed"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "read or signal"
+    }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "msio",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "microservices.io",
+     "sub": "Chris Richardson · names the pattern"
+    },
+    {
+     "id": "debezium",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Debezium outbox event router",
+     "sub": "CDC · routes rows to Kafka topics"
+    },
+    {
+     "id": "aws",
+     "kind": "external",
+     "tone": "external",
+     "label": "AWS prescriptive guidance",
+     "sub": "RDS + SQS · DynamoDB streams"
+    },
+    {
+     "id": "azure",
+     "kind": "external",
+     "tone": "external",
+     "label": "Microsoft Azure guidance",
+     "sub": "Cosmos DB change feed + Service Bus"
+    },
+    {
+     "id": "libs",
+     "kind": "container",
+     "tone": "core",
+     "label": "NServiceBus, MassTransit",
+     "sub": ".NET outbox and inbox built in"
+    }
+   ],
+   "edges": [
+    {
+     "id": "w1",
+     "from": "msio",
+     "to": "debezium",
+     "style": "solid",
+     "label": "log tailing"
+    },
+    {
+     "id": "w2",
+     "from": "msio",
+     "to": "aws",
+     "style": "solid",
+     "label": "polling and CDC"
+    },
+    {
+     "id": "w3",
+     "from": "msio",
+     "to": "azure",
+     "style": "solid",
+     "label": "change feed"
+    },
+    {
+     "id": "w4",
+     "from": "azure",
+     "to": "libs",
+     "style": "dotted",
+     "label": "or use a library"
+    }
+   ]
+  },
+  {
+   "id": "related",
+   "kind": "c4",
+   "title": "Related patterns",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "outbox",
+     "kind": "container",
+     "tone": "core",
+     "label": "Transactional outbox",
+     "sub": "commit the event with the change"
+    },
+    {
+     "id": "idem",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Idempotent consumer / inbox",
+     "sub": "absorbs the duplicates"
+    },
+    {
+     "id": "saga",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Saga",
+     "sub": "each step publishes reliably"
+    },
+    {
+     "id": "es",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Event sourcing",
+     "sub": "the events are the data"
+    },
+    {
+     "id": "cdc",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Change data capture",
+     "sub": "one way to run the relay"
+    },
+    {
+     "id": "tpc",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Two-phase commit",
+     "sub": "what it replaces"
+    }
+   ],
+   "edges": [
+    {
+     "id": "x1",
+     "from": "outbox",
+     "to": "idem",
+     "style": "solid",
+     "label": "at-least-once needs it"
+    },
+    {
+     "id": "x2",
+     "from": "saga",
+     "to": "outbox",
+     "style": "solid",
+     "label": "relies on it"
+    },
+    {
+     "id": "x3",
+     "from": "es",
+     "to": "outbox",
+     "style": "dotted",
+     "label": "alternative"
+    },
+    {
+     "id": "x4",
+     "from": "cdc",
+     "to": "outbox",
+     "style": "solid",
+     "label": "relays it"
+    },
+    {
+     "id": "x5",
+     "from": "tpc",
+     "to": "outbox",
+     "style": "dashed",
+     "label": "replaced by"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "problem",
+   "title": "The problem"
+  },
+  {
+   "id": "naive",
+   "title": "The naive fix"
+  },
+  {
+   "id": "pattern",
+   "title": "The pattern"
+  },
+  {
+   "id": "how",
+   "title": "How it works"
+  },
+  {
+   "id": "failure",
+   "title": "When it goes wrong"
+  },
+  {
+   "id": "tradeoffs",
+   "title": "Trade-offs"
+  },
+  {
+   "id": "wild",
+   "title": "In the wild"
+  },
+  {
+   "id": "related",
+   "title": "Related patterns"
+  },
+  {
+   "id": "recap",
+   "title": "Recap"
+  }
+ ],
+ "shots": [
+  {
+   "id": "ob-problem",
+   "chapter": "problem",
+   "title": "Lost event",
+   "diagram": "dualwrite",
+   "focus": [],
+   "trace": [
+    "d1",
+    "d2",
+    "d3",
+    "d4",
+    "d5"
+   ],
+   "engineer": "A customer places an order. The order service does two things: it commits the order to its own database, then publishes an OrderPlaced event to a message broker, so shipping and invoicing can react. Two writes, to two systems, with no transaction spanning both. Now the service crashes between the commit and the publish. The order exists, but nobody ever hears about it. Nothing ships, nothing is invoiced, and no error is shown anywhere.",
+   "executive": "Saving an order and announcing it are two separate steps. If the service fails between them, the order exists but the rest of the business never hears about it."
+  },
+  {
+   "id": "ob-outcomes",
+   "chapter": "problem",
+   "card": {
+    "heading": "Two writes, four outcomes",
+    "kind": "compare",
+    "points": [
+     "What happened | What the business sees",
+     "Both succeed | Consistent",
+     "Saved, publish lost | An order nobody ships",
+     "Published, save rolled back | Shipping an order that does not exist",
+     "Publish timed out, but arrived | Unknown; a retry may send it twice"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "This is called the dual-write problem. With two independent writes there are four outcomes, and only one of them is right. The save can succeed and the publish fail. The publish can succeed and the save roll back. Or the publish times out, and you cannot tell whether it arrived, so retrying may send it twice. Network errors, broker outages and host failures all cause these, and they happen at exactly the wrong moment.",
+   "executive": "Two independent writes can each succeed or fail on their own. Only one of the four combinations leaves the business consistent."
+  },
+  {
+   "id": "ob-naive",
+   "chapter": "naive",
+   "title": "Ghost order",
+   "diagram": "publishfirst",
+   "focus": [],
+   "trace": [
+    "n1",
+    "n2",
+    "n3",
+    "n4",
+    "n5"
+   ],
+   "engineer": "The obvious fix is to move the publish inside the database transaction, so it happens before the commit. That just swaps one failure for another. The event goes out, shipping receives it and starts work. Then the commit fails and the order is rolled back. Shipping looks up order forty-two, and it does not exist. A broker message cannot be rolled back once it has been delivered.",
+   "executive": "Announcing the order before saving it is no better: if the save then fails, other teams act on an order that never existed."
+  },
+  {
+   "id": "ob-2pc",
+   "chapter": "naive",
+   "card": {
+    "heading": "Why not a distributed transaction?",
+    "points": [
+     "Two-phase commit (XA) could span database and broker",
+     "The broker or database may not support it",
+     "It couples the service to both being up at once",
+     "Locks are held while a coordinator waits"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "What about a distributed transaction? Two-phase commit, often through the XA standard, can in principle make the database and the broker commit together. In practice it is avoided. The broker or the database may simply not support it. It ties the service's availability to both systems being up at once. And participants hold locks while a coordinator collects votes. Chris Richardson's microservices.io describes two-phase commit as not viable here.",
+   "executive": "A distributed transaction across database and broker sounds right, but it is often unsupported and makes the service fragile."
+  },
+  {
+   "id": "ob-structure",
+   "chapter": "pattern",
+   "title": "Write",
+   "diagram": "structure",
+   "focus": [],
+   "trace": [
+    "s1",
+    "s2"
+   ],
+   "engineer": "The transactional outbox removes the second write. Instead of publishing, the service inserts the event as a row in an outbox table, in the same database and the same local transaction as the business change. A row holds an event id, the aggregate it belongs to, such as order forty-two, an event type, and a payload. Now the order and its event commit together, or roll back together. There is only one write.",
+   "executive": "The service saves the order and the announcement together, in one database transaction, so they can never disagree."
+  },
+  {
+   "id": "ob-relay",
+   "chapter": "pattern",
+   "title": "Relay",
+   "diagram": "structure",
+   "focus": [],
+   "trace": [
+    "s3",
+    "s4",
+    "s5",
+    "s6"
+   ],
+   "engineer": "A separate process, the message relay, does the publishing. It reads rows from committed transactions only, so a rolled-back order never produces an event. It publishes each one to the broker, and once the broker has accepted it, marks the row as sent or deletes it. If the broker is down, the rows simply wait. The broker can be unavailable for an hour and nothing is lost.",
+   "executive": "A separate worker reads the saved announcements and delivers them. If the messaging system is down, they wait safely in the database."
+  },
+  {
+   "id": "ob-how",
+   "chapter": "how",
+   "title": "Sequence",
+   "diagram": "flow",
+   "focus": [],
+   "trace": [
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "h7",
+    "h8",
+    "h9"
+   ],
+   "engineer": "Step by step. The client places an order. The service begins a transaction, inserts the order and the outbox row, and commits. It replies straight away; the broker is not on this path at all. Shortly after, the relay fetches unsent rows, oldest first, and gets row one thousand and one. It publishes it, keyed by order forty-two. When the broker acknowledges, the relay marks the row sent. Shipping receives the event.",
+   "executive": "The order is saved and confirmed at once. Moments later the worker sends the announcement and records that it has gone."
+  },
+  {
+   "id": "ob-dup",
+   "chapter": "failure",
+   "title": "Duplicate",
+   "diagram": "duplicate",
+   "focus": [],
+   "trace": [
+    "f1",
+    "f2",
+    "f3",
+    "f4",
+    "f5",
+    "f6",
+    "f7",
+    "f8"
+   ],
+   "engineer": "Now the relay crashes after publishing, but before marking the row sent. On restart the row still looks unsent, so it is published again. The outbox guarantees at least once, not exactly once. So consumers must be idempotent. The usual answer is an inbox: shipping records each event id in an inbox table, in the same transaction as its own work. The second copy finds the id already there and is skipped.",
+   "executive": "Nothing is lost, but an announcement can arrive twice. Receivers keep a list of what they have already handled and ignore repeats."
+  },
+  {
+   "id": "ob-edges",
+   "chapter": "failure",
+   "card": {
+    "heading": "Where it still goes wrong",
+    "points": [
+     "Out of order: key messages by aggregate id",
+     "Several relays racing over the same rows",
+     "Relay stopped: the outbox quietly grows",
+     "A developer forgets to write the event"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Four more things to watch. Ordering: order created must arrive before order cancelled, so key every message by aggregate id; Kafka keeps one key in one partition, and SQS FIFO and Service Bus sessions do the same job. Polling in order is tricky, especially with several relay instances racing. If the relay stops, nothing fails visibly; the outbox just grows, so alert on its age. And the pattern only works if every change remembers to write its event.",
+   "executive": "Keep events for the same order in sequence, run one relay per set of rows, alert if the backlog grows, and make writing the event part of every change."
+  },
+  {
+   "id": "ob-relays",
+   "chapter": "tradeoffs",
+   "title": "Relays",
+   "diagram": "relays",
+   "focus": [],
+   "trace": [
+    "r1",
+    "r2",
+    "r3",
+    "r4",
+    "r5"
+   ],
+   "engineer": "There are two ways to run the relay. A polling publisher queries the outbox table for unsent rows every so often and publishes them. It works with any SQL database. Transaction log tailing, also called change data capture, never queries the table: every insert is already in the database's log, the Postgres write-ahead log or the MySQL binlog, and a tool such as Debezium reads it and publishes each new row.",
+   "executive": "The worker can either check the table regularly, or follow the database's own change log, which is faster but needs specialist tooling."
+  },
+  {
+   "id": "ob-compare",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "Polling or log tailing",
+    "kind": "compare",
+    "points": [
+     "Polling publisher | Log tailing (CDC)",
+     "Any SQL database | Database-specific connector",
+     "Adds query load; latency = poll interval | Low overhead, near real time",
+     "Easy to build and debug | More moving parts to run",
+     "Ordering is tricky | Reads changes in log order"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The choice is a trade-off. Polling is simple, works with any SQL database and is easy to debug, but it adds query load, its latency is the poll interval, and publishing strictly in order is tricky. Log tailing has low overhead and is close to real time, and it follows the order of the log. But it needs a database-specific connector and more infrastructure to run, and microservices.io notes it is still tricky to avoid duplicates.",
+   "executive": "Checking the table is simple and works anywhere. Following the change log is quicker and lighter, but more to operate."
+  },
+  {
+   "id": "ob-costs",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "Costs and clean-up",
+    "points": [
+     "Delete rows once sent, or mark and purge later",
+     "Or insert and delete in one transaction (CDC)",
+     "Or let the store expire them (a TTL)",
+     "Not needed when nothing else must hear of a change"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The outbox must be cleaned up or it grows for ever. AWS's sample deletes rows once the queue accepts them. Microsoft's Cosmos DB example sets a time to live and suggests days, not minutes, so a long outage cannot expire unsent events. With log tailing, Debezium describes inserting and deleting the row in the same transaction: the insert is in the log, and the table stays empty. And if no other service needs to hear about a change, you do not need an outbox.",
+   "executive": "Old announcements must be cleared out, by deleting them once sent or letting them expire. And if no one else needs to know about a change, skip the pattern."
+  },
+  {
+   "id": "ob-wild",
+   "chapter": "wild",
+   "title": "Lineage",
+   "diagram": "wild",
+   "focus": [],
+   "trace": [
+    "w1",
+    "w2",
+    "w3",
+    "w4"
+   ],
+   "engineer": "In the wild. Chris Richardson's microservices.io names the pattern and its two relays, polling publisher and transaction log tailing. Debezium ships an outbox event router that turns outbox rows into Kafka messages, keyed by aggregate id, on a topic per aggregate type. AWS prescriptive guidance shows it with RDS and SQS, and with DynamoDB streams. Microsoft's guidance uses a Cosmos DB transactional batch, the change feed and Service Bus, and points to NServiceBus and MassTransit, which build it in.",
+   "executive": "It is a standard, documented pattern: open-source tools, both major cloud providers, and popular messaging libraries all support it."
+  },
+  {
+   "id": "ob-related",
+   "chapter": "related",
+   "title": "Neighbours",
+   "diagram": "related",
+   "focus": [],
+   "trace": [
+    "x1",
+    "x2",
+    "x3",
+    "x4",
+    "x5"
+   ],
+   "engineer": "Its neighbours. The outbox delivers at least once, so it always comes with an idempotent consumer; the inbox is its transactional form. Sagas create the need: each step changes local data and must reliably tell the next step. Event sourcing is an alternative, because when the events are the data there is no second write. Change data capture is one way to run the relay. And it replaces two-phase commit across the database and the broker.",
+   "executive": "It pairs with receivers that ignore duplicates, underpins multi-step business processes, and replaces fragile distributed transactions."
+  },
+  {
+   "id": "ob-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "Never write to a database and a broker separately",
+     "Commit the event in the same local transaction",
+     "Expect duplicates: consumers must be idempotent"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. Writing to a database and then to a broker is two writes, and any crash between them leaves the two disagreeing. Put the event in an outbox table, in the same local transaction as the change, and let a relay publish it. And expect every event at least once: key by aggregate for order, and make consumers idempotent, with an inbox.",
+   "executive": "Never save and announce separately. Save the announcement with the change. Expect repeats and ignore them."
+  }
+ ],
+ "meta": {
+  "kind": "pattern",
+  "category": "Messaging",
+  "level": "intermediate",
+  "uses": [
+   "idempotency"
+  ],
+  "related": [
+   "saga",
+   "event-sourcing",
+   "idempotency"
+  ],
+  "blurb": "Commit the event with the change in one local transaction; a relay publishes it, at least once.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ }
+}

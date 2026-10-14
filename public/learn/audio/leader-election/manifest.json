@@ -1,0 +1,142 @@
+{
+ "le-problem-engineer": {
+  "file": "/audio/leader-election/le-problem-engineer.mp3",
+  "ms": 26616,
+  "hash": "64c49c1e94a9"
+ },
+ "le-problem-executive": {
+  "file": "/audio/leader-election/le-problem-executive.mp3",
+  "ms": 8760,
+  "hash": "81692427c91c"
+ },
+ "le-naive-lock-engineer": {
+  "file": "/audio/leader-election/le-naive-lock-engineer.mp3",
+  "ms": 28344,
+  "hash": "dfdd98926a5e"
+ },
+ "le-naive-lock-executive": {
+  "file": "/audio/leader-election/le-naive-lock-executive.mp3",
+  "ms": 7344,
+  "hash": "381c7abad0df"
+ },
+ "le-naive-lowest-engineer": {
+  "file": "/audio/leader-election/le-naive-lowest-engineer.mp3",
+  "ms": 26928,
+  "hash": "93d039583f27"
+ },
+ "le-naive-lowest-executive": {
+  "file": "/audio/leader-election/le-naive-lowest-executive.mp3",
+  "ms": 7248,
+  "hash": "1d8f2ea8bf92"
+ },
+ "le-pattern-engineer": {
+  "file": "/audio/leader-election/le-pattern-engineer.mp3",
+  "ms": 30120,
+  "hash": "2c648f935f36"
+ },
+ "le-pattern-executive": {
+  "file": "/audio/leader-election/le-pattern-executive.mp3",
+  "ms": 10008,
+  "hash": "c04f888cc38f"
+ },
+ "le-how-engineer": {
+  "file": "/audio/leader-election/le-how-engineer.mp3",
+  "ms": 34536,
+  "hash": "cbc42a91e596"
+ },
+ "le-how-executive": {
+  "file": "/audio/leader-election/le-how-executive.mp3",
+  "ms": 8232,
+  "hash": "020f31582025"
+ },
+ "le-raft-engineer": {
+  "file": "/audio/leader-election/le-raft-engineer.mp3",
+  "ms": 31224,
+  "hash": "6c430697c731"
+ },
+ "le-raft-executive": {
+  "file": "/audio/leader-election/le-raft-executive.mp3",
+  "ms": 6528,
+  "hash": "c961bdaa542c"
+ },
+ "le-recipes-engineer": {
+  "file": "/audio/leader-election/le-recipes-engineer.mp3",
+  "ms": 27792,
+  "hash": "6155c6293e80"
+ },
+ "le-recipes-executive": {
+  "file": "/audio/leader-election/le-recipes-executive.mp3",
+  "ms": 8040,
+  "hash": "d73a220e04be"
+ },
+ "le-fencing-engineer": {
+  "file": "/audio/leader-election/le-fencing-engineer.mp3",
+  "ms": 29016,
+  "hash": "8a936a0c4221"
+ },
+ "le-fencing-executive": {
+  "file": "/audio/leader-election/le-fencing-executive.mp3",
+  "ms": 8832,
+  "hash": "c30c8434d454"
+ },
+ "le-stale-engineer": {
+  "file": "/audio/leader-election/le-stale-engineer.mp3",
+  "ms": 29928,
+  "hash": "5653875abf83"
+ },
+ "le-stale-executive": {
+  "file": "/audio/leader-election/le-stale-executive.mp3",
+  "ms": 8856,
+  "hash": "9518aa5336e4"
+ },
+ "le-quorum-engineer": {
+  "file": "/audio/leader-election/le-quorum-engineer.mp3",
+  "ms": 27264,
+  "hash": "68a91b84ea9c"
+ },
+ "le-quorum-executive": {
+  "file": "/audio/leader-election/le-quorum-executive.mp3",
+  "ms": 9552,
+  "hash": "7c17592f5054"
+ },
+ "le-tradeoffs-engineer": {
+  "file": "/audio/leader-election/le-tradeoffs-engineer.mp3",
+  "ms": 27528,
+  "hash": "e150dd358392"
+ },
+ "le-tradeoffs-executive": {
+  "file": "/audio/leader-election/le-tradeoffs-executive.mp3",
+  "ms": 9216,
+  "hash": "10d5e49c3cff"
+ },
+ "le-wild-engineer": {
+  "file": "/audio/leader-election/le-wild-engineer.mp3",
+  "ms": 34272,
+  "hash": "3de4c9724a42"
+ },
+ "le-wild-executive": {
+  "file": "/audio/leader-election/le-wild-executive.mp3",
+  "ms": 7536,
+  "hash": "bd5cff525f62"
+ },
+ "le-related-engineer": {
+  "file": "/audio/leader-election/le-related-engineer.mp3",
+  "ms": 27936,
+  "hash": "4e55789a8765"
+ },
+ "le-related-executive": {
+  "file": "/audio/leader-election/le-related-executive.mp3",
+  "ms": 10008,
+  "hash": "1633417f305d"
+ },
+ "le-recap-engineer": {
+  "file": "/audio/leader-election/le-recap-engineer.mp3",
+  "ms": 22104,
+  "hash": "bdcfd4934dbf"
+ },
+ "le-recap-executive": {
+  "file": "/audio/leader-election/le-recap-executive.mp3",
+  "ms": 7848,
+  "hash": "06f37358af3e"
+ }
+}

@@ -1,0 +1,132 @@
+{
+ "ch-problem-engineer": {
+  "file": "/audio/consistent-hashing/ch-problem-engineer.mp3",
+  "ms": 28992,
+  "hash": "021502ce6858"
+ },
+ "ch-problem-executive": {
+  "file": "/audio/consistent-hashing/ch-problem-executive.mp3",
+  "ms": 9936,
+  "hash": "1e78594927f8"
+ },
+ "ch-naive-engineer": {
+  "file": "/audio/consistent-hashing/ch-naive-engineer.mp3",
+  "ms": 27792,
+  "hash": "2c7f05018252"
+ },
+ "ch-naive-executive": {
+  "file": "/audio/consistent-hashing/ch-naive-executive.mp3",
+  "ms": 8256,
+  "hash": "474db8fc76ca"
+ },
+ "ch-ring-engineer": {
+  "file": "/audio/consistent-hashing/ch-ring-engineer.mp3",
+  "ms": 31680,
+  "hash": "8fa335382cbb"
+ },
+ "ch-ring-executive": {
+  "file": "/audio/consistent-hashing/ch-ring-executive.mp3",
+  "ms": 9648,
+  "hash": "f6c4771a265f"
+ },
+ "ch-join-engineer": {
+  "file": "/audio/consistent-hashing/ch-join-engineer.mp3",
+  "ms": 30120,
+  "hash": "e68f8474f8ee"
+ },
+ "ch-join-executive": {
+  "file": "/audio/consistent-hashing/ch-join-executive.mp3",
+  "ms": 7728,
+  "hash": "9482a2af721d"
+ },
+ "ch-how-engineer": {
+  "file": "/audio/consistent-hashing/ch-how-engineer.mp3",
+  "ms": 31488,
+  "hash": "cfb05b629e3d"
+ },
+ "ch-how-executive": {
+  "file": "/audio/consistent-hashing/ch-how-executive.mp3",
+  "ms": 8952,
+  "hash": "7cfb77833170"
+ },
+ "ch-failure-engineer": {
+  "file": "/audio/consistent-hashing/ch-failure-engineer.mp3",
+  "ms": 25752,
+  "hash": "df982f6cd1c0"
+ },
+ "ch-failure-executive": {
+  "file": "/audio/consistent-hashing/ch-failure-executive.mp3",
+  "ms": 7344,
+  "hash": "1a17528e270a"
+ },
+ "ch-vnodes-engineer": {
+  "file": "/audio/consistent-hashing/ch-vnodes-engineer.mp3",
+  "ms": 28056,
+  "hash": "fe3bbfcf3a56"
+ },
+ "ch-vnodes-executive": {
+  "file": "/audio/consistent-hashing/ch-vnodes-executive.mp3",
+  "ms": 7656,
+  "hash": "a104892e80b7"
+ },
+ "ch-edges-engineer": {
+  "file": "/audio/consistent-hashing/ch-edges-engineer.mp3",
+  "ms": 27336,
+  "hash": "33405009663a"
+ },
+ "ch-edges-executive": {
+  "file": "/audio/consistent-hashing/ch-edges-executive.mp3",
+  "ms": 8208,
+  "hash": "72fa67f44a1a"
+ },
+ "ch-tradeoffs-engineer": {
+  "file": "/audio/consistent-hashing/ch-tradeoffs-engineer.mp3",
+  "ms": 27720,
+  "hash": "f14bd4d948ef"
+ },
+ "ch-tradeoffs-executive": {
+  "file": "/audio/consistent-hashing/ch-tradeoffs-executive.mp3",
+  "ms": 8736,
+  "hash": "6b765e5e50c8"
+ },
+ "ch-bounded-engineer": {
+  "file": "/audio/consistent-hashing/ch-bounded-engineer.mp3",
+  "ms": 31224,
+  "hash": "35add615326f"
+ },
+ "ch-bounded-executive": {
+  "file": "/audio/consistent-hashing/ch-bounded-executive.mp3",
+  "ms": 8952,
+  "hash": "224226cec9d7"
+ },
+ "ch-wild-engineer": {
+  "file": "/audio/consistent-hashing/ch-wild-engineer.mp3",
+  "ms": 35040,
+  "hash": "6d3d18c4cfb4"
+ },
+ "ch-wild-executive": {
+  "file": "/audio/consistent-hashing/ch-wild-executive.mp3",
+  "ms": 9432,
+  "hash": "15420d9d3d3a"
+ },
+ "ch-related-engineer": {
+  "file": "/audio/consistent-hashing/ch-related-engineer.mp3",
+  "ms": 29904,
+  "hash": "8c4908fb27a7"
+ },
+ "ch-related-executive": {
+  "file": "/audio/consistent-hashing/ch-related-executive.mp3",
+  "ms": 7728,
+  "hash": "b41b6de51c4f"
+ },
+ "ch-recap-engineer": {
+  "file": "/audio/consistent-hashing/ch-recap-engineer.mp3",
+  "ms": 20952,
+  "hash": "dc898d6f5495"
+ },
+ "ch-recap-executive": {
+  "file": "/audio/consistent-hashing/ch-recap-executive.mp3",
+  "ms": 7392,
+  "hash": "6f34901e3f28"
+ }
+}

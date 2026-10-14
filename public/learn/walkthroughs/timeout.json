@@ -1,0 +1,383 @@
+{
+ "id": "timeout",
+ "title": "Timeout",
+ "subtitle": "Design pattern",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "meta": {
+  "kind": "pattern",
+  "category": "Resilience",
+  "level": "beginner",
+  "uses": [],
+  "related": ["retry", "circuit-breaker", "bulkhead"],
+  "blurb": "Never wait forever: give every remote call a time limit, and pass one deadline down the chain.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ },
+ "diagrams": [
+  {
+   "id": "hang",
+   "kind": "c4",
+   "title": "No timeout: one hang stops everything",
+   "direction": "RIGHT",
+   "elements": [
+    { "id": "user", "kind": "person", "tone": "neutral", "label": "Users", "sub": "checkout and search" },
+    { "id": "web", "kind": "container", "tone": "core", "label": "Web app", "sub": "200 request threads" },
+    { "id": "orders", "kind": "container", "tone": "core", "label": "Order service", "sub": "200 threads · no timeout" },
+    { "id": "stock", "kind": "external", "tone": "external", "label": "Stock service", "sub": "hung: never answers" },
+    { "id": "search", "kind": "container", "tone": "core", "label": "Search service", "sub": "healthy" }
+   ],
+   "edges": [
+    { "id": "h1", "from": "user", "to": "web", "style": "solid", "label": "checkout" },
+    { "id": "h2", "from": "web", "to": "orders", "style": "solid", "label": "place order" },
+    { "id": "h3", "from": "orders", "to": "stock", "style": "dashed", "label": "reserve · waits forever" },
+    { "id": "h4", "from": "user", "to": "web", "style": "solid", "label": "search" },
+    { "id": "h5", "from": "web", "to": "search", "style": "dashed", "label": "stuck: no free threads" }
+   ],
+   "legend": [
+    { "style": "solid", "tone": "core", "label": "call" },
+    { "style": "dashed", "tone": "stream", "label": "failure or slow" },
+    { "style": "dotted", "tone": "data", "label": "signal" }
+   ]
+  },
+  {
+   "id": "naive",
+   "kind": "sequence",
+   "title": "Thirty seconds, everywhere",
+   "participants": [
+    { "id": "user", "label": "User" },
+    { "id": "web", "label": "Web app" },
+    { "id": "orders", "label": "Order service" },
+    { "id": "stock", "label": "Stock service" }
+   ],
+   "messages": [
+    { "id": "n1", "from": "user", "to": "web", "style": "solid", "label": "place order" },
+    { "id": "n2", "from": "web", "to": "orders", "style": "solid", "label": "reserve · timeout 30 s" },
+    { "id": "n3", "from": "orders", "to": "stock", "style": "solid", "label": "reserve · timeout 30 s" },
+    { "id": "n4", "from": "web", "to": "user", "style": "dashed", "label": "30 s later: error" },
+    { "id": "n5", "from": "user", "to": "web", "style": "solid", "label": "user clicks again" },
+    { "id": "n6", "from": "web", "to": "orders", "style": "solid", "label": "second request" },
+    { "id": "n7", "from": "orders", "to": "stock", "style": "solid", "label": "second reserve: two in flight" },
+    { "id": "n8", "from": "stock", "to": "orders", "style": "dashed", "label": "first answer: nobody is waiting" }
+   ]
+  },
+  {
+   "id": "parts",
+   "kind": "c4",
+   "title": "A time limit on every remote call",
+   "direction": "RIGHT",
+   "groups": [
+    { "id": "policy", "label": "Timeout policy [client library, wrapper or proxy]", "tone": "core" }
+   ],
+   "elements": [
+    { "id": "caller", "kind": "container", "tone": "neutral", "label": "Order service", "sub": "the caller" },
+    { "id": "deadline", "kind": "component", "tone": "neutral", "label": "Deadline", "sub": "time left for the whole request", "group": "policy" },
+    { "id": "connect", "kind": "component", "tone": "neutral", "label": "Connect timeout", "sub": "opening the connection, e.g. 1 s", "group": "policy" },
+    { "id": "request", "kind": "component", "tone": "neutral", "label": "Request timeout", "sub": "waiting for the answer: p99.9 + headroom", "group": "policy" },
+    { "id": "handler", "kind": "component", "tone": "neutral", "label": "On timeout", "sub": "cancel, then fallback, error or safe retry", "group": "policy" },
+    { "id": "dep", "kind": "external", "tone": "external", "label": "Stock service", "sub": "the dependency" },
+    { "id": "metrics", "kind": "store", "tone": "data", "label": "Metrics and alerts", "sub": "timeouts per dependency" }
+   ],
+   "edges": [
+    { "id": "p1", "from": "caller", "to": "deadline", "style": "solid", "label": "how much time is left?" },
+    { "id": "p2", "from": "deadline", "to": "connect", "style": "solid", "label": "connect" },
+    { "id": "p3", "from": "connect", "to": "dep", "style": "solid", "label": "TCP and TLS handshake" },
+    { "id": "p4", "from": "deadline", "to": "request", "style": "solid", "label": "cap at time left" },
+    { "id": "p5", "from": "request", "to": "dep", "style": "solid", "label": "send · wait for the answer" },
+    { "id": "p6", "from": "request", "to": "handler", "style": "dashed", "label": "time is up" },
+    { "id": "p7", "from": "handler", "to": "caller", "style": "solid", "label": "fallback or clear error" },
+    { "id": "p8", "from": "handler", "to": "metrics", "style": "dotted", "label": "count it" }
+   ],
+   "legend": [
+    { "style": "solid", "tone": "core", "label": "call" },
+    { "style": "dashed", "tone": "stream", "label": "failure or slow" },
+    { "style": "dotted", "tone": "data", "label": "signal" }
+   ]
+  },
+  {
+   "id": "budget",
+   "kind": "sequence",
+   "title": "One deadline, passed down the chain",
+   "participants": [
+    { "id": "app", "label": "App" },
+    { "id": "gw", "label": "API gateway" },
+    { "id": "orders", "label": "Order service" },
+    { "id": "stock", "label": "Stock service" },
+    { "id": "db", "label": "Database" }
+   ],
+   "messages": [
+    { "id": "b1", "from": "app", "to": "gw", "style": "solid", "label": "checkout · deadline: 2 s from now" },
+    { "id": "b2", "from": "gw", "to": "orders", "style": "solid", "label": "place order · 1.9 s left" },
+    { "id": "b3", "from": "orders", "to": "stock", "style": "solid", "label": "reserve · 1.6 s left" },
+    { "id": "b4", "from": "stock", "to": "db", "style": "solid", "label": "query · 1.5 s left" },
+    { "id": "b5", "from": "db", "to": "stock", "style": "solid", "label": "rows in 80 ms" },
+    { "id": "b6", "from": "stock", "to": "orders", "style": "solid", "label": "reserved" },
+    { "id": "b7", "from": "orders", "to": "gw", "style": "solid", "label": "order placed" },
+    { "id": "b8", "from": "gw", "to": "app", "style": "solid", "label": "done well inside 2 s" }
+   ]
+  },
+  {
+   "id": "expire",
+   "kind": "sequence",
+   "title": "Time runs out mid-chain",
+   "participants": [
+    { "id": "gw", "label": "API gateway" },
+    { "id": "orders", "label": "Order service" },
+    { "id": "stock", "label": "Stock service" },
+    { "id": "db", "label": "Database" }
+   ],
+   "messages": [
+    { "id": "e1", "from": "gw", "to": "orders", "style": "solid", "label": "place order · 1 s left" },
+    { "id": "e2", "from": "orders", "to": "stock", "style": "solid", "label": "reserve · 0.8 s left" },
+    { "id": "e3", "from": "stock", "to": "db", "style": "solid", "label": "write reservation (slow)" },
+    { "id": "e4", "from": "orders", "to": "gw", "style": "dashed", "label": "deadline passed: DEADLINE_EXCEEDED" },
+    { "id": "e5", "from": "orders", "to": "stock", "style": "dashed", "label": "call cancelled" },
+    { "id": "e6", "from": "db", "to": "stock", "style": "dashed", "label": "…but the write already committed" },
+    { "id": "e7", "from": "gw", "to": "orders", "style": "solid", "label": "retry · same idempotency key" },
+    { "id": "e8", "from": "orders", "to": "stock", "style": "solid", "label": "reserve · key k-123" },
+    { "id": "e9", "from": "stock", "to": "orders", "style": "solid", "label": "key seen: return the first result" }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    { "id": "svc", "kind": "container", "tone": "core", "label": "Your service", "sub": "sets the limits" },
+    { "id": "aws", "kind": "system", "tone": "neutral", "label": "AWS Builders' Library", "sub": "pick the dependency's p99.9" },
+    { "id": "grpc", "kind": "external", "tone": "external", "label": "gRPC deadlines", "sub": "none by default · propagated in Java and Go" },
+    { "id": "requests", "kind": "external", "tone": "external", "label": "Python Requests", "sub": "no timeout unless you pass one" },
+    { "id": "gohttp", "kind": "external", "tone": "external", "label": "Go net/http", "sub": "Timeout 0 means none" },
+    { "id": "envoy", "kind": "container", "tone": "stream", "label": "Envoy proxy", "sub": "route 15 s · connect 5 s by default" }
+   ],
+   "edges": [
+    { "id": "w1", "from": "svc", "to": "grpc", "style": "solid", "label": "deadline on every call" },
+    { "id": "w2", "from": "svc", "to": "requests", "style": "solid", "label": "timeout=(connect, read)" },
+    { "id": "w3", "from": "svc", "to": "gohttp", "style": "solid", "label": "Client.Timeout" },
+    { "id": "w4", "from": "svc", "to": "envoy", "style": "solid", "label": "timeouts in the proxy" },
+    { "id": "w5", "from": "aws", "to": "svc", "style": "dotted", "label": "how to pick the number" }
+   ],
+   "legend": [
+    { "style": "solid", "tone": "core", "label": "call" },
+    { "style": "dotted", "tone": "data", "label": "guidance" }
+   ]
+  },
+  {
+   "id": "related",
+   "kind": "c4",
+   "title": "Related patterns",
+   "direction": "DOWN",
+   "elements": [
+    { "id": "to", "kind": "container", "tone": "core", "label": "Timeout", "sub": "never wait forever" },
+    { "id": "retry", "kind": "component", "tone": "neutral", "label": "Retry with backoff and jitter", "sub": "try again, within the deadline" },
+    { "id": "idem", "kind": "component", "tone": "neutral", "label": "Idempotency key", "sub": "makes repeating safe" },
+    { "id": "cb", "kind": "component", "tone": "neutral", "label": "Circuit breaker", "sub": "stop calling what keeps failing" },
+    { "id": "bulkhead", "kind": "component", "tone": "neutral", "label": "Bulkhead", "sub": "cap how many can wait" },
+    { "id": "fallback", "kind": "component", "tone": "neutral", "label": "Fallback", "sub": "what the user gets instead" }
+   ],
+   "edges": [
+    { "id": "r1", "from": "to", "to": "retry", "style": "solid", "label": "a timed-out call may be retried" },
+    { "id": "r2", "from": "retry", "to": "idem", "style": "dotted", "label": "safe only with" },
+    { "id": "r3", "from": "to", "to": "cb", "style": "solid", "label": "feeds it failures" },
+    { "id": "r4", "from": "bulkhead", "to": "to", "style": "solid", "label": "limits the threads at risk" },
+    { "id": "r5", "from": "to", "to": "fallback", "style": "solid", "label": "when time is up" }
+   ],
+   "legend": [
+    { "style": "solid", "tone": "core", "label": "works with" },
+    { "style": "dotted", "tone": "data", "label": "depends on" }
+   ]
+  }
+ ],
+ "chapters": [
+  { "id": "problem", "title": "The problem" },
+  { "id": "naive", "title": "The naive fix" },
+  { "id": "pattern", "title": "The pattern" },
+  { "id": "how", "title": "How it works" },
+  { "id": "failure", "title": "When it goes wrong" },
+  { "id": "tradeoffs", "title": "Trade-offs" },
+  { "id": "wild", "title": "In the wild" },
+  { "id": "related", "title": "Related patterns" },
+  { "id": "recap", "title": "Recap" }
+ ],
+ "shots": [
+  {
+   "id": "to-problem",
+   "chapter": "problem",
+   "diagram": "hang",
+   "focus": [],
+   "trace": [],
+   "engineer": "Here is a checkout. Users call the web app, which calls the order service, which calls the stock service to reserve the items. Each service handles requests with a fixed pool of threads, and a fixed pool of connections to the next service. A thread is simply a worker that handles one request at a time. While everything answers quickly, the pools are mostly empty, and nobody notices how small they are.",
+   "executive": "A checkout passes through three services, and each one can only work on a fixed number of requests at once."
+  },
+  {
+   "id": "to-hang",
+   "title": "Hang",
+   "chapter": "problem",
+   "diagram": "hang",
+   "focus": [],
+   "trace": ["h1", "h2", "h3", "h4", "h5"],
+   "engineer": "Now the stock service stops answering. It has not crashed, so no error comes back; the connection just sits there. The order service has no timeout, so every thread that calls it waits, with no end. Within seconds every thread and every connection is held. Then the web app runs out too, and even search fails, although search is perfectly healthy. Without a timeout, a hang in one place becomes a hang everywhere.",
+   "executive": "When one service stops answering and nobody has set a time limit, every request waits forever, and the whole site stops working."
+  },
+  {
+   "id": "to-naive",
+   "title": "One big number",
+   "chapter": "naive",
+   "diagram": "naive",
+   "focus": [],
+   "trace": ["n1", "n2", "n3", "n4", "n5", "n6", "n7", "n8"],
+   "engineer": "The obvious fix is to pick a generous round number, say thirty seconds, and use it everywhere. It breaks in three ways. Thirty seconds is far longer than any user will wait, so threads are still held for ages. Every layer has the same limit, so when the web app gives up, the order service is still waiting on work nobody wants. And the user clicks again, so now two reservations are in flight, and the first answer arrives with nobody listening.",
+   "executive": "A long, one-size-fits-all limit still ties the system up, wastes work nobody is waiting for, and invites users to try again on top."
+  },
+  {
+   "id": "to-parts",
+   "title": "Parts",
+   "chapter": "pattern",
+   "diagram": "parts",
+   "focus": [],
+   "trace": ["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8"],
+   "engineer": "A proper timeout has a few parts. First, a deadline: how much time is left for the whole request. Then a connect timeout, which limits how long to wait just to open a connection; if a server cannot even accept one, you want to know quickly. Then a request timeout, which limits the wait for the answer, capped at whatever time is left. When it fires, a handler decides what happens next, and every timeout is counted, per dependency.",
+   "executive": "Every remote call gets a time limit, both for connecting and for answering, and a plan for what to do when the limit is hit."
+  },
+  {
+   "id": "to-kinds",
+   "chapter": "pattern",
+   "card": {
+    "heading": "Which limit covers what",
+    "kind": "compare",
+    "points": [
+     "Timeout | What it limits",
+     "Connect | Opening the connection",
+     "Read | Waiting for the answer; in some clients, the gap between bytes",
+     "Idle | A connection or stream with no traffic",
+     "Deadline | The whole request, across every hop"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The names vary between libraries, so read the documentation carefully. A connect timeout covers opening the connection. A read timeout often covers the gap between bytes, not the whole answer. Python's Requests library documents it that way, so a server that trickles out one byte at a time can keep you waiting far longer than you set. An idle timeout closes a quiet connection. And a deadline is one point in time for the whole request, however many hops it makes.",
+   "executive": "There are several different time limits, and libraries name them differently, so check exactly what each one covers."
+  },
+  {
+   "id": "to-choose",
+   "chapter": "how",
+   "card": {
+    "heading": "Choosing the number (illustrative)",
+    "kind": "numbers",
+    "points": [
+     "40 ms | p50: a typical call",
+     "180 ms | p99",
+     "300 ms | p99.9: one call in a thousand is slower",
+     "≈ 350 ms | timeout: p99.9 plus headroom"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "How long should the request timeout be? Amazon's Builders' Library describes a method. Look at the latency of the service you are calling, not your own. Decide how many false timeouts you can accept, say one call in a thousand, and read off that percentile: the p99.9, the time within which ninety-nine point nine percent of calls finish. Add a little headroom. In this made-up example that lands at about three hundred and fifty milliseconds, not thirty seconds.",
+   "executive": "Base the limit on how fast the service really is: long enough for nearly every normal call, and no longer."
+  },
+  {
+   "id": "to-budget",
+   "title": "Deadline",
+   "chapter": "how",
+   "diagram": "budget",
+   "focus": [],
+   "trace": ["b1", "b2", "b3", "b4", "b5", "b6", "b7", "b8"],
+   "engineer": "Now the whole chain. The app sets a deadline: two seconds from now. Each hop passes it on with the time already used taken off, so the order service knows it has one point nine seconds left, and the stock service knows it has one point six. gRPC works like this: it sends the time remaining rather than a clock time, so servers whose clocks disagree slightly still agree on the budget. Nothing inside can outlive the caller who is waiting.",
+   "executive": "One time limit is set at the front door and handed down the chain, so no service keeps working after the user has stopped waiting."
+  },
+  {
+   "id": "to-expire",
+   "title": "Time runs out",
+   "chapter": "failure",
+   "diagram": "expire",
+   "focus": [],
+   "trace": ["e1", "e2", "e3", "e4", "e5", "e6"],
+   "engineer": "What happens when time runs out mid-chain? The order service's budget expires while the stock service is still writing, so it stops waiting and returns deadline exceeded to the gateway. With gRPC, the server sees the call cancelled, but stopping the work is the application's job; gRPC only tells it. And here the database write had already committed. A timeout tells you that you stopped waiting. It does not tell you whether the work happened.",
+   "executive": "When time runs out, the caller stops waiting, but the work may already have been done, so a timeout does not mean nothing happened."
+  },
+  {
+   "id": "to-retry",
+   "title": "Safe retry",
+   "chapter": "failure",
+   "diagram": "expire",
+   "focus": [],
+   "trace": ["e7", "e8", "e9"],
+   "engineer": "So retrying after a timeout is safe only if the operation is idempotent: doing it twice has the same effect as doing it once. The usual trick is an idempotency key. The caller sends the same key with every attempt, and the stock service remembers keys it has seen, returning the first result instead of reserving the items again. Without that, a timeout plus a retry is how customers get charged twice. And any retry must still fit inside the deadline.",
+   "executive": "Only retry after a timeout if repeating the request is harmless, for example by tagging each request with a unique key the server remembers."
+  },
+  {
+   "id": "to-tradeoffs",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "Too short or too long",
+    "kind": "compare",
+    "points": [
+     "Too short | Too long",
+     "Healthy but slow calls fail | Threads and connections held for longer",
+     "Retries add load at the worst moment | Users give up before you do",
+     "Slow but valid work never finishes | A hang looks like a wait; alarms fire late"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The value is a trade-off. Too short, and healthy but slightly slow calls fail, and any retries add load at the worst possible moment. Too long, and threads and connections are held while users give up anyway, and a hang looks like a long wait, so alarms fire late. Amazon's article also warns that the percentile method needs care when network latency is high, or when the slowest calls are barely slower than the typical one.",
+   "executive": "Too short a limit fails good requests; too long a limit lets problems spread. Pick it per dependency, from real measurements."
+  },
+  {
+   "id": "to-variants",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "Variants",
+    "points": [
+     "Per-attempt timeout and an overall deadline: usually both",
+     "Fixed value, or adapted to live latency",
+     "Idle timeout for streams and long downloads",
+     "Server-side timeouts: drop work nobody is waiting for"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "There are variants worth knowing. A timeout per attempt is different from one deadline for the whole operation, retries included; you usually want both. Some systems adapt the value to live latency instead of fixing it. Long downloads and streams want an idle timeout rather than a total one. And servers should time out too: work for a caller who has gone away is pure waste. A timeout is rarely the wrong tool, but a badly chosen number often is.",
+   "executive": "Use a limit for each attempt and one for the whole job, and let servers stop work that no one is waiting for any more."
+  },
+  {
+   "id": "to-wild",
+   "title": "Defaults",
+   "chapter": "wild",
+   "diagram": "wild",
+   "focus": [],
+   "trace": ["w1", "w2", "w3", "w4", "w5"],
+   "engineer": "In the wild. gRPC sets no deadline by default, so a client can wait effectively forever; Java and Go pass deadlines on automatically. Python's Requests library does not time out unless you give it a value. Go's standard HTTP client treats a zero timeout as none, and its default client leaves it at zero. Envoy, the proxy, is stricter: fifteen seconds per route and five to connect, unless you change them. And Amazon's Builders' Library supplies the method for picking the number.",
+   "executive": "Many popular tools wait forever unless you set a limit, so setting one is your job, not the library's."
+  },
+  {
+   "id": "to-related",
+   "title": "Neighbours",
+   "chapter": "related",
+   "diagram": "related",
+   "focus": [],
+   "trace": ["r1", "r2", "r3", "r4", "r5"],
+   "engineer": "Its neighbours. Retry is what you often do after a timeout, but only within the deadline, and only when repeating is safe, which is where idempotency keys come in. A circuit breaker counts timeouts as failures, and stops calling a dependency that keeps timing out. A bulkhead caps how many threads can wait on one dependency at all, so even a slow service cannot take them all. And a fallback is what the user sees when time is up.",
+   "executive": "Timeouts work with retries, circuit breakers, separate resource pools and fallbacks; each covers a gap the others leave."
+  },
+  {
+   "id": "to-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "Every remote call needs a time limit; many libraries default to none",
+     "Choose it from the dependency's p99.9, and pass one deadline down the chain",
+     "A timeout means you stopped waiting, not that nothing happened"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. Every remote call needs a time limit, and many libraries will not set one for you. Choose the number from the dependency's real latency, and pass a single deadline down the chain, so nothing outlives its caller. And a timeout only means you stopped waiting: the work may still have happened, so retry only what is safe to repeat.",
+   "executive": "Always set a time limit. Base it on real latency and share it down the chain. A timeout does not mean the work did not happen."
+  }
+ ]
+}

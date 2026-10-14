@@ -1,0 +1,152 @@
+{
+ "ob-problem-engineer": {
+  "file": "/audio/outbox/ob-problem-engineer.mp3",
+  "ms": 28920,
+  "hash": "70d93d6c14f5"
+ },
+ "ob-problem-executive": {
+  "file": "/audio/outbox/ob-problem-executive.mp3",
+  "ms": 9768,
+  "hash": "482733e449da"
+ },
+ "ob-outcomes-engineer": {
+  "file": "/audio/outbox/ob-outcomes-engineer.mp3",
+  "ms": 26520,
+  "hash": "29de8fc5143c"
+ },
+ "ob-outcomes-executive": {
+  "file": "/audio/outbox/ob-outcomes-executive.mp3",
+  "ms": 8136,
+  "hash": "97b11bad07a2"
+ },
+ "ob-naive-engineer": {
+  "file": "/audio/outbox/ob-naive-engineer.mp3",
+  "ms": 24432,
+  "hash": "f5321cadfef6"
+ },
+ "ob-naive-executive": {
+  "file": "/audio/outbox/ob-naive-executive.mp3",
+  "ms": 7680,
+  "hash": "07264bd9746d"
+ },
+ "ob-2pc-engineer": {
+  "file": "/audio/outbox/ob-2pc-engineer.mp3",
+  "ms": 30288,
+  "hash": "2b3fcf8beb1e"
+ },
+ "ob-2pc-executive": {
+  "file": "/audio/outbox/ob-2pc-executive.mp3",
+  "ms": 7752,
+  "hash": "e926e6f64bbd"
+ },
+ "ob-structure-engineer": {
+  "file": "/audio/outbox/ob-structure-engineer.mp3",
+  "ms": 26616,
+  "hash": "57b4f7514b71"
+ },
+ "ob-structure-executive": {
+  "file": "/audio/outbox/ob-structure-executive.mp3",
+  "ms": 6984,
+  "hash": "ff83534ac1ec"
+ },
+ "ob-relay-engineer": {
+  "file": "/audio/outbox/ob-relay-engineer.mp3",
+  "ms": 24552,
+  "hash": "a005a7ddca8b"
+ },
+ "ob-relay-executive": {
+  "file": "/audio/outbox/ob-relay-executive.mp3",
+  "ms": 8304,
+  "hash": "6d0a0095e9a0"
+ },
+ "ob-how-engineer": {
+  "file": "/audio/outbox/ob-how-engineer.mp3",
+  "ms": 29688,
+  "hash": "2ac3f169d362"
+ },
+ "ob-how-executive": {
+  "file": "/audio/outbox/ob-how-executive.mp3",
+  "ms": 7704,
+  "hash": "33858c754453"
+ },
+ "ob-dup-engineer": {
+  "file": "/audio/outbox/ob-dup-engineer.mp3",
+  "ms": 28920,
+  "hash": "a9ff2a4feae8"
+ },
+ "ob-dup-executive": {
+  "file": "/audio/outbox/ob-dup-executive.mp3",
+  "ms": 8544,
+  "hash": "e96f047c15ae"
+ },
+ "ob-edges-engineer": {
+  "file": "/audio/outbox/ob-edges-engineer.mp3",
+  "ms": 30048,
+  "hash": "0fa9137cd583"
+ },
+ "ob-edges-executive": {
+  "file": "/audio/outbox/ob-edges-executive.mp3",
+  "ms": 9048,
+  "hash": "da78f4f37aa0"
+ },
+ "ob-relays-engineer": {
+  "file": "/audio/outbox/ob-relays-engineer.mp3",
+  "ms": 26280,
+  "hash": "c6428d895f2e"
+ },
+ "ob-relays-executive": {
+  "file": "/audio/outbox/ob-relays-executive.mp3",
+  "ms": 7992,
+  "hash": "32060a1678da"
+ },
+ "ob-compare-engineer": {
+  "file": "/audio/outbox/ob-compare-engineer.mp3",
+  "ms": 27120,
+  "hash": "1cbba7e07b15"
+ },
+ "ob-compare-executive": {
+  "file": "/audio/outbox/ob-compare-executive.mp3",
+  "ms": 7560,
+  "hash": "2dd2b928a2a5"
+ },
+ "ob-costs-engineer": {
+  "file": "/audio/outbox/ob-costs-engineer.mp3",
+  "ms": 30408,
+  "hash": "59a25f5522ad"
+ },
+ "ob-costs-executive": {
+  "file": "/audio/outbox/ob-costs-executive.mp3",
+  "ms": 9624,
+  "hash": "0647d3a1a5ce"
+ },
+ "ob-wild-engineer": {
+  "file": "/audio/outbox/ob-wild-engineer.mp3",
+  "ms": 34920,
+  "hash": "0dd198d087ca"
+ },
+ "ob-wild-executive": {
+  "file": "/audio/outbox/ob-wild-executive.mp3",
+  "ms": 8760,
+  "hash": "b1df1af558e5"
+ },
+ "ob-related-engineer": {
+  "file": "/audio/outbox/ob-related-engineer.mp3",
+  "ms": 28704,
+  "hash": "c1d4681b2a12"
+ },
+ "ob-related-executive": {
+  "file": "/audio/outbox/ob-related-executive.mp3",
+  "ms": 8760,
+  "hash": "bda33cb207e6"
+ },
+ "ob-recap-engineer": {
+  "file": "/audio/outbox/ob-recap-engineer.mp3",
+  "ms": 23088,
+  "hash": "c02c4cb01d73"
+ },
+ "ob-recap-executive": {
+  "file": "/audio/outbox/ob-recap-executive.mp3",
+  "ms": 7488,
+  "hash": "8768cae85fae"
+ }
+}

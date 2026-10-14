@@ -1,0 +1,142 @@
+{
+ "rl-problem-engineer": {
+  "file": "/audio/rate-limiting/rl-problem-engineer.mp3",
+  "ms": 24192,
+  "hash": "b19cbed3739c"
+ },
+ "rl-problem-executive": {
+  "file": "/audio/rate-limiting/rl-problem-executive.mp3",
+  "ms": 7416,
+  "hash": "8ca2ee673794"
+ },
+ "rl-storm-engineer": {
+  "file": "/audio/rate-limiting/rl-storm-engineer.mp3",
+  "ms": 26640,
+  "hash": "37560ac2507b"
+ },
+ "rl-storm-executive": {
+  "file": "/audio/rate-limiting/rl-storm-executive.mp3",
+  "ms": 8856,
+  "hash": "1bfaf271ad8d"
+ },
+ "rl-naive-engineer": {
+  "file": "/audio/rate-limiting/rl-naive-engineer.mp3",
+  "ms": 26016,
+  "hash": "bf67208500a7"
+ },
+ "rl-naive-executive": {
+  "file": "/audio/rate-limiting/rl-naive-executive.mp3",
+  "ms": 8304,
+  "hash": "5822629c371b"
+ },
+ "rl-structure-engineer": {
+  "file": "/audio/rate-limiting/rl-structure-engineer.mp3",
+  "ms": 30528,
+  "hash": "7c4d7b069842"
+ },
+ "rl-structure-executive": {
+  "file": "/audio/rate-limiting/rl-structure-executive.mp3",
+  "ms": 9144,
+  "hash": "3a613008233a"
+ },
+ "rl-algorithms-engineer": {
+  "file": "/audio/rate-limiting/rl-algorithms-engineer.mp3",
+  "ms": 29616,
+  "hash": "f212b8f0d873"
+ },
+ "rl-algorithms-executive": {
+  "file": "/audio/rate-limiting/rl-algorithms-executive.mp3",
+  "ms": 7272,
+  "hash": "4cd2f550a3f3"
+ },
+ "rl-how-engineer": {
+  "file": "/audio/rate-limiting/rl-how-engineer.mp3",
+  "ms": 31896,
+  "hash": "766594737026"
+ },
+ "rl-how-executive": {
+  "file": "/audio/rate-limiting/rl-how-executive.mp3",
+  "ms": 8736,
+  "hash": "5b5b23da00b1"
+ },
+ "rl-distributed-engineer": {
+  "file": "/audio/rate-limiting/rl-distributed-engineer.mp3",
+  "ms": 32400,
+  "hash": "864d8b4d7c10"
+ },
+ "rl-distributed-executive": {
+  "file": "/audio/rate-limiting/rl-distributed-executive.mp3",
+  "ms": 12048,
+  "hash": "1107ce71bde8"
+ },
+ "rl-edges-engineer": {
+  "file": "/audio/rate-limiting/rl-edges-engineer.mp3",
+  "ms": 28296,
+  "hash": "5d5443bd910b"
+ },
+ "rl-edges-executive": {
+  "file": "/audio/rate-limiting/rl-edges-executive.mp3",
+  "ms": 8568,
+  "hash": "12d9a851deac"
+ },
+ "rl-compare-engineer": {
+  "file": "/audio/rate-limiting/rl-compare-engineer.mp3",
+  "ms": 30120,
+  "hash": "bfa12d250621"
+ },
+ "rl-compare-executive": {
+  "file": "/audio/rate-limiting/rl-compare-executive.mp3",
+  "ms": 8712,
+  "hash": "2bce69230e5e"
+ },
+ "rl-whennot-engineer": {
+  "file": "/audio/rate-limiting/rl-whennot-engineer.mp3",
+  "ms": 30024,
+  "hash": "501b4a2436b2"
+ },
+ "rl-whennot-executive": {
+  "file": "/audio/rate-limiting/rl-whennot-executive.mp3",
+  "ms": 9264,
+  "hash": "25430e7c6c31"
+ },
+ "rl-wild-engineer": {
+  "file": "/audio/rate-limiting/rl-wild-engineer.mp3",
+  "ms": 35232,
+  "hash": "e1ceb0929516"
+ },
+ "rl-wild-executive": {
+  "file": "/audio/rate-limiting/rl-wild-executive.mp3",
+  "ms": 9168,
+  "hash": "71032d21fdbc"
+ },
+ "rl-numbers-engineer": {
+  "file": "/audio/rate-limiting/rl-numbers-engineer.mp3",
+  "ms": 30816,
+  "hash": "890b24a49c95"
+ },
+ "rl-numbers-executive": {
+  "file": "/audio/rate-limiting/rl-numbers-executive.mp3",
+  "ms": 10536,
+  "hash": "bb0c70319652"
+ },
+ "rl-related-engineer": {
+  "file": "/audio/rate-limiting/rl-related-engineer.mp3",
+  "ms": 32520,
+  "hash": "154ad1d90508"
+ },
+ "rl-related-executive": {
+  "file": "/audio/rate-limiting/rl-related-executive.mp3",
+  "ms": 10296,
+  "hash": "3dfe1c8fef1c"
+ },
+ "rl-recap-engineer": {
+  "file": "/audio/rate-limiting/rl-recap-engineer.mp3",
+  "ms": 24144,
+  "hash": "f8598ea639a1"
+ },
+ "rl-recap-executive": {
+  "file": "/audio/rate-limiting/rl-recap-executive.mp3",
+  "ms": 7512,
+  "hash": "250d2d32281d"
+ }
+}

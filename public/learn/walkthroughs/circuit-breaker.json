@@ -1,0 +1,972 @@
+{
+ "id": "circuit-breaker",
+ "title": "Circuit breaker",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "diagrams": [
+  {
+   "id": "cascade",
+   "kind": "c4",
+   "title": "One slow dependency takes down everything",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "user",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Users",
+     "sub": "checkout and browsing"
+    },
+    {
+     "id": "web",
+     "kind": "container",
+     "tone": "core",
+     "label": "Web app",
+     "sub": "200 request threads"
+    },
+    {
+     "id": "orders",
+     "kind": "container",
+     "tone": "core",
+     "label": "Order service",
+     "sub": "200 threads"
+    },
+    {
+     "id": "payments",
+     "kind": "external",
+     "tone": "external",
+     "label": "Payment service",
+     "sub": "slow: answers in 30 s"
+    },
+    {
+     "id": "catalogue",
+     "kind": "container",
+     "tone": "core",
+     "label": "Catalogue service",
+     "sub": "healthy"
+    }
+   ],
+   "edges": [
+    {
+     "id": "ca1",
+     "from": "user",
+     "to": "web",
+     "style": "solid",
+     "label": "checkout"
+    },
+    {
+     "id": "ca2",
+     "from": "web",
+     "to": "orders",
+     "style": "solid",
+     "label": "place order"
+    },
+    {
+     "id": "ca3",
+     "from": "orders",
+     "to": "payments",
+     "style": "dashed",
+     "label": "charge · waits 30 s"
+    },
+    {
+     "id": "ca4",
+     "from": "user",
+     "to": "web",
+     "style": "solid",
+     "label": "browse"
+    },
+    {
+     "id": "ca5",
+     "from": "web",
+     "to": "catalogue",
+     "style": "dashed",
+     "label": "stuck: no free threads"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or slow"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "signal"
+    }
+   ]
+  },
+  {
+   "id": "retries",
+   "kind": "sequence",
+   "title": "Retry harder",
+   "participants": [
+    {
+     "id": "web",
+     "label": "Web app"
+    },
+    {
+     "id": "orders",
+     "label": "Order service"
+    },
+    {
+     "id": "payments",
+     "label": "Payment service"
+    }
+   ],
+   "messages": [
+    {
+     "id": "rt1",
+     "from": "web",
+     "to": "orders",
+     "style": "solid",
+     "label": "place order"
+    },
+    {
+     "id": "rt2",
+     "from": "orders",
+     "to": "payments",
+     "style": "solid",
+     "label": "charge · times out"
+    },
+    {
+     "id": "rt3",
+     "from": "orders",
+     "to": "payments",
+     "style": "solid",
+     "label": "retry 1 · times out"
+    },
+    {
+     "id": "rt4",
+     "from": "orders",
+     "to": "payments",
+     "style": "solid",
+     "label": "retry 2 · times out"
+    },
+    {
+     "id": "rt5",
+     "from": "orders",
+     "to": "web",
+     "style": "solid",
+     "label": "error"
+    },
+    {
+     "id": "rt6",
+     "from": "web",
+     "to": "orders",
+     "style": "solid",
+     "label": "web retries the whole order"
+    },
+    {
+     "id": "rt7",
+     "from": "orders",
+     "to": "payments",
+     "style": "solid",
+     "label": "3 more charges, each retried"
+    },
+    {
+     "id": "rt8",
+     "from": "orders",
+     "to": "web",
+     "style": "solid",
+     "label": "error, minutes later"
+    }
+   ]
+  },
+  {
+   "id": "structure",
+   "kind": "c4",
+   "title": "A breaker wraps every call to one dependency",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "caller",
+     "kind": "container",
+     "tone": "neutral",
+     "label": "Order service",
+     "sub": "the caller"
+    },
+    {
+     "id": "guard",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Guard",
+     "sub": "allow, or reject at once",
+     "group": "cb"
+    },
+    {
+     "id": "window",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Sliding window",
+     "sub": "outcomes of the last 100 calls",
+     "group": "cb"
+    },
+    {
+     "id": "state",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "State",
+     "sub": "closed · open · half-open",
+     "group": "cb"
+    },
+    {
+     "id": "timer",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Open timer",
+     "sub": "e.g. 60 s",
+     "group": "cb"
+    },
+    {
+     "id": "fallback",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Fallback",
+     "sub": "cached, default, or a clear error",
+     "group": "cb"
+    },
+    {
+     "id": "dep",
+     "kind": "external",
+     "tone": "external",
+     "label": "Payment service",
+     "sub": "the protected dependency"
+    },
+    {
+     "id": "metrics",
+     "kind": "store",
+     "tone": "data",
+     "label": "Metrics and alerts",
+     "sub": "state changes"
+    }
+   ],
+   "edges": [
+    {
+     "id": "s1",
+     "from": "caller",
+     "to": "guard",
+     "style": "solid",
+     "label": "call"
+    },
+    {
+     "id": "s2",
+     "from": "guard",
+     "to": "state",
+     "style": "solid",
+     "label": "check state"
+    },
+    {
+     "id": "s3",
+     "from": "guard",
+     "to": "dep",
+     "style": "solid",
+     "label": "forward when closed"
+    },
+    {
+     "id": "s4",
+     "from": "guard",
+     "to": "window",
+     "style": "dotted",
+     "label": "record outcome and latency"
+    },
+    {
+     "id": "s5",
+     "from": "window",
+     "to": "state",
+     "style": "dotted",
+     "label": "failure rate ≥ 50% → open"
+    },
+    {
+     "id": "s6",
+     "from": "state",
+     "to": "timer",
+     "style": "solid",
+     "label": "start"
+    },
+    {
+     "id": "s7",
+     "from": "timer",
+     "to": "state",
+     "style": "dotted",
+     "label": "expires → half-open"
+    },
+    {
+     "id": "s8",
+     "from": "guard",
+     "to": "fallback",
+     "style": "solid",
+     "label": "when open"
+    },
+    {
+     "id": "s9",
+     "from": "state",
+     "to": "metrics",
+     "style": "dotted",
+     "label": "every change"
+    }
+   ],
+   "groups": [
+    {
+     "id": "cb",
+     "label": "Circuit breaker [in-process library or proxy]",
+     "tone": "core"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or slow"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "signal"
+    }
+   ]
+  },
+  {
+   "id": "states",
+   "kind": "c4",
+   "title": "Three states",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "closed",
+     "kind": "component",
+     "tone": "core",
+     "label": "Closed",
+     "sub": "calls pass; outcomes counted"
+    },
+    {
+     "id": "open",
+     "kind": "component",
+     "tone": "stream",
+     "label": "Open",
+     "sub": "calls fail fast; nothing sent"
+    },
+    {
+     "id": "half",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Half-open",
+     "sub": "a few trial calls pass"
+    }
+   ],
+   "edges": [
+    {
+     "id": "st1",
+     "from": "closed",
+     "to": "open",
+     "style": "dashed",
+     "label": "failure rate ≥ threshold"
+    },
+    {
+     "id": "st2",
+     "from": "open",
+     "to": "half",
+     "style": "solid",
+     "label": "wait elapsed"
+    },
+    {
+     "id": "st3",
+     "from": "half",
+     "to": "closed",
+     "style": "solid",
+     "label": "trials succeed"
+    },
+    {
+     "id": "st4",
+     "from": "half",
+     "to": "open",
+     "style": "dashed",
+     "label": "a trial fails"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or slow"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "signal"
+    }
+   ]
+  },
+  {
+   "id": "flow",
+   "kind": "sequence",
+   "title": "Closed, open, half-open, closed",
+   "participants": [
+    {
+     "id": "caller",
+     "label": "Order service"
+    },
+    {
+     "id": "cb",
+     "label": "Breaker"
+    },
+    {
+     "id": "fb",
+     "label": "Fallback"
+    },
+    {
+     "id": "dep",
+     "label": "Payment service"
+    }
+   ],
+   "messages": [
+    {
+     "id": "h1",
+     "from": "caller",
+     "to": "cb",
+     "style": "solid",
+     "label": "call (closed)"
+    },
+    {
+     "id": "h2",
+     "from": "cb",
+     "to": "dep",
+     "style": "solid",
+     "label": "forward"
+    },
+    {
+     "id": "h3",
+     "from": "dep",
+     "to": "cb",
+     "style": "solid",
+     "label": "200 OK · recorded"
+    },
+    {
+     "id": "h4",
+     "from": "cb",
+     "to": "dep",
+     "style": "solid",
+     "label": "…calls start timing out"
+    },
+    {
+     "id": "h5",
+     "from": "dep",
+     "to": "cb",
+     "style": "solid",
+     "label": "50 of last 100 failed → OPEN"
+    },
+    {
+     "id": "h6",
+     "from": "caller",
+     "to": "cb",
+     "style": "solid",
+     "label": "call (open)"
+    },
+    {
+     "id": "h7",
+     "from": "cb",
+     "to": "fb",
+     "style": "solid",
+     "label": "no call sent: fallback in microseconds"
+    },
+    {
+     "id": "h8",
+     "from": "fb",
+     "to": "caller",
+     "style": "solid",
+     "label": "cached or default answer"
+    },
+    {
+     "id": "h9",
+     "from": "cb",
+     "to": "dep",
+     "style": "solid",
+     "label": "after the wait: 10 trial calls (half-open)"
+    },
+    {
+     "id": "h10",
+     "from": "dep",
+     "to": "cb",
+     "style": "solid",
+     "label": "trials succeed → CLOSED"
+    }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "nygard",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Release It!",
+     "sub": "Michael Nygard · popularised the pattern"
+    },
+    {
+     "id": "fowler",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Martin Fowler",
+     "sub": "bliki article, 2014"
+    },
+    {
+     "id": "hystrix",
+     "kind": "external",
+     "tone": "external",
+     "label": "Netflix Hystrix",
+     "sub": "Java · maintenance mode"
+    },
+    {
+     "id": "r4j",
+     "kind": "container",
+     "tone": "core",
+     "label": "Resilience4j",
+     "sub": "Java · count or time windows"
+    },
+    {
+     "id": "polly",
+     "kind": "container",
+     "tone": "core",
+     "label": "Polly",
+     "sub": ".NET resilience library"
+    },
+    {
+     "id": "envoy",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Envoy and service meshes",
+     "sub": "connection limits + outlier ejection"
+    }
+   ],
+   "edges": [
+    {
+     "id": "w1",
+     "from": "nygard",
+     "to": "fowler",
+     "style": "solid",
+     "label": "explained"
+    },
+    {
+     "id": "w2",
+     "from": "nygard",
+     "to": "hystrix",
+     "style": "solid",
+     "label": "implemented at scale"
+    },
+    {
+     "id": "w3",
+     "from": "hystrix",
+     "to": "r4j",
+     "style": "solid",
+     "label": "Netflix points new projects here"
+    },
+    {
+     "id": "w4",
+     "from": "nygard",
+     "to": "polly",
+     "style": "solid",
+     "label": "same state machine"
+    },
+    {
+     "id": "w5",
+     "from": "nygard",
+     "to": "envoy",
+     "style": "dotted",
+     "label": "same idea in the proxy"
+    }
+   ]
+  },
+  {
+   "id": "related",
+   "kind": "c4",
+   "title": "Related patterns",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "cb",
+     "kind": "container",
+     "tone": "core",
+     "label": "Circuit breaker",
+     "sub": "stop calling what is failing"
+    },
+    {
+     "id": "timeout",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Timeout",
+     "sub": "turns slow into failed"
+    },
+    {
+     "id": "retry",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Retry with backoff and jitter",
+     "sub": "for brief faults"
+    },
+    {
+     "id": "bulkhead",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Bulkhead",
+     "sub": "separate pools per dependency"
+    },
+    {
+     "id": "fallback",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Fallback / graceful degradation",
+     "sub": "what the user gets instead"
+    },
+    {
+     "id": "health",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Health endpoint monitoring",
+     "sub": "probe instead of a timer"
+    },
+    {
+     "id": "shed",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Rate limiting and load shedding",
+     "sub": "the server protecting itself"
+    }
+   ],
+   "edges": [
+    {
+     "id": "r1",
+     "from": "timeout",
+     "to": "cb",
+     "style": "solid",
+     "label": "feeds it failures"
+    },
+    {
+     "id": "r2",
+     "from": "retry",
+     "to": "cb",
+     "style": "solid",
+     "label": "retries go through it; stop when open"
+    },
+    {
+     "id": "r3",
+     "from": "bulkhead",
+     "to": "cb",
+     "style": "solid",
+     "label": "limits the blast radius"
+    },
+    {
+     "id": "r4",
+     "from": "cb",
+     "to": "fallback",
+     "style": "solid",
+     "label": "when open"
+    },
+    {
+     "id": "r5",
+     "from": "health",
+     "to": "cb",
+     "style": "dotted",
+     "label": "decides when to try again"
+    },
+    {
+     "id": "r6",
+     "from": "cb",
+     "to": "shed",
+     "style": "dotted",
+     "label": "client side · server side"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "problem",
+   "title": "The problem"
+  },
+  {
+   "id": "naive",
+   "title": "The naive fix"
+  },
+  {
+   "id": "pattern",
+   "title": "The pattern"
+  },
+  {
+   "id": "how",
+   "title": "How it works"
+  },
+  {
+   "id": "failure",
+   "title": "When it goes wrong"
+  },
+  {
+   "id": "tradeoffs",
+   "title": "Trade-offs"
+  },
+  {
+   "id": "wild",
+   "title": "In the wild"
+  },
+  {
+   "id": "related",
+   "title": "Related patterns"
+  },
+  {
+   "id": "recap",
+   "title": "Recap"
+  }
+ ],
+ "shots": [
+  {
+   "id": "cb-problem",
+   "chapter": "problem",
+   "diagram": "cascade",
+   "focus": [],
+   "trace": [],
+   "engineer": "Here is a checkout. Users call the web app, which calls the order service, which calls payments. Every service has a fixed pool of threads. Nothing is broken yet.",
+   "executive": "A checkout passes through three services, each able to handle a fixed number of requests at once."
+  },
+  {
+   "id": "cb-cascade",
+   "chapter": "problem",
+   "title": "Cascade",
+   "diagram": "cascade",
+   "focus": [],
+   "trace": [
+    "ca1",
+    "ca2",
+    "ca3",
+    "ca4",
+    "ca5"
+   ],
+   "engineer": "Now payments gets slow: thirty seconds per answer. Each order request holds a thread while it waits. Within seconds the order service has no free threads, then the web app has none either. And now browsing the catalogue fails too, although the catalogue is perfectly healthy. One slow dependency has taken down everything upstream. That is a cascading failure.",
+   "executive": "When payments slows down, waiting requests pile up until even unrelated pages stop working. One slow service takes the whole site down."
+  },
+  {
+   "id": "cb-naive",
+   "chapter": "naive",
+   "title": "Retry storm",
+   "diagram": "retries",
+   "focus": [],
+   "trace": [
+    "rt1",
+    "rt2",
+    "rt3",
+    "rt4",
+    "rt5",
+    "rt6",
+    "rt7",
+    "rt8"
+   ],
+   "engineer": "The obvious fix is to retry. But retries make it worse. The order service retries the charge three times; the web app retries the whole order; each of those is retried again. Amazon's Builders' Library works the example: five layers retrying three times each multiplies the load on the bottom service two hundred and forty-three times, just when it is least able to cope.",
+   "executive": "Retrying harder sends even more traffic to the service that is already struggling, so it never recovers."
+  },
+  {
+   "id": "cb-structure",
+   "chapter": "pattern",
+   "title": "Trip",
+   "diagram": "structure",
+   "focus": [],
+   "trace": [
+    "s1",
+    "s2",
+    "s3",
+    "s4",
+    "s5",
+    "s6",
+    "s8",
+    "s9"
+   ],
+   "engineer": "The circuit breaker wraps every call to one dependency. A guard decides whether to let a call through. A sliding window records the outcome and latency of recent calls. When the failure rate crosses a threshold, the state flips to open and a timer starts. While open, the guard does not call the dependency at all; it goes straight to a fallback. Every state change is published as a metric.",
+   "executive": "A breaker sits between a service and something it depends on. When too many calls fail, it stops calling and answers immediately with a fallback."
+  },
+  {
+   "id": "cb-states",
+   "chapter": "pattern",
+   "title": "Recover",
+   "diagram": "states",
+   "focus": [],
+   "trace": [
+    "st1",
+    "st2",
+    "st3"
+   ],
+   "engineer": "Three states. Closed: calls pass and are counted. Open: calls fail fast and nothing is sent, which gives the dependency room to recover. Half-open: after the wait, a few trial calls pass. If they succeed, the breaker closes again; if one fails, it reopens. This is the state machine described by Michael Nygard and later by Martin Fowler.",
+   "executive": "Closed means normal, open means stop calling, half-open means test carefully before going back to normal."
+  },
+  {
+   "id": "cb-how",
+   "chapter": "how",
+   "title": "Sequence",
+   "diagram": "flow",
+   "focus": [],
+   "trace": [
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "h7",
+    "h8",
+    "h9",
+    "h10"
+   ],
+   "engineer": "Step by step. While closed, calls are forwarded and recorded. Calls start timing out; once half of the last hundred have failed, the breaker opens. The next call is not sent at all: the fallback answers in microseconds, with a cached or default result. After the wait, ten trial calls go through. They succeed, and the breaker closes. Those numbers are Resilience4j's defaults: a fifty percent failure threshold, a window of a hundred calls, sixty seconds open, ten trial calls.",
+   "executive": "The breaker notices failures, stops sending traffic, answers from a fallback, and later tests the service before trusting it again."
+  },
+  {
+   "id": "cb-failure",
+   "chapter": "failure",
+   "title": "Trial fails",
+   "diagram": "states",
+   "focus": [],
+   "trace": [
+    "st1",
+    "st2",
+    "st4"
+   ],
+   "engineer": "What if the service is still broken when the breaker tests it? One trial fails and the breaker goes straight back to open, restarting the timer. Some implementations lengthen the wait each time, from seconds to minutes, so a long outage is probed less and less often.",
+   "executive": "If the service is still broken, the breaker stays open and tries again later."
+  },
+  {
+   "id": "cb-edges",
+   "chapter": "failure",
+   "card": {
+    "heading": "Where it still goes wrong",
+    "points": [
+     "A long timeout ties up threads before the breaker trips",
+     "One breaker over many shards blocks the healthy ones",
+     "Retries that ignore an open breaker bypass it",
+     "A fallback the user cannot accept is just a different failure"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Four things catch teams out. A timeout longer than the failure takes to show up still ties up threads before the breaker trips, so the timeout matters as much as the breaker. One breaker for many shards blocks the healthy ones with the broken one. Retries must stop when the breaker is open, or they bypass it. And a fallback must be something the user can live with: a stale price is not always acceptable.",
+   "executive": "The breaker needs sensible timeouts, one breaker per independent dependency, retries that respect it, and a fallback users can accept."
+  },
+  {
+   "id": "cb-tradeoffs",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "The knobs",
+    "kind": "compare",
+    "points": [
+     "Choice | Trade-off",
+     "Count or time window | Last N calls, or last N seconds for uneven traffic",
+     "Failure threshold | Low trips on noise; high trips late",
+     "Open wait | Short probes too often; long keeps users on the fallback",
+     "Library or proxy | Library knows the error; proxy needs no code"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The knobs are trade-offs. A count window reacts to the last N calls; a time window to the last N seconds, which suits uneven traffic. A low threshold trips on noise; a high one trips late. A short wait probes a sick service too often; a long one keeps users on the fallback after it has recovered. And you can run the breaker in your code, or in a proxy such as Envoy, which needs no code but sees less about what failed.",
+   "executive": "Every setting trades reacting quickly against reacting to noise. Choose them per dependency, and watch them."
+  },
+  {
+   "id": "cb-whennot",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "When not to use it",
+    "points": [
+     "Local, in-memory resources: only overhead",
+     "Instead of handling errors in business logic",
+     "Message-driven flows with a dead-letter queue",
+     "When the load balancer or mesh already does it"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "When not to use it. Microsoft's guidance lists cases: calls to local, in-memory resources, where it only adds overhead; as a substitute for handling errors in business logic; message-driven systems, where a dead-letter queue already isolates failures; and platforms that already handle it in a load balancer or service mesh.",
+   "executive": "Skip it for in-memory work, for message queues that already handle failures, and where the platform already does it for you."
+  },
+  {
+   "id": "cb-wild",
+   "chapter": "wild",
+   "title": "Lineage",
+   "diagram": "wild",
+   "focus": [],
+   "trace": [
+    "w1",
+    "w2",
+    "w3",
+    "w4",
+    "w5"
+   ],
+   "engineer": "In the wild. Michael Nygard popularised the pattern in Release It!, and Martin Fowler's 2014 article made it common vocabulary. Netflix's Hystrix ran it at scale; Hystrix is now in maintenance mode and Netflix points new projects to Resilience4j. In dotnet, Polly provides the same state machine. Envoy and the service meshes built on it apply the idea in the proxy, with connection and request limits per cluster and outlier detection that ejects misbehaving hosts.",
+   "executive": "Every major platform has it: Java, dotnet, and the network proxies. Netflix made it famous."
+  },
+  {
+   "id": "cb-related",
+   "chapter": "related",
+   "title": "Neighbours",
+   "diagram": "related",
+   "focus": [],
+   "trace": [
+    "r1",
+    "r2",
+    "r3",
+    "r4",
+    "r5",
+    "r6"
+   ],
+   "engineer": "Its neighbours. A timeout turns slow into failed, which is what the breaker counts. Retry with backoff and jitter handles brief faults and must go through the breaker. A bulkhead gives each dependency its own pool, so one slow service cannot take every thread. Fallback is what the user gets while it is open. Health endpoint monitoring can replace the timer. And rate limiting is the same idea from the server's side.",
+   "executive": "Circuit breakers work with timeouts, retries, separate resource pools and fallbacks. Together they keep one failure from spreading."
+  },
+  {
+   "id": "cb-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "Slow is worse than down: it holds your threads",
+     "Stop calling what is failing; answer from a fallback",
+     "Test before trusting again: half-open, then close"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. A slow dependency is more dangerous than a dead one, because it holds your resources. Stop calling what is failing, and answer from a fallback instead. And test before you trust again: half-open, a few calls, then close.",
+   "executive": "Slow is worse than down. Stop calling what is failing. Test before trusting it again."
+  }
+ ],
+ "subtitle": "Design pattern",
+ "meta": {
+  "kind": "pattern",
+  "category": "Resilience",
+  "level": "intermediate",
+  "uses": [
+   "timeout",
+   "retry"
+  ],
+  "related": [
+   "bulkhead",
+   "retry",
+   "timeout"
+  ],
+  "blurb": "Stop calling what is failing; answer from a fallback; test before trusting again.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ }
+}
