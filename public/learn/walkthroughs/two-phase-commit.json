@@ -1,0 +1,1028 @@
+{
+ "id": "two-phase-commit",
+ "title": "Two-phase commit",
+ "subtitle": "Design pattern",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "diagrams": [
+  {
+   "id": "problem",
+   "kind": "c4",
+   "title": "One transfer, two databases",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "user",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Customer",
+     "sub": "moves £100"
+    },
+    {
+     "id": "app",
+     "kind": "container",
+     "tone": "core",
+     "label": "Transfer service",
+     "sub": "one change, two places"
+    },
+    {
+     "id": "dba",
+     "kind": "store",
+     "tone": "data",
+     "label": "Bank A database",
+     "sub": "debit £100"
+    },
+    {
+     "id": "dbb",
+     "kind": "store",
+     "tone": "data",
+     "label": "Bank B database",
+     "sub": "credit £100"
+    }
+   ],
+   "edges": [
+    {
+     "id": "p1",
+     "from": "user",
+     "to": "app",
+     "label": "transfer £100",
+     "style": "solid"
+    },
+    {
+     "id": "p2",
+     "from": "app",
+     "to": "dba",
+     "label": "debit £100 · committed",
+     "style": "solid"
+    },
+    {
+     "id": "p3",
+     "from": "app",
+     "to": "dbb",
+     "label": "credit £100 · fails",
+     "style": "dashed"
+    },
+    {
+     "id": "p4",
+     "from": "app",
+     "to": "user",
+     "label": "£100 has vanished",
+     "style": "dashed"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call or write"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "log or vote"
+    }
+   ]
+  },
+  {
+   "id": "naive",
+   "kind": "sequence",
+   "title": "Commit one, then the other",
+   "participants": [
+    {
+     "id": "app",
+     "label": "Transfer service"
+    },
+    {
+     "id": "dba",
+     "label": "Bank A database"
+    },
+    {
+     "id": "dbb",
+     "label": "Bank B database"
+    }
+   ],
+   "messages": [
+    {
+     "id": "n1",
+     "from": "app",
+     "to": "dba",
+     "label": "BEGIN · debit £100",
+     "style": "solid"
+    },
+    {
+     "id": "n2",
+     "from": "dba",
+     "to": "app",
+     "label": "ok",
+     "style": "solid"
+    },
+    {
+     "id": "n3",
+     "from": "app",
+     "to": "dba",
+     "label": "COMMIT · now permanent",
+     "style": "solid"
+    },
+    {
+     "id": "n4",
+     "from": "app",
+     "to": "dbb",
+     "label": "BEGIN · credit £100",
+     "style": "solid"
+    },
+    {
+     "id": "n5",
+     "from": "dbb",
+     "to": "app",
+     "label": "fails: crash or constraint",
+     "style": "dashed"
+    },
+    {
+     "id": "n6",
+     "from": "app",
+     "to": "dba",
+     "label": "too late to roll back A",
+     "style": "dashed"
+    }
+   ]
+  },
+  {
+   "id": "structure",
+   "kind": "c4",
+   "title": "A coordinator, participants, and their logs",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "tm",
+     "label": "Transaction manager [coordinator]",
+     "tone": "core"
+    },
+    {
+     "id": "rms",
+     "label": "Participants [resource managers]",
+     "tone": "data"
+    }
+   ],
+   "elements": [
+    {
+     "id": "app",
+     "kind": "container",
+     "tone": "neutral",
+     "label": "Transfer service",
+     "sub": "starts the transaction"
+    },
+    {
+     "id": "coord",
+     "kind": "component",
+     "tone": "core",
+     "label": "Coordinator",
+     "sub": "collects votes, decides",
+     "group": "tm"
+    },
+    {
+     "id": "clog",
+     "kind": "store",
+     "tone": "core",
+     "label": "Decision log",
+     "sub": "commit or abort, on disk",
+     "group": "tm"
+    },
+    {
+     "id": "pa",
+     "kind": "container",
+     "tone": "data",
+     "label": "Bank A database",
+     "sub": "participant",
+     "group": "rms"
+    },
+    {
+     "id": "pb",
+     "kind": "container",
+     "tone": "data",
+     "label": "Bank B database",
+     "sub": "participant",
+     "group": "rms"
+    },
+    {
+     "id": "alog",
+     "kind": "store",
+     "tone": "data",
+     "label": "A's log",
+     "sub": "prepare record",
+     "group": "rms"
+    },
+    {
+     "id": "blog",
+     "kind": "store",
+     "tone": "data",
+     "label": "B's log",
+     "sub": "prepare record",
+     "group": "rms"
+    }
+   ],
+   "edges": [
+    {
+     "id": "s1",
+     "from": "app",
+     "to": "coord",
+     "label": "commit T1",
+     "style": "solid"
+    },
+    {
+     "id": "s2",
+     "from": "coord",
+     "to": "pa",
+     "label": "prepare, then decision",
+     "style": "solid"
+    },
+    {
+     "id": "s3",
+     "from": "coord",
+     "to": "pb",
+     "label": "prepare, then decision",
+     "style": "solid"
+    },
+    {
+     "id": "s4",
+     "from": "pa",
+     "to": "alog",
+     "label": "make change durable",
+     "style": "dotted"
+    },
+    {
+     "id": "s5",
+     "from": "pb",
+     "to": "blog",
+     "label": "make change durable",
+     "style": "dotted"
+    },
+    {
+     "id": "s6",
+     "from": "coord",
+     "to": "clog",
+     "label": "log the decision",
+     "style": "dotted"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call or write"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "log or vote"
+    }
+   ]
+  },
+  {
+   "id": "how",
+   "kind": "sequence",
+   "title": "Phase 1: prepare and vote · Phase 2: commit",
+   "participants": [
+    {
+     "id": "app",
+     "label": "Transfer service"
+    },
+    {
+     "id": "coord",
+     "label": "Coordinator"
+    },
+    {
+     "id": "clog",
+     "label": "Decision log"
+    },
+    {
+     "id": "pa",
+     "label": "Bank A database"
+    },
+    {
+     "id": "pb",
+     "label": "Bank B database"
+    }
+   ],
+   "messages": [
+    {
+     "id": "h1",
+     "from": "app",
+     "to": "coord",
+     "label": "commit T1",
+     "style": "solid"
+    },
+    {
+     "id": "h2",
+     "from": "coord",
+     "to": "pa",
+     "label": "PREPARE T1",
+     "style": "solid"
+    },
+    {
+     "id": "h3",
+     "from": "coord",
+     "to": "pb",
+     "label": "PREPARE T1",
+     "style": "solid"
+    },
+    {
+     "id": "h4",
+     "from": "pa",
+     "to": "coord",
+     "label": "YES · debit on disk, row locked",
+     "style": "solid"
+    },
+    {
+     "id": "h5",
+     "from": "pb",
+     "to": "coord",
+     "label": "YES · credit on disk, row locked",
+     "style": "solid"
+    },
+    {
+     "id": "h6",
+     "from": "coord",
+     "to": "clog",
+     "label": "write COMMIT T1 · the decision point",
+     "style": "solid"
+    },
+    {
+     "id": "h7",
+     "from": "coord",
+     "to": "pa",
+     "label": "COMMIT T1",
+     "style": "solid"
+    },
+    {
+     "id": "h8",
+     "from": "coord",
+     "to": "pb",
+     "label": "COMMIT T1",
+     "style": "solid"
+    },
+    {
+     "id": "h9",
+     "from": "pa",
+     "to": "coord",
+     "label": "done · locks released",
+     "style": "solid"
+    },
+    {
+     "id": "h10",
+     "from": "pb",
+     "to": "coord",
+     "label": "done · locks released",
+     "style": "solid"
+    },
+    {
+     "id": "h11",
+     "from": "coord",
+     "to": "app",
+     "label": "T1 committed",
+     "style": "solid"
+    }
+   ]
+  },
+  {
+   "id": "blocking",
+   "kind": "sequence",
+   "title": "The coordinator dies after prepare",
+   "participants": [
+    {
+     "id": "coord",
+     "label": "Coordinator"
+    },
+    {
+     "id": "clog",
+     "label": "Decision log"
+    },
+    {
+     "id": "pa",
+     "label": "Bank A database"
+    },
+    {
+     "id": "pb",
+     "label": "Bank B database"
+    }
+   ],
+   "messages": [
+    {
+     "id": "f1",
+     "from": "coord",
+     "to": "pa",
+     "label": "PREPARE T1",
+     "style": "solid"
+    },
+    {
+     "id": "f2",
+     "from": "coord",
+     "to": "pb",
+     "label": "PREPARE T1",
+     "style": "solid"
+    },
+    {
+     "id": "f3",
+     "from": "pa",
+     "to": "coord",
+     "label": "YES · row locked",
+     "style": "solid"
+    },
+    {
+     "id": "f4",
+     "from": "pb",
+     "to": "coord",
+     "label": "YES · row locked",
+     "style": "solid"
+    },
+    {
+     "id": "f5",
+     "from": "coord",
+     "to": "pa",
+     "label": "crashes · no decision sent",
+     "style": "dashed"
+    },
+    {
+     "id": "f6",
+     "from": "pa",
+     "to": "pb",
+     "label": "what did you hear? nothing",
+     "style": "dashed"
+    },
+    {
+     "id": "f7",
+     "from": "pb",
+     "to": "coord",
+     "label": "in doubt: cannot commit or abort alone",
+     "style": "dashed"
+    },
+    {
+     "id": "r1",
+     "from": "coord",
+     "to": "clog",
+     "label": "restarts · reads its log",
+     "style": "solid"
+    },
+    {
+     "id": "r2",
+     "from": "clog",
+     "to": "coord",
+     "label": "T1: COMMIT logged? if not, abort",
+     "style": "solid"
+    },
+    {
+     "id": "r3",
+     "from": "coord",
+     "to": "pa",
+     "label": "COMMIT T1 (or ABORT)",
+     "style": "solid"
+    },
+    {
+     "id": "r4",
+     "from": "coord",
+     "to": "pb",
+     "label": "COMMIT T1 (or ABORT)",
+     "style": "solid"
+    },
+    {
+     "id": "r5",
+     "from": "pa",
+     "to": "coord",
+     "label": "done · locks released",
+     "style": "solid"
+    }
+   ]
+  },
+  {
+   "id": "paxos",
+   "kind": "c4",
+   "title": "Spanner: two-phase commit over Paxos groups",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "cg",
+     "label": "Coordinator group [Paxos-replicated]",
+     "tone": "core"
+    },
+    {
+     "id": "pg",
+     "label": "Participant groups [Paxos-replicated]",
+     "tone": "data"
+    }
+   ],
+   "elements": [
+    {
+     "id": "client",
+     "kind": "container",
+     "tone": "neutral",
+     "label": "Client",
+     "sub": "drives the commit"
+    },
+    {
+     "id": "cl",
+     "kind": "component",
+     "tone": "core",
+     "label": "Coordinator leader",
+     "sub": "picks the commit timestamp",
+     "group": "cg"
+    },
+    {
+     "id": "cr",
+     "kind": "component",
+     "tone": "core",
+     "label": "Coordinator replicas",
+     "sub": "hold the commit record",
+     "group": "cg"
+    },
+    {
+     "id": "pa",
+     "kind": "component",
+     "tone": "data",
+     "label": "Participant leader A",
+     "sub": "logs prepare via Paxos",
+     "group": "pg"
+    },
+    {
+     "id": "pb",
+     "kind": "component",
+     "tone": "data",
+     "label": "Participant leader B",
+     "sub": "logs prepare via Paxos",
+     "group": "pg"
+    }
+   ],
+   "edges": [
+    {
+     "id": "m1",
+     "from": "client",
+     "to": "pa",
+     "label": "commit + buffered writes",
+     "style": "solid"
+    },
+    {
+     "id": "m2",
+     "from": "client",
+     "to": "pb",
+     "label": "commit + buffered writes",
+     "style": "solid"
+    },
+    {
+     "id": "m3",
+     "from": "client",
+     "to": "cl",
+     "label": "commit",
+     "style": "solid"
+    },
+    {
+     "id": "m4",
+     "from": "pa",
+     "to": "cl",
+     "label": "prepared",
+     "style": "dotted"
+    },
+    {
+     "id": "m5",
+     "from": "pb",
+     "to": "cl",
+     "label": "prepared",
+     "style": "dotted"
+    },
+    {
+     "id": "m6",
+     "from": "cl",
+     "to": "cr",
+     "label": "commit record via Paxos",
+     "style": "dotted"
+    },
+    {
+     "id": "m7",
+     "from": "cl",
+     "to": "pa",
+     "label": "commit timestamp",
+     "style": "solid"
+    },
+    {
+     "id": "m8",
+     "from": "cl",
+     "to": "pb",
+     "label": "commit timestamp",
+     "style": "solid"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call or write"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "log or vote"
+    }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "tpc",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Two-phase commit",
+     "sub": "the classic protocol"
+    },
+    {
+     "id": "xa",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "X/Open XA",
+     "sub": "standard for a transaction manager"
+    },
+    {
+     "id": "pg",
+     "kind": "container",
+     "tone": "core",
+     "label": "PostgreSQL",
+     "sub": "PREPARE TRANSACTION · COMMIT PREPARED"
+    },
+    {
+     "id": "mysql",
+     "kind": "container",
+     "tone": "core",
+     "label": "MySQL",
+     "sub": "XA PREPARE · XA RECOVER · InnoDB"
+    },
+    {
+     "id": "gl",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Gray and Lamport, 2006",
+     "sub": "Paxos Commit"
+    },
+    {
+     "id": "spanner",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Google Spanner",
+     "sub": "OSDI 2012 · 2PC over Paxos"
+    }
+   ],
+   "edges": [
+    {
+     "id": "w1",
+     "from": "tpc",
+     "to": "xa",
+     "label": "standardised as",
+     "style": "solid"
+    },
+    {
+     "id": "w2",
+     "from": "xa",
+     "to": "pg",
+     "label": "follows the XA model",
+     "style": "solid"
+    },
+    {
+     "id": "w3",
+     "from": "xa",
+     "to": "mysql",
+     "label": "implements XA",
+     "style": "solid"
+    },
+    {
+     "id": "w4",
+     "from": "tpc",
+     "to": "gl",
+     "label": "2PC is Paxos Commit with no fault tolerance",
+     "style": "solid"
+    },
+    {
+     "id": "w5",
+     "from": "tpc",
+     "to": "spanner",
+     "label": "each participant a Paxos group",
+     "style": "dotted"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "problem",
+   "title": "The problem"
+  },
+  {
+   "id": "naive",
+   "title": "The naive fix"
+  },
+  {
+   "id": "pattern",
+   "title": "The pattern"
+  },
+  {
+   "id": "how",
+   "title": "How it works"
+  },
+  {
+   "id": "failure",
+   "title": "When it goes wrong"
+  },
+  {
+   "id": "tradeoffs",
+   "title": "Trade-offs"
+  },
+  {
+   "id": "wild",
+   "title": "In the wild"
+  },
+  {
+   "id": "related",
+   "title": "Related patterns"
+  },
+  {
+   "id": "recap",
+   "title": "Recap"
+  }
+ ],
+ "shots": [
+  {
+   "id": "tpc-problem",
+   "chapter": "problem",
+   "diagram": "problem",
+   "focus": [],
+   "trace": [],
+   "engineer": "Here is a money transfer. A customer moves a hundred pounds from an account held in one database to an account held in another. Two separate databases, each with its own transactions and its own log, and neither knows the other exists. The business rule is simple: either both the debit and the credit happen, or neither does. Money must never appear from nowhere or vanish.",
+   "executive": "Moving money between two databases has to happen completely or not at all."
+  },
+  {
+   "id": "tpc-half",
+   "chapter": "problem",
+   "title": "Half done",
+   "diagram": "problem",
+   "focus": [],
+   "trace": [
+    "p1",
+    "p2",
+    "p3",
+    "p4"
+   ],
+   "engineer": "Now watch what can go wrong. The service debits Bank A and that commits. Then it tries to credit Bank B, and that fails: the database is down, a constraint rejects the row, or the service itself crashes in between. Bank A's change is permanent and Bank B's never happened. A hundred pounds has vanished. Each database is perfectly consistent on its own; together they are wrong.",
+   "executive": "If the second step fails after the first has been saved, the money is gone and the books no longer balance."
+  },
+  {
+   "id": "tpc-naive",
+   "chapter": "naive",
+   "title": "One after another",
+   "diagram": "naive",
+   "focus": [],
+   "trace": [
+    "n1",
+    "n2",
+    "n3",
+    "n4",
+    "n5",
+    "n6"
+   ],
+   "engineer": "The obvious fix is to be careful with ordering. Begin in A, debit, commit. Then begin in B and credit. But once A has committed, it cannot be rolled back. If B fails, all you can do is write a second, compensating transaction to put the money back, and hope that one does not fail too. Reordering the steps only moves the gap; it never closes it. Neither database knows the other exists.",
+   "executive": "Doing one step and then the other always leaves a gap where only half is done."
+  },
+  {
+   "id": "tpc-structure",
+   "chapter": "pattern",
+   "title": "Parts",
+   "diagram": "structure",
+   "focus": [],
+   "trace": [
+    "s1",
+    "s2",
+    "s3",
+    "s4",
+    "s5",
+    "s6"
+   ],
+   "engineer": "Two-phase commit adds a coordinator, often called the transaction manager. The databases become participants, or resource managers. Before anything is final, each participant makes its change durable in its own log, without committing it. The coordinator collects their answers and decides. That decision is also written to its own log on disk, because whatever was decided must survive a crash.",
+   "executive": "A coordinator asks every database to get ready, then tells them all to commit or all to cancel."
+  },
+  {
+   "id": "tpc-how",
+   "chapter": "how",
+   "title": "Commit",
+   "diagram": "how",
+   "focus": [],
+   "trace": [
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "h7",
+    "h8",
+    "h9",
+    "h10",
+    "h11"
+   ],
+   "engineer": "Step by step. Phase one: the coordinator sends prepare to both databases. Each one writes the change to its log, keeps the row locked, and votes yes. A yes is a promise: I can commit this, whatever happens to me next. With every vote in, the coordinator writes commit to its log. That write is the moment the transaction is decided. Phase two: it tells each participant to commit; they finish, release their locks and reply.",
+   "executive": "First every database promises it can commit. Then the coordinator records the decision and tells them all to go ahead."
+  },
+  {
+   "id": "tpc-rules",
+   "chapter": "how",
+   "card": {
+    "heading": "The rules",
+    "kind": "compare",
+    "points": [
+     "Situation | What happens",
+     "Every participant votes yes | Coordinator logs commit; all commit",
+     "Any vote no, or a timeout | Coordinator logs abort; all roll back",
+     "Before voting | A participant may abort alone",
+     "After voting yes | It must wait for the decision"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The rules are strict. If any participant votes no, or does not answer in time, the coordinator decides abort and tells everyone to roll back. Before it votes, a participant may abort on its own. But once it has voted yes, it has given up that right: it must wait to be told. And the coordinator only says commit after every single yes is in.",
+   "executive": "One no means everyone cancels. Once a database has said yes, it must wait for the decision."
+  },
+  {
+   "id": "tpc-blocking",
+   "chapter": "failure",
+   "title": "Blocked",
+   "diagram": "blocking",
+   "focus": [],
+   "trace": [
+    "f1",
+    "f2",
+    "f3",
+    "f4",
+    "f5",
+    "f6",
+    "f7"
+   ],
+   "engineer": "Now the hard case. Both participants vote yes, and the coordinator crashes before sending the decision. Each participant has promised to commit if told, so it cannot abort on its own; but it does not know the decision, so it cannot commit either. It is in doubt. If the two ask each other, neither knows. So they wait, holding their row locks, and every other transaction that needs those rows waits too. This is the blocking problem.",
+   "executive": "If the coordinator fails at the wrong moment, the databases are stuck waiting, with records locked, until it comes back."
+  },
+  {
+   "id": "tpc-recover",
+   "chapter": "failure",
+   "title": "Recover",
+   "diagram": "blocking",
+   "focus": [],
+   "trace": [
+    "r1",
+    "r2",
+    "r3",
+    "r4",
+    "r5"
+   ],
+   "engineer": "Recovery comes from the logs. When the coordinator restarts, it reads its decision log. If commit was written, it sends commit again; if no decision was written, nobody can have been told to commit, so it is safe to abort. Participants keep their prepared state on disk too, so a database restart does not lose it. Messages may repeat, so commit and abort must be safe to apply twice. Until the coordinator returns, though, the locks stay held.",
+   "executive": "When the coordinator comes back it reads its log and finishes the job, but nothing moves until it does."
+  },
+  {
+   "id": "tpc-costs",
+   "chapter": "tradeoffs",
+   "title": "Costs",
+   "card": {
+    "heading": "What you pay",
+    "kind": "compare",
+    "points": [
+     "You get | You pay",
+     "All-or-nothing across databases | Two round trips per commit",
+     "Decisions that survive crashes | Forced log writes on every node",
+     "Strong consistency | Locks held until the decision",
+     "One coordinator | It can block everyone if it fails"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "What it costs. Every transaction pays at least two round trips and several forced writes to disk before the answer. Gray and Lamport count three stable-storage writes in the normal case, two if everyone prepares at once. Locks are held from prepare until the decision arrives, so slow participants slow everyone. And availability falls: one slow or failed participant, or the coordinator, can stall the whole transaction.",
+   "executive": "You get all-or-nothing across databases, but every transaction is slower and holds locks longer."
+  },
+  {
+   "id": "tpc-paxos",
+   "chapter": "tradeoffs",
+   "title": "Over Paxos",
+   "diagram": "paxos",
+   "focus": [],
+   "trace": [
+    "m1",
+    "m2",
+    "m3",
+    "m4",
+    "m5",
+    "m6",
+    "m7",
+    "m8"
+   ],
+   "engineer": "The fix for blocking is to stop relying on one coordinator. Dale Skeen's three-phase commit added an extra step so participants can finish without it, but it assumes network delays are bounded, which real networks do not promise. Consensus fixes it properly. Gray and Lamport's Paxos Commit uses several coordinators and progresses while a majority work; plain two-phase commit is its case with no fault tolerance. Google's Spanner runs two-phase commit where each participant and the coordinator is a Paxos group, so a leader can fail without losing the state.",
+   "executive": "Modern systems replicate the coordinator, so one machine failing no longer leaves everyone stuck."
+  },
+  {
+   "id": "tpc-whennot",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "Where it fits",
+    "kind": "compare",
+    "points": [
+     "Good fit | Poor fit",
+     "Inside a distributed database | Across independent microservices",
+     "A few databases you operate | Third-party APIs with no prepare",
+     "Short transactions on a fast network | Long-running business processes",
+     "When strong consistency is required | When eventual consistency is acceptable"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "When to use it. It works well inside one system you control: a distributed database committing across its own shards, or a transaction manager over a few databases on a reliable network. It fits badly across microservices. Each service would hold locks on behalf of others, every service must support prepare, and one slow team's service stalls the rest. That is why service architectures usually reach for sagas and the outbox pattern instead.",
+   "executive": "Use it inside a database or between a few databases you run; between independent services, prefer sagas."
+  },
+  {
+   "id": "tpc-wild",
+   "chapter": "wild",
+   "title": "Lineage",
+   "diagram": "wild",
+   "focus": [],
+   "trace": [
+    "w1",
+    "w2",
+    "w3",
+    "w4",
+    "w5"
+   ],
+   "engineer": "In the wild. The X/Open XA standard defines how a transaction manager drives resource managers through prepare and commit. PostgreSQL follows the XA model with prepare transaction and commit prepared, and its documentation warns you not to use them unless you are writing a transaction manager; the feature is off by default. MySQL supports XA in InnoDB, and XA recover lists transactions stuck in prepared. And Spanner's 2012 paper argues two-phase commit is worth having, with Paxos making it available.",
+   "executive": "Databases such as PostgreSQL and MySQL support it through the XA standard, and Google's Spanner uses it at global scale."
+  },
+  {
+   "id": "tpc-related",
+   "chapter": "related",
+   "card": {
+    "heading": "Related patterns",
+    "kind": "compare",
+    "points": [
+     "Pattern | Relation",
+     "Saga | Local commits plus compensations; no global locks",
+     "Outbox | Database write and message in one local transaction",
+     "Leader election | Replaces a failed coordinator safely",
+     "Distributed locks | Exclusive access, not atomic commit"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Its neighbours. A saga replaces one atomic commit with a chain of local transactions and compensations: no locks across services, but no isolation either. The outbox pattern makes a database write and a message atomic using one local transaction. Leader election and consensus are what make a coordinator safe to replace. Distributed locks are often confused with it, but a lock only gives exclusive access; it does not make two writes commit together.",
+   "executive": "Sagas and the outbox give up instant consistency to avoid blocking; consensus keeps two-phase commit available."
+  },
+  {
+   "id": "tpc-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "Prepare and vote, then all commit or all abort",
+     "Log every vote and decision so crashes can be recovered",
+     "A lost coordinator blocks everyone: replicate it with consensus"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. Two-phase commit makes one change atomic across several databases: everyone prepares and votes, then everyone commits or everyone aborts. Every vote and decision is written to disk, which is how it survives crashes. And its weak point is the coordinator: lose it after prepare and participants wait with locks held, which is why modern systems replicate it with consensus.",
+   "executive": "Prepare, then commit. Log every decision. Replicate the coordinator, or expect to wait."
+  }
+ ],
+ "meta": {
+  "kind": "pattern",
+  "category": "Coordination",
+  "level": "advanced",
+  "uses": [
+   "write-ahead-log",
+   "timeout"
+  ],
+  "related": [
+   "saga",
+   "outbox",
+   "leader-election",
+   "distributed-locks"
+  ],
+  "blurb": "Make one change commit in several databases at once: prepare and vote, then all commit or all abort.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ }
+}

@@ -1,0 +1,252 @@
+{
+ "s01-engineer": {
+  "file": "/audio/shopify/s01-engineer.mp3",
+  "ms": 27168,
+  "hash": "c4b20aeeabd4"
+ },
+ "s01-executive": {
+  "file": "/audio/shopify/s01-executive.mp3",
+  "ms": 11016,
+  "hash": "a4cf5ff0e113"
+ },
+ "s02-engineer": {
+  "file": "/audio/shopify/s02-engineer.mp3",
+  "ms": 27840,
+  "hash": "da09d0097a6a"
+ },
+ "s02-executive": {
+  "file": "/audio/shopify/s02-executive.mp3",
+  "ms": 9192,
+  "hash": "e693b3538195"
+ },
+ "s03-engineer": {
+  "file": "/audio/shopify/s03-engineer.mp3",
+  "ms": 23208,
+  "hash": "fa0e9d1b8460"
+ },
+ "s03-executive": {
+  "file": "/audio/shopify/s03-executive.mp3",
+  "ms": 7128,
+  "hash": "c4922d49e2cb"
+ },
+ "s04-engineer": {
+  "file": "/audio/shopify/s04-engineer.mp3",
+  "ms": 30096,
+  "hash": "1a4926bae647"
+ },
+ "s04-executive": {
+  "file": "/audio/shopify/s04-executive.mp3",
+  "ms": 10176,
+  "hash": "5eb6bcba1c45"
+ },
+ "s05-engineer": {
+  "file": "/audio/shopify/s05-engineer.mp3",
+  "ms": 27480,
+  "hash": "4f6e41d91113"
+ },
+ "s05-executive": {
+  "file": "/audio/shopify/s05-executive.mp3",
+  "ms": 7176,
+  "hash": "3b3d65d8dc2e"
+ },
+ "s06-engineer": {
+  "file": "/audio/shopify/s06-engineer.mp3",
+  "ms": 25392,
+  "hash": "7ccae0607247"
+ },
+ "s06-executive": {
+  "file": "/audio/shopify/s06-executive.mp3",
+  "ms": 8016,
+  "hash": "8f061539c494"
+ },
+ "s07-engineer": {
+  "file": "/audio/shopify/s07-engineer.mp3",
+  "ms": 31512,
+  "hash": "04234642745a"
+ },
+ "s07-executive": {
+  "file": "/audio/shopify/s07-executive.mp3",
+  "ms": 9696,
+  "hash": "e619774d4c3b"
+ },
+ "s08-engineer": {
+  "file": "/audio/shopify/s08-engineer.mp3",
+  "ms": 30504,
+  "hash": "61f54cef0a5b"
+ },
+ "s08-executive": {
+  "file": "/audio/shopify/s08-executive.mp3",
+  "ms": 8016,
+  "hash": "d34079ebb269"
+ },
+ "s09-engineer": {
+  "file": "/audio/shopify/s09-engineer.mp3",
+  "ms": 27312,
+  "hash": "4d18474e79d2"
+ },
+ "s09-executive": {
+  "file": "/audio/shopify/s09-executive.mp3",
+  "ms": 6792,
+  "hash": "039fb4849981"
+ },
+ "s10-engineer": {
+  "file": "/audio/shopify/s10-engineer.mp3",
+  "ms": 26352,
+  "hash": "a18309dda89f"
+ },
+ "s10-executive": {
+  "file": "/audio/shopify/s10-executive.mp3",
+  "ms": 6648,
+  "hash": "c8101194d99e"
+ },
+ "s11-engineer": {
+  "file": "/audio/shopify/s11-engineer.mp3",
+  "ms": 30720,
+  "hash": "f1849647e096"
+ },
+ "s11-executive": {
+  "file": "/audio/shopify/s11-executive.mp3",
+  "ms": 7920,
+  "hash": "ace044a5594b"
+ },
+ "s12-engineer": {
+  "file": "/audio/shopify/s12-engineer.mp3",
+  "ms": 26112,
+  "hash": "21882b36bd80"
+ },
+ "s12-executive": {
+  "file": "/audio/shopify/s12-executive.mp3",
+  "ms": 6384,
+  "hash": "968152b8a222"
+ },
+ "s13-engineer": {
+  "file": "/audio/shopify/s13-engineer.mp3",
+  "ms": 27912,
+  "hash": "b484a6ec7a85"
+ },
+ "s13-executive": {
+  "file": "/audio/shopify/s13-executive.mp3",
+  "ms": 6240,
+  "hash": "096ee840ee8b"
+ },
+ "s14-engineer": {
+  "file": "/audio/shopify/s14-engineer.mp3",
+  "ms": 29640,
+  "hash": "9368c8a0440f"
+ },
+ "s14-executive": {
+  "file": "/audio/shopify/s14-executive.mp3",
+  "ms": 8472,
+  "hash": "c0ce22329261"
+ },
+ "s15-engineer": {
+  "file": "/audio/shopify/s15-engineer.mp3",
+  "ms": 29088,
+  "hash": "3c007eb9451b"
+ },
+ "s15-executive": {
+  "file": "/audio/shopify/s15-executive.mp3",
+  "ms": 7848,
+  "hash": "b13e1d63e8f0"
+ },
+ "s16-engineer": {
+  "file": "/audio/shopify/s16-engineer.mp3",
+  "ms": 27720,
+  "hash": "1a67229ce37e"
+ },
+ "s16-executive": {
+  "file": "/audio/shopify/s16-executive.mp3",
+  "ms": 6600,
+  "hash": "b96cf5c14fe1"
+ },
+ "s17-engineer": {
+  "file": "/audio/shopify/s17-engineer.mp3",
+  "ms": 30024,
+  "hash": "d3acd4a57dfa"
+ },
+ "s17-executive": {
+  "file": "/audio/shopify/s17-executive.mp3",
+  "ms": 7176,
+  "hash": "1b49c43e1929"
+ },
+ "s18-engineer": {
+  "file": "/audio/shopify/s18-engineer.mp3",
+  "ms": 26088,
+  "hash": "eca57535b128"
+ },
+ "s18-executive": {
+  "file": "/audio/shopify/s18-executive.mp3",
+  "ms": 7440,
+  "hash": "53ef0d85daa9"
+ },
+ "s19-engineer": {
+  "file": "/audio/shopify/s19-engineer.mp3",
+  "ms": 34248,
+  "hash": "a6c0653151ce"
+ },
+ "s19-executive": {
+  "file": "/audio/shopify/s19-executive.mp3",
+  "ms": 7680,
+  "hash": "d052c75cb1d1"
+ },
+ "s20-engineer": {
+  "file": "/audio/shopify/s20-engineer.mp3",
+  "ms": 31488,
+  "hash": "74223e10ff0f"
+ },
+ "s20-executive": {
+  "file": "/audio/shopify/s20-executive.mp3",
+  "ms": 7296,
+  "hash": "b0115b99e9d1"
+ },
+ "s21-engineer": {
+  "file": "/audio/shopify/s21-engineer.mp3",
+  "ms": 33624,
+  "hash": "7b47bf92113c"
+ },
+ "s21-executive": {
+  "file": "/audio/shopify/s21-executive.mp3",
+  "ms": 5976,
+  "hash": "5244940ea108"
+ },
+ "s22-engineer": {
+  "file": "/audio/shopify/s22-engineer.mp3",
+  "ms": 29328,
+  "hash": "4e95b6dff5aa"
+ },
+ "s22-executive": {
+  "file": "/audio/shopify/s22-executive.mp3",
+  "ms": 8928,
+  "hash": "2d7a234e02fb"
+ },
+ "s23-engineer": {
+  "file": "/audio/shopify/s23-engineer.mp3",
+  "ms": 31992,
+  "hash": "eb4970d7661f"
+ },
+ "s23-executive": {
+  "file": "/audio/shopify/s23-executive.mp3",
+  "ms": 8472,
+  "hash": "0f7bd05bec4a"
+ },
+ "s24-engineer": {
+  "file": "/audio/shopify/s24-engineer.mp3",
+  "ms": 33072,
+  "hash": "77fc39236e2e"
+ },
+ "s24-executive": {
+  "file": "/audio/shopify/s24-executive.mp3",
+  "ms": 7944,
+  "hash": "40a62082c08a"
+ },
+ "s25-engineer": {
+  "file": "/audio/shopify/s25-engineer.mp3",
+  "ms": 29952,
+  "hash": "ff6b28d9096a"
+ },
+ "s25-executive": {
+  "file": "/audio/shopify/s25-executive.mp3",
+  "ms": 8112,
+  "hash": "68aa8195ffbb"
+ }
+}

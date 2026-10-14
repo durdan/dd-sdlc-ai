@@ -1,0 +1,142 @@
+{
+ "wal-problem-engineer": {
+  "file": "/audio/write-ahead-log/wal-problem-engineer.mp3",
+  "ms": 23088,
+  "hash": "8f5338af0375"
+ },
+ "wal-problem-executive": {
+  "file": "/audio/write-ahead-log/wal-problem-executive.mp3",
+  "ms": 4992,
+  "hash": "3878d0e12d5a"
+ },
+ "wal-torn-engineer": {
+  "file": "/audio/write-ahead-log/wal-torn-engineer.mp3",
+  "ms": 22896,
+  "hash": "f9d7d779faef"
+ },
+ "wal-torn-executive": {
+  "file": "/audio/write-ahead-log/wal-torn-executive.mp3",
+  "ms": 7464,
+  "hash": "3d5a15dc13d7"
+ },
+ "wal-naive-engineer": {
+  "file": "/audio/write-ahead-log/wal-naive-engineer.mp3",
+  "ms": 24816,
+  "hash": "4d70ed2c8db8"
+ },
+ "wal-naive-executive": {
+  "file": "/audio/write-ahead-log/wal-naive-executive.mp3",
+  "ms": 6840,
+  "hash": "689e4c91a6dc"
+ },
+ "wal-parts-engineer": {
+  "file": "/audio/write-ahead-log/wal-parts-engineer.mp3",
+  "ms": 23424,
+  "hash": "090faa48201b"
+ },
+ "wal-parts-executive": {
+  "file": "/audio/write-ahead-log/wal-parts-executive.mp3",
+  "ms": 8616,
+  "hash": "5ab9d8d0c079"
+ },
+ "wal-checkpoint-engineer": {
+  "file": "/audio/write-ahead-log/wal-checkpoint-engineer.mp3",
+  "ms": 22728,
+  "hash": "6a63559ecef3"
+ },
+ "wal-checkpoint-executive": {
+  "file": "/audio/write-ahead-log/wal-checkpoint-executive.mp3",
+  "ms": 7104,
+  "hash": "5c66d1242209"
+ },
+ "wal-how-engineer": {
+  "file": "/audio/write-ahead-log/wal-how-engineer.mp3",
+  "ms": 32736,
+  "hash": "38cb102d1a15"
+ },
+ "wal-how-executive": {
+  "file": "/audio/write-ahead-log/wal-how-executive.mp3",
+  "ms": 6792,
+  "hash": "4c1a921e2325"
+ },
+ "wal-group-engineer": {
+  "file": "/audio/write-ahead-log/wal-group-engineer.mp3",
+  "ms": 23376,
+  "hash": "b9ec226c6603"
+ },
+ "wal-group-executive": {
+  "file": "/audio/write-ahead-log/wal-group-executive.mp3",
+  "ms": 6528,
+  "hash": "5bd84ec0b824"
+ },
+ "wal-recovery-engineer": {
+  "file": "/audio/write-ahead-log/wal-recovery-engineer.mp3",
+  "ms": 30312,
+  "hash": "f04df49f0129"
+ },
+ "wal-recovery-executive": {
+  "file": "/audio/write-ahead-log/wal-recovery-executive.mp3",
+  "ms": 8832,
+  "hash": "f7d820be4f59"
+ },
+ "wal-edges-engineer": {
+  "file": "/audio/write-ahead-log/wal-edges-engineer.mp3",
+  "ms": 27168,
+  "hash": "641664fc1754"
+ },
+ "wal-edges-executive": {
+  "file": "/audio/write-ahead-log/wal-edges-executive.mp3",
+  "ms": 6768,
+  "hash": "3c6191af9d77"
+ },
+ "wal-dials-engineer": {
+  "file": "/audio/write-ahead-log/wal-dials-engineer.mp3",
+  "ms": 30888,
+  "hash": "f346e1384b51"
+ },
+ "wal-dials-executive": {
+  "file": "/audio/write-ahead-log/wal-dials-executive.mp3",
+  "ms": 7752,
+  "hash": "d91fcc0c63b0"
+ },
+ "wal-costs-engineer": {
+  "file": "/audio/write-ahead-log/wal-costs-engineer.mp3",
+  "ms": 32040,
+  "hash": "95a94525563a"
+ },
+ "wal-costs-executive": {
+  "file": "/audio/write-ahead-log/wal-costs-executive.mp3",
+  "ms": 6456,
+  "hash": "1895bc43c84b"
+ },
+ "wal-wild-engineer": {
+  "file": "/audio/write-ahead-log/wal-wild-engineer.mp3",
+  "ms": 34008,
+  "hash": "434778a2e174"
+ },
+ "wal-wild-executive": {
+  "file": "/audio/write-ahead-log/wal-wild-executive.mp3",
+  "ms": 7056,
+  "hash": "255172160ae1"
+ },
+ "wal-related-engineer": {
+  "file": "/audio/write-ahead-log/wal-related-engineer.mp3",
+  "ms": 28512,
+  "hash": "30c3f701579f"
+ },
+ "wal-related-executive": {
+  "file": "/audio/write-ahead-log/wal-related-executive.mp3",
+  "ms": 6576,
+  "hash": "e1765e385e1b"
+ },
+ "wal-recap-engineer": {
+  "file": "/audio/write-ahead-log/wal-recap-engineer.mp3",
+  "ms": 24408,
+  "hash": "b7ca01c31aff"
+ },
+ "wal-recap-executive": {
+  "file": "/audio/write-ahead-log/wal-recap-executive.mp3",
+  "ms": 7968,
+  "hash": "bb600ee8e570"
+ }
+}

@@ -1,0 +1,252 @@
+{
+ "s01-engineer": {
+  "file": "/audio/airbnb/s01-engineer.mp3",
+  "ms": 24552,
+  "hash": "aaee764bec07"
+ },
+ "s01-executive": {
+  "file": "/audio/airbnb/s01-executive.mp3",
+  "ms": 9432,
+  "hash": "ccdaf0d3da6a"
+ },
+ "s02-engineer": {
+  "file": "/audio/airbnb/s02-engineer.mp3",
+  "ms": 30024,
+  "hash": "51e92fe1b9ae"
+ },
+ "s02-executive": {
+  "file": "/audio/airbnb/s02-executive.mp3",
+  "ms": 8448,
+  "hash": "3bfc4eba6667"
+ },
+ "s03-engineer": {
+  "file": "/audio/airbnb/s03-engineer.mp3",
+  "ms": 27792,
+  "hash": "80ccf0ef2292"
+ },
+ "s03-executive": {
+  "file": "/audio/airbnb/s03-executive.mp3",
+  "ms": 7968,
+  "hash": "276e55aac276"
+ },
+ "s04-engineer": {
+  "file": "/audio/airbnb/s04-engineer.mp3",
+  "ms": 23616,
+  "hash": "e65cc8666437"
+ },
+ "s04-executive": {
+  "file": "/audio/airbnb/s04-executive.mp3",
+  "ms": 8592,
+  "hash": "b75501660b31"
+ },
+ "s05-engineer": {
+  "file": "/audio/airbnb/s05-engineer.mp3",
+  "ms": 28536,
+  "hash": "b661ee20eefd"
+ },
+ "s05-executive": {
+  "file": "/audio/airbnb/s05-executive.mp3",
+  "ms": 8328,
+  "hash": "456a75e43616"
+ },
+ "s06-engineer": {
+  "file": "/audio/airbnb/s06-engineer.mp3",
+  "ms": 35208,
+  "hash": "2d1ab4d9faad"
+ },
+ "s06-executive": {
+  "file": "/audio/airbnb/s06-executive.mp3",
+  "ms": 9432,
+  "hash": "516a2dd9b426"
+ },
+ "s07-engineer": {
+  "file": "/audio/airbnb/s07-engineer.mp3",
+  "ms": 27168,
+  "hash": "8f98413cabbf"
+ },
+ "s07-executive": {
+  "file": "/audio/airbnb/s07-executive.mp3",
+  "ms": 6216,
+  "hash": "4f692d15c71e"
+ },
+ "s08-engineer": {
+  "file": "/audio/airbnb/s08-engineer.mp3",
+  "ms": 28704,
+  "hash": "10135ab38ea4"
+ },
+ "s08-executive": {
+  "file": "/audio/airbnb/s08-executive.mp3",
+  "ms": 6816,
+  "hash": "5562cd4861c2"
+ },
+ "s09-engineer": {
+  "file": "/audio/airbnb/s09-engineer.mp3",
+  "ms": 25824,
+  "hash": "4e180b4ad6fc"
+ },
+ "s09-executive": {
+  "file": "/audio/airbnb/s09-executive.mp3",
+  "ms": 5472,
+  "hash": "9b7b26974d09"
+ },
+ "s10-engineer": {
+  "file": "/audio/airbnb/s10-engineer.mp3",
+  "ms": 28704,
+  "hash": "2f68509d3273"
+ },
+ "s10-executive": {
+  "file": "/audio/airbnb/s10-executive.mp3",
+  "ms": 7440,
+  "hash": "a43a42dbe600"
+ },
+ "s11-engineer": {
+  "file": "/audio/airbnb/s11-engineer.mp3",
+  "ms": 30912,
+  "hash": "c139595b998e"
+ },
+ "s11-executive": {
+  "file": "/audio/airbnb/s11-executive.mp3",
+  "ms": 7320,
+  "hash": "f783b0ecdeea"
+ },
+ "s12-engineer": {
+  "file": "/audio/airbnb/s12-engineer.mp3",
+  "ms": 35160,
+  "hash": "18e013b71b05"
+ },
+ "s12-executive": {
+  "file": "/audio/airbnb/s12-executive.mp3",
+  "ms": 6864,
+  "hash": "3b4fb7626d68"
+ },
+ "s13-engineer": {
+  "file": "/audio/airbnb/s13-engineer.mp3",
+  "ms": 31848,
+  "hash": "13e02a8bb4f0"
+ },
+ "s13-executive": {
+  "file": "/audio/airbnb/s13-executive.mp3",
+  "ms": 6192,
+  "hash": "55b906bd6e57"
+ },
+ "s15-engineer": {
+  "file": "/audio/airbnb/s15-engineer.mp3",
+  "ms": 28032,
+  "hash": "0b35578536c4"
+ },
+ "s15-executive": {
+  "file": "/audio/airbnb/s15-executive.mp3",
+  "ms": 5928,
+  "hash": "ea4038321b23"
+ },
+ "s16-engineer": {
+  "file": "/audio/airbnb/s16-engineer.mp3",
+  "ms": 26208,
+  "hash": "d4dc73236c03"
+ },
+ "s16-executive": {
+  "file": "/audio/airbnb/s16-executive.mp3",
+  "ms": 6168,
+  "hash": "57ab838dfc4d"
+ },
+ "s17-engineer": {
+  "file": "/audio/airbnb/s17-engineer.mp3",
+  "ms": 28800,
+  "hash": "f7178d134c70"
+ },
+ "s17-executive": {
+  "file": "/audio/airbnb/s17-executive.mp3",
+  "ms": 5064,
+  "hash": "b55ab51ab507"
+ },
+ "s18-engineer": {
+  "file": "/audio/airbnb/s18-engineer.mp3",
+  "ms": 28080,
+  "hash": "87b25790e2bf"
+ },
+ "s18-executive": {
+  "file": "/audio/airbnb/s18-executive.mp3",
+  "ms": 6384,
+  "hash": "5aa06f9f0292"
+ },
+ "s19-engineer": {
+  "file": "/audio/airbnb/s19-engineer.mp3",
+  "ms": 27816,
+  "hash": "8a981984925e"
+ },
+ "s19-executive": {
+  "file": "/audio/airbnb/s19-executive.mp3",
+  "ms": 9144,
+  "hash": "d34be0e39c8a"
+ },
+ "s20-engineer": {
+  "file": "/audio/airbnb/s20-engineer.mp3",
+  "ms": 29976,
+  "hash": "b5723a00c35f"
+ },
+ "s20-executive": {
+  "file": "/audio/airbnb/s20-executive.mp3",
+  "ms": 6816,
+  "hash": "27dd3365bece"
+ },
+ "s21-engineer": {
+  "file": "/audio/airbnb/s21-engineer.mp3",
+  "ms": 31848,
+  "hash": "011a36005467"
+ },
+ "s21-executive": {
+  "file": "/audio/airbnb/s21-executive.mp3",
+  "ms": 6504,
+  "hash": "dece4fed0fdc"
+ },
+ "s22-engineer": {
+  "file": "/audio/airbnb/s22-engineer.mp3",
+  "ms": 27096,
+  "hash": "29d1f3d101de"
+ },
+ "s22-executive": {
+  "file": "/audio/airbnb/s22-executive.mp3",
+  "ms": 7296,
+  "hash": "097af36ea4c0"
+ },
+ "s23-engineer": {
+  "file": "/audio/airbnb/s23-engineer.mp3",
+  "ms": 29496,
+  "hash": "795c96f24212"
+ },
+ "s23-executive": {
+  "file": "/audio/airbnb/s23-executive.mp3",
+  "ms": 6216,
+  "hash": "fd77871bbe1b"
+ },
+ "s24-engineer": {
+  "file": "/audio/airbnb/s24-engineer.mp3",
+  "ms": 28056,
+  "hash": "64fd6854d65a"
+ },
+ "s24-executive": {
+  "file": "/audio/airbnb/s24-executive.mp3",
+  "ms": 6720,
+  "hash": "81e977cd66d2"
+ },
+ "s25-engineer": {
+  "file": "/audio/airbnb/s25-engineer.mp3",
+  "ms": 30816,
+  "hash": "7ca51993a0a4"
+ },
+ "s25-executive": {
+  "file": "/audio/airbnb/s25-executive.mp3",
+  "ms": 8016,
+  "hash": "a103337e930a"
+ },
+ "s26-engineer": {
+  "file": "/audio/airbnb/s26-engineer.mp3",
+  "ms": 28080,
+  "hash": "3b08838097a6"
+ },
+ "s26-executive": {
+  "file": "/audio/airbnb/s26-executive.mp3",
+  "ms": 6648,
+  "hash": "0c842590b099"
+ }
+}

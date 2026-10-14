@@ -1,0 +1,1232 @@
+{
+ "id": "spotify",
+ "title": "Spotify: press play anywhere",
+ "subtitle": "Company case study",
+ "voice": "en-GB-SoniaNeural",
+ "template": "case-study",
+ "meta": {
+  "kind": "company",
+  "category": "Streaming",
+  "level": "intermediate",
+  "uses": [
+   "pub-sub",
+   "event-streaming",
+   "cdn-caching",
+   "bulkhead",
+   "idempotency",
+   "retry"
+  ],
+  "related": [
+   "netflix",
+   "youtube"
+  ],
+  "blurb": "Audio chunks from CDNs, a phone that becomes a remote, and a trillion listening events a day on Google Cloud Pub/Sub.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14",
+  "changelog": [
+   {
+    "date": "2026-10-14",
+    "note": "First version."
+   }
+  ]
+ },
+ "diagrams": [
+  {
+   "id": "context",
+   "kind": "c4",
+   "title": "Level 1 · Context",
+   "direction": "DOWN",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request · response"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "commands · events"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "content · hosting"
+    }
+   ],
+   "elements": [
+    {
+     "id": "listener",
+     "kind": "person",
+     "label": "Listener",
+     "sub": "phone, desktop, web"
+    },
+    {
+     "id": "creators",
+     "kind": "external",
+     "label": "Artists, labels, podcasters",
+     "sub": "deliver music and shows"
+    },
+    {
+     "id": "devs",
+     "kind": "external",
+     "label": "Third-party apps",
+     "sub": "Web API, Player API"
+    },
+    {
+     "id": "spotify",
+     "kind": "system",
+     "label": "Spotify",
+     "sub": "catalogue, playback, personalisation, events"
+    },
+    {
+     "id": "devices",
+     "kind": "external",
+     "label": "Connect devices",
+     "sub": "speakers, TVs, cars, consoles"
+    },
+    {
+     "id": "cdn",
+     "kind": "external",
+     "label": "CDN partners",
+     "sub": "audio files close to listeners"
+    },
+    {
+     "id": "gcp",
+     "kind": "external",
+     "label": "Google Cloud",
+     "sub": "hosting since the 2016–18 move"
+    }
+   ],
+   "edges": [
+    {
+     "id": "c-lis-sp",
+     "from": "listener",
+     "to": "spotify",
+     "label": "browse, search, play",
+     "style": "solid"
+    },
+    {
+     "id": "c-lis-cdn",
+     "from": "listener",
+     "to": "cdn",
+     "label": "audio in chunks",
+     "style": "solid"
+    },
+    {
+     "id": "c-sp-dev",
+     "from": "spotify",
+     "to": "devices",
+     "label": "play here, pause, skip",
+     "style": "dashed"
+    },
+    {
+     "id": "c-dev-cdn",
+     "from": "devices",
+     "to": "cdn",
+     "label": "audio for the device",
+     "style": "solid"
+    },
+    {
+     "id": "c-cre-sp",
+     "from": "creators",
+     "to": "spotify",
+     "label": "tracks, episodes",
+     "style": "dotted"
+    },
+    {
+     "id": "c-devs-sp",
+     "from": "devs",
+     "to": "spotify",
+     "label": "control playback",
+     "style": "solid"
+    },
+    {
+     "id": "c-sp-gcp",
+     "from": "spotify",
+     "to": "gcp",
+     "label": "runs on",
+     "style": "dotted"
+    }
+   ]
+  },
+  {
+   "id": "containers",
+   "kind": "c4",
+   "title": "Level 2 · Containers (our reconstruction)",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "backend",
+     "label": "Spotify backend · our grouping",
+     "tone": "core"
+    },
+    {
+     "id": "data",
+     "label": "Data platform on Google Cloud",
+     "tone": "data"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request · response"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "commands · events"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "files · datasets"
+    }
+   ],
+   "elements": [
+    {
+     "id": "app",
+     "kind": "container",
+     "label": "Spotify app",
+     "sub": "phone, desktop, web",
+     "tone": "neutral",
+     "rank": 0
+    },
+    {
+     "id": "speaker",
+     "kind": "external",
+     "label": "Connect device",
+     "sub": "plays; the phone is a remote",
+     "rank": 0
+    },
+    {
+     "id": "edge",
+     "kind": "container",
+     "label": "API edge",
+     "sub": "auth, routing · our design",
+     "group": "backend",
+     "rank": 1
+    },
+    {
+     "id": "receiver",
+     "kind": "container",
+     "label": "Event receiver",
+     "sub": "takes events from SDKs",
+     "tone": "stream",
+     "rank": 1
+    },
+    {
+     "id": "catalogue",
+     "kind": "container",
+     "label": "Catalogue and metadata",
+     "sub": "tracks, albums, files · our design",
+     "group": "backend",
+     "rank": 2
+    },
+    {
+     "id": "playback",
+     "kind": "container",
+     "label": "Playback and Connect state",
+     "sub": "active device per account · our design",
+     "group": "backend",
+     "rank": 2
+    },
+    {
+     "id": "recs",
+     "kind": "container",
+     "label": "Personalisation",
+     "sub": "Discover Weekly, every Monday",
+     "group": "backend",
+     "rank": 3
+    },
+    {
+     "id": "pubsub",
+     "kind": "container",
+     "label": "Pub/Sub",
+     "sub": "one topic per event type",
+     "tone": "stream",
+     "group": "data",
+     "rank": 3
+    },
+    {
+     "id": "lake",
+     "kind": "store",
+     "label": "Datasets",
+     "sub": "Cloud Storage hourly buckets, BigQuery",
+     "group": "data",
+     "rank": 4
+    },
+    {
+     "id": "files",
+     "kind": "store",
+     "label": "Encoded audio files",
+     "sub": "one file per track and quality",
+     "tone": "data",
+     "rank": 4
+    },
+    {
+     "id": "cdn",
+     "kind": "external",
+     "label": "CDN partners",
+     "sub": "HTTP servers worldwide",
+     "rank": 5
+    }
+   ],
+   "edges": [
+    {
+     "id": "k-app-edge",
+     "from": "app",
+     "to": "edge",
+     "label": "browse, play",
+     "style": "solid"
+    },
+    {
+     "id": "k-edge-cat",
+     "from": "edge",
+     "to": "catalogue",
+     "label": "which track, which file",
+     "style": "solid"
+    },
+    {
+     "id": "k-app-cdn",
+     "from": "app",
+     "to": "cdn",
+     "label": "range requests, ~512 kB",
+     "style": "solid"
+    },
+    {
+     "id": "k-files-cdn",
+     "from": "files",
+     "to": "cdn",
+     "label": "copied worldwide",
+     "style": "dotted"
+    },
+    {
+     "id": "k-edge-play",
+     "from": "edge",
+     "to": "playback",
+     "label": "transfer, pause, skip",
+     "style": "solid"
+    },
+    {
+     "id": "k-play-spk",
+     "from": "playback",
+     "to": "speaker",
+     "label": "become active",
+     "style": "dashed"
+    },
+    {
+     "id": "k-spk-cdn",
+     "from": "speaker",
+     "to": "cdn",
+     "label": "fetches its own audio",
+     "style": "solid"
+    },
+    {
+     "id": "k-app-recv",
+     "from": "app",
+     "to": "receiver",
+     "label": "listening events",
+     "style": "dashed"
+    },
+    {
+     "id": "k-recv-ps",
+     "from": "receiver",
+     "to": "pubsub",
+     "label": "publish by type",
+     "style": "dashed"
+    },
+    {
+     "id": "k-ps-lake",
+     "from": "pubsub",
+     "to": "lake",
+     "label": "hourly datasets",
+     "style": "dashed"
+    },
+    {
+     "id": "k-lake-recs",
+     "from": "lake",
+     "to": "recs",
+     "label": "listening history",
+     "style": "dotted"
+    },
+    {
+     "id": "k-recs-edge",
+     "from": "recs",
+     "to": "edge",
+     "label": "personal playlists",
+     "style": "solid"
+    }
+   ]
+  },
+  {
+   "id": "events",
+   "kind": "c4",
+   "title": "Level 3 · Inside event delivery",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "control",
+     "label": "Control plane",
+     "tone": "neutral"
+    },
+    {
+     "id": "dataplane",
+     "label": "Data plane",
+     "tone": "stream"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "send · provision"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "event stream"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "datasets"
+    }
+   ],
+   "elements": [
+    {
+     "id": "sdk",
+     "kind": "component",
+     "label": "Client SDK",
+     "sub": "in the app; stores and resends",
+     "tone": "neutral",
+     "rank": 0
+    },
+    {
+     "id": "schemas",
+     "kind": "component",
+     "label": "Event types and schemas",
+     "sub": "declared by owning teams · Avro",
+     "group": "control",
+     "rank": 0
+    },
+    {
+     "id": "receiver",
+     "kind": "component",
+     "label": "Receiver service",
+     "sub": "highly available API; rejects malformed",
+     "group": "dataplane",
+     "rank": 1
+    },
+    {
+     "id": "composer",
+     "kind": "component",
+     "label": "Provisioner",
+     "sub": "topic, subscription, ETL per type",
+     "group": "control",
+     "rank": 1
+    },
+    {
+     "id": "topicA",
+     "kind": "container",
+     "label": "Topic: EndSong",
+     "sub": "high priority · pays royalties",
+     "group": "dataplane",
+     "rank": 2
+    },
+    {
+     "id": "topicB",
+     "kind": "container",
+     "label": "Topic: a UI event",
+     "sub": "low priority · illustrative",
+     "group": "dataplane",
+     "rank": 2
+    },
+    {
+     "id": "dedup",
+     "kind": "component",
+     "label": "Deduplicate",
+     "sub": "by event message id",
+     "group": "dataplane",
+     "rank": 3
+    },
+    {
+     "id": "pseudo",
+     "kind": "component",
+     "label": "Pseudonymise",
+     "sub": "personal fields, by schema annotation",
+     "group": "dataplane",
+     "rank": 3
+    },
+    {
+     "id": "buckets",
+     "kind": "store",
+     "label": "Hourly buckets",
+     "sub": "immutable, per event type",
+     "tone": "data",
+     "rank": 4
+    },
+    {
+     "id": "consumers",
+     "kind": "external",
+     "label": "Downstream pipelines",
+     "sub": "royalties, reports, recommendations",
+     "rank": 5
+    }
+   ],
+   "edges": [
+    {
+     "id": "e-sdk-recv",
+     "from": "sdk",
+     "to": "receiver",
+     "label": "events with message ids",
+     "style": "solid"
+    },
+    {
+     "id": "e-recv-sdk",
+     "from": "receiver",
+     "to": "sdk",
+     "label": "outage: keep and resend",
+     "style": "dashed"
+    },
+    {
+     "id": "e-sch-recv",
+     "from": "schemas",
+     "to": "receiver",
+     "label": "known types",
+     "style": "solid"
+    },
+    {
+     "id": "e-sch-comp",
+     "from": "schemas",
+     "to": "composer",
+     "label": "new or changed type",
+     "style": "solid"
+    },
+    {
+     "id": "e-comp-a",
+     "from": "composer",
+     "to": "topicA",
+     "label": "provision",
+     "style": "solid"
+    },
+    {
+     "id": "e-recv-a",
+     "from": "receiver",
+     "to": "topicA",
+     "label": "EndSong",
+     "style": "dashed"
+    },
+    {
+     "id": "e-recv-b",
+     "from": "receiver",
+     "to": "topicB",
+     "label": "UI clicks",
+     "style": "dashed"
+    },
+    {
+     "id": "e-a-dedup",
+     "from": "topicA",
+     "to": "dedup",
+     "style": "dashed"
+    },
+    {
+     "id": "e-b-dedup",
+     "from": "topicB",
+     "to": "dedup",
+     "label": "its own job",
+     "style": "dashed"
+    },
+    {
+     "id": "e-dedup-ps",
+     "from": "dedup",
+     "to": "pseudo",
+     "style": "dashed"
+    },
+    {
+     "id": "e-ps-bkt",
+     "from": "pseudo",
+     "to": "buckets",
+     "label": "write the hour",
+     "style": "dotted"
+    },
+    {
+     "id": "e-bkt-cons",
+     "from": "buckets",
+     "to": "consumers",
+     "label": "hour by hour",
+     "style": "dotted"
+    }
+   ]
+  },
+  {
+   "id": "play",
+   "kind": "sequence",
+   "title": "Press play on a phone",
+   "participants": [
+    {
+     "id": "q-app",
+     "label": "Spotify app"
+    },
+    {
+     "id": "q-api",
+     "label": "Spotify backend"
+    },
+    {
+     "id": "q-cdn",
+     "label": "Nearby CDN server"
+    },
+    {
+     "id": "q-recv",
+     "label": "Event receiver"
+    }
+   ],
+   "messages": [
+    {
+     "id": "q1",
+     "from": "q-app",
+     "to": "q-api",
+     "label": "play this track",
+     "style": "solid"
+    },
+    {
+     "id": "q2",
+     "from": "q-api",
+     "to": "q-app",
+     "label": "metadata, which file · our design",
+     "style": "dashed"
+    },
+    {
+     "id": "q3",
+     "from": "q-app",
+     "to": "q-cdn",
+     "label": "GET, Range: first chunk",
+     "style": "solid"
+    },
+    {
+     "id": "q4",
+     "from": "q-cdn",
+     "to": "q-app",
+     "label": "206, about 512 kB",
+     "style": "dashed"
+    },
+    {
+     "id": "q5",
+     "from": "q-app",
+     "to": "q-recv",
+     "label": "playback started",
+     "style": "solid"
+    },
+    {
+     "id": "q6",
+     "from": "q-app",
+     "to": "q-cdn",
+     "label": "next chunks, as the buffer drains",
+     "style": "solid"
+    },
+    {
+     "id": "q7",
+     "from": "q-cdn",
+     "to": "q-app",
+     "label": "206, next chunk",
+     "style": "dashed"
+    },
+    {
+     "id": "q8",
+     "from": "q-app",
+     "to": "q-recv",
+     "label": "EndSong",
+     "style": "solid"
+    }
+   ]
+  },
+  {
+   "id": "connect",
+   "kind": "sequence",
+   "title": "Move playback to a speaker with Spotify Connect",
+   "participants": [
+    {
+     "id": "x-phone",
+     "label": "Phone app"
+    },
+    {
+     "id": "x-api",
+     "label": "Spotify backend"
+    },
+    {
+     "id": "x-spk",
+     "label": "Connect speaker"
+    },
+    {
+     "id": "x-cdn",
+     "label": "CDN server"
+    }
+   ],
+   "messages": [
+    {
+     "id": "x1",
+     "from": "x-spk",
+     "to": "x-api",
+     "label": "online, same account",
+     "style": "solid"
+    },
+    {
+     "id": "x2",
+     "from": "x-phone",
+     "to": "x-api",
+     "label": "which devices can I use?",
+     "style": "solid"
+    },
+    {
+     "id": "x3",
+     "from": "x-api",
+     "to": "x-phone",
+     "label": "kitchen speaker, TV, laptop",
+     "style": "dashed"
+    },
+    {
+     "id": "x4",
+     "from": "x-phone",
+     "to": "x-api",
+     "label": "transfer playback, device id",
+     "style": "solid"
+    },
+    {
+     "id": "x5",
+     "from": "x-api",
+     "to": "x-spk",
+     "label": "become active, from 1:23",
+     "style": "dashed"
+    },
+    {
+     "id": "x6",
+     "from": "x-spk",
+     "to": "x-cdn",
+     "label": "fetch audio chunks",
+     "style": "solid"
+    },
+    {
+     "id": "x7",
+     "from": "x-api",
+     "to": "x-phone",
+     "label": "now playing on kitchen speaker",
+     "style": "dashed"
+    },
+    {
+     "id": "x8",
+     "from": "x-phone",
+     "to": "x-api",
+     "label": "pause",
+     "style": "solid"
+    },
+    {
+     "id": "x9",
+     "from": "x-api",
+     "to": "x-spk",
+     "label": "pause",
+     "style": "dashed"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "overview",
+   "title": "Overview"
+  },
+  {
+   "id": "requirements",
+   "title": "Requirements and scale"
+  },
+  {
+   "id": "context",
+   "title": "Context"
+  },
+  {
+   "id": "containers",
+   "title": "Containers"
+  },
+  {
+   "id": "deep-dive",
+   "title": "Deep dive"
+  },
+  {
+   "id": "flows",
+   "title": "Core flows"
+  },
+  {
+   "id": "data",
+   "title": "Data and caching"
+  },
+  {
+   "id": "growth",
+   "title": "Growth"
+  },
+  {
+   "id": "failures",
+   "title": "Failure modes"
+  },
+  {
+   "id": "patterns",
+   "title": "Patterns used"
+  },
+  {
+   "id": "decisions",
+   "title": "Key decisions"
+  },
+  {
+   "id": "mvp",
+   "title": "What we would build first"
+  }
+ ],
+ "shots": [
+  {
+   "id": "s01",
+   "chapter": "overview",
+   "diagram": "context",
+   "focus": [],
+   "trace": [],
+   "engineer": "This is Spotify, seen from the outside. A listener opens the app on a phone, a laptop or a web browser, picks a song, and it starts almost at once. They can then move that same song to a speaker, a TV or a car, and carry on from the same second. The idea everything depends on: playing music is the cheap, simple part, and every play is also an event that has to be counted, because it decides what artists are paid.",
+   "executive": "Spotify plays music on any device, instantly. Every play is also counted, because those counts decide what artists are paid."
+  },
+  {
+   "id": "s02",
+   "chapter": "requirements",
+   "card": {
+    "heading": "Scale, from Spotify's own publications",
+    "kind": "numbers",
+    "points": [
+     "777M | monthly active users (Q2 2026)",
+     "300M | Premium subscribers (Q2 2026)",
+     "184 | markets",
+     "100M+ | tracks, plus 7M podcast titles",
+     "1T+ | events collected a day (2024)",
+     "~11.6M | events a second on average (1T ÷ 86,400 s)"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "First, the scale. In its second-quarter results for 2026, published in August, Spotify reported seven hundred and seventy-seven million monthly active users, and three hundred million Premium subscribers. Its company page lists a hundred and eighty-four markets and more than a hundred million tracks. Its data team wrote in 2024 that it collects more than a trillion events a day. Divide that by the seconds in a day, and it is nearly twelve million events every second, on average.",
+   "executive": "Nearly eight hundred million people use Spotify each month, and their apps send more than a trillion events a day."
+  },
+  {
+   "id": "s03",
+   "chapter": "requirements",
+   "card": {
+    "heading": "What the system must do (our list)",
+    "points": [
+     "Start a song in well under a second, on a weak mobile network",
+     "Keep playing through short gaps in the signal",
+     "Move playback between devices without losing the place",
+     "Count every finished play exactly once, even if sent twice",
+     "Keep personal data out of analytics datasets",
+     "Let hundreds of teams add new events without a central bottleneck"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The requirements. These are ours, written from the product rather than taken from a Spotify document. A song should start in well under a second, even on a weak mobile network, and keep playing through short gaps in the signal. Playback should move between devices without losing its place. Every finished play must be counted exactly once, even if the app sends it twice. Personal data stays out of analytics. And hundreds of teams must be able to add new events on their own.",
+   "executive": "Fast starts, smooth playback, moving between devices, accurate play counts, privacy, and room for many teams to work independently."
+  },
+  {
+   "id": "s04",
+   "title": "Listeners and devices",
+   "chapter": "context",
+   "diagram": "context",
+   "focus": [
+    "listener",
+    "spotify",
+    "devices",
+    "cdn",
+    "devs"
+   ],
+   "trace": [
+    "c-lis-sp",
+    "c-lis-cdn",
+    "c-sp-dev",
+    "c-dev-cdn",
+    "c-devs-sp"
+   ],
+   "engineer": "Who talks to whom. The listener's app talks to Spotify to browse, search and choose what to play. But the audio itself does not come from the same place: Spotify's engineers describe each track stored as files on HTTP servers around the world, run with several CDN partners. Spotify also sends commands to Connect devices such as speakers and TVs. And third-party apps can control a listener's playback through the public Web API.",
+   "executive": "The app asks Spotify what to play, but the music itself comes from delivery networks close to the listener."
+  },
+  {
+   "id": "s05",
+   "title": "Content and hosting",
+   "chapter": "context",
+   "diagram": "context",
+   "focus": [
+    "creators",
+    "spotify",
+    "gcp"
+   ],
+   "trace": [
+    "c-cre-sp",
+    "c-sp-gcp"
+   ],
+   "engineer": "On the other side, artists, labels and podcasters deliver tracks and episodes; Spotify handles the conversion into the formats it streams. And underneath it all is Google Cloud. Google announced the partnership in February 2016, all traffic was routed to Google Cloud by May 2017, and the last of Spotify's four data centres closed in 2018. Its chief architect put it simply: Spotify is in the music business, not the data centre business.",
+   "executive": "Creators supply the content, and since 2018 Spotify has run entirely on Google Cloud rather than its own data centres."
+  },
+  {
+   "id": "s06",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [],
+   "trace": [],
+   "engineer": "One level in. Spotify has not published a container diagram, so this is our design, built from its engineering posts and developer documentation. Across the top, the app and a Connect device. In the middle, a backend we have grouped into an API edge, the catalogue, playback state, and personalisation. To the side, the event pipeline Spotify has written about in detail. And at the bottom, encoded audio files and the CDNs that serve them.",
+   "executive": "Inside: a backend that decides what to play, delivery networks that send the audio, and a pipeline that counts every play. The layout is our reconstruction."
+  },
+  {
+   "id": "s07",
+   "title": "Press play",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "app",
+    "edge",
+    "catalogue",
+    "files",
+    "cdn"
+   ],
+   "trace": [
+    "k-app-edge",
+    "k-edge-cat",
+    "k-files-cdn",
+    "k-app-cdn"
+   ],
+   "engineer": "The first path: press play. The app asks the backend about the track; how the backend looks up the right file is our design. The audio comes from somewhere else. Spotify's 2018 post on streaming says each encoded track is a file copied to HTTP servers across the world, and the app fetches it from a nearby server in chunks, using HTTP range requests. A typical chunk was five hundred and twelve kilobytes. So the backend never carries the audio itself.",
+   "executive": "The backend says what to play; the song itself is downloaded in small pieces from a server near the listener."
+  },
+  {
+   "id": "s08",
+   "title": "Play on a speaker",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "app",
+    "edge",
+    "playback",
+    "speaker",
+    "cdn"
+   ],
+   "trace": [
+    "k-app-edge",
+    "k-edge-play",
+    "k-play-spk",
+    "k-spk-cdn"
+   ],
+   "engineer": "The second path: Spotify Connect. The listener picks a speaker in the app. Spotify's developer documentation says only the active device plays audio, and the phone carries on as a remote control for pause, skip and volume. A playback state container that tracks the active device for each account is our design. And the speaker fetching its own audio from the delivery network, rather than through the phone, is our reading of how Connect works.",
+   "executive": "Pick a speaker and it starts playing; the phone just becomes a remote control."
+  },
+  {
+   "id": "s09",
+   "title": "Count the play",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "app",
+    "receiver",
+    "pubsub",
+    "lake"
+   ],
+   "trace": [
+    "k-app-recv",
+    "k-recv-ps",
+    "k-ps-lake"
+   ],
+   "engineer": "The third path is the one Spotify has written about most. While music plays, the app sends events. Since 2021, an SDK in the app sends them to a receiver service. The receiver recognises each event type and publishes it to Google Cloud Pub/Sub, with its own topic for every type. From there, events become datasets in Cloud Storage or BigQuery, in hourly buckets. One of these events, EndSong, is used to pay royalties to labels and artists.",
+   "executive": "Every play becomes an event that flows into Spotify's data platform, and some of those events decide royalty payments."
+  },
+  {
+   "id": "s10",
+   "title": "Discover Weekly",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "lake",
+    "recs",
+    "edge"
+   ],
+   "trace": [
+    "k-lake-recs",
+    "k-recs-edge"
+   ],
+   "engineer": "The fourth path closes the loop. Listening history feeds personalisation. Discover Weekly launched in 2015 as a playlist of about two hours, refreshed every Monday; that year Spotify said it delivered seventy-five million unique mixtapes each week, and by its tenth birthday in 2025, more than a hundred billion tracks had been streamed from it. Spotify describes it as algorithms combined with human curation. Building the playlists in a weekly batch, rather than on request, is our design.",
+   "executive": "What people listen to feeds back into personal playlists like Discover Weekly, refreshed every Monday."
+  },
+  {
+   "id": "s11",
+   "chapter": "deep-dive",
+   "diagram": "events",
+   "focus": [],
+   "trace": [],
+   "engineer": "The deep dive is event delivery, because Spotify has described it across a series of posts from 2016 to 2024. The topic names and the low-priority example are ours; the parts are Spotify's. It splits into a control plane, where teams declare event types and schemas, and a data plane, which receives events, splits them by type, removes duplicates, pseudonymises personal fields, and writes hourly datasets.",
+   "executive": "Spotify's event system has two halves: one where teams define their events, and one that moves, cleans and stores them."
+  },
+  {
+   "id": "s12",
+   "title": "Receive",
+   "chapter": "deep-dive",
+   "diagram": "events",
+   "focus": [
+    "sdk",
+    "receiver",
+    "schemas",
+    "composer",
+    "topicA"
+   ],
+   "trace": [
+    "e-sch-recv",
+    "e-sch-comp",
+    "e-comp-a",
+    "e-sdk-recv",
+    "e-recv-sdk"
+   ],
+   "engineer": "Start with the control plane. An owning team declares an event type and its schema, in Avro. A central provisioner then creates what that type needs: a Pub/Sub topic and subscription, its processing job and storage. On the data plane, the SDK sends each event with a message identifier to the receiver, a highly available API. Malformed or unknown events are rejected. If the receiver cannot be reached, the client keeps events and resends them later under a retry policy.",
+   "executive": "Teams define their events once; the infrastructure is set up for them, and the app keeps and resends events if the service is unreachable."
+  },
+  {
+   "id": "s13",
+   "title": "Isolate",
+   "chapter": "deep-dive",
+   "diagram": "events",
+   "focus": [
+    "receiver",
+    "topicA",
+    "topicB",
+    "dedup"
+   ],
+   "trace": [
+    "e-recv-a",
+    "e-recv-b",
+    "e-a-dedup",
+    "e-b-dedup"
+   ],
+   "engineer": "Next, isolation. Spotify chose to separate event streams as early as possible, so a noisy, high-volume event cannot hold up business-critical data. Each event type gets its own topic, its own processing and its own storage. Types are ranked by importance, each with its own target: a few hours for high priority, twenty-four hours for normal, and seventy-two for low. This is the bulkhead pattern: one flooded compartment does not sink the ship.",
+   "executive": "Each kind of event has its own lane, so a flood of unimportant events can never delay the ones that pay artists."
+  },
+  {
+   "id": "s14",
+   "title": "Clean and store",
+   "chapter": "deep-dive",
+   "diagram": "events",
+   "focus": [
+    "dedup",
+    "pseudo",
+    "buckets",
+    "consumers"
+   ],
+   "trace": [
+    "e-dedup-ps",
+    "e-ps-bkt",
+    "e-bkt-cons"
+   ],
+   "engineer": "Then clean and store. Pub/Sub delivers at least once, and clients resend, so duplicates are expected. A deduplication job uses the event message identifiers and, Spotify says, can look back across weeks. Personal fields are pseudonymised, guided by annotations in the schema. Each type's data lands in immutable hourly buckets. Spotify chose liveness over lateness: one event type's late hour does not stop other types' hours from being delivered and used.",
+   "executive": "Duplicates are removed, personal details are masked, and data is published hour by hour without one slow stream holding up the rest."
+  },
+  {
+   "id": "s15",
+   "title": "Start a song",
+   "chapter": "flows",
+   "diagram": "play",
+   "focus": [
+    "q-app",
+    "q-api",
+    "q-cdn"
+   ],
+   "trace": [
+    "q1",
+    "q2",
+    "q3",
+    "q4"
+   ],
+   "engineer": "Now step by step: pressing play on a phone. The app asks the backend for the track. What comes back, metadata and which file to fetch, is our design, as Spotify has not published that exchange. The app then asks a nearby CDN server for the first chunk, with an HTTP range request, and gets back a partial content response of about half a megabyte. That first chunk is enough to start playing.",
+   "executive": "The app asks what to play, then downloads the first small piece of the song from a nearby server and starts playing."
+  },
+  {
+   "id": "s16",
+   "title": "Keep it playing",
+   "chapter": "flows",
+   "diagram": "play",
+   "focus": [
+    "q-app",
+    "q-cdn",
+    "q-recv"
+   ],
+   "trace": [
+    "q5",
+    "q6",
+    "q7",
+    "q8"
+   ],
+   "engineer": "While the song plays, the app reports that playback started, and keeps fetching chunks as its buffer drains. The transport matters on bad networks: in 2018 Spotify tested the BBR congestion control algorithm on one CDN, and stutter fell by six to ten per cent with no change in latency. When the track finishes, the app sends EndSong, the event that later feeds royalty calculations. It travels the event path we saw in the deep dive.",
+   "executive": "The app keeps downloading ahead, so the music does not stop, and reports when each song ends."
+  },
+  {
+   "id": "s17",
+   "title": "Choose a speaker",
+   "chapter": "flows",
+   "diagram": "connect",
+   "focus": [
+    "x-phone",
+    "x-api",
+    "x-spk"
+   ],
+   "trace": [
+    "x1",
+    "x2",
+    "x3",
+    "x4"
+   ],
+   "engineer": "The second flow: moving playback to a speaker. The speaker comes online on the listener's account; on a home network it can also be found locally. The phone asks which devices it can use. Spotify's public Web API shows the shape of this: a devices list, and a transfer playback call that takes a single device identifier. The internal path behind it is our design. Spotify notes that this API only works for Premium users.",
+   "executive": "The phone lists the speakers on the account and asks Spotify to move the music to one of them."
+  },
+  {
+   "id": "s18",
+   "title": "Remote control",
+   "chapter": "flows",
+   "diagram": "connect",
+   "focus": [
+    "x-api",
+    "x-spk",
+    "x-cdn",
+    "x-phone"
+   ],
+   "trace": [
+    "x5",
+    "x6",
+    "x7",
+    "x8",
+    "x9"
+   ],
+   "engineer": "The speaker is told to become active, and only then may it play; Spotify's device kit signals this with a became-active notification. It fetches its own audio and carries on from the same position. The phone now shows what is playing on the speaker, and acts as a remote: pause, skip, volume. Each command goes to Spotify and on to the active device. Because state lives on Spotify's side, any device on the account can take over.",
+   "executive": "The speaker takes over from the same second, and the phone becomes a remote control."
+  },
+  {
+   "id": "s19",
+   "chapter": "data",
+   "card": {
+    "heading": "What is stored where",
+    "kind": "compare",
+    "points": [
+     "Data | Where, and for how long",
+     "Encoded audio | Files on HTTP servers and CDNs worldwide",
+     "Events in flight | Pub/Sub; undelivered data kept up to 7 days (2016)",
+     "Event datasets | Immutable hourly buckets in Cloud Storage, or BigQuery",
+     "Schemas | Avro, evolved compatibly; up to 10 years readable",
+     "Personal fields | Pseudonymised or encrypted, by schema annotation",
+     "Active device, queue | Per account, short-lived · our design"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "What is stored where. Audio is the big, static part: encoded files, copied to servers worldwide, which is exactly what CDNs are good at caching. Events sit in Pub/Sub only briefly; in 2016 Spotify noted it could keep undelivered data for seven days. Datasets land in immutable hourly buckets, with Avro schemas evolved compatibly, so consumers can read up to ten years of history. And who is playing where is short-lived state, in our design.",
+   "executive": "Songs are cached close to listeners, events are kept briefly in transit and then stored hour by hour, and personal details are masked."
+  },
+  {
+   "id": "s20",
+   "chapter": "growth",
+   "card": {
+    "heading": "How it got here, from Spotify's own posts",
+    "kind": "compare",
+    "points": [
+     "Year | Change",
+     "2008 | Spotify launches",
+     "2015 | Discover Weekly; cloud strategy explored",
+     "2016 | Google Cloud move announced; events move from Kafka to Pub/Sub at ~700K a second",
+     "2017 | Kafka system switched off; all traffic on Google Cloud by May",
+     "2018 | Last of four data centres closed",
+     "2019 | 500 billion events a day, 8M a second at peak",
+     "2020 | Backstage open-sourced; CNCF Sandbox",
+     "2024 | 1 trillion+ events a day, 1,800+ event types",
+     "2026 | 777M monthly users, 300M subscribers"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "How it grew. Spotify launched in 2008. In 2016 its old event system, built on Kafka and Hadoop, peaked around seven hundred thousand events a second; Spotify load-tested Pub/Sub at two million. The Kafka system was switched off in February 2017. By early 2019 it handled five hundred billion events a day and eight million a second at peak. By 2024 it was over a trillion a day.",
+   "executive": "Event volume grew from under a million a second in 2016 to over a trillion a day in 2024, on the same basic design."
+  },
+  {
+   "id": "s21",
+   "chapter": "failures",
+   "card": {
+    "heading": "What fails, and what protects users",
+    "kind": "compare",
+    "points": [
+     "Failure | Protection",
+     "Signal drops mid-song | Chunks fetched ahead keep playing · our design",
+     "Event receiver unreachable | SDK keeps events and resends them",
+     "Same event sent twice | Deduplication by message id",
+     "One event type floods | Own topic and job; others keep flowing",
+     "An hour arrives late | Other types' hours still published",
+     "One CDN struggles | Several CDN partners · switching is our design"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "What breaks, and what protects listeners. The signal drops mid-song: chunks already fetched keep playing; how far ahead to fetch is our design. The event receiver is unreachable: the SDK keeps events and resends them. That creates duplicates, which the deduplication job removes. One event type floods the system: it has its own topic and job, so the rest keep flowing. And a CDN struggles: Spotify uses several partners, though how it switches between them is our design.",
+   "executive": "Music keeps playing through short drops, events are kept and resent, duplicates are removed, and no single stream or delivery partner can block the rest."
+  },
+  {
+   "id": "s22",
+   "chapter": "patterns",
+   "card": {
+    "heading": "Patterns used",
+    "points": [
+     "Publish–subscribe: one Pub/Sub topic per event type",
+     "Event streaming: a trillion events a day into hourly datasets",
+     "CDN caching: audio files served from servers near listeners",
+     "Bulkhead: per-type isolation, with priority tiers",
+     "Idempotency: deduplication by event message id",
+     "Retry: clients keep and resend events during outages"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The named patterns, each with its own walkthrough. Publish and subscribe, with one Pub/Sub topic for every event type. Event streaming, turning a trillion events a day into hourly datasets. CDN caching for audio files that never change. The bulkhead pattern, in the way each event type is isolated, with its own priority. Idempotency, through deduplication on message identifiers. And retry, in clients that keep events and send them again after an outage.",
+   "executive": "Well-known building blocks: publish and subscribe, event streams, content delivery networks, isolation, duplicate removal and retries."
+  },
+  {
+   "id": "s23",
+   "chapter": "decisions",
+   "card": {
+    "heading": "Key decisions",
+    "kind": "compare",
+    "points": [
+     "Decision | Why",
+     "Move to Google Cloud | In the music business, not the data centre business",
+     "Pub/Sub over Kafka 0.8 | Producer instability; 7-day retention, acknowledgements",
+     "One topic per event type | Noisy events cannot delay royalty data",
+     "Liveness over lateness | Hours ship on time; one slow type waits alone",
+     "Audio from CDNs, not the backend | Static files cache well near listeners",
+     "Backstage, then open source | One portal over fragmented tooling"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The decisions that shaped it. Move to Google Cloud, because Spotify wanted engineers building product rather than data centres. Choose Pub/Sub over Kafka zero point eight, after stability problems with the Kafka producer, though it had to write its own client library. Give every event type its own topic. Prefer liveness over lateness. Serve audio from CDNs. And build Backstage, a developer portal created at Spotify in 2016 and open-sourced in 2020.",
+   "executive": "Rent the cloud instead of running data centres, give each event its own lane, publish data on time, serve music from the edge, and give engineers one portal."
+  },
+  {
+   "id": "s24",
+   "chapter": "mvp",
+   "card": {
+    "heading": "What we would build first",
+    "points": [
+     "Store each track as files per quality on object storage, behind one CDN",
+     "Players fetch with HTTP range requests and buffer ahead",
+     "One API service and Postgres for catalogue, accounts and playback state",
+     "An event endpoint with client message ids; dedupe on a unique key",
+     "A managed topic per critical event type from day one",
+     "Hourly batches for play counts; no real-time analytics yet"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "If we built a small music service today, these are our recommendations, not Spotify's. Encoded files in object storage, behind one CDN, fetched with range requests and buffered ahead. One API service and Postgres for the catalogue, accounts and playback state. An event endpoint where clients attach a message identifier, deduplicated on a unique key. A separate topic for each critical event type from the start. And hourly batches for play counts, before anything real-time.",
+   "executive": "Start with files on a CDN, one service and one database, and a simple, duplicate-proof way to count plays."
+  }
+ ]
+}

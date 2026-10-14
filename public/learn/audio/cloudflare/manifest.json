@@ -1,0 +1,252 @@
+{
+ "s01-engineer": {
+  "file": "/audio/cloudflare/s01-engineer.mp3",
+  "ms": 28800,
+  "hash": "be90e4cdf6ce"
+ },
+ "s01-executive": {
+  "file": "/audio/cloudflare/s01-executive.mp3",
+  "ms": 9960,
+  "hash": "ebc0fc8e76e5"
+ },
+ "s02-engineer": {
+  "file": "/audio/cloudflare/s02-engineer.mp3",
+  "ms": 30600,
+  "hash": "d96407e5246a"
+ },
+ "s02-executive": {
+  "file": "/audio/cloudflare/s02-executive.mp3",
+  "ms": 6432,
+  "hash": "be57a0b6f8fb"
+ },
+ "s03-engineer": {
+  "file": "/audio/cloudflare/s03-engineer.mp3",
+  "ms": 30312,
+  "hash": "a471bced157e"
+ },
+ "s03-executive": {
+  "file": "/audio/cloudflare/s03-executive.mp3",
+  "ms": 9648,
+  "hash": "321aabec42d7"
+ },
+ "s04-engineer": {
+  "file": "/audio/cloudflare/s04-engineer.mp3",
+  "ms": 27888,
+  "hash": "ca5da8241b36"
+ },
+ "s04-executive": {
+  "file": "/audio/cloudflare/s04-executive.mp3",
+  "ms": 7032,
+  "hash": "4fb2ea52405c"
+ },
+ "s05-engineer": {
+  "file": "/audio/cloudflare/s05-engineer.mp3",
+  "ms": 27192,
+  "hash": "981845660184"
+ },
+ "s05-executive": {
+  "file": "/audio/cloudflare/s05-executive.mp3",
+  "ms": 7152,
+  "hash": "faece0946f92"
+ },
+ "s06-engineer": {
+  "file": "/audio/cloudflare/s06-engineer.mp3",
+  "ms": 30480,
+  "hash": "19994642a4d9"
+ },
+ "s06-executive": {
+  "file": "/audio/cloudflare/s06-executive.mp3",
+  "ms": 10296,
+  "hash": "7b4996c33bbb"
+ },
+ "s07-engineer": {
+  "file": "/audio/cloudflare/s07-engineer.mp3",
+  "ms": 27528,
+  "hash": "070af46c0e90"
+ },
+ "s07-executive": {
+  "file": "/audio/cloudflare/s07-executive.mp3",
+  "ms": 7488,
+  "hash": "10a606f5cf0d"
+ },
+ "s08-engineer": {
+  "file": "/audio/cloudflare/s08-engineer.mp3",
+  "ms": 26712,
+  "hash": "a960f7b42f7a"
+ },
+ "s08-executive": {
+  "file": "/audio/cloudflare/s08-executive.mp3",
+  "ms": 6192,
+  "hash": "f8a03f088394"
+ },
+ "s09-engineer": {
+  "file": "/audio/cloudflare/s09-engineer.mp3",
+  "ms": 25704,
+  "hash": "02904271056b"
+ },
+ "s09-executive": {
+  "file": "/audio/cloudflare/s09-executive.mp3",
+  "ms": 6480,
+  "hash": "b29694567b97"
+ },
+ "s10-engineer": {
+  "file": "/audio/cloudflare/s10-engineer.mp3",
+  "ms": 32112,
+  "hash": "4a9c19d99fd6"
+ },
+ "s10-executive": {
+  "file": "/audio/cloudflare/s10-executive.mp3",
+  "ms": 9216,
+  "hash": "096cc69451f1"
+ },
+ "s11-engineer": {
+  "file": "/audio/cloudflare/s11-engineer.mp3",
+  "ms": 29352,
+  "hash": "b5b98ef3783e"
+ },
+ "s11-executive": {
+  "file": "/audio/cloudflare/s11-executive.mp3",
+  "ms": 7320,
+  "hash": "ab3ff9173d1b"
+ },
+ "s12-engineer": {
+  "file": "/audio/cloudflare/s12-engineer.mp3",
+  "ms": 33024,
+  "hash": "c349c3b46ff0"
+ },
+ "s12-executive": {
+  "file": "/audio/cloudflare/s12-executive.mp3",
+  "ms": 8208,
+  "hash": "22b18e538b8e"
+ },
+ "s13-engineer": {
+  "file": "/audio/cloudflare/s13-engineer.mp3",
+  "ms": 32088,
+  "hash": "a50ae352d9fc"
+ },
+ "s13-executive": {
+  "file": "/audio/cloudflare/s13-executive.mp3",
+  "ms": 8712,
+  "hash": "780777e65584"
+ },
+ "s14-engineer": {
+  "file": "/audio/cloudflare/s14-engineer.mp3",
+  "ms": 27336,
+  "hash": "44e8553ab9d0"
+ },
+ "s14-executive": {
+  "file": "/audio/cloudflare/s14-executive.mp3",
+  "ms": 5616,
+  "hash": "fb8b7e4f8b92"
+ },
+ "s15-engineer": {
+  "file": "/audio/cloudflare/s15-engineer.mp3",
+  "ms": 26976,
+  "hash": "627675548bc4"
+ },
+ "s15-executive": {
+  "file": "/audio/cloudflare/s15-executive.mp3",
+  "ms": 6888,
+  "hash": "b245afb14f31"
+ },
+ "s16-engineer": {
+  "file": "/audio/cloudflare/s16-engineer.mp3",
+  "ms": 25776,
+  "hash": "87ede58dd7f8"
+ },
+ "s16-executive": {
+  "file": "/audio/cloudflare/s16-executive.mp3",
+  "ms": 6840,
+  "hash": "3c63f2e149ee"
+ },
+ "s17-engineer": {
+  "file": "/audio/cloudflare/s17-engineer.mp3",
+  "ms": 27456,
+  "hash": "d78a0e820b30"
+ },
+ "s17-executive": {
+  "file": "/audio/cloudflare/s17-executive.mp3",
+  "ms": 6600,
+  "hash": "1d54e9c75c03"
+ },
+ "s18-engineer": {
+  "file": "/audio/cloudflare/s18-engineer.mp3",
+  "ms": 33840,
+  "hash": "0694b1dbc560"
+ },
+ "s18-executive": {
+  "file": "/audio/cloudflare/s18-executive.mp3",
+  "ms": 8232,
+  "hash": "7535f73cc89e"
+ },
+ "s19-engineer": {
+  "file": "/audio/cloudflare/s19-engineer.mp3",
+  "ms": 26568,
+  "hash": "ad75371aae8d"
+ },
+ "s19-executive": {
+  "file": "/audio/cloudflare/s19-executive.mp3",
+  "ms": 6456,
+  "hash": "24789447afc8"
+ },
+ "s20-engineer": {
+  "file": "/audio/cloudflare/s20-engineer.mp3",
+  "ms": 31824,
+  "hash": "37763455e8d7"
+ },
+ "s20-executive": {
+  "file": "/audio/cloudflare/s20-executive.mp3",
+  "ms": 7920,
+  "hash": "3ba5bf71ec09"
+ },
+ "s21-engineer": {
+  "file": "/audio/cloudflare/s21-engineer.mp3",
+  "ms": 32496,
+  "hash": "136dfd07270b"
+ },
+ "s21-executive": {
+  "file": "/audio/cloudflare/s21-executive.mp3",
+  "ms": 11016,
+  "hash": "c40769837624"
+ },
+ "s22-engineer": {
+  "file": "/audio/cloudflare/s22-engineer.mp3",
+  "ms": 32136,
+  "hash": "ac20ff5154df"
+ },
+ "s22-executive": {
+  "file": "/audio/cloudflare/s22-executive.mp3",
+  "ms": 10392,
+  "hash": "b8a11e8ec3b6"
+ },
+ "s23-engineer": {
+  "file": "/audio/cloudflare/s23-engineer.mp3",
+  "ms": 28512,
+  "hash": "f4848943dee1"
+ },
+ "s23-executive": {
+  "file": "/audio/cloudflare/s23-executive.mp3",
+  "ms": 7992,
+  "hash": "c2e45205a50c"
+ },
+ "s24-engineer": {
+  "file": "/audio/cloudflare/s24-engineer.mp3",
+  "ms": 32424,
+  "hash": "cded4db7b1e5"
+ },
+ "s24-executive": {
+  "file": "/audio/cloudflare/s24-executive.mp3",
+  "ms": 8568,
+  "hash": "d8dd54956d1f"
+ },
+ "s25-engineer": {
+  "file": "/audio/cloudflare/s25-engineer.mp3",
+  "ms": 33336,
+  "hash": "062bff83f371"
+ },
+ "s25-executive": {
+  "file": "/audio/cloudflare/s25-executive.mp3",
+  "ms": 7008,
+  "hash": "f71a9f4aace2"
+ }
+}

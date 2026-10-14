@@ -1,0 +1,1242 @@
+{
+ "id": "linkedin",
+ "title": "LinkedIn: where Kafka came from",
+ "subtitle": "Company case study",
+ "voice": "en-GB-SoniaNeural",
+ "template": "case-study",
+ "meta": {
+  "kind": "company",
+  "category": "Social",
+  "level": "intermediate",
+  "uses": [
+   "event-streaming",
+   "pub-sub",
+   "change-data-capture",
+   "write-ahead-log",
+   "sharding",
+   "cqrs"
+  ],
+  "related": [
+   "meta"
+  ],
+  "blurb": "Why LinkedIn built Kafka: one shared log feeding search, the social graph, the feed, analytics and caches.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14",
+  "changelog": [
+   {
+    "date": "2026-10-14",
+    "note": "First version."
+   }
+  ]
+ },
+ "diagrams": [
+  {
+   "id": "context",
+   "kind": "c4",
+   "title": "Level 1 · Context",
+   "direction": "DOWN",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request · response"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "push · asynchronous"
+    }
+   ],
+   "elements": [
+    {
+     "id": "member",
+     "kind": "person",
+     "label": "Member",
+     "sub": "web and mobile apps"
+    },
+    {
+     "id": "customer",
+     "kind": "person",
+     "label": "Paying customers",
+     "sub": "recruiters, advertisers, sellers"
+    },
+    {
+     "id": "linkedin",
+     "kind": "system",
+     "label": "LinkedIn",
+     "sub": "profiles, network, feed, jobs, messages"
+    },
+    {
+     "id": "notify",
+     "kind": "external",
+     "label": "Email and push services",
+     "sub": "notifications · simplified"
+    },
+    {
+     "id": "teams",
+     "kind": "person",
+     "label": "Analysts and ML teams",
+     "sub": "reports, experiments, models"
+    }
+   ],
+   "edges": [
+    {
+     "id": "c-mem",
+     "from": "member",
+     "to": "linkedin",
+     "label": "post, connect, search, apply",
+     "style": "solid"
+    },
+    {
+     "id": "c-cust",
+     "from": "customer",
+     "to": "linkedin",
+     "label": "post jobs, run ads, search members",
+     "style": "solid"
+    },
+    {
+     "id": "c-notify",
+     "from": "linkedin",
+     "to": "notify",
+     "label": "emails and push",
+     "style": "dashed"
+    },
+    {
+     "id": "c-notify-mem",
+     "from": "notify",
+     "to": "member",
+     "label": "\"you have a new message\"",
+     "style": "dashed"
+    },
+    {
+     "id": "c-teams",
+     "from": "linkedin",
+     "to": "teams",
+     "label": "every event, for analysis",
+     "style": "dashed"
+    }
+   ]
+  },
+  {
+   "id": "containers",
+   "kind": "c4",
+   "title": "Level 2 · Containers (our design, from LinkedIn's posts)",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "online",
+     "label": "Online serving",
+     "tone": "core"
+    },
+    {
+     "id": "log",
+     "label": "The log",
+     "tone": "stream"
+    },
+    {
+     "id": "derived",
+     "label": "Derived data",
+     "tone": "data"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request · response"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "stream · asynchronous"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "batch"
+    }
+   ],
+   "elements": [
+    {
+     "id": "apps",
+     "kind": "container",
+     "label": "Web and mobile apps",
+     "sub": "members and customers",
+     "tone": "neutral",
+     "rank": 0
+    },
+    {
+     "id": "front",
+     "kind": "container",
+     "label": "Frontend and API services",
+     "sub": "Rest.li, D2 discovery",
+     "group": "online",
+     "rank": 1
+    },
+    {
+     "id": "espresso",
+     "kind": "store",
+     "label": "Espresso",
+     "sub": "document store · source of truth",
+     "group": "online",
+     "rank": 2
+    },
+    {
+     "id": "cdc",
+     "kind": "container",
+     "label": "Change capture",
+     "sub": "Databus, later Brooklin",
+     "group": "log",
+     "rank": 3
+    },
+    {
+     "id": "kafka",
+     "kind": "store",
+     "label": "Kafka",
+     "sub": "activity, metrics, change events",
+     "group": "log",
+     "rank": 3
+    },
+    {
+     "id": "search",
+     "kind": "container",
+     "label": "Search index",
+     "sub": "fed from changes",
+     "group": "derived",
+     "rank": 4
+    },
+    {
+     "id": "graph",
+     "kind": "container",
+     "label": "Social graph",
+     "sub": "fed from changes · simplified",
+     "group": "derived",
+     "rank": 4
+    },
+    {
+     "id": "feed",
+     "kind": "container",
+     "label": "FollowFeed",
+     "sub": "feed index, ranks in place",
+     "group": "derived",
+     "rank": 4
+    },
+    {
+     "id": "samza",
+     "kind": "container",
+     "label": "Samza jobs",
+     "sub": "stream processing",
+     "group": "derived",
+     "rank": 5
+    },
+    {
+     "id": "hadoop",
+     "kind": "store",
+     "label": "Hadoop",
+     "sub": "offline analytics, training",
+     "group": "derived",
+     "rank": 5
+    },
+    {
+     "id": "venice",
+     "kind": "store",
+     "label": "Venice",
+     "sub": "derived key-value data",
+     "group": "derived",
+     "rank": 6
+    }
+   ],
+   "edges": [
+    {
+     "id": "k-apps-front",
+     "from": "apps",
+     "to": "front",
+     "label": "requests",
+     "style": "solid"
+    },
+    {
+     "id": "k-front-esp",
+     "from": "front",
+     "to": "espresso",
+     "label": "reads, writes",
+     "style": "solid"
+    },
+    {
+     "id": "k-esp-cdc",
+     "from": "espresso",
+     "to": "cdc",
+     "label": "commit log",
+     "style": "dashed"
+    },
+    {
+     "id": "k-cdc-search",
+     "from": "cdc",
+     "to": "search",
+     "label": "changes, in commit order",
+     "style": "dashed"
+    },
+    {
+     "id": "k-cdc-graph",
+     "from": "cdc",
+     "to": "graph",
+     "label": "changes",
+     "style": "dashed"
+    },
+    {
+     "id": "k-front-kafka",
+     "from": "front",
+     "to": "kafka",
+     "label": "tracking events",
+     "style": "dashed"
+    },
+    {
+     "id": "k-kafka-hadoop",
+     "from": "kafka",
+     "to": "hadoop",
+     "label": "load",
+     "style": "dashed"
+    },
+    {
+     "id": "k-kafka-samza",
+     "from": "kafka",
+     "to": "samza",
+     "label": "consume",
+     "style": "dashed"
+    },
+    {
+     "id": "k-kafka-feed",
+     "from": "kafka",
+     "to": "feed",
+     "label": "new activities",
+     "style": "dashed"
+    },
+    {
+     "id": "k-front-feed",
+     "from": "front",
+     "to": "feed",
+     "label": "feed query",
+     "style": "solid"
+    },
+    {
+     "id": "k-front-search",
+     "from": "front",
+     "to": "search",
+     "label": "search query",
+     "style": "solid"
+    },
+    {
+     "id": "k-hadoop-venice",
+     "from": "hadoop",
+     "to": "venice",
+     "label": "batch push",
+     "style": "dotted"
+    },
+    {
+     "id": "k-samza-venice",
+     "from": "samza",
+     "to": "venice",
+     "label": "nearline writes",
+     "style": "dashed"
+    },
+    {
+     "id": "k-front-venice",
+     "from": "front",
+     "to": "venice",
+     "label": "features, PYMK",
+     "style": "solid"
+    }
+   ]
+  },
+  {
+   "id": "pipeline",
+   "kind": "c4",
+   "title": "Level 3 · One log, many readers",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "kafkag",
+     "label": "Kafka cluster · our sketch, from The Log and LinkedIn's posts",
+     "tone": "stream"
+    }
+   ],
+   "elements": [
+    {
+     "id": "producers",
+     "kind": "external",
+     "label": "Application servers",
+     "sub": "page views, clicks, searches",
+     "rank": 0
+    },
+    {
+     "id": "dbcdc",
+     "kind": "container",
+     "label": "Change capture",
+     "sub": "database commits as events",
+     "tone": "data",
+     "rank": 0
+    },
+    {
+     "id": "leader",
+     "kind": "component",
+     "label": "Partition leader",
+     "sub": "append-only, ordered per partition",
+     "group": "kafkag",
+     "rank": 1
+    },
+    {
+     "id": "followers",
+     "kind": "component",
+     "label": "Follower replicas",
+     "sub": "one takes over on failure",
+     "group": "kafkag",
+     "rank": 2
+    },
+    {
+     "id": "retention",
+     "kind": "component",
+     "label": "Retention and compaction",
+     "sub": "days, or latest per key",
+     "group": "kafkag",
+     "rank": 2
+    },
+    {
+     "id": "mirror",
+     "kind": "component",
+     "label": "Mirroring",
+     "sub": "between data centres",
+     "group": "kafkag",
+     "rank": 1
+    },
+    {
+     "id": "c-search",
+     "kind": "container",
+     "label": "Search indexer",
+     "sub": "own offset",
+     "tone": "data",
+     "rank": 3
+    },
+    {
+     "id": "c-hadoop",
+     "kind": "container",
+     "label": "Hadoop loader",
+     "sub": "hourly or daily",
+     "tone": "data",
+     "rank": 3
+    },
+    {
+     "id": "c-samza",
+     "kind": "container",
+     "label": "Samza job",
+     "sub": "seconds behind",
+     "tone": "data",
+     "rank": 3
+    },
+    {
+     "id": "c-cache",
+     "kind": "container",
+     "label": "Caches and Venice",
+     "sub": "derived views",
+     "tone": "data",
+     "rank": 3
+    },
+    {
+     "id": "burrow",
+     "kind": "component",
+     "label": "Burrow",
+     "sub": "watches consumer lag",
+     "tone": "neutral",
+     "rank": 4
+    }
+   ],
+   "edges": [
+    {
+     "id": "d-prod",
+     "from": "producers",
+     "to": "leader",
+     "label": "append, keyed by id",
+     "style": "solid"
+    },
+    {
+     "id": "d-cdc",
+     "from": "dbcdc",
+     "to": "leader",
+     "label": "append change",
+     "style": "solid"
+    },
+    {
+     "id": "d-repl",
+     "from": "leader",
+     "to": "followers",
+     "label": "replicate",
+     "style": "solid"
+    },
+    {
+     "id": "d-ret",
+     "from": "leader",
+     "to": "retention",
+     "label": "clean up old segments",
+     "style": "dotted"
+    },
+    {
+     "id": "d-mirror",
+     "from": "leader",
+     "to": "mirror",
+     "label": "aggregate copy",
+     "style": "dashed"
+    },
+    {
+     "id": "d-search",
+     "from": "leader",
+     "to": "c-search",
+     "label": "each reads at its own pace",
+     "style": "dashed"
+    },
+    {
+     "id": "d-hadoop",
+     "from": "leader",
+     "to": "c-hadoop",
+     "style": "dashed"
+    },
+    {
+     "id": "d-samza",
+     "from": "leader",
+     "to": "c-samza",
+     "style": "dashed"
+    },
+    {
+     "id": "d-cache",
+     "from": "leader",
+     "to": "c-cache",
+     "style": "dashed"
+    },
+    {
+     "id": "d-lag-s",
+     "from": "c-samza",
+     "to": "burrow",
+     "label": "committed offset",
+     "style": "dotted"
+    },
+    {
+     "id": "d-lag-h",
+     "from": "c-hadoop",
+     "to": "burrow",
+     "label": "committed offset",
+     "style": "dotted"
+    }
+   ]
+  },
+  {
+   "id": "profile",
+   "kind": "sequence",
+   "title": "A profile edit fans out",
+   "participants": [
+    {
+     "id": "p-member",
+     "label": "Member"
+    },
+    {
+     "id": "p-front",
+     "label": "Profile service"
+    },
+    {
+     "id": "p-esp",
+     "label": "Espresso"
+    },
+    {
+     "id": "p-cdc",
+     "label": "Change capture"
+    },
+    {
+     "id": "p-search",
+     "label": "Search index"
+    },
+    {
+     "id": "p-replica",
+     "label": "Read replicas and caches"
+    }
+   ],
+   "messages": [
+    {
+     "id": "f1",
+     "from": "p-member",
+     "to": "p-front",
+     "label": "change my headline",
+     "style": "solid"
+    },
+    {
+     "id": "f2",
+     "from": "p-front",
+     "to": "p-esp",
+     "label": "write document, Rest.li call",
+     "style": "solid"
+    },
+    {
+     "id": "f3",
+     "from": "p-esp",
+     "to": "p-front",
+     "label": "committed; indexes updated",
+     "style": "dashed"
+    },
+    {
+     "id": "f4",
+     "from": "p-front",
+     "to": "p-member",
+     "label": "saved",
+     "style": "dashed"
+    },
+    {
+     "id": "f5",
+     "from": "p-esp",
+     "to": "p-cdc",
+     "label": "MySQL binlog entry, with SCN",
+     "style": "dashed"
+    },
+    {
+     "id": "f6",
+     "from": "p-cdc",
+     "to": "p-search",
+     "label": "change event, commit order",
+     "style": "dashed"
+    },
+    {
+     "id": "f7",
+     "from": "p-cdc",
+     "to": "p-replica",
+     "label": "same event, own pace",
+     "style": "dashed"
+    },
+    {
+     "id": "f8",
+     "from": "p-search",
+     "to": "p-member",
+     "label": "new headline in results",
+     "style": "dashed"
+    }
+   ]
+  },
+  {
+   "id": "feedseq",
+   "kind": "sequence",
+   "title": "A post reaches a feed (FollowFeed, 2016)",
+   "participants": [
+    {
+     "id": "q-poster",
+     "label": "Member who posts"
+    },
+    {
+     "id": "q-kafka",
+     "label": "Kafka"
+    },
+    {
+     "id": "q-part",
+     "label": "Partitioner"
+    },
+    {
+     "id": "q-index",
+     "label": "Index nodes"
+    },
+    {
+     "id": "q-broker",
+     "label": "Broker"
+    },
+    {
+     "id": "q-viewer",
+     "label": "Viewer"
+    }
+   ],
+   "messages": [
+    {
+     "id": "g1",
+     "from": "q-poster",
+     "to": "q-kafka",
+     "label": "new activity",
+     "style": "solid"
+    },
+    {
+     "id": "g2",
+     "from": "q-kafka",
+     "to": "q-part",
+     "label": "consume",
+     "style": "dashed"
+    },
+    {
+     "id": "g3",
+     "from": "q-part",
+     "to": "q-index",
+     "label": "republish, keyed like the index",
+     "style": "dashed"
+    },
+    {
+     "id": "g4",
+     "from": "q-viewer",
+     "to": "q-broker",
+     "label": "open my feed",
+     "style": "solid"
+    },
+    {
+     "id": "g5",
+     "from": "q-broker",
+     "to": "q-index",
+     "label": "fan out: followed timelines",
+     "style": "solid"
+    },
+    {
+     "id": "g6",
+     "from": "q-index",
+     "to": "q-broker",
+     "label": "top records, scored in place",
+     "style": "dashed"
+    },
+    {
+     "id": "g7",
+     "from": "q-broker",
+     "to": "q-viewer",
+     "label": "merged, de-duplicated, diverse",
+     "style": "dashed"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "overview",
+   "title": "Overview"
+  },
+  {
+   "id": "requirements",
+   "title": "Requirements and scale"
+  },
+  {
+   "id": "context",
+   "title": "Context"
+  },
+  {
+   "id": "containers",
+   "title": "Containers"
+  },
+  {
+   "id": "deep-dive",
+   "title": "Deep dive"
+  },
+  {
+   "id": "flows",
+   "title": "Core flows"
+  },
+  {
+   "id": "data",
+   "title": "Data and caching"
+  },
+  {
+   "id": "growth",
+   "title": "Growth"
+  },
+  {
+   "id": "failures",
+   "title": "Failure modes"
+  },
+  {
+   "id": "patterns",
+   "title": "Patterns used"
+  },
+  {
+   "id": "decisions",
+   "title": "Key decisions"
+  },
+  {
+   "id": "mvp",
+   "title": "What we would build first"
+  }
+ ],
+ "shots": [
+  {
+   "id": "l01",
+   "chapter": "overview",
+   "diagram": "context",
+   "focus": [],
+   "trace": [],
+   "engineer": "This is LinkedIn, seen from the outside. Members build profiles, connect, post, search and apply for jobs; recruiters, advertisers and sellers pay to reach them. LinkedIn's pressroom, checked in October 2026, says it has more than one point three billion members. This video is about what members never see: Kafka, the data system LinkedIn built for itself and then gave away.",
+   "executive": "LinkedIn connects more than a billion professionals. This is the story of the data system it built for itself, Kafka."
+  },
+  {
+   "id": "l02",
+   "title": "One log",
+   "chapter": "overview",
+   "card": {
+    "heading": "The one idea: a log in the middle",
+    "kind": "compare",
+    "points": [
+     "Before | After",
+     "A pipeline for each pair of systems | Each system connects once, to the log",
+     "Pipelines grow with the square of systems | Work grows with the number of systems",
+     "Consumers know the source's details | Consumers only know the log",
+     "Adding a reader means touching the writer | Readers come and go freely"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The one idea everything depends on is a log: an append-only, ordered list of records. Jay Kreps described the problem in his 2013 essay, The Log. As LinkedIn moved off one central database to many specialised systems, every source needed a pipeline to every destination, which grows with the square of the number of systems. The fix was one central log that every system writes to once and reads at its own pace.",
+   "executive": "Instead of wiring every system to every other, LinkedIn put one shared log in the middle that everyone writes to and reads from."
+  },
+  {
+   "id": "l03",
+   "chapter": "requirements",
+   "card": {
+    "heading": "Scale, from LinkedIn's own publications",
+    "kind": "numbers",
+    "points": [
+     "1.3B+ | members, LinkedIn pressroom (checked Oct 2026)",
+     "7T+ | Kafka messages a day (Oct 2019)",
+     "100+ | Kafka clusters, 4,000+ brokers (2019)",
+     "~7M | partitions in 100,000+ topics (2019)",
+     "~81M | messages a second on average (our arithmetic)",
+     "~4 | applications read each message (2015)"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The scale, from LinkedIn's own posts, each dated. In October 2019 LinkedIn wrote that Kafka handled more than seven trillion messages a day, across more than a hundred clusters, four thousand brokers, a hundred thousand topics and about seven million partitions. That is roughly eighty-one million messages a second on average; that division is ours, and daily peaks are higher.",
+   "executive": "In 2019 LinkedIn's Kafka carried more than seven trillion messages a day, about eighty million every second."
+  },
+  {
+   "id": "l04",
+   "chapter": "requirements",
+   "card": {
+    "heading": "What the system must do (our list)",
+    "points": [
+     "Every event and every database change lands once, in one place",
+     "New readers join without changing any writer",
+     "A profile edit reaches search and caches within seconds",
+     "A slow reader never holds back the others",
+     "Any index can be rebuilt by replaying history",
+     "Feed reads stay fast for members who follow thousands"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Then the requirements. Every event, from a page view to a database change, lands once in one place that any team can read. A new reader can be added without touching any writer. A profile edit reaches search and caches within seconds. One slow or broken reader never holds back the others. And any index can be thrown away and rebuilt by replaying history.",
+   "executive": "Every event captured once, readable by anyone, quickly, with no team able to slow down another, and every index rebuildable."
+  },
+  {
+   "id": "l05",
+   "title": "Users and data",
+   "chapter": "context",
+   "diagram": "context",
+   "focus": [
+    "member",
+    "customer",
+    "linkedin",
+    "notify",
+    "teams"
+   ],
+   "trace": [
+    "c-mem",
+    "c-cust",
+    "c-notify",
+    "c-notify-mem",
+    "c-teams"
+   ],
+   "engineer": "Who the system talks to. This context view is simplified. Members use the web and mobile apps to post, connect, search and apply. Paying customers, such as recruiters and advertisers, post jobs, run campaigns and search for people. LinkedIn sends emails and push notifications through delivery services. And, easy to forget, there are internal users: analysts and machine-learning teams who need every event, for reports, experiments and model training.",
+   "executive": "Members and paying customers use LinkedIn; LinkedIn notifies them, and its own analysts need every event it records."
+  },
+  {
+   "id": "l06",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [],
+   "trace": [],
+   "engineer": "One level in. LinkedIn has not published a container diagram, so this is our design, built from its engineering posts. Frontend and API services talk to each other with Rest.li, LinkedIn's REST framework, and find each other through D2. Espresso, a document store, holds source-of-truth data such as profiles. Below the log sits everything derived from it. In the middle sits the log: Kafka and change capture.",
+   "executive": "Online services and their database on top, the shared log in the middle, and everything derived from it underneath. The layout is our reconstruction."
+  },
+  {
+   "id": "l07",
+   "title": "Profile write",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "apps",
+    "front",
+    "espresso",
+    "cdc",
+    "search",
+    "graph"
+   ],
+   "trace": [
+    "k-apps-front",
+    "k-front-esp",
+    "k-esp-cdc",
+    "k-cdc-search",
+    "k-cdc-graph"
+   ],
+   "engineer": "Path one: a write to source-of-truth data. A member edits their profile; the frontend writes to Espresso. Espresso's 2015 post explains that replication inside a cluster uses MySQL's binary log, which also feeds Databus, LinkedIn's change capture system. Databus streams each committed change, in commit order, to whatever needs it. Its own documentation names the search index and member-profile read replicas as consumers.",
+   "executive": "A profile edit is saved once, and the database's own change log carries it to search and the other copies."
+  },
+  {
+   "id": "l08",
+   "title": "Tracking",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "apps",
+    "front",
+    "kafka",
+    "hadoop",
+    "samza"
+   ],
+   "trace": [
+    "k-apps-front",
+    "k-front-kafka",
+    "k-kafka-hadoop",
+    "k-kafka-samza"
+   ],
+   "engineer": "Path two: tracking. Every page view, search and ad impression becomes an event. The Log describes several hundred event types, each with its own attributes, all published to Kafka. This was Kafka's first job: a central pipeline for activity data. From Kafka, events load into Hadoop for analysis, and Samza jobs consume the same events within seconds, for anomaly detection, fraud prevention and notifications.",
+   "executive": "Every click and view becomes an event in Kafka, read by analytics and by real-time jobs."
+  },
+  {
+   "id": "l09",
+   "title": "Feed",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "front",
+    "kafka",
+    "feed"
+   ],
+   "trace": [
+    "k-apps-front",
+    "k-kafka-feed",
+    "k-front-feed"
+   ],
+   "engineer": "Path three: the feed. When someone posts, the activity goes into Kafka, and FollowFeed, the feed's index and serving system, consumes it. When a member opens the feed, the frontend queries FollowFeed, which finds recent activity from the people and companies they follow and ranks it where the data lives. LinkedIn's 2016 post says this replaced an older system called Sensei, cut ninety-ninth percentile latency about five times, and used roughly half the servers.",
+   "executive": "Posts flow through Kafka into the feed's index, which builds each member's feed when they open it."
+  },
+  {
+   "id": "l10",
+   "title": "Derived data",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "hadoop",
+    "samza",
+    "venice",
+    "front"
+   ],
+   "trace": [
+    "k-hadoop-venice",
+    "k-samza-venice",
+    "k-front-venice"
+   ],
+   "engineer": "Path four: derived data. Some data is computed rather than typed in, such as People You May Know. Hadoop jobs compute it in batch and push whole datasets into Venice, LinkedIn's derived data platform. Samza jobs add nearline updates between pushes. In 2022 LinkedIn said Venice held more than eighteen hundred datasets for over three hundred applications, with peaks of six and a quarter million single reads a second.",
+   "executive": "Computed data, like suggested connections, is built offline, topped up in real time, and served from a fast store."
+  },
+  {
+   "id": "l11",
+   "chapter": "deep-dive",
+   "diagram": "pipeline",
+   "focus": [],
+   "trace": [],
+   "engineer": "Inside the log. This view is our sketch, built from The Log and LinkedIn's Kafka posts. Two kinds of writer append to it: application servers sending activity events, and change capture sending database commits. A topic is split into partitions, each a totally ordered log with one leader and follower replicas. Old data is cleaned up by time or by key. And many independent readers sit underneath.",
+   "executive": "Inside Kafka: writers append, the data is copied for safety, and many readers each go at their own speed."
+  },
+  {
+   "id": "l12",
+   "title": "Partitions",
+   "chapter": "deep-dive",
+   "diagram": "pipeline",
+   "focus": [
+    "producers",
+    "dbcdc",
+    "leader",
+    "followers"
+   ],
+   "trace": [
+    "d-prod",
+    "d-cdc",
+    "d-repl"
+   ],
+   "engineer": "How it scales. The Log explains that each partition is a totally ordered log, and writers can choose a key, such as a user id, to pick the partition. Appends need no coordination between partitions, so throughput grows with the cluster. Each partition is replicated; one copy leads, and if it fails, a follower takes over. Ordering is guaranteed within a partition, not across them.",
+   "executive": "The log is split into many ordered pieces spread over machines, each copied so a failure loses nothing."
+  },
+  {
+   "id": "l13",
+   "title": "Retention",
+   "chapter": "deep-dive",
+   "diagram": "pipeline",
+   "focus": [
+    "leader",
+    "retention",
+    "mirror"
+   ],
+   "trace": [
+    "d-ret",
+    "d-mirror"
+   ],
+   "engineer": "How long data lives. The Log describes two kinds of clean-up. Event data, like page views, is kept for a window, usually a few days, set by time or by size. Keyed data, like a profile, is compacted instead: Kafka removes records whose key has a newer value, so the log always holds the latest version of every key. A brand-new search index can read the compacted log from the start.",
+   "executive": "Events are kept for a few days; for records like profiles, the latest version of each is kept, so anything can be rebuilt."
+  },
+  {
+   "id": "l14",
+   "title": "Readers",
+   "chapter": "deep-dive",
+   "diagram": "pipeline",
+   "focus": [
+    "leader",
+    "c-search",
+    "c-hadoop",
+    "c-samza",
+    "c-cache",
+    "burrow"
+   ],
+   "trace": [
+    "d-search",
+    "d-hadoop",
+    "d-samza",
+    "d-cache",
+    "d-lag-s",
+    "d-lag-h"
+   ],
+   "engineer": "Why many readers is cheap. Each reader keeps its own position in the log, and reads as fast as it can. Hadoop can load hourly, a Samza job can be seconds behind, and neither affects the other or the writers. Because readers pull, one slow job cannot push back on the whole flow. LinkedIn's site reliability engineers built Burrow, described in 2015, to watch how far each consumer has fallen behind.",
+   "executive": "Each reader keeps its own place, so a slow one never slows the rest, and a monitor watches how far behind each one is."
+  },
+  {
+   "id": "l15",
+   "title": "Write once",
+   "chapter": "flows",
+   "diagram": "profile",
+   "focus": [
+    "p-member",
+    "p-front",
+    "p-esp"
+   ],
+   "trace": [
+    "f1",
+    "f2",
+    "f3",
+    "f4"
+   ],
+   "engineer": "Step by step: a profile edit. The member changes their headline, and the profile service writes the document to Espresso over Rest.li. Espresso's 2015 post says storage nodes update secondary indexes together with the data, so a query straight after the write is not stale. The member sees saved. Search and the caches have not been touched by this write path at all.",
+   "executive": "The edit is saved in one place, and the member gets an answer straight away."
+  },
+  {
+   "id": "l16",
+   "title": "Fan out",
+   "chapter": "flows",
+   "diagram": "profile",
+   "focus": [
+    "p-esp",
+    "p-cdc",
+    "p-search",
+    "p-replica",
+    "p-member"
+   ],
+   "trace": [
+    "f5",
+    "f6",
+    "f7",
+    "f8"
+   ],
+   "engineer": "Then the fan-out. The write lands in MySQL's binary log with a system change number, which Espresso uses to keep a timeline-consistent order per partition. Change capture picks it up and delivers it, in commit order, to every subscriber. The search index applies it; read replicas and caches apply the same event at their own pace. Databus's 2013 post adds a bootstrap service, so a new or badly lagging reader starts from a snapshot and then catches up.",
+   "executive": "The database's change log carries the edit to search and caches, in order, and new readers can start from a snapshot."
+  },
+  {
+   "id": "l17",
+   "title": "Index a post",
+   "chapter": "flows",
+   "diagram": "feedseq",
+   "focus": [
+    "q-poster",
+    "q-kafka",
+    "q-part",
+    "q-index"
+   ],
+   "trace": [
+    "g1",
+    "g2",
+    "g3"
+   ],
+   "engineer": "The second flow: a post reaching someone's feed, from LinkedIn's 2016 FollowFeed post. A member posts, and the activity goes into Kafka. A partitioner service republishes it to a topic partitioned exactly like the feed index, so each index node consumes only the partitions it hosts. The index has seven hundred and twenty partitions, chosen because seven hundred and twenty divides evenly across many cluster sizes.",
+   "executive": "A new post goes into Kafka and is sorted to the right part of the feed's index."
+  },
+  {
+   "id": "l18",
+   "title": "Read a feed",
+   "chapter": "flows",
+   "diagram": "feedseq",
+   "focus": [
+    "q-viewer",
+    "q-broker",
+    "q-index"
+   ],
+   "trace": [
+    "g4",
+    "g5",
+    "g6",
+    "g7"
+   ],
+   "engineer": "Reading is where the work happens, because FollowFeed builds feeds when they are read, not when posts are written. LinkedIn found that pre-computing every member's feed made the data about sixty-two times larger, and slowed ranking experiments. The broker turns who you follow into timeline keys and fans out to the index nodes. Each node scores its records in place and returns the best. The broker merges, removes duplicates, adds diversity and returns the feed.",
+   "executive": "Your feed is assembled when you open it, from the timelines of everyone you follow, ranked where the data lives."
+  },
+  {
+   "id": "l19",
+   "title": "Stores",
+   "chapter": "data",
+   "diagram": "containers",
+   "focus": [
+    "espresso",
+    "kafka",
+    "cdc",
+    "search",
+    "graph",
+    "feed",
+    "venice"
+   ],
+   "trace": [
+    "k-esp-cdc",
+    "k-cdc-search",
+    "k-kafka-feed",
+    "k-samza-venice"
+   ],
+   "engineer": "Where data lives. Espresso holds source-of-truth data; its 2015 post says it powered about thirty applications, including member profiles and InMail, with hundreds of terabytes. Search, the graph and the feed hold views that can be rebuilt. Venice serves computed data. The Log makes the key point: the derived systems need no external write interface at all. Changes reach them only through the log.",
+   "executive": "One store is the truth; everything else is a copy built from the log, and can be rebuilt from it."
+  },
+  {
+   "id": "l20",
+   "chapter": "data",
+   "card": {
+    "heading": "What is stored where",
+    "kind": "compare",
+    "points": [
+     "Data | Where, and for how long",
+     "Profiles, InMail | Espresso: source of truth, kept",
+     "Activity events | Kafka for days; Hadoop for analysis",
+     "Keyed changes | Compacted topics: latest value per key",
+     "Search, graph, feed | Derived indexes, rebuilt by replay",
+     "Computed features | Venice, replaced by each batch push"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The same thing as a table. Profiles and messages live in Espresso, kept indefinitely. Activity events live in Kafka for a window, usually days, and in Hadoop for analysis. Search, graph and feed indexes are derived, rebuilt by replay. Venice datasets are replaced by each batch push. And as The Log puts it, the derived systems need no externally accessible write interface at all.",
+   "executive": "Truth is kept in one database, events for days, and everything else is a rebuildable copy."
+  },
+  {
+   "id": "l21",
+   "chapter": "growth",
+   "card": {
+    "heading": "Kafka at LinkedIn, by year",
+    "kind": "compare",
+    "points": [
+     "Year | Change",
+     "2011 | In production at ~1B messages a day; enters Apache incubator",
+     "2012 | ~20B a day; standard for all tracking; Apache top-level",
+     "2013 | ~200B a day; The Log essay; Samza open sourced",
+     "2015 | 1T+ a day, peaks of 4.5M a second",
+     "2018 | 3,000+ Samza applications in production",
+     "2019 | 7T+ a day; 100+ clusters, 4,000+ brokers"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "How it grew, from LinkedIn's posts and Apache's records. Kafka went into production at LinkedIn in July 2011 at about a billion messages a day, and entered the Apache incubator that month. It graduated in October 2012, the year LinkedIn standardised on it for all tracking data. The 2015 post counts about two hundred billion a day by mid-2013 and more than a trillion by 2015. In 2019, more than seven trillion.",
+   "executive": "From a billion messages a day in 2011 to more than seven trillion in 2019, on the same core idea."
+  },
+  {
+   "id": "l22",
+   "title": "Second generations",
+   "chapter": "growth",
+   "card": {
+    "heading": "Second generations",
+    "kind": "compare",
+    "points": [
+     "First | What followed",
+     "Voldemort (Dynamo-style, key-value) | Venice; production use ended 2018",
+     "Databus (change capture, 2011 revision) | Brooklin, in production since 2016",
+     "Sensei (feed index) | FollowFeed (2016): ~5x lower p99, ~half the servers",
+     "Rest.li (open sourced 2013) | gRPC; README sets archiving for July 2026"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Growth also meant replacing first generations. Voldemort, an open-source clone of Amazon's Dynamo, once served much of the site; its README says LinkedIn stopped using it in production in 2018, moving many read-only workloads to Venice. Databus taught the lessons behind Brooklin, in production since 2016. Sensei gave way to FollowFeed. And Rest.li's repository says LinkedIn has moved to gRPC.",
+   "executive": "LinkedIn replaced many of its first-generation systems, but the shared log in the middle stayed."
+  },
+  {
+   "id": "l23",
+   "chapter": "failures",
+   "card": {
+    "heading": "What fails, and what protects users",
+    "kind": "compare",
+    "points": [
+     "Failure | Protection",
+     "A broker dies | A follower replica becomes leader",
+     "A reader falls behind | Resumes from its offset; Burrow watches lag",
+     "A buggy index | Throw it away and replay the log",
+     "A data centre is lost | Logs mirrored; Espresso geo-replicates via Databus",
+     "A slow feed index node | Duplicate request to a replica; first answer wins",
+     "A risky Kafka release | Certified against production traffic first (2019)"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "What breaks, and what protects people. A broker dies: a follower replica becomes leader. A reader falls behind: it resumes from its own position while the data is retained, and Burrow watches the lag. A slow job cannot stall others, because readers pull. A data centre is lost: logs are mirrored between data centres. A slow feed node: FollowFeed's broker sends a duplicate request to a replica and keeps the first answer.",
+   "executive": "Copies take over when machines fail, slow readers catch up on their own, and the feed hedges slow servers with duplicate requests."
+  },
+  {
+   "id": "l24",
+   "chapter": "patterns",
+   "card": {
+    "heading": "Patterns used",
+    "points": [
+     "Event streaming and pub-sub: Kafka, many independent readers",
+     "Change data capture: Databus, then Brooklin",
+     "Write-ahead log: the log as the source of every view",
+     "Sharding: Kafka partitions; 720 FollowFeed partitions",
+     "CQRS (our framing): write to Espresso, read from derived views"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The named patterns, each with its own walkthrough. Event streaming and publish-subscribe: Kafka, with many independent readers. Change data capture: Databus, then Brooklin, turning database commits into events. A write-ahead log, the idea at the heart of all of it. Sharding: partitions in Kafka, and seven hundred and twenty in FollowFeed. And CQRS: writes go to one store, reads to views built from the log; that framing is ours.",
+   "executive": "Streaming events, capturing database changes, a shared log, splitting data across machines, and separate read and write models."
+  },
+  {
+   "id": "l25",
+   "chapter": "decisions",
+   "card": {
+    "heading": "Key decisions",
+    "kind": "compare",
+    "points": [
+     "Decision | Why, and the cost",
+     "One central log, not pairwise pipelines | Each system connects once; the log becomes critical",
+     "Capture from the commit log | Exact order of what committed; harder to build",
+     "No external writes to derived stores | Simple, rebuildable views; only as fresh as the feed",
+     "Feed built on read | ~62x less data, fast experiments; more work per read",
+     "Build, then open source | Kafka, Samza, Venice gained communities; branches kept near upstream"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The decisions that shaped it. One central log rather than a pipeline per pair, at the price of running that log as the most critical system in the company. Capture changes from the database's own commit log, so derived systems see exactly what was committed, in order. Derived stores with no side door for writes. Feeds built on read, not on write. And building in-house, then open sourcing, while keeping LinkedIn's own Kafka branches close to Apache's.",
+   "executive": "One shared log, changes taken from the database itself, read-only copies, feeds built on demand, and tools shared as open source."
+  },
+  {
+   "id": "l26",
+   "chapter": "mvp",
+   "card": {
+    "heading": "What we would build first",
+    "points": [
+     "Postgres as the one source of truth",
+     "A managed Kafka, or similar, for activity events from month one",
+     "Change data capture from the database log, not dual writes",
+     "Search, caches, analytics as consumers that can be replayed",
+     "Topics keyed by member id; compacted topics for state",
+     "Consumer lag on the dashboard from day one; feeds built on read"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "If we built a smaller version today, this is where we would start; these are our recommendations, not LinkedIn's. Postgres as the single source of truth. A managed Kafka, or similar log, from the first month, for activity events. Change data capture from the database's write-ahead log rather than dual writes. Search, caches and analytics built only as consumers, so they can be rebuilt by replay. And watch consumer lag from day one.",
+   "executive": "Start with one database and a managed log, feed every other system from the log, and watch how far behind each reader is."
+  }
+ ]
+}

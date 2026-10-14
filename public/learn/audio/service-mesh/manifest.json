@@ -1,0 +1,142 @@
+{
+ "sm-problem-engineer": {
+  "file": "/audio/service-mesh/sm-problem-engineer.mp3",
+  "ms": 32328,
+  "hash": "9d7af9b4f1a6"
+ },
+ "sm-problem-executive": {
+  "file": "/audio/service-mesh/sm-problem-executive.mp3",
+  "ms": 8520,
+  "hash": "fedca4da93b8"
+ },
+ "sm-naive-engineer": {
+  "file": "/audio/service-mesh/sm-naive-engineer.mp3",
+  "ms": 30840,
+  "hash": "e2477674b144"
+ },
+ "sm-naive-executive": {
+  "file": "/audio/service-mesh/sm-naive-executive.mp3",
+  "ms": 7632,
+  "hash": "bd99ed8717c1"
+ },
+ "sm-sidecar-engineer": {
+  "file": "/audio/service-mesh/sm-sidecar-engineer.mp3",
+  "ms": 33912,
+  "hash": "e8594ebd542d"
+ },
+ "sm-sidecar-executive": {
+  "file": "/audio/service-mesh/sm-sidecar-executive.mp3",
+  "ms": 8304,
+  "hash": "607245c149a7"
+ },
+ "sm-mesh-engineer": {
+  "file": "/audio/service-mesh/sm-mesh-engineer.mp3",
+  "ms": 32688,
+  "hash": "26418ce2557d"
+ },
+ "sm-mesh-executive": {
+  "file": "/audio/service-mesh/sm-mesh-executive.mp3",
+  "ms": 9408,
+  "hash": "1606c8873554"
+ },
+ "sm-eastwest-engineer": {
+  "file": "/audio/service-mesh/sm-eastwest-engineer.mp3",
+  "ms": 30720,
+  "hash": "42f7fb90073a"
+ },
+ "sm-eastwest-executive": {
+  "file": "/audio/service-mesh/sm-eastwest-executive.mp3",
+  "ms": 8568,
+  "hash": "449ac2503a3b"
+ },
+ "sm-how-engineer": {
+  "file": "/audio/service-mesh/sm-how-engineer.mp3",
+  "ms": 32520,
+  "hash": "274090a609c2"
+ },
+ "sm-how-executive": {
+  "file": "/audio/service-mesh/sm-how-executive.mp3",
+  "ms": 9000,
+  "hash": "46127e98feea"
+ },
+ "sm-features-engineer": {
+  "file": "/audio/service-mesh/sm-features-engineer.mp3",
+  "ms": 33288,
+  "hash": "f11e2ad41b4d"
+ },
+ "sm-features-executive": {
+  "file": "/audio/service-mesh/sm-features-executive.mp3",
+  "ms": 7848,
+  "hash": "7c5400cd9f4a"
+ },
+ "sm-failure-engineer": {
+  "file": "/audio/service-mesh/sm-failure-engineer.mp3",
+  "ms": 29616,
+  "hash": "6383e6a107b2"
+ },
+ "sm-failure-executive": {
+  "file": "/audio/service-mesh/sm-failure-executive.mp3",
+  "ms": 8184,
+  "hash": "a43dd476bf45"
+ },
+ "sm-storm-engineer": {
+  "file": "/audio/service-mesh/sm-storm-engineer.mp3",
+  "ms": 30120,
+  "hash": "d8a912756653"
+ },
+ "sm-storm-executive": {
+  "file": "/audio/service-mesh/sm-storm-executive.mp3",
+  "ms": 7896,
+  "hash": "edd9414c9f2a"
+ },
+ "sm-costs-engineer": {
+  "file": "/audio/service-mesh/sm-costs-engineer.mp3",
+  "ms": 33072,
+  "hash": "dea999d78143"
+ },
+ "sm-costs-executive": {
+  "file": "/audio/service-mesh/sm-costs-executive.mp3",
+  "ms": 9816,
+  "hash": "a954dd1fbb23"
+ },
+ "sm-sidecarless-engineer": {
+  "file": "/audio/service-mesh/sm-sidecarless-engineer.mp3",
+  "ms": 33096,
+  "hash": "3da7de067ea3"
+ },
+ "sm-sidecarless-executive": {
+  "file": "/audio/service-mesh/sm-sidecarless-executive.mp3",
+  "ms": 7464,
+  "hash": "ef74b8db4258"
+ },
+ "sm-wild-engineer": {
+  "file": "/audio/service-mesh/sm-wild-engineer.mp3",
+  "ms": 34824,
+  "hash": "1eef884e5890"
+ },
+ "sm-wild-executive": {
+  "file": "/audio/service-mesh/sm-wild-executive.mp3",
+  "ms": 8208,
+  "hash": "f8cd8207f028"
+ },
+ "sm-related-engineer": {
+  "file": "/audio/service-mesh/sm-related-engineer.mp3",
+  "ms": 28152,
+  "hash": "5c74bb9dcdce"
+ },
+ "sm-related-executive": {
+  "file": "/audio/service-mesh/sm-related-executive.mp3",
+  "ms": 8232,
+  "hash": "1c32fd650303"
+ },
+ "sm-recap-engineer": {
+  "file": "/audio/service-mesh/sm-recap-engineer.mp3",
+  "ms": 28968,
+  "hash": "a683910221f2"
+ },
+ "sm-recap-executive": {
+  "file": "/audio/service-mesh/sm-recap-executive.mp3",
+  "ms": 8352,
+  "hash": "7532239f0436"
+ }
+}

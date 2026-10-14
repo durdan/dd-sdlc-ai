@@ -1,0 +1,1414 @@
+{
+ "id": "shopify",
+ "title": "Shopify: surviving Black Friday",
+ "subtitle": "Company case study",
+ "voice": "en-GB-SoniaNeural",
+ "template": "case-study",
+ "meta": {
+  "kind": "company",
+  "category": "E-commerce",
+  "level": "intermediate",
+  "uses": [
+   "cell-based-architecture",
+   "sharding",
+   "rate-limiting",
+   "circuit-breaker",
+   "bulkhead",
+   "graceful-degradation",
+   "read-replicas",
+   "strangler-fig"
+  ],
+  "related": [
+   "amazon",
+   "stripe"
+  ],
+  "blurb": "How millions of shops survive Black Friday: a modular Rails monolith on isolated pods, live shop moves, a fair checkout queue and Semian circuit breakers.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14",
+  "changelog": [
+   {
+    "date": "2026-10-14",
+    "note": "First version."
+   }
+  ]
+ },
+ "diagrams": [
+  {
+   "id": "context",
+   "kind": "c4",
+   "title": "Level 1 · Context",
+   "direction": "DOWN",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request · response"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "partners · infrastructure"
+    }
+   ],
+   "elements": [
+    {
+     "id": "buyer",
+     "kind": "person",
+     "label": "Buyer",
+     "sub": "browses, adds to cart, checks out"
+    },
+    {
+     "id": "merchant",
+     "kind": "person",
+     "label": "Merchant",
+     "sub": "runs a shop from the admin"
+    },
+    {
+     "id": "apps",
+     "kind": "external",
+     "label": "App developers",
+     "sub": "extend shops through APIs"
+    },
+    {
+     "id": "shopify",
+     "kind": "system",
+     "label": "Shopify",
+     "sub": "storefronts, checkout, admin, APIs"
+    },
+    {
+     "id": "payments",
+     "kind": "external",
+     "label": "Payment providers",
+     "sub": "cards and other methods"
+    },
+    {
+     "id": "cloud",
+     "kind": "external",
+     "label": "Google Cloud",
+     "sub": "regions in the US and Europe"
+    }
+   ],
+   "edges": [
+    {
+     "id": "c-buyer",
+     "from": "buyer",
+     "to": "shopify",
+     "label": "browse, check out",
+     "style": "solid"
+    },
+    {
+     "id": "c-merchant",
+     "from": "merchant",
+     "to": "shopify",
+     "label": "products, orders, settings",
+     "style": "solid"
+    },
+    {
+     "id": "c-apps",
+     "from": "apps",
+     "to": "shopify",
+     "label": "API calls",
+     "style": "solid"
+    },
+    {
+     "id": "c-pay",
+     "from": "shopify",
+     "to": "payments",
+     "label": "authorise payments",
+     "style": "dotted"
+    },
+    {
+     "id": "c-cloud",
+     "from": "shopify",
+     "to": "cloud",
+     "label": "runs on",
+     "style": "dotted"
+    }
+   ]
+  },
+  {
+   "id": "containers",
+   "kind": "c4",
+   "title": "Level 2 · Containers (our reconstruction)",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "shared",
+     "label": "Shared compute · one pod per request or job",
+     "tone": "core"
+    },
+    {
+     "id": "pod",
+     "label": "A pod · one of 100+ (2018)",
+     "tone": "data"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request · response"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "jobs · asynchronous"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "storage"
+    }
+   ],
+   "elements": [
+    {
+     "id": "buyer",
+     "kind": "person",
+     "label": "Buyer",
+     "sub": "storefront and checkout",
+     "rank": 0
+    },
+    {
+     "id": "merchant",
+     "kind": "external",
+     "label": "Merchants and apps",
+     "sub": "admin and APIs",
+     "rank": 0
+    },
+    {
+     "id": "edge",
+     "kind": "container",
+     "label": "Edge load balancers",
+     "sub": "Nginx + OpenResty Lua: route, throttle",
+     "tone": "core",
+     "rank": 1
+    },
+    {
+     "id": "routing",
+     "kind": "store",
+     "label": "Routing table",
+     "sub": "shop → pod · not sharded",
+     "tone": "data",
+     "rank": 1
+    },
+    {
+     "id": "renderer",
+     "kind": "container",
+     "label": "Storefront Renderer",
+     "sub": "Liquid themes → HTML",
+     "group": "shared",
+     "rank": 2
+    },
+    {
+     "id": "core",
+     "kind": "container",
+     "label": "Rails monolith",
+     "sub": "checkout, admin, API · modular",
+     "group": "shared",
+     "rank": 2
+    },
+    {
+     "id": "jobs",
+     "kind": "container",
+     "label": "Job workers",
+     "sub": "background jobs",
+     "group": "shared",
+     "rank": 2
+    },
+    {
+     "id": "memc",
+     "kind": "store",
+     "label": "Memcached",
+     "sub": "cache",
+     "group": "pod",
+     "rank": 3
+    },
+    {
+     "id": "mysql",
+     "kind": "store",
+     "label": "MySQL shard",
+     "sub": "primary and read replicas",
+     "group": "pod",
+     "rank": 3
+    },
+    {
+     "id": "redis",
+     "kind": "store",
+     "label": "Redis",
+     "sub": "job queues, locks",
+     "group": "pod",
+     "rank": 3
+    },
+    {
+     "id": "payments",
+     "kind": "external",
+     "label": "Payment providers",
+     "sub": "authorise and capture",
+     "rank": 4
+    }
+   ],
+   "edges": [
+    {
+     "id": "k-buyer-edge",
+     "from": "buyer",
+     "to": "edge",
+     "label": "page or checkout",
+     "style": "solid"
+    },
+    {
+     "id": "k-merch-edge",
+     "from": "merchant",
+     "to": "edge",
+     "label": "admin, API",
+     "style": "solid"
+    },
+    {
+     "id": "k-edge-route",
+     "from": "edge",
+     "to": "routing",
+     "label": "which pod?",
+     "style": "dotted"
+    },
+    {
+     "id": "k-edge-rend",
+     "from": "edge",
+     "to": "renderer",
+     "label": "storefront pages",
+     "style": "solid"
+    },
+    {
+     "id": "k-edge-core",
+     "from": "edge",
+     "to": "core",
+     "label": "checkout (throttled), admin, API",
+     "style": "solid"
+    },
+    {
+     "id": "k-rend-memc",
+     "from": "renderer",
+     "to": "memc",
+     "label": "cache",
+     "style": "dotted"
+    },
+    {
+     "id": "k-rend-db",
+     "from": "renderer",
+     "to": "mysql",
+     "label": "read replicas",
+     "style": "dotted"
+    },
+    {
+     "id": "k-core-db",
+     "from": "core",
+     "to": "mysql",
+     "label": "reads, writes",
+     "style": "dotted"
+    },
+    {
+     "id": "k-core-redis",
+     "from": "core",
+     "to": "redis",
+     "label": "enqueue",
+     "style": "dashed"
+    },
+    {
+     "id": "k-redis-jobs",
+     "from": "redis",
+     "to": "jobs",
+     "label": "dequeue",
+     "style": "dashed"
+    },
+    {
+     "id": "k-jobs-db",
+     "from": "jobs",
+     "to": "mysql",
+     "label": "writes",
+     "style": "dotted"
+    },
+    {
+     "id": "k-core-pay",
+     "from": "core",
+     "to": "payments",
+     "label": "authorise",
+     "style": "solid"
+    }
+   ]
+  },
+  {
+   "id": "pods",
+   "kind": "c4",
+   "title": "Level 3 · Pods: isolated shards of shops",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "shared",
+     "label": "Shared compute · talks to one pod at a time",
+     "tone": "core"
+    },
+    {
+     "id": "pod1",
+     "label": "Pod 1 · a set of shops",
+     "tone": "data"
+    },
+    {
+     "id": "pod2",
+     "label": "Pod 2 · other shops",
+     "tone": "data"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request path"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "jobs · failover"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "lookup · other pods"
+    }
+   ],
+   "elements": [
+    {
+     "id": "req",
+     "kind": "person",
+     "label": "Request",
+     "sub": "storefront, checkout, admin or API",
+     "rank": 0
+    },
+    {
+     "id": "hat",
+     "kind": "component",
+     "label": "Sorting Hat",
+     "sub": "in the load balancers · rules → pod",
+     "tone": "core",
+     "rank": 1
+    },
+    {
+     "id": "routing",
+     "kind": "store",
+     "label": "Routing table",
+     "sub": "shop → pod ID · not sharded",
+     "tone": "data",
+     "rank": 1
+    },
+    {
+     "id": "app",
+     "kind": "container",
+     "label": "App servers",
+     "sub": "connect using the pod header",
+     "group": "shared",
+     "rank": 2
+    },
+    {
+     "id": "jobs",
+     "kind": "container",
+     "label": "Job workers",
+     "sub": "each job belongs to one pod",
+     "group": "shared",
+     "rank": 2
+    },
+    {
+     "id": "p1db",
+     "kind": "store",
+     "label": "MySQL shard",
+     "sub": "this pod's shops only",
+     "group": "pod1",
+     "rank": 3
+    },
+    {
+     "id": "p1redis",
+     "kind": "store",
+     "label": "Redis",
+     "sub": "queues, locks",
+     "group": "pod1",
+     "rank": 3
+    },
+    {
+     "id": "p1memc",
+     "kind": "store",
+     "label": "Memcached",
+     "sub": "cache",
+     "group": "pod1",
+     "rank": 3
+    },
+    {
+     "id": "p2db",
+     "kind": "store",
+     "label": "MySQL, Redis, Memcached",
+     "sub": "a separate, identical set",
+     "group": "pod2",
+     "rank": 3
+    },
+    {
+     "id": "dr",
+     "kind": "external",
+     "label": "Recovery data centre",
+     "sub": "every pod: one active, one standby",
+     "rank": 4
+    }
+   ],
+   "edges": [
+    {
+     "id": "d-req-hat",
+     "from": "req",
+     "to": "hat",
+     "label": "request",
+     "style": "solid"
+    },
+    {
+     "id": "d-hat-route",
+     "from": "hat",
+     "to": "routing",
+     "label": "look up the shop",
+     "style": "dotted"
+    },
+    {
+     "id": "d-hat-app",
+     "from": "hat",
+     "to": "app",
+     "label": "add pod header",
+     "style": "solid"
+    },
+    {
+     "id": "d-app-db",
+     "from": "app",
+     "to": "p1db",
+     "label": "reads, writes",
+     "style": "solid"
+    },
+    {
+     "id": "d-app-memc",
+     "from": "app",
+     "to": "p1memc",
+     "label": "cache",
+     "style": "solid"
+    },
+    {
+     "id": "d-app-redis",
+     "from": "app",
+     "to": "p1redis",
+     "label": "enqueue",
+     "style": "solid"
+    },
+    {
+     "id": "d-jobs-redis",
+     "from": "jobs",
+     "to": "p1redis",
+     "label": "pod 1 jobs",
+     "style": "dashed"
+    },
+    {
+     "id": "d-app-p2",
+     "from": "app",
+     "to": "p2db",
+     "label": "other shops' requests",
+     "style": "dotted"
+    },
+    {
+     "id": "d-p1-dr",
+     "from": "p1db",
+     "to": "dr",
+     "label": "Pod Mover: about a minute",
+     "style": "dashed"
+    }
+   ]
+  },
+  {
+   "id": "shopmove",
+   "kind": "sequence",
+   "title": "Moving a shop between pods with Ghostferry",
+   "participants": [
+    {
+     "id": "m-mover",
+     "label": "Shop mover"
+    },
+    {
+     "id": "m-gf",
+     "label": "Ghostferry"
+    },
+    {
+     "id": "m-src",
+     "label": "Pod 1 MySQL"
+    },
+    {
+     "id": "m-dst",
+     "label": "Pod 2 MySQL"
+    },
+    {
+     "id": "m-lock",
+     "label": "Shop lock (Redis)"
+    },
+    {
+     "id": "m-route",
+     "label": "Routing table"
+    }
+   ],
+   "messages": [
+    {
+     "id": "g1",
+     "from": "m-mover",
+     "to": "m-gf",
+     "label": "move shop 42 to pod 2",
+     "style": "solid"
+    },
+    {
+     "id": "g2",
+     "from": "m-gf",
+     "to": "m-src",
+     "label": "copy rows in batches, SELECT … FOR UPDATE",
+     "style": "solid"
+    },
+    {
+     "id": "g3",
+     "from": "m-gf",
+     "to": "m-dst",
+     "label": "insert batches",
+     "style": "solid"
+    },
+    {
+     "id": "g4",
+     "from": "m-src",
+     "to": "m-gf",
+     "label": "binlog: shop 42's changes",
+     "style": "dashed"
+    },
+    {
+     "id": "g5",
+     "from": "m-gf",
+     "to": "m-dst",
+     "label": "replay changes",
+     "style": "solid"
+    },
+    {
+     "id": "g6",
+     "from": "m-mover",
+     "to": "m-lock",
+     "label": "take writer lock, wait for readers",
+     "style": "solid"
+    },
+    {
+     "id": "g7",
+     "from": "m-gf",
+     "to": "m-dst",
+     "label": "replay to the final binlog position",
+     "style": "solid"
+    },
+    {
+     "id": "g8",
+     "from": "m-mover",
+     "to": "m-route",
+     "label": "shop 42 → pod 2",
+     "style": "solid"
+    },
+    {
+     "id": "g9",
+     "from": "m-mover",
+     "to": "m-lock",
+     "label": "release lock",
+     "style": "solid"
+    },
+    {
+     "id": "g10",
+     "from": "m-gf",
+     "to": "m-dst",
+     "label": "verify the copy",
+     "style": "dashed"
+    },
+    {
+     "id": "g11",
+     "from": "m-mover",
+     "to": "m-src",
+     "label": "prune stale rows, later",
+     "style": "dashed"
+    }
+   ]
+  },
+  {
+   "id": "checkout",
+   "kind": "sequence",
+   "title": "Checkout during a flash sale",
+   "participants": [
+    {
+     "id": "q-buyer",
+     "label": "Buyer's browser"
+    },
+    {
+     "id": "q-lb",
+     "label": "Edge load balancer (Lua)"
+    },
+    {
+     "id": "q-core",
+     "label": "Checkout (Rails)"
+    },
+    {
+     "id": "q-db",
+     "label": "Pod MySQL"
+    },
+    {
+     "id": "q-pay",
+     "label": "Payment provider"
+    }
+   ],
+   "messages": [
+    {
+     "id": "q1",
+     "from": "q-buyer",
+     "to": "q-lb",
+     "label": "start checkout",
+     "style": "solid"
+    },
+    {
+     "id": "q2",
+     "from": "q-lb",
+     "to": "q-buyer",
+     "label": "queue page, signed cookie with first-try time",
+     "style": "dashed"
+    },
+    {
+     "id": "q3",
+     "from": "q-buyer",
+     "to": "q-lb",
+     "label": "poll",
+     "style": "solid"
+    },
+    {
+     "id": "q4",
+     "from": "q-lb",
+     "to": "q-core",
+     "label": "time before threshold, bucket has room",
+     "style": "solid"
+    },
+    {
+     "id": "q5",
+     "from": "q-core",
+     "to": "q-db",
+     "label": "create the order",
+     "style": "solid"
+    },
+    {
+     "id": "q6",
+     "from": "q-core",
+     "to": "q-pay",
+     "label": "authorise: idempotency key, circuit breaker",
+     "style": "solid"
+    },
+    {
+     "id": "q7",
+     "from": "q-pay",
+     "to": "q-core",
+     "label": "approved",
+     "style": "dashed"
+    },
+    {
+     "id": "q8",
+     "from": "q-core",
+     "to": "q-buyer",
+     "label": "order confirmed",
+     "style": "dashed"
+    }
+   ]
+  },
+  {
+   "id": "resilience",
+   "kind": "c4",
+   "title": "Failing fast, and proving it before the day",
+   "direction": "DOWN",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "calls"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "fail fast · degrade · load"
+    },
+    {
+     "style": "dotted",
+     "tone": "neutral",
+     "label": "fault injection in tests"
+    }
+   ],
+   "elements": [
+    {
+     "id": "genghis",
+     "kind": "external",
+     "label": "Genghis",
+     "sub": "load tests: browse, cart, checkout",
+     "rank": 0
+    },
+    {
+     "id": "worker",
+     "kind": "container",
+     "label": "Rails worker",
+     "sub": "storefront, checkout or job",
+     "tone": "core",
+     "rank": 1
+    },
+    {
+     "id": "fallback",
+     "kind": "component",
+     "label": "Fallback",
+     "sub": "for example guest checkout",
+     "tone": "neutral",
+     "rank": 1
+    },
+    {
+     "id": "semian",
+     "kind": "component",
+     "label": "Semian",
+     "sub": "circuit breaker and bulkhead per resource",
+     "tone": "core",
+     "rank": 2
+    },
+    {
+     "id": "toxiproxy",
+     "kind": "component",
+     "label": "Toxiproxy",
+     "sub": "tests, CI and development",
+     "tone": "neutral",
+     "rank": 2
+    },
+    {
+     "id": "mysql",
+     "kind": "store",
+     "label": "MySQL",
+     "tone": "data",
+     "rank": 3
+    },
+    {
+     "id": "redis",
+     "kind": "store",
+     "label": "Redis",
+     "tone": "data",
+     "rank": 3
+    },
+    {
+     "id": "sessions",
+     "kind": "store",
+     "label": "Session store",
+     "sub": "only sign-in needs it",
+     "tone": "data",
+     "rank": 3
+    },
+    {
+     "id": "pay",
+     "kind": "external",
+     "label": "Payment provider",
+     "sub": "one breaker per host and country",
+     "rank": 3
+    }
+   ],
+   "edges": [
+    {
+     "id": "r-load",
+     "from": "genghis",
+     "to": "worker",
+     "label": "simulated peak traffic",
+     "style": "dashed"
+    },
+    {
+     "id": "r-call",
+     "from": "worker",
+     "to": "semian",
+     "label": "call a resource",
+     "style": "solid"
+    },
+    {
+     "id": "r-mysql",
+     "from": "semian",
+     "to": "mysql",
+     "style": "solid"
+    },
+    {
+     "id": "r-redis",
+     "from": "semian",
+     "to": "redis",
+     "style": "solid"
+    },
+    {
+     "id": "r-sessions",
+     "from": "semian",
+     "to": "sessions",
+     "style": "solid"
+    },
+    {
+     "id": "r-pay",
+     "from": "semian",
+     "to": "pay",
+     "label": "authorise",
+     "style": "solid"
+    },
+    {
+     "id": "r-open",
+     "from": "semian",
+     "to": "worker",
+     "label": "circuit open: fail at once",
+     "style": "dashed"
+    },
+    {
+     "id": "r-fallback",
+     "from": "worker",
+     "to": "fallback",
+     "label": "degrade",
+     "style": "dashed"
+    },
+    {
+     "id": "r-tox-redis",
+     "from": "toxiproxy",
+     "to": "redis",
+     "label": "latency, resets, timeouts",
+     "style": "dotted"
+    },
+    {
+     "id": "r-tox-mysql",
+     "from": "toxiproxy",
+     "to": "mysql",
+     "style": "dotted"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "overview",
+   "title": "Overview"
+  },
+  {
+   "id": "requirements",
+   "title": "Requirements and scale"
+  },
+  {
+   "id": "context",
+   "title": "Context"
+  },
+  {
+   "id": "containers",
+   "title": "Containers"
+  },
+  {
+   "id": "deep-dive",
+   "title": "Deep dive"
+  },
+  {
+   "id": "flows",
+   "title": "Core flows"
+  },
+  {
+   "id": "data",
+   "title": "Data and caching"
+  },
+  {
+   "id": "growth",
+   "title": "Growth"
+  },
+  {
+   "id": "failures",
+   "title": "Failure modes"
+  },
+  {
+   "id": "patterns",
+   "title": "Patterns used"
+  },
+  {
+   "id": "decisions",
+   "title": "Key decisions"
+  },
+  {
+   "id": "mvp",
+   "title": "What we would build first"
+  }
+ ],
+ "shots": [
+  {
+   "id": "s01",
+   "chapter": "overview",
+   "diagram": "context",
+   "focus": [],
+   "trace": [],
+   "engineer": "This is Shopify, seen from the outside. Millions of merchants run their shops on it, and buyers browse, fill a cart and check out. Then comes the weekend from Black Friday to Cyber Monday, when traffic jumps within minutes and every shop wants to sell at once. The one idea everything here depends on is isolation: split the platform into pods, so that one shop's flash sale, or one broken database, only hurts a small slice of shops.",
+   "executive": "Shopify runs millions of online shops on one platform. Its key idea is isolation: shops are split into separate pods, so trouble in one never spreads to all."
+  },
+  {
+   "id": "s02",
+   "chapter": "requirements",
+   "card": {
+    "heading": "Black Friday–Cyber Monday 2025, from Shopify's own release",
+    "kind": "numbers",
+    "points": [
+     "$14.6B | merchant sales over the weekend, up 27%",
+     "$5.1M | sales per minute at peak, 12:01 pm EST Black Friday",
+     "489M | requests per minute at the edge, at peak",
+     "117M+ | requests per minute on app servers, at peak",
+     "14.8T | database queries over the weekend",
+     "81M+ | buyers"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "First, the scale, from Shopify's press release of the second of December 2025; Shopify calls the figures approximate and unaudited. Merchants sold fourteen point six billion dollars over the weekend, up twenty-seven per cent, peaking at five point one million dollars a minute just after noon Eastern time on Black Friday. At the peak, the edge served four hundred and eighty-nine million requests a minute, and the app servers more than a hundred and seventeen million.",
+   "executive": "Over the 2025 Black Friday weekend, Shopify merchants sold fourteen point six billion dollars, peaking at over five million dollars a minute."
+  },
+  {
+   "id": "s03",
+   "chapter": "requirements",
+   "card": {
+    "heading": "Back of the envelope (our arithmetic)",
+    "kind": "numbers",
+    "points": [
+     "~8M | edge requests a second at peak (489M ÷ 60)",
+     "~2M | app-server requests a second at peak",
+     "~4 : 1 | edge to app-server requests",
+     "~44k | orders a minute at peak, if every cart were average ($114.70)"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Now some arithmetic of our own. Four hundred and eighty-nine million requests a minute is about eight million a second at the edge. The app servers saw about two million a second, so roughly four requests reach the edge for every one that reaches Ruby. The average cart that weekend was a hundred and fourteen dollars seventy, so the peak sales rate is something like forty-four thousand orders a minute.",
+   "executive": "That is about eight million requests a second at the edge, and very roughly forty-four thousand orders a minute at the peak."
+  },
+  {
+   "id": "s04",
+   "chapter": "requirements",
+   "card": {
+    "heading": "What the system must do (our list)",
+    "points": [
+     "One shop's flash sale never takes down another shop",
+     "Checkout keeps working when optional parts fail",
+     "Buyers wait in a fair queue, not on an error page",
+     "Shops move between databases without going offline",
+     "Peak capacity is proven before the day, not on it",
+     "Hundreds of developers can change one codebase safely"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Then the requirements. This list is ours, written from what Shopify has described. One shop's flash sale must never take down another. Checkout must keep working when optional parts fail. When demand outruns capacity, buyers should wait in a fair queue, not see an error. Shops must move between databases without going offline. Capacity must be proven before the day. And hundreds of developers must be able to change one codebase safely.",
+   "executive": "Contain each shop's spikes, protect checkout, queue buyers fairly, rebalance shops live, prove capacity in advance, and keep a huge codebase safe to change."
+  },
+  {
+   "id": "s05",
+   "title": "Buyers, merchants and apps",
+   "chapter": "context",
+   "diagram": "context",
+   "focus": [
+    "buyer",
+    "merchant",
+    "apps",
+    "shopify"
+   ],
+   "trace": [
+    "c-buyer",
+    "c-merchant",
+    "c-apps"
+   ],
+   "engineer": "Three kinds of user meet here. Buyers browse storefronts and check out. Merchants run their shops from the admin. And app developers extend shops through Shopify's APIs; at the 2025 peak, Shopify says it processed thirty-one point eight million API requests a minute. On Black Friday all three peak together: merchants change prices and launch discounts while the apps they install call the APIs on their behalf.",
+   "executive": "Buyers shop, merchants manage their stores, and apps work through APIs, and all three peak at the same moment."
+  },
+  {
+   "id": "s06",
+   "title": "Payments and cloud",
+   "chapter": "context",
+   "diagram": "context",
+   "focus": [
+    "shopify",
+    "payments",
+    "cloud"
+   ],
+   "trace": [
+    "c-pay",
+    "c-cloud"
+   ],
+   "engineer": "Behind Shopify sit two kinds of partner. Payment providers authorise each order, and each one is a remote dependency that can slow down on the busiest day of the year. And the platform runs on Google Cloud. Shopify's 2025 readiness post describes a multi-region plan, with load tests run from regions in the United States and Europe, and traffic forecasts shared with its cloud providers months ahead.",
+   "executive": "Shopify depends on payment providers for every order and runs on Google Cloud, which it warns months ahead about expected traffic."
+  },
+  {
+   "id": "s07",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [],
+   "trace": [],
+   "engineer": "One level in. Shopify has not published a container diagram, so this layout is our reconstruction from its engineering posts. At the top, edge load balancers built on Nginx with OpenResty's Lua scripting, plus a routing table that maps each shop to a pod. In the middle, shared compute: the Storefront Renderer, the Rails monolith that handles checkout, admin and APIs, and job workers. Underneath, a pod: a MySQL shard with read replicas, Redis and Memcached.",
+   "executive": "Smart load balancers in front, shared application servers in the middle, and isolated pods of data underneath. The layout is our reconstruction."
+  },
+  {
+   "id": "s08",
+   "title": "Browse a storefront",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "buyer",
+    "edge",
+    "routing",
+    "renderer",
+    "memc",
+    "mysql"
+   ],
+   "trace": [
+    "k-buyer-edge",
+    "k-edge-route",
+    "k-edge-rend",
+    "k-rend-memc",
+    "k-rend-db"
+   ],
+   "engineer": "The busiest path: a buyer browsing. The load balancer looks up which pod holds the shop, then sends the page request to the Storefront Renderer. Shopify rebuilt this as a separate application from 2019. It renders the merchant's Liquid theme into HTML, uses several layers of caching, and always reads from dedicated read replicas, so browsing does not load the primary database. In 2020 Shopify reported it was four to six times faster than the code it replaced.",
+   "executive": "Shop pages come from a dedicated renderer that leans on caches and database copies, keeping the main database free for orders."
+  },
+  {
+   "id": "s09",
+   "title": "Check out",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "buyer",
+    "edge",
+    "core",
+    "mysql",
+    "payments"
+   ],
+   "trace": [
+    "k-buyer-edge",
+    "k-edge-core",
+    "k-core-db",
+    "k-core-pay"
+   ],
+   "engineer": "The path that earns the money: checkout. In Shopify's 2020 description it ran in the Rails monolith. Checkout writes to the primary database, so it is the scarce resource in a flash sale. That is why the edge throttles it: Lua scripts in the load balancers admit only so many checkouts at a time and send the rest to a queue. Admitted requests create the order in the shop's pod and ask a payment provider to authorise it.",
+   "executive": "Checkout is the expensive step, so the front door rations it, and admitted buyers place their orders and pay."
+  },
+  {
+   "id": "s10",
+   "title": "Admin, APIs and jobs",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "merchant",
+    "edge",
+    "core",
+    "redis",
+    "jobs",
+    "mysql"
+   ],
+   "trace": [
+    "k-merch-edge",
+    "k-edge-core",
+    "k-core-redis",
+    "k-redis-jobs",
+    "k-jobs-db"
+   ],
+   "engineer": "Merchants and apps take the third path, through the admin and the APIs, into the same monolith. Slow work, such as sending emails or updating many products, is put on a queue in Redis and done later by job workers. In 2018 Shopify described how one shared Redis once caused a major outage, which it called Redismageddon. Now each pod has its own Redis, so a queue problem stays inside one pod.",
+   "executive": "Merchant and app traffic goes to the same core, and slow work is queued per pod so problems stay contained."
+  },
+  {
+   "id": "s11",
+   "chapter": "deep-dive",
+   "diagram": "pods",
+   "focus": [],
+   "trace": [],
+   "engineer": "The heart of the design: pods. By 2015 Shopify could no longer buy a bigger database server, so it sharded MySQL. But sharding alone was not enough. In 2016 it reorganised into pods: a set of shops on a fully isolated set of datastores, with its own MySQL, Redis and Memcached. App servers, job workers and load balancers are shared, but each talks to only one pod at a time. By 2018 there were more than a hundred pods.",
+   "executive": "Shops are grouped into pods, each with its own databases. Servers are shared, but never touch two pods at once."
+  },
+  {
+   "id": "s12",
+   "title": "Route a request",
+   "chapter": "deep-dive",
+   "diagram": "pods",
+   "focus": [
+    "req",
+    "hat",
+    "routing",
+    "app",
+    "jobs",
+    "p1db",
+    "p1redis",
+    "p1memc",
+    "p2db"
+   ],
+   "trace": [
+    "d-req-hat",
+    "d-hat-route",
+    "d-hat-app",
+    "d-app-db",
+    "d-app-memc",
+    "d-app-redis",
+    "d-jobs-redis",
+    "d-app-p2"
+   ],
+   "engineer": "How a request finds its pod. Inside the load balancers, a component called Sorting Hat matches the request against its rules, backed by a routing table from shop to pod in its own unsharded database. It adds a header naming the pod, and the app server uses it to connect to the right datastores. Every job belongs to exactly one pod too. Nothing may reach across pods, which is what keeps a failure contained.",
+   "executive": "The load balancer tags each request with its pod, and the servers only ever connect to that one pod."
+  },
+  {
+   "id": "s13",
+   "title": "Fail over a pod",
+   "chapter": "deep-dive",
+   "diagram": "pods",
+   "focus": [
+    "p1db",
+    "dr"
+   ],
+   "trace": [
+    "d-p1-dr"
+   ],
+   "engineer": "Isolation also makes disaster recovery smaller. In Shopify's 2018 design, every pod is assigned a pair of data centres: one active, the other a recovery site. A tool called Pod Mover moves a pod to its recovery data centre, and Shopify wrote that it could do so in about a minute without dropping requests or jobs. Because a pod is the unit, Shopify can fail over one pod, or a few, rather than the whole platform at once.",
+   "executive": "Each pod has a standby site, and a pod can be moved there in about a minute without losing requests."
+  },
+  {
+   "id": "s14",
+   "title": "Copy and tail",
+   "chapter": "flows",
+   "diagram": "shopmove",
+   "focus": [
+    "m-mover",
+    "m-gf",
+    "m-src",
+    "m-dst"
+   ],
+   "trace": [
+    "g1",
+    "g2",
+    "g3",
+    "g4",
+    "g5"
+   ],
+   "engineer": "First flow: moving a shop to another pod. Shops grow unevenly, and two big merchants on one pod may hold flash sales on the same day. In 2021 Shopify described shard balancing with Ghostferry, its open-source tool for copying data between MySQL servers with minimal downtime. Ghostferry copies the shop's rows in batches, while tailing the source's binlog and replaying only this shop's changes onto the target. The shop stays online throughout.",
+   "executive": "To rebalance, Shopify copies a busy shop's data to another pod while the shop keeps trading, replaying any new changes as it goes."
+  },
+  {
+   "id": "s15",
+   "title": "Cut over",
+   "chapter": "flows",
+   "diagram": "shopmove",
+   "focus": [
+    "m-mover",
+    "m-gf",
+    "m-dst",
+    "m-lock",
+    "m-route",
+    "m-src"
+   ],
+   "trace": [
+    "g6",
+    "g7",
+    "g8",
+    "g9",
+    "g10",
+    "g11"
+   ],
+   "engineer": "When the replay has nearly caught up, the cut-over begins. Every request and job for the shop holds the reader side of a lock kept in Redis. The mover takes the writer side, waiting for readers to finish, so no new writes start. Ghostferry replays the last changes, the routing table points to the new pod, and the lock is released. Shopify only says cut-over is designed to be short. Verifiers check the copy; stale rows are pruned later.",
+   "executive": "Writes pause for a moment, the last changes are copied, the shop is pointed at its new pod, and the old copy is cleaned up later."
+  },
+  {
+   "id": "s16",
+   "title": "Wait fairly",
+   "chapter": "flows",
+   "diagram": "checkout",
+   "focus": [
+    "q-buyer",
+    "q-lb"
+   ],
+   "trace": [
+    "q1",
+    "q2",
+    "q3"
+   ],
+   "engineer": "Second flow: checkout in a flash sale. In 2017 Shopify described the throttle in its load balancers: a leaky bucket that admits a fixed number of checkouts per window. A plain 429 error would look like a crashed site, so extra buyers get a cached queue page that polls. The first version picked winners almost at random, and some waited forty minutes. So now the first checkout attempt is stamped into a signed cookie.",
+   "executive": "When too many buyers arrive, they see a waiting page instead of an error, and their arrival time is remembered."
+  },
+  {
+   "id": "s17",
+   "title": "Get served",
+   "chapter": "flows",
+   "diagram": "checkout",
+   "focus": [
+    "q-lb",
+    "q-core",
+    "q-db",
+    "q-pay",
+    "q-buyer"
+   ],
+   "trace": [
+    "q4",
+    "q5",
+    "q6",
+    "q7",
+    "q8"
+   ],
+   "engineer": "Each load balancer keeps its own now-serving threshold, nudged by a simple feedback controller according to room in the bucket. Buyers who arrived before the threshold go through, in order. There is no shared store to fail under load. Once admitted, checkout creates the order in the shop's pod and asks the payment provider to authorise it. Shopify's payments team describes using an idempotency key for each attempt, so a retry never charges twice, and a circuit breaker on the provider.",
+   "executive": "Buyers are let through in arrival order, then the order is created and paid for, with protection against double charges."
+  },
+  {
+   "id": "s18",
+   "chapter": "data",
+   "card": {
+    "heading": "What is stored where",
+    "kind": "compare",
+    "points": [
+     "Data | Where",
+     "Products, orders, customers | MySQL in the shop's pod, keyed by shop",
+     "Storefront reads | Read replicas, plus caching layers",
+     "Cache | Memcached, in each pod",
+     "Job queues and shop locks | Redis, in each pod",
+     "Which pod holds each shop | Routing table, in an unsharded database",
+     "Place in the checkout queue | Signed cookie in the buyer's browser"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Where the data lives. A shop's products, orders and customers sit in MySQL in its pod; a shop ID can serve as the sharding key. Storefront reads go to replicas and caches. Memcached and Redis are per pod too. Only the routing table is global, in its own unsharded database. And a buyer's place in the checkout queue is never stored on a server at all: it lives in a signed cookie.",
+   "executive": "Each shop's data stays in its own pod; only the shop-to-pod map is global, and queue places live in the buyer's browser."
+  },
+  {
+   "id": "s19",
+   "chapter": "growth",
+   "card": {
+    "heading": "How it got here, from Shopify's own posts",
+    "kind": "compare",
+    "points": [
+     "Year | Change",
+     "2004 | Founded; the first version is built on Rails",
+     "2014–15 | MySQL sharded by shop; Semian and Toxiproxy in use",
+     "2016 | Pods and Sorting Hat; a flash sale hits a shared shard",
+     "2017 | Fair checkout queue at the edge; modular monolith work begins",
+     "2018 | 100+ pods, on Google Kubernetes Engine",
+     "2019–20 | Storefront Renderer rewrite; Packwerk; 2.8M lines of Ruby",
+     "2021 | Live shop moves between pods with Ghostferry",
+     "2023–25 | BFCM sales $9.3B → $11.5B → $14.6B"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "How it grew. Shopify was built on Rails from 2004. By the mid-2010s it had sharded MySQL, and Semian and Toxiproxy were in use from 2014. In 2016 a famous flash sale took down its own store and others on the same shard, the year pods arrived. Then came the fair checkout queue, the modular monolith, a hundred pods by 2018, the renderer rewrite and live shop moves. Black Friday sales grew from nine point three billion in 2023 to fourteen point six in 2025.",
+   "executive": "The same pod design from 2016 has carried Black Friday sales from nine to nearly fifteen billion dollars in two years."
+  },
+  {
+   "id": "s20",
+   "title": "Fail fast",
+   "chapter": "failures",
+   "diagram": "resilience",
+   "focus": [
+    "worker",
+    "semian",
+    "pay",
+    "sessions",
+    "fallback"
+   ],
+   "trace": [
+    "r-call",
+    "r-pay",
+    "r-sessions",
+    "r-open",
+    "r-fallback"
+   ],
+   "engineer": "What protects a request when a dependency fails. Semian, Shopify's open-source library, wraps calls to MySQL, Redis and HTTP services. Its circuit breaker opens after repeated errors, so later calls fail at once instead of waiting for a timeout; its bulkhead caps how many workers use a resource. For card payments, the merchant's country is part of the breaker's name, so a local outage stays local. And if the session store fails, buyers can still check out as guests.",
+   "executive": "When a dependency fails, requests fail fast instead of piling up, and checkout falls back to simpler options."
+  },
+  {
+   "id": "s21",
+   "title": "Prove it first",
+   "chapter": "failures",
+   "diagram": "resilience",
+   "focus": [
+    "genghis",
+    "worker",
+    "toxiproxy",
+    "mysql",
+    "redis"
+   ],
+   "trace": [
+    "r-load",
+    "r-tox-redis",
+    "r-tox-mysql"
+   ],
+   "engineer": "None of this is trusted until it is tested. Toxiproxy, also open source, sits between the app and its datastores in tests and development, adding latency, resets and timeouts. For 2025, Shopify ran five scale tests from April to October with its load tool, Genghis, simulating browsing, carts and checkout. One reached a hundred and forty-six million requests a minute and over eighty thousand checkouts a minute. Game days rehearsed failures, and regional failovers evacuated whole regions.",
+   "executive": "Shopify injects faults in testing and runs huge rehearsals for months before Black Friday."
+  },
+  {
+   "id": "s22",
+   "chapter": "failures",
+   "card": {
+    "heading": "What fails, and what protects buyers",
+    "kind": "compare",
+    "points": [
+     "Failure | Protection",
+     "One shop's flash sale | Pods confine it; shop moves rebalance hot pods",
+     "Checkout demand exceeds capacity | Leaky bucket and a fair queue page at the edge",
+     "Database, Redis or provider slows | Semian breaker opens; calls fail fast",
+     "Session store down | Guest checkout still works",
+     "Data centre lost | Pod Mover fails pods over to their pair",
+     "Unknown limits | Genghis load tests and game days, months ahead"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Putting it together. A flash sale is confined to its pod, and hot pods are rebalanced by moving shops. Too many checkouts at once: the edge queues buyers fairly. A database, Redis or payment provider slows down: Semian's breaker opens and calls fail fast. The session store dies: guests can still buy. A data centre is lost: pods fail over to their pair. And unknown limits are found in rehearsal, not on the day.",
+   "executive": "Every failure has a planned answer: contain it in a pod, queue the excess, fail fast, degrade gracefully, fail over and rehearse."
+  },
+  {
+   "id": "s23",
+   "chapter": "patterns",
+   "card": {
+    "heading": "Patterns used",
+    "points": [
+     "Cell-based architecture: pods of shops, each with its own datastores",
+     "Sharding: MySQL split by shop, with live shop moves",
+     "Rate limiting: a leaky bucket and fair queue for checkout",
+     "Circuit breaker and bulkhead: Semian on every remote resource",
+     "Graceful degradation: guest checkout without sessions",
+     "Read replicas: storefront reads kept off the primary",
+     "Strangler fig: the Storefront Renderer replaced the old code gradually"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The named patterns, each with its own walkthrough. Cell-based architecture: pods are cells of shops. Sharding by shop, with live moves. Rate limiting, as a leaky bucket and a fair queue at the edge. Circuit breakers and bulkheads, through Semian. Graceful degradation, such as guest checkout. Read replicas for storefront traffic. And a strangler fig: the new Storefront Renderer was checked against the old one on mirrored traffic, then given more traffic as its results matched.",
+   "executive": "Cells, sharding, rate limiting, circuit breakers, graceful degradation, read replicas and gradual replacement."
+  },
+  {
+   "id": "s24",
+   "chapter": "decisions",
+   "card": {
+    "heading": "Key decisions",
+    "kind": "compare",
+    "points": [
+     "Decision | Why",
+     "Modular monolith, not microservices | One app; boundaries enforced by Packwerk",
+     "Pods: isolate whole stacks, not just databases | A failure or flash sale stays in one pod",
+     "Shared, pod-aware compute | Any server can serve any pod, one at a time",
+     "Queue at the edge, not 429 errors | Buyers wait fairly; no shared store to fail",
+     "Move shops live with Ghostferry | Rebalance hot pods without downtime",
+     "Build its own resilience tools | Semian, Toxiproxy and Genghis, run constantly"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The decisions that shaped it. Keep one Rails application, but make it modular: components with public interfaces, and Packwerk, now open source, to flag code that crosses a boundary. Shopify argued microservices would trade code problems for network ones. Isolate whole stacks in pods, not just databases. Keep compute shared but pod-aware. Queue buyers at the edge rather than return errors. Move shops live. And build, and keep running, its own resilience and load-testing tools.",
+   "executive": "One modular codebase, isolated pods, shared servers, a fair queue, live rebalancing and constant rehearsal."
+  },
+  {
+   "id": "s25",
+   "chapter": "mvp",
+   "card": {
+    "heading": "What we would build first",
+    "points": [
+     "One modular app; enforce boundaries in CI from day one",
+     "A tenant ID on every table, even with one database",
+     "A tenant-to-database routing table, even with one entry",
+     "Timeouts and circuit breakers on every remote call",
+     "A waiting room at the edge for flash sales",
+     "Load test at 1.5× last year's peak, months ahead"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "If we built a multi-tenant shop platform today, these are our recommendations, not Shopify's. One modular application, with boundaries checked in continuous integration. A tenant ID on every table and a tenant-to-database routing table, even with one database, so pods can come later without a rewrite. Timeouts and circuit breakers on every remote call. A waiting room at the edge. And load tests at one and a half times last year's peak, months ahead.",
+   "executive": "Start simple, but tag every row with its shop, route through a lookup table, fail fast, add a waiting room and rehearse early."
+  }
+ ]
+}

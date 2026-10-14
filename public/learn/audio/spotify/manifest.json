@@ -1,0 +1,242 @@
+{
+ "s01-engineer": {
+  "file": "/audio/spotify/s01-engineer.mp3",
+  "ms": 27000,
+  "hash": "c2cfc391b1a1"
+ },
+ "s01-executive": {
+  "file": "/audio/spotify/s01-executive.mp3",
+  "ms": 9240,
+  "hash": "abf243c19405"
+ },
+ "s02-engineer": {
+  "file": "/audio/spotify/s02-engineer.mp3",
+  "ms": 30936,
+  "hash": "92ce25071017"
+ },
+ "s02-executive": {
+  "file": "/audio/spotify/s02-executive.mp3",
+  "ms": 6624,
+  "hash": "860e82d25398"
+ },
+ "s03-engineer": {
+  "file": "/audio/spotify/s03-engineer.mp3",
+  "ms": 30720,
+  "hash": "3ffe84d606c0"
+ },
+ "s03-executive": {
+  "file": "/audio/spotify/s03-executive.mp3",
+  "ms": 9264,
+  "hash": "5f809ebcc431"
+ },
+ "s04-engineer": {
+  "file": "/audio/spotify/s04-engineer.mp3",
+  "ms": 28296,
+  "hash": "4b1e488a1739"
+ },
+ "s04-executive": {
+  "file": "/audio/spotify/s04-executive.mp3",
+  "ms": 6720,
+  "hash": "03deed99fe2a"
+ },
+ "s05-engineer": {
+  "file": "/audio/spotify/s05-engineer.mp3",
+  "ms": 29352,
+  "hash": "9f5f415e35af"
+ },
+ "s05-executive": {
+  "file": "/audio/spotify/s05-executive.mp3",
+  "ms": 7920,
+  "hash": "ceb7bd6c566e"
+ },
+ "s06-engineer": {
+  "file": "/audio/spotify/s06-engineer.mp3",
+  "ms": 29880,
+  "hash": "908de407b8b4"
+ },
+ "s06-executive": {
+  "file": "/audio/spotify/s06-executive.mp3",
+  "ms": 10368,
+  "hash": "0705108cc902"
+ },
+ "s07-engineer": {
+  "file": "/audio/spotify/s07-engineer.mp3",
+  "ms": 30336,
+  "hash": "4b8a95a221ae"
+ },
+ "s07-executive": {
+  "file": "/audio/spotify/s07-executive.mp3",
+  "ms": 6624,
+  "hash": "8a465cebae61"
+ },
+ "s08-engineer": {
+  "file": "/audio/spotify/s08-engineer.mp3",
+  "ms": 27720,
+  "hash": "029ad886e1e7"
+ },
+ "s08-executive": {
+  "file": "/audio/spotify/s08-executive.mp3",
+  "ms": 4920,
+  "hash": "598f459e1272"
+ },
+ "s09-engineer": {
+  "file": "/audio/spotify/s09-engineer.mp3",
+  "ms": 31032,
+  "hash": "1fd52b53d079"
+ },
+ "s09-executive": {
+  "file": "/audio/spotify/s09-executive.mp3",
+  "ms": 7536,
+  "hash": "04e51e12b51d"
+ },
+ "s10-engineer": {
+  "file": "/audio/spotify/s10-engineer.mp3",
+  "ms": 31392,
+  "hash": "dd523d21621a"
+ },
+ "s10-executive": {
+  "file": "/audio/spotify/s10-executive.mp3",
+  "ms": 6408,
+  "hash": "4a516a59c9dd"
+ },
+ "s11-engineer": {
+  "file": "/audio/spotify/s11-engineer.mp3",
+  "ms": 27000,
+  "hash": "0b8ded43de3c"
+ },
+ "s11-executive": {
+  "file": "/audio/spotify/s11-executive.mp3",
+  "ms": 7848,
+  "hash": "645a778cbc65"
+ },
+ "s12-engineer": {
+  "file": "/audio/spotify/s12-engineer.mp3",
+  "ms": 31320,
+  "hash": "2a8b0c4e351f"
+ },
+ "s12-executive": {
+  "file": "/audio/spotify/s12-executive.mp3",
+  "ms": 7992,
+  "hash": "b4d1d89cc9ce"
+ },
+ "s13-engineer": {
+  "file": "/audio/spotify/s13-engineer.mp3",
+  "ms": 29304,
+  "hash": "8dedca275370"
+ },
+ "s13-executive": {
+  "file": "/audio/spotify/s13-executive.mp3",
+  "ms": 6936,
+  "hash": "8a2c8b724dce"
+ },
+ "s14-engineer": {
+  "file": "/audio/spotify/s14-engineer.mp3",
+  "ms": 31104,
+  "hash": "f975bcb36c53"
+ },
+ "s14-executive": {
+  "file": "/audio/spotify/s14-executive.mp3",
+  "ms": 8208,
+  "hash": "4ecb07a4d505"
+ },
+ "s15-engineer": {
+  "file": "/audio/spotify/s15-engineer.mp3",
+  "ms": 26136,
+  "hash": "e64b9fc56b51"
+ },
+ "s15-executive": {
+  "file": "/audio/spotify/s15-executive.mp3",
+  "ms": 6888,
+  "hash": "7f7e7bebf5bf"
+ },
+ "s16-engineer": {
+  "file": "/audio/spotify/s16-engineer.mp3",
+  "ms": 28248,
+  "hash": "f56960606946"
+ },
+ "s16-executive": {
+  "file": "/audio/spotify/s16-executive.mp3",
+  "ms": 6024,
+  "hash": "f48bb73fd1e7"
+ },
+ "s17-engineer": {
+  "file": "/audio/spotify/s17-engineer.mp3",
+  "ms": 28512,
+  "hash": "484f7018a3a6"
+ },
+ "s17-executive": {
+  "file": "/audio/spotify/s17-executive.mp3",
+  "ms": 5424,
+  "hash": "eb0028545ace"
+ },
+ "s18-engineer": {
+  "file": "/audio/spotify/s18-engineer.mp3",
+  "ms": 27768,
+  "hash": "3c8e4f4feae3"
+ },
+ "s18-executive": {
+  "file": "/audio/spotify/s18-executive.mp3",
+  "ms": 5208,
+  "hash": "bbc10a9e73c3"
+ },
+ "s19-engineer": {
+  "file": "/audio/spotify/s19-engineer.mp3",
+  "ms": 29856,
+  "hash": "a909b50f2b77"
+ },
+ "s19-executive": {
+  "file": "/audio/spotify/s19-executive.mp3",
+  "ms": 8016,
+  "hash": "2af404d0f1b5"
+ },
+ "s20-engineer": {
+  "file": "/audio/spotify/s20-engineer.mp3",
+  "ms": 28152,
+  "hash": "92b75a097dca"
+ },
+ "s20-executive": {
+  "file": "/audio/spotify/s20-executive.mp3",
+  "ms": 8352,
+  "hash": "85573fe8cbc4"
+ },
+ "s21-engineer": {
+  "file": "/audio/spotify/s21-engineer.mp3",
+  "ms": 31440,
+  "hash": "8319be8d878e"
+ },
+ "s21-executive": {
+  "file": "/audio/spotify/s21-executive.mp3",
+  "ms": 9240,
+  "hash": "6add56ed1b3d"
+ },
+ "s22-engineer": {
+  "file": "/audio/spotify/s22-engineer.mp3",
+  "ms": 31632,
+  "hash": "5db7858d5d3c"
+ },
+ "s22-executive": {
+  "file": "/audio/spotify/s22-executive.mp3",
+  "ms": 9600,
+  "hash": "b0f4107caf00"
+ },
+ "s23-engineer": {
+  "file": "/audio/spotify/s23-engineer.mp3",
+  "ms": 31512,
+  "hash": "bbf70e7ad50e"
+ },
+ "s23-executive": {
+  "file": "/audio/spotify/s23-executive.mp3",
+  "ms": 9720,
+  "hash": "58f0287815ac"
+ },
+ "s24-engineer": {
+  "file": "/audio/spotify/s24-engineer.mp3",
+  "ms": 32280,
+  "hash": "a8eb1c60099d"
+ },
+ "s24-executive": {
+  "file": "/audio/spotify/s24-executive.mp3",
+  "ms": 7776,
+  "hash": "2648d8bbd8ab"
+ }
+}

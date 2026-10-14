@@ -1,0 +1,569 @@
+{
+ "id": "slack",
+ "title": "Slack: messages in real time",
+ "subtitle": "Company case study",
+ "voice": "en-GB-SoniaNeural",
+ "template": "case-study",
+ "meta": {
+  "kind": "company",
+  "category": "Messaging",
+  "level": "intermediate",
+  "uses": ["consistent-hashing", "pub-sub", "sharding", "competing-consumers", "cell-based-architecture", "cache-aside", "graceful-degradation"],
+  "related": ["discord", "whatsapp"],
+  "blurb": "Channel servers on a consistent hash ring, regional gateways, Vitess for storage, Kafka in front of the job queue, and availability zones you can drain.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14",
+  "changelog": [{ "date": "2026-10-14", "note": "First version." }]
+ },
+ "diagrams": [
+  {
+   "id": "context",
+   "kind": "c4",
+   "title": "Level 1 · Context",
+   "direction": "DOWN",
+   "legend": [
+    { "style": "solid", "tone": "core", "label": "request · response" },
+    { "style": "dashed", "tone": "stream", "label": "pushed events" },
+    { "style": "dotted", "tone": "data", "label": "infrastructure" }
+   ],
+   "elements": [
+    { "id": "user", "kind": "person", "label": "Member", "sub": "desktop, mobile or browser" },
+    { "id": "app", "kind": "external", "label": "App or bot", "sub": "a developer's integration" },
+    { "id": "slack", "kind": "system", "label": "Slack", "sub": "web app, real-time servers, storage, jobs" },
+    { "id": "push", "kind": "external", "label": "Push services", "sub": "phone notifications · illustrative" },
+    { "id": "cloud", "kind": "external", "label": "Cloud provider", "sub": "AWS regions and zones" }
+   ],
+   "edges": [
+    { "id": "c-user-api", "from": "user", "to": "slack", "label": "HTTPS API: boot, send, history", "style": "solid" },
+    { "id": "c-ws-user", "from": "slack", "to": "user", "label": "WebSocket: live events", "style": "dashed" },
+    { "id": "c-app-api", "from": "app", "to": "slack", "label": "Web API calls", "style": "solid" },
+    { "id": "c-ev-app", "from": "slack", "to": "app", "label": "events", "style": "dashed" },
+    { "id": "c-push", "from": "slack", "to": "push", "label": "when the app is closed", "style": "dashed" },
+    { "id": "c-push-user", "from": "push", "to": "user", "label": "notification", "style": "dashed" },
+    { "id": "c-cloud", "from": "slack", "to": "cloud", "label": "runs on", "style": "dotted" }
+   ]
+  },
+  {
+   "id": "containers",
+   "kind": "c4",
+   "title": "Level 2 · Containers (our reconstruction)",
+   "direction": "DOWN",
+   "groups": [
+    { "id": "rt", "label": "Real time · Java, in memory", "tone": "stream" },
+    { "id": "store", "label": "Storage", "tone": "data" },
+    { "id": "jobs", "label": "Job queue", "tone": "core" }
+   ],
+   "legend": [
+    { "style": "solid", "tone": "core", "label": "request · control" },
+    { "style": "dashed", "tone": "stream", "label": "events pushed" },
+    { "style": "dotted", "tone": "data", "label": "storage · cache" }
+   ],
+   "elements": [
+    { "id": "client", "kind": "container", "label": "Slack client", "sub": "desktop, mobile, web", "tone": "neutral", "rank": 0 },
+    { "id": "edge", "kind": "container", "label": "Edge", "sub": "Envoy · nearest region", "tone": "neutral", "rank": 1 },
+    { "id": "webapp", "kind": "container", "label": "Webapp", "sub": "Hack · the API", "tone": "core", "rank": 2 },
+    { "id": "gs", "kind": "container", "label": "Gateway servers", "sub": "WebSockets · many regions", "group": "rt", "rank": 2 },
+    { "id": "as", "kind": "container", "label": "Admin servers", "sub": "stateless", "group": "rt", "rank": 3 },
+    { "id": "cs", "kind": "container", "label": "Channel servers", "sub": "recent history per channel", "group": "rt", "rank": 4 },
+    { "id": "ps", "kind": "container", "label": "Presence servers", "sub": "who is online", "group": "rt", "rank": 4 },
+    { "id": "cache", "kind": "store", "label": "Memcached", "sub": "in front of the database", "group": "store", "rank": 3 },
+    { "id": "vitess", "kind": "store", "label": "Vitess · MySQL", "sub": "sharded, e.g. by channel", "group": "store", "rank": 4 },
+    { "id": "kafka", "kind": "container", "label": "Kafkagate · Kafka", "sub": "durable enqueue", "group": "jobs", "rank": 3 },
+    { "id": "workers", "kind": "container", "label": "JQRelay · Redis · workers", "sub": "run the jobs", "group": "jobs", "rank": 4 }
+   ],
+   "edges": [
+    { "id": "k-cl-web", "from": "client", "to": "webapp", "label": "boot, POST message", "style": "solid" },
+    { "id": "k-cl-edge", "from": "client", "to": "edge", "label": "open WebSocket", "style": "solid" },
+    { "id": "k-edge-gs", "from": "edge", "to": "gs", "label": "forward", "style": "solid" },
+    { "id": "k-gs-web", "from": "gs", "to": "webapp", "label": "user, channel list", "style": "solid" },
+    { "id": "k-gs-cs", "from": "gs", "to": "cs", "label": "subscribe to channels", "style": "solid" },
+    { "id": "k-web-cache", "from": "webapp", "to": "cache", "label": "read", "style": "dotted" },
+    { "id": "k-web-db", "from": "webapp", "to": "vitess", "label": "write message", "style": "dotted" },
+    { "id": "k-web-as", "from": "webapp", "to": "as", "label": "publish", "style": "solid" },
+    { "id": "k-as-cs", "from": "as", "to": "cs", "label": "route by channel ID", "style": "solid" },
+    { "id": "k-cs-gs", "from": "cs", "to": "gs", "label": "to subscribed gateways", "style": "dashed" },
+    { "id": "k-gs-cl", "from": "gs", "to": "client", "label": "event", "style": "dashed" },
+    { "id": "k-gs-ps", "from": "gs", "to": "ps", "label": "presence for users on screen", "style": "solid" },
+    { "id": "k-web-kafka", "from": "webapp", "to": "kafka", "label": "enqueue job", "style": "solid" },
+    { "id": "k-kafka-wk", "from": "kafka", "to": "workers", "label": "relay, rate-limited", "style": "solid" }
+   ]
+  },
+  {
+   "id": "rtm",
+   "kind": "c4",
+   "title": "Level 3 · Inside real-time messaging (our drawing of Slack's 2023 post)",
+   "direction": "DOWN",
+   "groups": [
+    { "id": "core", "label": "Main region", "tone": "stream" },
+    { "id": "regions", "label": "Edge regions", "tone": "neutral" }
+   ],
+   "legend": [
+    { "style": "solid", "tone": "core", "label": "call · lookup" },
+    { "style": "dashed", "tone": "stream", "label": "message fan-out" },
+    { "style": "dotted", "tone": "data", "label": "configuration" }
+   ],
+   "elements": [
+    { "id": "web", "kind": "container", "label": "Webapp", "sub": "accepts the message", "rank": 0 },
+    { "id": "admin", "kind": "component", "label": "Admin server", "sub": "stateless router", "group": "core", "rank": 1 },
+    { "id": "consul", "kind": "store", "label": "Consul", "sub": "current hash ring", "group": "core", "rank": 1 },
+    { "id": "charm", "kind": "component", "label": "CHARM", "sub": "ring manager · replaces bad hosts", "group": "core", "rank": 2 },
+    { "id": "chan", "kind": "component", "label": "Channel server", "sub": "owns its channels · recent history", "group": "core", "rank": 2 },
+    { "id": "gwa", "kind": "component", "label": "Gateway, region A", "sub": "subscriptions per client", "group": "regions", "rank": 3 },
+    { "id": "gwb", "kind": "component", "label": "Gateway, region B", "sub": "subscriptions per client", "group": "regions", "rank": 3 },
+    { "id": "ca", "kind": "component", "label": "Clients near A", "sub": "one WebSocket each", "rank": 4 },
+    { "id": "cb", "kind": "component", "label": "Clients near B", "sub": "one WebSocket each", "rank": 4 }
+   ],
+   "edges": [
+    { "id": "r-web-admin", "from": "web", "to": "admin", "label": "message for channel C", "style": "solid" },
+    { "id": "r-admin-consul", "from": "admin", "to": "consul", "label": "which server owns C?", "style": "dotted" },
+    { "id": "r-charm-consul", "from": "charm", "to": "consul", "label": "write ring", "style": "dotted" },
+    { "id": "r-charm-chan", "from": "charm", "to": "chan", "label": "health · replace", "style": "solid" },
+    { "id": "r-admin-chan", "from": "admin", "to": "chan", "label": "route", "style": "solid" },
+    { "id": "r-chan-gwa", "from": "chan", "to": "gwa", "label": "once per gateway", "style": "dashed" },
+    { "id": "r-chan-gwb", "from": "chan", "to": "gwb", "label": "once per gateway", "style": "dashed" },
+    { "id": "r-gwa-ca", "from": "gwa", "to": "ca", "label": "subscribed clients", "style": "dashed" },
+    { "id": "r-gwb-cb", "from": "gwb", "to": "cb", "label": "subscribed clients", "style": "dashed" }
+   ]
+  },
+  {
+   "id": "boot",
+   "kind": "sequence",
+   "title": "Boot and connect",
+   "participants": [
+    { "id": "b-cl", "label": "Client" },
+    { "id": "b-web", "label": "Webapp" },
+    { "id": "b-edge", "label": "Edge (Envoy)" },
+    { "id": "b-gs", "label": "Gateway server" },
+    { "id": "b-cs", "label": "Channel servers" }
+   ],
+   "messages": [
+    { "id": "b1", "from": "b-cl", "to": "b-web", "label": "boot: token, WebSocket details", "style": "solid" },
+    { "id": "b2", "from": "b-web", "to": "b-cl", "label": "setup information", "style": "dashed" },
+    { "id": "b3", "from": "b-cl", "to": "b-edge", "label": "open WebSocket, nearest region", "style": "solid" },
+    { "id": "b4", "from": "b-edge", "to": "b-gs", "label": "forward", "style": "solid" },
+    { "id": "b5", "from": "b-gs", "to": "b-web", "label": "user info, channel list", "style": "solid" },
+    { "id": "b6", "from": "b-gs", "to": "b-cl", "label": "first message", "style": "dashed" },
+    { "id": "b7", "from": "b-gs", "to": "b-cs", "label": "subscribe, asynchronously", "style": "solid" }
+   ]
+  },
+  {
+   "id": "send",
+   "kind": "sequence",
+   "title": "Send a message to a channel",
+   "participants": [
+    { "id": "q-a", "label": "Sender's client" },
+    { "id": "q-web", "label": "Webapp" },
+    { "id": "q-db", "label": "Vitess" },
+    { "id": "q-jobs", "label": "Job queue" },
+    { "id": "q-as", "label": "Admin server" },
+    { "id": "q-cs", "label": "Channel server" },
+    { "id": "q-gs", "label": "Gateways" },
+    { "id": "q-b", "label": "Members' clients" }
+   ],
+   "messages": [
+    { "id": "m1", "from": "q-a", "to": "q-web", "label": "POST message", "style": "solid" },
+    { "id": "m2", "from": "q-web", "to": "q-db", "label": "store · our assumption", "style": "solid" },
+    { "id": "m3", "from": "q-web", "to": "q-jobs", "label": "enqueue follow-up jobs", "style": "solid" },
+    { "id": "m4", "from": "q-web", "to": "q-a", "label": "OK", "style": "dashed" },
+    { "id": "m5", "from": "q-web", "to": "q-as", "label": "publish", "style": "solid" },
+    { "id": "m6", "from": "q-as", "to": "q-cs", "label": "hash channel ID → owner", "style": "solid" },
+    { "id": "m7", "from": "q-cs", "to": "q-gs", "label": "every subscribed gateway", "style": "dashed" },
+    { "id": "m8", "from": "q-gs", "to": "q-b", "label": "every subscribed client", "style": "dashed" },
+    { "id": "m9", "from": "q-gs", "to": "q-a", "label": "sender's copy", "style": "dashed" }
+   ]
+  },
+  {
+   "id": "cells",
+   "kind": "c4",
+   "title": "Cells · draining an availability zone (2023)",
+   "direction": "DOWN",
+   "groups": [
+    { "id": "az1", "label": "Zone 1 · silo", "tone": "core" },
+    { "id": "az2", "label": "Zone 2 · silo", "tone": "core" },
+    { "id": "az3", "label": "Zone 3 · silo", "tone": "neutral" }
+   ],
+   "legend": [
+    { "style": "solid", "tone": "core", "label": "traffic" },
+    { "style": "dotted", "tone": "data", "label": "configuration" },
+    { "style": "dashed", "tone": "stream", "label": "drained: weight 0" }
+   ],
+   "elements": [
+    { "id": "rotor", "kind": "component", "label": "Rotor", "sub": "xDS control plane", "tone": "core", "rank": 0 },
+    { "id": "lb", "kind": "container", "label": "Edge load balancers", "sub": "Envoy · weighted clusters", "tone": "neutral", "rank": 0 },
+    { "id": "f1", "kind": "container", "label": "Frontends", "group": "az1", "rank": 1 },
+    { "id": "b1", "kind": "container", "label": "Backends", "group": "az1", "rank": 2 },
+    { "id": "f2", "kind": "container", "label": "Frontends", "group": "az2", "rank": 1 },
+    { "id": "b2", "kind": "container", "label": "Backends", "group": "az2", "rank": 2 },
+    { "id": "f3", "kind": "container", "label": "Frontends", "group": "az3", "rank": 1 },
+    { "id": "b3", "kind": "container", "label": "Backends", "group": "az3", "rank": 2 }
+   ],
+   "edges": [
+    { "id": "z-rotor-lb", "from": "rotor", "to": "lb", "label": "weights in seconds", "style": "dotted" },
+    { "id": "z-lb-f1", "from": "lb", "to": "f1", "label": "50%", "style": "solid" },
+    { "id": "z-lb-f2", "from": "lb", "to": "f2", "label": "50%", "style": "solid" },
+    { "id": "z-lb-f3", "from": "lb", "to": "f3", "label": "0%", "style": "dashed" },
+    { "id": "z-f1-b1", "from": "f1", "to": "b1", "label": "same zone only", "style": "solid" },
+    { "id": "z-f2-b2", "from": "f2", "to": "b2", "label": "same zone only", "style": "solid" },
+    { "id": "z-f3-b3", "from": "f3", "to": "b3", "label": "in-flight finish", "style": "dashed" }
+   ]
+  }
+ ],
+ "chapters": [
+  { "id": "overview", "title": "Overview" },
+  { "id": "requirements", "title": "Requirements and scale" },
+  { "id": "context", "title": "Context" },
+  { "id": "containers", "title": "Containers" },
+  { "id": "deep-dive", "title": "Deep dive" },
+  { "id": "flows", "title": "Core flows" },
+  { "id": "data", "title": "Data and caching" },
+  { "id": "growth", "title": "Growth" },
+  { "id": "failures", "title": "Failure modes" },
+  { "id": "patterns", "title": "Patterns used" },
+  { "id": "decisions", "title": "Key decisions" },
+  { "id": "mvp", "title": "What we would build first" }
+ ],
+ "shots": [
+  {
+   "id": "s01",
+   "chapter": "overview",
+   "diagram": "context",
+   "focus": [],
+   "trace": [],
+   "engineer": "This is Slack, seen from the outside. People in a workspace talk in channels, direct messages and threads, on desktop, mobile and the web, and apps and bots join in through a public API. The one idea everything depends on is that a channel is the unit of everything. Every message, reaction and channel join is an event on a channel, and every online member subscribed to that channel should see it within a fraction of a second.",
+   "executive": "Slack is messaging for work. Everything happens in channels, and every change in a channel is pushed live to everyone in it."
+  },
+  {
+   "id": "s02",
+   "chapter": "requirements",
+   "card": {
+    "heading": "Scale, from Slack's own statements",
+    "kind": "numbers",
+    "points": [
+     "12M+ | daily active users (September 2019)",
+     "169,000+ | paid customers (quarter to April 2021)",
+     "200K+ | paid customers (slack.com, checked October 2026)",
+     "2.3M | database queries a second at peak (December 2020)",
+     "1.4B | jobs on the busiest days, 33,000 a second (2017)",
+     "500 ms | to deliver a message worldwide (2023)"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Scale, from Slack's own statements, each with its date. Slack last published daily users in 2019: more than twelve million. Its last results before joining Salesforce counted over a hundred and sixty-nine thousand paid customers, and its website now says more than two hundred thousand. On the engineering side: two point three million database queries a second at peak in 2020, one point four billion background jobs on busy days in 2017, and messages delivered worldwide in about half a second.",
+   "executive": "Slack last reported over twelve million daily users, in 2019, and now has more than two hundred thousand paying customers."
+  },
+  {
+   "id": "s03",
+   "chapter": "requirements",
+   "card": {
+    "heading": "What the system must do (our list)",
+    "points": [
+     "A message reaches every online member of the channel in well under a second",
+     "Opening the app is fast, even in a workspace of tens of thousands",
+     "Reactions, edits and joins arrive the same way as messages",
+     "Slow work, like notifications, never slows the send",
+     "Losing a server, or a whole data centre, is barely noticed",
+     "99.99% availability, under an hour of downtime a year"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The requirements are ours, except the last. A message reaches every online member of its channel in well under a second. Opening the app is fast, even in a workspace with tens of thousands of people. Slow work, such as push notifications, never slows the send. Losing a server, or a whole data centre, is barely noticed. And Slack itself cites a ninety-nine point nine nine per cent availability target.",
+   "executive": "Messages arrive almost instantly, the app opens fast, slow work stays out of the way, and losing a data centre is barely noticed."
+  },
+  {
+   "id": "s04",
+   "title": "Members",
+   "chapter": "context",
+   "diagram": "context",
+   "focus": ["user", "slack", "push"],
+   "trace": ["c-user-api", "c-ws-user", "c-push", "c-push-user"],
+   "engineer": "A member's client uses two doors. It calls Slack's HTTPS API to boot, send messages and fetch history. And it keeps one WebSocket open, over which Slack pushes events as they happen. When the app is closed, a phone notification brings the person back. Slack's posts say push notifications run as background jobs; the push services box itself is our illustration, since the posts we used do not describe it.",
+   "executive": "Clients send through an API and receive everything live over one open connection; phones get notifications when the app is closed."
+  },
+  {
+   "id": "s05",
+   "title": "Apps and cloud",
+   "chapter": "context",
+   "diagram": "context",
+   "focus": ["app", "slack", "cloud"],
+   "trace": ["c-app-api", "c-ev-app", "c-cloud"],
+   "engineer": "Apps and bots use the same Web API and receive events about the channels they are in. Underneath, Slack runs in Amazon Web Services, in regions split into availability zones, which are isolated data centres. That detail matters later. Two of the incidents in this video started in the cloud network, not in Slack's own code, and Slack's answer was to design for a whole zone going bad.",
+   "executive": "Integrations use the same API. Slack runs on AWS, and two of its biggest incidents started in the cloud network."
+  },
+  {
+   "id": "s06",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [],
+   "trace": [],
+   "engineer": "One level in. Slack has not published a single container diagram, so this layout is ours, built from its engineering posts. The Webapp, written in Hack, serves the API. A real-time layer, written in Java and held in memory, has gateway servers for WebSockets, admin servers, channel servers and presence servers. Storage is MySQL behind Vitess, with Memcached in front. And a job queue runs the slow work.",
+   "executive": "Inside: an API, a real-time layer, a sharded database and a job queue. The arrangement is our reconstruction."
+  },
+  {
+   "id": "s07",
+   "title": "Connect",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": ["client", "edge", "gs", "webapp", "cs"],
+   "trace": ["k-cl-web", "k-cl-edge", "k-edge-gs", "k-gs-web", "k-gs-cs"],
+   "engineer": "First path: coming online. On boot the client fetches its token and WebSocket setup details from the Webapp. It opens a WebSocket to the nearest edge region, where Envoy forwards it to a gateway server. The gateway fetches the user and their channel list from the Webapp, sends the client its first message, and then, asynchronously, subscribes to the channel servers that hold those channels. Unlike every other part, gateways run in many regions.",
+   "executive": "The app gets its details, opens one connection to a nearby gateway, and the gateway subscribes it to all its channels."
+  },
+  {
+   "id": "s08",
+   "title": "Send",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": ["client", "webapp", "vitess", "as", "cs"],
+   "trace": ["k-cl-web", "k-web-db", "k-web-as", "k-as-cs"],
+   "engineer": "Second path: sending. Messages are sent over the API, not the WebSocket. The Webapp hands the message to an admin server, which looks up the channel ID on a consistent hash ring and routes it to the one channel server that owns that channel. Writing it to the database first is our assumption; the real-time post starts at the hand-off. Channel IDs cover more than channels: users, teams, files and huddles hash the same way.",
+   "executive": "A sent message goes through the API to the one server that owns its channel."
+  },
+  {
+   "id": "s09",
+   "title": "Fan out",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": ["cs", "gs", "client"],
+   "trace": ["k-cs-gs", "k-gs-cl"],
+   "engineer": "Third path: fan-out. The channel server sends the message once to every gateway, anywhere in the world, that has a client subscribed to the channel. Each gateway then writes it down every subscribed WebSocket. Hundreds of event types, from reactions to bookmarks, take the same road. Slack notes a spike at the top of every hour, when reminders, scheduled messages and calendar events all fire at once.",
+   "executive": "The channel's server sends each message once per gateway, and gateways deliver it to every connected member."
+  },
+  {
+   "id": "s10",
+   "title": "Presence",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": ["gs", "ps", "client"],
+   "trace": ["k-gs-ps", "k-gs-cl"],
+   "engineer": "Fourth path: presence, the green dot. Presence servers keep, in memory, which users are online, with each user hashed to one presence server. Clients do not get everyone's status. They ask only about the users visible on screen, through their gateway as a proxy. Back in 2017, Slack said moving presence to a publish-subscribe model cut the presence events reaching clients by a factor of five.",
+   "executive": "Who is online is tracked in memory, and each app only asks about the people on its screen."
+  },
+  {
+   "id": "s11",
+   "title": "Jobs",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": ["webapp", "kafka", "workers"],
+   "trace": ["k-web-kafka", "k-kafka-wk"],
+   "engineer": "Fifth path: background jobs. Work too slow for a web request, such as every message post, push notification, link unfurl, calendar reminder and billing calculation, goes on the job queue. Since 2017 the Webapp writes jobs to a small Go service called Kafkagate, which puts them in Kafka. Another Go service, JQRelay, copies them into Redis, at a rate operators can limit, and a pool of workers takes them from there.",
+   "executive": "Slow work, like notifications, is queued durably in Kafka and run by workers, so it never holds up the send."
+  },
+  {
+   "id": "s12",
+   "chapter": "deep-dive",
+   "diagram": "rtm",
+   "focus": [],
+   "trace": [],
+   "engineer": "Inside real-time messaging, from Slack's 2023 post. The arrangement is our drawing of what it describes. Channel servers are stateful and in memory, each owning a slice of channels and some of their recent history; at peak, about sixteen million channels are served per host. Admin servers are stateless routers between the Webapp and channel servers. Gateway servers hold each client's subscriptions. Consul holds the hash ring, and ring managers, called CHARMs, keep it healthy.",
+   "executive": "Each channel belongs to one in-memory server; routers find it, and regional gateways carry its messages to people."
+  },
+  {
+   "id": "s13",
+   "title": "The hash ring",
+   "chapter": "deep-dive",
+   "diagram": "rtm",
+   "focus": ["admin", "consul", "charm", "chan"],
+   "trace": ["r-web-admin", "r-admin-consul", "r-admin-chan", "r-charm-consul", "r-charm-chan"],
+   "engineer": "Finding the owner. Channel IDs are hashed onto a consistent hash ring, so each channel maps to exactly one channel server, and adding or removing a server moves only a small share of channels. The CHARMs define each ring in Consul, and admin servers read the current version from there. When a channel server goes unhealthy, its CHARM replaces it: a new one is serving in under twenty seconds, and users of those channels see slower messages until then.",
+   "executive": "A hash ring says which server owns each channel; if that server fails, a replacement takes over in under twenty seconds."
+  },
+  {
+   "id": "s14",
+   "title": "Across regions",
+   "chapter": "deep-dive",
+   "diagram": "rtm",
+   "focus": ["chan", "gwa", "gwb", "ca", "cb"],
+   "trace": ["r-chan-gwa", "r-chan-gwb", "r-gwa-ca", "r-gwb-cb"],
+   "engineer": "The fan-out has two steps, and that is the point. The channel server sends one copy to each subscribed gateway, not one per person. Gateways sit in edge regions close to users, so the long hop across the world carries each message once, and the many short hops happen nearby. If a gateway region fails, Slack drains its users to the nearest healthy region. Slack says gateways now serve tens of millions of connected clients.",
+   "executive": "Each message crosses the world once per region, then fans out locally, which is how it reaches everyone in half a second."
+  },
+  {
+   "id": "s15",
+   "title": "Boot",
+   "chapter": "flows",
+   "diagram": "boot",
+   "focus": [],
+   "trace": ["b1", "b2", "b3", "b4", "b5", "b6", "b7"],
+   "engineer": "Now step by step: opening Slack. The client asks the Webapp for its token and connection details. It opens a WebSocket to the nearest edge, and Envoy, which also ends the TLS connection, passes it to a gateway. The gateway loads the user and channel list from the Webapp and sends its first message straight away. Subscribing to channel servers happens afterwards, asynchronously, so a user in hundreds of channels is not kept waiting.",
+   "executive": "Opening Slack takes one request for details and one connection; subscribing to channels happens in the background."
+  },
+  {
+   "id": "s16",
+   "title": "Store and queue",
+   "chapter": "flows",
+   "diagram": "send",
+   "focus": ["q-a", "q-web", "q-db", "q-jobs"],
+   "trace": ["m1", "m2", "m3", "m4"],
+   "engineer": "Second flow: sending a message. The client posts it to the Webapp. In our drawing the message is stored in Vitess first, so that what everyone sees is already durable; Slack's posts do not spell out this order. Follow-up work, such as push notifications for people who are away, is queued as jobs, because Slack's job queue runs for every message post. Then the sender gets its answer.",
+   "executive": "The message is saved, slow follow-up work is queued, and the sender gets an answer."
+  },
+  {
+   "id": "s17",
+   "title": "Broadcast",
+   "chapter": "flows",
+   "diagram": "send",
+   "focus": ["q-web", "q-as", "q-cs", "q-gs", "q-b", "q-a"],
+   "trace": ["m5", "m6", "m7", "m8", "m9"],
+   "engineer": "Then the broadcast, which Slack's post does describe. The Webapp sends the message to an admin server. The admin server hashes the channel ID to find the owning channel server. The channel server sends it to every gateway subscribed to the channel, and each gateway sends it to every subscribed client, the sender's own included. Typing indicators take a similar road, but start at the gateway and are never stored.",
+   "executive": "The channel's owner sends the message to every gateway, and every gateway to every member online."
+  },
+  {
+   "id": "s18",
+   "chapter": "data",
+   "card": {
+    "heading": "What is stored where",
+    "kind": "compare",
+    "points": [
+     "Data | Where",
+     "Messages, channels, users | MySQL behind Vitess",
+     "Hot reads | Memcached in front of Vitess",
+     "Recent channel history | Channel servers, in memory",
+     "Who is online | Presence servers, in memory",
+     "Jobs | Kafka (two days), then Redis",
+     "Typing indicators | Nowhere: never stored",
+     "App state on desktop | Local cache for fast, offline boot (2019)"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "What is stored where. Durable data lives in MySQL behind Vitess, with Memcached in front for hot reads. Recent channel history sits in channel server memory, and who is online sits in presence server memory. Jobs wait in Kafka, kept for two days in the 2017 design, before Redis. Typing indicators are never stored. Since 2019 the desktop client caches its own code and state, so it boots about twice as fast and can open offline.",
+   "executive": "Messages live in a sharded MySQL database; live state stays in memory; typing indicators are never stored at all."
+  },
+  {
+   "id": "s19",
+   "title": "Vitess",
+   "chapter": "data",
+   "diagram": "containers",
+   "focus": ["webapp", "cache", "vitess"],
+   "trace": ["k-web-cache", "k-web-db"],
+   "engineer": "The database story. Slack began on MySQL sharded by workspace, with pairs of servers replicating both ways. That made big enterprise customers hot spots, and one bad shard took down every workspace on it. From 2017 Slack moved to Vitess, which shards MySQL by any key; message data, for example, by channel ID. By December 2020 Vitess served ninety-nine per cent of queries: two point three million a second at peak, with a two millisecond median.",
+   "executive": "Slack moved from one database shard per workspace to Vitess, which spreads data by channel and other keys."
+  },
+  {
+   "id": "s20",
+   "chapter": "growth",
+   "card": {
+    "heading": "How it got here, from Slack's own posts",
+    "kind": "compare",
+    "points": [
+     "Year | Change",
+     "Early | MySQL sharded by workspace, server pairs",
+     "2017 | Flannel edge cache: 4M connections, 44× smaller boot",
+     "2017 | Kafka in front of the Redis job queue",
+     "2017 | Vitess migration begins",
+     "2019 | 12M+ daily users; desktop boot ~50% faster",
+     "2020 | Vitess: 99% of queries, 2.3M a second",
+     "2021 | Salesforce acquires Slack (21 July)",
+     "2023 | Cells: any zone drained in minutes; real-time post"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "How it grew. Slack began on MySQL sharded by workspace. In 2017, big workspaces made the old boot call, which sent the whole team to the client, too heavy, so Slack built Flannel, a cache at edge locations: four million connections, and a boot payload forty-four times smaller for a thirty-two thousand person team. The same year Kafka went in front of the job queue, and Vitess began. Salesforce bought Slack in 2021, and cells followed by 2023.",
+   "executive": "Each growth step moved work closer to users or spread it more evenly: an edge cache, a durable job queue, a resharded database, then cells."
+  },
+  {
+   "id": "s21",
+   "chapter": "failures",
+   "card": {
+    "heading": "What fails, and what protects users",
+    "kind": "compare",
+    "points": [
+     "Failure | Protection",
+     "Channel server dies | CHARM replaces it in under 20 s",
+     "Gateway region fails | Drain users to the nearest healthy region",
+     "Redis job queue full (2016) | Kafka absorbs enqueues; relays rate-limit",
+     "Cloud network loses packets (Jan 2021) | Load balancer panic mode, retries, circuit breaking",
+     "One zone degraded (June 2021) | Since 2023: drain the zone in minutes",
+     "Cache emptied (Feb 2022) | Throttle boots; booted clients keep working"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "What breaks, and what protects people. A channel server dies: a new one serves in under twenty seconds. A gateway region fails: its users are drained to the nearest one. On the fourth of January 2021, an overloaded AWS transit gateway dropped packets, autoscaling tried to add twelve hundred servers, and provisioning itself choked. Slack was down at the morning peak and degraded for hours. Panic mode, retries and circuit breaking helped the web tier recover.",
+   "executive": "Failed servers are replaced in seconds and failed regions drained; the worst outages started in the cloud network."
+  },
+  {
+   "id": "s22",
+   "title": "Drain a zone",
+   "chapter": "failures",
+   "diagram": "cells",
+   "focus": ["rotor", "lb", "f3", "b3"],
+   "trace": ["z-rotor-lb", "z-lb-f1", "z-lb-f2", "z-lb-f3", "z-f3-b3"],
+   "engineer": "On the thirtieth of June 2021, a faulty network link cut one availability zone off from the others, on and off, for hours. Slack's answer, finished in 2023 after about eighteen months, was cells. Services are siloed: each zone's frontends only call backends in the same zone. Edge Envoy load balancers, configured by Slack's own control plane, Rotor, can set a zone's weight to zero in one per cent steps. In-flight requests finish, and the zone is drained within five minutes.",
+   "executive": "Each data centre now works as a sealed cell, and operators can move all traffic away from a bad one within five minutes."
+  },
+  {
+   "id": "s23",
+   "title": "Empty cache",
+   "chapter": "failures",
+   "diagram": "containers",
+   "focus": ["client", "webapp", "cache", "vitess"],
+   "trace": ["k-cl-web", "k-web-cache", "k-web-db"],
+   "engineer": "A third incident, on the twenty-second of February 2022. A rolling upgrade of service discovery kept swapping Memcached nodes for empty ones. Client boot needed group message memberships, and every cache miss became a query to every shard, so database load grew faster than the misses and the cache could not refill. Slack throttled boots, so clients already open kept working, then fixed the query and moved it to a table sharded by channel.",
+   "executive": "When the cache emptied, Slack limited new logins so people already in kept working, then fixed the query behind it."
+  },
+  {
+   "id": "s24",
+   "chapter": "patterns",
+   "card": {
+    "heading": "Patterns used",
+    "points": [
+     "Consistent hashing: channels to channel servers; users to presence servers",
+     "Publish-subscribe: gateways subscribe to channels; clients to what is on screen",
+     "Sharding: Vitess keyspaces by channel, user or team",
+     "Competing consumers: workers draining the job queue",
+     "Cell-based architecture: zones siloed and drainable",
+     "Cache-aside and graceful degradation: Memcached; throttled boot"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Consistent hashing places channels on channel servers and users on presence servers. Publish-subscribe is the whole real-time layer: gateways subscribe to channels, and clients to what is on screen. Competing consumers, as workers drain the job queue. A cell-based architecture, with each zone a drainable silo. And cache-aside with graceful degradation, as the 2022 incident showed.",
+   "executive": "Hashing work to servers, subscribing to channels, sharded data, queued jobs and sealed cells."
+  },
+  {
+   "id": "s25",
+   "chapter": "decisions",
+   "card": {
+    "heading": "Key decisions",
+    "kind": "compare",
+    "points": [
+     "Decision | Why, and the cost",
+     "Send over HTTP, receive over WebSocket | One API for all writes; two paths to run",
+     "Stateful channel servers on a hash ring | Fast fan-out; failover takes up to 20 s",
+     "Gateways at the edge | One copy per region; a regional tier to operate",
+     "Vitess, not NoSQL | Kept MySQL features and skills; a long migration",
+     "Kafka in front of Redis, not a rewrite | Durable enqueue; more moving parts",
+     "Silo zones and drain them | Blast radius of one zone; cross-zone services to rework"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Sends go over HTTP and events come back over WebSocket, so every write passes one API. Channel servers are stateful, which makes fan-out fast but failover takes seconds. Gateways sit at the edge, so each message crosses the world once per region. Vitess was chosen over NoSQL to keep MySQL features. Kafka went in front of Redis rather than replacing it. And zones were siloed so one bad zone can simply be switched off.",
+   "executive": "Writes through one API, in-memory channel owners, regional gateways, MySQL kept but resharded, and zones that can be switched off."
+  },
+  {
+   "id": "s26",
+   "chapter": "mvp",
+   "card": {
+    "heading": "What we would build first",
+    "points": [
+     "Send over HTTP; push events over one WebSocket per client",
+     "Postgres, with messages keyed by channel ID from day one",
+     "One in-memory process per channel, placed by consistent hashing",
+     "A durable queue for notifications and unfurls, not Redis alone",
+     "Clients subscribe only to what is on screen; cache state locally",
+     "Throttle boot when the backend struggles; keep connected users working"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "If we built a team chat product today, this is where we would start; these are our recommendations, not Slack's. Send over HTTP and push events over one WebSocket per client. Postgres, with messages keyed by channel ID from the first day, so resharding later is easy. One in-memory owner per channel, placed by consistent hashing. A durable queue for slow work. Subscriptions only for what is on screen. And a boot throttle, so trouble never logs everyone out.",
+   "executive": "Start with one API, one connection per client and one database keyed by channel, and plan for durable jobs and throttled logins from day one."
+  }
+ ]
+}

@@ -1,0 +1,531 @@
+{
+ "id": "instagram",
+ "title": "Instagram: photos at planet scale",
+ "subtitle": "Company case study",
+ "voice": "en-GB-SoniaNeural",
+ "template": "case-study",
+ "meta": {
+  "kind": "company",
+  "category": "Social",
+  "level": "intermediate",
+  "uses": ["sharding", "cache-aside", "read-replicas", "cdn-caching", "competing-consumers"],
+  "related": ["meta"],
+  "blurb": "From one server in 2010 to billions of users: sharded PostgreSQL, 64-bit time-sortable IDs, Redis feeds, a CDN and Python at scale.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14",
+  "changelog": [{ "date": "2026-10-14", "note": "First version." }]
+ },
+ "diagrams": [
+  {
+   "id": "context",
+   "kind": "c4",
+   "title": "Level 1 · Context",
+   "direction": "DOWN",
+   "legend": [
+    { "style": "solid", "tone": "core", "label": "request · response" },
+    { "style": "dashed", "tone": "stream", "label": "push · asynchronous" },
+    { "style": "dotted", "tone": "data", "label": "runs on · stores" }
+   ],
+   "elements": [
+    { "id": "user", "kind": "person", "label": "People on Instagram", "sub": "post, scroll, explore, message" },
+    { "id": "ads", "kind": "external", "label": "Advertisers", "sub": "ads in Feed, Stories and Reels" },
+    { "id": "ig", "kind": "system", "label": "Instagram", "sub": "app, API, feeds, ranking" },
+    { "id": "cdn", "kind": "external", "label": "Meta's CDN", "sub": "serves photos and video" },
+    { "id": "push", "kind": "external", "label": "Push services", "sub": "Apple and Google" },
+    { "id": "meta", "kind": "external", "label": "Meta infrastructure", "sub": "data centres and shared services, since 2014" }
+   ],
+   "edges": [
+    { "id": "c-user-ig", "from": "user", "to": "ig", "label": "post, browse", "style": "solid" },
+    { "id": "c-user-cdn", "from": "user", "to": "cdn", "label": "load images", "style": "solid" },
+    { "id": "c-ads-ig", "from": "ads", "to": "ig", "label": "campaigns", "style": "solid" },
+    { "id": "c-ig-cdn", "from": "ig", "to": "cdn", "label": "media to serve", "style": "dotted" },
+    { "id": "c-ig-push", "from": "ig", "to": "push", "label": "notifications", "style": "dashed" },
+    { "id": "c-push-user", "from": "push", "to": "user", "label": "alerts", "style": "dashed" },
+    { "id": "c-ig-meta", "from": "ig", "to": "meta", "label": "runs on", "style": "dotted" }
+   ]
+  },
+  {
+   "id": "containers",
+   "kind": "c4",
+   "title": "Level 2 · Containers (our reconstruction)",
+   "direction": "DOWN",
+   "groups": [
+    { "id": "app", "label": "Application tier", "tone": "core" },
+    { "id": "store", "label": "Storage", "tone": "data" }
+   ],
+   "legend": [
+    { "style": "solid", "tone": "core", "label": "request · response" },
+    { "style": "dashed", "tone": "stream", "label": "queue · asynchronous" },
+    { "style": "dotted", "tone": "data", "label": "storage" }
+   ],
+   "elements": [
+    { "id": "client", "kind": "container", "label": "Instagram app", "sub": "iOS, Android, web", "tone": "neutral", "rank": 0 },
+    { "id": "cdn", "kind": "external", "label": "CDN", "sub": "CloudFront in 2011; Meta's today", "rank": 0 },
+    { "id": "lb", "kind": "container", "label": "Load balancers", "sub": "ELB and nginx in 2011", "tone": "core", "rank": 1 },
+    { "id": "push", "kind": "external", "label": "Push services", "sub": "Apple and Google", "rank": 1 },
+    { "id": "django", "kind": "container", "label": "Django web tier", "sub": "Python; Cinder runtime today", "group": "app", "rank": 2 },
+    { "id": "workers", "kind": "container", "label": "Async workers", "sub": "task queue; Gearman in 2011", "tone": "stream", "group": "app", "rank": 2 },
+    { "id": "media", "kind": "container", "label": "Media service", "sub": "uploads · our design", "group": "app", "rank": 3 },
+    { "id": "rank", "kind": "container", "label": "Ranking services", "sub": "Feed, Explore, Reels", "group": "app", "rank": 3 },
+    { "id": "pg", "kind": "store", "label": "PostgreSQL shards", "sub": "canonical data, by user id", "group": "store", "rank": 4 },
+    { "id": "redis", "kind": "store", "label": "Redis", "sub": "feed and activity lists", "group": "store", "rank": 4 },
+    { "id": "mc", "kind": "store", "label": "memcached", "sub": "object cache", "group": "store", "rank": 4 },
+    { "id": "cass", "kind": "store", "label": "Cassandra", "sub": "since 2012", "group": "store", "rank": 5 },
+    { "id": "ann", "kind": "store", "label": "Embedding index", "sub": "nearest-neighbour lookups", "group": "store", "rank": 5 },
+    { "id": "blob", "kind": "store", "label": "Media storage", "sub": "S3 in 2011; Meta's today", "group": "store", "rank": 5 }
+   ],
+   "edges": [
+    { "id": "k-app-lb", "from": "client", "to": "lb", "label": "API calls", "style": "solid" },
+    { "id": "k-lb-dj", "from": "lb", "to": "django", "style": "solid" },
+    { "id": "k-dj-media", "from": "django", "to": "media", "label": "photo bytes", "style": "solid" },
+    { "id": "k-media-blob", "from": "media", "to": "blob", "label": "sized copies", "style": "dotted" },
+    { "id": "k-dj-pg", "from": "django", "to": "pg", "label": "rows, next_id()", "style": "dotted" },
+    { "id": "k-dj-q", "from": "django", "to": "workers", "label": "enqueue fan-out", "style": "dashed" },
+    { "id": "k-w-redis", "from": "workers", "to": "redis", "label": "into followers' lists", "style": "dashed" },
+    { "id": "k-w-push", "from": "workers", "to": "push", "label": "notify", "style": "dashed" },
+    { "id": "k-dj-redis", "from": "django", "to": "redis", "label": "read my feed list", "style": "dotted" },
+    { "id": "k-dj-rank", "from": "django", "to": "rank", "label": "rank candidates", "style": "solid" },
+    { "id": "k-dj-mc", "from": "django", "to": "mc", "label": "get objects", "style": "dotted" },
+    { "id": "k-rank-ann", "from": "rank", "to": "ann", "label": "Explore retrieval", "style": "dotted" },
+    { "id": "k-rank-cass", "from": "rank", "to": "cass", "label": "illustrative", "style": "dotted" },
+    { "id": "k-app-cdn", "from": "client", "to": "cdn", "label": "image URLs", "style": "solid" },
+    { "id": "k-cdn-blob", "from": "cdn", "to": "blob", "label": "on a miss", "style": "dotted" }
+   ]
+  },
+  {
+   "id": "shards",
+   "kind": "c4",
+   "title": "Level 3 · Sharded PostgreSQL and IDs (from Instagram's 2012 talk)",
+   "direction": "DOWN",
+   "groups": [
+    { "id": "lib", "label": "In the Django process", "tone": "core" },
+    { "id": "db", "label": "PostgreSQL machines", "tone": "data" }
+   ],
+   "legend": [
+    { "style": "solid", "tone": "core", "label": "query path" },
+    { "style": "dashed", "tone": "stream", "label": "replication · resharding" },
+    { "style": "dotted", "tone": "data", "label": "returned id" }
+   ],
+   "elements": [
+    { "id": "view", "kind": "container", "label": "Django view", "sub": "for example, post a photo", "rank": 0 },
+    { "id": "dal", "kind": "component", "label": "DB abstraction layer", "sub": "select(fields, table, shard_key, …)", "group": "lib", "rank": 1 },
+    { "id": "map", "kind": "component", "label": "Shard map", "sub": "logical shard → machine", "group": "lib", "rank": 1 },
+    { "id": "bouncer", "kind": "component", "label": "PgBouncer", "sub": "pools connections, hides moves", "tone": "core", "rank": 2 },
+    { "id": "ma", "kind": "store", "label": "Machine A", "sub": "schemas shard0 … shard3", "group": "db", "rank": 3 },
+    { "id": "mb", "kind": "store", "label": "Machine B", "sub": "schemas shard4 … shard7", "group": "db", "rank": 3 },
+    { "id": "nextid", "kind": "component", "label": "next_id() in each schema", "sub": "41 bits ms · 13 bits shard · 10 bits sequence", "group": "db", "rank": 4 },
+    { "id": "replica", "kind": "store", "label": "Replica of A", "sub": "streaming replication, repmgr clone", "group": "db", "rank": 4 },
+    { "id": "mc", "kind": "store", "label": "Machine C", "sub": "now serves shard2, shard3", "group": "db", "rank": 5 }
+   ],
+   "edges": [
+    { "id": "e-view-dal", "from": "view", "to": "dal", "label": "shard key: user id", "style": "solid" },
+    { "id": "e-dal-map", "from": "dal", "to": "map", "label": "user_id % N", "style": "solid" },
+    { "id": "e-dal-pgb", "from": "dal", "to": "bouncer", "label": "query that schema", "style": "solid" },
+    { "id": "e-pgb-a", "from": "bouncer", "to": "ma", "style": "solid" },
+    { "id": "e-pgb-b", "from": "bouncer", "to": "mb", "style": "solid" },
+    { "id": "e-a-id", "from": "ma", "to": "nextid", "label": "INSERT uses it as default", "style": "solid" },
+    { "id": "e-id-dal", "from": "nextid", "to": "dal", "label": "64-bit id, sorts by time", "style": "dotted" },
+    { "id": "e-a-rep", "from": "ma", "to": "replica", "label": "stream changes", "style": "dashed" },
+    { "id": "e-rep-c", "from": "replica", "to": "mc", "label": "promote", "style": "dashed" },
+    { "id": "e-pgb-c", "from": "bouncer", "to": "mc", "label": "after the map changes", "style": "solid" }
+   ]
+  },
+  {
+   "id": "post",
+   "kind": "sequence",
+   "title": "Posting a photo (our reconstruction of the 2011–12 design)",
+   "participants": [
+    { "id": "u-app", "label": "Instagram app" },
+    { "id": "u-dj", "label": "Django" },
+    { "id": "u-blob", "label": "Media storage" },
+    { "id": "u-pg", "label": "Author's shard" },
+    { "id": "u-q", "label": "Queue and workers" },
+    { "id": "u-redis", "label": "Redis" },
+    { "id": "u-push", "label": "Push service" }
+   ],
+   "messages": [
+    { "id": "u1", "from": "u-app", "to": "u-dj", "label": "upload photo, caption", "style": "solid" },
+    { "id": "u2", "from": "u-dj", "to": "u-blob", "label": "store original and sized copies", "style": "solid" },
+    { "id": "u3", "from": "u-dj", "to": "u-pg", "label": "INSERT media row", "style": "solid" },
+    { "id": "u4", "from": "u-pg", "to": "u-dj", "label": "id from next_id()", "style": "dashed" },
+    { "id": "u5", "from": "u-dj", "to": "u-q", "label": "enqueue fan-out task", "style": "dashed" },
+    { "id": "u6", "from": "u-dj", "to": "u-app", "label": "posted", "style": "dashed" },
+    { "id": "u7", "from": "u-q", "to": "u-redis", "label": "SMEMBERS followers:author", "style": "solid" },
+    { "id": "u8", "from": "u-q", "to": "u-redis", "label": "LPUSH feed:follower media_id", "style": "solid" },
+    { "id": "u9", "from": "u-q", "to": "u-push", "label": "notify", "style": "dashed" }
+   ]
+  },
+  {
+   "id": "feed",
+   "kind": "sequence",
+   "title": "Opening the feed (our reconstruction)",
+   "participants": [
+    { "id": "f-app", "label": "Instagram app" },
+    { "id": "f-dj", "label": "Django" },
+    { "id": "f-redis", "label": "Redis" },
+    { "id": "f-rank", "label": "Feed ranking" },
+    { "id": "f-mc", "label": "memcached" },
+    { "id": "f-pg", "label": "PostgreSQL shards" },
+    { "id": "f-cdn", "label": "CDN" }
+   ],
+   "messages": [
+    { "id": "r1", "from": "f-app", "to": "f-dj", "label": "GET feed", "style": "solid" },
+    { "id": "r2", "from": "f-dj", "to": "f-redis", "label": "LRANGE feed:me", "style": "solid" },
+    { "id": "r3", "from": "f-redis", "to": "f-dj", "label": "recent media ids", "style": "dashed" },
+    { "id": "r4", "from": "f-dj", "to": "f-rank", "label": "rank candidates (since 2016)", "style": "solid" },
+    { "id": "r5", "from": "f-rank", "to": "f-dj", "label": "ordered ids", "style": "dashed" },
+    { "id": "r6", "from": "f-dj", "to": "f-mc", "label": "multi-get media objects", "style": "solid" },
+    { "id": "r7", "from": "f-dj", "to": "f-pg", "label": "misses: shard from the id", "style": "solid" },
+    { "id": "r8", "from": "f-dj", "to": "f-mc", "label": "fill the cache", "style": "dashed" },
+    { "id": "r9", "from": "f-dj", "to": "f-app", "label": "posts with image URLs", "style": "dashed" },
+    { "id": "r10", "from": "f-app", "to": "f-cdn", "label": "fetch images", "style": "solid" },
+    { "id": "r11", "from": "f-cdn", "to": "f-app", "label": "nearest cached copy", "style": "dashed" }
+   ]
+  }
+ ],
+ "chapters": [
+  { "id": "overview", "title": "Overview" },
+  { "id": "requirements", "title": "Requirements and scale" },
+  { "id": "context", "title": "Context" },
+  { "id": "containers", "title": "Containers" },
+  { "id": "deep-dive", "title": "Deep dive" },
+  { "id": "flows", "title": "Core flows" },
+  { "id": "data", "title": "Data and caching" },
+  { "id": "growth", "title": "Growth" },
+  { "id": "failures", "title": "Failure modes" },
+  { "id": "patterns", "title": "Patterns used" },
+  { "id": "decisions", "title": "Key decisions" },
+  { "id": "mvp", "title": "What we would build first" }
+ ],
+ "shots": [
+  {
+   "id": "i01",
+   "chapter": "overview",
+   "diagram": "context",
+   "focus": [],
+   "trace": [],
+   "engineer": "This is Instagram, seen from the outside. People post photos and videos, scroll a feed of the accounts they follow, and explore posts from accounts they do not. It launched in October 2010, joined Facebook in 2012, and now runs inside Meta. The one idea everything depends on is simple: keep core data in a database you understand, split it into many small pieces early, and give every post an ID that says when and where it lives.",
+   "executive": "Instagram is a photo and video app that grew from one server to billions of users. Its core trick is splitting data into many small pieces, with IDs that say where each piece lives."
+  },
+  {
+   "id": "i02",
+   "chapter": "requirements",
+   "card": {
+    "heading": "Scale, dated",
+    "kind": "numbers",
+    "points": [
+     "25k | sign-ups on launch day, October 2010",
+     "14M | users run by 3 engineers, December 2011",
+     "1B | monthly users, June 2018",
+     "3B | monthly users, September 2025",
+     "Trillions | image downloads a day across Meta's apps (2024)"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Scale first, with dates, because these numbers move. In a 2012 talk, co-founder Mike Krieger said Instagram had twenty-five thousand sign-ups on its first day. By December 2011, three engineers ran it for fourteen million users, according to a summary of Instagram's stack post. Instagram's timeline says a billion people used it each month by June 2018, and in September 2025 Meta's chief executive announced three billion. Across Meta's apps, images are downloaded trillions of times a day.",
+   "executive": "Instagram went from twenty-five thousand sign-ups on day one to three billion monthly users in 2025."
+  },
+  {
+   "id": "i03",
+   "chapter": "requirements",
+   "card": {
+    "heading": "What the system must do (our list)",
+    "points": [
+     "Posting feels instant, even on a weak mobile signal",
+     "The feed opens fast and shows what you care about",
+     "A post, once accepted, is never lost",
+     "Images load quickly anywhere in the world",
+     "IDs sort by time without a lookup",
+     "Database capacity grows without downtime"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The requirements are ours, written from the product rather than from an Instagram document. Posting must feel instant, even on a weak mobile signal. The feed must open quickly and show what you care about. A post, once accepted, is never lost. Images load quickly wherever you are. Every ID sorts by time without a lookup, which Instagram itself listed as a requirement in 2012. And database capacity must grow without taking the app down.",
+   "executive": "Fast posting, a fast and relevant feed, no lost posts, quick images everywhere, and room to grow without downtime."
+  },
+  {
+   "id": "i04",
+   "title": "People and the app",
+   "chapter": "context",
+   "diagram": "context",
+   "focus": ["user", "ig", "cdn", "ads"],
+   "trace": ["c-user-ig", "c-user-cdn", "c-ads-ig", "c-ig-cdn"],
+   "engineer": "Two paths matter to someone using the app. Their requests, such as posting or loading the feed, go to Instagram's API. The image and video bytes themselves come from a content delivery network, which is Meta's own today, and was Amazon CloudFront in 2011. Keeping heavy bytes off the API lets a few application servers handle many people. Advertisers are the other big party: their ads appear in Feed, Stories and Reels.",
+   "executive": "The app talks to Instagram for posts and feeds, but photos themselves come from a delivery network close to the user."
+  },
+  {
+   "id": "i05",
+   "title": "Push and platform",
+   "chapter": "context",
+   "diagram": "context",
+   "focus": ["ig", "push", "user", "meta"],
+   "trace": ["c-ig-push", "c-push-user", "c-ig-meta"],
+   "engineer": "Notifications go out through Apple's and Google's push services; a 2011 summary of Instagram's stack mentions over a billion push notifications sent. Underneath, since 2014, Instagram runs on Meta's infrastructure. Before that it ran on Amazon Web Services. That move gave Instagram Meta's tooling and shared systems, which is why the CDN and ranking stack are now Meta's.",
+   "executive": "Alerts go out through Apple and Google, and since 2014 Instagram has run in Meta's own data centres."
+  },
+  {
+   "id": "i06",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [],
+   "trace": [],
+   "engineer": "One level in. Instagram has not published a current container diagram, so this is our design, built from its 2011 and 2012 descriptions and later Meta posts. The app calls load balancers in front of a Django web tier written in Python. Async workers take slow jobs from a queue. A media service, which is our assumption, stores photos. Ranking services order Feed and Explore. And underneath sit PostgreSQL shards, Redis, memcached, Cassandra, an embedding index and media storage.",
+   "executive": "Inside: a Python web tier, background workers, ranking services and several stores. The layout is our reconstruction."
+  },
+  {
+   "id": "i07",
+   "title": "Post a photo",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": ["client", "lb", "django", "media", "blob", "pg", "workers", "redis", "push"],
+   "trace": ["k-app-lb", "k-lb-dj", "k-dj-media", "k-media-blob", "k-dj-pg", "k-dj-q", "k-w-redis", "k-w-push"],
+   "engineer": "Posting a photo. The request passes the load balancers to Django. The photo bytes go to media storage, which was Amazon S3 in 2011. A row for the post goes into the author's PostgreSQL shard, and the shard hands back its ID. Then Django puts a fan-out task on a queue. In 2011 that queue was Gearman, with about two hundred Python workers, and one of their jobs was pushing the new post into followers' feeds and sending notifications.",
+   "executive": "A new photo is stored, recorded in the author's database shard, and then copied to followers' feeds in the background."
+  },
+  {
+   "id": "i08",
+   "title": "Open the feed",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": ["client", "lb", "django", "redis", "rank", "mc", "pg"],
+   "trace": ["k-app-lb", "k-lb-dj", "k-dj-redis", "k-dj-rank", "k-dj-mc", "k-dj-pg"],
+   "engineer": "Opening the feed. Django reads the user's feed list from Redis, which in 2012 held feeds, lists and sets, while PostgreSQL held the canonical data and memcached held objects. Since 2016 the candidates are ranked rather than shown newest first. Django then fetches each post from memcached, and only goes to the PostgreSQL shard on a miss. That split, lists in one store and objects in another, is the heart of the read path.",
+   "executive": "The feed is a short list of post IDs, ranked, then filled in from a cache, with the database only as a fallback."
+  },
+  {
+   "id": "i09",
+   "title": "Load images",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": ["client", "cdn", "blob"],
+   "trace": ["k-app-cdn", "k-cdn-blob"],
+   "engineer": "Loading images. The feed response carries image URLs, not image bytes. The app fetches them from the CDN, which answers from a nearby cache and only goes back to media storage on a miss. Storing several sized copies per photo is our design; Instagram has not published its current sizes. A 2024 Meta post says its media platform team owns the whole path, from serving images through the CDN to showing them on the device.",
+   "executive": "Photos are fetched from a nearby delivery network, which only reaches back to central storage when it has no copy."
+  },
+  {
+   "id": "i10",
+   "title": "Explore",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": ["django", "rank", "ann", "cass"],
+   "trace": ["k-dj-rank", "k-rank-ann", "k-rank-cass"],
+   "engineer": "Explore shows posts from accounts you do not follow. In 2023 Meta described its funnel. Retrieval pulls candidates from a pool of billions, partly with a two-tower model whose item embeddings are computed daily and served from a nearest-neighbour index. A light first-stage model narrows thousands to about a hundred, a heavier model scores those, and a final pass applies integrity and diversity rules. Hundreds of millions of people visit Explore. The Cassandra link here is illustrative.",
+   "executive": "Explore finds a few posts you might like from billions, using a funnel of cheaper models first and heavier ones last."
+  },
+  {
+   "id": "i11",
+   "title": "Route to a shard",
+   "chapter": "deep-dive",
+   "diagram": "shards",
+   "focus": ["view", "dal", "map", "bouncer", "ma", "mb"],
+   "trace": ["e-view-dal", "e-dal-map", "e-dal-pgb", "e-pgb-a", "e-pgb-b"],
+   "engineer": "The deep dive: sharding, as Mike Krieger described it in an April 2012 talk. Instagram split PostgreSQL into thousands of logical shards, each a PostgreSQL schema, placed on far fewer machines. Instead of the Django ORM, it wrote a small database layer: you pass a table and a shard key, usually the user ID. The user ID modulo the number of logical shards picks the shard, a map picks the machine, and PgBouncer pools the connections.",
+   "executive": "Data is split into thousands of small logical pieces, and a simple map says which machine holds each one."
+  },
+  {
+   "id": "i12",
+   "chapter": "deep-dive",
+   "card": {
+    "heading": "Inside a 64-bit Instagram ID",
+    "kind": "compare",
+    "points": [
+     "Bits | Holds",
+     "41 | milliseconds since a custom epoch in August 2011 (~69 years)",
+     "13 | logical shard id (up to 8,192 shards)",
+     "10 | sequence, mod 1,024 (per shard, per millisecond)",
+     "Rejected | ticket servers, UUIDs, Snowflake, app-made IDs"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Every row needs an ID that is unique across shards. Instagram wanted it sortable by time without a lookup, sixty-four bits long, and simple to run. It rejected ticket servers, UUIDs and Twitter's Snowflake, and used the database itself. Forty-one bits hold milliseconds since a custom epoch in August 2011, enough for about sixty-nine years. Thirteen bits hold the logical shard. Ten bits hold a sequence, so each shard can make one thousand and twenty-four IDs per millisecond.",
+   "executive": "Each ID packs in the time it was made, the shard it lives on, and a counter, so it sorts by time and says where to look."
+  },
+  {
+   "id": "i13",
+   "title": "next_id()",
+   "chapter": "deep-dive",
+   "diagram": "shards",
+   "focus": ["ma", "nextid", "dal"],
+   "trace": ["e-a-id", "e-id-dal"],
+   "engineer": "The generator is a short PL/pgSQL function in each shard's schema. It takes a sequence value modulo one thousand and twenty-four, reads the clock in milliseconds, subtracts the epoch, and shifts the time left twenty-three bits, above the shard ID and the sequence. Each table uses it as the default for its ID column. To find a row later, you shift the ID right and read the shard straight out of it.",
+   "executive": "A tiny function inside the database builds each ID, so there is no separate ID service to run."
+  },
+  {
+   "id": "i14",
+   "title": "Post",
+   "chapter": "flows",
+   "diagram": "post",
+   "focus": ["u-app", "u-dj", "u-blob", "u-pg"],
+   "trace": ["u1", "u2", "u3", "u4"],
+   "engineer": "Now step by step, posting a photo. This sequence is our reconstruction of the 2011 and 2012 design, from the parts Instagram described. The app uploads the photo and caption to Django. Django writes the photo to media storage. It then inserts the media row into the author's shard, chosen from the author's user ID, and the shard's next ID function returns a new ID that already encodes the time and the shard.",
+   "executive": "The photo is saved, and a record is written to the author's database shard, which returns a new ID."
+  },
+  {
+   "id": "i15",
+   "title": "Fan out",
+   "chapter": "flows",
+   "diagram": "post",
+   "focus": ["u-dj", "u-q", "u-app", "u-redis", "u-push"],
+   "trace": ["u5", "u6", "u7", "u8", "u9"],
+   "engineer": "Django enqueues a fan-out task and answers the app straight away, so posting feels quick. A worker then does the slow part. Krieger's 2012 slides show the launch feed in Redis: read the author's followers with SMEMBERS, then LPUSH the new media ID onto each follower's feed list. This is fan-out on write: reads become cheap, but one post from an account with millions of followers means millions of writes. Notifications go out in the same background step.",
+   "executive": "The app gets an answer at once; a background worker then adds the post to every follower's feed."
+  },
+  {
+   "id": "i16",
+   "title": "Read the list",
+   "chapter": "flows",
+   "diagram": "feed",
+   "focus": ["f-app", "f-dj", "f-redis", "f-rank"],
+   "trace": ["r1", "r2", "r3", "r4", "r5"],
+   "engineer": "Second flow: opening the feed. Django reads the first page of the user's feed list from Redis with LRANGE, getting media IDs. Until 2016 the feed was newest first; Instagram says people were then missing seventy per cent of posts, so ranking now orders the candidates. Instagram says Feed uses thousands of signals and predicts about a dozen actions, such as whether you will like, comment on or spend a few seconds on a post.",
+   "executive": "The feed starts as a list of recent post IDs, which a ranking model reorders by what you are likely to care about."
+  },
+  {
+   "id": "i17",
+   "title": "Fill and fetch",
+   "chapter": "flows",
+   "diagram": "feed",
+   "focus": ["f-dj", "f-mc", "f-pg", "f-app", "f-cdn"],
+   "trace": ["r6", "r7", "r8", "r9", "r10", "r11"],
+   "engineer": "Django turns IDs into posts with one multi-get to memcached. For any misses, it reads the shard number straight out of each ID, queries only those shards, and puts the results back in the cache. That is cache-aside. The response carries image URLs, and the app fetches the bytes from the nearest CDN cache. The exact cache keys and batching are our design; the split between PostgreSQL, Redis and memcached is Instagram's own.",
+   "executive": "Posts come from a cache first and the database only on a miss; images come from a nearby delivery network."
+  },
+  {
+   "id": "i18",
+   "chapter": "data",
+   "card": {
+    "heading": "What lives where",
+    "kind": "compare",
+    "points": [
+     "Data | Where",
+     "Users, media rows, likes | PostgreSQL, sharded by user id (2012)",
+     "Feed and activity lists | Redis lists of media ids (2011–12)",
+     "Hot objects | memcached, cache-aside (2011–12)",
+     "Photo bytes | S3 in 2011; Meta storage behind its CDN today",
+     "Feed, Direct inbox, fraud data | Cassandra, from 2012 (secondary source)",
+     "Explore item embeddings | Nearest-neighbour index, rebuilt daily (2023)"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "What is stored where, with dates. In 2012 PostgreSQL held the canonical data, sharded by user ID, with streaming replicas. Redis held feeds, lists and sets. Memcached held hot objects. Photo bytes lived in Amazon S3 behind CloudFront, and today live in Meta's storage behind its CDN. From 2012, according to a secondary summary of Instagram's post, Cassandra replaced some Redis uses, such as Feed, the Direct inbox and fraud detection. And Explore's item embeddings are rebuilt daily.",
+   "executive": "Core records in PostgreSQL, feed lists in Redis, hot objects in a cache, photos in object storage, and some newer data in Cassandra."
+  },
+  {
+   "id": "i19",
+   "chapter": "growth",
+   "card": {
+    "heading": "How it got here",
+    "kind": "compare",
+    "points": [
+     "Year | Change",
+     "2010 | One machine in Los Angeles, then EC2 soon after launch",
+     "2011 | Django, PostgreSQL, Redis, memcached on 100+ EC2 instances",
+     "2011–12 | Photos moved to their own database, then thousands of logical shards",
+     "2012 | Joins Facebook; Cassandra adopted",
+     "2013–14 | Moves from AWS into Facebook's data centres, via Amazon VPC",
+     "2016 | Ranked Feed replaces newest-first",
+     "2023 | Immortal objects, from Instagram's server, ship in Python 3.12",
+     "2025 | 3 billion monthly users"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "How it grew. Instagram launched on a single machine in Los Angeles and moved to Amazon EC2 soon after launch. By late 2011 it ran on more than a hundred instances. Photos moved to their own database, then into logical shards. In 2012 it joined Facebook and adopted Cassandra. From 2013 it moved into Facebook's data centres, going through Amazon's private cloud first to avoid address clashes. Throughout, it stayed on Python and Django.",
+   "executive": "The same basic design grew from one machine to Meta's data centres, moving piece by piece rather than being rewritten."
+  },
+  {
+   "id": "i20",
+   "title": "Resharding",
+   "chapter": "growth",
+   "diagram": "shards",
+   "focus": ["ma", "replica", "mc", "bouncer", "map"],
+   "trace": ["e-a-rep", "e-rep-c", "e-pgb-c"],
+   "engineer": "Logical shards are what made growth cheap. When machine A fills up, Instagram cloned it as a streaming replica with repmgr, then promoted the copy as a new machine and changed the map so half of A's shards point there. Nothing is re-hashed, because the user ID still maps to the same logical shard. PgBouncer hides the move from the app. A new map took about thirty seconds of maintenance, and this only works while logical shards outnumber machines.",
+   "executive": "To add capacity, a copy of a full database server becomes a new server, and half its pieces are pointed at it."
+  },
+  {
+   "id": "i21",
+   "chapter": "failures",
+   "card": {
+    "heading": "What fails, and what protects users",
+    "kind": "compare",
+    "points": [
+     "Failure | Protection",
+     "Database machine dies | Streaming replica in another zone (2011); promote it",
+     "Shard machine fills up | Move logical shards to a new machine; brief maintenance",
+     "Cassandra GC pauses | Rocksandra: P99 reads 60 ms → 20 ms (2018)",
+     "Post from a huge account | Our design: merge its posts at read time, skip fan-out",
+     "Cache lost or cold | Reads fall to PostgreSQL; our design: warm it gradually",
+     "Ranking is slow | Our design: fall back to recent posts in time order"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "What breaks. A database machine dies: in 2011 each primary had a streaming replica in another availability zone. A shard machine fills up: move logical shards to a new one. Cassandra paused for garbage collection: Instagram swapped in a RocksDB storage engine, and a summary of its 2018 post reports P99 reads falling from sixty to twenty milliseconds. The last three rows are our design.",
+   "executive": "Each failure has a planned answer: database copies, movable shards, a faster storage engine, and simple fallbacks for the feed."
+  },
+  {
+   "id": "i22",
+   "chapter": "patterns",
+   "card": {
+    "heading": "Patterns used",
+    "points": [
+     "Sharding: thousands of logical PostgreSQL shards on fewer machines",
+     "Cache-aside: memcached in front of PostgreSQL",
+     "Read replicas: streaming replication, replicas in another zone",
+     "CDN caching: images served from the edge, originals in storage",
+     "Competing consumers: workers pulling fan-out jobs from a queue"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The named patterns, each with its own walkthrough. Sharding, with many more logical shards than machines, so data moves without re-hashing. Cache-aside, with memcached in front of PostgreSQL. Read replicas, from PostgreSQL's streaming replication, used both for failover and to take load off busy primaries. CDN caching, so image bytes rarely touch the core. And competing consumers: a pool of workers pulling fan-out and notification jobs from one queue.",
+   "executive": "Five well-known patterns: splitting data, caching, database copies, delivery networks and worker pools."
+  },
+  {
+   "id": "i23",
+   "chapter": "decisions",
+   "card": {
+    "heading": "Key decisions",
+    "kind": "compare",
+    "points": [
+     "Decision | Trade-off",
+     "Shard inside PostgreSQL | Keeps durability and SQL; cross-shard queries are hard",
+     "Many logical shards, few machines | Move shards freely; a map change needs brief maintenance",
+     "IDs made in the database | No ID service to run; large IDs from day one",
+     "Fan-out on write into Redis | Cheap reads; heavy writes for big accounts",
+     "Stay on Python, speed up CPython | No rewrite; Meta maintains its own runtime",
+     "Move into Facebook's data centres | Shared tooling and scale; about a year of migration"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The decisions that shaped it. Shard inside PostgreSQL rather than adopt a new database, keeping durability at the cost of hard cross-shard queries. Use many logical shards on few machines, so capacity grows by moving shards. Make IDs in the database, so there is no ID service to run. Fan out on write, for cheap reads. Stay on Python and speed up the runtime with Cinder, Meta's fork of CPython. And move into Facebook's data centres for shared tooling.",
+   "executive": "Keep a familiar database and split it early, make IDs in place, precompute feeds, keep Python, and join Meta's infrastructure."
+  },
+  {
+   "id": "i24",
+   "chapter": "mvp",
+   "card": {
+    "heading": "What we would build first",
+    "points": [
+     "One web app, PostgreSQL, object storage behind a CDN",
+     "64-bit time-sortable IDs with a shard field, from day one",
+     "Hundreds of logical shards on one machine, ready to split",
+     "A queue and workers for fan-out, image sizes and notifications",
+     "Redis for feed lists, memcached or Redis for hot objects",
+     "Newest-first feed; add ranking once people miss posts"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "If we built a photo app today, this is where we would start. These are our recommendations, not Instagram's. One web app and PostgreSQL, with photos in object storage behind a CDN. Sixty-four-bit IDs that sort by time and carry a shard number, from the first day. Hundreds of logical shards, all on one machine, so splitting later is a map change. A queue and workers for slow work. And a newest-first feed, until people start missing posts.",
+   "executive": "Start small with one database, but choose IDs and logical shards on day one so growth is a configuration change, not a rewrite."
+  }
+ ]
+}

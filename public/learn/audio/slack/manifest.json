@@ -1,0 +1,262 @@
+{
+ "s01-engineer": {
+  "file": "/audio/slack/s01-engineer.mp3",
+  "ms": 27120,
+  "hash": "2ca9490ebec3"
+ },
+ "s01-executive": {
+  "file": "/audio/slack/s01-executive.mp3",
+  "ms": 7920,
+  "hash": "0fc095efbe8a"
+ },
+ "s02-engineer": {
+  "file": "/audio/slack/s02-engineer.mp3",
+  "ms": 31800,
+  "hash": "b2a2addad036"
+ },
+ "s02-executive": {
+  "file": "/audio/slack/s02-executive.mp3",
+  "ms": 8112,
+  "hash": "120fbb2ec1e4"
+ },
+ "s03-engineer": {
+  "file": "/audio/slack/s03-engineer.mp3",
+  "ms": 27432,
+  "hash": "0485480aee41"
+ },
+ "s03-executive": {
+  "file": "/audio/slack/s03-executive.mp3",
+  "ms": 8712,
+  "hash": "1a17d728a9e2"
+ },
+ "s04-engineer": {
+  "file": "/audio/slack/s04-engineer.mp3",
+  "ms": 27384,
+  "hash": "641c8932a2c2"
+ },
+ "s04-executive": {
+  "file": "/audio/slack/s04-executive.mp3",
+  "ms": 8112,
+  "hash": "7ad43c01af56"
+ },
+ "s05-engineer": {
+  "file": "/audio/slack/s05-engineer.mp3",
+  "ms": 24432,
+  "hash": "79220a290a3c"
+ },
+ "s05-executive": {
+  "file": "/audio/slack/s05-executive.mp3",
+  "ms": 8712,
+  "hash": "92a376e9dbd0"
+ },
+ "s06-engineer": {
+  "file": "/audio/slack/s06-engineer.mp3",
+  "ms": 28920,
+  "hash": "bf693bf85e52"
+ },
+ "s06-executive": {
+  "file": "/audio/slack/s06-executive.mp3",
+  "ms": 8400,
+  "hash": "66cdb514f1c1"
+ },
+ "s07-engineer": {
+  "file": "/audio/slack/s07-engineer.mp3",
+  "ms": 28368,
+  "hash": "d80f4087ca19"
+ },
+ "s07-executive": {
+  "file": "/audio/slack/s07-executive.mp3",
+  "ms": 7440,
+  "hash": "a8a21c71264b"
+ },
+ "s08-engineer": {
+  "file": "/audio/slack/s08-engineer.mp3",
+  "ms": 27696,
+  "hash": "dee5fe179c1e"
+ },
+ "s08-executive": {
+  "file": "/audio/slack/s08-executive.mp3",
+  "ms": 4872,
+  "hash": "09eefbf5e329"
+ },
+ "s09-engineer": {
+  "file": "/audio/slack/s09-engineer.mp3",
+  "ms": 26328,
+  "hash": "a917224366f6"
+ },
+ "s09-executive": {
+  "file": "/audio/slack/s09-executive.mp3",
+  "ms": 6552,
+  "hash": "09ff1e407538"
+ },
+ "s10-engineer": {
+  "file": "/audio/slack/s10-engineer.mp3",
+  "ms": 26328,
+  "hash": "2a613355d34a"
+ },
+ "s10-executive": {
+  "file": "/audio/slack/s10-executive.mp3",
+  "ms": 5592,
+  "hash": "3f214f7d3a5e"
+ },
+ "s11-engineer": {
+  "file": "/audio/slack/s11-engineer.mp3",
+  "ms": 28416,
+  "hash": "d831d0e6ccfd"
+ },
+ "s11-executive": {
+  "file": "/audio/slack/s11-executive.mp3",
+  "ms": 7584,
+  "hash": "895af87c4703"
+ },
+ "s12-engineer": {
+  "file": "/audio/slack/s12-engineer.mp3",
+  "ms": 31368,
+  "hash": "2229adf1dc7f"
+ },
+ "s12-executive": {
+  "file": "/audio/slack/s12-executive.mp3",
+  "ms": 7224,
+  "hash": "aab352950b5b"
+ },
+ "s13-engineer": {
+  "file": "/audio/slack/s13-engineer.mp3",
+  "ms": 27192,
+  "hash": "efc8ce0801b4"
+ },
+ "s13-executive": {
+  "file": "/audio/slack/s13-executive.mp3",
+  "ms": 7656,
+  "hash": "feb802b621fd"
+ },
+ "s14-engineer": {
+  "file": "/audio/slack/s14-engineer.mp3",
+  "ms": 27048,
+  "hash": "5567441dbc4e"
+ },
+ "s14-executive": {
+  "file": "/audio/slack/s14-executive.mp3",
+  "ms": 7368,
+  "hash": "53c4514df56c"
+ },
+ "s15-engineer": {
+  "file": "/audio/slack/s15-engineer.mp3",
+  "ms": 28080,
+  "hash": "8707bd76539a"
+ },
+ "s15-executive": {
+  "file": "/audio/slack/s15-executive.mp3",
+  "ms": 7104,
+  "hash": "e6ec4fa4fcfa"
+ },
+ "s16-engineer": {
+  "file": "/audio/slack/s16-engineer.mp3",
+  "ms": 24600,
+  "hash": "5cd423e1c1c8"
+ },
+ "s16-executive": {
+  "file": "/audio/slack/s16-executive.mp3",
+  "ms": 5304,
+  "hash": "1c295a062df3"
+ },
+ "s17-engineer": {
+  "file": "/audio/slack/s17-engineer.mp3",
+  "ms": 25728,
+  "hash": "60777d0c5fd6"
+ },
+ "s17-executive": {
+  "file": "/audio/slack/s17-executive.mp3",
+  "ms": 6024,
+  "hash": "7614766af86b"
+ },
+ "s18-engineer": {
+  "file": "/audio/slack/s18-engineer.mp3",
+  "ms": 30096,
+  "hash": "4fbaccedbf8d"
+ },
+ "s18-executive": {
+  "file": "/audio/slack/s18-executive.mp3",
+  "ms": 8064,
+  "hash": "f326fc2d846b"
+ },
+ "s19-engineer": {
+  "file": "/audio/slack/s19-engineer.mp3",
+  "ms": 31824,
+  "hash": "24ff6784de94"
+ },
+ "s19-executive": {
+  "file": "/audio/slack/s19-executive.mp3",
+  "ms": 6960,
+  "hash": "62e56d9a5f53"
+ },
+ "s20-engineer": {
+  "file": "/audio/slack/s20-engineer.mp3",
+  "ms": 30648,
+  "hash": "4f6e136a08fe"
+ },
+ "s20-executive": {
+  "file": "/audio/slack/s20-executive.mp3",
+  "ms": 9312,
+  "hash": "8aa9a7c54354"
+ },
+ "s21-engineer": {
+  "file": "/audio/slack/s21-engineer.mp3",
+  "ms": 31176,
+  "hash": "444fef760714"
+ },
+ "s21-executive": {
+  "file": "/audio/slack/s21-executive.mp3",
+  "ms": 7152,
+  "hash": "74b5562db924"
+ },
+ "s22-engineer": {
+  "file": "/audio/slack/s22-engineer.mp3",
+  "ms": 32400,
+  "hash": "53a0922e33c9"
+ },
+ "s22-executive": {
+  "file": "/audio/slack/s22-executive.mp3",
+  "ms": 7584,
+  "hash": "10c2b119d15d"
+ },
+ "s23-engineer": {
+  "file": "/audio/slack/s23-engineer.mp3",
+  "ms": 27744,
+  "hash": "2acb28319112"
+ },
+ "s23-executive": {
+  "file": "/audio/slack/s23-executive.mp3",
+  "ms": 7224,
+  "hash": "feb34aff5067"
+ },
+ "s24-engineer": {
+  "file": "/audio/slack/s24-engineer.mp3",
+  "ms": 25704,
+  "hash": "297ba7ac3866"
+ },
+ "s24-executive": {
+  "file": "/audio/slack/s24-executive.mp3",
+  "ms": 6768,
+  "hash": "6d2f4fbc1aef"
+ },
+ "s25-engineer": {
+  "file": "/audio/slack/s25-engineer.mp3",
+  "ms": 29856,
+  "hash": "cd442d514623"
+ },
+ "s25-executive": {
+  "file": "/audio/slack/s25-executive.mp3",
+  "ms": 9096,
+  "hash": "7eb16c60e612"
+ },
+ "s26-engineer": {
+  "file": "/audio/slack/s26-engineer.mp3",
+  "ms": 31608,
+  "hash": "2b637bd50a4b"
+ },
+ "s26-executive": {
+  "file": "/audio/slack/s26-executive.mp3",
+  "ms": 9000,
+  "hash": "4a8bbc5d82f9"
+ }
+}

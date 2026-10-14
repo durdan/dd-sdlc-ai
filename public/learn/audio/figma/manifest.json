@@ -1,0 +1,252 @@
+{
+ "s01-engineer": {
+  "file": "/audio/figma/s01-engineer.mp3",
+  "ms": 29256,
+  "hash": "f81c7492c426"
+ },
+ "s01-executive": {
+  "file": "/audio/figma/s01-executive.mp3",
+  "ms": 8904,
+  "hash": "6b673721cfc4"
+ },
+ "s02-engineer": {
+  "file": "/audio/figma/s02-engineer.mp3",
+  "ms": 30480,
+  "hash": "ec46f51b125a"
+ },
+ "s02-executive": {
+  "file": "/audio/figma/s02-executive.mp3",
+  "ms": 6744,
+  "hash": "8f59ff356843"
+ },
+ "s03-engineer": {
+  "file": "/audio/figma/s03-engineer.mp3",
+  "ms": 26424,
+  "hash": "d7f0ee3ac5a4"
+ },
+ "s03-executive": {
+  "file": "/audio/figma/s03-executive.mp3",
+  "ms": 7368,
+  "hash": "19777e94e777"
+ },
+ "s04-engineer": {
+  "file": "/audio/figma/s04-engineer.mp3",
+  "ms": 31224,
+  "hash": "654e7c53731d"
+ },
+ "s04-executive": {
+  "file": "/audio/figma/s04-executive.mp3",
+  "ms": 8616,
+  "hash": "3aba4a987451"
+ },
+ "s05-engineer": {
+  "file": "/audio/figma/s05-engineer.mp3",
+  "ms": 30720,
+  "hash": "8b828dfbe0c0"
+ },
+ "s05-executive": {
+  "file": "/audio/figma/s05-executive.mp3",
+  "ms": 9168,
+  "hash": "111dc174991a"
+ },
+ "s06-engineer": {
+  "file": "/audio/figma/s06-engineer.mp3",
+  "ms": 27192,
+  "hash": "72d8819e7a9b"
+ },
+ "s06-executive": {
+  "file": "/audio/figma/s06-executive.mp3",
+  "ms": 6792,
+  "hash": "8e159ea027b3"
+ },
+ "s07-engineer": {
+  "file": "/audio/figma/s07-engineer.mp3",
+  "ms": 29616,
+  "hash": "40c6f3f990ed"
+ },
+ "s07-executive": {
+  "file": "/audio/figma/s07-executive.mp3",
+  "ms": 6576,
+  "hash": "70877a7c7f31"
+ },
+ "s08-engineer": {
+  "file": "/audio/figma/s08-engineer.mp3",
+  "ms": 25872,
+  "hash": "01ebe3fde431"
+ },
+ "s08-executive": {
+  "file": "/audio/figma/s08-executive.mp3",
+  "ms": 7200,
+  "hash": "22851fd88ab5"
+ },
+ "s09-engineer": {
+  "file": "/audio/figma/s09-engineer.mp3",
+  "ms": 31200,
+  "hash": "1d380f828ed0"
+ },
+ "s09-executive": {
+  "file": "/audio/figma/s09-executive.mp3",
+  "ms": 6768,
+  "hash": "b4a56e99371f"
+ },
+ "s10-engineer": {
+  "file": "/audio/figma/s10-engineer.mp3",
+  "ms": 30168,
+  "hash": "713baab1b6af"
+ },
+ "s10-executive": {
+  "file": "/audio/figma/s10-executive.mp3",
+  "ms": 5904,
+  "hash": "c786ef030725"
+ },
+ "s11-engineer": {
+  "file": "/audio/figma/s11-engineer.mp3",
+  "ms": 29520,
+  "hash": "66d453af814e"
+ },
+ "s11-executive": {
+  "file": "/audio/figma/s11-executive.mp3",
+  "ms": 5880,
+  "hash": "6635b08d772d"
+ },
+ "s12-engineer": {
+  "file": "/audio/figma/s12-engineer.mp3",
+  "ms": 27960,
+  "hash": "a131904170d7"
+ },
+ "s12-executive": {
+  "file": "/audio/figma/s12-executive.mp3",
+  "ms": 7488,
+  "hash": "4f703c434e9d"
+ },
+ "s13-engineer": {
+  "file": "/audio/figma/s13-engineer.mp3",
+  "ms": 28536,
+  "hash": "e83c02400606"
+ },
+ "s13-executive": {
+  "file": "/audio/figma/s13-executive.mp3",
+  "ms": 6408,
+  "hash": "36cc09c43215"
+ },
+ "s14-engineer": {
+  "file": "/audio/figma/s14-engineer.mp3",
+  "ms": 27288,
+  "hash": "29eb6804f652"
+ },
+ "s14-executive": {
+  "file": "/audio/figma/s14-executive.mp3",
+  "ms": 5208,
+  "hash": "6a4892da4e50"
+ },
+ "s15-engineer": {
+  "file": "/audio/figma/s15-engineer.mp3",
+  "ms": 25272,
+  "hash": "b8c77214aba2"
+ },
+ "s15-executive": {
+  "file": "/audio/figma/s15-executive.mp3",
+  "ms": 5688,
+  "hash": "f70230515252"
+ },
+ "s16-engineer": {
+  "file": "/audio/figma/s16-engineer.mp3",
+  "ms": 28248,
+  "hash": "ccfc2bfe902b"
+ },
+ "s16-executive": {
+  "file": "/audio/figma/s16-executive.mp3",
+  "ms": 5784,
+  "hash": "a07bd9c110b6"
+ },
+ "s17-engineer": {
+  "file": "/audio/figma/s17-engineer.mp3",
+  "ms": 25896,
+  "hash": "8d4048b248f9"
+ },
+ "s17-executive": {
+  "file": "/audio/figma/s17-executive.mp3",
+  "ms": 6768,
+  "hash": "95a3d16ce0d3"
+ },
+ "s18-engineer": {
+  "file": "/audio/figma/s18-engineer.mp3",
+  "ms": 30576,
+  "hash": "27d8455c679b"
+ },
+ "s18-executive": {
+  "file": "/audio/figma/s18-executive.mp3",
+  "ms": 6744,
+  "hash": "d82d04f3ecf1"
+ },
+ "s19-engineer": {
+  "file": "/audio/figma/s19-engineer.mp3",
+  "ms": 29400,
+  "hash": "cd2a039749b1"
+ },
+ "s19-executive": {
+  "file": "/audio/figma/s19-executive.mp3",
+  "ms": 6288,
+  "hash": "17bc483b86b2"
+ },
+ "s20-engineer": {
+  "file": "/audio/figma/s20-engineer.mp3",
+  "ms": 33192,
+  "hash": "ccadbeeaadb8"
+ },
+ "s20-executive": {
+  "file": "/audio/figma/s20-executive.mp3",
+  "ms": 6888,
+  "hash": "712f9facb8a8"
+ },
+ "s21-engineer": {
+  "file": "/audio/figma/s21-engineer.mp3",
+  "ms": 29256,
+  "hash": "fe4daee27b78"
+ },
+ "s21-executive": {
+  "file": "/audio/figma/s21-executive.mp3",
+  "ms": 5856,
+  "hash": "45805104cbad"
+ },
+ "s22-engineer": {
+  "file": "/audio/figma/s22-engineer.mp3",
+  "ms": 28560,
+  "hash": "b54c706ffdcb"
+ },
+ "s22-executive": {
+  "file": "/audio/figma/s22-executive.mp3",
+  "ms": 8016,
+  "hash": "f52a271f8230"
+ },
+ "s23-engineer": {
+  "file": "/audio/figma/s23-engineer.mp3",
+  "ms": 32472,
+  "hash": "364009cdbea6"
+ },
+ "s23-executive": {
+  "file": "/audio/figma/s23-executive.mp3",
+  "ms": 8496,
+  "hash": "e318e0ffb256"
+ },
+ "s24-engineer": {
+  "file": "/audio/figma/s24-engineer.mp3",
+  "ms": 30288,
+  "hash": "6c40ffbc92eb"
+ },
+ "s24-executive": {
+  "file": "/audio/figma/s24-executive.mp3",
+  "ms": 7536,
+  "hash": "0b90fbfa0b44"
+ },
+ "s25-engineer": {
+  "file": "/audio/figma/s25-engineer.mp3",
+  "ms": 29904,
+  "hash": "e29e74c47570"
+ },
+ "s25-executive": {
+  "file": "/audio/figma/s25-executive.mp3",
+  "ms": 8088,
+  "hash": "79f032120ce4"
+ }
+}

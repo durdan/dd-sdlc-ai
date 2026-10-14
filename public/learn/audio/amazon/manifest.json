@@ -1,0 +1,242 @@
+{
+ "a01-engineer": {
+  "file": "/audio/amazon/a01-engineer.mp3",
+  "ms": 31296,
+  "hash": "21949952dad2"
+ },
+ "a01-executive": {
+  "file": "/audio/amazon/a01-executive.mp3",
+  "ms": 8064,
+  "hash": "ac9af3b0fd8f"
+ },
+ "a02-engineer": {
+  "file": "/audio/amazon/a02-engineer.mp3",
+  "ms": 34152,
+  "hash": "be40e26fe6cd"
+ },
+ "a02-executive": {
+  "file": "/audio/amazon/a02-executive.mp3",
+  "ms": 11088,
+  "hash": "ce2d309176a3"
+ },
+ "a03-engineer": {
+  "file": "/audio/amazon/a03-engineer.mp3",
+  "ms": 31104,
+  "hash": "c0febb393691"
+ },
+ "a03-executive": {
+  "file": "/audio/amazon/a03-executive.mp3",
+  "ms": 8328,
+  "hash": "1dd6f6a629f6"
+ },
+ "a04-engineer": {
+  "file": "/audio/amazon/a04-engineer.mp3",
+  "ms": 26544,
+  "hash": "4732cfa0065c"
+ },
+ "a04-executive": {
+  "file": "/audio/amazon/a04-executive.mp3",
+  "ms": 6144,
+  "hash": "941f64ee38a1"
+ },
+ "a05-engineer": {
+  "file": "/audio/amazon/a05-engineer.mp3",
+  "ms": 31224,
+  "hash": "d84c14d0dd73"
+ },
+ "a05-executive": {
+  "file": "/audio/amazon/a05-executive.mp3",
+  "ms": 7464,
+  "hash": "2f763654f959"
+ },
+ "a06-engineer": {
+  "file": "/audio/amazon/a06-engineer.mp3",
+  "ms": 28680,
+  "hash": "4baac37216eb"
+ },
+ "a06-executive": {
+  "file": "/audio/amazon/a06-executive.mp3",
+  "ms": 7872,
+  "hash": "cbfa2b90aa91"
+ },
+ "a07-engineer": {
+  "file": "/audio/amazon/a07-engineer.mp3",
+  "ms": 31008,
+  "hash": "72ad6080448c"
+ },
+ "a07-executive": {
+  "file": "/audio/amazon/a07-executive.mp3",
+  "ms": 5064,
+  "hash": "2aa87854014a"
+ },
+ "a08-engineer": {
+  "file": "/audio/amazon/a08-engineer.mp3",
+  "ms": 26184,
+  "hash": "76621f9b0d26"
+ },
+ "a08-executive": {
+  "file": "/audio/amazon/a08-executive.mp3",
+  "ms": 6912,
+  "hash": "2f5cebdcebbe"
+ },
+ "a09-engineer": {
+  "file": "/audio/amazon/a09-engineer.mp3",
+  "ms": 26664,
+  "hash": "9ff3931cb54f"
+ },
+ "a09-executive": {
+  "file": "/audio/amazon/a09-executive.mp3",
+  "ms": 6096,
+  "hash": "0a3910c54fd0"
+ },
+ "a10-engineer": {
+  "file": "/audio/amazon/a10-engineer.mp3",
+  "ms": 31032,
+  "hash": "a58e4358faad"
+ },
+ "a10-executive": {
+  "file": "/audio/amazon/a10-executive.mp3",
+  "ms": 7176,
+  "hash": "8054f6d84718"
+ },
+ "a11-engineer": {
+  "file": "/audio/amazon/a11-engineer.mp3",
+  "ms": 27288,
+  "hash": "c085f504915a"
+ },
+ "a11-executive": {
+  "file": "/audio/amazon/a11-executive.mp3",
+  "ms": 5280,
+  "hash": "aab1b224da5f"
+ },
+ "a12-engineer": {
+  "file": "/audio/amazon/a12-engineer.mp3",
+  "ms": 25632,
+  "hash": "3dc6c102198a"
+ },
+ "a12-executive": {
+  "file": "/audio/amazon/a12-executive.mp3",
+  "ms": 5304,
+  "hash": "3a69b7101714"
+ },
+ "a13-engineer": {
+  "file": "/audio/amazon/a13-engineer.mp3",
+  "ms": 27072,
+  "hash": "1fffcb72a3ae"
+ },
+ "a13-executive": {
+  "file": "/audio/amazon/a13-executive.mp3",
+  "ms": 5520,
+  "hash": "07e97acab098"
+ },
+ "a14-engineer": {
+  "file": "/audio/amazon/a14-engineer.mp3",
+  "ms": 24576,
+  "hash": "75d937587817"
+ },
+ "a14-executive": {
+  "file": "/audio/amazon/a14-executive.mp3",
+  "ms": 6912,
+  "hash": "979480cc731f"
+ },
+ "a15-engineer": {
+  "file": "/audio/amazon/a15-engineer.mp3",
+  "ms": 25776,
+  "hash": "a43f01a2e05e"
+ },
+ "a15-executive": {
+  "file": "/audio/amazon/a15-executive.mp3",
+  "ms": 6888,
+  "hash": "f8a6b53e0a3d"
+ },
+ "a16-engineer": {
+  "file": "/audio/amazon/a16-engineer.mp3",
+  "ms": 27456,
+  "hash": "86d3491877b3"
+ },
+ "a16-executive": {
+  "file": "/audio/amazon/a16-executive.mp3",
+  "ms": 6216,
+  "hash": "f9c75db34c12"
+ },
+ "a17-engineer": {
+  "file": "/audio/amazon/a17-engineer.mp3",
+  "ms": 32736,
+  "hash": "a2d41599c68c"
+ },
+ "a17-executive": {
+  "file": "/audio/amazon/a17-executive.mp3",
+  "ms": 6960,
+  "hash": "78d7b1ee37a9"
+ },
+ "a18-engineer": {
+  "file": "/audio/amazon/a18-engineer.mp3",
+  "ms": 34344,
+  "hash": "ea29b5bb8ae9"
+ },
+ "a18-executive": {
+  "file": "/audio/amazon/a18-executive.mp3",
+  "ms": 9120,
+  "hash": "4cf9496c0daf"
+ },
+ "a19-engineer": {
+  "file": "/audio/amazon/a19-engineer.mp3",
+  "ms": 34584,
+  "hash": "195851273070"
+ },
+ "a19-executive": {
+  "file": "/audio/amazon/a19-executive.mp3",
+  "ms": 10248,
+  "hash": "ed0f0c564368"
+ },
+ "a20-engineer": {
+  "file": "/audio/amazon/a20-engineer.mp3",
+  "ms": 32592,
+  "hash": "71cb2cd9c7ef"
+ },
+ "a20-executive": {
+  "file": "/audio/amazon/a20-executive.mp3",
+  "ms": 11016,
+  "hash": "967dd4fea217"
+ },
+ "a21-engineer": {
+  "file": "/audio/amazon/a21-engineer.mp3",
+  "ms": 30288,
+  "hash": "74e9c01a9f91"
+ },
+ "a21-executive": {
+  "file": "/audio/amazon/a21-executive.mp3",
+  "ms": 8904,
+  "hash": "695e1d32103f"
+ },
+ "a22-engineer": {
+  "file": "/audio/amazon/a22-engineer.mp3",
+  "ms": 31128,
+  "hash": "b5c8fca91e0b"
+ },
+ "a22-executive": {
+  "file": "/audio/amazon/a22-executive.mp3",
+  "ms": 8112,
+  "hash": "8bf84f736d89"
+ },
+ "a23-engineer": {
+  "file": "/audio/amazon/a23-engineer.mp3",
+  "ms": 31488,
+  "hash": "98323efeb44e"
+ },
+ "a23-executive": {
+  "file": "/audio/amazon/a23-executive.mp3",
+  "ms": 9096,
+  "hash": "0620aa174c09"
+ },
+ "a24-engineer": {
+  "file": "/audio/amazon/a24-engineer.mp3",
+  "ms": 31680,
+  "hash": "721e02296ee4"
+ },
+ "a24-executive": {
+  "file": "/audio/amazon/a24-executive.mp3",
+  "ms": 7488,
+  "hash": "455e262c90ca"
+ }
+}

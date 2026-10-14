@@ -1,0 +1,262 @@
+{
+ "m01-engineer": {
+  "file": "/audio/meta/m01-engineer.mp3",
+  "ms": 26664,
+  "hash": "99760b09f594"
+ },
+ "m01-executive": {
+  "file": "/audio/meta/m01-executive.mp3",
+  "ms": 8520,
+  "hash": "da97d97be249"
+ },
+ "m02-engineer": {
+  "file": "/audio/meta/m02-engineer.mp3",
+  "ms": 26136,
+  "hash": "30ae3a6eb989"
+ },
+ "m02-executive": {
+  "file": "/audio/meta/m02-executive.mp3",
+  "ms": 6912,
+  "hash": "47f0d19e289d"
+ },
+ "m03-engineer": {
+  "file": "/audio/meta/m03-engineer.mp3",
+  "ms": 26640,
+  "hash": "2fc2e8258fd3"
+ },
+ "m03-executive": {
+  "file": "/audio/meta/m03-executive.mp3",
+  "ms": 8712,
+  "hash": "e1d30ccaf462"
+ },
+ "m04-engineer": {
+  "file": "/audio/meta/m04-engineer.mp3",
+  "ms": 26712,
+  "hash": "a3ab4dd9373e"
+ },
+ "m04-executive": {
+  "file": "/audio/meta/m04-executive.mp3",
+  "ms": 6696,
+  "hash": "9a671245b0df"
+ },
+ "m05-engineer": {
+  "file": "/audio/meta/m05-engineer.mp3",
+  "ms": 20256,
+  "hash": "472cb7754098"
+ },
+ "m05-executive": {
+  "file": "/audio/meta/m05-executive.mp3",
+  "ms": 5784,
+  "hash": "44002237c7d8"
+ },
+ "m06-engineer": {
+  "file": "/audio/meta/m06-engineer.mp3",
+  "ms": 30024,
+  "hash": "6364af895ac2"
+ },
+ "m06-executive": {
+  "file": "/audio/meta/m06-executive.mp3",
+  "ms": 10848,
+  "hash": "644190d432dd"
+ },
+ "m07-engineer": {
+  "file": "/audio/meta/m07-engineer.mp3",
+  "ms": 28632,
+  "hash": "5e2542a13e19"
+ },
+ "m07-executive": {
+  "file": "/audio/meta/m07-executive.mp3",
+  "ms": 6744,
+  "hash": "aa0708d57889"
+ },
+ "m08-engineer": {
+  "file": "/audio/meta/m08-engineer.mp3",
+  "ms": 27360,
+  "hash": "c1806b54591f"
+ },
+ "m08-executive": {
+  "file": "/audio/meta/m08-executive.mp3",
+  "ms": 7056,
+  "hash": "d35ffaeca448"
+ },
+ "m09-engineer": {
+  "file": "/audio/meta/m09-engineer.mp3",
+  "ms": 26112,
+  "hash": "06dd2d320440"
+ },
+ "m09-executive": {
+  "file": "/audio/meta/m09-executive.mp3",
+  "ms": 8184,
+  "hash": "292eeaad331d"
+ },
+ "m10-engineer": {
+  "file": "/audio/meta/m10-engineer.mp3",
+  "ms": 25632,
+  "hash": "d16237932cb7"
+ },
+ "m10-executive": {
+  "file": "/audio/meta/m10-executive.mp3",
+  "ms": 6840,
+  "hash": "a5375b5fc8d0"
+ },
+ "m11-engineer": {
+  "file": "/audio/meta/m11-engineer.mp3",
+  "ms": 28008,
+  "hash": "9c9ee08a1860"
+ },
+ "m11-executive": {
+  "file": "/audio/meta/m11-executive.mp3",
+  "ms": 7080,
+  "hash": "198e4570cac4"
+ },
+ "m12-engineer": {
+  "file": "/audio/meta/m12-engineer.mp3",
+  "ms": 25824,
+  "hash": "e210e8766bfe"
+ },
+ "m12-executive": {
+  "file": "/audio/meta/m12-executive.mp3",
+  "ms": 6984,
+  "hash": "2faa5e085e2d"
+ },
+ "m13-engineer": {
+  "file": "/audio/meta/m13-engineer.mp3",
+  "ms": 28848,
+  "hash": "8a613d077bd0"
+ },
+ "m13-executive": {
+  "file": "/audio/meta/m13-executive.mp3",
+  "ms": 6144,
+  "hash": "f7b9da40dded"
+ },
+ "m14-engineer": {
+  "file": "/audio/meta/m14-engineer.mp3",
+  "ms": 27192,
+  "hash": "7336936dca7d"
+ },
+ "m14-executive": {
+  "file": "/audio/meta/m14-executive.mp3",
+  "ms": 7632,
+  "hash": "26400227ba83"
+ },
+ "m15-engineer": {
+  "file": "/audio/meta/m15-engineer.mp3",
+  "ms": 26424,
+  "hash": "52aaf576d192"
+ },
+ "m15-executive": {
+  "file": "/audio/meta/m15-executive.mp3",
+  "ms": 5832,
+  "hash": "3d97c3395c40"
+ },
+ "m16-engineer": {
+  "file": "/audio/meta/m16-engineer.mp3",
+  "ms": 27984,
+  "hash": "24966d9f466a"
+ },
+ "m16-executive": {
+  "file": "/audio/meta/m16-executive.mp3",
+  "ms": 7320,
+  "hash": "920c35bc24c1"
+ },
+ "m17-engineer": {
+  "file": "/audio/meta/m17-engineer.mp3",
+  "ms": 33000,
+  "hash": "8618bedc8064"
+ },
+ "m17-executive": {
+  "file": "/audio/meta/m17-executive.mp3",
+  "ms": 7464,
+  "hash": "1f61ca875558"
+ },
+ "m18-engineer": {
+  "file": "/audio/meta/m18-engineer.mp3",
+  "ms": 21240,
+  "hash": "a2fb89ad025d"
+ },
+ "m18-executive": {
+  "file": "/audio/meta/m18-executive.mp3",
+  "ms": 5736,
+  "hash": "6d9d38469a0e"
+ },
+ "m19-engineer": {
+  "file": "/audio/meta/m19-engineer.mp3",
+  "ms": 29928,
+  "hash": "97706ba15bbe"
+ },
+ "m19-executive": {
+  "file": "/audio/meta/m19-executive.mp3",
+  "ms": 6456,
+  "hash": "847421846619"
+ },
+ "m20-engineer": {
+  "file": "/audio/meta/m20-engineer.mp3",
+  "ms": 33120,
+  "hash": "8bfbfcf35667"
+ },
+ "m20-executive": {
+  "file": "/audio/meta/m20-executive.mp3",
+  "ms": 8328,
+  "hash": "adb13221e093"
+ },
+ "m21-engineer": {
+  "file": "/audio/meta/m21-engineer.mp3",
+  "ms": 29136,
+  "hash": "c1a9efe86cfb"
+ },
+ "m21-executive": {
+  "file": "/audio/meta/m21-executive.mp3",
+  "ms": 8304,
+  "hash": "a15ddb3cec66"
+ },
+ "m22-engineer": {
+  "file": "/audio/meta/m22-engineer.mp3",
+  "ms": 29736,
+  "hash": "34ff125b682e"
+ },
+ "m22-executive": {
+  "file": "/audio/meta/m22-executive.mp3",
+  "ms": 8424,
+  "hash": "62afb038526d"
+ },
+ "m23-engineer": {
+  "file": "/audio/meta/m23-engineer.mp3",
+  "ms": 27288,
+  "hash": "35702813fe2c"
+ },
+ "m23-executive": {
+  "file": "/audio/meta/m23-executive.mp3",
+  "ms": 9384,
+  "hash": "3ce64628e16d"
+ },
+ "m24-engineer": {
+  "file": "/audio/meta/m24-engineer.mp3",
+  "ms": 29616,
+  "hash": "a5e0dd8ba3eb"
+ },
+ "m24-executive": {
+  "file": "/audio/meta/m24-executive.mp3",
+  "ms": 9936,
+  "hash": "31cf3e9a9e16"
+ },
+ "m25-engineer": {
+  "file": "/audio/meta/m25-engineer.mp3",
+  "ms": 30240,
+  "hash": "c31b8a5ef289"
+ },
+ "m25-executive": {
+  "file": "/audio/meta/m25-executive.mp3",
+  "ms": 8592,
+  "hash": "28d3747f3e27"
+ },
+ "m26-engineer": {
+  "file": "/audio/meta/m26-engineer.mp3",
+  "ms": 27936,
+  "hash": "8dce61375f7c"
+ },
+ "m26-executive": {
+  "file": "/audio/meta/m26-executive.mp3",
+  "ms": 7392,
+  "hash": "0574530f6568"
+ }
+}

@@ -1,0 +1,938 @@
+{
+ "id": "read-replicas",
+ "title": "Read replicas",
+ "subtitle": "Design pattern",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "meta": {
+  "kind": "pattern",
+  "category": "Data",
+  "level": "beginner",
+  "uses": [
+   "write-ahead-log"
+  ],
+  "related": [
+   "cache-aside",
+   "sharding",
+   "cqrs",
+   "write-ahead-log"
+  ],
+  "blurb": "Send writes to one primary, stream its log to read-only copies, and spread reads across them.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ },
+ "diagrams": [
+  {
+   "id": "saturated",
+   "kind": "c4",
+   "title": "One database, mostly reads",
+   "direction": "RIGHT",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "query"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or lag"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "replication stream"
+    }
+   ],
+   "elements": [
+    {
+     "id": "users",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Users",
+     "sub": "browsing, searching, buying"
+    },
+    {
+     "id": "app",
+     "kind": "container",
+     "tone": "core",
+     "label": "Web application",
+     "sub": "10,000 queries a second"
+    },
+    {
+     "id": "db",
+     "kind": "store",
+     "tone": "data",
+     "label": "Database",
+     "sub": "CPU and disk saturated"
+    }
+   ],
+   "edges": [
+    {
+     "id": "p1",
+     "from": "users",
+     "to": "app",
+     "style": "solid",
+     "label": "page views"
+    },
+    {
+     "id": "p2",
+     "from": "app",
+     "to": "db",
+     "style": "solid",
+     "label": "reads: 9 in 10 queries"
+    },
+    {
+     "id": "p3",
+     "from": "app",
+     "to": "db",
+     "style": "solid",
+     "label": "writes: 1 in 10"
+    },
+    {
+     "id": "p4",
+     "from": "db",
+     "to": "app",
+     "style": "dashed",
+     "label": "queries queue · writes wait too"
+    }
+   ]
+  },
+  {
+   "id": "naive",
+   "kind": "c4",
+   "title": "Buy a bigger machine",
+   "direction": "RIGHT",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "query"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or lag"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "replication stream"
+    }
+   ],
+   "elements": [
+    {
+     "id": "app",
+     "kind": "container",
+     "tone": "core",
+     "label": "Web application",
+     "sub": "every query to one place"
+    },
+    {
+     "id": "big",
+     "kind": "store",
+     "tone": "data",
+     "label": "Database",
+     "sub": "largest instance size"
+    },
+    {
+     "id": "ceiling",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "No larger size",
+     "sub": "the ceiling"
+    }
+   ],
+   "edges": [
+    {
+     "id": "nv1",
+     "from": "app",
+     "to": "big",
+     "style": "solid",
+     "label": "every read and every write"
+    },
+    {
+     "id": "nv2",
+     "from": "big",
+     "to": "ceiling",
+     "style": "dashed",
+     "label": "next upgrade: none left"
+    },
+    {
+     "id": "nv3",
+     "from": "big",
+     "to": "app",
+     "style": "dashed",
+     "label": "one machine: a failure stops everything"
+    }
+   ]
+  },
+  {
+   "id": "structure",
+   "kind": "c4",
+   "title": "One primary for writes, replicas for reads",
+   "direction": "RIGHT",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "query"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or lag"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "replication stream"
+    }
+   ],
+   "groups": [
+    {
+     "id": "reps",
+     "label": "Read replicas [read-only copies]",
+     "tone": "data"
+    }
+   ],
+   "elements": [
+    {
+     "id": "app",
+     "kind": "container",
+     "tone": "core",
+     "label": "Application + router",
+     "sub": "router: in the app, driver or proxy"
+    },
+    {
+     "id": "primary",
+     "kind": "store",
+     "tone": "data",
+     "label": "Primary",
+     "sub": "every write, every change logged"
+    },
+    {
+     "id": "r1",
+     "kind": "store",
+     "tone": "data",
+     "label": "Replica 1",
+     "sub": "replays the log",
+     "group": "reps"
+    },
+    {
+     "id": "r2",
+     "kind": "store",
+     "tone": "data",
+     "label": "Replica 2",
+     "sub": "replays the log",
+     "group": "reps"
+    }
+   ],
+   "edges": [
+    {
+     "id": "s1",
+     "from": "app",
+     "to": "primary",
+     "style": "solid",
+     "label": "writes and fresh reads"
+    },
+    {
+     "id": "s2",
+     "from": "primary",
+     "to": "r1",
+     "style": "dotted",
+     "label": "WAL or binlog"
+    },
+    {
+     "id": "s3",
+     "from": "primary",
+     "to": "r2",
+     "style": "dotted",
+     "label": "WAL or binlog"
+    },
+    {
+     "id": "s4",
+     "from": "app",
+     "to": "r1",
+     "style": "solid",
+     "label": "reads"
+    },
+    {
+     "id": "s5",
+     "from": "app",
+     "to": "r2",
+     "style": "solid",
+     "label": "reads"
+    }
+   ]
+  },
+  {
+   "id": "flow",
+   "kind": "sequence",
+   "title": "A write, then a read, with asynchronous replication",
+   "participants": [
+    {
+     "id": "app",
+     "label": "Application"
+    },
+    {
+     "id": "router",
+     "label": "Router"
+    },
+    {
+     "id": "primary",
+     "label": "Primary"
+    },
+    {
+     "id": "replica",
+     "label": "Replica"
+    }
+   ],
+   "messages": [
+    {
+     "id": "f1",
+     "from": "app",
+     "to": "router",
+     "style": "solid",
+     "label": "UPDATE price = 12"
+    },
+    {
+     "id": "f2",
+     "from": "router",
+     "to": "primary",
+     "style": "solid",
+     "label": "write goes to the primary"
+    },
+    {
+     "id": "f3",
+     "from": "primary",
+     "to": "app",
+     "style": "solid",
+     "label": "committed · no wait for replicas"
+    },
+    {
+     "id": "f4",
+     "from": "primary",
+     "to": "replica",
+     "style": "dotted",
+     "label": "stream log record"
+    },
+    {
+     "id": "f5",
+     "from": "replica",
+     "to": "primary",
+     "style": "dotted",
+     "label": "received · replayed (typically < 1 s)"
+    },
+    {
+     "id": "f6",
+     "from": "app",
+     "to": "router",
+     "style": "solid",
+     "label": "SELECT price"
+    },
+    {
+     "id": "f7",
+     "from": "router",
+     "to": "replica",
+     "style": "solid",
+     "label": "read goes to a replica"
+    },
+    {
+     "id": "f8",
+     "from": "replica",
+     "to": "app",
+     "style": "solid",
+     "label": "12"
+    }
+   ]
+  },
+  {
+   "id": "lag",
+   "kind": "sequence",
+   "title": "Lag breaks read-your-writes and monotonic reads",
+   "participants": [
+    {
+     "id": "user",
+     "label": "User"
+    },
+    {
+     "id": "app",
+     "label": "App and router"
+    },
+    {
+     "id": "primary",
+     "label": "Primary"
+    },
+    {
+     "id": "ra",
+     "label": "Replica A · 2 s behind"
+    },
+    {
+     "id": "rb",
+     "label": "Replica B · 5 s behind"
+    }
+   ],
+   "messages": [
+    {
+     "id": "l1",
+     "from": "user",
+     "to": "app",
+     "style": "solid",
+     "label": "rename to 'Sam'"
+    },
+    {
+     "id": "l2",
+     "from": "app",
+     "to": "primary",
+     "style": "solid",
+     "label": "UPDATE name = 'Sam'"
+    },
+    {
+     "id": "l3",
+     "from": "primary",
+     "to": "app",
+     "style": "solid",
+     "label": "committed"
+    },
+    {
+     "id": "l4",
+     "from": "user",
+     "to": "app",
+     "style": "solid",
+     "label": "reload profile"
+    },
+    {
+     "id": "l5",
+     "from": "app",
+     "to": "ra",
+     "style": "solid",
+     "label": "SELECT name"
+    },
+    {
+     "id": "l6",
+     "from": "ra",
+     "to": "user",
+     "style": "dashed",
+     "label": "old name: my edit vanished"
+    },
+    {
+     "id": "l7",
+     "from": "user",
+     "to": "app",
+     "style": "solid",
+     "label": "reload again"
+    },
+    {
+     "id": "l8",
+     "from": "app",
+     "to": "rb",
+     "style": "solid",
+     "label": "SELECT name"
+    },
+    {
+     "id": "l9",
+     "from": "rb",
+     "to": "user",
+     "style": "dashed",
+     "label": "older still: time runs backwards"
+    },
+    {
+     "id": "l10",
+     "from": "user",
+     "to": "app",
+     "style": "solid",
+     "label": "fix: after a write…"
+    },
+    {
+     "id": "l11",
+     "from": "app",
+     "to": "primary",
+     "style": "solid",
+     "label": "…read from the primary for a few seconds"
+    },
+    {
+     "id": "l12",
+     "from": "app",
+     "to": "ra",
+     "style": "solid",
+     "label": "then the same caught-up replica every time"
+    }
+   ]
+  },
+  {
+   "id": "failover",
+   "kind": "c4",
+   "title": "Promote a replica, fence the old primary",
+   "direction": "DOWN",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "query"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or lag"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "replication stream"
+    }
+   ],
+   "elements": [
+    {
+     "id": "app",
+     "kind": "container",
+     "tone": "core",
+     "label": "Application",
+     "sub": "re-pointed after failover"
+    },
+    {
+     "id": "mgr",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Failover manager",
+     "sub": "detects, fences, promotes"
+    },
+    {
+     "id": "old",
+     "kind": "store",
+     "tone": "stream",
+     "label": "Old primary",
+     "sub": "crashed; may come back"
+    },
+    {
+     "id": "newp",
+     "kind": "store",
+     "tone": "data",
+     "label": "Replica A",
+     "sub": "promoted to new primary"
+    },
+    {
+     "id": "rb",
+     "kind": "store",
+     "tone": "data",
+     "label": "Replica B",
+     "sub": "follows the new primary"
+    }
+   ],
+   "edges": [
+    {
+     "id": "fo1",
+     "from": "old",
+     "to": "newp",
+     "style": "dashed",
+     "label": "last commits never shipped: lost"
+    },
+    {
+     "id": "fo2",
+     "from": "mgr",
+     "to": "newp",
+     "style": "solid",
+     "label": "promote"
+    },
+    {
+     "id": "fo3",
+     "from": "mgr",
+     "to": "old",
+     "style": "dashed",
+     "label": "fence: must not accept writes"
+    },
+    {
+     "id": "fo4",
+     "from": "app",
+     "to": "newp",
+     "style": "solid",
+     "label": "writes re-pointed"
+    },
+    {
+     "id": "fo5",
+     "from": "newp",
+     "to": "rb",
+     "style": "dotted",
+     "label": "stream log"
+    },
+    {
+     "id": "fo6",
+     "from": "app",
+     "to": "old",
+     "style": "dashed",
+     "label": "not fenced? writes to both: split brain"
+    }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "pg",
+     "kind": "system",
+     "tone": "core",
+     "label": "PostgreSQL",
+     "sub": "streaming replication · hot standby"
+    },
+    {
+     "id": "mysql",
+     "kind": "system",
+     "tone": "core",
+     "label": "MySQL",
+     "sub": "binary log · semisynchronous option"
+    },
+    {
+     "id": "rds",
+     "kind": "external",
+     "tone": "external",
+     "label": "Amazon RDS read replicas",
+     "sub": "engine's async replication · cross-Region"
+    },
+    {
+     "id": "aurora",
+     "kind": "external",
+     "tone": "external",
+     "label": "Amazon Aurora Replicas",
+     "sub": "shared volume · up to 15 · lag < 100 ms"
+    },
+    {
+     "id": "libpq",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "libpq driver",
+     "sub": "target_session_attrs"
+    },
+    {
+     "id": "proxysql",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "ProxySQL",
+     "sub": "read/write split by query rules"
+    }
+   ],
+   "edges": [
+    {
+     "id": "w1",
+     "from": "pg",
+     "to": "rds",
+     "style": "solid",
+     "label": "native replication underneath"
+    },
+    {
+     "id": "w2",
+     "from": "mysql",
+     "to": "rds",
+     "style": "solid",
+     "label": "native replication underneath"
+    },
+    {
+     "id": "w3",
+     "from": "rds",
+     "to": "aurora",
+     "style": "dotted",
+     "label": "different design: shared storage"
+    },
+    {
+     "id": "w4",
+     "from": "pg",
+     "to": "libpq",
+     "style": "solid",
+     "label": "driver picks primary or standby"
+    },
+    {
+     "id": "w5",
+     "from": "mysql",
+     "to": "proxysql",
+     "style": "solid",
+     "label": "proxy routes reads"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "problem",
+   "title": "The problem"
+  },
+  {
+   "id": "naive",
+   "title": "The naive fix"
+  },
+  {
+   "id": "pattern",
+   "title": "The pattern"
+  },
+  {
+   "id": "how",
+   "title": "How it works"
+  },
+  {
+   "id": "failure",
+   "title": "When it goes wrong"
+  },
+  {
+   "id": "tradeoffs",
+   "title": "Trade-offs"
+  },
+  {
+   "id": "wild",
+   "title": "In the wild"
+  },
+  {
+   "id": "related",
+   "title": "Related patterns"
+  },
+  {
+   "id": "recap",
+   "title": "Recap"
+  }
+ ],
+ "shots": [
+  {
+   "id": "rr-problem",
+   "chapter": "problem",
+   "title": "Saturated",
+   "diagram": "saturated",
+   "focus": [],
+   "trace": [
+    "p1",
+    "p2",
+    "p3",
+    "p4"
+   ],
+   "engineer": "Here is a typical web application with one database. Every page view reads from it: product lists, profiles, search results. Only a small share of the traffic writes anything. Say ten thousand queries a second, nine in ten of them reads. The database's CPU and disk are saturated, queries queue, and the few writes that matter, like orders, wait behind thousands of reads. These numbers are illustrative, but the shape is common: the bottleneck is reading, not writing.",
+   "executive": "One database answers every request, most of them reads, and it has run out of capacity."
+  },
+  {
+   "id": "rr-naive",
+   "chapter": "naive",
+   "title": "Scale up",
+   "diagram": "naive",
+   "focus": [],
+   "trace": [
+    "nv1",
+    "nv2",
+    "nv3"
+   ],
+   "engineer": "The obvious fix is a bigger machine. Move to the largest instance you can buy, with more cores, more memory and faster disks. It works for a while, and it needs no code changes. But each step up costs more than the last, and eventually there is no bigger machine to buy. Worse, it is still one machine: when it fails, or is restarted for maintenance, every read and every write stops together. Scaling up buys time, not a design.",
+   "executive": "A bigger database server helps for a while, but there is a largest size, and it is still a single point of failure."
+  },
+  {
+   "id": "rr-structure",
+   "chapter": "pattern",
+   "title": "Parts",
+   "diagram": "structure",
+   "focus": [],
+   "trace": [
+    "s1",
+    "s2",
+    "s3",
+    "s4",
+    "s5"
+   ],
+   "engineer": "Read replicas. Keep one primary database that accepts every write. Every change it makes is already recorded in its log: the write-ahead log in PostgreSQL, the binary log in MySQL. Stream that log to one or more replicas, which replay it and so hold copies of the same data. Replicas accept read-only queries. A router, in the application, the driver or a proxy, sends writes to the primary and reads to the replicas. Add replicas, and read capacity grows with them.",
+   "executive": "One main database takes all the changes and copies them to read-only copies, which share the work of answering reads."
+  },
+  {
+   "id": "rr-flow",
+   "chapter": "how",
+   "title": "Write then read",
+   "diagram": "flow",
+   "focus": [],
+   "trace": [
+    "f1",
+    "f2",
+    "f3",
+    "f4",
+    "f5",
+    "f6",
+    "f7",
+    "f8"
+   ],
+   "engineer": "Step by step. The application updates a price. The router sends the write to the primary, which commits it and records it in its log. With asynchronous replication, the default in both PostgreSQL and MySQL, the primary answers straight away, without waiting for any replica. Separately, it streams the log record to each replica, which replays it. PostgreSQL's documentation says this delay is typically under one second. A moment later, a read goes to a replica and sees the new price.",
+   "executive": "Changes are saved on the main database first and copied to the replicas a moment later; reads then come from the copies."
+  },
+  {
+   "id": "rr-routing",
+   "chapter": "how",
+   "title": "Routing",
+   "diagram": "structure",
+   "focus": [
+    "app",
+    "primary",
+    "r1",
+    "r2"
+   ],
+   "trace": [
+    "s1",
+    "s4",
+    "s5"
+   ],
+   "engineer": "Where does the split between reads and writes live? In the application, you keep two connection pools and choose per query. In the driver: PostgreSQL's libpq can list several hosts and pick one with target session attrs, such as read-write or prefer-standby. In a proxy: ProxySQL sends queries to a primary or replica host group by rules. Its own guide warns that a blanket rule sending every select to replicas causes problems with transactions and consistency. Route deliberately, not by keyword.",
+   "executive": "Something has to decide which database each query goes to: the application, its database driver, or a proxy in between."
+  },
+  {
+   "id": "rr-lag",
+   "chapter": "failure",
+   "title": "Stale read",
+   "diagram": "lag",
+   "focus": [],
+   "trace": [
+    "l1",
+    "l2",
+    "l3",
+    "l4",
+    "l5",
+    "l6"
+   ],
+   "engineer": "Now the catch: replicas are behind. A user changes their display name. The write commits on the primary. They reload the page, the read goes to a replica that is two seconds behind, and their old name comes back. Their edit seems to have vanished. This breaks a guarantee called read-your-writes: a process that writes something should see that write when it reads afterwards. PostgreSQL's documentation puts it plainly: data on a standby is eventually consistent with the primary.",
+   "executive": "Because copies lag slightly behind, a user can save a change and then not see it on the next page."
+  },
+  {
+   "id": "rr-monotonic",
+   "chapter": "failure",
+   "title": "Backwards",
+   "diagram": "lag",
+   "focus": [
+    "user",
+    "app",
+    "rb"
+   ],
+   "trace": [
+    "l7",
+    "l8",
+    "l9"
+   ],
+   "engineer": "A second surprise. The user reloads again, and this time the router picks a different replica, one further behind. Now they see something even older than before. Time appears to run backwards. The guarantee broken here is monotonic reads: once you have seen a version, later reads should not show an older one. It happens whenever one user's reads are spread across replicas with different lag, which a simple round-robin load balancer will happily do.",
+   "executive": "Reading from different copies in turn can even show a user older data than they saw a moment ago."
+  },
+  {
+   "id": "rr-sticky",
+   "chapter": "failure",
+   "title": "Sticky reads",
+   "diagram": "lag",
+   "focus": [
+    "app",
+    "primary",
+    "ra"
+   ],
+   "trace": [
+    "l10",
+    "l11",
+    "l12"
+   ],
+   "engineer": "The fixes. After a user writes, send their reads to the primary for a short while, longer than your usual lag; this is often called sticky reads. Or remember the log position of their write, and only read from a replica that has replayed past it. For monotonic reads, send each user to the same replica every time, for example by hashing their id. And read anything that must be exact, such as a balance before a payment, from the primary.",
+   "executive": "After someone saves a change, read their data from the main database for a short while, and keep each user on the same copy."
+  },
+  {
+   "id": "rr-failover",
+   "chapter": "failure",
+   "title": "Failover",
+   "diagram": "failover",
+   "focus": [],
+   "trace": [
+    "fo1",
+    "fo2",
+    "fo3",
+    "fo4",
+    "fo5",
+    "fo6"
+   ],
+   "engineer": "What if the primary dies? You promote a replica. In PostgreSQL that is pg_ctl promote, but PostgreSQL itself does not detect the failure; external tooling must. With asynchronous replication, commits that had not reached the replica are lost, in proportion to the lag at that moment. Then the old primary restarts. If nothing tells it that it is no longer primary, both accept writes: split brain. PostgreSQL's documentation calls the remedy STONITH: shoot the other node in the head.",
+   "executive": "If the main database fails, a copy takes over, but the last few changes can be lost, and the old one must be stopped from coming back as a second boss."
+  },
+  {
+   "id": "rr-modes",
+   "chapter": "tradeoffs",
+   "title": "Sync modes",
+   "card": {
+    "heading": "How long should a commit wait?",
+    "kind": "compare",
+    "points": [
+     "Mode | Trade-off",
+     "Asynchronous | Fastest writes; failover can lose recent commits",
+     "Semi-synchronous (MySQL) | Waits for one replica to receive and log; falls back to async after a timeout",
+     "Synchronous (PostgreSQL) | Waits for standby flush, or replay with remote_apply; slower writes",
+     "Any mode | Replicas still serve reads; only commit latency and durability change"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "How long should a commit wait? Asynchronous: the primary does not wait, so writes are fast, but a failover can lose recent commits. Semi-synchronous, in MySQL: the commit waits until at least one replica has received and logged it, though not applied it. If no replica answers within the timeout, ten seconds by default, it falls back to asynchronous. Synchronous, in PostgreSQL: wait for the standby to flush the commit, or with remote apply, to replay it. Each wait adds latency to every write.",
+   "executive": "Making the main database wait for its copies protects recent changes in a failure, but slows every write."
+  },
+  {
+   "id": "rr-limits",
+   "chapter": "tradeoffs",
+   "title": "Limits",
+   "card": {
+    "heading": "What replicas do not fix",
+    "points": [
+     "Writes: every replica replays every write; the primary is the ceiling",
+     "To scale writes, split the data: sharding",
+     "Cost: each replica is a full database instance",
+     "Cross-region replicas: closer reads and disaster recovery, but more lag"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three limits. Replicas do not help writes. Every replica replays every write, so the primary's write capacity is the ceiling; to scale writes, split the data with sharding. Replicas cost money: Amazon RDS bills each one as a standard database instance. And replicas in another region bring reads closer to distant users and give you a copy for disaster recovery, but AWS notes their lag is higher, because the network path between regions is longer.",
+   "executive": "Copies spread out reading, not writing. Each one costs a full server, and copies far away lag further behind."
+  },
+  {
+   "id": "rr-wild",
+   "chapter": "wild",
+   "title": "Sources",
+   "diagram": "wild",
+   "focus": [],
+   "trace": [
+    "w1",
+    "w2",
+    "w3",
+    "w4",
+    "w5"
+   ],
+   "engineer": "In the wild. PostgreSQL streams write-ahead log records to standbys, and hot standby lets them answer read-only queries. MySQL replicates from the source's binary log, asynchronous by default, with semisynchronous as an option. Amazon RDS read replicas use each engine's own asynchronous replication, can live in another region, and can be promoted to standalone. Aurora is different: up to fifteen replicas share one storage volume, so lag is usually well under a hundred milliseconds, and a replica is promoted automatically on failure.",
+   "executive": "PostgreSQL and MySQL have this built in, and Amazon's managed databases offer it as a setting, with Aurora sharing storage to keep copies very close."
+  },
+  {
+   "id": "rr-related",
+   "chapter": "related",
+   "card": {
+    "heading": "Related patterns",
+    "kind": "compare",
+    "points": [
+     "Pattern | How it relates",
+     "Cache-aside | Absorbs repeated reads before they reach any replica",
+     "Sharding | Splits the data so writes scale too; each shard can have replicas",
+     "CQRS | Builds a separate read model shaped for queries",
+     "Write-ahead log | The ordered record of changes that replicas replay"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Its neighbours. Cache-aside sits in front and absorbs repeated reads before they reach any replica. Sharding answers the write limit: split the data so each primary owns a slice, and each shard can still have its own replicas. CQRS goes further than copying the same tables: it builds a separate read model shaped for the queries you actually run. And the write-ahead log is the building block underneath: the ordered record of changes that every replica replays.",
+   "executive": "Caches, splitting data across databases, and purpose-built read models all work alongside read copies."
+  },
+  {
+   "id": "rr-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "Writes to one primary; stream its log to replicas that serve reads",
+     "Replicas lag: read your own writes from the primary; keep users on one replica",
+     "Plan failover: know what async can lose, and fence the old primary"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. Send writes to one primary and stream its log to replicas that serve reads; it scales reads, never writes. Replicas lag, so design for it: read your own writes from the primary or a caught-up replica, and keep each user on one replica. And plan failover before you need it: know what asynchronous replication can lose, and fence the old primary so it never comes back as a second one.",
+   "executive": "Copies scale reading, not writing. Expect them to lag. Plan carefully for the main database failing."
+  }
+ ]
+}

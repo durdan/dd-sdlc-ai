@@ -1,0 +1,403 @@
+{
+ "id": "distributed-locks",
+ "title": "Distributed locks",
+ "subtitle": "Design pattern",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "diagrams": [
+  {
+   "id": "overwrite",
+   "kind": "c4",
+   "title": "Two workers, one report, a lost update",
+   "direction": "RIGHT",
+   "elements": [
+    { "id": "queue", "kind": "container", "tone": "neutral", "label": "Job queue", "sub": "\"rebuild report 42\" delivered twice" },
+    { "id": "wa", "kind": "container", "tone": "core", "label": "Worker A", "sub": "machine 1" },
+    { "id": "wb", "kind": "container", "tone": "core", "label": "Worker B", "sub": "machine 2" },
+    { "id": "store", "kind": "store", "tone": "data", "label": "Report store", "sub": "report 42" }
+   ],
+   "edges": [
+    { "id": "o1", "from": "queue", "to": "wa", "style": "solid", "label": "job" },
+    { "id": "o2", "from": "queue", "to": "wb", "style": "solid", "label": "same job" },
+    { "id": "o3", "from": "wa", "to": "store", "style": "solid", "label": "read v1 · write A's v2" },
+    { "id": "o4", "from": "wb", "to": "store", "style": "dashed", "label": "read v1 · write B's v2 over it" }
+   ],
+   "legend": [
+    { "style": "solid", "tone": "core", "label": "call" },
+    { "style": "dashed", "tone": "stream", "label": "conflict or failure" },
+    { "style": "dotted", "tone": "data", "label": "signal" }
+   ]
+  },
+  {
+   "id": "local",
+   "kind": "c4",
+   "title": "A lock in memory guards one process",
+   "direction": "RIGHT",
+   "elements": [
+    { "id": "wa", "kind": "container", "tone": "core", "label": "Worker A", "group": "m1" },
+    { "id": "la", "kind": "component", "tone": "neutral", "label": "Mutex", "sub": "in A's memory", "group": "m1" },
+    { "id": "wb", "kind": "container", "tone": "core", "label": "Worker B", "group": "m2" },
+    { "id": "lb", "kind": "component", "tone": "neutral", "label": "Mutex", "sub": "in B's memory", "group": "m2" },
+    { "id": "store", "kind": "store", "tone": "data", "label": "Report store", "sub": "report 42" }
+   ],
+   "edges": [
+    { "id": "l1", "from": "wa", "to": "la", "style": "solid", "label": "lock: granted" },
+    { "id": "l2", "from": "wb", "to": "lb", "style": "solid", "label": "lock: granted" },
+    { "id": "l3", "from": "wa", "to": "store", "style": "solid", "label": "write" },
+    { "id": "l4", "from": "wb", "to": "store", "style": "dashed", "label": "write: still overwrites" }
+   ],
+   "groups": [
+    { "id": "m1", "label": "Machine 1", "tone": "neutral" },
+    { "id": "m2", "label": "Machine 2", "tone": "neutral" }
+   ],
+   "legend": [
+    { "style": "solid", "tone": "core", "label": "call" },
+    { "style": "dashed", "tone": "stream", "label": "conflict or failure" },
+    { "style": "dotted", "tone": "data", "label": "signal" }
+   ]
+  },
+  {
+   "id": "structure",
+   "kind": "c4",
+   "title": "A shared lock with an owner, a lease and a fencing token",
+   "direction": "RIGHT",
+   "elements": [
+    { "id": "wa", "kind": "container", "tone": "core", "label": "Worker A", "sub": "owner value a-7f3" },
+    { "id": "wb", "kind": "container", "tone": "core", "label": "Worker B", "sub": "owner value b-91c" },
+    { "id": "key", "kind": "component", "tone": "neutral", "label": "Lock key", "sub": "lock:report-42 = owner value", "group": "svc" },
+    { "id": "lease", "kind": "component", "tone": "neutral", "label": "Lease", "sub": "expires after 30 s", "group": "svc" },
+    { "id": "counter", "kind": "component", "tone": "neutral", "label": "Fencing counter", "sub": "goes up on every grant", "group": "svc" },
+    { "id": "res", "kind": "store", "tone": "data", "label": "Report store", "sub": "remembers the highest token seen" }
+   ],
+   "edges": [
+    { "id": "p1", "from": "wa", "to": "key", "style": "solid", "label": "acquire if free" },
+    { "id": "p2", "from": "wb", "to": "key", "style": "dashed", "label": "acquire: held, retry later" },
+    { "id": "p3", "from": "key", "to": "lease", "style": "dotted", "label": "start the clock" },
+    { "id": "p4", "from": "lease", "to": "key", "style": "dotted", "label": "expired → free again" },
+    { "id": "p5", "from": "counter", "to": "wa", "style": "dotted", "label": "token 33" },
+    { "id": "p6", "from": "wa", "to": "res", "style": "solid", "label": "write · token 33" },
+    { "id": "p7", "from": "wa", "to": "key", "style": "solid", "label": "release only if value is a-7f3" },
+    { "id": "p8", "from": "counter", "to": "wb", "style": "dotted", "label": "token 34" },
+    { "id": "p9", "from": "wb", "to": "res", "style": "solid", "label": "write · token 34 → ok" },
+    { "id": "p10", "from": "res", "to": "wa", "style": "dashed", "label": "late write · token 33 → rejected" }
+   ],
+   "groups": [
+    { "id": "svc", "label": "Lock service [Redis, etcd or ZooKeeper]", "tone": "core" }
+   ],
+   "legend": [
+    { "style": "solid", "tone": "core", "label": "call" },
+    { "style": "dashed", "tone": "stream", "label": "conflict or failure" },
+    { "style": "dotted", "tone": "data", "label": "signal" }
+   ]
+  },
+  {
+   "id": "flow",
+   "kind": "sequence",
+   "title": "Acquire, work, release with Redis",
+   "participants": [
+    { "id": "wa", "label": "Worker A" },
+    { "id": "redis", "label": "Redis" },
+    { "id": "wb", "label": "Worker B" },
+    { "id": "res", "label": "Report store" }
+   ],
+   "messages": [
+    { "id": "h1", "from": "wa", "to": "redis", "style": "solid", "label": "SET lock:report-42 a-7f3 NX PX 30000" },
+    { "id": "h2", "from": "redis", "to": "wa", "style": "solid", "label": "OK: key was free" },
+    { "id": "h3", "from": "wb", "to": "redis", "style": "solid", "label": "SET lock:report-42 b-91c NX PX 30000" },
+    { "id": "h4", "from": "redis", "to": "wb", "style": "dashed", "label": "nil: held · retry after a random delay" },
+    { "id": "h5", "from": "wa", "to": "res", "style": "solid", "label": "read, rebuild, write report 42" },
+    { "id": "h6", "from": "wa", "to": "redis", "style": "solid", "label": "delete only if value = a-7f3" },
+    { "id": "h7", "from": "redis", "to": "wa", "style": "solid", "label": "1: released" },
+    { "id": "h8", "from": "wb", "to": "redis", "style": "solid", "label": "retry SET … NX PX 30000" },
+    { "id": "h9", "from": "redis", "to": "wb", "style": "solid", "label": "OK: B holds it now" }
+   ]
+  },
+  {
+   "id": "pause",
+   "kind": "sequence",
+   "title": "The lease expires while the holder is paused",
+   "participants": [
+    { "id": "wa", "label": "Worker A" },
+    { "id": "redis", "label": "Lock service" },
+    { "id": "wb", "label": "Worker B" },
+    { "id": "res", "label": "Report store" }
+   ],
+   "messages": [
+    { "id": "f1", "from": "redis", "to": "wa", "style": "solid", "label": "lock granted · 30 s lease" },
+    { "id": "f2", "from": "wa", "to": "redis", "style": "dashed", "label": "40 s garbage-collection pause" },
+    { "id": "f3", "from": "redis", "to": "wb", "style": "solid", "label": "lease expired · lock granted to B" },
+    { "id": "f4", "from": "wb", "to": "res", "style": "solid", "label": "B writes report 42" },
+    { "id": "f5", "from": "wa", "to": "res", "style": "dashed", "label": "A wakes, still \"holds\" it: writes over B" },
+    { "id": "f6", "from": "wa", "to": "redis", "style": "solid", "label": "release: value is not a-7f3 · nothing deleted" }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    { "id": "chubby", "kind": "system", "tone": "neutral", "label": "Google Chubby", "sub": "OSDI 2006 · sequencers, lock-delay" },
+    { "id": "redis", "kind": "container", "tone": "core", "label": "Redis SET NX PX", "sub": "single-instance lock" },
+    { "id": "redlock", "kind": "container", "tone": "core", "label": "Redlock", "sub": "majority of 5 independent Redis masters" },
+    { "id": "kleppmann", "kind": "system", "tone": "neutral", "label": "Martin Kleppmann", "sub": "How to do distributed locking · 2016" },
+    { "id": "antirez", "kind": "system", "tone": "neutral", "label": "antirez", "sub": "Is Redlock safe?" },
+    { "id": "zk", "kind": "container", "tone": "stream", "label": "ZooKeeper lock recipe", "sub": "ephemeral sequential nodes" },
+    { "id": "etcd", "kind": "container", "tone": "stream", "label": "etcd concurrency.Mutex", "sub": "lock tied to a session lease" },
+    { "id": "pg", "kind": "container", "tone": "data", "label": "PostgreSQL advisory locks", "sub": "session or transaction level" }
+   ],
+   "edges": [
+    { "id": "w1", "from": "redis", "to": "redlock", "style": "solid", "label": "same SET, on N nodes" },
+    { "id": "w2", "from": "kleppmann", "to": "redlock", "style": "dashed", "label": "critiques: no fencing, timing assumptions" },
+    { "id": "w3", "from": "antirez", "to": "kleppmann", "style": "dashed", "label": "replies" },
+    { "id": "w4", "from": "chubby", "to": "kleppmann", "style": "dotted", "label": "efficiency vs correctness" },
+    { "id": "w5", "from": "kleppmann", "to": "zk", "style": "solid", "label": "use consensus; zxid as token" },
+    { "id": "w6", "from": "zk", "to": "etcd", "style": "dotted", "label": "both consensus-backed" }
+   ]
+  },
+  {
+   "id": "related",
+   "kind": "c4",
+   "title": "Related patterns",
+   "direction": "DOWN",
+   "elements": [
+    { "id": "lock", "kind": "container", "tone": "core", "label": "Distributed lock", "sub": "one holder at a time, for one operation" },
+    { "id": "leader", "kind": "component", "tone": "neutral", "label": "Leader election", "sub": "a lock on being in charge, held for long" },
+    { "id": "timeout", "kind": "component", "tone": "neutral", "label": "Timeout", "sub": "a lease is a timeout on ownership" },
+    { "id": "occ", "kind": "component", "tone": "neutral", "label": "Optimistic concurrency", "sub": "version column, compare-and-set" },
+    { "id": "dblock", "kind": "component", "tone": "neutral", "label": "Database row and advisory locks", "sub": "lock where the data lives" },
+    { "id": "idem", "kind": "component", "tone": "neutral", "label": "Idempotency", "sub": "make a duplicate harmless" },
+    { "id": "tpc", "kind": "component", "tone": "neutral", "label": "Two-phase commit", "sub": "holds locks across resources" }
+   ],
+   "edges": [
+    { "id": "r1", "from": "lock", "to": "leader", "style": "solid", "label": "same machinery" },
+    { "id": "r2", "from": "timeout", "to": "lock", "style": "solid", "label": "frees a dead holder" },
+    { "id": "r3", "from": "occ", "to": "lock", "style": "dotted", "label": "often replaces it" },
+    { "id": "r4", "from": "dblock", "to": "lock", "style": "dotted", "label": "when one database holds the data" },
+    { "id": "r5", "from": "lock", "to": "idem", "style": "solid", "label": "backstop for duplicates" },
+    { "id": "r6", "from": "tpc", "to": "lock", "style": "dotted", "label": "locks inside a transaction" }
+   ]
+  }
+ ],
+ "chapters": [
+  { "id": "problem", "title": "The problem" },
+  { "id": "naive", "title": "The naive fix" },
+  { "id": "pattern", "title": "The pattern" },
+  { "id": "how", "title": "How it works" },
+  { "id": "failure", "title": "When it goes wrong" },
+  { "id": "tradeoffs", "title": "Trade-offs" },
+  { "id": "wild", "title": "In the wild" },
+  { "id": "related", "title": "Related patterns" },
+  { "id": "recap", "title": "Recap" }
+ ],
+ "shots": [
+  {
+   "id": "dl-problem",
+   "chapter": "problem",
+   "diagram": "overwrite",
+   "focus": [],
+   "trace": [],
+   "engineer": "Here is a small reporting system. A queue hands out jobs such as rebuild report forty-two. Two workers, on two different machines, take jobs from it, and both read and write the same report store. Queues often deliver a job more than once, and a user can press the button twice. So sooner or later, both workers pick up the same report at the same moment.",
+   "executive": "Two workers on separate machines can end up doing the same job on the same report at the same time."
+  },
+  {
+   "id": "dl-race",
+   "chapter": "problem",
+   "title": "Lost update",
+   "diagram": "overwrite",
+   "focus": [],
+   "trace": ["o1", "o2", "o3", "o4"],
+   "engineer": "Watch what happens. Both workers get the job. Both read version one of the report. Worker A builds its version two and writes it. Worker B, working from the same old version one, writes its own version two straight over the top. A's work is gone, and nobody gets an error. Swap the report for an account balance or a file, and the result is a lost payment or a corrupted file.",
+   "executive": "Both read the same starting point and the second write silently erases the first. Nobody sees an error, but data is lost."
+  },
+  {
+   "id": "dl-naive",
+   "chapter": "naive",
+   "title": "Local mutex",
+   "diagram": "local",
+   "focus": [],
+   "trace": ["l1", "l2", "l3", "l4"],
+   "engineer": "The obvious fix is a lock around the update, the same mutex we would use between threads. But a mutex lives in one process's memory. Worker A locks its mutex and is granted it. Worker B locks its own mutex, on another machine, and is granted that too. Neither lock knows the other exists, so both write and B still overwrites A. To exclude another machine, the lock has to live somewhere both machines can see.",
+   "executive": "A lock inside one program cannot stop a program on another machine. The lock has to be shared."
+  },
+  {
+   "id": "dl-pattern",
+   "chapter": "pattern",
+   "title": "Acquire and release",
+   "diagram": "structure",
+   "focus": [],
+   "trace": ["p1", "p2", "p3", "p4", "p7"],
+   "engineer": "A distributed lock lives in a shared service. It has three parts. A lock key, named after the resource, whose value says who owns it: a random string only that worker knows. A lease, so the key expires on its own and a crashed holder cannot block everyone for ever. And, for correctness, a fencing counter, which we will come back to. Worker A acquires the key if it is free; B is told it is held and retries. A releases it, but only if the value is still its own.",
+   "executive": "Workers ask a shared service for the lock. It records who holds it and for how long, so a crashed worker's lock eventually frees itself."
+  },
+  {
+   "id": "dl-how",
+   "chapter": "how",
+   "title": "Redis",
+   "diagram": "flow",
+   "focus": [],
+   "trace": ["h1", "h2", "h3", "h4", "h5", "h6", "h7", "h8", "h9"],
+   "engineer": "With Redis, step by step. Worker A sends SET, with the lock key, its random value, NX meaning only if the key does not exist, and PX thirty thousand: expire in thirty seconds. Redis says OK. B sends the same command and gets nil, so it waits a random delay and tries again. A does its work, then releases with a small script: delete the key only if the value is still a-7f3. B's retry now succeeds.",
+   "executive": "One command sets the lock only if nobody has it, with a thirty-second expiry. The holder removes it when finished, but only if it is still theirs."
+  },
+  {
+   "id": "dl-why-value",
+   "chapter": "how",
+   "card": {
+    "heading": "Why each part matters",
+    "kind": "compare",
+    "points": [
+     "Without | What goes wrong",
+     "NX | Everyone \"acquires\" by overwriting the key",
+     "An expiry | A crashed holder blocks the resource for ever",
+     "A random owner value | A slow holder deletes the next holder's lock",
+     "Setting both in one command | A crash between them leaves a lock that never expires"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Each piece earns its place. Without NX, every worker simply overwrites the key and believes it won. Without an expiry, a holder that crashes keeps the lock for ever. Without the random value, a slow holder whose lease has run out would delete the lock that now belongs to someone else; Redis's own documentation gives exactly this reason. And the value and expiry are set in one atomic command, so there is no moment where the lock exists with no expiry.",
+   "executive": "Only-if-free, an expiry, and a private owner value each close a specific hole. Leave any one out and two workers can collide."
+  },
+  {
+   "id": "dl-pause",
+   "chapter": "failure",
+   "title": "Paused holder",
+   "diagram": "pause",
+   "focus": [],
+   "trace": ["f1", "f2", "f3", "f4", "f5", "f6"],
+   "engineer": "Now the hard case, described by Martin Kleppmann. A holds the lock with a thirty second lease, then stops for forty seconds: a long garbage collection pause, or a stalled virtual machine. The lease expires and B is granted the lock. B writes the report. A wakes up, still believing it holds the lock, and writes over B. Its release then finds a different value and deletes nothing. The owner value protected the lock, but not the data.",
+   "executive": "If the holder freezes longer than its lease, someone else gets the lock, and the frozen worker wakes up and overwrites their work anyway."
+  },
+  {
+   "id": "dl-fencing",
+   "chapter": "failure",
+   "title": "Fencing token",
+   "diagram": "structure",
+   "focus": [],
+   "trace": ["p5", "p6", "p8", "p9", "p10"],
+   "engineer": "The fix is a fencing token. Every time the lock is granted, the service hands out a number that only goes up. A gets thirty-three; after the lease expires, B gets thirty-four. Every write carries its token, and the store remembers the highest it has seen. B's write with thirty-four succeeds. A's late write with thirty-three is rejected. The check happens at the resource, which is the only place that can see the order. Google's Chubby called these sequencers.",
+   "executive": "Each lock grant gets a rising number, and the data store refuses any write carrying an older number than one it has already seen."
+  },
+  {
+   "id": "dl-edges",
+   "chapter": "failure",
+   "card": {
+    "heading": "Other ways two holders appear",
+    "points": [
+     "Primary fails before replicating the key; the replica grants it again",
+     "A clock jump makes a key expire early",
+     "A lock node restarts without the key on disk",
+     "Work outlives the lease: renew it, or keep work short"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "A pause is not the only way to get two holders. Redis replication is asynchronous, so a primary can grant the lock and crash before the replica has the key; the promoted replica grants it again. Redis expiry uses the wall clock, so a clock jump can end a lease early. A node that restarts without the key on disk forgets the lock. And work that outlives the lease must renew it, or stay short.",
+   "executive": "Failovers, clock changes and restarts can all hand the same lock to two workers. The lock alone cannot promise exclusivity."
+  },
+  {
+   "id": "dl-kinds",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "Two kinds of lock",
+    "kind": "compare",
+    "points": [
+     "Efficiency lock | Correctness lock",
+     "Avoids doing work twice | Prevents corruption or data loss",
+     "A rare duplicate is fine | A duplicate is an incident",
+     "Single Redis node is enough | Consensus store: ZooKeeper, etcd",
+     "No fencing needed | Fencing tokens checked by the resource"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Kleppmann's key distinction is why you want the lock. An efficiency lock stops you doing work twice, such as sending the same email or rebuilding a report. If it occasionally fails, you waste a little effort, so one Redis node is fine. A correctness lock protects data, and a failure means corruption. Then you need a consensus-backed store such as ZooKeeper or etcd, and fencing tokens checked by the resource itself.",
+   "executive": "Decide first whether a rare duplicate is merely wasteful or actually harmful. Harmful needs a stronger, more expensive lock with an extra safety check."
+  },
+  {
+   "id": "dl-redlock",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "Redlock and the debate",
+    "kind": "compare",
+    "points": [
+     "Redlock says | Critics reply",
+     "Lock a majority of 5 independent masters | Still no fencing token",
+     "Subtract elapsed time from the validity | Assumes bounded pauses and clock drift",
+     "Survives some nodes failing | Too heavy for efficiency, too weak for correctness"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Redlock is Redis's answer to the failover problem: run five independent masters, set the key on all of them, and count the lock as held only on a majority within the validity time. Kleppmann argued in 2016 that it still offers no fencing token and relies on timing assumptions. Antirez, Redis's creator, replied in Is Redlock safe?, accepting the point about monotonic clocks but disputing the rest. Redis's own page now links both and recommends fencing tokens.",
+   "executive": "Redis offers a multi-server lock called Redlock. Experts disagree on whether it is safe enough to protect data, so use it to save effort rather than to guarantee correctness."
+  },
+  {
+   "id": "dl-alternatives",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "Often you need no lock at all",
+    "kind": "compare",
+    "points": [
+     "Alternative | Use when",
+     "Version column, compare-and-set | Conflicts are rare; retry on mismatch",
+     "SELECT … FOR UPDATE | The data sits in one database",
+     "PostgreSQL advisory lock | One database, application-defined resource",
+     "Idempotent operations | Running twice can be made harmless"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Before reaching for a lock service, ask whether you need one. Optimistic concurrency adds a version column: update where version is still one, and retry if no row changed. If the data sits in one database, a row lock with select for update, or a PostgreSQL advisory lock, uses the database you already trust. And if the operation can be made idempotent, a duplicate stops mattering.",
+   "executive": "Often the database can prevent the conflict itself, or the work can be made safe to repeat. Then no separate lock service is needed."
+  },
+  {
+   "id": "dl-wild",
+   "chapter": "wild",
+   "title": "Lineage",
+   "diagram": "wild",
+   "focus": [],
+   "trace": ["w1", "w2", "w3", "w4", "w5", "w6"],
+   "engineer": "In the wild. Redis documents the single-node SET pattern and Redlock, which runs the same SET across independent masters. Martin Kleppmann's 2016 article criticised Redlock, citing Google's Chubby paper from 2006 for the efficiency versus correctness split. Antirez replied. Kleppmann recommends a consensus system such as ZooKeeper, whose lock recipe uses ephemeral sequential nodes, with the zxid as a fencing token. etcd offers a mutex tied to a session lease. PostgreSQL has advisory locks.",
+   "executive": "Redis, ZooKeeper, etcd and PostgreSQL all offer locks. Google's Chubby showed the idea at scale, and a public debate shaped how people use Redis locks."
+  },
+  {
+   "id": "dl-related",
+   "chapter": "related",
+   "title": "Neighbours",
+   "diagram": "related",
+   "focus": [],
+   "trace": ["r1", "r2", "r3", "r4", "r5", "r6"],
+   "engineer": "Its neighbours. Leader election is the same machinery, held indefinitely to be in charge rather than briefly for one operation. A timeout is what frees a dead holder; a lease is a timeout on ownership. Optimistic concurrency and database locks often replace a distributed lock outright. Idempotency is the backstop when two holders slip through. And two-phase commit holds locks on several resources while it waits for everyone to agree.",
+   "executive": "Locks are close cousins of leader election, rely on timeouts, and are often replaced by database features or by making work safe to repeat."
+  },
+  {
+   "id": "dl-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "Share the lock, own it with a secret, and let it expire",
+     "A lease can end while the holder still thinks it owns it",
+     "For correctness, fence at the resource, or avoid the lock"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. A lock must live where every machine can see it, carry a value only the owner knows, and expire on its own. A lease can run out while the holder still believes it owns the lock, so the lock alone never guarantees one writer. And when correctness matters, make the resource check fencing tokens, or design the lock away with versions and idempotency.",
+   "executive": "Share the lock and let it expire. Remember it can be lost without the holder knowing. When data is at stake, have the data store do the final check."
+  }
+ ],
+ "meta": {
+  "kind": "pattern",
+  "category": "Coordination",
+  "level": "advanced",
+  "uses": ["timeout"],
+  "related": ["leader-election", "idempotency", "two-phase-commit"],
+  "blurb": "One worker at a time across machines: an owned, expiring lock, and fencing tokens when correctness is at stake.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ }
+}
