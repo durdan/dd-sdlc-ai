@@ -1,0 +1,1104 @@
+{
+ "id": "bff",
+ "title": "Backend for frontend",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "diagrams": [
+  {
+   "id": "general",
+   "kind": "c4",
+   "title": "One general-purpose API for every client",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "web",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Web app",
+     "sub": "big screen, fast network"
+    },
+    {
+     "id": "mobile",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Mobile app",
+     "sub": "small screen, patchy network"
+    },
+    {
+     "id": "tv",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "TV app",
+     "sub": "remote control, few fields"
+    },
+    {
+     "id": "api",
+     "kind": "container",
+     "tone": "core",
+     "label": "General-purpose API",
+     "sub": "owned by the API team"
+    },
+    {
+     "id": "catalogue",
+     "kind": "container",
+     "tone": "neutral",
+     "label": "Catalogue service",
+     "sub": "names, images, specs"
+    },
+    {
+     "id": "pricing",
+     "kind": "container",
+     "tone": "neutral",
+     "label": "Pricing service",
+     "sub": "prices and offers"
+    },
+    {
+     "id": "reviews",
+     "kind": "container",
+     "tone": "neutral",
+     "label": "Reviews service",
+     "sub": "ratings and comments"
+    },
+    {
+     "id": "stock",
+     "kind": "container",
+     "tone": "neutral",
+     "label": "Stock service",
+     "sub": "availability"
+    }
+   ],
+   "edges": [
+    {
+     "id": "g1",
+     "from": "web",
+     "to": "api",
+     "style": "solid",
+     "label": "product page"
+    },
+    {
+     "id": "g2",
+     "from": "mobile",
+     "to": "api",
+     "style": "dashed",
+     "label": "6 calls for one screen"
+    },
+    {
+     "id": "g3",
+     "from": "api",
+     "to": "mobile",
+     "style": "dashed",
+     "label": "full objects: 40 fields, uses 8"
+    },
+    {
+     "id": "g4",
+     "from": "tv",
+     "to": "api",
+     "style": "dashed",
+     "label": "waits for the API team's release"
+    },
+    {
+     "id": "g5",
+     "from": "api",
+     "to": "catalogue",
+     "style": "solid",
+     "label": "product"
+    },
+    {
+     "id": "g6",
+     "from": "api",
+     "to": "pricing",
+     "style": "solid",
+     "label": "price"
+    },
+    {
+     "id": "g7",
+     "from": "api",
+     "to": "reviews",
+     "style": "solid",
+     "label": "reviews"
+    },
+    {
+     "id": "g8",
+     "from": "api",
+     "to": "stock",
+     "style": "solid",
+     "label": "stock"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure, slow or waiting"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "ownership or sharing"
+    }
+   ]
+  },
+  {
+   "id": "naive",
+   "kind": "sequence",
+   "title": "Bend the shared API for each client",
+   "participants": [
+    {
+     "id": "mteam",
+     "label": "Mobile team"
+    },
+    {
+     "id": "wteam",
+     "label": "Web team"
+    },
+    {
+     "id": "ateam",
+     "label": "API team"
+    },
+    {
+     "id": "api",
+     "label": "Shared API"
+    }
+   ],
+   "messages": [
+    {
+     "id": "n1",
+     "from": "mteam",
+     "to": "ateam",
+     "style": "solid",
+     "label": "need a slim product endpoint"
+    },
+    {
+     "id": "n2",
+     "from": "wteam",
+     "to": "ateam",
+     "style": "solid",
+     "label": "need reviews inside the product"
+    },
+    {
+     "id": "n3",
+     "from": "ateam",
+     "to": "api",
+     "style": "solid",
+     "label": "add ?client=mobile and ?include=reviews"
+    },
+    {
+     "id": "n4",
+     "from": "ateam",
+     "to": "wteam",
+     "style": "solid",
+     "label": "does the slim version break you?"
+    },
+    {
+     "id": "n5",
+     "from": "ateam",
+     "to": "api",
+     "style": "solid",
+     "label": "test every client, release together"
+    },
+    {
+     "id": "n6",
+     "from": "ateam",
+     "to": "mteam",
+     "style": "solid",
+     "label": "shipped, three sprints later"
+    },
+    {
+     "id": "n7",
+     "from": "api",
+     "to": "ateam",
+     "style": "solid",
+     "label": "flags and versions nobody dares remove"
+    }
+   ]
+  },
+  {
+   "id": "structure",
+   "kind": "c4",
+   "title": "One backend per user experience",
+   "direction": "RIGHT",
+   "groups": [
+    {
+     "id": "clients",
+     "label": "Client experiences",
+     "tone": "neutral"
+    },
+    {
+     "id": "bffs",
+     "label": "BFFs [owned by the client teams]",
+     "tone": "core"
+    },
+    {
+     "id": "domain",
+     "label": "Downstream services [shared]",
+     "tone": "neutral"
+    }
+   ],
+   "elements": [
+    {
+     "id": "web",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Web app",
+     "group": "clients"
+    },
+    {
+     "id": "ios",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "iOS app",
+     "group": "clients"
+    },
+    {
+     "id": "android",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Android app",
+     "group": "clients"
+    },
+    {
+     "id": "tv",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "TV app",
+     "group": "clients"
+    },
+    {
+     "id": "gw",
+     "kind": "container",
+     "tone": "external",
+     "label": "Edge gateway",
+     "sub": "TLS, auth, rate limits"
+    },
+    {
+     "id": "webbff",
+     "kind": "container",
+     "tone": "core",
+     "label": "Web BFF",
+     "sub": "owned by the web team",
+     "group": "bffs"
+    },
+    {
+     "id": "mobilebff",
+     "kind": "container",
+     "tone": "core",
+     "label": "Mobile BFF",
+     "sub": "owned by the mobile team",
+     "group": "bffs"
+    },
+    {
+     "id": "tvbff",
+     "kind": "container",
+     "tone": "core",
+     "label": "TV BFF",
+     "sub": "owned by the TV team",
+     "group": "bffs"
+    },
+    {
+     "id": "catalogue",
+     "kind": "container",
+     "tone": "neutral",
+     "label": "Catalogue",
+     "group": "domain"
+    },
+    {
+     "id": "pricing",
+     "kind": "container",
+     "tone": "neutral",
+     "label": "Pricing",
+     "group": "domain"
+    },
+    {
+     "id": "reviews",
+     "kind": "container",
+     "tone": "neutral",
+     "label": "Reviews",
+     "group": "domain"
+    },
+    {
+     "id": "stock",
+     "kind": "container",
+     "tone": "neutral",
+     "label": "Stock",
+     "group": "domain"
+    }
+   ],
+   "edges": [
+    {
+     "id": "s1",
+     "from": "web",
+     "to": "gw",
+     "style": "solid"
+    },
+    {
+     "id": "s2",
+     "from": "ios",
+     "to": "gw",
+     "style": "solid"
+    },
+    {
+     "id": "s3",
+     "from": "android",
+     "to": "gw",
+     "style": "solid"
+    },
+    {
+     "id": "s4",
+     "from": "tv",
+     "to": "gw",
+     "style": "solid"
+    },
+    {
+     "id": "s5",
+     "from": "gw",
+     "to": "webbff",
+     "style": "solid",
+     "label": "/web"
+    },
+    {
+     "id": "s6",
+     "from": "gw",
+     "to": "mobilebff",
+     "style": "solid",
+     "label": "/mobile"
+    },
+    {
+     "id": "s7",
+     "from": "gw",
+     "to": "tvbff",
+     "style": "solid",
+     "label": "/tv"
+    },
+    {
+     "id": "s8",
+     "from": "webbff",
+     "to": "reviews",
+     "style": "solid",
+     "label": "full reviews"
+    },
+    {
+     "id": "s9",
+     "from": "mobilebff",
+     "to": "catalogue",
+     "style": "solid",
+     "label": "product"
+    },
+    {
+     "id": "s10",
+     "from": "mobilebff",
+     "to": "pricing",
+     "style": "solid",
+     "label": "price"
+    },
+    {
+     "id": "s11",
+     "from": "mobilebff",
+     "to": "stock",
+     "style": "solid",
+     "label": "stock"
+    },
+    {
+     "id": "s12",
+     "from": "tvbff",
+     "to": "catalogue",
+     "style": "solid",
+     "label": "title, image"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure, slow or waiting"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "ownership or sharing"
+    }
+   ]
+  },
+  {
+   "id": "flow",
+   "kind": "sequence",
+   "title": "One screen, one call",
+   "participants": [
+    {
+     "id": "app",
+     "label": "Mobile app"
+    },
+    {
+     "id": "bff",
+     "label": "Mobile BFF"
+    },
+    {
+     "id": "catalogue",
+     "label": "Catalogue"
+    },
+    {
+     "id": "pricing",
+     "label": "Pricing"
+    },
+    {
+     "id": "stock",
+     "label": "Stock"
+    }
+   ],
+   "messages": [
+    {
+     "id": "h1",
+     "from": "app",
+     "to": "bff",
+     "style": "solid",
+     "label": "GET /screens/product/42"
+    },
+    {
+     "id": "h2",
+     "from": "bff",
+     "to": "catalogue",
+     "style": "solid",
+     "label": "product 42 (in parallel)"
+    },
+    {
+     "id": "h3",
+     "from": "bff",
+     "to": "pricing",
+     "style": "solid",
+     "label": "price for this customer"
+    },
+    {
+     "id": "h4",
+     "from": "bff",
+     "to": "stock",
+     "style": "solid",
+     "label": "stock near this customer"
+    },
+    {
+     "id": "h5",
+     "from": "catalogue",
+     "to": "bff",
+     "style": "solid",
+     "label": "40 fields"
+    },
+    {
+     "id": "h6",
+     "from": "pricing",
+     "to": "bff",
+     "style": "solid",
+     "label": "price and offer"
+    },
+    {
+     "id": "h7",
+     "from": "stock",
+     "to": "bff",
+     "style": "solid",
+     "label": "3 left"
+    },
+    {
+     "id": "h8",
+     "from": "bff",
+     "to": "app",
+     "style": "solid",
+     "label": "one response: 8 fields, phone-sized image"
+    }
+   ]
+  },
+  {
+   "id": "partial",
+   "kind": "sequence",
+   "title": "A downstream call fails",
+   "participants": [
+    {
+     "id": "app",
+     "label": "Mobile app"
+    },
+    {
+     "id": "bff",
+     "label": "Mobile BFF"
+    },
+    {
+     "id": "catalogue",
+     "label": "Catalogue"
+    },
+    {
+     "id": "pricing",
+     "label": "Pricing"
+    },
+    {
+     "id": "stock",
+     "label": "Stock"
+    }
+   ],
+   "messages": [
+    {
+     "id": "f1",
+     "from": "app",
+     "to": "bff",
+     "style": "solid",
+     "label": "GET /screens/product/42"
+    },
+    {
+     "id": "f2",
+     "from": "bff",
+     "to": "catalogue",
+     "style": "solid",
+     "label": "product 42"
+    },
+    {
+     "id": "f3",
+     "from": "bff",
+     "to": "pricing",
+     "style": "solid",
+     "label": "price"
+    },
+    {
+     "id": "f4",
+     "from": "bff",
+     "to": "stock",
+     "style": "dashed",
+     "label": "stock: no answer in 300 ms"
+    },
+    {
+     "id": "f5",
+     "from": "catalogue",
+     "to": "bff",
+     "style": "solid",
+     "label": "product"
+    },
+    {
+     "id": "f6",
+     "from": "pricing",
+     "to": "bff",
+     "style": "solid",
+     "label": "price"
+    },
+    {
+     "id": "f7",
+     "from": "bff",
+     "to": "app",
+     "style": "solid",
+     "label": "200 · stock omitted, 'check availability'"
+    },
+    {
+     "id": "f8",
+     "from": "bff",
+     "to": "app",
+     "style": "dashed",
+     "label": "pricing down instead: 503, app shows retry"
+    }
+   ]
+  },
+  {
+   "id": "sharing",
+   "kind": "c4",
+   "title": "Share code without sharing a backend",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "webbff",
+     "kind": "container",
+     "tone": "core",
+     "label": "Web BFF",
+     "sub": "web team"
+    },
+    {
+     "id": "mobilebff",
+     "kind": "container",
+     "tone": "core",
+     "label": "Mobile BFF",
+     "sub": "mobile team"
+    },
+    {
+     "id": "dup",
+     "kind": "component",
+     "tone": "stream",
+     "label": "Discount rules",
+     "sub": "copied into both BFFs"
+    },
+    {
+     "id": "lib",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Shared library",
+     "sub": "HTTP clients, auth, tracing"
+    },
+    {
+     "id": "pricing",
+     "kind": "container",
+     "tone": "neutral",
+     "label": "Pricing service",
+     "sub": "now owns the discount rules"
+    }
+   ],
+   "edges": [
+    {
+     "id": "d1",
+     "from": "webbff",
+     "to": "dup",
+     "style": "dashed",
+     "label": "copied"
+    },
+    {
+     "id": "d2",
+     "from": "mobilebff",
+     "to": "dup",
+     "style": "dashed",
+     "label": "copied"
+    },
+    {
+     "id": "d3",
+     "from": "dup",
+     "to": "pricing",
+     "style": "solid",
+     "label": "move it down into the domain"
+    },
+    {
+     "id": "d4",
+     "from": "webbff",
+     "to": "lib",
+     "style": "dotted",
+     "label": "depends on"
+    },
+    {
+     "id": "d5",
+     "from": "mobilebff",
+     "to": "lib",
+     "style": "dotted",
+     "label": "depends on"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure, slow or waiting"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "ownership or sharing"
+    }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "sc",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "SoundCloud",
+     "sub": "Phil Calçado's write-up, Sept 2015"
+    },
+    {
+     "id": "newman",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Sam Newman",
+     "sub": "pattern article, Nov 2015"
+    },
+    {
+     "id": "rea",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "REA",
+     "sub": "one BFF per client type"
+    },
+    {
+     "id": "ms",
+     "kind": "container",
+     "tone": "core",
+     "label": "Microsoft Azure",
+     "sub": "pattern page · gateway in front of BFFs"
+    },
+    {
+     "id": "aws",
+     "kind": "container",
+     "tone": "core",
+     "label": "AWS",
+     "sub": "REST via API Gateway, GraphQL via AppSync"
+    },
+    {
+     "id": "mfe",
+     "kind": "container",
+     "tone": "core",
+     "label": "Micro-frontends",
+     "sub": "AWS: one BFF per micro-frontend"
+    }
+   ],
+   "edges": [
+    {
+     "id": "w1",
+     "from": "sc",
+     "to": "newman",
+     "style": "solid",
+     "label": "named BFF, seen in use"
+    },
+    {
+     "id": "w2",
+     "from": "rea",
+     "to": "newman",
+     "style": "solid",
+     "label": "seen in use"
+    },
+    {
+     "id": "w3",
+     "from": "newman",
+     "to": "ms",
+     "style": "solid",
+     "label": "cited as the source"
+    },
+    {
+     "id": "w4",
+     "from": "newman",
+     "to": "aws",
+     "style": "solid",
+     "label": "one backend per user experience"
+    },
+    {
+     "id": "w5",
+     "from": "aws",
+     "to": "mfe",
+     "style": "dotted",
+     "label": "same idea, smaller unit"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure, slow or waiting"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "ownership or sharing"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "problem",
+   "title": "The problem"
+  },
+  {
+   "id": "naive",
+   "title": "The naive fix"
+  },
+  {
+   "id": "pattern",
+   "title": "The pattern"
+  },
+  {
+   "id": "how",
+   "title": "How it works"
+  },
+  {
+   "id": "failure",
+   "title": "When it goes wrong"
+  },
+  {
+   "id": "tradeoffs",
+   "title": "Trade-offs"
+  },
+  {
+   "id": "wild",
+   "title": "In the wild"
+  },
+  {
+   "id": "related",
+   "title": "Related patterns"
+  },
+  {
+   "id": "recap",
+   "title": "Recap"
+  }
+ ],
+ "shots": [
+  {
+   "id": "bff-problem",
+   "title": "One API",
+   "chapter": "problem",
+   "diagram": "general",
+   "focus": [],
+   "trace": [
+    "g1",
+    "g5",
+    "g6",
+    "g7",
+    "g8"
+   ],
+   "engineer": "Here is an online shop with three clients: a web app, a mobile app and a TV app. They all call one general-purpose API, owned by an API team. To build a product page, that API asks the catalogue, pricing, reviews and stock services, and returns everything it knows. For the web app on a desktop with a fast connection, that works well enough.",
+   "executive": "An online shop has web, mobile and TV apps, all talking to one shared API that gathers data from several services."
+  },
+  {
+   "id": "bff-chatty",
+   "title": "Chatty mobile",
+   "chapter": "problem",
+   "diagram": "general",
+   "focus": [],
+   "trace": [
+    "g2",
+    "g3"
+   ],
+   "engineer": "Now look at the mobile app. The API was shaped around resources, not screens, so one product screen needs six separate calls, each over a patchy mobile network. And each answer is the full object: forty fields when the screen shows eight. The phone downloads and parses data it throws away, and the screen waits for the slowest of six round trips.",
+   "executive": "On mobile, one screen needs many slow calls and downloads far more data than it shows."
+  },
+  {
+   "id": "bff-coupling",
+   "title": "Release queue",
+   "chapter": "problem",
+   "diagram": "general",
+   "focus": [
+    "tv",
+    "api"
+   ],
+   "trace": [
+    "g4"
+   ],
+   "engineer": "The third cost is people, not bytes. The TV team wants a simpler response for a remote-control interface. They cannot change the API themselves; they file a request and wait for the API team's next release. Every client team now queues behind one team and one deployable. Microsoft's guidance describes exactly this: competing demands, conflicting updates, and changes from one frontend that must be checked with every other.",
+   "executive": "Every client team waits on one API team, so the shared API becomes a bottleneck for the whole business."
+  },
+  {
+   "id": "bff-naive",
+   "title": "Special cases",
+   "chapter": "naive",
+   "diagram": "naive",
+   "focus": [],
+   "trace": [
+    "n1",
+    "n2",
+    "n3",
+    "n4",
+    "n5",
+    "n6",
+    "n7"
+   ],
+   "engineer": "The obvious fix is to bend the shared API for each client. The mobile team asks for a slim endpoint; the web team wants reviews embedded. The API team adds query flags for each. But every change must now be tested against every client, and released together. The mobile feature ships three sprints later. Over time the API fills with client flags and versions nobody dares remove. It serves everyone, and suits no one.",
+   "executive": "Adding special cases for each app to one shared API makes it slower to change and harder to understand."
+  },
+  {
+   "id": "bff-structure",
+   "title": "Per experience",
+   "chapter": "pattern",
+   "diagram": "structure",
+   "focus": [],
+   "trace": [
+    "s1",
+    "s5",
+    "s8",
+    "s4",
+    "s7",
+    "s12"
+   ],
+   "engineer": "The pattern: give each user experience its own backend, owned by the team that builds that experience. The web BFF, the mobile BFF and the TV BFF sit behind a shared edge gateway, which still handles TLS, authentication and rate limits. Each BFF calls the shared downstream services and shapes the answer for its own screens. Sam Newman's article says the BFF is tightly coupled to a specific user experience, and is typically maintained by the same team as the user interface.",
+   "executive": "Each app gets its own small backend, built by the same team that builds the app, so it can be shaped to that app's screens."
+  },
+  {
+   "id": "bff-experience",
+   "title": "iOS and Android",
+   "chapter": "pattern",
+   "diagram": "structure",
+   "focus": [
+    "ios",
+    "android",
+    "mobilebff"
+   ],
+   "trace": [
+    "s2",
+    "s3",
+    "s6",
+    "s9",
+    "s10",
+    "s11"
+   ],
+   "engineer": "Notice that the iOS and Android apps share one mobile BFF. The guideline Newman quotes is one experience, one BFF, not one per platform. If two apps show the same screens with the same constraints, a second BFF only doubles the work. SoundCloud's iOS and Android listener apps shared one BFF. Where experiences really differ, as with the TV, they get their own.",
+   "executive": "Two apps that offer the same experience share one backend; only genuinely different experiences get their own."
+  },
+  {
+   "id": "bff-how",
+   "title": "Fan out",
+   "chapter": "how",
+   "diagram": "flow",
+   "focus": [],
+   "trace": [
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "h7",
+    "h8"
+   ],
+   "engineer": "Step by step. The mobile app asks for one thing: the product screen for item forty-two. The BFF fans out to catalogue, pricing and stock in parallel, because none of those calls depend on each other. Catalogue returns forty fields; pricing returns the price and any offer; stock says three left. The BFF keeps the eight fields the screen needs, picks a phone-sized image, and returns a single response. One round trip over the mobile network instead of six.",
+   "executive": "The app makes one request; the backend gathers what it needs from several services at once and sends back only what the screen shows."
+  },
+  {
+   "id": "bff-failure",
+   "title": "Partial response",
+   "chapter": "failure",
+   "diagram": "partial",
+   "focus": [],
+   "trace": [
+    "f1",
+    "f2",
+    "f3",
+    "f4",
+    "f5",
+    "f6",
+    "f7",
+    "f8"
+   ],
+   "engineer": "Now the stock service does not answer within three hundred milliseconds. The BFF should not fail the whole screen for that. It returns the product and the price, leaves out the stock indicator, and the app shows 'check availability'. Newman's article makes the same point: if only the inventory service is down, degrade the response rather than fail it, and build the client to render a partial answer. But if pricing is down, there is nothing to sell, so the BFF returns an error and the app offers a retry.",
+   "executive": "If an optional service fails, the app still shows the page without that part; only essential failures become errors."
+  },
+  {
+   "id": "bff-essential",
+   "chapter": "failure",
+   "card": {
+    "heading": "Essential or optional",
+    "kind": "compare",
+    "points": [
+     "Downstream call | If it fails",
+     "Catalogue | Essential: return an error, app offers retry",
+     "Pricing | Essential: no price, nothing to buy",
+     "Stock | Optional: omit it, show 'check availability'",
+     "Reviews | Optional: hide the section"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "So each BFF needs an explicit decision per downstream call. Is it essential, or can the screen live without it? Give every call its own timeout, so one slow service cannot hold the whole response. Remember that the BFF is also a new network hop, and a new thing that can fail, so it needs the same timeouts, circuit breakers and monitoring as any other service.",
+   "executive": "Decide in advance which parts of each screen are essential, and protect the backend with timeouts like any other service."
+  },
+  {
+   "id": "bff-sharing",
+   "title": "Duplication",
+   "chapter": "tradeoffs",
+   "diagram": "sharing",
+   "focus": [],
+   "trace": [
+    "d1",
+    "d2",
+    "d3",
+    "d4",
+    "d5"
+   ],
+   "engineer": "The main cost is duplication. Here both BFFs have grown their own copy of the discount rules. That is a warning sign: business logic has crept into the BFF. Move it down into the pricing service, which owns that domain, and let both BFFs ask for the final price. Plumbing, such as HTTP clients, authentication and tracing, can live in a shared library, but shared libraries couple teams, so keep them small. Newman suggests waiting until the third copy before you abstract.",
+   "executive": "Copying code between backends is the main cost. Business rules belong in shared services, not in the app-specific backends."
+  },
+  {
+   "id": "bff-tradeoffs",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "What it costs",
+    "kind": "compare",
+    "points": [
+     "You gain | You pay",
+     "Client teams release independently | More services to deploy and run",
+     "Responses shaped for each screen | An extra network hop",
+     "One BFF failing spares the others | Duplicated code across BFFs",
+     "Skip it with one client | Or when every client asks the same"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "What you gain: client teams release on their own schedule, responses fit the screen, and a fault in one BFF does not take down the other clients. What you pay: more services to run, an extra network hop, and duplicated code. Microsoft's page says the pattern may not be suitable when the interfaces make the same or similar requests, or when only one interface talks to the backend. And keep the BFF thin: shape and combine, never decide.",
+   "executive": "You trade more services and some duplication for teams that move independently. Skip it if you only have one kind of client."
+  },
+  {
+   "id": "bff-wild",
+   "title": "Lineage",
+   "chapter": "wild",
+   "diagram": "wild",
+   "focus": [],
+   "trace": [
+    "w1",
+    "w2",
+    "w3",
+    "w4",
+    "w5"
+   ],
+   "engineer": "In the wild. Phil Calçado's 2015 write-up describes SoundCloud building a separate backend per frontend when a generic public API got in the way of a new iOS app; the name BFF came from their web tech lead, Nick Fisher. Sam Newman's article, from November 2015, describes the pattern as seen at REA and SoundCloud. Microsoft's Azure pattern page builds on Newman's, with API Management in front of a BFF per client. AWS shows it with REST through API Gateway, or GraphQL through AppSync.",
+   "executive": "The idea came from SoundCloud, was written up in 2015, and Microsoft and AWS now publish guidance on it."
+  },
+  {
+   "id": "bff-related",
+   "chapter": "related",
+   "card": {
+    "heading": "BFF, gateway or GraphQL",
+    "kind": "compare",
+    "points": [
+     "Option | What it is for",
+     "API gateway | One shared entry: routing, auth, rate limits",
+     "Backend for frontend | One backend per experience, owned by its team",
+     "GraphQL | Clients pick fields; may replace the BFF",
+     "Server-driven UI | Backend also decides the layout"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "It is often confused with two neighbours. An API gateway is one shared entry point for routing, authentication and rate limits; it sits in front of the BFFs rather than replacing them. GraphQL lets the client ask for exactly the fields it needs, and Microsoft notes that with frontend-specific resolvers you may not need a BFF at all. Server-driven UI goes further, letting the backend decide the layout too.",
+   "executive": "A gateway is a shared front door, GraphQL lets clients choose their own data, and a BFF is a tailored backend per app."
+  },
+  {
+   "id": "bff-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "One API for every client suits none of them",
+     "One thin backend per experience, owned by its team",
+     "Shape and combine; keep business rules downstream"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. One general-purpose API forces every client to compromise, and every client team to queue. Give each user experience its own thin backend, owned by the team that builds it, and share across platforms that look the same. And keep the business rules downstream: the BFF shapes and combines data, degrades gracefully when a call fails, and decides nothing else.",
+   "executive": "One shared API makes every app compromise. Give each experience its own thin backend. Keep the business rules elsewhere."
+  }
+ ],
+ "subtitle": "Design pattern",
+ "meta": {
+  "kind": "pattern",
+  "category": "APIs",
+  "level": "intermediate",
+  "uses": [
+   "api-gateway"
+  ],
+  "related": [
+   "api-gateway",
+   "server-driven-ui",
+   "graceful-degradation"
+  ],
+  "blurb": "Give each user experience its own thin backend, owned by the team that builds the client.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ }
+}

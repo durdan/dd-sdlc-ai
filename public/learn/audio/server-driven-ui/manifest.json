@@ -1,0 +1,142 @@
+{
+ "sdui-problem-engineer": {
+  "file": "/audio/server-driven-ui/sdui-problem-engineer.mp3",
+  "ms": 28680,
+  "hash": "da45ba470cd5"
+ },
+ "sdui-problem-executive": {
+  "file": "/audio/server-driven-ui/sdui-problem-executive.mp3",
+  "ms": 7728,
+  "hash": "e9848dee39b8"
+ },
+ "sdui-naive-engineer": {
+  "file": "/audio/server-driven-ui/sdui-naive-engineer.mp3",
+  "ms": 27720,
+  "hash": "a6aa8e86f31c"
+ },
+ "sdui-naive-executive": {
+  "file": "/audio/server-driven-ui/sdui-naive-executive.mp3",
+  "ms": 6936,
+  "hash": "fbbd1e286f96"
+ },
+ "sdui-pattern-engineer": {
+  "file": "/audio/server-driven-ui/sdui-pattern-engineer.mp3",
+  "ms": 26184,
+  "hash": "527eaf0367b2"
+ },
+ "sdui-pattern-executive": {
+  "file": "/audio/server-driven-ui/sdui-pattern-executive.mp3",
+  "ms": 6408,
+  "hash": "52ae0e109cbc"
+ },
+ "sdui-vocab-engineer": {
+  "file": "/audio/server-driven-ui/sdui-vocab-engineer.mp3",
+  "ms": 27960,
+  "hash": "953217d66de3"
+ },
+ "sdui-vocab-executive": {
+  "file": "/audio/server-driven-ui/sdui-vocab-executive.mp3",
+  "ms": 8064,
+  "hash": "48a6c47e128b"
+ },
+ "sdui-how-engineer": {
+  "file": "/audio/server-driven-ui/sdui-how-engineer.mp3",
+  "ms": 25872,
+  "hash": "5810d22650fa"
+ },
+ "sdui-how-executive": {
+  "file": "/audio/server-driven-ui/sdui-how-executive.mp3",
+  "ms": 7488,
+  "hash": "67e5248d6404"
+ },
+ "sdui-actions-engineer": {
+  "file": "/audio/server-driven-ui/sdui-actions-engineer.mp3",
+  "ms": 26040,
+  "hash": "e2f72e5d24d7"
+ },
+ "sdui-actions-executive": {
+  "file": "/audio/server-driven-ui/sdui-actions-executive.mp3",
+  "ms": 5928,
+  "hash": "c87131e33b0a"
+ },
+ "sdui-degrade-engineer": {
+  "file": "/audio/server-driven-ui/sdui-degrade-engineer.mp3",
+  "ms": 26424,
+  "hash": "9ce5465cd6ee"
+ },
+ "sdui-degrade-executive": {
+  "file": "/audio/server-driven-ui/sdui-degrade-executive.mp3",
+  "ms": 6312,
+  "hash": "55a4273b9206"
+ },
+ "sdui-edges-engineer": {
+  "file": "/audio/server-driven-ui/sdui-edges-engineer.mp3",
+  "ms": 24408,
+  "hash": "0c715084befc"
+ },
+ "sdui-edges-executive": {
+  "file": "/audio/server-driven-ui/sdui-edges-executive.mp3",
+  "ms": 6024,
+  "hash": "1e8316b72e2f"
+ },
+ "sdui-tradeoffs-engineer": {
+  "file": "/audio/server-driven-ui/sdui-tradeoffs-engineer.mp3",
+  "ms": 25728,
+  "hash": "f9eac4a0354e"
+ },
+ "sdui-tradeoffs-executive": {
+  "file": "/audio/server-driven-ui/sdui-tradeoffs-executive.mp3",
+  "ms": 4968,
+  "hash": "d1f94153e672"
+ },
+ "sdui-testing-engineer": {
+  "file": "/audio/server-driven-ui/sdui-testing-engineer.mp3",
+  "ms": 24864,
+  "hash": "4a59cd3275a2"
+ },
+ "sdui-testing-executive": {
+  "file": "/audio/server-driven-ui/sdui-testing-executive.mp3",
+  "ms": 5424,
+  "hash": "f1c443686a1f"
+ },
+ "sdui-whennot-engineer": {
+  "file": "/audio/server-driven-ui/sdui-whennot-engineer.mp3",
+  "ms": 27312,
+  "hash": "a796e98d2e25"
+ },
+ "sdui-whennot-executive": {
+  "file": "/audio/server-driven-ui/sdui-whennot-executive.mp3",
+  "ms": 7080,
+  "hash": "9689ffc3bb33"
+ },
+ "sdui-wild-engineer": {
+  "file": "/audio/server-driven-ui/sdui-wild-engineer.mp3",
+  "ms": 31992,
+  "hash": "ba00ecb14b1c"
+ },
+ "sdui-wild-executive": {
+  "file": "/audio/server-driven-ui/sdui-wild-executive.mp3",
+  "ms": 7920,
+  "hash": "9980293fa7d2"
+ },
+ "sdui-related-engineer": {
+  "file": "/audio/server-driven-ui/sdui-related-engineer.mp3",
+  "ms": 27264,
+  "hash": "742c0e4e8b8e"
+ },
+ "sdui-related-executive": {
+  "file": "/audio/server-driven-ui/sdui-related-executive.mp3",
+  "ms": 6528,
+  "hash": "f2aa60d9d7c3"
+ },
+ "sdui-recap-engineer": {
+  "file": "/audio/server-driven-ui/sdui-recap-engineer.mp3",
+  "ms": 23304,
+  "hash": "5f610b3f026d"
+ },
+ "sdui-recap-executive": {
+  "file": "/audio/server-driven-ui/sdui-recap-executive.mp3",
+  "ms": 7488,
+  "hash": "43894da10f7b"
+ }
+}

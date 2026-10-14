@@ -1,0 +1,152 @@
+{
+ "sf-problem-engineer": {
+  "file": "/audio/strangler-fig/sf-problem-engineer.mp3",
+  "ms": 30552,
+  "hash": "29eb1b452b4d"
+ },
+ "sf-problem-executive": {
+  "file": "/audio/strangler-fig/sf-problem-executive.mp3",
+  "ms": 6336,
+  "hash": "0bc718321e11"
+ },
+ "sf-naive-engineer": {
+  "file": "/audio/strangler-fig/sf-naive-engineer.mp3",
+  "ms": 28776,
+  "hash": "c48568a799d7"
+ },
+ "sf-naive-executive": {
+  "file": "/audio/strangler-fig/sf-naive-executive.mp3",
+  "ms": 6960,
+  "hash": "1914a975d65e"
+ },
+ "sf-structure-engineer": {
+  "file": "/audio/strangler-fig/sf-structure-engineer.mp3",
+  "ms": 29976,
+  "hash": "5f44a8a6c1b9"
+ },
+ "sf-structure-executive": {
+  "file": "/audio/strangler-fig/sf-structure-executive.mp3",
+  "ms": 6600,
+  "hash": "0f960685e313"
+ },
+ "sf-coexist-engineer": {
+  "file": "/audio/strangler-fig/sf-coexist-engineer.mp3",
+  "ms": 25272,
+  "hash": "f205e37805fa"
+ },
+ "sf-coexist-executive": {
+  "file": "/audio/strangler-fig/sf-coexist-executive.mp3",
+  "ms": 8016,
+  "hash": "e7bbba4ad512"
+ },
+ "sf-how-engineer": {
+  "file": "/audio/strangler-fig/sf-how-engineer.mp3",
+  "ms": 28224,
+  "hash": "172da19ef3bf"
+ },
+ "sf-how-executive": {
+  "file": "/audio/strangler-fig/sf-how-executive.mp3",
+  "ms": 5424,
+  "hash": "dfca8a9af50e"
+ },
+ "sf-rollout-engineer": {
+  "file": "/audio/strangler-fig/sf-rollout-engineer.mp3",
+  "ms": 29328,
+  "hash": "2216b9b30e0a"
+ },
+ "sf-rollout-executive": {
+  "file": "/audio/strangler-fig/sf-rollout-executive.mp3",
+  "ms": 9024,
+  "hash": "93fe5b2aab9b"
+ },
+ "sf-finish-engineer": {
+  "file": "/audio/strangler-fig/sf-finish-engineer.mp3",
+  "ms": 24600,
+  "hash": "429da94cb159"
+ },
+ "sf-finish-executive": {
+  "file": "/audio/strangler-fig/sf-finish-executive.mp3",
+  "ms": 5424,
+  "hash": "ef6eeb759b9a"
+ },
+ "sf-dual-engineer": {
+  "file": "/audio/strangler-fig/sf-dual-engineer.mp3",
+  "ms": 27264,
+  "hash": "da36aff44929"
+ },
+ "sf-dual-executive": {
+  "file": "/audio/strangler-fig/sf-dual-executive.mp3",
+  "ms": 7392,
+  "hash": "eadffb8b03b9"
+ },
+ "sf-sync-engineer": {
+  "file": "/audio/strangler-fig/sf-sync-engineer.mp3",
+  "ms": 29280,
+  "hash": "fae4e6cd665b"
+ },
+ "sf-sync-executive": {
+  "file": "/audio/strangler-fig/sf-sync-executive.mp3",
+  "ms": 6432,
+  "hash": "3dccaf0b4d19"
+ },
+ "sf-facade-engineer": {
+  "file": "/audio/strangler-fig/sf-facade-engineer.mp3",
+  "ms": 30120,
+  "hash": "29527d184dfc"
+ },
+ "sf-facade-executive": {
+  "file": "/audio/strangler-fig/sf-facade-executive.mp3",
+  "ms": 5880,
+  "hash": "7443d33ffaea"
+ },
+ "sf-tradeoffs-engineer": {
+  "file": "/audio/strangler-fig/sf-tradeoffs-engineer.mp3",
+  "ms": 25728,
+  "hash": "d8d3af9df789"
+ },
+ "sf-tradeoffs-executive": {
+  "file": "/audio/strangler-fig/sf-tradeoffs-executive.mp3",
+  "ms": 8112,
+  "hash": "69c896b75e11"
+ },
+ "sf-whennot-engineer": {
+  "file": "/audio/strangler-fig/sf-whennot-engineer.mp3",
+  "ms": 28704,
+  "hash": "f158f52ffffc"
+ },
+ "sf-whennot-executive": {
+  "file": "/audio/strangler-fig/sf-whennot-executive.mp3",
+  "ms": 6456,
+  "hash": "c2b7de05e02e"
+ },
+ "sf-wild-engineer": {
+  "file": "/audio/strangler-fig/sf-wild-engineer.mp3",
+  "ms": 33864,
+  "hash": "03be565e6dac"
+ },
+ "sf-wild-executive": {
+  "file": "/audio/strangler-fig/sf-wild-executive.mp3",
+  "ms": 8856,
+  "hash": "e998143ceee2"
+ },
+ "sf-related-engineer": {
+  "file": "/audio/strangler-fig/sf-related-engineer.mp3",
+  "ms": 28416,
+  "hash": "8ede87794995"
+ },
+ "sf-related-executive": {
+  "file": "/audio/strangler-fig/sf-related-executive.mp3",
+  "ms": 9000,
+  "hash": "15bd8d858ec3"
+ },
+ "sf-recap-engineer": {
+  "file": "/audio/strangler-fig/sf-recap-engineer.mp3",
+  "ms": 23016,
+  "hash": "ac6ce69b3d03"
+ },
+ "sf-recap-executive": {
+  "file": "/audio/strangler-fig/sf-recap-executive.mp3",
+  "ms": 7608,
+  "hash": "d330f46bb8c9"
+ }
+}

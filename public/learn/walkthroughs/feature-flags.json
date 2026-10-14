@@ -1,0 +1,1079 @@
+{
+ "id": "feature-flags",
+ "title": "Feature flags",
+ "subtitle": "Design pattern",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "diagrams": [
+  {
+   "id": "coupled",
+   "kind": "c4",
+   "title": "Deploy and release are the same moment",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "dev",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Team",
+     "sub": "building a new checkout"
+    },
+    {
+     "id": "branch",
+     "kind": "container",
+     "tone": "neutral",
+     "label": "Feature branch",
+     "sub": "weeks unmerged"
+    },
+    {
+     "id": "pipeline",
+     "kind": "container",
+     "tone": "core",
+     "label": "Deploy pipeline",
+     "sub": "build, test, ship"
+    },
+    {
+     "id": "prod",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Production",
+     "sub": "new code live for everyone"
+    },
+    {
+     "id": "users",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "All users",
+     "sub": "see it at once"
+    }
+   ],
+   "edges": [
+    {
+     "id": "c1",
+     "from": "dev",
+     "to": "branch",
+     "style": "solid",
+     "label": "hide work"
+    },
+    {
+     "id": "c2",
+     "from": "branch",
+     "to": "pipeline",
+     "style": "dashed",
+     "label": "big merge, then deploy"
+    },
+    {
+     "id": "c4",
+     "from": "pipeline",
+     "to": "prod",
+     "style": "solid",
+     "label": "deploy = release"
+    },
+    {
+     "id": "c5",
+     "from": "prod",
+     "to": "users",
+     "style": "solid",
+     "label": "everyone at once"
+    },
+    {
+     "id": "c6",
+     "from": "prod",
+     "to": "pipeline",
+     "style": "dashed",
+     "label": "bug: redeploy"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call or change"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or risk"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "config or signal"
+    }
+   ]
+  },
+  {
+   "id": "restart",
+   "kind": "sequence",
+   "title": "A config switch baked in at deploy",
+   "participants": [
+    {
+     "id": "team",
+     "label": "Team"
+    },
+    {
+     "id": "cfg",
+     "label": "Config file"
+    },
+    {
+     "id": "servers",
+     "label": "Servers"
+    },
+    {
+     "id": "users",
+     "label": "Users"
+    }
+   ],
+   "messages": [
+    {
+     "id": "n1",
+     "from": "team",
+     "to": "cfg",
+     "style": "solid",
+     "label": "NEW_CHECKOUT=true"
+    },
+    {
+     "id": "n2",
+     "from": "cfg",
+     "to": "servers",
+     "style": "solid",
+     "label": "redeploy or restart every server"
+    },
+    {
+     "id": "n3",
+     "from": "servers",
+     "to": "users",
+     "style": "solid",
+     "label": "everyone gets the new checkout"
+    },
+    {
+     "id": "n4",
+     "from": "users",
+     "to": "team",
+     "style": "dashed",
+     "label": "errors climb"
+    },
+    {
+     "id": "n5",
+     "from": "team",
+     "to": "cfg",
+     "style": "solid",
+     "label": "NEW_CHECKOUT=false"
+    },
+    {
+     "id": "n6",
+     "from": "cfg",
+     "to": "servers",
+     "style": "dashed",
+     "label": "restart again · minutes of errors"
+    },
+    {
+     "id": "n7",
+     "from": "servers",
+     "to": "users",
+     "style": "solid",
+     "label": "old checkout, eventually"
+    }
+   ]
+  },
+  {
+   "id": "structure",
+   "kind": "c4",
+   "title": "Ship dark, turn on at runtime",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "app",
+     "label": "Your service [deployed once]",
+     "tone": "core"
+    }
+   ],
+   "elements": [
+    {
+     "id": "team",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Team",
+     "sub": "product and engineering"
+    },
+    {
+     "id": "console",
+     "kind": "container",
+     "tone": "neutral",
+     "label": "Flag console",
+     "sub": "rules, audit log"
+    },
+    {
+     "id": "svc",
+     "kind": "system",
+     "tone": "data",
+     "label": "Flag service",
+     "sub": "stores flag rules"
+    },
+    {
+     "id": "users",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Users",
+     "sub": "each with an id"
+    },
+    {
+     "id": "code",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Flag check",
+     "sub": "if enabled(new-checkout)",
+     "group": "app"
+    },
+    {
+     "id": "sdk",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Flag SDK",
+     "sub": "cached rules, local evaluation",
+     "group": "app"
+    },
+    {
+     "id": "newp",
+     "kind": "component",
+     "tone": "core",
+     "label": "New checkout",
+     "sub": "shipped dark",
+     "group": "app"
+    },
+    {
+     "id": "oldp",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Old checkout",
+     "sub": "still the default",
+     "group": "app"
+    }
+   ],
+   "edges": [
+    {
+     "id": "p1",
+     "from": "team",
+     "to": "console",
+     "style": "solid",
+     "label": "on for 5% of users"
+    },
+    {
+     "id": "p2",
+     "from": "console",
+     "to": "svc",
+     "style": "solid",
+     "label": "save rule"
+    },
+    {
+     "id": "p3",
+     "from": "svc",
+     "to": "sdk",
+     "style": "dotted",
+     "label": "stream rule change"
+    },
+    {
+     "id": "p4",
+     "from": "users",
+     "to": "code",
+     "style": "solid",
+     "label": "request"
+    },
+    {
+     "id": "p5",
+     "from": "code",
+     "to": "sdk",
+     "style": "solid",
+     "label": "evaluate(flag, user)"
+    },
+    {
+     "id": "p6",
+     "from": "code",
+     "to": "newp",
+     "style": "solid",
+     "label": "on"
+    },
+    {
+     "id": "p7",
+     "from": "code",
+     "to": "oldp",
+     "style": "solid",
+     "label": "off"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call or change"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or risk"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "config or signal"
+    }
+   ]
+  },
+  {
+   "id": "evaluate",
+   "kind": "sequence",
+   "title": "Evaluating a flag on every request",
+   "participants": [
+    {
+     "id": "user",
+     "label": "User 42"
+    },
+    {
+     "id": "app",
+     "label": "Service"
+    },
+    {
+     "id": "sdk",
+     "label": "Flag SDK"
+    },
+    {
+     "id": "svc",
+     "label": "Flag service"
+    }
+   ],
+   "messages": [
+    {
+     "id": "e1",
+     "from": "svc",
+     "to": "sdk",
+     "style": "dotted",
+     "label": "at startup: all flag rules"
+    },
+    {
+     "id": "e2",
+     "from": "user",
+     "to": "app",
+     "style": "solid",
+     "label": "open checkout"
+    },
+    {
+     "id": "e3",
+     "from": "app",
+     "to": "sdk",
+     "style": "solid",
+     "label": "enabled(new-checkout, user 42)?"
+    },
+    {
+     "id": "e4",
+     "from": "sdk",
+     "to": "app",
+     "style": "solid",
+     "label": "hash(flag + 42) → bucket 37 · rule 50% → on"
+    },
+    {
+     "id": "e5",
+     "from": "app",
+     "to": "user",
+     "style": "solid",
+     "label": "new checkout"
+    },
+    {
+     "id": "e6",
+     "from": "svc",
+     "to": "sdk",
+     "style": "dotted",
+     "label": "stream: new-checkout off"
+    },
+    {
+     "id": "e7",
+     "from": "user",
+     "to": "app",
+     "style": "solid",
+     "label": "next request"
+    },
+    {
+     "id": "e8",
+     "from": "app",
+     "to": "user",
+     "style": "solid",
+     "label": "old checkout · no deploy"
+    }
+   ]
+  },
+  {
+   "id": "rollout",
+   "kind": "c4",
+   "title": "Progressive rollout, instant rollback",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "one",
+     "kind": "component",
+     "tone": "core",
+     "label": "1% of users",
+     "sub": "after staff · watch metrics"
+    },
+    {
+     "id": "ten",
+     "kind": "component",
+     "tone": "core",
+     "label": "10%",
+     "sub": "same users stay in"
+    },
+    {
+     "id": "half",
+     "kind": "component",
+     "tone": "core",
+     "label": "50%",
+     "sub": "same users stay in"
+    },
+    {
+     "id": "all",
+     "kind": "component",
+     "tone": "core",
+     "label": "100%",
+     "sub": "then delete the flag"
+    },
+    {
+     "id": "off",
+     "kind": "component",
+     "tone": "stream",
+     "label": "Flag off",
+     "sub": "everyone back on old path"
+    }
+   ],
+   "edges": [
+    {
+     "id": "r2",
+     "from": "one",
+     "to": "ten",
+     "style": "solid",
+     "label": "healthy"
+    },
+    {
+     "id": "r3",
+     "from": "ten",
+     "to": "half",
+     "style": "solid",
+     "label": "healthy"
+    },
+    {
+     "id": "r4",
+     "from": "half",
+     "to": "all",
+     "style": "solid",
+     "label": "healthy"
+    },
+    {
+     "id": "r5",
+     "from": "half",
+     "to": "off",
+     "style": "dashed",
+     "label": "errors → off"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call or change"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or risk"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "config or signal"
+    }
+   ]
+  },
+  {
+   "id": "outage",
+   "kind": "sequence",
+   "title": "When the flag service is unreachable",
+   "participants": [
+    {
+     "id": "app",
+     "label": "Service"
+    },
+    {
+     "id": "sdk",
+     "label": "Flag SDK"
+    },
+    {
+     "id": "svc",
+     "label": "Flag service"
+    }
+   ],
+   "messages": [
+    {
+     "id": "f1",
+     "from": "svc",
+     "to": "sdk",
+     "style": "dotted",
+     "label": "rules cached in memory"
+    },
+    {
+     "id": "f2",
+     "from": "svc",
+     "to": "sdk",
+     "style": "dashed",
+     "label": "connection lost"
+    },
+    {
+     "id": "f3",
+     "from": "app",
+     "to": "sdk",
+     "style": "solid",
+     "label": "enabled(new-checkout)?"
+    },
+    {
+     "id": "f4",
+     "from": "sdk",
+     "to": "app",
+     "style": "solid",
+     "label": "answer from last known rules"
+    },
+    {
+     "id": "f5",
+     "from": "app",
+     "to": "sdk",
+     "style": "solid",
+     "label": "new instance starts: enabled(...)?"
+    },
+    {
+     "id": "f6",
+     "from": "sdk",
+     "to": "svc",
+     "style": "dashed",
+     "label": "fetch rules · fails"
+    },
+    {
+     "id": "f7",
+     "from": "sdk",
+     "to": "app",
+     "style": "solid",
+     "label": "no rules: code default (off, the safe path)"
+    }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "article",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Feature Toggles article",
+     "sub": "Pete Hodgson, martinfowler.com",
+     "rank": 0
+    },
+    {
+     "id": "gk",
+     "kind": "external",
+     "tone": "external",
+     "label": "Facebook Gatekeeper",
+     "sub": "staged launches by config",
+     "rank": 0
+    },
+    {
+     "id": "code",
+     "kind": "container",
+     "tone": "core",
+     "label": "Your code",
+     "sub": "one evaluation API",
+     "rank": 1
+    },
+    {
+     "id": "of",
+     "kind": "container",
+     "tone": "core",
+     "label": "OpenFeature",
+     "sub": "CNCF incubating standard",
+     "rank": 1
+    },
+    {
+     "id": "ld",
+     "kind": "external",
+     "tone": "external",
+     "label": "LaunchDarkly",
+     "sub": "commercial service",
+     "rank": 2
+    },
+    {
+     "id": "fs",
+     "kind": "external",
+     "tone": "external",
+     "label": "Flagsmith",
+     "sub": "open source, BSD-3",
+     "rank": 2
+    },
+    {
+     "id": "un",
+     "kind": "external",
+     "tone": "external",
+     "label": "Unleash",
+     "sub": "open source, AGPL-3.0",
+     "rank": 0
+    }
+   ],
+   "edges": [
+    {
+     "id": "w1",
+     "from": "article",
+     "to": "code",
+     "style": "dotted",
+     "label": "names the four types"
+    },
+    {
+     "id": "w2",
+     "from": "gk",
+     "to": "code",
+     "style": "dotted",
+     "label": "ship disabled, enable in phases"
+    },
+    {
+     "id": "w3",
+     "from": "code",
+     "to": "of",
+     "style": "solid",
+     "label": "evaluate flags"
+    },
+    {
+     "id": "w4",
+     "from": "of",
+     "to": "ld",
+     "style": "solid",
+     "label": "provider"
+    },
+    {
+     "id": "w5",
+     "from": "of",
+     "to": "fs",
+     "style": "solid",
+     "label": "provider"
+    },
+    {
+     "id": "w6",
+     "from": "code",
+     "to": "un",
+     "style": "solid",
+     "label": "Unleash SDK"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call or change"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or risk"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "config or signal"
+    }
+   ]
+  },
+  {
+   "id": "related",
+   "kind": "c4",
+   "title": "Related patterns",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "ff",
+     "kind": "container",
+     "tone": "core",
+     "label": "Feature flags",
+     "sub": "separate deploy from release"
+    },
+    {
+     "id": "tbd",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Trunk-based development",
+     "sub": "merge small, merge daily"
+    },
+    {
+     "id": "canary",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Canary release",
+     "sub": "new version on a few servers"
+    },
+    {
+     "id": "ab",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "A/B testing",
+     "sub": "experiment toggles"
+    },
+    {
+     "id": "gd",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Graceful degradation",
+     "sub": "kill switches shed features"
+    },
+    {
+     "id": "sf",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Strangler fig",
+     "sub": "move traffic to the new system"
+    },
+    {
+     "id": "sdui",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Server-driven UI",
+     "sub": "server decides what clients show"
+    }
+   ],
+   "edges": [
+    {
+     "id": "x1",
+     "from": "tbd",
+     "to": "ff",
+     "style": "solid",
+     "label": "hides unfinished work on main"
+    },
+    {
+     "id": "x2",
+     "from": "canary",
+     "to": "ff",
+     "style": "dotted",
+     "label": "per server · per user"
+    },
+    {
+     "id": "x3",
+     "from": "ff",
+     "to": "ab",
+     "style": "solid",
+     "label": "stable buckets"
+    },
+    {
+     "id": "x4",
+     "from": "ff",
+     "to": "gd",
+     "style": "solid",
+     "label": "ops toggles"
+    },
+    {
+     "id": "x5",
+     "from": "ff",
+     "to": "sf",
+     "style": "solid",
+     "label": "route by flag"
+    },
+    {
+     "id": "x6",
+     "from": "ff",
+     "to": "sdui",
+     "style": "dotted",
+     "label": "flags pick the layout"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "problem",
+   "title": "The problem"
+  },
+  {
+   "id": "naive",
+   "title": "The naive fix"
+  },
+  {
+   "id": "pattern",
+   "title": "The pattern"
+  },
+  {
+   "id": "how",
+   "title": "How it works"
+  },
+  {
+   "id": "failure",
+   "title": "When it goes wrong"
+  },
+  {
+   "id": "tradeoffs",
+   "title": "Trade-offs"
+  },
+  {
+   "id": "wild",
+   "title": "In the wild"
+  },
+  {
+   "id": "related",
+   "title": "Related patterns"
+  },
+  {
+   "id": "recap",
+   "title": "Recap"
+  }
+ ],
+ "shots": [
+  {
+   "id": "ff-problem",
+   "chapter": "problem",
+   "diagram": "coupled",
+   "focus": [],
+   "trace": [],
+   "engineer": "Here is a team building a new checkout. It lives on a feature branch for weeks, because the moment it reaches the main branch it will be deployed, and the moment it is deployed every user will see it. Deploying the code and releasing the feature are the same event. That one coupling shapes everything else about how this team works, and none of it is good.",
+   "executive": "Today, shipping code and launching a feature happen at the same moment, so the team hides unfinished work for weeks."
+  },
+  {
+   "id": "ff-coupled",
+   "chapter": "problem",
+   "title": "Coupled",
+   "diagram": "coupled",
+   "trace": [
+    "c1",
+    "c2",
+    "c4",
+    "c5",
+    "c6"
+   ],
+   "focus": [],
+   "engineer": "Follow it through. The branch drifts from main, so the merge is large and full of conflicts. The deploy goes out, and a hundred percent of users get the new checkout at once. There is no way to try it on staff first, or on one percent. And when a bug appears, the only way back is to roll back the deploy: rebuild, retest and ship again, while users hit errors. Every release is a bet on the whole system.",
+   "executive": "Everything goes out to everyone at once, and undoing a mistake means another full deployment while customers see errors."
+  },
+  {
+   "id": "ff-naive",
+   "chapter": "naive",
+   "title": "Restart to flip",
+   "diagram": "restart",
+   "trace": [
+    "n1",
+    "n2",
+    "n3",
+    "n4",
+    "n5",
+    "n6",
+    "n7"
+   ],
+   "focus": [],
+   "engineer": "The obvious fix is a switch in a config file or an environment variable. That gets the code merged early, which helps. But the value is read when the server starts, so flipping it means a redeploy or a restart of every server. It is still all or nothing: everyone gets the new checkout at once. When errors climb, turning it off means restarting everything again, and users wait minutes for the old checkout to come back.",
+   "executive": "A simple on-off setting helps a little, but changing it still needs a restart, and it still switches everyone at once."
+  },
+  {
+   "id": "ff-pattern",
+   "chapter": "pattern",
+   "title": "Ship dark",
+   "diagram": "structure",
+   "trace": [
+    "p1",
+    "p2",
+    "p3",
+    "p4",
+    "p5",
+    "p6",
+    "p7"
+   ],
+   "focus": [],
+   "engineer": "Feature flags separate deploying from releasing. The new checkout is deployed dark: it is in production, behind a flag check, but switched off. A flag service stores the rules. The team changes a rule in a console, say on for five percent of users, and the change streams to an SDK inside each service. On each request the code asks the SDK whether the flag is on for this user, and takes the new path or the old one. No deploy, no restart.",
+   "executive": "The new feature ships switched off. A control panel turns it on for chosen users, while the system is running, with no new deployment."
+  },
+  {
+   "id": "ff-types",
+   "chapter": "pattern",
+   "card": {
+    "heading": "Four kinds of flag",
+    "kind": "compare",
+    "points": [
+     "Kind | Purpose and lifetime",
+     "Release toggle | Hide unfinished work · days to weeks",
+     "Experiment toggle | A/B test, stable cohorts · hours to weeks",
+     "Ops toggle / kill switch | Turn a feature off under load · short, or kept for good",
+     "Permission toggle | Premium or beta users · months to years"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Not all flags are the same. Pete Hodgson's article on Martin Fowler's site names four kinds. Release toggles hide unfinished work, and should live a week or two. Experiment toggles put each user in a stable group for an A/B test, for as long as the test needs. Ops toggles let operators switch a feature off quickly; some are kept for good as kill switches. Permission toggles give features to premium or beta users, and can last years.",
+   "executive": "There are four kinds of flag, for releases, experiments, operations and permissions, and each should live for a different length of time."
+  },
+  {
+   "id": "ff-how",
+   "chapter": "how",
+   "title": "Evaluate",
+   "diagram": "evaluate",
+   "trace": [
+    "e1",
+    "e2",
+    "e3",
+    "e4",
+    "e5",
+    "e6",
+    "e7",
+    "e8"
+   ],
+   "focus": [],
+   "engineer": "Step by step. At startup, a server-side SDK downloads all the flag rules and keeps them in memory, so evaluation is local and fast. User forty-two opens checkout. The service asks the SDK. The SDK hashes the flag name with the user id into a bucket, say thirty-seven out of a hundred; the rule says fifty percent, so it is on. Later, someone switches the flag off. The change streams to the SDK, and the next request gets the old checkout. Nothing was deployed.",
+   "executive": "Each server keeps a copy of the rules and answers instantly. Changes arrive while it runs, so a feature can be switched off without a deployment."
+  },
+  {
+   "id": "ff-rollout",
+   "chapter": "how",
+   "title": "Roll out",
+   "diagram": "rollout",
+   "trace": [
+    "r2",
+    "r3",
+    "r4"
+   ],
+   "focus": [],
+   "engineer": "Because the bucket comes from a hash of the user id, the same user always lands in the same place. That makes a progressive rollout safe. Start with staff, then one percent, then ten, then half, watching errors and latency at each step. Raising the percentage keeps the users who already have the feature and adds new ones. Unleash and LaunchDarkly both document this. At a hundred percent, the release is done, and the last step is to delete the flag.",
+   "executive": "The feature goes to a small, fixed group first, then more and more users, while the team watches for problems."
+  },
+  {
+   "id": "ff-rollback",
+   "chapter": "failure",
+   "title": "Roll back",
+   "diagram": "rollout",
+   "focus": [
+    "half",
+    "off"
+   ],
+   "trace": [
+    "r2",
+    "r3",
+    "r5"
+   ],
+   "engineer": "Now the bad case. At fifty percent, errors spike. Without flags, this would be a rollback deploy. With flags, someone turns the flag off, the change streams to every SDK, and all users are back on the old checkout on their next request. The faulty code is still deployed, but nobody runs it. The team can fix it calmly, and start the rollout again. Rollback has become a switch, not a deployment.",
+   "executive": "If something goes wrong, the feature is switched off for everyone at once. The fix can wait for a calm, normal release."
+  },
+  {
+   "id": "ff-outage",
+   "chapter": "failure",
+   "title": "Service down",
+   "diagram": "outage",
+   "trace": [
+    "f1",
+    "f2",
+    "f3",
+    "f4",
+    "f5",
+    "f6",
+    "f7"
+   ],
+   "focus": [],
+   "engineer": "What if the flag service itself is down? Running services keep their cached rules and carry on; they just stop getting updates. Unleash's SDK docs say exactly this. The harder case is a new instance that starts during the outage, with no rules at all. Then the SDK returns the default value written in the code. OpenFeature's specification requires evaluation to return the default rather than throw. So choose defaults that are safe: usually off, the old path.",
+   "executive": "If the flag system goes down, servers keep their last known settings. New servers fall back to a safe default chosen in the code."
+  },
+  {
+   "id": "ff-tradeoffs",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "What flags cost",
+    "kind": "compare",
+    "points": [
+     "Cost | What to do about it",
+     "Flag debt: dead branches pile up | Owner, expiry date, removal ticket on day one",
+     "Many combinations to test | Test production config, release config, and all new flags off",
+     "Client-side flags can be read and changed | Enforce access on the server, not by hiding",
+     "Another system on the request path | Local evaluation, cached rules, safe defaults"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Flags have a carrying cost. Every flag is an if statement and two code paths. Left in place, they become flag debt, so give each one an owner and an expiry date, and file the removal task when you create it. You cannot test every combination; Hodgson suggests testing the production setting, the intended release, and everything new switched off. And never rely on a client-side flag to protect something sensitive: the browser can see it. Check permissions on the server.",
+   "executive": "Every flag adds complexity, so remove them once the release is done, and never use them as a security lock."
+  },
+  {
+   "id": "ff-whennot",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "When not to use one",
+    "points": [
+     "A one-line change that is easy to roll back",
+     "Database migrations: plan expand and contract instead",
+     "As a permanent if-else nobody owns",
+     "To hide unfinished security code from attackers"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "When not to reach for a flag. A tiny change that is quick to deploy and roll back does not need one. A flag cannot undo a database migration; plan those as separate, backward-compatible steps. Do not let a release flag turn into permanent configuration that nobody owns. And unfinished code behind a flag is still in production, so security-sensitive code needs real protection, not just a switch the client can see.",
+   "executive": "Small changes, data migrations and security controls usually need something other than a flag."
+  },
+  {
+   "id": "ff-wild",
+   "chapter": "wild",
+   "title": "Ecosystem",
+   "diagram": "wild",
+   "trace": [
+    "w1",
+    "w2",
+    "w3",
+    "w4",
+    "w5",
+    "w6"
+   ],
+   "focus": [],
+   "engineer": "In the wild. Pete Hodgson's Feature Toggles article on martinfowler.com gave us the vocabulary. Facebook's Gatekeeper, described in a 2015 paper, ships code disabled and enables it in phases: engineers, then employees, then a region, then everyone. OpenFeature, a CNCF incubating project, defines one vendor-neutral evaluation API, with providers translating to the flag system you use; LaunchDarkly and Flagsmith both document providers. Unleash and Flagsmith are open source; LaunchDarkly is a commercial service.",
+   "executive": "Large companies have done this for years, and there is now an open standard so teams can switch flag vendors without rewriting code."
+  },
+  {
+   "id": "ff-related",
+   "chapter": "related",
+   "title": "Neighbours",
+   "diagram": "related",
+   "trace": [
+    "x1",
+    "x2",
+    "x3",
+    "x4",
+    "x5",
+    "x6"
+   ],
+   "focus": [],
+   "engineer": "Its neighbours. Trunk-based development depends on flags to merge unfinished work every day. A canary release sends a new version to a few servers; a flag sends a feature to a few users, and the two combine well. Experiment toggles are the engine of A/B testing. Kill switches are a tool for graceful degradation. A strangler fig migration can route traffic to the new system by flag. And server-driven UI often uses flags to pick what each client shows.",
+   "executive": "Flags support daily merging, gradual launches, experiments, emergency switches and step-by-step migrations."
+  },
+  {
+   "id": "ff-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "Deploy is not release: ship dark, turn on at runtime",
+     "Roll out by stable percentage; roll back with a switch",
+     "Safe defaults, owners and expiry: flags are debt"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. Deploying is not releasing: ship code dark and turn it on at runtime. Roll out to a stable, growing percentage of users, and roll back by flipping a switch, not by redeploying. And treat every flag as debt: give it a safe default, an owner and an expiry date, and delete it when its job is done.",
+   "executive": "Ship quietly, switch on gradually, switch off instantly, and clean up afterwards."
+  }
+ ],
+ "meta": {
+  "kind": "pattern",
+  "category": "Evolution",
+  "level": "beginner",
+  "uses": [],
+  "related": [
+   "strangler-fig",
+   "graceful-degradation",
+   "server-driven-ui"
+  ],
+  "blurb": "Ship code dark, switch features on at runtime for chosen users, and switch them off without a deploy.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ }
+}

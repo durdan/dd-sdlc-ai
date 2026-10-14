@@ -1,0 +1,1159 @@
+{
+ "id": "api-gateway",
+ "title": "API gateway",
+ "subtitle": "Design pattern",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "diagrams": [
+  {
+   "id": "direct",
+   "kind": "c4",
+   "title": "Every client calls every service",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "mobile",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Mobile app",
+     "sub": "on a slow phone network",
+     "rank": 0
+    },
+    {
+     "id": "web",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Web app",
+     "sub": "browser",
+     "rank": 0
+    },
+    {
+     "id": "anyone",
+     "kind": "external",
+     "tone": "external",
+     "label": "Anyone on the internet",
+     "sub": "sees every endpoint",
+     "rank": 0
+    },
+    {
+     "id": "catalogue",
+     "kind": "container",
+     "tone": "core",
+     "label": "Catalogue service",
+     "sub": "own TLS · auth · limits",
+     "rank": 1
+    },
+    {
+     "id": "reviews",
+     "kind": "container",
+     "tone": "core",
+     "label": "Reviews service",
+     "sub": "own TLS · auth · limits",
+     "rank": 1
+    },
+    {
+     "id": "stock",
+     "kind": "container",
+     "tone": "core",
+     "label": "Stock service",
+     "sub": "own TLS · auth · limits",
+     "rank": 1
+    },
+    {
+     "id": "orders",
+     "kind": "container",
+     "tone": "core",
+     "label": "Order service",
+     "sub": "own TLS · auth · limits",
+     "rank": 1
+    }
+   ],
+   "edges": [
+    {
+     "id": "d1",
+     "from": "mobile",
+     "to": "catalogue",
+     "style": "solid",
+     "label": "GET item"
+    },
+    {
+     "id": "d2",
+     "from": "mobile",
+     "to": "reviews",
+     "style": "solid",
+     "label": "GET reviews"
+    },
+    {
+     "id": "d3",
+     "from": "mobile",
+     "to": "stock",
+     "style": "solid",
+     "label": "GET stock"
+    },
+    {
+     "id": "d4",
+     "from": "mobile",
+     "to": "orders",
+     "style": "solid",
+     "label": "GET my orders"
+    },
+    {
+     "id": "d5",
+     "from": "web",
+     "to": "catalogue",
+     "style": "solid",
+     "label": "same calls again"
+    },
+    {
+     "id": "d6",
+     "from": "web",
+     "to": "orders",
+     "style": "solid",
+     "label": "same calls again"
+    },
+    {
+     "id": "d7",
+     "from": "anyone",
+     "to": "stock",
+     "style": "dashed",
+     "label": "probes a public endpoint"
+    },
+    {
+     "id": "d8",
+     "from": "anyone",
+     "to": "orders",
+     "style": "dashed",
+     "label": "probes a public endpoint"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or exposure"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "signal"
+    }
+   ]
+  },
+  {
+   "id": "naive",
+   "kind": "sequence",
+   "title": "Share a library, keep calling directly",
+   "participants": [
+    {
+     "id": "mobile",
+     "label": "Mobile app"
+    },
+    {
+     "id": "catalogue",
+     "label": "Catalogue"
+    },
+    {
+     "id": "reviews",
+     "label": "Reviews"
+    },
+    {
+     "id": "stock",
+     "label": "Stock"
+    },
+    {
+     "id": "idp",
+     "label": "Identity provider"
+    }
+   ],
+   "messages": [
+    {
+     "id": "n1",
+     "from": "mobile",
+     "to": "catalogue",
+     "style": "solid",
+     "label": "GET item · token"
+    },
+    {
+     "id": "n2",
+     "from": "catalogue",
+     "to": "idp",
+     "style": "solid",
+     "label": "auth library v3: check token"
+    },
+    {
+     "id": "n3",
+     "from": "mobile",
+     "to": "reviews",
+     "style": "solid",
+     "label": "GET reviews · token"
+    },
+    {
+     "id": "n4",
+     "from": "reviews",
+     "to": "idp",
+     "style": "solid",
+     "label": "auth library v2: check token"
+    },
+    {
+     "id": "n5",
+     "from": "mobile",
+     "to": "stock",
+     "style": "solid",
+     "label": "GET stock · token"
+    },
+    {
+     "id": "n6",
+     "from": "stock",
+     "to": "mobile",
+     "style": "solid",
+     "label": "401: library v1 rejects the new token"
+    }
+   ]
+  },
+  {
+   "id": "structure",
+   "kind": "c4",
+   "title": "One front door in front of every service",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "clients",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Clients",
+     "sub": "mobile, web, partners"
+    },
+    {
+     "id": "tls",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "TLS termination",
+     "sub": "one certificate, one place",
+     "group": "gw"
+    },
+    {
+     "id": "auth",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Authentication",
+     "sub": "validate the token once",
+     "group": "gw"
+    },
+    {
+     "id": "limit",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Rate limiter",
+     "sub": "budget per caller",
+     "group": "gw"
+    },
+    {
+     "id": "idp",
+     "kind": "external",
+     "tone": "external",
+     "label": "Identity provider",
+     "sub": "issues tokens and keys"
+    },
+    {
+     "id": "router",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Router",
+     "sub": "path, host or header → service",
+     "group": "gw"
+    },
+    {
+     "id": "agg",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Aggregator",
+     "sub": "fan out, merge, reshape",
+     "group": "gw"
+    },
+    {
+     "id": "obs",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Telemetry",
+     "sub": "logs, metrics, trace ids",
+     "group": "gw"
+    },
+    {
+     "id": "metrics",
+     "kind": "store",
+     "tone": "data",
+     "label": "Metrics and logs",
+     "sub": "every request"
+    },
+    {
+     "id": "orders",
+     "kind": "container",
+     "tone": "core",
+     "label": "Order service",
+     "sub": "private network only"
+    },
+    {
+     "id": "catalogue",
+     "kind": "container",
+     "tone": "core",
+     "label": "Catalogue service",
+     "sub": "private network only"
+    },
+    {
+     "id": "reviews",
+     "kind": "container",
+     "tone": "core",
+     "label": "Reviews service",
+     "sub": "private network only"
+    }
+   ],
+   "edges": [
+    {
+     "id": "s1",
+     "from": "clients",
+     "to": "tls",
+     "style": "solid",
+     "label": "HTTPS to one host name"
+    },
+    {
+     "id": "s2",
+     "from": "tls",
+     "to": "router",
+     "style": "solid",
+     "label": "decrypted request"
+    },
+    {
+     "id": "s3",
+     "from": "router",
+     "to": "auth",
+     "style": "dotted",
+     "label": "check token"
+    },
+    {
+     "id": "s4",
+     "from": "auth",
+     "to": "idp",
+     "style": "dotted",
+     "label": "signing keys, cached"
+    },
+    {
+     "id": "s5",
+     "from": "router",
+     "to": "limit",
+     "style": "dotted",
+     "label": "check budget"
+    },
+    {
+     "id": "s6",
+     "from": "router",
+     "to": "orders",
+     "style": "solid",
+     "label": "/orders/* → one service"
+    },
+    {
+     "id": "s7",
+     "from": "router",
+     "to": "agg",
+     "style": "solid",
+     "label": "/product-page/*"
+    },
+    {
+     "id": "s8",
+     "from": "agg",
+     "to": "catalogue",
+     "style": "solid",
+     "label": "fan out"
+    },
+    {
+     "id": "s9",
+     "from": "agg",
+     "to": "reviews",
+     "style": "solid",
+     "label": "fan out"
+    },
+    {
+     "id": "s10",
+     "from": "router",
+     "to": "obs",
+     "style": "dotted",
+     "label": "every request"
+    },
+    {
+     "id": "s11",
+     "from": "obs",
+     "to": "metrics",
+     "style": "dotted",
+     "label": "export"
+    }
+   ],
+   "groups": [
+    {
+     "id": "gw",
+     "label": "API gateway [managed service or reverse proxy]",
+     "tone": "core"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or exposure"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "signal"
+    }
+   ]
+  },
+  {
+   "id": "flow",
+   "kind": "sequence",
+   "title": "One request for a product page",
+   "participants": [
+    {
+     "id": "mobile",
+     "label": "Mobile app"
+    },
+    {
+     "id": "gw",
+     "label": "API gateway"
+    },
+    {
+     "id": "idp",
+     "label": "Identity provider"
+    },
+    {
+     "id": "catalogue",
+     "label": "Catalogue"
+    },
+    {
+     "id": "reviews",
+     "label": "Reviews"
+    },
+    {
+     "id": "stock",
+     "label": "Stock"
+    }
+   ],
+   "messages": [
+    {
+     "id": "h1",
+     "from": "mobile",
+     "to": "gw",
+     "style": "solid",
+     "label": "GET /product-page/42 · HTTPS + token"
+    },
+    {
+     "id": "h2",
+     "from": "gw",
+     "to": "idp",
+     "style": "solid",
+     "label": "signing keys (fetched once, cached)"
+    },
+    {
+     "id": "h3",
+     "from": "gw",
+     "to": "catalogue",
+     "style": "solid",
+     "label": "GET /items/42 · user id header"
+    },
+    {
+     "id": "h4",
+     "from": "gw",
+     "to": "reviews",
+     "style": "solid",
+     "label": "GET /reviews?item=42"
+    },
+    {
+     "id": "h5",
+     "from": "gw",
+     "to": "stock",
+     "style": "solid",
+     "label": "GET /stock/42"
+    },
+    {
+     "id": "h6",
+     "from": "catalogue",
+     "to": "gw",
+     "style": "solid",
+     "label": "item"
+    },
+    {
+     "id": "h7",
+     "from": "reviews",
+     "to": "gw",
+     "style": "solid",
+     "label": "reviews"
+    },
+    {
+     "id": "h8",
+     "from": "stock",
+     "to": "gw",
+     "style": "solid",
+     "label": "stock level"
+    },
+    {
+     "id": "h9",
+     "from": "gw",
+     "to": "mobile",
+     "style": "solid",
+     "label": "one JSON reply · compressed · logged"
+    }
+   ]
+  },
+  {
+   "id": "partial",
+   "kind": "sequence",
+   "title": "A slow service and a greedy client",
+   "participants": [
+    {
+     "id": "mobile",
+     "label": "Mobile app"
+    },
+    {
+     "id": "gw",
+     "label": "API gateway"
+    },
+    {
+     "id": "catalogue",
+     "label": "Catalogue"
+    },
+    {
+     "id": "reviews",
+     "label": "Reviews"
+    }
+   ],
+   "messages": [
+    {
+     "id": "f1",
+     "from": "mobile",
+     "to": "gw",
+     "style": "solid",
+     "label": "GET /product-page/42"
+    },
+    {
+     "id": "f2",
+     "from": "gw",
+     "to": "catalogue",
+     "style": "solid",
+     "label": "GET /items/42"
+    },
+    {
+     "id": "f3",
+     "from": "gw",
+     "to": "reviews",
+     "style": "solid",
+     "label": "GET /reviews · no answer"
+    },
+    {
+     "id": "f4",
+     "from": "catalogue",
+     "to": "gw",
+     "style": "solid",
+     "label": "item"
+    },
+    {
+     "id": "f5",
+     "from": "gw",
+     "to": "mobile",
+     "style": "solid",
+     "label": "200 · item, reviews left out after 300 ms"
+    },
+    {
+     "id": "f6",
+     "from": "mobile",
+     "to": "gw",
+     "style": "solid",
+     "label": "request 101 this minute"
+    },
+    {
+     "id": "f7",
+     "from": "gw",
+     "to": "mobile",
+     "style": "solid",
+     "label": "429 Too Many Requests · Retry-After"
+    }
+   ]
+  },
+  {
+   "id": "ha",
+   "kind": "c4",
+   "title": "The gateway is on every path, so run several",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "clients",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Clients",
+     "sub": "one host name",
+     "rank": 0
+    },
+    {
+     "id": "lb",
+     "kind": "system",
+     "tone": "stream",
+     "label": "Load balancer",
+     "sub": "health checks every instance",
+     "rank": 1
+    },
+    {
+     "id": "g1",
+     "kind": "container",
+     "tone": "core",
+     "label": "Gateway 1",
+     "sub": "stateless",
+     "rank": 2
+    },
+    {
+     "id": "g2",
+     "kind": "container",
+     "tone": "core",
+     "label": "Gateway 2",
+     "sub": "unhealthy",
+     "rank": 2
+    },
+    {
+     "id": "g3",
+     "kind": "container",
+     "tone": "core",
+     "label": "Gateway 3",
+     "sub": "stateless",
+     "rank": 2
+    },
+    {
+     "id": "svc",
+     "kind": "container",
+     "tone": "core",
+     "label": "Services",
+     "sub": "accept traffic only from the gateway",
+     "rank": 3
+    },
+    {
+     "id": "counters",
+     "kind": "store",
+     "tone": "data",
+     "label": "Shared counters",
+     "sub": "rate limits across instances",
+     "rank": 3
+    }
+   ],
+   "edges": [
+    {
+     "id": "a1",
+     "from": "clients",
+     "to": "lb",
+     "style": "solid",
+     "label": "HTTPS"
+    },
+    {
+     "id": "a2",
+     "from": "lb",
+     "to": "g1",
+     "style": "solid",
+     "label": "share of traffic"
+    },
+    {
+     "id": "a3",
+     "from": "lb",
+     "to": "g2",
+     "style": "dashed",
+     "label": "health check fails · removed"
+    },
+    {
+     "id": "a4",
+     "from": "lb",
+     "to": "g3",
+     "style": "solid",
+     "label": "share of traffic"
+    },
+    {
+     "id": "a5",
+     "from": "g1",
+     "to": "svc",
+     "style": "solid",
+     "label": "route"
+    },
+    {
+     "id": "a6",
+     "from": "g3",
+     "to": "svc",
+     "style": "solid",
+     "label": "route"
+    },
+    {
+     "id": "a7",
+     "from": "g1",
+     "to": "counters",
+     "style": "dotted",
+     "label": "count"
+    },
+    {
+     "id": "a8",
+     "from": "g3",
+     "to": "counters",
+     "style": "dotted",
+     "label": "count"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or exposure"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "signal"
+    }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "pattern",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "API gateway pattern",
+     "sub": "one entry point for all clients",
+     "rank": 0
+    },
+    {
+     "id": "msio",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "microservices.io",
+     "sub": "Chris Richardson · BFF variation",
+     "rank": 1
+    },
+    {
+     "id": "ms",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Microsoft guidance",
+     "sub": "routing · aggregation · offloading",
+     "rank": 1
+    },
+    {
+     "id": "aws",
+     "kind": "external",
+     "tone": "external",
+     "label": "Amazon API Gateway",
+     "sub": "managed · REST, HTTP, WebSocket",
+     "rank": 2
+    },
+    {
+     "id": "apim",
+     "kind": "external",
+     "tone": "external",
+     "label": "Azure API Management",
+     "sub": "managed · policies",
+     "rank": 2
+    },
+    {
+     "id": "kong",
+     "kind": "container",
+     "tone": "core",
+     "label": "Kong Gateway",
+     "sub": "open source · plugins",
+     "rank": 2
+    },
+    {
+     "id": "nginx",
+     "kind": "container",
+     "tone": "core",
+     "label": "NGINX",
+     "sub": "reverse proxy, load balancer",
+     "rank": 3
+    },
+    {
+     "id": "envoy",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Envoy Gateway",
+     "sub": "Envoy + Kubernetes Gateway API",
+     "rank": 3
+    },
+    {
+     "id": "zuul",
+     "kind": "container",
+     "tone": "core",
+     "label": "Netflix Zuul",
+     "sub": "Netflix's front door · open source",
+     "rank": 3
+    }
+   ],
+   "edges": [
+    {
+     "id": "w1",
+     "from": "pattern",
+     "to": "msio",
+     "style": "solid",
+     "label": "named and described"
+    },
+    {
+     "id": "w2",
+     "from": "pattern",
+     "to": "ms",
+     "style": "solid",
+     "label": "split into three jobs"
+    },
+    {
+     "id": "w3",
+     "from": "pattern",
+     "to": "aws",
+     "style": "solid",
+     "label": "managed"
+    },
+    {
+     "id": "w4",
+     "from": "ms",
+     "to": "apim",
+     "style": "solid",
+     "label": "managed option"
+    },
+    {
+     "id": "w5",
+     "from": "pattern",
+     "to": "kong",
+     "style": "solid",
+     "label": "open source"
+    },
+    {
+     "id": "w6",
+     "from": "ms",
+     "to": "nginx",
+     "style": "solid",
+     "label": "reverse-proxy option"
+    },
+    {
+     "id": "w7",
+     "from": "pattern",
+     "to": "envoy",
+     "style": "solid",
+     "label": "proxy-based"
+    },
+    {
+     "id": "w8",
+     "from": "msio",
+     "to": "zuul",
+     "style": "solid",
+     "label": "known use: Netflix"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "problem",
+   "title": "The problem"
+  },
+  {
+   "id": "naive",
+   "title": "The naive fix"
+  },
+  {
+   "id": "pattern",
+   "title": "The pattern"
+  },
+  {
+   "id": "how",
+   "title": "How it works"
+  },
+  {
+   "id": "failure",
+   "title": "When it goes wrong"
+  },
+  {
+   "id": "tradeoffs",
+   "title": "Trade-offs"
+  },
+  {
+   "id": "wild",
+   "title": "In the wild"
+  },
+  {
+   "id": "related",
+   "title": "Related patterns"
+  },
+  {
+   "id": "recap",
+   "title": "Recap"
+  }
+ ],
+ "shots": [
+  {
+   "id": "gw-problem",
+   "chapter": "problem",
+   "title": "Chatty",
+   "diagram": "direct",
+   "focus": [],
+   "trace": [
+    "d1",
+    "d2",
+    "d3",
+    "d4",
+    "d5",
+    "d6"
+   ],
+   "engineer": "Here is a shop built from small services: catalogue, reviews, stock and orders. A mobile app and a web app call them directly. To draw one product page, the phone makes four separate requests over a slow mobile network, and every new feature adds another. The client has to know where every service lives, so splitting or renaming a service means shipping a new app.",
+   "executive": "Without a single front door, the app has to call every service itself, which is slow on a phone and ties the app to how the back end is split."
+  },
+  {
+   "id": "gw-exposed",
+   "chapter": "problem",
+   "title": "Exposed",
+   "diagram": "direct",
+   "focus": [],
+   "trace": [
+    "d7",
+    "d8"
+   ],
+   "engineer": "There is a second cost. Each service is on the public internet, so each one terminates TLS, checks tokens and limits greedy callers on its own. That is four certificates to renew, four places to get authentication wrong, and four endpoints for anyone to probe. Microsoft's guidance lists exactly these problems: complex clients, tight coupling, extra latency, repeated cross-cutting work and a bigger attack surface.",
+   "executive": "Every service also has to do its own security and traffic control, and every one of them is open to attack."
+  },
+  {
+   "id": "gw-naive",
+   "chapter": "naive",
+   "title": "Shared library",
+   "diagram": "naive",
+   "focus": [],
+   "trace": [
+    "n1",
+    "n2",
+    "n3",
+    "n4",
+    "n5",
+    "n6"
+   ],
+   "engineer": "The obvious fix is a shared library: one authentication package that every service imports. It helps, until the versions drift. Catalogue runs version three, reviews version two, and stock still runs version one, which rejects the new token format. The phone still makes three round trips, and every service is still public. A shared library copies the same code everywhere; it does not give you one place to change it.",
+   "executive": "Sharing code between services keeps them inconsistent and still leaves the app making many slow calls."
+  },
+  {
+   "id": "gw-structure",
+   "chapter": "pattern",
+   "title": "Parts",
+   "diagram": "structure",
+   "focus": [],
+   "trace": [
+    "s1",
+    "s2",
+    "s3",
+    "s4",
+    "s5",
+    "s6",
+    "s7",
+    "s8",
+    "s9",
+    "s10",
+    "s11"
+   ],
+   "engineer": "The API gateway is a single entry point for every client. It terminates TLS with one certificate. It validates the caller's token once, using signing keys it caches from the identity provider. It applies a rate limit per caller. A router sends each request to the right service by path, host or header, and an aggregator fans one request out to several services and merges the answers. Every request is logged, and the services sit on a private network.",
+   "executive": "The gateway is one front door: it checks who is calling, limits how much they can call, and sends each request to the right service."
+  },
+  {
+   "id": "gw-three",
+   "chapter": "pattern",
+   "card": {
+    "heading": "Three jobs, as Microsoft names them",
+    "kind": "compare",
+    "points": [
+     "Pattern | The gateway…",
+     "Gateway routing | sends each request to a service by path, host or header",
+     "Gateway aggregation | turns one client call into several, and one reply",
+     "Gateway offloading | does TLS, auth, throttling and logging for everyone"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Microsoft's architecture guidance splits the gateway's work into three named patterns. Gateway routing: a layer seven reverse proxy that maps one endpoint to many services. Gateway aggregation: one client request becomes several back-end calls and one reply. Gateway offloading: TLS, authentication, throttling, logging and compression move out of every service and into one place. Most real gateways do all three, but naming them helps you decide what yours should do.",
+   "executive": "The gateway does three jobs: it routes requests, it combines answers, and it takes shared chores off every service."
+  },
+  {
+   "id": "gw-how",
+   "chapter": "how",
+   "title": "Product page",
+   "diagram": "flow",
+   "focus": [],
+   "trace": [
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "h7",
+    "h8",
+    "h9"
+   ],
+   "engineer": "Step by step. The phone asks the gateway for product page forty-two, over HTTPS, with a token. The gateway checks the token's signature with keys it already has, and checks the caller's budget. It then calls catalogue, reviews and stock in parallel, passing the user's id in a header the services trust. When the three answers arrive, it merges them into one compressed reply and logs the request with a trace id. One round trip for the phone instead of three.",
+   "executive": "The app makes one call. The gateway checks it, asks three services at once, and sends back one combined answer."
+  },
+  {
+   "id": "gw-partial",
+   "chapter": "failure",
+   "title": "Partial answer",
+   "diagram": "partial",
+   "focus": [],
+   "trace": [
+    "f1",
+    "f2",
+    "f3",
+    "f4",
+    "f5",
+    "f6",
+    "f7"
+   ],
+   "engineer": "Now reviews stops answering. The gateway gives each back-end call a time budget; here three hundred milliseconds, an illustrative number. When it runs out, the gateway returns the item and stock without reviews, rather than making the whole page fail. Microsoft's aggregation guidance suggests exactly this: time out, return partial data, and protect calls with circuit breakers. Then a client sends its hundred and first request this minute, and the gateway answers four twenty-nine, too many requests, before any service does work.",
+   "executive": "When one service is slow, the gateway returns what it has instead of failing the whole page, and it turns away clients that send too much."
+  },
+  {
+   "id": "gw-ha",
+   "chapter": "failure",
+   "title": "Gateway down",
+   "diagram": "ha",
+   "focus": [],
+   "trace": [
+    "a1",
+    "a2",
+    "a3",
+    "a4",
+    "a5",
+    "a6",
+    "a7",
+    "a8"
+   ],
+   "engineer": "The bigger risk is the gateway itself. Every request passes through it, so it is a potential single point of failure and a bottleneck. Run several stateless instances behind a load balancer that health-checks them, and size them for peak traffic, not the average. Keep shared state, such as rate-limit counters, outside the instances. Make services accept traffic only from the gateway, so nobody can bypass it. And never put business logic in the gateway.",
+   "executive": "The gateway sits in front of everything, so run several copies, keep it simple, and make sure nobody can go around it."
+  },
+  {
+   "id": "gw-perclient",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "One gateway or one per client",
+    "kind": "compare",
+    "points": [
+     "One gateway | Per-client gateways (BFF)",
+     "Same API for every client | API shaped for each client",
+     "One team owns it | Each client team owns its own",
+     "Fewer things to run | More gateways to deploy and secure",
+     "A queue for every change | Some duplication between them"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The first big choice is one gateway or one per kind of client. A single gateway gives every client the same API and one team to run it, but it becomes a shared bottleneck for change: the mobile team waits for the gateway team. Per-client gateways, called backends for frontends, let each client team shape its own API and release it with its app, at the cost of more gateways to deploy, secure and keep consistent.",
+   "executive": "One gateway is simpler to run. A gateway per kind of app lets each team move faster, but there are more of them to look after."
+  },
+  {
+   "id": "gw-costs",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "What it costs, and when to skip it",
+    "points": [
+     "An extra network hop on every request",
+     "Another critical system to deploy, scale and secure",
+     "Skip it for one or two services",
+     "Coupled releases if it knows service internals"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "And the costs. Every request takes an extra network hop, and each check the gateway runs adds a little time. It is another moving part to deploy, scale and secure, and because it holds every certificate and checks every token, it is a high-value target. Microsoft's routing guidance says the pattern may not be worth it for a simple application with only one or two services. And when routing rules depend on service internals, the gateway couples every release to its own.",
+   "executive": "A gateway adds a small delay and one more critical thing to run. For an app with one or two services, it is often not worth it."
+  },
+  {
+   "id": "gw-wild",
+   "chapter": "wild",
+   "title": "Implementations",
+   "diagram": "wild",
+   "focus": [],
+   "trace": [
+    "w1",
+    "w2",
+    "w3",
+    "w4",
+    "w5",
+    "w6",
+    "w7",
+    "w8"
+   ],
+   "engineer": "In the wild. Chris Richardson's microservices dot io describes the pattern as a single entry point that routes or fans out, with backends for frontends as a variation. Microsoft splits it into routing, aggregation and offloading, and lists NGINX and HAProxy as reverse-proxy options next to Azure API Management. Amazon API Gateway is a managed service for REST, HTTP and WebSocket APIs. Kong is open source with plugins. Envoy Gateway runs Envoy as a gateway. And Netflix's Zuul is its front door.",
+   "executive": "Every cloud offers a managed gateway, and there are mature open-source ones. Netflix built and open-sourced its own."
+  },
+  {
+   "id": "gw-related",
+   "chapter": "related",
+   "card": {
+    "heading": "Related patterns",
+    "kind": "compare",
+    "points": [
+     "Pattern | How it relates",
+     "Backends for frontends | One gateway per client experience",
+     "Rate limiting | Enforced at the gateway, per caller",
+     "Timeout and circuit breaker | Keep one slow service from holding the reply",
+     "Service mesh | Inside traffic; the gateway handles traffic coming in"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Its neighbours. Backends for frontends is a gateway per client experience. Rate limiting is usually enforced at the gateway, because that is where every caller is identified. Timeouts and circuit breakers protect aggregation, so one slow service cannot hold the whole reply. A service mesh is often confused with it: the mesh handles traffic between services, east-west, while the gateway handles traffic coming in from outside, north-south. Many systems run both.",
+   "executive": "The gateway works with rate limits, timeouts and circuit breakers, and with a service mesh that handles traffic inside the system."
+  },
+  {
+   "id": "gw-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "One front door: clients see one API, not your topology",
+     "Route, aggregate, offload; keep business logic out",
+     "It is on every path: run several, and allow no bypass"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. Give clients one front door, so they see one API and not your service topology. Let the gateway route, aggregate and offload shared chores like TLS, authentication and rate limits, but keep business logic out of it. And because every request passes through it, run it as a highly available, horizontally scaled tier that nobody can bypass.",
+   "executive": "One front door. Route, combine and protect, but no business logic. Run it so it never goes down."
+  }
+ ],
+ "meta": {
+  "kind": "pattern",
+  "category": "APIs",
+  "level": "beginner",
+  "uses": [
+   "rate-limiting",
+   "timeout"
+  ],
+  "related": [
+   "bff",
+   "rate-limiting",
+   "circuit-breaker"
+  ],
+  "blurb": "Give every client one front door that routes, combines and protects, so services stay private and simple.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ }
+}

@@ -1,0 +1,132 @@
+{
+ "gw-problem-engineer": {
+  "file": "/audio/api-gateway/gw-problem-engineer.mp3",
+  "ms": 23136,
+  "hash": "0032adc81db1"
+ },
+ "gw-problem-executive": {
+  "file": "/audio/api-gateway/gw-problem-executive.mp3",
+  "ms": 8328,
+  "hash": "b40e601677b6"
+ },
+ "gw-exposed-engineer": {
+  "file": "/audio/api-gateway/gw-exposed-engineer.mp3",
+  "ms": 26880,
+  "hash": "9d732f64d826"
+ },
+ "gw-exposed-executive": {
+  "file": "/audio/api-gateway/gw-exposed-executive.mp3",
+  "ms": 6912,
+  "hash": "2b87c88df72c"
+ },
+ "gw-naive-engineer": {
+  "file": "/audio/api-gateway/gw-naive-engineer.mp3",
+  "ms": 26904,
+  "hash": "7a809a323480"
+ },
+ "gw-naive-executive": {
+  "file": "/audio/api-gateway/gw-naive-executive.mp3",
+  "ms": 6408,
+  "hash": "bc673f16144e"
+ },
+ "gw-structure-engineer": {
+  "file": "/audio/api-gateway/gw-structure-engineer.mp3",
+  "ms": 30432,
+  "hash": "b03743534dd8"
+ },
+ "gw-structure-executive": {
+  "file": "/audio/api-gateway/gw-structure-executive.mp3",
+  "ms": 7848,
+  "hash": "92805bab0a2f"
+ },
+ "gw-three-engineer": {
+  "file": "/audio/api-gateway/gw-three-engineer.mp3",
+  "ms": 31368,
+  "hash": "43fd14397b03"
+ },
+ "gw-three-executive": {
+  "file": "/audio/api-gateway/gw-three-executive.mp3",
+  "ms": 7392,
+  "hash": "f09874ff3a0b"
+ },
+ "gw-how-engineer": {
+  "file": "/audio/api-gateway/gw-how-engineer.mp3",
+  "ms": 30432,
+  "hash": "50882e2cf2e5"
+ },
+ "gw-how-executive": {
+  "file": "/audio/api-gateway/gw-how-executive.mp3",
+  "ms": 7752,
+  "hash": "ab1fc131c071"
+ },
+ "gw-partial-engineer": {
+  "file": "/audio/api-gateway/gw-partial-engineer.mp3",
+  "ms": 33312,
+  "hash": "9af2f6aaeecf"
+ },
+ "gw-partial-executive": {
+  "file": "/audio/api-gateway/gw-partial-executive.mp3",
+  "ms": 8088,
+  "hash": "6505d7c7616c"
+ },
+ "gw-ha-engineer": {
+  "file": "/audio/api-gateway/gw-ha-engineer.mp3",
+  "ms": 29496,
+  "hash": "b7d6396d1471"
+ },
+ "gw-ha-executive": {
+  "file": "/audio/api-gateway/gw-ha-executive.mp3",
+  "ms": 7416,
+  "hash": "545c038d56fc"
+ },
+ "gw-perclient-engineer": {
+  "file": "/audio/api-gateway/gw-perclient-engineer.mp3",
+  "ms": 25056,
+  "hash": "39b0177f23f9"
+ },
+ "gw-perclient-executive": {
+  "file": "/audio/api-gateway/gw-perclient-executive.mp3",
+  "ms": 8016,
+  "hash": "523bca44025f"
+ },
+ "gw-costs-engineer": {
+  "file": "/audio/api-gateway/gw-costs-engineer.mp3",
+  "ms": 28944,
+  "hash": "b79b71a5c850"
+ },
+ "gw-costs-executive": {
+  "file": "/audio/api-gateway/gw-costs-executive.mp3",
+  "ms": 8376,
+  "hash": "08bb179e6d4f"
+ },
+ "gw-wild-engineer": {
+  "file": "/audio/api-gateway/gw-wild-engineer.mp3",
+  "ms": 35664,
+  "hash": "5564f6294cbd"
+ },
+ "gw-wild-executive": {
+  "file": "/audio/api-gateway/gw-wild-executive.mp3",
+  "ms": 7728,
+  "hash": "189d90446601"
+ },
+ "gw-related-engineer": {
+  "file": "/audio/api-gateway/gw-related-engineer.mp3",
+  "ms": 30240,
+  "hash": "dfc2ce0afe2e"
+ },
+ "gw-related-executive": {
+  "file": "/audio/api-gateway/gw-related-executive.mp3",
+  "ms": 8016,
+  "hash": "234eaec6bb38"
+ },
+ "gw-recap-engineer": {
+  "file": "/audio/api-gateway/gw-recap-engineer.mp3",
+  "ms": 23832,
+  "hash": "b3cd6cbea3a5"
+ },
+ "gw-recap-executive": {
+  "file": "/audio/api-gateway/gw-recap-executive.mp3",
+  "ms": 7992,
+  "hash": "cff5d0febd1f"
+ }
+}

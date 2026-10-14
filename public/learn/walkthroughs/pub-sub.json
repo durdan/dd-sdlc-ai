@@ -1,0 +1,1073 @@
+{
+ "id": "pub-sub",
+ "title": "Publish/subscribe",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "diagrams": [
+  {
+   "id": "direct",
+   "kind": "c4",
+   "title": "The sender calls everyone who cares",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "user",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Customer",
+     "sub": "places an order"
+    },
+    {
+     "id": "orders",
+     "kind": "container",
+     "tone": "core",
+     "label": "Order service",
+     "sub": "knows every receiver"
+    },
+    {
+     "id": "email",
+     "kind": "container",
+     "tone": "core",
+     "label": "Email service",
+     "sub": "sends the receipt"
+    },
+    {
+     "id": "inventory",
+     "kind": "container",
+     "tone": "core",
+     "label": "Inventory service",
+     "sub": "reserves stock"
+    },
+    {
+     "id": "analytics",
+     "kind": "container",
+     "tone": "core",
+     "label": "Analytics",
+     "sub": "counts sales"
+    },
+    {
+     "id": "loyalty",
+     "kind": "external",
+     "tone": "external",
+     "label": "Loyalty service",
+     "sub": "slow: 8 s"
+    },
+    {
+     "id": "fraud",
+     "kind": "container",
+     "tone": "neutral",
+     "label": "Fraud checks",
+     "sub": "new team, wants orders too"
+    }
+   ],
+   "edges": [
+    {
+     "id": "d1",
+     "from": "user",
+     "to": "orders",
+     "style": "solid",
+     "label": "place order"
+    },
+    {
+     "id": "d2",
+     "from": "orders",
+     "to": "email",
+     "style": "solid",
+     "label": "send receipt"
+    },
+    {
+     "id": "d3",
+     "from": "orders",
+     "to": "inventory",
+     "style": "solid",
+     "label": "reserve stock"
+    },
+    {
+     "id": "d4",
+     "from": "orders",
+     "to": "analytics",
+     "style": "solid",
+     "label": "record sale"
+    },
+    {
+     "id": "d5",
+     "from": "orders",
+     "to": "loyalty",
+     "style": "dashed",
+     "label": "add points · waits 8 s"
+    },
+    {
+     "id": "d6",
+     "from": "orders",
+     "to": "fraud",
+     "style": "dotted",
+     "label": "needs a code change and redeploy"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "publish or deliver"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or slow"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "ack or signal"
+    }
+   ]
+  },
+  {
+   "id": "loop",
+   "kind": "sequence",
+   "title": "A loop in the sender",
+   "participants": [
+    {
+     "id": "user",
+     "label": "Customer"
+    },
+    {
+     "id": "orders",
+     "label": "Order service"
+    },
+    {
+     "id": "email",
+     "label": "Email"
+    },
+    {
+     "id": "inventory",
+     "label": "Inventory"
+    },
+    {
+     "id": "loyalty",
+     "label": "Loyalty"
+    },
+    {
+     "id": "analytics",
+     "label": "Analytics"
+    }
+   ],
+   "messages": [
+    {
+     "id": "n1",
+     "from": "user",
+     "to": "orders",
+     "style": "solid",
+     "label": "place order"
+    },
+    {
+     "id": "n2",
+     "from": "orders",
+     "to": "email",
+     "style": "solid",
+     "label": "1. send receipt · 120 ms"
+    },
+    {
+     "id": "n3",
+     "from": "orders",
+     "to": "inventory",
+     "style": "solid",
+     "label": "2. reserve stock · 80 ms"
+    },
+    {
+     "id": "n4",
+     "from": "orders",
+     "to": "loyalty",
+     "style": "dashed",
+     "label": "3. add points · waits 8 s"
+    },
+    {
+     "id": "n5",
+     "from": "orders",
+     "to": "analytics",
+     "style": "solid",
+     "label": "4. record sale · only now"
+    },
+    {
+     "id": "n6",
+     "from": "orders",
+     "to": "user",
+     "style": "solid",
+     "label": "confirmed, 8 s late"
+    },
+    {
+     "id": "n7",
+     "from": "orders",
+     "to": "email",
+     "style": "dashed",
+     "label": "loyalty failed? retry the loop: second receipt"
+    }
+   ]
+  },
+  {
+   "id": "structure",
+   "kind": "c4",
+   "title": "Publish once, a copy for every subscription",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "broker",
+     "label": "Broker [managed service or cluster]",
+     "tone": "stream"
+    }
+   ],
+   "elements": [
+    {
+     "id": "orders",
+     "kind": "container",
+     "tone": "core",
+     "label": "Order service",
+     "sub": "publisher"
+    },
+    {
+     "id": "topic",
+     "kind": "system",
+     "tone": "stream",
+     "label": "order-placed topic",
+     "sub": "input channel",
+     "group": "broker"
+    },
+    {
+     "id": "semail",
+     "kind": "store",
+     "tone": "stream",
+     "label": "Email subscription",
+     "sub": "its own queue",
+     "group": "broker"
+    },
+    {
+     "id": "sinv",
+     "kind": "store",
+     "tone": "stream",
+     "label": "Inventory subscription",
+     "sub": "its own queue",
+     "group": "broker"
+    },
+    {
+     "id": "san",
+     "kind": "store",
+     "tone": "stream",
+     "label": "Analytics subscription",
+     "sub": "its own queue",
+     "group": "broker"
+    },
+    {
+     "id": "sfraud",
+     "kind": "store",
+     "tone": "stream",
+     "label": "Fraud subscription",
+     "sub": "filter: total > 500",
+     "group": "broker"
+    },
+    {
+     "id": "dlq",
+     "kind": "store",
+     "tone": "data",
+     "label": "Dead-letter topic",
+     "sub": "messages that never succeed",
+     "group": "broker"
+    },
+    {
+     "id": "email",
+     "kind": "container",
+     "tone": "core",
+     "label": "Email service",
+     "sub": "subscriber"
+    },
+    {
+     "id": "inventory",
+     "kind": "container",
+     "tone": "core",
+     "label": "Inventory service",
+     "sub": "subscriber"
+    },
+    {
+     "id": "analytics",
+     "kind": "container",
+     "tone": "core",
+     "label": "Analytics",
+     "sub": "subscriber"
+    },
+    {
+     "id": "fraud",
+     "kind": "container",
+     "tone": "neutral",
+     "label": "Fraud checks",
+     "sub": "new subscriber"
+    }
+   ],
+   "edges": [
+    {
+     "id": "p1",
+     "from": "orders",
+     "to": "topic",
+     "style": "solid",
+     "label": "publish once"
+    },
+    {
+     "id": "p2",
+     "from": "topic",
+     "to": "semail",
+     "style": "solid",
+     "label": "copy"
+    },
+    {
+     "id": "p3",
+     "from": "topic",
+     "to": "sinv",
+     "style": "solid",
+     "label": "copy"
+    },
+    {
+     "id": "p4",
+     "from": "topic",
+     "to": "san",
+     "style": "solid",
+     "label": "copy"
+    },
+    {
+     "id": "p5",
+     "from": "semail",
+     "to": "email",
+     "style": "solid",
+     "label": "deliver"
+    },
+    {
+     "id": "p6",
+     "from": "sinv",
+     "to": "inventory",
+     "style": "solid",
+     "label": "deliver"
+    },
+    {
+     "id": "p7",
+     "from": "san",
+     "to": "analytics",
+     "style": "solid",
+     "label": "deliver"
+    },
+    {
+     "id": "p8",
+     "from": "topic",
+     "to": "sfraud",
+     "style": "solid",
+     "label": "copy · added later"
+    },
+    {
+     "id": "p9",
+     "from": "sfraud",
+     "to": "fraud",
+     "style": "solid",
+     "label": "deliver matches only"
+    },
+    {
+     "id": "p10",
+     "from": "san",
+     "to": "dlq",
+     "style": "dashed",
+     "label": "after N failed attempts"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "publish or deliver"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or slow"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "ack or signal"
+    }
+   ]
+  },
+  {
+   "id": "flow",
+   "kind": "sequence",
+   "title": "Publish, pull, push, acknowledge",
+   "participants": [
+    {
+     "id": "orders",
+     "label": "Order service"
+    },
+    {
+     "id": "broker",
+     "label": "Broker"
+    },
+    {
+     "id": "email",
+     "label": "Email worker (pull)"
+    },
+    {
+     "id": "analytics",
+     "label": "Analytics endpoint (push)"
+    }
+   ],
+   "messages": [
+    {
+     "id": "h1",
+     "from": "orders",
+     "to": "broker",
+     "style": "solid",
+     "label": "publish order-placed #42"
+    },
+    {
+     "id": "h2",
+     "from": "broker",
+     "to": "orders",
+     "style": "dotted",
+     "label": "ack: stored"
+    },
+    {
+     "id": "h3",
+     "from": "email",
+     "to": "broker",
+     "style": "solid",
+     "label": "pull: up to 10 messages"
+    },
+    {
+     "id": "h4",
+     "from": "broker",
+     "to": "email",
+     "style": "solid",
+     "label": "#42 · ack deadline starts"
+    },
+    {
+     "id": "h5",
+     "from": "email",
+     "to": "broker",
+     "style": "dotted",
+     "label": "ack #42 after the receipt is sent"
+    },
+    {
+     "id": "h6",
+     "from": "broker",
+     "to": "analytics",
+     "style": "solid",
+     "label": "push: HTTPS POST #42"
+    },
+    {
+     "id": "h7",
+     "from": "analytics",
+     "to": "broker",
+     "style": "dotted",
+     "label": "204 No Content = ack"
+    }
+   ]
+  },
+  {
+   "id": "redeliver",
+   "kind": "sequence",
+   "title": "Redelivery, duplicates and dead letters",
+   "participants": [
+    {
+     "id": "broker",
+     "label": "Broker"
+    },
+    {
+     "id": "worker",
+     "label": "Email worker"
+    },
+    {
+     "id": "seen",
+     "label": "Processed-ids store"
+    },
+    {
+     "id": "dlq",
+     "label": "Dead-letter topic"
+    }
+   ],
+   "messages": [
+    {
+     "id": "r1",
+     "from": "broker",
+     "to": "worker",
+     "style": "solid",
+     "label": "#42"
+    },
+    {
+     "id": "r2",
+     "from": "worker",
+     "to": "seen",
+     "style": "dashed",
+     "label": "receipt sent · record #42 · crash before ack"
+    },
+    {
+     "id": "r3",
+     "from": "broker",
+     "to": "worker",
+     "style": "dashed",
+     "label": "deadline passed: #42 again"
+    },
+    {
+     "id": "r4",
+     "from": "worker",
+     "to": "seen",
+     "style": "solid",
+     "label": "seen #42? yes → skip the work"
+    },
+    {
+     "id": "r5",
+     "from": "worker",
+     "to": "broker",
+     "style": "dotted",
+     "label": "ack #42"
+    },
+    {
+     "id": "r6",
+     "from": "broker",
+     "to": "worker",
+     "style": "solid",
+     "label": "#57 (malformed)"
+    },
+    {
+     "id": "r7",
+     "from": "worker",
+     "to": "broker",
+     "style": "dashed",
+     "label": "fails · attempt 1 … 5"
+    },
+    {
+     "id": "r8",
+     "from": "broker",
+     "to": "dlq",
+     "style": "dashed",
+     "label": "forward #57 for a person to inspect"
+    }
+   ]
+  },
+  {
+   "id": "fanout",
+   "kind": "c4",
+   "title": "Live updates to many screens",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "gwg",
+     "label": "Push gateway [one WebSocket per client]",
+     "tone": "core"
+    }
+   ],
+   "elements": [
+    {
+     "id": "loc",
+     "kind": "container",
+     "tone": "core",
+     "label": "Location service",
+     "sub": "publishes position every 1 s"
+    },
+    {
+     "id": "broker",
+     "kind": "system",
+     "tone": "stream",
+     "label": "Broker",
+     "sub": "channel per delivery"
+    },
+    {
+     "id": "gw",
+     "kind": "container",
+     "tone": "core",
+     "label": "Forwarder",
+     "sub": "fans out to connections",
+     "group": "gwg"
+    },
+    {
+     "id": "buf",
+     "kind": "component",
+     "tone": "data",
+     "label": "Per-client buffer",
+     "sub": "bounded, e.g. 50 updates",
+     "group": "gwg"
+    },
+    {
+     "id": "fast",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Customer on Wi-Fi",
+     "sub": "keeps up"
+    },
+    {
+     "id": "slow",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Customer on weak signal",
+     "sub": "falls behind"
+    }
+   ],
+   "edges": [
+    {
+     "id": "f1",
+     "from": "loc",
+     "to": "broker",
+     "style": "solid",
+     "label": "publish position"
+    },
+    {
+     "id": "f2",
+     "from": "broker",
+     "to": "gw",
+     "style": "solid",
+     "label": "deliver"
+    },
+    {
+     "id": "f3",
+     "from": "gw",
+     "to": "fast",
+     "style": "solid",
+     "label": "every update"
+    },
+    {
+     "id": "f4",
+     "from": "gw",
+     "to": "buf",
+     "style": "dashed",
+     "label": "queue for slow client"
+    },
+    {
+     "id": "f5",
+     "from": "buf",
+     "to": "slow",
+     "style": "dashed",
+     "label": "coalesce: latest position only"
+    },
+    {
+     "id": "f6",
+     "from": "buf",
+     "to": "gw",
+     "style": "dotted",
+     "label": "full: drop, or disconnect"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "publish or deliver"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or slow"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "ack or signal"
+    }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "ms",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Publisher-Subscriber pattern",
+     "sub": "Microsoft Azure Architecture Center"
+    },
+    {
+     "id": "gcp",
+     "kind": "container",
+     "tone": "core",
+     "label": "Google Cloud Pub/Sub",
+     "sub": "pull or push · ordering keys · dead-letter topics"
+    },
+    {
+     "id": "sns",
+     "kind": "container",
+     "tone": "core",
+     "label": "Amazon SNS",
+     "sub": "pushes to SQS, Lambda, HTTPS, email, SMS"
+    },
+    {
+     "id": "sqs",
+     "kind": "store",
+     "tone": "data",
+     "label": "Amazon SQS queues",
+     "sub": "one per consumer"
+    },
+    {
+     "id": "redis",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Redis Pub/Sub",
+     "sub": "at-most-once · nothing stored"
+    },
+    {
+     "id": "nats",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Core NATS",
+     "sub": "at-most-once · JetStream adds storage"
+    }
+   ],
+   "edges": [
+    {
+     "id": "w1",
+     "from": "ms",
+     "to": "gcp",
+     "style": "solid",
+     "label": "managed, durable"
+    },
+    {
+     "id": "w2",
+     "from": "ms",
+     "to": "sns",
+     "style": "solid",
+     "label": "managed, push"
+    },
+    {
+     "id": "w3",
+     "from": "sns",
+     "to": "sqs",
+     "style": "solid",
+     "label": "fan-out"
+    },
+    {
+     "id": "w4",
+     "from": "ms",
+     "to": "redis",
+     "style": "dotted",
+     "label": "lightweight"
+    },
+    {
+     "id": "w5",
+     "from": "ms",
+     "to": "nats",
+     "style": "dotted",
+     "label": "lightweight"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "publish or deliver"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or slow"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "ack or signal"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "problem",
+   "title": "The problem"
+  },
+  {
+   "id": "naive",
+   "title": "The naive fix"
+  },
+  {
+   "id": "pattern",
+   "title": "The pattern"
+  },
+  {
+   "id": "how",
+   "title": "How it works"
+  },
+  {
+   "id": "failure",
+   "title": "When it goes wrong"
+  },
+  {
+   "id": "tradeoffs",
+   "title": "Trade-offs"
+  },
+  {
+   "id": "wild",
+   "title": "In the wild"
+  },
+  {
+   "id": "related",
+   "title": "Related patterns"
+  },
+  {
+   "id": "recap",
+   "title": "Recap"
+  }
+ ],
+ "shots": [
+  {
+   "id": "ps-problem",
+   "chapter": "problem",
+   "title": "Switchboard",
+   "diagram": "direct",
+   "focus": [],
+   "trace": [
+    "d1",
+    "d2",
+    "d3",
+    "d4",
+    "d5",
+    "d6"
+   ],
+   "engineer": "Here is an order service. When an order is placed, four other services care: email sends a receipt, inventory reserves stock, analytics counts the sale, and loyalty adds points. So the order service calls each of them directly. It has to know every one: where it lives, its API, and how it fails. And when a new team, say fraud checks, wants orders too, it has to ask the order team to change their code and redeploy. The sender has become a switchboard.",
+   "executive": "One service has to call every other service that cares about an order, and change its code each time a new one appears."
+  },
+  {
+   "id": "ps-naive",
+   "chapter": "naive",
+   "title": "Fan-out loop",
+   "diagram": "loop",
+   "focus": [],
+   "trace": [
+    "n1",
+    "n2",
+    "n3",
+    "n4",
+    "n5",
+    "n6",
+    "n7"
+   ],
+   "engineer": "The obvious fix is a loop: for each receiver, make the call. Now the customer waits for the slowest one. Email takes a hundred and twenty milliseconds and inventory eighty, but loyalty takes eight seconds, so analytics waits, and the confirmation arrives eight seconds late. Worse, what if loyalty fails half-way? Retry the whole loop and the customer gets a second receipt. Skip it and loyalty never hears. Running the calls in the background helps the wait, but the coupling stays.",
+   "executive": "Calling everyone in turn means one slow service delays the customer, and a failure half-way leaves some services told and others not."
+  },
+  {
+   "id": "ps-structure",
+   "chapter": "pattern",
+   "title": "Fan out",
+   "diagram": "structure",
+   "focus": [],
+   "trace": [
+    "p1",
+    "p2",
+    "p3",
+    "p4",
+    "p5",
+    "p6",
+    "p7"
+   ],
+   "engineer": "Publish and subscribe puts a broker in the middle. The order service publishes one message to a topic, order placed, and goes back to work. It does not know who is listening. Each interested service has its own subscription on that topic, and the broker puts a copy of every message into every subscription. A subscription behaves like a private queue: email reads from its own, inventory from its own, analytics from its own, each at its own pace.",
+   "executive": "The order service announces each order once, to a topic. A broker gives every interested service its own copy."
+  },
+  {
+   "id": "ps-add",
+   "chapter": "pattern",
+   "title": "Add a subscriber",
+   "diagram": "structure",
+   "focus": [
+    "topic",
+    "sfraud",
+    "fraud"
+   ],
+   "trace": [
+    "p8",
+    "p9"
+   ],
+   "engineer": "Now fraud checks wants orders. The fraud team creates a new subscription on the same topic, and copies start arriving. The order service is not changed or redeployed. A subscription can also filter: this one only wants orders over five hundred pounds, so the broker never delivers the rest to it. Google Cloud Pub/Sub filters on message attributes; Amazon SNS can filter on attributes or on a JSON body. With no filter, a subscriber gets everything on the topic.",
+   "executive": "Adding a new listener means creating a subscription, not changing the sender. Listeners can ask for only the messages they care about."
+  },
+  {
+   "id": "ps-how",
+   "chapter": "how",
+   "title": "Pull",
+   "diagram": "flow",
+   "focus": [],
+   "trace": [
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5"
+   ],
+   "engineer": "Step by step. The order service publishes order forty-two, and the broker acknowledges once the message is stored. That is the publisher's whole job. The email worker pulls: it asks the broker for a batch of messages when it has capacity. The broker hands over order forty-two and starts an acknowledgement deadline. The worker sends the receipt, and only then acknowledges. Until that acknowledgement arrives, the broker treats the message as outstanding.",
+   "executive": "The broker confirms it has the message; a worker collects it, does the job, and then confirms it is done."
+  },
+  {
+   "id": "ps-push",
+   "chapter": "how",
+   "title": "Push",
+   "diagram": "flow",
+   "focus": [
+    "broker",
+    "analytics"
+   ],
+   "trace": [
+    "h6",
+    "h7"
+   ],
+   "engineer": "That was pull. The other style is push, where the broker calls the subscriber. Google Cloud Pub/Sub sends each message as an HTTPS POST to the subscriber's endpoint. A success status, such as two hundred or two oh four, counts as the acknowledgement; anything else means send it again, and the broker backs off. Pull suits workers that want to control their own rate. Push suits serverless functions and webhooks. Amazon SNS also delivers by push.",
+   "executive": "Workers can either fetch messages when they are ready, or have the broker deliver them to a web address."
+  },
+  {
+   "id": "ps-redeliver",
+   "chapter": "failure",
+   "title": "Duplicate",
+   "diagram": "redeliver",
+   "focus": [],
+   "trace": [
+    "r1",
+    "r2",
+    "r3",
+    "r4",
+    "r5"
+   ],
+   "engineer": "Now the worker sends the receipt, records the message id, and crashes before it can acknowledge. The deadline passes, so the broker delivers order forty-two again. That is at-least-once delivery, the default in Google Cloud Pub/Sub: you do not lose the message, but you may see it twice. So the subscriber must be idempotent. Here it checks a store of processed ids, finds forty-two, skips the work, and acknowledges. One receipt, not two.",
+   "executive": "If a worker crashes mid-job, the broker sends the message again. Workers must recognise a repeat and not do the work twice."
+  },
+  {
+   "id": "ps-poison",
+   "chapter": "failure",
+   "title": "Dead letter",
+   "diagram": "redeliver",
+   "focus": [
+    "broker",
+    "worker",
+    "dlq"
+   ],
+   "trace": [
+    "r6",
+    "r7",
+    "r8"
+   ],
+   "engineer": "Some messages will never succeed. Message fifty-seven is malformed, and every attempt fails. Without a limit, it is redelivered for as long as it is kept. A dead-letter topic catches it: in Google Cloud Pub/Sub, after a set number of delivery attempts, five by default, the message is forwarded there for a person to inspect. And order: by default Pub/Sub promises none. With ordering keys, messages sharing a key arrive in order, but redelivering one replays every later message for that key.",
+   "executive": "Messages that keep failing are set aside for a person to look at. And messages can arrive out of order unless you ask for order per key."
+  },
+  {
+   "id": "ps-slow",
+   "chapter": "failure",
+   "title": "Slow clients",
+   "diagram": "fanout",
+   "focus": [],
+   "trace": [
+    "f1",
+    "f2",
+    "f3",
+    "f4",
+    "f5",
+    "f6"
+   ],
+   "engineer": "Pub/sub also drives live updates to many screens. A location service publishes a driver's position every second, and a gateway holding a WebSocket per customer forwards each update. The customer on Wi-Fi keeps up. The one on a weak signal does not, and updates pile up. The gateway has three choices: buffer, but only up to a limit; drop, and disconnect clients that stay behind; or coalesce, keeping only the latest position, since an old location is worthless anyway.",
+   "executive": "When some screens cannot keep up with live updates, the system buffers a little, then drops old updates or keeps only the latest one."
+  },
+  {
+   "id": "ps-tradeoffs",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "Durable broker or fire-and-forget?",
+    "kind": "compare",
+    "points": [
+     "Durable (Cloud Pub/Sub, SNS to SQS) | Fire-and-forget (Redis Pub/Sub, core NATS)",
+     "Holds messages for subscribers that are down | Only subscribers connected now receive it",
+     "At-least-once: expect duplicates | At-most-once: expect losses",
+     "Acks, retries and dead letters | No acks, nothing stored",
+     "More moving parts and latency | Fast and simple"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The biggest choice is whether the broker keeps messages. Durable services, such as Google Cloud Pub/Sub, or Amazon SNS feeding SQS queues, hold or retry each message until the subscriber takes it, so a subscriber that was down catches up. The price is duplicates to handle and more moving parts. Fire-and-forget systems, like Redis Pub/Sub and core NATS, deliver only to whoever is connected at that moment, at most once. Fast and simple, but a subscriber that blinks misses messages for good.",
+   "executive": "Some brokers keep messages until every listener has them; others only reach whoever is listening right now, which is faster but can lose messages."
+  },
+  {
+   "id": "ps-whennot",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "When not to use it",
+    "points": [
+     "A few consumers that each need very different data",
+     "The caller needs an answer now: use request-reply",
+     "Everything must be processed in one guaranteed order",
+     "Publisher and consumers must commit in one transaction"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Microsoft's guidance lists when it is the wrong tool. If you have only a few consumers that each need quite different information, a broker adds complexity for no gain. If the caller needs an answer now, use request and reply. If consumers must process everything in one guaranteed order, pub/sub fights you. And if the publisher and its consumers must commit in one atomic transaction, look at a local transaction or a saga instead.",
+   "executive": "Skip it when you need an immediate answer, strict order, or one all-or-nothing transaction."
+  },
+  {
+   "id": "ps-wild",
+   "chapter": "wild",
+   "title": "Products",
+   "diagram": "wild",
+   "focus": [],
+   "trace": [
+    "w1",
+    "w2",
+    "w3",
+    "w4",
+    "w5"
+   ],
+   "engineer": "In the wild. Microsoft's Azure Architecture Center documents it as the Publisher-Subscriber pattern. Google Cloud Pub/Sub is a managed version, with pull and push subscriptions, ordering keys, filters and dead-letter topics. Amazon SNS pushes each message to many endpoints, and a common shape is SNS fanning out to one SQS queue per consumer, so each gets a durable queue of its own. Redis Pub/Sub and core NATS are the lightweight end: at most once, nothing stored, with Redis Streams and NATS JetStream when you need persistence.",
+   "executive": "The major clouds offer it as a managed service; lighter tools like Redis and NATS trade durability for speed."
+  },
+  {
+   "id": "ps-related",
+   "chapter": "related",
+   "card": {
+    "heading": "Pub/sub, log or queue?",
+    "kind": "compare",
+    "points": [
+     "You need | Reach for",
+     "Every interested service gets its own copy | Pub/sub topic",
+     "Events kept for replay, in order per key | Log: event streaming",
+     "Jobs shared out, each done by one worker | Queue: competing consumers",
+     "Publish reliably alongside a database write | Transactional outbox",
+     "Absorb duplicate deliveries | Idempotent consumer"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Pub/sub is often confused with its neighbours. A pub/sub topic gives every subscription its own copy. A log, as in event streaming, keeps events so that new readers can replay history, in order per partition key. A queue shares work out: each message is handled by one of many workers. They combine, too: each subscription is in effect a queue for its consumer. The transactional outbox publishes reliably alongside a database write, and idempotent consumers absorb the duplicates.",
+   "executive": "Pub/sub copies messages to every listener, a log keeps history for replay, and a queue shares work among workers."
+  },
+  {
+   "id": "ps-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "Publish once; the broker copies to every subscription",
+     "Expect duplicates and disorder: idempotent subscribers",
+     "Plan for slow and broken: dead letters, limits, coalescing"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. Publish once, to a topic, and let the broker copy it to every subscription, so new listeners never change the sender. Expect duplicates and disorder: acknowledge only after the work is done, and make every subscriber idempotent. And plan for the slow and the broken: dead-letter topics for messages that never succeed, and buffer limits, dropping or coalescing for clients that cannot keep up.",
+   "executive": "Publish once. Expect repeats. Plan for slow and failing listeners."
+  }
+ ],
+ "subtitle": "Design pattern",
+ "meta": {
+  "kind": "pattern",
+  "category": "Messaging",
+  "level": "beginner",
+  "uses": [
+   "idempotency"
+  ],
+  "related": [
+   "event-streaming",
+   "backpressure",
+   "outbox"
+  ],
+  "blurb": "Publish once to a topic; the broker gives every subscriber its own copy, so new listeners never change the sender.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ }
+}

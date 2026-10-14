@@ -1,0 +1,152 @@
+{
+ "cba-problem-engineer": {
+  "file": "/audio/cell-based-architecture/cba-problem-engineer.mp3",
+  "ms": 25776,
+  "hash": "e68bf865e26c"
+ },
+ "cba-problem-executive": {
+  "file": "/audio/cell-based-architecture/cba-problem-executive.mp3",
+  "ms": 7680,
+  "hash": "cd1655e44f80"
+ },
+ "cba-blast-engineer": {
+  "file": "/audio/cell-based-architecture/cba-blast-engineer.mp3",
+  "ms": 28224,
+  "hash": "b11b3091d017"
+ },
+ "cba-blast-executive": {
+  "file": "/audio/cell-based-architecture/cba-blast-executive.mp3",
+  "ms": 6672,
+  "hash": "eaa804d1ad09"
+ },
+ "cba-naive-engineer": {
+  "file": "/audio/cell-based-architecture/cba-naive-engineer.mp3",
+  "ms": 31344,
+  "hash": "f0ee7876a1ac"
+ },
+ "cba-naive-executive": {
+  "file": "/audio/cell-based-architecture/cba-naive-executive.mp3",
+  "ms": 7728,
+  "hash": "b2a5e0068003"
+ },
+ "cba-cells-engineer": {
+  "file": "/audio/cell-based-architecture/cba-cells-engineer.mp3",
+  "ms": 30840,
+  "hash": "f9c923a7d5f8"
+ },
+ "cba-cells-executive": {
+  "file": "/audio/cell-based-architecture/cba-cells-executive.mp3",
+  "ms": 8808,
+  "hash": "2db5983d3bac"
+ },
+ "cba-global-engineer": {
+  "file": "/audio/cell-based-architecture/cba-global-engineer.mp3",
+  "ms": 31584,
+  "hash": "b602a189f7d7"
+ },
+ "cba-global-executive": {
+  "file": "/audio/cell-based-architecture/cba-global-executive.mp3",
+  "ms": 8664,
+  "hash": "c10eccbf5a58"
+ },
+ "cba-request-engineer": {
+  "file": "/audio/cell-based-architecture/cba-request-engineer.mp3",
+  "ms": 29976,
+  "hash": "d709e585b08b"
+ },
+ "cba-request-executive": {
+  "file": "/audio/cell-based-architecture/cba-request-executive.mp3",
+  "ms": 8304,
+  "hash": "01f7f4e526d1"
+ },
+ "cba-grow-engineer": {
+  "file": "/audio/cell-based-architecture/cba-grow-engineer.mp3",
+  "ms": 29304,
+  "hash": "5661bd5194d7"
+ },
+ "cba-grow-executive": {
+  "file": "/audio/cell-based-architecture/cba-grow-executive.mp3",
+  "ms": 9552,
+  "hash": "8a6c6185cfc5"
+ },
+ "cba-poison-engineer": {
+  "file": "/audio/cell-based-architecture/cba-poison-engineer.mp3",
+  "ms": 29904,
+  "hash": "f7ef21c2b5db"
+ },
+ "cba-poison-executive": {
+  "file": "/audio/cell-based-architecture/cba-poison-executive.mp3",
+  "ms": 9504,
+  "hash": "605128e58ef4"
+ },
+ "cba-waves-engineer": {
+  "file": "/audio/cell-based-architecture/cba-waves-engineer.mp3",
+  "ms": 30096,
+  "hash": "d0f6c7889f11"
+ },
+ "cba-waves-executive": {
+  "file": "/audio/cell-based-architecture/cba-waves-executive.mp3",
+  "ms": 8376,
+  "hash": "5a52eaebcd26"
+ },
+ "cba-sizing-engineer": {
+  "file": "/audio/cell-based-architecture/cba-sizing-engineer.mp3",
+  "ms": 30984,
+  "hash": "3f3e7acbfc57"
+ },
+ "cba-sizing-executive": {
+  "file": "/audio/cell-based-architecture/cba-sizing-executive.mp3",
+  "ms": 9552,
+  "hash": "9e45ab623d21"
+ },
+ "cba-costs-engineer": {
+  "file": "/audio/cell-based-architecture/cba-costs-engineer.mp3",
+  "ms": 31368,
+  "hash": "9f6029c8a9da"
+ },
+ "cba-costs-executive": {
+  "file": "/audio/cell-based-architecture/cba-costs-executive.mp3",
+  "ms": 8448,
+  "hash": "1260b9043cd4"
+ },
+ "cba-shuffle-engineer": {
+  "file": "/audio/cell-based-architecture/cba-shuffle-engineer.mp3",
+  "ms": 33624,
+  "hash": "ee1a38c73c00"
+ },
+ "cba-shuffle-executive": {
+  "file": "/audio/cell-based-architecture/cba-shuffle-executive.mp3",
+  "ms": 7848,
+  "hash": "433961b9f48d"
+ },
+ "cba-wild-engineer": {
+  "file": "/audio/cell-based-architecture/cba-wild-engineer.mp3",
+  "ms": 31968,
+  "hash": "105a4c2ffaef"
+ },
+ "cba-wild-executive": {
+  "file": "/audio/cell-based-architecture/cba-wild-executive.mp3",
+  "ms": 8400,
+  "hash": "02c1274a3de6"
+ },
+ "cba-related-engineer": {
+  "file": "/audio/cell-based-architecture/cba-related-engineer.mp3",
+  "ms": 33840,
+  "hash": "5783418833e3"
+ },
+ "cba-related-executive": {
+  "file": "/audio/cell-based-architecture/cba-related-executive.mp3",
+  "ms": 8856,
+  "hash": "a20ac92d053c"
+ },
+ "cba-recap-engineer": {
+  "file": "/audio/cell-based-architecture/cba-recap-engineer.mp3",
+  "ms": 29256,
+  "hash": "0d5052019225"
+ },
+ "cba-recap-executive": {
+  "file": "/audio/cell-based-architecture/cba-recap-executive.mp3",
+  "ms": 8928,
+  "hash": "423f1a922325"
+ }
+}

@@ -1,0 +1,1004 @@
+{
+ "id": "cursor-pagination",
+ "title": "Cursor pagination",
+ "subtitle": "Design pattern",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "meta": {
+  "kind": "pattern",
+  "category": "APIs",
+  "level": "beginner",
+  "uses": [],
+  "related": [
+   "api-gateway",
+   "cache-aside",
+   "sharding"
+  ],
+  "blurb": "Page through big lists by remembering where you stopped, not how many rows to skip.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ },
+ "diagrams": [
+  {
+   "id": "offset",
+   "kind": "c4",
+   "title": "Page 501 reads 10,020 rows to return 20",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "client",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Client",
+     "sub": "asks for page 501",
+     "rank": 0
+    },
+    {
+     "id": "api",
+     "kind": "container",
+     "tone": "core",
+     "label": "List API",
+     "sub": "GET /orders?page=501",
+     "rank": 0
+    },
+    {
+     "id": "db",
+     "kind": "store",
+     "tone": "data",
+     "label": "Database",
+     "sub": "ORDER BY created_at DESC LIMIT 20 OFFSET 10000",
+     "rank": 1
+    },
+    {
+     "id": "skipped",
+     "kind": "component",
+     "tone": "external",
+     "label": "Skipped rows",
+     "sub": "10,000 read, then thrown away",
+     "rank": 2
+    },
+    {
+     "id": "page",
+     "kind": "component",
+     "tone": "core",
+     "label": "The page",
+     "sub": "20 rows returned",
+     "rank": 2
+    }
+   ],
+   "edges": [
+    {
+     "id": "o1",
+     "from": "client",
+     "to": "api",
+     "style": "solid",
+     "label": "page 501"
+    },
+    {
+     "id": "o2",
+     "from": "api",
+     "to": "db",
+     "style": "solid",
+     "label": "OFFSET 10000 LIMIT 20"
+    },
+    {
+     "id": "o3",
+     "from": "db",
+     "to": "skipped",
+     "style": "dashed",
+     "label": "walk 10,000 rows"
+    },
+    {
+     "id": "o4",
+     "from": "db",
+     "to": "page",
+     "style": "solid",
+     "label": "keep the next 20"
+    },
+    {
+     "id": "o5",
+     "from": "page",
+     "to": "client",
+     "style": "solid",
+     "label": "slower every page"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request or result"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "wasted work"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "cursor"
+    }
+   ]
+  },
+  {
+   "id": "drift",
+   "kind": "sequence",
+   "title": "The list moves between requests",
+   "participants": [
+    {
+     "id": "client",
+     "label": "Client"
+    },
+    {
+     "id": "api",
+     "label": "List API"
+    },
+    {
+     "id": "writer",
+     "label": "Another user"
+    }
+   ],
+   "messages": [
+    {
+     "id": "d1",
+     "from": "client",
+     "to": "api",
+     "style": "solid",
+     "label": "page 1: OFFSET 0 LIMIT 20"
+    },
+    {
+     "id": "d2",
+     "from": "api",
+     "to": "client",
+     "style": "solid",
+     "label": "orders 1 to 20"
+    },
+    {
+     "id": "d3",
+     "from": "writer",
+     "to": "api",
+     "style": "solid",
+     "label": "new order arrives at the top"
+    },
+    {
+     "id": "d4",
+     "from": "client",
+     "to": "api",
+     "style": "solid",
+     "label": "page 2: OFFSET 20 LIMIT 20"
+    },
+    {
+     "id": "d5",
+     "from": "api",
+     "to": "client",
+     "style": "dashed",
+     "label": "order 20 again: a duplicate"
+    },
+    {
+     "id": "d6",
+     "from": "writer",
+     "to": "api",
+     "style": "solid",
+     "label": "an order on page 2 is deleted"
+    },
+    {
+     "id": "d7",
+     "from": "client",
+     "to": "api",
+     "style": "solid",
+     "label": "page 3: OFFSET 40 LIMIT 20"
+    },
+    {
+     "id": "d8",
+     "from": "api",
+     "to": "client",
+     "style": "dashed",
+     "label": "one order slid to page 2: never seen"
+    }
+   ]
+  },
+  {
+   "id": "ties",
+   "kind": "sequence",
+   "title": "Remember the last timestamp",
+   "participants": [
+    {
+     "id": "client",
+     "label": "Client"
+    },
+    {
+     "id": "api",
+     "label": "List API"
+    },
+    {
+     "id": "db",
+     "label": "Database"
+    }
+   ],
+   "messages": [
+    {
+     "id": "t1",
+     "from": "client",
+     "to": "api",
+     "style": "solid",
+     "label": "first page"
+    },
+    {
+     "id": "t2",
+     "from": "api",
+     "to": "db",
+     "style": "solid",
+     "label": "ORDER BY created_at DESC LIMIT 20"
+    },
+    {
+     "id": "t3",
+     "from": "db",
+     "to": "api",
+     "style": "solid",
+     "label": "page ends at 10:00:05 (3 orders share it)"
+    },
+    {
+     "id": "t4",
+     "from": "api",
+     "to": "client",
+     "style": "solid",
+     "label": "20 orders + after=10:00:05"
+    },
+    {
+     "id": "t5",
+     "from": "client",
+     "to": "api",
+     "style": "solid",
+     "label": "next page, after=10:00:05"
+    },
+    {
+     "id": "t6",
+     "from": "api",
+     "to": "db",
+     "style": "solid",
+     "label": "WHERE created_at < 10:00:05"
+    },
+    {
+     "id": "t7",
+     "from": "db",
+     "to": "api",
+     "style": "dashed",
+     "label": "the other 2 orders at 10:00:05 are skipped"
+    }
+   ]
+  },
+  {
+   "id": "structure",
+   "kind": "c4",
+   "title": "Seek to where you stopped",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "client",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Client",
+     "sub": "holds an opaque cursor",
+     "rank": 0
+    },
+    {
+     "id": "codec",
+     "kind": "component",
+     "tone": "core",
+     "label": "Cursor codec",
+     "sub": "encode, sign, decode",
+     "group": "api",
+     "rank": 0
+    },
+    {
+     "id": "query",
+     "kind": "component",
+     "tone": "core",
+     "label": "Query builder",
+     "sub": "WHERE (created_at, id) < (…)",
+     "group": "api",
+     "rank": 1
+    },
+    {
+     "id": "shaper",
+     "kind": "component",
+     "tone": "core",
+     "label": "Page shaper",
+     "sub": "limit ≤ 100, has_more, next cursor",
+     "group": "api",
+     "rank": 1
+    },
+    {
+     "id": "index",
+     "kind": "store",
+     "tone": "data",
+     "label": "Index",
+     "sub": "(created_at DESC, id DESC)",
+     "rank": 2
+    },
+    {
+     "id": "table",
+     "kind": "store",
+     "tone": "data",
+     "label": "Orders table",
+     "sub": "the rows",
+     "rank": 2
+    }
+   ],
+   "edges": [
+    {
+     "id": "s1",
+     "from": "client",
+     "to": "codec",
+     "style": "dotted",
+     "label": "cursor=eyJjIjo…"
+    },
+    {
+     "id": "s2",
+     "from": "codec",
+     "to": "query",
+     "style": "solid",
+     "label": "last (created_at, id)"
+    },
+    {
+     "id": "s3",
+     "from": "query",
+     "to": "index",
+     "style": "solid",
+     "label": "seek, read 21 entries"
+    },
+    {
+     "id": "s4",
+     "from": "index",
+     "to": "table",
+     "style": "solid",
+     "label": "fetch those rows"
+    },
+    {
+     "id": "s5",
+     "from": "query",
+     "to": "shaper",
+     "style": "solid",
+     "label": "21 rows"
+    },
+    {
+     "id": "s6",
+     "from": "shaper",
+     "to": "codec",
+     "style": "solid",
+     "label": "position of row 20"
+    },
+    {
+     "id": "s7",
+     "from": "codec",
+     "to": "client",
+     "style": "dotted",
+     "label": "20 rows, next_cursor, has_more"
+    }
+   ],
+   "groups": [
+    {
+     "id": "api",
+     "label": "List API",
+     "tone": "core"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request or result"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "wasted work"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "cursor"
+    }
+   ]
+  },
+  {
+   "id": "flow",
+   "kind": "sequence",
+   "title": "Next, next, previous",
+   "participants": [
+    {
+     "id": "client",
+     "label": "Client"
+    },
+    {
+     "id": "api",
+     "label": "List API"
+    },
+    {
+     "id": "db",
+     "label": "Database"
+    }
+   ],
+   "messages": [
+    {
+     "id": "f1",
+     "from": "client",
+     "to": "api",
+     "style": "solid",
+     "label": "GET /orders?limit=20"
+    },
+    {
+     "id": "f2",
+     "from": "api",
+     "to": "db",
+     "style": "solid",
+     "label": "ORDER BY created_at DESC, id DESC LIMIT 21"
+    },
+    {
+     "id": "f3",
+     "from": "db",
+     "to": "api",
+     "style": "solid",
+     "label": "21 rows: so there is more"
+    },
+    {
+     "id": "f4",
+     "from": "api",
+     "to": "client",
+     "style": "solid",
+     "label": "20 rows, has_more: true, next_cursor"
+    },
+    {
+     "id": "f5",
+     "from": "client",
+     "to": "api",
+     "style": "solid",
+     "label": "GET /orders?cursor=next_cursor"
+    },
+    {
+     "id": "f6",
+     "from": "api",
+     "to": "db",
+     "style": "solid",
+     "label": "WHERE (created_at, id) < (10:00:05, 812) … LIMIT 21"
+    },
+    {
+     "id": "f7",
+     "from": "db",
+     "to": "api",
+     "style": "solid",
+     "label": "12 rows: the end"
+    },
+    {
+     "id": "f8",
+     "from": "api",
+     "to": "client",
+     "style": "solid",
+     "label": "12 rows, has_more: false, prev_cursor"
+    },
+    {
+     "id": "f9",
+     "from": "client",
+     "to": "api",
+     "style": "solid",
+     "label": "GET /orders?cursor=prev_cursor"
+    },
+    {
+     "id": "f10",
+     "from": "api",
+     "to": "db",
+     "style": "solid",
+     "label": "flip: WHERE (…) > first row, ASC, LIMIT 21"
+    },
+    {
+     "id": "f11",
+     "from": "api",
+     "to": "client",
+     "style": "solid",
+     "label": "reverse the rows: the page before"
+    }
+   ]
+  },
+  {
+   "id": "feeds",
+   "kind": "c4",
+   "title": "Sharded and ranked lists",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "client",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Client",
+     "sub": "next page"
+    },
+    {
+     "id": "api",
+     "kind": "container",
+     "tone": "core",
+     "label": "Feed API",
+     "sub": "decodes the cursor, merges"
+    },
+    {
+     "id": "shard1",
+     "kind": "store",
+     "tone": "data",
+     "label": "Shard 1",
+     "sub": "same seek, LIMIT 20",
+     "group": "shards"
+    },
+    {
+     "id": "shard2",
+     "kind": "store",
+     "tone": "data",
+     "label": "Shard 2",
+     "sub": "same seek, LIMIT 20",
+     "group": "shards"
+    },
+    {
+     "id": "shard3",
+     "kind": "store",
+     "tone": "data",
+     "label": "Shard 3",
+     "sub": "same seek, LIMIT 20",
+     "group": "shards"
+    },
+    {
+     "id": "ranker",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Ranker",
+     "sub": "personalised order"
+    },
+    {
+     "id": "snapshot",
+     "kind": "store",
+     "tone": "data",
+     "label": "Ranked snapshot",
+     "sub": "ids by seed, kept for minutes"
+    }
+   ],
+   "edges": [
+    {
+     "id": "g1",
+     "from": "client",
+     "to": "api",
+     "style": "dotted",
+     "label": "cursor: last (created_at, id)"
+    },
+    {
+     "id": "g2",
+     "from": "api",
+     "to": "shard1",
+     "style": "solid",
+     "label": "seek past cursor"
+    },
+    {
+     "id": "g3",
+     "from": "api",
+     "to": "shard2",
+     "style": "solid",
+     "label": "seek past cursor"
+    },
+    {
+     "id": "g4",
+     "from": "api",
+     "to": "shard3",
+     "style": "solid",
+     "label": "seek past cursor"
+    },
+    {
+     "id": "g5",
+     "from": "api",
+     "to": "client",
+     "style": "dotted",
+     "label": "top 20 of 60 + new cursor"
+    },
+    {
+     "id": "g6",
+     "from": "api",
+     "to": "ranker",
+     "style": "dotted",
+     "label": "seed, snapshot, position 40"
+    },
+    {
+     "id": "g7",
+     "from": "ranker",
+     "to": "snapshot",
+     "style": "solid",
+     "label": "items 41 to 60, same ranking"
+    }
+   ],
+   "groups": [
+    {
+     "id": "shards",
+     "label": "Orders, sharded by customer",
+     "tone": "data"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request or result"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "wasted work"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "cursor"
+    }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "postgres",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "PostgreSQL docs",
+     "sub": "skipped rows are still computed"
+    },
+    {
+     "id": "stripe",
+     "kind": "external",
+     "tone": "external",
+     "label": "Stripe list API",
+     "sub": "starting_after · ending_before · has_more"
+    },
+    {
+     "id": "slack",
+     "kind": "external",
+     "tone": "external",
+     "label": "Slack Web API",
+     "sub": "cursor · next_cursor · cursors expire"
+    },
+    {
+     "id": "github",
+     "kind": "external",
+     "tone": "external",
+     "label": "GitHub REST",
+     "sub": "Link header: next, prev, first, last"
+    },
+    {
+     "id": "relay",
+     "kind": "system",
+     "tone": "core",
+     "label": "Relay connections spec",
+     "sub": "edges, cursor, pageInfo"
+    },
+    {
+     "id": "ghql",
+     "kind": "external",
+     "tone": "external",
+     "label": "GitHub GraphQL",
+     "sub": "endCursor · hasNextPage"
+    }
+   ],
+   "edges": [
+    {
+     "id": "w1",
+     "from": "postgres",
+     "to": "stripe",
+     "style": "solid",
+     "label": "object id as cursor"
+    },
+    {
+     "id": "w2",
+     "from": "postgres",
+     "to": "slack",
+     "style": "solid",
+     "label": "opaque cursor"
+    },
+    {
+     "id": "w3",
+     "from": "postgres",
+     "to": "github",
+     "style": "solid",
+     "label": "links instead of maths"
+    },
+    {
+     "id": "w4",
+     "from": "relay",
+     "to": "ghql",
+     "style": "solid",
+     "label": "implements"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "problem",
+   "title": "The problem"
+  },
+  {
+   "id": "naive",
+   "title": "The naive fix"
+  },
+  {
+   "id": "pattern",
+   "title": "The pattern"
+  },
+  {
+   "id": "how",
+   "title": "How it works"
+  },
+  {
+   "id": "failure",
+   "title": "When it goes wrong"
+  },
+  {
+   "id": "tradeoffs",
+   "title": "Trade-offs"
+  },
+  {
+   "id": "wild",
+   "title": "In the wild"
+  },
+  {
+   "id": "related",
+   "title": "Related patterns"
+  },
+  {
+   "id": "recap",
+   "title": "Recap"
+  }
+ ],
+ "shots": [
+  {
+   "id": "cp-slow",
+   "chapter": "problem",
+   "title": "Deep page",
+   "diagram": "offset",
+   "focus": [],
+   "trace": [
+    "o1",
+    "o2",
+    "o3",
+    "o4",
+    "o5"
+   ],
+   "engineer": "Here is the usual way to page through a list: page number times page size becomes an offset. Page five hundred and one asks for twenty rows at offset ten thousand. The database cannot jump there. It walks ten thousand rows in order, throws them away, then keeps the next twenty. The PostgreSQL manual says it plainly: skipped rows still have to be computed, so a large offset might be inefficient. Every page is slower than the last.",
+   "executive": "Asking for page 501 makes the database read and discard ten thousand rows first, so deep pages get slower and slower."
+  },
+  {
+   "id": "cp-drift",
+   "chapter": "problem",
+   "title": "Drift",
+   "diagram": "drift",
+   "focus": [],
+   "trace": [
+    "d1",
+    "d2",
+    "d3",
+    "d4",
+    "d5",
+    "d6",
+    "d7",
+    "d8"
+   ],
+   "engineer": "Speed is only half of it. An offset counts rows, and the rows move. The client reads page one. Someone adds a new order at the top, which pushes everything down by one, so page two starts with the order the client has already seen: a duplicate. Then an order is deleted, everything shifts up by one, and an order slides back to the page the client has already read. It is never shown at all.",
+   "executive": "Because new and deleted items shift the list, offset pages show some items twice and silently skip others."
+  },
+  {
+   "id": "cp-naive",
+   "chapter": "naive",
+   "title": "Ties",
+   "diagram": "ties",
+   "focus": [],
+   "trace": [
+    "t1",
+    "t2",
+    "t3",
+    "t4",
+    "t5",
+    "t6",
+    "t7"
+   ],
+   "engineer": "The obvious fix is to remember where the page ended instead of counting. Return the last timestamp, and next time ask for everything older than it. That is fast and does not drift, but timestamps are not unique. Here the page ends at five seconds past ten, and three orders share that second. Strictly older than ten oh oh five skips the other two. Moving the boundary to less than or equal instead repeats the one already shown.",
+   "executive": "Remembering only the last timestamp fails when several items share it: some are skipped or repeated."
+  },
+  {
+   "id": "cp-structure",
+   "chapter": "pattern",
+   "title": "Seek",
+   "diagram": "structure",
+   "focus": [],
+   "trace": [
+    "s1",
+    "s2",
+    "s3",
+    "s4",
+    "s5",
+    "s6",
+    "s7"
+   ],
+   "engineer": "Cursor pagination, also called keyset or seek pagination, fixes both. Sort by the column you want plus a unique tie-breaker, usually the id. The cursor holds the last row's values for both. The query asks for rows where created at and id, compared as a pair, are less than those values. With an index on the same two columns, the database seeks straight to that point and reads only the rows it returns, however deep the page is.",
+   "executive": "Instead of counting rows to skip, the server remembers the exact last item and jumps straight to it using an index."
+  },
+  {
+   "id": "cp-cursor",
+   "chapter": "pattern",
+   "title": "Opaque cursor",
+   "diagram": "structure",
+   "focus": [
+    "codec",
+    "shaper",
+    "client"
+   ],
+   "trace": [
+    "s6",
+    "s7",
+    "s1"
+   ],
+   "engineer": "The cursor is opaque. The server encodes the position, often with the sort order, the filters, and a version number, then signs or encrypts it so it cannot be forged. The client only passes it back. That keeps clients from building on your internals, so you can change the index or the sort without breaking them. The page shaper also caps the page size, say a hundred, and says whether more rows exist.",
+   "executive": "The client gets a sealed bookmark it cannot read or edit, so the server stays free to change how pages work underneath."
+  },
+  {
+   "id": "cp-how",
+   "chapter": "how",
+   "title": "Next page",
+   "diagram": "flow",
+   "focus": [],
+   "trace": [
+    "f1",
+    "f2",
+    "f3",
+    "f4",
+    "f5",
+    "f6",
+    "f7",
+    "f8"
+   ],
+   "engineer": "Step by step. The first request has no cursor. The server asks the database for twenty-one rows, one more than the page. Twenty-one came back, so there is more: it returns twenty, has more set to true, and a next cursor built from the twentieth row. The client sends that cursor back. The server decodes it and seeks past that row. Only twelve come back this time, so has more is false, and the client stops.",
+   "executive": "The client keeps handing back the bookmark it was given until the server says there is nothing more."
+  },
+  {
+   "id": "cp-prev",
+   "chapter": "how",
+   "title": "Previous page",
+   "diagram": "flow",
+   "focus": [],
+   "trace": [
+    "f8",
+    "f9",
+    "f10",
+    "f11"
+   ],
+   "engineer": "Going backwards uses the same trick in reverse. The server also returns a previous cursor, built from the first row on the page. To serve it, it flips the comparison and the sort order, reads twenty-one rows going the other way, then reverses them so the page still reads newest first. Stripe exposes exactly this pair: starting after an object id for the next page, ending before one for the previous.",
+   "executive": "A second bookmark from the top of the page lets the client step backwards just as cheaply."
+  },
+  {
+   "id": "cp-feeds",
+   "chapter": "failure",
+   "title": "Shards and feeds",
+   "diagram": "feeds",
+   "focus": [],
+   "trace": [
+    "g1",
+    "g2",
+    "g3",
+    "g4",
+    "g5",
+    "g6",
+    "g7"
+   ],
+   "engineer": "Two harder cases. When orders are sharded, offset is hopeless, because no shard knows the global position. A keyset still works: send the same seek to every shard, take twenty from each, merge, and keep the top twenty. The new cursor is the last of those. Ranked or personalised feeds are harder, because scores change between requests. Here the cursor carries the ranking seed or a snapshot id plus a position, so page three continues the same ranking.",
+   "executive": "Across many databases, each is asked for the next items after the same bookmark and the results are merged. For personalised feeds, the bookmark also remembers which ranking the user was shown."
+  },
+  {
+   "id": "cp-edges",
+   "chapter": "failure",
+   "card": {
+    "heading": "Where it still goes wrong",
+    "points": [
+     "Sort column not in the index: every page is a full sort again",
+     "No unique tie-breaker: rows skipped or repeated",
+     "Old, tampered or mismatched cursor: reject it clearly",
+     "Nullable sort column: row comparison returns null"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Where it still goes wrong. If the index does not match the sort, the database sorts the whole set on every page, and the speed advantage disappears. Without a unique tie-breaker, ties skip or repeat rows. A cursor that is stale, edited, or sent with different filters should be rejected with a clear error: Slack returns invalid cursor. And in PostgreSQL a null in a row comparison makes the result null, so keep sort columns not null.",
+   "executive": "It needs a matching index, a unique tie-breaker, and clear errors for bad bookmarks."
+  },
+  {
+   "id": "cp-tradeoffs",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "Offset or cursor",
+    "kind": "compare",
+    "points": [
+     "Offset | Cursor",
+     "Jump to page 57 | Only next and previous",
+     "Cost grows with depth | Same cost on every page",
+     "Skips and duplicates as rows change | Stable while rows change",
+     "Total pages easy to show | Total counts cost a separate count"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "What it costs. With a cursor you cannot jump to page fifty-seven; you can only walk forwards or backwards from where you are. Showing a total such as page three of nine hundred needs a separate count query, which on a big table can cost more than the page itself, so many APIs simply return has more instead. In exchange, every page costs the same, and the list stays correct while it changes underneath.",
+   "executive": "Cursors give fast, correct paging but no jumping to an arbitrary page and no cheap total count."
+  },
+  {
+   "id": "cp-whenoffset",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "When offset is fine",
+    "points": [
+     "Small lists that never grow deep",
+     "Admin screens that need page numbers",
+     "Data that does not change while people page",
+     "Search results where nobody goes past page ten"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Offset is not always wrong. For a small table, an admin screen that needs numbered pages, data that rarely changes, or search results where nobody goes past page ten, offset is simpler and good enough. Some systems mix the two: numbered pages for the first few, and a cursor for anything deeper or for bulk export. Pick the cursor when lists are long, live, or read by machines that must see every item exactly once.",
+   "executive": "Use page numbers for small, stable lists; use cursors for long, changing ones and for exports."
+  },
+  {
+   "id": "cp-wild",
+   "chapter": "wild",
+   "title": "Real APIs",
+   "diagram": "wild",
+   "focus": [],
+   "trace": [
+    "w1",
+    "w2",
+    "w3",
+    "w4"
+   ],
+   "engineer": "In the wild. Stripe's list endpoints take starting after or ending before an object id, a limit from one to a hundred, and return has more. Slack's Web API returns a next cursor in response metadata; an empty one means the end, and cursors expire. GitHub's REST API puts next, previous, first and last links in a Link header. And the Relay connection spec, used by GitHub's GraphQL API, gives every edge a cursor and every page an end cursor and has next page.",
+   "executive": "Stripe, Slack and GitHub all page their APIs with cursors rather than page numbers."
+  },
+  {
+   "id": "cp-related",
+   "chapter": "related",
+   "card": {
+    "heading": "Related patterns",
+    "kind": "compare",
+    "points": [
+     "Pattern | How it connects",
+     "Sharding | Same seek on every shard, then merge",
+     "Cache-aside | Cache the first page; cursors handle the rest",
+     "API gateway | Enforce page size limits at the edge",
+     "Change data capture | For syncing everything, stream changes instead"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Its neighbours. With sharding, a keyset is what makes a global order possible: the same seek on every shard, then a merge. Cache-aside suits the first page, which most people only ever see. An API gateway is a good place to enforce page size limits. And if a client is paging through everything to keep a copy in sync, a change feed or change data capture is usually the better tool.",
+   "executive": "Cursors pair naturally with sharding, caching and gateways; for full syncs, stream changes instead."
+  },
+  {
+   "id": "cp-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "Offsets count rows: slow when deep, wrong when rows move",
+     "Seek past the last row: sort key plus unique id, with an index",
+     "Hand out an opaque cursor, with has_more and a page size cap"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. Offsets count rows, so they get slower the deeper you go and wrong when the list changes. Instead, seek past the last row you returned, using the sort key plus a unique id, backed by an index on both. And give clients an opaque cursor, a has more flag, and a capped page size, so you can change everything behind it.",
+   "executive": "Page numbers get slow and wrong. Remember the last item instead. Give clients a sealed bookmark."
+  }
+ ]
+}

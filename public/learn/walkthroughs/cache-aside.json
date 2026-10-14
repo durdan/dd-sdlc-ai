@@ -1,0 +1,906 @@
+{
+ "id": "cache-aside",
+ "title": "Cache-aside",
+ "subtitle": "Design pattern",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "diagrams": [
+  {
+   "id": "hammer",
+   "kind": "c4",
+   "title": "The same read, thousands of times a second",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "users",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Shoppers",
+     "sub": "all viewing product 42"
+    },
+    {
+     "id": "app",
+     "kind": "container",
+     "tone": "core",
+     "label": "Product service",
+     "sub": "builds the product page"
+    },
+    {
+     "id": "db",
+     "kind": "store",
+     "tone": "data",
+     "label": "Database",
+     "sub": "join over 6 tables · 50 ms"
+    }
+   ],
+   "edges": [
+    {
+     "id": "hm1",
+     "from": "users",
+     "to": "app",
+     "style": "solid",
+     "label": "5,000 page views a second"
+    },
+    {
+     "id": "hm2",
+     "from": "app",
+     "to": "db",
+     "style": "solid",
+     "label": "the same query, every time"
+    },
+    {
+     "id": "hm3",
+     "from": "db",
+     "to": "app",
+     "style": "dashed",
+     "label": "CPU saturated · 50 ms becomes 2 s"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or slow"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "cache traffic"
+    }
+   ]
+  },
+  {
+   "id": "naive",
+   "kind": "sequence",
+   "title": "Cache forever, update it on every write",
+   "participants": [
+    {
+     "id": "a",
+     "label": "Writer A"
+    },
+    {
+     "id": "b",
+     "label": "Writer B"
+    },
+    {
+     "id": "db",
+     "label": "Database"
+    },
+    {
+     "id": "cache",
+     "label": "Cache"
+    }
+   ],
+   "messages": [
+    {
+     "id": "nv1",
+     "from": "a",
+     "to": "db",
+     "style": "solid",
+     "label": "price = 10"
+    },
+    {
+     "id": "nv2",
+     "from": "b",
+     "to": "db",
+     "style": "solid",
+     "label": "price = 12 (latest)"
+    },
+    {
+     "id": "nv3",
+     "from": "b",
+     "to": "cache",
+     "style": "solid",
+     "label": "SET price 12"
+    },
+    {
+     "id": "nv4",
+     "from": "a",
+     "to": "cache",
+     "style": "dashed",
+     "label": "SET price 10 · arrives late"
+    },
+    {
+     "id": "nv5",
+     "from": "cache",
+     "to": "db",
+     "style": "dashed",
+     "label": "cache says 10, database says 12 · forever"
+    }
+   ]
+  },
+  {
+   "id": "structure",
+   "kind": "c4",
+   "title": "The application owns the cache logic",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "client",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Client"
+    },
+    {
+     "id": "reader",
+     "kind": "component",
+     "tone": "core",
+     "label": "Read path",
+     "sub": "check cache, load on miss",
+     "group": "app"
+    },
+    {
+     "id": "writer",
+     "kind": "component",
+     "tone": "core",
+     "label": "Write path",
+     "sub": "database first, then delete",
+     "group": "app"
+    },
+    {
+     "id": "cache",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Cache",
+     "sub": "Redis or Memcached · keys with a TTL"
+    },
+    {
+     "id": "db",
+     "kind": "store",
+     "tone": "data",
+     "label": "Database",
+     "sub": "source of truth"
+    }
+   ],
+   "edges": [
+    {
+     "id": "s1",
+     "from": "client",
+     "to": "reader",
+     "style": "solid",
+     "label": "read"
+    },
+    {
+     "id": "s2",
+     "from": "reader",
+     "to": "cache",
+     "style": "dotted",
+     "label": "1 · GET key"
+    },
+    {
+     "id": "s3",
+     "from": "reader",
+     "to": "db",
+     "style": "solid",
+     "label": "2 · on a miss, query"
+    },
+    {
+     "id": "s4",
+     "from": "reader",
+     "to": "cache",
+     "style": "dotted",
+     "label": "3 · SET key, TTL"
+    },
+    {
+     "id": "s5",
+     "from": "client",
+     "to": "writer",
+     "style": "solid",
+     "label": "write"
+    },
+    {
+     "id": "s6",
+     "from": "writer",
+     "to": "db",
+     "style": "solid",
+     "label": "1 · UPDATE row"
+    },
+    {
+     "id": "s7",
+     "from": "writer",
+     "to": "cache",
+     "style": "dotted",
+     "label": "2 · DEL key"
+    }
+   ],
+   "groups": [
+    {
+     "id": "app",
+     "label": "Application [cache-aside logic lives here]",
+     "tone": "core"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or slow"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "cache traffic"
+    }
+   ]
+  },
+  {
+   "id": "flow",
+   "kind": "sequence",
+   "title": "Miss, fill, hit, write, invalidate",
+   "participants": [
+    {
+     "id": "client",
+     "label": "Client"
+    },
+    {
+     "id": "app",
+     "label": "Product service"
+    },
+    {
+     "id": "cache",
+     "label": "Cache"
+    },
+    {
+     "id": "db",
+     "label": "Database"
+    }
+   ],
+   "messages": [
+    {
+     "id": "f1",
+     "from": "client",
+     "to": "app",
+     "style": "solid",
+     "label": "GET /products/42"
+    },
+    {
+     "id": "f2",
+     "from": "app",
+     "to": "cache",
+     "style": "dotted",
+     "label": "GET product:42"
+    },
+    {
+     "id": "f3",
+     "from": "cache",
+     "to": "app",
+     "style": "dotted",
+     "label": "nil · miss"
+    },
+    {
+     "id": "f4",
+     "from": "app",
+     "to": "db",
+     "style": "solid",
+     "label": "SELECT … 50 ms"
+    },
+    {
+     "id": "f5",
+     "from": "app",
+     "to": "cache",
+     "style": "dotted",
+     "label": "SET product:42 EX 300"
+    },
+    {
+     "id": "f6",
+     "from": "app",
+     "to": "client",
+     "style": "solid",
+     "label": "200 OK"
+    },
+    {
+     "id": "f7",
+     "from": "client",
+     "to": "app",
+     "style": "solid",
+     "label": "next request"
+    },
+    {
+     "id": "f8",
+     "from": "cache",
+     "to": "app",
+     "style": "dotted",
+     "label": "hit · about 1 ms"
+    },
+    {
+     "id": "f9",
+     "from": "client",
+     "to": "app",
+     "style": "solid",
+     "label": "PUT new price"
+    },
+    {
+     "id": "f10",
+     "from": "app",
+     "to": "db",
+     "style": "solid",
+     "label": "UPDATE · committed"
+    },
+    {
+     "id": "f11",
+     "from": "app",
+     "to": "cache",
+     "style": "dotted",
+     "label": "DEL product:42"
+    },
+    {
+     "id": "f12",
+     "from": "cache",
+     "to": "app",
+     "style": "dotted",
+     "label": "next read misses, loads the new price"
+    }
+   ]
+  },
+  {
+   "id": "race",
+   "kind": "sequence",
+   "title": "A slow reader puts back an old value",
+   "participants": [
+    {
+     "id": "reader",
+     "label": "Slow reader"
+    },
+    {
+     "id": "writer",
+     "label": "Writer"
+    },
+    {
+     "id": "cache",
+     "label": "Cache"
+    },
+    {
+     "id": "db",
+     "label": "Database"
+    }
+   ],
+   "messages": [
+    {
+     "id": "rc1",
+     "from": "reader",
+     "to": "cache",
+     "style": "dotted",
+     "label": "GET · miss"
+    },
+    {
+     "id": "rc2",
+     "from": "reader",
+     "to": "db",
+     "style": "solid",
+     "label": "SELECT · reads price 10"
+    },
+    {
+     "id": "rc3",
+     "from": "writer",
+     "to": "db",
+     "style": "solid",
+     "label": "UPDATE price = 12"
+    },
+    {
+     "id": "rc4",
+     "from": "writer",
+     "to": "cache",
+     "style": "dotted",
+     "label": "DEL key (nothing there yet)"
+    },
+    {
+     "id": "rc5",
+     "from": "reader",
+     "to": "cache",
+     "style": "dashed",
+     "label": "SET price 10 · stale until the TTL"
+    }
+   ]
+  },
+  {
+   "id": "stampede",
+   "kind": "c4",
+   "title": "A hot key expires: the stampede, and the fixes",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "traffic",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Requests",
+     "sub": "thousands a second"
+    },
+    {
+     "id": "app",
+     "kind": "container",
+     "tone": "core",
+     "label": "App instances",
+     "sub": "each sees a miss at once"
+    },
+    {
+     "id": "flight",
+     "kind": "component",
+     "tone": "core",
+     "label": "Single-flight or lease",
+     "sub": "one rebuild per key"
+    },
+    {
+     "id": "cache",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Cache",
+     "sub": "hot key just expired"
+    },
+    {
+     "id": "db",
+     "kind": "store",
+     "tone": "data",
+     "label": "Database",
+     "sub": "the expensive query"
+    }
+   ],
+   "edges": [
+    {
+     "id": "sp1",
+     "from": "traffic",
+     "to": "app",
+     "style": "solid",
+     "label": "GET one key"
+    },
+    {
+     "id": "sp2",
+     "from": "app",
+     "to": "cache",
+     "style": "dotted",
+     "label": "all miss together"
+    },
+    {
+     "id": "sp3",
+     "from": "app",
+     "to": "db",
+     "style": "dashed",
+     "label": "N identical queries"
+    },
+    {
+     "id": "fx1",
+     "from": "app",
+     "to": "flight",
+     "style": "solid",
+     "label": "rebuild?"
+    },
+    {
+     "id": "fx2",
+     "from": "flight",
+     "to": "db",
+     "style": "solid",
+     "label": "one query"
+    },
+    {
+     "id": "fx3",
+     "from": "flight",
+     "to": "cache",
+     "style": "dotted",
+     "label": "SET, TTL + jitter"
+    },
+    {
+     "id": "fx4",
+     "from": "cache",
+     "to": "app",
+     "style": "dotted",
+     "label": "others wait or get stale copy"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or overload"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "cache traffic"
+    }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "ms",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Microsoft Cache-Aside pattern",
+     "sub": "update store, then invalidate"
+    },
+    {
+     "id": "aws",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "AWS ElastiCache",
+     "sub": "lazy loading vs write-through, plus TTL"
+    },
+    {
+     "id": "redis",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Redis",
+     "sub": "SET … EX · LRU and LFU eviction"
+    },
+    {
+     "id": "memcached",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Memcached",
+     "sub": "to alleviate database load"
+    },
+    {
+     "id": "fb",
+     "kind": "external",
+     "tone": "external",
+     "label": "Facebook memcache, NSDI 2013",
+     "sub": "look-aside · leases · Gutter"
+    },
+    {
+     "id": "xfetch",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "XFetch, VLDB 2015",
+     "sub": "probabilistic early refresh"
+    }
+   ],
+   "edges": [
+    {
+     "id": "w1",
+     "from": "ms",
+     "to": "redis",
+     "style": "solid",
+     "label": "example uses Redis"
+    },
+    {
+     "id": "w2",
+     "from": "aws",
+     "to": "memcached",
+     "style": "solid",
+     "label": "strategies for Memcached"
+    },
+    {
+     "id": "w3",
+     "from": "memcached",
+     "to": "fb",
+     "style": "solid",
+     "label": "scaled to billions of requests a second"
+    },
+    {
+     "id": "w4",
+     "from": "fb",
+     "to": "xfetch",
+     "style": "dotted",
+     "label": "same problem: stampedes"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "problem",
+   "title": "The problem"
+  },
+  {
+   "id": "naive",
+   "title": "The naive fix"
+  },
+  {
+   "id": "pattern",
+   "title": "The pattern"
+  },
+  {
+   "id": "how",
+   "title": "How it works"
+  },
+  {
+   "id": "failure",
+   "title": "When it goes wrong"
+  },
+  {
+   "id": "tradeoffs",
+   "title": "Trade-offs"
+  },
+  {
+   "id": "wild",
+   "title": "In the wild"
+  },
+  {
+   "id": "related",
+   "title": "Related patterns"
+  },
+  {
+   "id": "recap",
+   "title": "Recap"
+  }
+ ],
+ "shots": [
+  {
+   "id": "ca-problem",
+   "chapter": "problem",
+   "title": "Hammered",
+   "diagram": "hammer",
+   "focus": [],
+   "trace": [
+    "hm1",
+    "hm2",
+    "hm3"
+   ],
+   "engineer": "Here is a product page. Building it needs a database query that joins six tables and takes fifty milliseconds. A sale starts, and five thousand shoppers a second open the same product. Every request runs the very same query and gets the very same answer. The database's CPU saturates, fifty milliseconds becomes two seconds, and every other query on that database slows down with it. Almost all of that work was repeated work. These numbers are illustrative.",
+   "executive": "The same expensive question is asked of the database thousands of times a second, and it slows everything down."
+  },
+  {
+   "id": "ca-naive",
+   "chapter": "naive",
+   "title": "Write race",
+   "diagram": "naive",
+   "focus": [],
+   "trace": [
+    "nv1",
+    "nv2",
+    "nv3",
+    "nv4",
+    "nv5"
+   ],
+   "engineer": "The obvious fix: put a cache in front, keep values forever, and whenever someone writes, update the cache too. Watch two writers. A sets the price to ten, then B sets it to twelve, in that order in the database. But the cache updates race: B's arrives first, and A's arrives late. The cache now says ten while the database says twelve, and with no expiry, nothing ever corrects it. Updating the cache from every write turns ordinary races into permanent wrong answers.",
+   "executive": "Keeping the cache in step by updating it on every write goes wrong when two writes cross, and without an expiry the wrong value stays forever."
+  },
+  {
+   "id": "ca-structure",
+   "chapter": "pattern",
+   "title": "Parts",
+   "diagram": "structure",
+   "focus": [],
+   "trace": [
+    "s1",
+    "s2",
+    "s3",
+    "s4",
+    "s5",
+    "s6",
+    "s7"
+   ],
+   "engineer": "Cache-aside, also called lazy loading. The cache sits beside the database, not in front of it, and the application owns all the logic. To read, ask the cache first. On a miss, query the database, store the result with a time to live, and return it. To write, update the database first, then delete the key rather than writing a new value into it. The next read loads fresh data. The database stays the source of truth; the cache only holds copies.",
+   "executive": "The application checks the cache first, fills it from the database when something is missing, and clears the cached copy whenever the data changes."
+  },
+  {
+   "id": "ca-read",
+   "chapter": "how",
+   "title": "Read",
+   "diagram": "flow",
+   "focus": [],
+   "trace": [
+    "f1",
+    "f2",
+    "f3",
+    "f4",
+    "f5",
+    "f6",
+    "f7",
+    "f8"
+   ],
+   "engineer": "Step by step. A request for product forty-two arrives. The service asks the cache, which returns nothing: a miss. It runs the fifty-millisecond query, stores the result with an expiry of three hundred seconds, and answers. The next request finds the value in the cache and is served in about a millisecond. A miss costs three trips: the cache, the database, then the cache again. AWS calls this the miss penalty. Only data that someone actually asks for is ever cached.",
+   "executive": "The first request is slow and fills the cache; every request after that is fast until the copy expires."
+  },
+  {
+   "id": "ca-write",
+   "chapter": "how",
+   "title": "Write",
+   "diagram": "flow",
+   "focus": [],
+   "trace": [
+    "f9",
+    "f10",
+    "f11",
+    "f12"
+   ],
+   "engineer": "Now a price change. The service updates the database, waits for the commit, and then deletes the cached key. Order matters. Microsoft's guidance is explicit: if you delete first, another request can miss, read the old row, and put it back before your update lands. Why delete rather than update? Facebook's memcache paper gives the reason: deletes are idempotent. Repeating a delete is harmless, and the next reader fetches whatever the database now holds.",
+   "executive": "On a change, save to the database first and then throw the cached copy away, so the next reader fetches the new value."
+  },
+  {
+   "id": "ca-race",
+   "chapter": "failure",
+   "title": "Stale set",
+   "diagram": "race",
+   "focus": [],
+   "trace": [
+    "rc1",
+    "rc2",
+    "rc3",
+    "rc4",
+    "rc5"
+   ],
+   "engineer": "Even done right, there is a race. A slow reader misses and reads price ten. Before it writes back, a writer sets twelve and deletes the key, which is not there yet. Then the slow reader stores ten. The cache is stale until the key expires. That is why every key needs a time to live: it bounds how wrong you can be. Facebook calls this a stale set, and fixed it with leases: a token from the cache that a delete invalidates, so the late write is refused.",
+   "executive": "A slow read can still put an old value back after a change. An expiry time limits how long that lasts, and stronger fixes refuse the late write."
+  },
+  {
+   "id": "ca-stampede",
+   "chapter": "failure",
+   "title": "Stampede",
+   "diagram": "stampede",
+   "focus": [],
+   "trace": [
+    "sp1",
+    "sp2",
+    "sp3"
+   ],
+   "engineer": "The second failure is the stampede, or thundering herd. A hot key is read thousands of times a second. The moment it expires, every request in flight misses together, and every one runs the same expensive query. The database, which the cache was protecting, takes the full load at once and slows down, which makes each rebuild slower, which lets even more requests pile in. The same happens when a write keeps deleting a key that is read heavily.",
+   "executive": "When a popular cached item expires, everyone asks the database at the same moment, and it can buckle."
+  },
+  {
+   "id": "ca-fixes",
+   "chapter": "failure",
+   "title": "Coalesce",
+   "diagram": "stampede",
+   "focus": [],
+   "trace": [
+    "sp1",
+    "fx1",
+    "fx2",
+    "fx3",
+    "fx4"
+   ],
+   "engineer": "The fixes. Coalesce requests so only one rebuilds each key: Go's single-flight package does this within a process; a short lock, such as Redis SET with NX and an expiry, does it across servers. Let the others wait briefly, or serve the stale copy while one request revalidates. Facebook's leases hand out one token per key every ten seconds; on keys prone to herds, peak database load fell from seventeen thousand to thirteen hundred queries a second. Add jitter to TTLs so keys do not expire together, or refresh early at random, as XFetch does.",
+   "executive": "Let only one request rebuild a popular item, serve the old copy meanwhile, and stagger expiry times so items do not all expire together."
+  },
+  {
+   "id": "ca-down",
+   "chapter": "failure",
+   "card": {
+    "heading": "When the cache itself struggles",
+    "points": [
+     "Cache down: every read hits the database at once",
+     "Fall back carefully: timeouts, concurrency limits, shed load",
+     "Facebook's Gutter: a small spare pool takes a failed server's keys",
+     "Hot keys: one key can overload one cache node; replicate or keep a local copy"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "What if the cache itself fails? Cache-aside degrades gracefully, because the database still has everything. But a cache that was absorbing ninety-nine percent of reads now sends all of them to a database sized for one percent. Give cache calls a short timeout, cap how many fallback queries run at once, and shed load before the database falls over. Facebook redirects a failed server's keys to a small spare pool called Gutter, rather than spreading them around, because one hot key can overload whichever server inherits it.",
+   "executive": "If the cache fails, everything falls back to the database. Limit that fallback so the database is not overwhelmed."
+  },
+  {
+   "id": "ca-compare",
+   "chapter": "tradeoffs",
+   "title": "Strategies",
+   "card": {
+    "heading": "Cache-aside and its alternatives",
+    "kind": "compare",
+    "points": [
+     "Strategy | Trade-off",
+     "Cache-aside | Only requested data cached; miss penalty; can be stale",
+     "Read-through | Same loading, but the cache library or service does it",
+     "Write-through | Fresh after writes; writes slower; caches data never read",
+     "Write-behind | Fast writes; data lost if the cache dies first"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Cache-aside is one of four common strategies. Cache-aside caches only what is asked for and survives a cache restart, but pays a miss penalty and can serve stale data. Read-through loads the same way, but the cache or a library does it for you. Write-through updates the cache on every write, so reads after writes are fresh, but every write costs two trips and fills the cache with data nobody reads. Write-behind acknowledges the write from the cache and saves it later: fast, but risky.",
+   "executive": "Cache-aside is the simplest and most forgiving. Writing into the cache on every change keeps it fresher, but costs more and is harder to get right."
+  },
+  {
+   "id": "ca-whennot",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "What to cache, and what not to",
+    "points": [
+     "Cache read-heavy data that changes rarely and tolerates staleness",
+     "Cache 'not found' briefly too, or misses keep hitting the database",
+     "Not sensitive or security data, especially in a shared cache",
+     "Not data where most reads would miss anyway"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Cache data that is read often, changes rarely, and can be a little out of date. Consider caching absence too: if a missing product is requested again and again, every request misses and queries the database. Storing a short-lived 'not found', called negative caching, stops that. Microsoft lists cases where cache-aside fits badly: sensitive or security data, especially in a shared cache; most requests missing anyway; and a small static data set, which you should load at start-up instead.",
+   "executive": "Cache popular data that rarely changes. Do not cache sensitive data, and skip caching where most requests would miss anyway."
+  },
+  {
+   "id": "ca-wild",
+   "chapter": "wild",
+   "title": "Sources",
+   "diagram": "wild",
+   "focus": [],
+   "trace": [
+    "w1",
+    "w2",
+    "w3",
+    "w4"
+   ],
+   "engineer": "In the wild. Microsoft's Cache-Aside pattern page shows it with Redis: update the store, then delete the key, with a five-minute expiry. AWS's ElastiCache guide compares lazy loading with write-through and recommends adding a TTL to both. Redis and Memcached are the usual caches, and both evict to stay within memory. Facebook's 2013 paper describes memcache as a demand-filled look-aside cache serving billions of requests a second. And the XFetch paper, from 2015, gives an optimal way to refresh early.",
+   "executive": "Microsoft and AWS both document it, Redis and Memcached are the usual caches, and Facebook ran it at enormous scale."
+  },
+  {
+   "id": "ca-related",
+   "chapter": "related",
+   "card": {
+    "heading": "Related patterns",
+    "kind": "compare",
+    "points": [
+     "Pattern | How it relates",
+     "CDN caching | The same idea at the edge, for whole HTTP responses",
+     "CQRS | Build a read model on purpose instead of caching on demand",
+     "Consistent hashing | Spreads keys across cache nodes as they come and go",
+     "Timeout | Keeps a slow cache from slowing every request"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Its neighbours. CDN caching is the same idea at the edge, for whole responses, and HTTP's stale-while-revalidate directive is the stampede fix built into the protocol. CQRS goes further: rather than caching reads on demand, you build a separate read model on purpose and keep it updated from events. Consistent hashing decides which cache node owns each key, so adding a node moves only a fraction of keys. And a timeout on every cache call keeps a slow cache from becoming slower than the database it protects.",
+   "executive": "Edge caches, dedicated read models, and ways of spreading keys across servers all build on the same idea."
+  },
+  {
+   "id": "ca-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "Read the cache; on a miss, load from the database and set a TTL",
+     "On write, update the database, then delete the key",
+     "Protect the database: coalesce rebuilds, jitter expiry, limit fallback"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. Read the cache first; on a miss, load from the database and store it with a time to live, because every key will one day be wrong. On a write, update the database, then delete the key; do not try to update it. And protect the database the cache exists for: let one request rebuild each hot key, add jitter to expiry, and limit the fallback when the cache is down.",
+   "executive": "Load on demand with an expiry. Change the database, then delete the cached copy. Never let a cache problem overwhelm the database."
+  }
+ ],
+ "meta": {
+  "kind": "pattern",
+  "category": "Caching",
+  "level": "beginner",
+  "uses": [
+   "timeout"
+  ],
+  "related": [
+   "cdn-caching",
+   "cqrs",
+   "consistent-hashing"
+  ],
+  "blurb": "Read the cache, load from the database on a miss, and delete the key on every write.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ }
+}

@@ -1,0 +1,142 @@
+{
+ "acl-problem-engineer": {
+  "file": "/audio/anti-corruption-layer/acl-problem-engineer.mp3",
+  "ms": 27696,
+  "hash": "280ba70726dc"
+ },
+ "acl-problem-executive": {
+  "file": "/audio/anti-corruption-layer/acl-problem-executive.mp3",
+  "ms": 6504,
+  "hash": "e3e3f665785c"
+ },
+ "acl-ripple-engineer": {
+  "file": "/audio/anti-corruption-layer/acl-ripple-engineer.mp3",
+  "ms": 26592,
+  "hash": "170428f9210d"
+ },
+ "acl-ripple-executive": {
+  "file": "/audio/anti-corruption-layer/acl-ripple-executive.mp3",
+  "ms": 7944,
+  "hash": "fb2f5d61ea5f"
+ },
+ "acl-naive-engineer": {
+  "file": "/audio/anti-corruption-layer/acl-naive-engineer.mp3",
+  "ms": 28704,
+  "hash": "226fb4df68d1"
+ },
+ "acl-naive-executive": {
+  "file": "/audio/anti-corruption-layer/acl-naive-executive.mp3",
+  "ms": 8376,
+  "hash": "2dd0ac70e9b1"
+ },
+ "acl-structure-engineer": {
+  "file": "/audio/anti-corruption-layer/acl-structure-engineer.mp3",
+  "ms": 31728,
+  "hash": "c6ea4ad66dbf"
+ },
+ "acl-structure-executive": {
+  "file": "/audio/anti-corruption-layer/acl-structure-executive.mp3",
+  "ms": 8928,
+  "hash": "0286fc7e89fb"
+ },
+ "acl-mapping-engineer": {
+  "file": "/audio/anti-corruption-layer/acl-mapping-engineer.mp3",
+  "ms": 29304,
+  "hash": "15ed61d12a6e"
+ },
+ "acl-mapping-executive": {
+  "file": "/audio/anti-corruption-layer/acl-mapping-executive.mp3",
+  "ms": 8712,
+  "hash": "1b85b7f800ec"
+ },
+ "acl-how-engineer": {
+  "file": "/audio/anti-corruption-layer/acl-how-engineer.mp3",
+  "ms": 32712,
+  "hash": "49ccf76ab0a0"
+ },
+ "acl-how-executive": {
+  "file": "/audio/anti-corruption-layer/acl-how-executive.mp3",
+  "ms": 8664,
+  "hash": "91c31220a4c6"
+ },
+ "acl-events-engineer": {
+  "file": "/audio/anti-corruption-layer/acl-events-engineer.mp3",
+  "ms": 30024,
+  "hash": "8346145487b7"
+ },
+ "acl-events-executive": {
+  "file": "/audio/anti-corruption-layer/acl-events-executive.mp3",
+  "ms": 7656,
+  "hash": "08f2eb5a02e8"
+ },
+ "acl-failure-engineer": {
+  "file": "/audio/anti-corruption-layer/acl-failure-engineer.mp3",
+  "ms": 30984,
+  "hash": "616496e6b059"
+ },
+ "acl-failure-executive": {
+  "file": "/audio/anti-corruption-layer/acl-failure-executive.mp3",
+  "ms": 7488,
+  "hash": "903729acb66e"
+ },
+ "acl-quirks-engineer": {
+  "file": "/audio/anti-corruption-layer/acl-quirks-engineer.mp3",
+  "ms": 27744,
+  "hash": "462c482b1afd"
+ },
+ "acl-quirks-executive": {
+  "file": "/audio/anti-corruption-layer/acl-quirks-executive.mp3",
+  "ms": 7800,
+  "hash": "1671d1b043c4"
+ },
+ "acl-testing-engineer": {
+  "file": "/audio/anti-corruption-layer/acl-testing-engineer.mp3",
+  "ms": 29064,
+  "hash": "a2b966dc2409"
+ },
+ "acl-testing-executive": {
+  "file": "/audio/anti-corruption-layer/acl-testing-executive.mp3",
+  "ms": 7824,
+  "hash": "ad6120520a0a"
+ },
+ "acl-tradeoffs-engineer": {
+  "file": "/audio/anti-corruption-layer/acl-tradeoffs-engineer.mp3",
+  "ms": 30120,
+  "hash": "5e5ab69ae036"
+ },
+ "acl-tradeoffs-executive": {
+  "file": "/audio/anti-corruption-layer/acl-tradeoffs-executive.mp3",
+  "ms": 7536,
+  "hash": "ca42ce008692"
+ },
+ "acl-wild-engineer": {
+  "file": "/audio/anti-corruption-layer/acl-wild-engineer.mp3",
+  "ms": 33696,
+  "hash": "08ccb34e373b"
+ },
+ "acl-wild-executive": {
+  "file": "/audio/anti-corruption-layer/acl-wild-executive.mp3",
+  "ms": 9408,
+  "hash": "d8b949f9421a"
+ },
+ "acl-related-engineer": {
+  "file": "/audio/anti-corruption-layer/acl-related-engineer.mp3",
+  "ms": 29640,
+  "hash": "61d8c131ce26"
+ },
+ "acl-related-executive": {
+  "file": "/audio/anti-corruption-layer/acl-related-executive.mp3",
+  "ms": 10176,
+  "hash": "528174ee53d2"
+ },
+ "acl-recap-engineer": {
+  "file": "/audio/anti-corruption-layer/acl-recap-engineer.mp3",
+  "ms": 25392,
+  "hash": "ae1a64762732"
+ },
+ "acl-recap-executive": {
+  "file": "/audio/anti-corruption-layer/acl-recap-executive.mp3",
+  "ms": 7272,
+  "hash": "7ff9dcf0fecb"
+ }
+}
