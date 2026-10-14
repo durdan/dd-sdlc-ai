@@ -4,7 +4,7 @@
 //   requests/<id>/script.md      the narration script
 //   requests/<id>/diagram.json   { diagram, svg }
 //   requests/<id>/files/…        the finished walkthrough (scripts/deliver.ts in design-player)
-//   users/<user id>/<id>         empty marker: a user's requests, and when each was started
+//   users/<user id>/<id>         marker (holds the start time): a user's requests
 // The script and the diagram are written by different requests running at the
 // same time, so each has its own file and neither overwrites the other.
 import { get, list, put } from "@vercel/blob"
@@ -54,7 +54,7 @@ export async function saveRequest(r: WalkthroughRequest) {
 
 export async function createRequest(r: WalkthroughRequest) {
   await saveRequest(r)
-  await write(`users/${r.user_id}/${r.id}`, "", "text/plain")
+  await write(`users/${r.user_id}/${r.id}`, r.created_at, "text/plain")
 }
 
 export const loadScript = async (id: string) => (await read(`${dir(id)}/script.md`))?.text() ?? null
