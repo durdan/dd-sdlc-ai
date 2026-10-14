@@ -332,7 +332,7 @@ function Intro() {
 const STEPS = [
   ["You describe it", "What the system does, who the walkthrough is for, and anything we should know. No secrets."],
   ["You get a draft in about a minute", "A narration script in eight chapters and a system diagram. Ask for changes up to three times."],
-  ["You approve, we produce it", "We record the narration, animate the diagram shot by shot and check the details. Usually within two working days."],
+  ["You approve, we produce it", "We record the narration, animate the diagram shot by shot and check the details. You'll receive a notification as soon as it's ready."],
   ["You watch it here", "We email you a private link. Only you can open it, after signing in."],
 ] as const
 
