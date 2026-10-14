@@ -1,0 +1,1138 @@
+{
+ "id": "bloom-filter",
+ "title": "Bloom filters",
+ "subtitle": "Design pattern",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "diagrams": [
+  {
+   "id": "problem",
+   "kind": "c4",
+   "title": "Every lookup for a missing key reads every file",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "client",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Client",
+     "sub": "GET user:99 (never stored)"
+    },
+    {
+     "id": "store",
+     "kind": "container",
+     "tone": "core",
+     "label": "Key-value store",
+     "sub": "read path"
+    },
+    {
+     "id": "f1",
+     "kind": "store",
+     "tone": "data",
+     "label": "File 1 on disk",
+     "sub": "newest"
+    },
+    {
+     "id": "f2",
+     "kind": "store",
+     "tone": "data",
+     "label": "File 2 on disk"
+    },
+    {
+     "id": "f3",
+     "kind": "store",
+     "tone": "data",
+     "label": "File 3 on disk",
+     "sub": "oldest"
+    }
+   ],
+   "edges": [
+    {
+     "id": "p1",
+     "from": "client",
+     "to": "store",
+     "style": "solid",
+     "label": "GET user:99"
+    },
+    {
+     "id": "p2",
+     "from": "store",
+     "to": "f1",
+     "style": "dashed",
+     "label": "read a block · not here"
+    },
+    {
+     "id": "p3",
+     "from": "store",
+     "to": "f2",
+     "style": "dashed",
+     "label": "read a block · not here"
+    },
+    {
+     "id": "p4",
+     "from": "store",
+     "to": "f3",
+     "style": "dashed",
+     "label": "read a block · not here"
+    },
+    {
+     "id": "p5",
+     "from": "store",
+     "to": "client",
+     "style": "dotted",
+     "label": "not found, after 3 disk reads"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call or hash"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "wasted or failing work"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "answer"
+    }
+   ]
+  },
+  {
+   "id": "naive",
+   "kind": "c4",
+   "title": "Exact answers cost memory; a miss cache only knows old misses",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "app",
+     "kind": "container",
+     "tone": "core",
+     "label": "Key-value store",
+     "sub": "read path"
+    },
+    {
+     "id": "keyset",
+     "kind": "store",
+     "tone": "data",
+     "label": "Set of every key",
+     "sub": "in memory, keys stored in full"
+    },
+    {
+     "id": "ram",
+     "kind": "external",
+     "tone": "external",
+     "label": "Memory budget",
+     "sub": "e.g. 100 M keys × 40 B ≈ 4 GB"
+    },
+    {
+     "id": "miss",
+     "kind": "store",
+     "tone": "data",
+     "label": "Cache of misses",
+     "sub": "keys already looked up"
+    },
+    {
+     "id": "disk",
+     "kind": "store",
+     "tone": "data",
+     "label": "Files on disk"
+    }
+   ],
+   "edges": [
+    {
+     "id": "n1",
+     "from": "app",
+     "to": "keyset",
+     "style": "solid",
+     "label": "contains(user:99)? exact"
+    },
+    {
+     "id": "n2",
+     "from": "keyset",
+     "to": "ram",
+     "style": "dashed",
+     "label": "grows with every key"
+    },
+    {
+     "id": "n3",
+     "from": "app",
+     "to": "miss",
+     "style": "solid",
+     "label": "seen this miss before?"
+    },
+    {
+     "id": "n4",
+     "from": "miss",
+     "to": "disk",
+     "style": "dashed",
+     "label": "new missing key: still a disk read"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call or hash"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "wasted or failing work"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "answer"
+    }
+   ]
+  },
+  {
+   "id": "bits",
+   "kind": "c4",
+   "title": "Add: hash the item k times and set those bits (m = 16, k = 3, illustrative)",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "item",
+     "kind": "container",
+     "tone": "core",
+     "label": "add(\"cat\")",
+     "sub": "item to remember",
+     "rank": 0
+    },
+    {
+     "id": "h1",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Hash 1",
+     "sub": "cat → 2",
+     "rank": 1
+    },
+    {
+     "id": "h2",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Hash 2",
+     "sub": "cat → 5",
+     "rank": 1
+    },
+    {
+     "id": "h3",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Hash 3",
+     "sub": "cat → 9",
+     "rank": 1
+    },
+    {
+     "id": "b2",
+     "kind": "component",
+     "tone": "data",
+     "label": "Bit 2",
+     "sub": "0 → 1",
+     "group": "arr",
+     "rank": 2
+    },
+    {
+     "id": "b5",
+     "kind": "component",
+     "tone": "data",
+     "label": "Bit 5",
+     "sub": "0 → 1",
+     "group": "arr",
+     "rank": 2
+    },
+    {
+     "id": "b9",
+     "kind": "component",
+     "tone": "data",
+     "label": "Bit 9",
+     "sub": "0 → 1",
+     "group": "arr",
+     "rank": 2
+    },
+    {
+     "id": "b13",
+     "kind": "component",
+     "tone": "data",
+     "label": "Bit 13",
+     "sub": "still 0",
+     "group": "arr",
+     "rank": 2
+    }
+   ],
+   "groups": [
+    {
+     "id": "arr",
+     "label": "Bit array · 16 bits, all start at 0",
+     "tone": "data"
+    }
+   ],
+   "edges": [
+    {
+     "id": "a1",
+     "from": "item",
+     "to": "h1",
+     "style": "solid",
+     "label": "hash"
+    },
+    {
+     "id": "a2",
+     "from": "item",
+     "to": "h2",
+     "style": "solid",
+     "label": "hash"
+    },
+    {
+     "id": "a3",
+     "from": "item",
+     "to": "h3",
+     "style": "solid",
+     "label": "hash"
+    },
+    {
+     "id": "a4",
+     "from": "h1",
+     "to": "b2",
+     "style": "solid",
+     "label": "set"
+    },
+    {
+     "id": "a5",
+     "from": "h2",
+     "to": "b5",
+     "style": "solid",
+     "label": "set"
+    },
+    {
+     "id": "a6",
+     "from": "h3",
+     "to": "b9",
+     "style": "solid",
+     "label": "set"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call or hash"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "wasted or failing work"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "answer"
+    }
+   ]
+  },
+  {
+   "id": "query",
+   "kind": "c4",
+   "title": "Query: any 0 bit means definitely not; all 1 means probably yes",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "dog",
+     "kind": "container",
+     "tone": "core",
+     "label": "contains(\"dog\")?",
+     "sub": "hashes to 5, 13, 2",
+     "rank": 0
+    },
+    {
+     "id": "fox",
+     "kind": "container",
+     "tone": "core",
+     "label": "contains(\"fox\")?",
+     "sub": "hashes to 2, 9, 5",
+     "rank": 0
+    },
+    {
+     "id": "b2",
+     "kind": "component",
+     "tone": "data",
+     "label": "Bit 2",
+     "sub": "1",
+     "group": "arr",
+     "rank": 1
+    },
+    {
+     "id": "b5",
+     "kind": "component",
+     "tone": "data",
+     "label": "Bit 5",
+     "sub": "1",
+     "group": "arr",
+     "rank": 1
+    },
+    {
+     "id": "b9",
+     "kind": "component",
+     "tone": "data",
+     "label": "Bit 9",
+     "sub": "1",
+     "group": "arr",
+     "rank": 1
+    },
+    {
+     "id": "b13",
+     "kind": "component",
+     "tone": "data",
+     "label": "Bit 13",
+     "sub": "0",
+     "group": "arr",
+     "rank": 1
+    },
+    {
+     "id": "no",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Definitely not",
+     "sub": "skip the expensive lookup",
+     "rank": 2
+    },
+    {
+     "id": "maybe",
+     "kind": "system",
+     "tone": "stream",
+     "label": "Probably yes",
+     "sub": "do the real lookup to be sure",
+     "rank": 2
+    }
+   ],
+   "groups": [
+    {
+     "id": "arr",
+     "label": "Bit array after adding \"cat\" (and other items)",
+     "tone": "data"
+    }
+   ],
+   "edges": [
+    {
+     "id": "q1",
+     "from": "dog",
+     "to": "b5",
+     "style": "solid",
+     "label": "bit 5 = 1"
+    },
+    {
+     "id": "q2",
+     "from": "dog",
+     "to": "b13",
+     "style": "solid",
+     "label": "bit 13 = 0"
+    },
+    {
+     "id": "q3",
+     "from": "b13",
+     "to": "no",
+     "style": "dotted",
+     "label": "one 0 is enough"
+    },
+    {
+     "id": "q4",
+     "from": "fox",
+     "to": "b2",
+     "style": "solid",
+     "label": "1"
+    },
+    {
+     "id": "q5",
+     "from": "fox",
+     "to": "b9",
+     "style": "solid",
+     "label": "1"
+    },
+    {
+     "id": "q6",
+     "from": "fox",
+     "to": "b5",
+     "style": "solid",
+     "label": "1"
+    },
+    {
+     "id": "q7",
+     "from": "b9",
+     "to": "maybe",
+     "style": "dotted",
+     "label": "all k bits are 1"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call or hash"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "wasted or failing work"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "answer"
+    }
+   ]
+  },
+  {
+   "id": "flow",
+   "kind": "sequence",
+   "title": "Check the filter before touching disk",
+   "participants": [
+    {
+     "id": "client",
+     "label": "Client"
+    },
+    {
+     "id": "store",
+     "label": "Store read path"
+    },
+    {
+     "id": "bloom",
+     "label": "Bloom filter (in memory)"
+    },
+    {
+     "id": "disk",
+     "label": "File on disk"
+    }
+   ],
+   "messages": [
+    {
+     "id": "f1",
+     "from": "client",
+     "to": "store",
+     "style": "solid",
+     "label": "GET user:99"
+    },
+    {
+     "id": "f2",
+     "from": "store",
+     "to": "bloom",
+     "style": "solid",
+     "label": "might file hold user:99?"
+    },
+    {
+     "id": "f3",
+     "from": "bloom",
+     "to": "store",
+     "style": "dotted",
+     "label": "a bit is 0: definitely not"
+    },
+    {
+     "id": "f4",
+     "from": "store",
+     "to": "client",
+     "style": "dotted",
+     "label": "not found · no disk read"
+    },
+    {
+     "id": "f5",
+     "from": "client",
+     "to": "store",
+     "style": "solid",
+     "label": "GET user:42"
+    },
+    {
+     "id": "f6",
+     "from": "store",
+     "to": "bloom",
+     "style": "solid",
+     "label": "might file hold user:42?"
+    },
+    {
+     "id": "f7",
+     "from": "bloom",
+     "to": "store",
+     "style": "dotted",
+     "label": "all k bits set: probably"
+    },
+    {
+     "id": "f8",
+     "from": "store",
+     "to": "disk",
+     "style": "solid",
+     "label": "read the block"
+    },
+    {
+     "id": "f9",
+     "from": "disk",
+     "to": "store",
+     "style": "dotted",
+     "label": "value"
+    },
+    {
+     "id": "f10",
+     "from": "store",
+     "to": "client",
+     "style": "dotted",
+     "label": "value"
+    },
+    {
+     "id": "f11",
+     "from": "client",
+     "to": "store",
+     "style": "solid",
+     "label": "GET user:77 (never stored)"
+    },
+    {
+     "id": "f12",
+     "from": "store",
+     "to": "bloom",
+     "style": "solid",
+     "label": "might file hold user:77?"
+    },
+    {
+     "id": "f13",
+     "from": "bloom",
+     "to": "store",
+     "style": "dotted",
+     "label": "bits set by other keys: probably"
+    },
+    {
+     "id": "f14",
+     "from": "store",
+     "to": "disk",
+     "style": "dashed",
+     "label": "read the block · false positive"
+    },
+    {
+     "id": "f15",
+     "from": "disk",
+     "to": "store",
+     "style": "dashed",
+     "label": "not there: wasted read"
+    },
+    {
+     "id": "f16",
+     "from": "store",
+     "to": "client",
+     "style": "dotted",
+     "label": "not found, correctly"
+    }
+   ]
+  },
+  {
+   "id": "fill",
+   "kind": "c4",
+   "title": "Filters fill up and cannot forget",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "filter",
+     "kind": "container",
+     "tone": "core",
+     "label": "Filter sized for 1 M items",
+     "sub": "9.6 bits each · 1% target"
+    },
+    {
+     "id": "full",
+     "kind": "system",
+     "tone": "stream",
+     "label": "2 M items added",
+     "sub": "false positives ≈ 16%"
+    },
+    {
+     "id": "rebuild",
+     "kind": "container",
+     "tone": "core",
+     "label": "Rebuild bigger",
+     "sub": "from the source of truth"
+    },
+    {
+     "id": "scale",
+     "kind": "container",
+     "tone": "core",
+     "label": "Scalable filter",
+     "sub": "adds larger layers"
+    },
+    {
+     "id": "del",
+     "kind": "system",
+     "tone": "stream",
+     "label": "Delete \"cat\"?",
+     "sub": "clearing bit 5 may erase \"dog\""
+    },
+    {
+     "id": "count",
+     "kind": "container",
+     "tone": "core",
+     "label": "Counting Bloom filter",
+     "sub": "small counters, not bits"
+    },
+    {
+     "id": "cuckoo",
+     "kind": "container",
+     "tone": "core",
+     "label": "Cuckoo filter",
+     "sub": "stores fingerprints · supports delete"
+    }
+   ],
+   "edges": [
+    {
+     "id": "g1",
+     "from": "filter",
+     "to": "full",
+     "style": "dashed",
+     "label": "past capacity"
+    },
+    {
+     "id": "g2",
+     "from": "full",
+     "to": "rebuild",
+     "style": "solid",
+     "label": "fix: rebuild"
+    },
+    {
+     "id": "g3",
+     "from": "full",
+     "to": "scale",
+     "style": "solid",
+     "label": "fix: grow in layers"
+    },
+    {
+     "id": "g4",
+     "from": "filter",
+     "to": "del",
+     "style": "dashed",
+     "label": "bits cannot be unset"
+    },
+    {
+     "id": "g5",
+     "from": "del",
+     "to": "count",
+     "style": "solid",
+     "label": "fix: count, then decrement"
+    },
+    {
+     "id": "g6",
+     "from": "del",
+     "to": "cuckoo",
+     "style": "solid",
+     "label": "fix: other filter"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call or hash"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "wasted or failing work"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "answer"
+    }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "bloom",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Burton Bloom",
+     "sub": "CACM 1970 · hash coding with allowable errors"
+    },
+    {
+     "id": "bigtable",
+     "kind": "external",
+     "tone": "external",
+     "label": "Google Bigtable",
+     "sub": "OSDI 2006 · filters per SSTable"
+    },
+    {
+     "id": "rocks",
+     "kind": "container",
+     "tone": "core",
+     "label": "RocksDB",
+     "sub": "a filter in every SST file"
+    },
+    {
+     "id": "cass",
+     "kind": "container",
+     "tone": "core",
+     "label": "Apache Cassandra",
+     "sub": "bloom_filter_fp_chance per table"
+    },
+    {
+     "id": "cdn",
+     "kind": "external",
+     "tone": "external",
+     "label": "Akamai CDN",
+     "sub": "cache on second hit"
+    },
+    {
+     "id": "redis",
+     "kind": "container",
+     "tone": "core",
+     "label": "Redis",
+     "sub": "BF.RESERVE · BF.ADD · BF.EXISTS"
+    },
+    {
+     "id": "cuckoo",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Cuckoo filter",
+     "sub": "Fan et al. · CoNEXT 2014"
+    }
+   ],
+   "edges": [
+    {
+     "id": "w1",
+     "from": "bloom",
+     "to": "bigtable",
+     "style": "solid",
+     "label": "skip disk for missing rows"
+    },
+    {
+     "id": "w2",
+     "from": "bigtable",
+     "to": "rocks",
+     "style": "solid",
+     "label": "LSM-tree stores"
+    },
+    {
+     "id": "w3",
+     "from": "bigtable",
+     "to": "cass",
+     "style": "solid",
+     "label": "LSM-tree stores"
+    },
+    {
+     "id": "w4",
+     "from": "bloom",
+     "to": "cdn",
+     "style": "solid",
+     "label": "skip one-hit wonders"
+    },
+    {
+     "id": "w5",
+     "from": "bloom",
+     "to": "redis",
+     "style": "solid",
+     "label": "filter as a data type"
+    },
+    {
+     "id": "w6",
+     "from": "bloom",
+     "to": "cuckoo",
+     "style": "dotted",
+     "label": "adds delete"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call or hash"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "wasted or failing work"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "answer"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "problem",
+   "title": "The problem"
+  },
+  {
+   "id": "naive",
+   "title": "The naive fix"
+  },
+  {
+   "id": "pattern",
+   "title": "The pattern"
+  },
+  {
+   "id": "how",
+   "title": "How it works"
+  },
+  {
+   "id": "failure",
+   "title": "When it goes wrong"
+  },
+  {
+   "id": "tradeoffs",
+   "title": "Trade-offs"
+  },
+  {
+   "id": "wild",
+   "title": "In the wild"
+  },
+  {
+   "id": "related",
+   "title": "Related patterns"
+  },
+  {
+   "id": "recap",
+   "title": "Recap"
+  }
+ ],
+ "shots": [
+  {
+   "id": "bf-problem",
+   "chapter": "problem",
+   "title": "Missing key",
+   "diagram": "problem",
+   "focus": [],
+   "trace": [
+    "p1",
+    "p2",
+    "p3",
+    "p4",
+    "p5"
+   ],
+   "engineer": "A storage engine keeps its data in several files on disk, newest first. A client asks for user ninety-nine, a key that was never stored. The engine cannot know that without looking, so it reads a block from file one: not there. Then file two, then file three. Three disk reads to say not found. Many workloads ask about missing keys all the time: new usernames, unseen web addresses, cache keys that expired. Most of the expensive work goes on things that are not there.",
+   "executive": "Checking whether something exists in a very large set usually means slow disk or network lookups, and much of that effort goes on things that are not there at all."
+  },
+  {
+   "id": "bf-naive",
+   "chapter": "naive",
+   "title": "Exact set",
+   "diagram": "naive",
+   "focus": [],
+   "trace": [
+    "n1",
+    "n2",
+    "n3",
+    "n4"
+   ],
+   "engineer": "The obvious fix is to keep every key in memory, in a hash set. That gives exact answers, but it stores every key in full. As an illustration, a hundred million keys at around forty bytes each is about four gigabytes, and it grows with every key you add. Another idea is to cache the misses. That helps when the same missing key is asked for twice, but a key nobody has asked about before still costs a disk read, and those are often most of them.",
+   "executive": "Keeping every key in memory gives exact answers but costs too much memory, and remembering past misses does not help with new ones."
+  },
+  {
+   "id": "bf-add",
+   "chapter": "pattern",
+   "title": "Add",
+   "diagram": "bits",
+   "focus": [],
+   "trace": [
+    "a1",
+    "a2",
+    "a3",
+    "a4",
+    "a5",
+    "a6"
+   ],
+   "engineer": "A Bloom filter gives up exactness to save space. It has two parts: an array of m bits, all starting at zero, and k hash functions. To add an item, run it through each hash function to get k positions, and set those bits to one. Here, with sixteen bits and three hashes, cat lands on bits two, five and nine. The filter never stores cat itself, only those three bits, so each item costs a handful of bits, not tens of bytes.",
+   "executive": "A Bloom filter is a row of bits. Adding an item switches on a few bits chosen by hashing it; the item itself is never stored."
+  },
+  {
+   "id": "bf-query",
+   "chapter": "pattern",
+   "title": "Query",
+   "diagram": "query",
+   "focus": [],
+   "trace": [
+    "q1",
+    "q2",
+    "q3",
+    "q4",
+    "q5",
+    "q6",
+    "q7"
+   ],
+   "engineer": "To query, hash the item the same way and check the same k bits. Dog hashes to five, thirteen and two. Bit thirteen is zero, so dog was never added: if it had been, that bit would be one. That answer is certain. Fox hashes to two, nine and five, and all three are one, but only because cat and other items set them. So the filter says probably yes. It can give false positives, but never false negatives.",
+   "executive": "Checking an item looks at the same few bits. Any bit still off means definitely not; all bits on means probably yes, with a small chance of being wrong."
+  },
+  {
+   "id": "bf-how-absent",
+   "chapter": "how",
+   "title": "Absent key",
+   "diagram": "flow",
+   "focus": [],
+   "trace": [
+    "f1",
+    "f2",
+    "f3",
+    "f4"
+   ],
+   "engineer": "Step by step, in a storage engine. Each file on disk carries its own Bloom filter, kept in memory. A client asks for user ninety-nine. Before touching the file, the read path asks the filter whether this file might hold that key. One of the bits is zero, so the answer is definitely not. The engine skips the file entirely and returns not found without a single disk read. Google's Bigtable paper says this is why most lookups for missing rows never touch disk.",
+   "executive": "Before reading a file, the system asks the filter. If it says definitely not, the disk is never touched."
+  },
+  {
+   "id": "bf-how-present",
+   "chapter": "how",
+   "title": "Present key",
+   "diagram": "flow",
+   "focus": [],
+   "trace": [
+    "f5",
+    "f6",
+    "f7",
+    "f8",
+    "f9",
+    "f10"
+   ],
+   "engineer": "Now a key that does exist, user forty-two. The read path checks the filter, and all k bits are set, so the answer is probably. The engine reads the block from disk, finds the value and returns it. Notice that the filter saved nothing here: for keys that are present, you still pay for the read, plus a small amount of hashing. The win comes entirely from the negative answers, which is why filters pay off when many lookups are for things that are not there.",
+   "executive": "For items that do exist, the filter says probably and the normal lookup goes ahead. The saving comes only from the items that are not there."
+  },
+  {
+   "id": "bf-false-positive",
+   "chapter": "failure",
+   "title": "False positive",
+   "diagram": "flow",
+   "focus": [],
+   "trace": [
+    "f11",
+    "f12",
+    "f13",
+    "f14",
+    "f15",
+    "f16"
+   ],
+   "engineer": "Now the case that goes wrong. User seventy-seven was never stored, but its k bits happen to have been set by other keys. The filter says probably, so the engine reads the block, finds nothing, and returns not found. The answer is still correct, because the filter only ever decides whether to look. The cost is one wasted read. That is the deal: a false positive costs performance, never correctness, as long as a probably yes is always checked against the real data.",
+   "executive": "Sometimes the filter says probably for something that is not there. That wastes one lookup, but the final answer is still right."
+  },
+  {
+   "id": "bf-fill",
+   "chapter": "failure",
+   "title": "Full and stuck",
+   "diagram": "fill",
+   "focus": [],
+   "trace": [
+    "g1",
+    "g2",
+    "g3",
+    "g4",
+    "g5",
+    "g6"
+   ],
+   "engineer": "Two more limits. First, a filter is sized for an expected number of items. Keep adding past that and more bits turn on until nearly everything says probably. Working from the standard formula, a filter sized for one per cent at one million items gives about sixteen per cent false positives at two million. The fix is to rebuild bigger, or use a scalable filter that stacks new, larger layers. Second, you cannot delete: clearing cat's bits may erase dog. Counting Bloom filters and cuckoo filters solve that.",
+   "executive": "Overfilled filters say probably to almost everything, so they must be rebuilt or grown. Plain filters also cannot remove items; variants exist that can."
+  },
+  {
+   "id": "bf-numbers",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "False-positive rate vs bits per item",
+    "kind": "numbers",
+    "points": [
+     "9.6 bits | 1% false positives · 7 hashes",
+     "14.4 bits | 0.1% false positives · 10 hashes",
+     "19.2 bits | 0.01% false positives · 14 hashes",
+     "≈ 120 MB | 100 M keys at 1%"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Sizing comes from two standard formulas. The bits per item are minus the natural log of the false-positive rate, divided by the square of the natural log of two. The best number of hash functions is about that times the log of two. For one per cent, that is about nine point six bits and seven hashes. Each extra four point eight bits per item cuts the rate tenfold. So a hundred million keys at one per cent need about a hundred and twenty megabytes.",
+   "executive": "Each item costs about ten bits for a one per cent error rate, and each extra five bits cuts errors tenfold."
+  },
+  {
+   "id": "bf-variants",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "Variants",
+    "kind": "compare",
+    "points": [
+     "Filter | Trade-off",
+     "Plain Bloom | Smallest and simplest; no delete, fixed size",
+     "Counting Bloom | Supports delete; counters cost more memory than bits",
+     "Scalable Bloom | Grows in layers; queries check every layer",
+     "Cuckoo | Supports delete; smaller below ~3% false positives",
+     "No filter | Best when most lookups find a match"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "When to reach for which. A plain Bloom filter is the simplest and cheapest to insert into, but cannot delete or grow. A counting Bloom filter swaps each bit for a small counter so items can be removed, at the cost of more memory. A scalable filter grows in layers, but each query checks every layer. A cuckoo filter stores short fingerprints, supports deletion, and the paper reports it uses less space than a Bloom filter below about three per cent false positives. Skip filters altogether when most lookups hit.",
+   "executive": "Variants trade memory and speed for deletion or growth. If most lookups find what they look for, a filter adds cost without saving any."
+  },
+  {
+   "id": "bf-wild",
+   "chapter": "wild",
+   "title": "Lineage",
+   "diagram": "wild",
+   "focus": [],
+   "trace": [
+    "w1",
+    "w2",
+    "w3",
+    "w4",
+    "w5",
+    "w6"
+   ],
+   "engineer": "In the wild. Burton Bloom described the idea in Communications of the ACM in 1970. Google's Bigtable paper, at OSDI in 2006, used Bloom filters per SSTable to avoid disk seeks for missing rows. RocksDB builds a filter into every SST file, and about ten bits per key gives roughly one per cent. Apache Cassandra lets you tune bloom filter f p chance per table. Akamai used them to cache only on a second request. Redis offers filters with B F commands. Cuckoo filters followed in 2014.",
+   "executive": "Invented in 1970, Bloom filters now sit inside Google Bigtable, RocksDB, Apache Cassandra, Redis and content delivery networks."
+  },
+  {
+   "id": "bf-related",
+   "chapter": "related",
+   "card": {
+    "heading": "Related patterns",
+    "points": [
+     "Cache-aside: skip lookups for keys that exist nowhere",
+     "Cache admission: store only items seen before",
+     "LSM-tree storage and write-ahead logs: one filter per file",
+     "Consistent hashing: which server, not whether it exists",
+     "HyperLogLog: counts distinct items instead"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Its neighbours. With cache-aside, a filter in front of the cache can skip lookups for keys that do not exist anywhere, and a cache can admit only items the filter has seen before. LSM-tree storage, built on a write-ahead log and sorted files, is the classic home: one filter per file. Consistent hashing decides which server holds a key; a filter decides whether it is worth asking. And HyperLogLog, another sketch, counts distinct items rather than testing membership.",
+   "executive": "Bloom filters sit in front of caches and storage engines, and belong to a family of small, approximate data structures."
+  },
+  {
+   "id": "bf-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "Definitely not, or probably yes, in a few bits per item",
+     "Pays off when most lookups miss; always check a yes",
+     "About 10 bits per item for 1%; rebuild as it fills"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. A Bloom filter answers definitely not or probably yes, using a few bits per item instead of the items themselves. It pays off when many lookups are for things that are not there, and a probably yes must always be checked against the real data. And size it for the items you expect, about ten bits each for one per cent; plan to rebuild it as it fills, and pick a counting or cuckoo filter if you must delete.",
+   "executive": "A Bloom filter cheaply rules out what is not there. Check every probably, and size it for growth."
+  }
+ ],
+ "meta": {
+  "kind": "pattern",
+  "category": "Data",
+  "level": "intermediate",
+  "uses": [],
+  "related": [
+   "cache-aside",
+   "write-ahead-log",
+   "consistent-hashing"
+  ],
+  "blurb": "A few bits per item tell you an item is definitely not in a set, so you skip the expensive lookup.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ }
+}

@@ -1,0 +1,1335 @@
+{
+ "id": "paypal",
+ "title": "PayPal: moving money safely",
+ "subtitle": "Company case study",
+ "voice": "en-GB-SoniaNeural",
+ "template": "case-study",
+ "meta": {
+  "kind": "company",
+  "category": "Payments",
+  "level": "intermediate",
+  "uses": [
+   "idempotency",
+   "outbox",
+   "saga",
+   "event-streaming",
+   "retry"
+  ],
+  "related": [
+   "stripe"
+  ],
+  "blurb": "A two-sided wallet: balance-first funding, risk checks before money moves, a balanced ledger and Kafka at trillion-message scale.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14",
+  "changelog": [
+   {
+    "date": "2026-10-14",
+    "note": "First version."
+   }
+  ]
+ },
+ "diagrams": [
+  {
+   "id": "context",
+   "kind": "c4",
+   "title": "Level 1 · Context",
+   "direction": "DOWN",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request · response"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "notification · asynchronous"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "funding rails"
+    }
+   ],
+   "elements": [
+    {
+     "id": "sender",
+     "kind": "person",
+     "label": "Consumer",
+     "sub": "pays, sends and receives",
+     "rank": 0
+    },
+    {
+     "id": "merchant",
+     "kind": "external",
+     "label": "Merchant",
+     "sub": "website, app and server",
+     "rank": 1
+    },
+    {
+     "id": "paypal",
+     "kind": "system",
+     "label": "PayPal",
+     "sub": "wallet, payments, risk, ledger",
+     "rank": 2
+    },
+    {
+     "id": "recipient",
+     "kind": "person",
+     "label": "Recipient",
+     "sub": "friend, family or seller",
+     "rank": 3
+    },
+    {
+     "id": "banks",
+     "kind": "external",
+     "label": "Banks",
+     "sub": "linked bank accounts",
+     "rank": 3
+    },
+    {
+     "id": "cards",
+     "kind": "external",
+     "label": "Card networks and issuers",
+     "sub": "linked debit and credit cards",
+     "rank": 3
+    }
+   ],
+   "edges": [
+    {
+     "id": "c-buyer-merch",
+     "from": "sender",
+     "to": "merchant",
+     "label": "shops, clicks the PayPal button",
+     "style": "solid"
+    },
+    {
+     "id": "c-send",
+     "from": "sender",
+     "to": "paypal",
+     "label": "send money, approve checkout",
+     "style": "solid"
+    },
+    {
+     "id": "c-merch",
+     "from": "merchant",
+     "to": "paypal",
+     "label": "Orders API, PayPal-Request-Id",
+     "style": "solid"
+    },
+    {
+     "id": "c-hook",
+     "from": "paypal",
+     "to": "merchant",
+     "label": "webhooks, retried for 3 days",
+     "style": "dashed"
+    },
+    {
+     "id": "c-notify",
+     "from": "paypal",
+     "to": "recipient",
+     "label": "money arrives in balance",
+     "style": "dashed"
+    },
+    {
+     "id": "c-bank",
+     "from": "paypal",
+     "to": "banks",
+     "label": "pull funds, withdrawals",
+     "style": "dotted"
+    },
+    {
+     "id": "c-card",
+     "from": "paypal",
+     "to": "cards",
+     "label": "charge a linked card",
+     "style": "dotted"
+    }
+   ]
+  },
+  {
+   "id": "containers",
+   "kind": "c4",
+   "title": "Level 2 · Containers (our design)",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "money",
+     "label": "Money movement",
+     "tone": "core"
+    },
+    {
+     "id": "platform",
+     "label": "Ledger and events",
+     "tone": "data"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request · response"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "events · asynchronous"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "ledger writes"
+    }
+   ],
+   "elements": [
+    {
+     "id": "app",
+     "kind": "container",
+     "label": "PayPal web and app",
+     "sub": "Node.js web tier since 2013",
+     "tone": "neutral",
+     "rank": 0
+    },
+    {
+     "id": "merchant",
+     "kind": "external",
+     "label": "Merchant server",
+     "sub": "Orders API, webhook endpoint",
+     "rank": 0
+    },
+    {
+     "id": "api",
+     "kind": "container",
+     "label": "API gateway",
+     "sub": "auth, PayPal-Request-Id",
+     "tone": "core",
+     "rank": 1
+    },
+    {
+     "id": "pay",
+     "kind": "container",
+     "label": "Payments service",
+     "sub": "orchestrates each payment",
+     "group": "money",
+     "rank": 2
+    },
+    {
+     "id": "wallet",
+     "kind": "container",
+     "label": "Wallet",
+     "sub": "balance, linked banks and cards",
+     "group": "money",
+     "rank": 3
+    },
+    {
+     "id": "risk",
+     "kind": "container",
+     "label": "Risk decisioning",
+     "sub": "ML scores in milliseconds",
+     "group": "money",
+     "rank": 3
+    },
+    {
+     "id": "funding",
+     "kind": "container",
+     "label": "Funding connectors",
+     "sub": "bank, card · illustrative",
+     "group": "money",
+     "rank": 4
+    },
+    {
+     "id": "holds",
+     "kind": "container",
+     "label": "Holds and disputes",
+     "sub": "usually up to 21 days",
+     "group": "money",
+     "rank": 4
+    },
+    {
+     "id": "notify",
+     "kind": "container",
+     "label": "Notifications",
+     "sub": "app alerts, webhooks",
+     "tone": "stream",
+     "rank": 6
+    },
+    {
+     "id": "ledger",
+     "kind": "store",
+     "label": "Ledger",
+     "sub": "double-entry postings · our design",
+     "group": "platform",
+     "rank": 5
+    },
+    {
+     "id": "kafka",
+     "kind": "store",
+     "label": "Kafka",
+     "sub": "1.3T messages a day, 2022 peak",
+     "group": "platform",
+     "rank": 5
+    },
+    {
+     "id": "analytics",
+     "kind": "store",
+     "label": "Analytics and compliance",
+     "sub": "reporting, model training",
+     "group": "platform",
+     "rank": 6
+    },
+    {
+     "id": "partners",
+     "kind": "external",
+     "label": "Banks and card networks",
+     "sub": "transfers, card authorisations",
+     "rank": 7
+    }
+   ],
+   "edges": [
+    {
+     "id": "k-app-api",
+     "from": "app",
+     "to": "api",
+     "label": "send money",
+     "style": "solid"
+    },
+    {
+     "id": "k-m-api",
+     "from": "merchant",
+     "to": "api",
+     "label": "orders",
+     "style": "solid"
+    },
+    {
+     "id": "k-api-pay",
+     "from": "api",
+     "to": "pay",
+     "style": "solid"
+    },
+    {
+     "id": "k-pay-wallet",
+     "from": "pay",
+     "to": "wallet",
+     "label": "methods",
+     "style": "solid"
+    },
+    {
+     "id": "k-pay-risk",
+     "from": "pay",
+     "to": "risk",
+     "label": "score",
+     "style": "solid"
+    },
+    {
+     "id": "k-pay-fund",
+     "from": "pay",
+     "to": "funding",
+     "label": "pull the shortfall",
+     "style": "solid"
+    },
+    {
+     "id": "k-fund-partners",
+     "from": "funding",
+     "to": "partners",
+     "label": "bank transfer, card auth",
+     "style": "solid"
+    },
+    {
+     "id": "k-pay-ledger",
+     "from": "pay",
+     "to": "ledger",
+     "label": "post entries",
+     "style": "dotted"
+    },
+    {
+     "id": "k-pay-holds",
+     "from": "pay",
+     "to": "holds",
+     "label": "risky seller?",
+     "style": "solid"
+    },
+    {
+     "id": "k-holds-ledger",
+     "from": "holds",
+     "to": "ledger",
+     "label": "release",
+     "style": "dotted"
+    },
+    {
+     "id": "k-pay-kafka",
+     "from": "pay",
+     "to": "kafka",
+     "label": "events",
+     "style": "dashed"
+    },
+    {
+     "id": "k-kafka-risk",
+     "from": "kafka",
+     "to": "risk",
+     "label": "signals",
+     "style": "dashed"
+    },
+    {
+     "id": "k-kafka-analytics",
+     "from": "kafka",
+     "to": "analytics",
+     "style": "dashed"
+    },
+    {
+     "id": "k-kafka-notify",
+     "from": "kafka",
+     "to": "notify",
+     "style": "dashed"
+    },
+    {
+     "id": "k-notify-m",
+     "from": "notify",
+     "to": "merchant",
+     "label": "webhook",
+     "style": "dashed"
+    },
+    {
+     "id": "k-notify-app",
+     "from": "notify",
+     "to": "app",
+     "style": "dashed"
+    }
+   ]
+  },
+  {
+   "id": "p2p",
+   "kind": "c4",
+   "title": "Level 3 · Inside one payment (our design)",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "orch",
+     "label": "Payments service · our design",
+     "tone": "core"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request path"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "reply · event"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "state"
+    }
+   ],
+   "elements": [
+    {
+     "id": "client",
+     "kind": "external",
+     "label": "Sender's app",
+     "sub": "send £20 with a request id",
+     "rank": 0
+    },
+    {
+     "id": "idem",
+     "kind": "component",
+     "label": "Idempotency check",
+     "sub": "request id → saved first result",
+     "group": "orch",
+     "rank": 1
+    },
+    {
+     "id": "plan",
+     "kind": "component",
+     "label": "Funding planner",
+     "sub": "reads wallet: balance, bank, card",
+     "group": "orch",
+     "rank": 2
+    },
+    {
+     "id": "riskc",
+     "kind": "component",
+     "label": "Risk gate",
+     "sub": "allow, step up or decline",
+     "group": "orch",
+     "rank": 3
+    },
+    {
+     "id": "risk",
+     "kind": "container",
+     "label": "Risk decisioning",
+     "sub": "models and rules",
+     "tone": "core",
+     "rank": 3
+    },
+    {
+     "id": "post",
+     "kind": "component",
+     "label": "Posting engine",
+     "sub": "debits equal credits",
+     "group": "orch",
+     "rank": 4
+    },
+    {
+     "id": "ledger",
+     "kind": "store",
+     "label": "Ledger",
+     "sub": "append-only entries and balances",
+     "tone": "data",
+     "rank": 4
+    },
+    {
+     "id": "outbox",
+     "kind": "store",
+     "label": "Outbox",
+     "sub": "event rows, relayed to Kafka",
+     "tone": "data",
+     "rank": 5
+    },
+    {
+     "id": "settle",
+     "kind": "component",
+     "label": "Funding connector",
+     "sub": "capture card, clear later",
+     "group": "orch",
+     "rank": 5
+    },
+    {
+     "id": "kafka",
+     "kind": "store",
+     "label": "Kafka",
+     "sub": "payment events",
+     "tone": "stream",
+     "rank": 6
+    }
+   ],
+   "edges": [
+    {
+     "id": "e-req",
+     "from": "client",
+     "to": "idem",
+     "label": "POST send",
+     "style": "solid"
+    },
+    {
+     "id": "e-idem-replay",
+     "from": "idem",
+     "to": "client",
+     "label": "repeat: first result",
+     "style": "dashed"
+    },
+    {
+     "id": "e-idem-plan",
+     "from": "idem",
+     "to": "plan",
+     "label": "new request",
+     "style": "solid"
+    },
+    {
+     "id": "e-plan-risk",
+     "from": "plan",
+     "to": "riskc",
+     "label": "£5 balance + £15 card",
+     "style": "solid"
+    },
+    {
+     "id": "e-risk-call",
+     "from": "riskc",
+     "to": "risk",
+     "label": "score",
+     "style": "solid"
+    },
+    {
+     "id": "e-risk-decline",
+     "from": "riskc",
+     "to": "client",
+     "label": "declined or step-up",
+     "style": "dashed"
+    },
+    {
+     "id": "e-risk-post",
+     "from": "riskc",
+     "to": "post",
+     "label": "allowed",
+     "style": "solid"
+    },
+    {
+     "id": "e-post-ledger",
+     "from": "post",
+     "to": "ledger",
+     "label": "3 entries, one transaction",
+     "style": "dotted"
+    },
+    {
+     "id": "e-post-outbox",
+     "from": "post",
+     "to": "outbox",
+     "label": "same transaction",
+     "style": "dotted"
+    },
+    {
+     "id": "e-outbox-kafka",
+     "from": "outbox",
+     "to": "kafka",
+     "label": "relay: payment completed",
+     "style": "dashed"
+    },
+    {
+     "id": "e-post-settle",
+     "from": "post",
+     "to": "settle",
+     "label": "card owes £15",
+     "style": "solid"
+    },
+    {
+     "id": "e-settle-ledger",
+     "from": "settle",
+     "to": "ledger",
+     "label": "clear card clearing",
+     "style": "dotted"
+    }
+   ]
+  },
+  {
+   "id": "send",
+   "kind": "sequence",
+   "title": "Alice sends Bob £20 (our design)",
+   "participants": [
+    {
+     "id": "q-app",
+     "label": "Alice's app"
+    },
+    {
+     "id": "q-pay",
+     "label": "Payments service"
+    },
+    {
+     "id": "q-risk",
+     "label": "Risk decisioning"
+    },
+    {
+     "id": "q-fund",
+     "label": "Card rail"
+    },
+    {
+     "id": "q-ledger",
+     "label": "Ledger"
+    },
+    {
+     "id": "q-recv",
+     "label": "Bob's app"
+    }
+   ],
+   "messages": [
+    {
+     "id": "q1",
+     "from": "q-app",
+     "to": "q-pay",
+     "label": "send £20, request id",
+     "style": "solid"
+    },
+    {
+     "id": "q2",
+     "from": "q-pay",
+     "to": "q-risk",
+     "label": "score: device, amount, history",
+     "style": "solid"
+    },
+    {
+     "id": "q3",
+     "from": "q-risk",
+     "to": "q-pay",
+     "label": "allow",
+     "style": "dashed"
+    },
+    {
+     "id": "q4",
+     "from": "q-pay",
+     "to": "q-fund",
+     "label": "authorise £15 on linked card",
+     "style": "solid"
+    },
+    {
+     "id": "q5",
+     "from": "q-fund",
+     "to": "q-pay",
+     "label": "approved",
+     "style": "dashed"
+    },
+    {
+     "id": "q6",
+     "from": "q-pay",
+     "to": "q-ledger",
+     "label": "post 3 balanced entries",
+     "style": "solid"
+    },
+    {
+     "id": "q7",
+     "from": "q-ledger",
+     "to": "q-pay",
+     "label": "committed",
+     "style": "dashed"
+    },
+    {
+     "id": "q8",
+     "from": "q-pay",
+     "to": "q-app",
+     "label": "sent",
+     "style": "dashed"
+    },
+    {
+     "id": "q9",
+     "from": "q-pay",
+     "to": "q-recv",
+     "label": "you've received £20",
+     "style": "dashed"
+    },
+    {
+     "id": "q10",
+     "from": "q-fund",
+     "to": "q-ledger",
+     "label": "card settles: clear the entry",
+     "style": "dashed"
+    }
+   ]
+  },
+  {
+   "id": "checkout",
+   "kind": "sequence",
+   "title": "Checkout with PayPal",
+   "participants": [
+    {
+     "id": "b-buyer",
+     "label": "Buyer's browser"
+    },
+    {
+     "id": "b-merch",
+     "label": "Merchant server"
+    },
+    {
+     "id": "b-api",
+     "label": "PayPal Orders API"
+    },
+    {
+     "id": "b-paypal",
+     "label": "PayPal pop-up"
+    },
+    {
+     "id": "b-risk",
+     "label": "Risk · our placement"
+    }
+   ],
+   "messages": [
+    {
+     "id": "b1",
+     "from": "b-buyer",
+     "to": "b-merch",
+     "label": "clicks the PayPal button",
+     "style": "solid"
+    },
+    {
+     "id": "b2",
+     "from": "b-merch",
+     "to": "b-api",
+     "label": "create order, intent CAPTURE",
+     "style": "solid"
+    },
+    {
+     "id": "b3",
+     "from": "b-api",
+     "to": "b-merch",
+     "label": "order id",
+     "style": "dashed"
+    },
+    {
+     "id": "b4",
+     "from": "b-buyer",
+     "to": "b-paypal",
+     "label": "log in, choose funding, approve",
+     "style": "solid"
+    },
+    {
+     "id": "b5",
+     "from": "b-paypal",
+     "to": "b-buyer",
+     "label": "onApprove callback",
+     "style": "dashed"
+    },
+    {
+     "id": "b6",
+     "from": "b-merch",
+     "to": "b-api",
+     "label": "capture order, PayPal-Request-Id",
+     "style": "solid"
+    },
+    {
+     "id": "b7",
+     "from": "b-api",
+     "to": "b-risk",
+     "label": "score the payment",
+     "style": "solid"
+    },
+    {
+     "id": "b8",
+     "from": "b-api",
+     "to": "b-merch",
+     "label": "capture confirmed",
+     "style": "dashed"
+    },
+    {
+     "id": "b9",
+     "from": "b-api",
+     "to": "b-merch",
+     "label": "webhook, retried up to 3 days",
+     "style": "dashed"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "overview",
+   "title": "Overview"
+  },
+  {
+   "id": "requirements",
+   "title": "Requirements and scale"
+  },
+  {
+   "id": "context",
+   "title": "Context"
+  },
+  {
+   "id": "containers",
+   "title": "Containers"
+  },
+  {
+   "id": "deep-dive",
+   "title": "Deep dive"
+  },
+  {
+   "id": "flows",
+   "title": "Core flows"
+  },
+  {
+   "id": "data",
+   "title": "Data and caching"
+  },
+  {
+   "id": "growth",
+   "title": "Growth"
+  },
+  {
+   "id": "failures",
+   "title": "Failure modes"
+  },
+  {
+   "id": "patterns",
+   "title": "Patterns used"
+  },
+  {
+   "id": "decisions",
+   "title": "Key decisions"
+  },
+  {
+   "id": "mvp",
+   "title": "What we would build first"
+  }
+ ],
+ "shots": [
+  {
+   "id": "s01",
+   "chapter": "overview",
+   "diagram": "context",
+   "focus": [],
+   "trace": [],
+   "engineer": "This is PayPal. It is a two-sided network: on one side, consumers who pay, send and receive money; on the other, merchants who accept it at checkout. Each person holds a wallet, and a payment can be funded from a PayPal balance, a linked bank account or a card. The one idea everything depends on: money is never created or lost. Every movement must balance, happen once, and be checked for risk before it moves.",
+   "executive": "PayPal connects people who pay with the friends and businesses they pay. Its core promise is that every payment balances, happens once and is checked for fraud first."
+  },
+  {
+   "id": "s02",
+   "chapter": "requirements",
+   "card": {
+    "heading": "Scale, from PayPal's filings",
+    "kind": "numbers",
+    "points": [
+     "$1.79T | total payment volume in 2025, up 7%",
+     "439M | active accounts, end of 2025",
+     "25.4B | payment transactions in 2025",
+     "$486.4B | payment volume in Q2 2026, up 10%",
+     "0.07% | transaction losses as a share of volume, 2025",
+     "~800 | payments a second on average (25.4B ÷ 31.5M s)"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "First, the scale, from PayPal's own filings. In 2025, total payment volume was one point seven nine trillion dollars, up seven per cent, across twenty-five point four billion payment transactions and four hundred and thirty-nine million active accounts. In the second quarter of 2026, volume was four hundred and eighty-six billion dollars, up ten per cent. Transaction losses were seven hundredths of a per cent of volume. That is about eight hundred payments, and fifty-seven thousand dollars, every second.",
+   "executive": "Nearly 1.8 trillion dollars moved through PayPal in 2025, about eight hundred payments a second, with fraud and other transaction losses below a tenth of a per cent."
+  },
+  {
+   "id": "s03",
+   "chapter": "requirements",
+   "card": {
+    "heading": "What the system must do (our list)",
+    "points": [
+     "Money is never created or lost: every movement balances",
+     "A retried request never sends money twice",
+     "Risk is checked before money moves, in milliseconds",
+     "Pay from balance, bank or card behind one button",
+     "The recipient sees the money at once, even if funding settles later",
+     "Merchants hear about every outcome, even when their endpoint is down"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Then the requirements. These are ours, not PayPal's. Money is never created or lost, so every movement balances. A retried request never sends money twice. Risk is checked before money moves, quickly enough that nobody notices. A person can pay from a balance, a bank or a card behind one button. The recipient sees the money straight away, even if the funding settles days later. And merchants hear about every outcome.",
+   "executive": "Balanced books, no double payments, fraud checks before money moves, any funding source, instant receipt, and reliable notifications for merchants."
+  },
+  {
+   "id": "s04",
+   "title": "Two sides",
+   "chapter": "context",
+   "diagram": "context",
+   "focus": [
+    "sender",
+    "merchant",
+    "paypal",
+    "recipient"
+   ],
+   "trace": [
+    "c-buyer-merch",
+    "c-send",
+    "c-merch",
+    "c-notify"
+   ],
+   "engineer": "Two kinds of user meet here. A consumer sends money to a friend, or shops on a merchant's site and clicks the PayPal button. The merchant's server talks to PayPal's Orders API, and can send a PayPal-Request-Id header so a retried call is not repeated. Money sent to a friend lands in the recipient's PayPal balance. Unlike a card-only processor, PayPal holds an account for both sides of the payment.",
+   "executive": "Consumers pay friends and shops, merchants call PayPal's API, and both sides hold PayPal accounts."
+  },
+  {
+   "id": "s05",
+   "title": "Funding and notifying",
+   "chapter": "context",
+   "diagram": "context",
+   "focus": [
+    "paypal",
+    "banks",
+    "cards",
+    "merchant"
+   ],
+   "trace": [
+    "c-bank",
+    "c-card",
+    "c-hook"
+   ],
+   "engineer": "Behind PayPal sit the funding rails. PayPal's help pages say a payment always uses any money in the sender's balance first. If that is not enough, it tries a linked bank account, then a linked card. Banks also receive withdrawals. And PayPal tells merchants what happened with webhooks, retried up to twenty-five times over three days if the merchant's endpoint does not answer.",
+   "executive": "Payments draw on the PayPal balance first, then a bank account, then a card. Merchants are told the result, with retries for three days."
+  },
+  {
+   "id": "s06",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [],
+   "trace": [],
+   "engineer": "One level in. PayPal has not published a container diagram, so this is our design, built from its posts and documentation. A web and app tier, which PayPal began moving to Node.js in 2013. An API gateway for merchants. A payments service that orchestrates each payment, with the wallet, risk decisioning, funding connectors and holds around it. Underneath, a ledger, which is our design, and Kafka, which PayPal has run at over a trillion messages a day at peak.",
+   "executive": "Inside: a web tier, a payments core with wallet, risk and funding services, a ledger and a large event stream. The layout is our reconstruction."
+  },
+  {
+   "id": "s07",
+   "title": "Send money",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "app",
+    "api",
+    "pay",
+    "wallet",
+    "risk",
+    "funding",
+    "partners"
+   ],
+   "trace": [
+    "k-app-api",
+    "k-api-pay",
+    "k-pay-wallet",
+    "k-pay-risk",
+    "k-pay-fund",
+    "k-fund-partners"
+   ],
+   "engineer": "The first path: sending money to a friend. The payments service asks the wallet what the sender can pay with. It asks risk decisioning for a score; a 2018 talk by PayPal's risk data architect said the business demands real-time, millisecond-range responses. If the balance does not cover the amount, a funding connector pulls the rest from a bank or a card.",
+   "executive": "To send money, PayPal checks what the sender can pay with, scores the risk in milliseconds, and pulls any shortfall from a bank or card."
+  },
+  {
+   "id": "s08",
+   "title": "Checkout",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "merchant",
+    "api",
+    "pay",
+    "risk",
+    "ledger"
+   ],
+   "trace": [
+    "k-m-api",
+    "k-api-pay",
+    "k-pay-risk",
+    "k-pay-ledger"
+   ],
+   "engineer": "The second path: checkout. The merchant's server creates an order through the Orders API, the buyer approves it on PayPal, and the server then captures it to move the money. The payments service scores the payment and records it. In our design every payment, checkout or person to person, ends as a set of balanced ledger entries: the buyer's side is debited, and the merchant's balance is credited.",
+   "executive": "At checkout, the merchant creates an order, the buyer approves it on PayPal, and the money is captured and recorded."
+  },
+  {
+   "id": "s09",
+   "title": "Events",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "pay",
+    "kafka",
+    "risk",
+    "analytics",
+    "notify",
+    "merchant",
+    "app"
+   ],
+   "trace": [
+    "k-pay-kafka",
+    "k-kafka-risk",
+    "k-kafka-analytics",
+    "k-kafka-notify",
+    "k-notify-m",
+    "k-notify-app"
+   ],
+   "engineer": "The third path: events. In 2023 PayPal wrote that its Kafka fleet had more than eighty-five clusters, fifteen hundred brokers and twenty thousand topics, peaking at about one point three trillion messages a day in late 2022. Its listed uses include risk detection, database synchronisation, analytics and compliance. In our design, notifications read the same stream, and send webhooks to merchants and alerts to the app.",
+   "executive": "Payment events flow through PayPal's Kafka platform, which feeds fraud detection, analytics, compliance and notifications."
+  },
+  {
+   "id": "s10",
+   "title": "Hold funds",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "pay",
+    "holds",
+    "ledger"
+   ],
+   "trace": [
+    "k-pay-holds",
+    "k-holds-ledger"
+   ],
+   "engineer": "The fourth path: holding funds. A payment can reach a seller without being available yet. PayPal says funds are usually held for up to twenty-one days, for example when a seller is new, sales spike suddenly, or the items are higher risk, such as tickets or gift cards. In our ledger, held money sits in a separate held account until it is released.",
+   "executive": "Money for new or risky sellers can be held for up to twenty-one days before they can use it."
+  },
+  {
+   "id": "s11",
+   "chapter": "deep-dive",
+   "diagram": "p2p",
+   "focus": [],
+   "trace": [],
+   "engineer": "Inside one payment between two people. PayPal has not published how its payments service is built, so this whole level is our design. A request passes an idempotency check, a funding planner and a risk gate. If allowed, a posting engine writes balanced entries to the ledger and, in the same database transaction, an event to an outbox. A relay publishes that event to Kafka, and a funding connector settles what the card owes.",
+   "executive": "Our design for one payment: check for repeats, plan the funding, check risk, record balanced entries, then announce and settle."
+  },
+  {
+   "id": "s12",
+   "title": "Repeat and plan",
+   "chapter": "deep-dive",
+   "diagram": "p2p",
+   "focus": [
+    "client",
+    "idem",
+    "plan"
+   ],
+   "trace": [
+    "e-req",
+    "e-idem-replay",
+    "e-idem-plan"
+   ],
+   "engineer": "Step one, idempotency. PayPal's REST APIs accept a PayPal-Request-Id header on POST calls; a repeat with the same id returns the latest status of the first request instead of doing it again. We apply the same rule inside. Step two, the funding plan. Say Alice sends Bob twenty pounds and has five in her balance. Balance comes first, so the plan is five from balance and fifteen from her linked card.",
+   "executive": "A repeated request gets the first answer back. Then the funding is planned: balance first, then a card for the rest."
+  },
+  {
+   "id": "s13",
+   "title": "Risk gate",
+   "chapter": "deep-dive",
+   "diagram": "p2p",
+   "focus": [
+    "plan",
+    "riskc",
+    "risk",
+    "client",
+    "post"
+   ],
+   "trace": [
+    "e-plan-risk",
+    "e-risk-call",
+    "e-risk-decline",
+    "e-risk-post"
+   ],
+   "engineer": "Step three, the risk gate. In our design it sends the payment, with signals such as the device, the history between Alice and Bob, and the amount, to risk decisioning. PayPal's annual report says it uses AI and machine learning in various parts of its business. The gate has three answers: allow, ask for more proof, or decline. Nothing has been written yet, so a decline needs no undo.",
+   "executive": "Before any money moves, a risk check allows the payment, asks for more proof, or declines it."
+  },
+  {
+   "id": "s14",
+   "title": "Post",
+   "chapter": "deep-dive",
+   "diagram": "p2p",
+   "focus": [
+    "post",
+    "ledger",
+    "outbox",
+    "kafka"
+   ],
+   "trace": [
+    "e-risk-post",
+    "e-post-ledger",
+    "e-post-outbox",
+    "e-outbox-kafka"
+   ],
+   "engineer": "Step four, the postings, in a double-entry ledger of our design. Debit Alice's balance five pounds. Debit card clearing fifteen. Credit Bob's balance twenty. Debits equal credits, and all three entries commit in one database transaction with an outbox row, or none do. A relay then publishes payment completed to Kafka, so an event is never lost, and never sent for a payment that did not happen.",
+   "executive": "Each payment is written as balanced entries, together with its event, in one step, so the books always add up."
+  },
+  {
+   "id": "s15",
+   "title": "Settle",
+   "chapter": "deep-dive",
+   "diagram": "p2p",
+   "focus": [
+    "post",
+    "settle",
+    "ledger"
+   ],
+   "trace": [
+    "e-post-settle",
+    "e-settle-ledger"
+   ],
+   "engineer": "Step five, settlement. The fifteen pounds on the card is only authorised so far. The funding connector captures it through the card network, and when the money arrives, card clearing goes back to zero. If the card payment is later reversed, the ledger records new entries; it never edits old ones. Reconciling clearing accounts against bank and processor reports every day catches anything that drifts.",
+   "executive": "The card is charged afterwards and the books are matched against the bank's records; mistakes are fixed with new entries, never edits."
+  },
+  {
+   "id": "s16",
+   "title": "Check and fund",
+   "chapter": "flows",
+   "diagram": "send",
+   "focus": [
+    "q-app",
+    "q-pay",
+    "q-risk",
+    "q-fund"
+   ],
+   "trace": [
+    "q1",
+    "q2",
+    "q3",
+    "q4",
+    "q5"
+   ],
+   "engineer": "Now the same payment as a sequence, still our design. Alice's app sends twenty pounds to Bob, with a request id. The payments service asks risk for a score, using the device, the amount and the history between them, and gets allow. It then asks the card rail to authorise fifteen pounds on Alice's linked card, which is approved. Every check has passed, and nothing has been written to the ledger yet.",
+   "executive": "Alice sends money; PayPal checks the risk, then gets her card approved for the part her balance does not cover."
+  },
+  {
+   "id": "s17",
+   "title": "Post and notify",
+   "chapter": "flows",
+   "diagram": "send",
+   "focus": [
+    "q-pay",
+    "q-ledger",
+    "q-app",
+    "q-recv",
+    "q-fund"
+   ],
+   "trace": [
+    "q6",
+    "q7",
+    "q8",
+    "q9",
+    "q10"
+   ],
+   "engineer": "The payments service posts the balanced entries, and the ledger confirms they committed. Alice's app shows sent, and Bob's app says he has received twenty pounds. He can spend it at once, because balances moved inside PayPal, even though the card money has not arrived. Later the card rail settles and the clearing entry is matched. If the card had been declined earlier, nothing would have been posted at all.",
+   "executive": "Bob gets the money straight away; the card payment settles later in the background."
+  },
+  {
+   "id": "s18",
+   "title": "Create and approve",
+   "chapter": "flows",
+   "diagram": "checkout",
+   "focus": [
+    "b-buyer",
+    "b-merch",
+    "b-api",
+    "b-paypal"
+   ],
+   "trace": [
+    "b1",
+    "b2",
+    "b3",
+    "b4",
+    "b5"
+   ],
+   "engineer": "The second flow: checkout with PayPal, from PayPal's developer documentation. The buyer clicks the PayPal button. The merchant's server creates an order with the intent capture, and gets back an order id. The buyer then completes checkout in the PayPal pop-up, choosing how to pay inside PayPal rather than on the merchant's page. When the buyer finishes, the page receives an on-approve callback.",
+   "executive": "The merchant creates an order; the buyer approves it inside PayPal, choosing how to pay there."
+  },
+  {
+   "id": "s19",
+   "title": "Capture",
+   "chapter": "flows",
+   "diagram": "checkout",
+   "focus": [
+    "b-merch",
+    "b-api",
+    "b-risk"
+   ],
+   "trace": [
+    "b6",
+    "b7",
+    "b8",
+    "b9"
+   ],
+   "engineer": "Then the merchant's server captures the order, the call that actually moves the money. It should send a PayPal-Request-Id, so a timed-out capture can be retried safely. We show risk scoring here; PayPal does not publish exactly where it sits. The capture is confirmed and a webhook follows. If the merchant's endpoint is down, PayPal retries up to twenty-five times over three days.",
+   "executive": "The merchant captures the payment, safely retryable, and PayPal confirms it with a webhook."
+  },
+  {
+   "id": "s20",
+   "chapter": "data",
+   "card": {
+    "heading": "What is stored where",
+    "kind": "compare",
+    "points": [
+     "Data | Where, and for how long",
+     "Balances and entries | Ledger, append-only, kept (our design)",
+     "Request ids | Stored for a period PayPal does not publish",
+     "Payment events | Kafka, then risk, analytics and compliance",
+     "Risk history | Risk platform: dozens of petabytes (2018 talk)",
+     "Buyer's funding choice | Inside PayPal, not on the merchant's page"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Next, data, partly documented and partly our design. Balances and entries live in the ledger, append-only and kept. Request ids are stored for a period PayPal does not publish. Payment events flow through Kafka to risk, analytics and compliance. The risk platform works over a long history; a 2018 talk described dozens of petabytes. And at checkout the buyer chooses the funding source inside PayPal, not on the merchant's page.",
+   "executive": "The ledger keeps every entry for good, events feed fraud models and reporting, and the buyer picks how to pay inside PayPal."
+  },
+  {
+   "id": "s21",
+   "chapter": "growth",
+   "card": {
+    "heading": "How it got here",
+    "kind": "compare",
+    "points": [
+     "Year | Change",
+     "2013 | Node.js in production; Kraken.js open-sourced",
+     "2013 | Buys Braintree, and with it Venmo",
+     "2015 | Separates from eBay; lists on Nasdaq",
+     "2016 | Writes up squbs, open source for Akka services",
+     "2022 | Kafka peaks at ~1.3T messages a day",
+     "2025 | $1.79T volume, 439M active accounts"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "How it grew. In 2013 PayPal put Node.js into production and open-sourced Kraken.js, a convention layer on top of Express. Also in 2013 it bought Braintree, and with it Venmo. In 2015 it separated from eBay. In 2016 it wrote up squbs, its open-source toolkit for Akka services. Kafka peaked at about one point three trillion messages a day in 2022, and 2025 volume reached one point seven nine trillion dollars.",
+   "executive": "From a 2013 move to Node.js, through independence in 2015, to 1.8 trillion dollars a year in 2025."
+  },
+  {
+   "id": "s22",
+   "chapter": "growth",
+   "card": {
+    "heading": "The 2013 Node.js pilot (reported by InfoQ)",
+    "kind": "numbers",
+    "points": [
+     "2× | requests per second versus the Java version",
+     "35% | lower average response time",
+     "1 vs 5 | CPU cores, Node.js versus Java",
+     "2 vs 5 | engineers who built it"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The Node.js move is worth a closer look. PayPal's own post sits on a blog we could not reach, so these figures are as InfoQ reported them in 2013. PayPal built its account overview page twice, in Java and in Node.js. The Node.js version served twice the requests per second, on one core against five, with a thirty-five per cent lower average response time. Two engineers built it, against five for Java.",
+   "executive": "In a 2013 head-to-head, PayPal's Node.js page served twice the traffic, faster, and was built by a smaller team."
+  },
+  {
+   "id": "s23",
+   "chapter": "failures",
+   "card": {
+    "heading": "What fails, and what protects users",
+    "kind": "compare",
+    "points": [
+     "Failure | Protection",
+     "App or merchant retries after a timeout | Same request id returns the first result",
+     "Payment looks fraudulent | Risk declines or steps up before money moves",
+     "New seller, sudden spike | Funds usually held up to 21 days",
+     "Merchant endpoint down | Webhooks retried up to 25 times over 3 days",
+     "Ledger write fails half-way | One transaction: all entries or none (our design)",
+     "Kafka unavailable | Events wait in the outbox (our design)"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "An app or merchant retries after a timeout: the same request id returns the first result. A payment looks fraudulent: risk declines it, or asks for more proof, before money moves. A new seller's sales spike: funds are held, usually for up to twenty-one days. A merchant's endpoint is down: webhooks retry for three days. And in our design, a ledger write is all or nothing, and events wait in the outbox if Kafka is unavailable.",
+   "executive": "Each failure has a planned answer: retries are safe, fraud is stopped early, risky funds are held, and notifications keep trying."
+  },
+  {
+   "id": "s24",
+   "chapter": "patterns",
+   "card": {
+    "heading": "Patterns used",
+    "points": [
+     "Idempotency: PayPal-Request-Id on POST calls",
+     "Transactional outbox: entries and events commit together (our design)",
+     "Saga: authorise, post, settle, with compensating entries (our design)",
+     "Event streaming: Kafka at trillion-message scale",
+     "Retry with backoff: webhooks for up to three days"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The named patterns, each with its own walkthrough. Idempotency, through the PayPal-Request-Id header. A transactional outbox, so ledger entries and their events commit together; that is our design. A saga for the steps across systems, authorise, post and settle, where a failure is undone with compensating entries rather than a rollback. Event streaming, on Kafka. And retries with backoff, as in PayPal's webhook delivery.",
+   "executive": "Five well-known patterns: safe retries, events saved with the data, multi-step payments that can be undone, event streams, and retrying with backoff."
+  },
+  {
+   "id": "s25",
+   "chapter": "decisions",
+   "card": {
+    "heading": "Key decisions",
+    "kind": "compare",
+    "points": [
+     "Decision | Trade-off",
+     "Two-sided wallet, balance first | Instant, cheaper funding; PayPal holds customers' money",
+     "Buyer approves inside PayPal | Funding stays private; an extra pop-up step",
+     "Risk in the payment path | Fraud stopped early; every payment waits milliseconds",
+     "Hold risky sellers' funds | Losses contained; new sellers wait",
+     "Node.js web tier, Java behind | One language for UI teams; two runtimes to run",
+     "Double-entry ledger (our design) | Always balances; every change is a new pair of entries"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The decisions that shaped it. A two-sided wallet that spends the balance first, so funding is instant, but PayPal holds its customers' money. Buyers approve inside PayPal, keeping funding private at the cost of a pop-up. Risk sits in the payment path, so every payment waits a few milliseconds. Risky sellers' funds are held. Node.js serves the web, with Java behind. And, in our design, a double-entry ledger that always balances.",
+   "executive": "Hold both sides' accounts, keep funding inside PayPal, check risk before money moves, hold risky funds, and keep books that always balance."
+  },
+  {
+   "id": "s26",
+   "chapter": "mvp",
+   "card": {
+    "heading": "What we would build first",
+    "points": [
+     "One service and Postgres, with a double-entry ledger from day one",
+     "Request ids with a unique constraint; replay the first result",
+     "Balance-first funding; one card processor for the rest",
+     "A rules-based risk check in the path; models later",
+     "Outbox to a queue for notifications and webhooks",
+     "Daily reconciliation against bank and processor reports"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "If we built a small wallet today, this is where we would start. One service and Postgres, with a double-entry ledger table from the first day. Request ids with a unique constraint, replaying the first result. Balance-first funding, with one card processor for the rest. A simple rules-based risk check in the path, and models later. An outbox for notifications and webhooks. And a daily reconciliation against bank and processor reports.",
+   "executive": "Start small, but with balanced books, safe retries, a risk check and daily reconciliation from day one."
+  }
+ ]
+}

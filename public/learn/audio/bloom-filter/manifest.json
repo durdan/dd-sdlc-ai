@@ -1,0 +1,132 @@
+{
+ "bf-problem-engineer": {
+  "file": "/audio/bloom-filter/bf-problem-engineer.mp3",
+  "ms": 31752,
+  "hash": "f9b37edfe34c"
+ },
+ "bf-problem-executive": {
+  "file": "/audio/bloom-filter/bf-problem-executive.mp3",
+  "ms": 8952,
+  "hash": "a27d83d4980e"
+ },
+ "bf-naive-engineer": {
+  "file": "/audio/bloom-filter/bf-naive-engineer.mp3",
+  "ms": 27576,
+  "hash": "31be4f5829e8"
+ },
+ "bf-naive-executive": {
+  "file": "/audio/bloom-filter/bf-naive-executive.mp3",
+  "ms": 7992,
+  "hash": "6794164d02b0"
+ },
+ "bf-add-engineer": {
+  "file": "/audio/bloom-filter/bf-add-engineer.mp3",
+  "ms": 29304,
+  "hash": "7f7541bd2b5a"
+ },
+ "bf-add-executive": {
+  "file": "/audio/bloom-filter/bf-add-executive.mp3",
+  "ms": 8736,
+  "hash": "7696c2768684"
+ },
+ "bf-query-engineer": {
+  "file": "/audio/bloom-filter/bf-query-engineer.mp3",
+  "ms": 28752,
+  "hash": "7799227377ed"
+ },
+ "bf-query-executive": {
+  "file": "/audio/bloom-filter/bf-query-executive.mp3",
+  "ms": 9864,
+  "hash": "9ef1ab60c3a6"
+ },
+ "bf-how-absent-engineer": {
+  "file": "/audio/bloom-filter/bf-how-absent-engineer.mp3",
+  "ms": 30720,
+  "hash": "06f529e22709"
+ },
+ "bf-how-absent-executive": {
+  "file": "/audio/bloom-filter/bf-how-absent-executive.mp3",
+  "ms": 7464,
+  "hash": "da361df28ad7"
+ },
+ "bf-how-present-engineer": {
+  "file": "/audio/bloom-filter/bf-how-present-engineer.mp3",
+  "ms": 27864,
+  "hash": "28178d12007e"
+ },
+ "bf-how-present-executive": {
+  "file": "/audio/bloom-filter/bf-how-present-executive.mp3",
+  "ms": 9024,
+  "hash": "225ca2a3f4bb"
+ },
+ "bf-false-positive-engineer": {
+  "file": "/audio/bloom-filter/bf-false-positive-engineer.mp3",
+  "ms": 29976,
+  "hash": "2aaaf717b26c"
+ },
+ "bf-false-positive-executive": {
+  "file": "/audio/bloom-filter/bf-false-positive-executive.mp3",
+  "ms": 8328,
+  "hash": "24c1db28af02"
+ },
+ "bf-fill-engineer": {
+  "file": "/audio/bloom-filter/bf-fill-engineer.mp3",
+  "ms": 33744,
+  "hash": "9dd6cab0dbb2"
+ },
+ "bf-fill-executive": {
+  "file": "/audio/bloom-filter/bf-fill-executive.mp3",
+  "ms": 10656,
+  "hash": "ab8c66799bf9"
+ },
+ "bf-numbers-engineer": {
+  "file": "/audio/bloom-filter/bf-numbers-engineer.mp3",
+  "ms": 28824,
+  "hash": "704603978349"
+ },
+ "bf-numbers-executive": {
+  "file": "/audio/bloom-filter/bf-numbers-executive.mp3",
+  "ms": 6840,
+  "hash": "5c1408edb5d1"
+ },
+ "bf-variants-engineer": {
+  "file": "/audio/bloom-filter/bf-variants-engineer.mp3",
+  "ms": 32544,
+  "hash": "4840fac7b7d8"
+ },
+ "bf-variants-executive": {
+  "file": "/audio/bloom-filter/bf-variants-executive.mp3",
+  "ms": 9024,
+  "hash": "29061961ce58"
+ },
+ "bf-wild-engineer": {
+  "file": "/audio/bloom-filter/bf-wild-engineer.mp3",
+  "ms": 36024,
+  "hash": "dda807deebe2"
+ },
+ "bf-wild-executive": {
+  "file": "/audio/bloom-filter/bf-wild-executive.mp3",
+  "ms": 9984,
+  "hash": "995f4608b7ed"
+ },
+ "bf-related-engineer": {
+  "file": "/audio/bloom-filter/bf-related-engineer.mp3",
+  "ms": 29496,
+  "hash": "3f849644907f"
+ },
+ "bf-related-executive": {
+  "file": "/audio/bloom-filter/bf-related-executive.mp3",
+  "ms": 7680,
+  "hash": "e4f94a06f8a6"
+ },
+ "bf-recap-engineer": {
+  "file": "/audio/bloom-filter/bf-recap-engineer.mp3",
+  "ms": 25944,
+  "hash": "c69b751c6246"
+ },
+ "bf-recap-executive": {
+  "file": "/audio/bloom-filter/bf-recap-executive.mp3",
+  "ms": 6720,
+  "hash": "59c0cecadb54"
+ }
+}

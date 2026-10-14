@@ -1,0 +1,262 @@
+{
+ "s01-engineer": {
+  "file": "/audio/paypal/s01-engineer.mp3",
+  "ms": 27696,
+  "hash": "fd6ed4ecb6af"
+ },
+ "s01-executive": {
+  "file": "/audio/paypal/s01-executive.mp3",
+  "ms": 10416,
+  "hash": "902558e19809"
+ },
+ "s02-engineer": {
+  "file": "/audio/paypal/s02-engineer.mp3",
+  "ms": 31608,
+  "hash": "39e6a93f6767"
+ },
+ "s02-executive": {
+  "file": "/audio/paypal/s02-executive.mp3",
+  "ms": 10512,
+  "hash": "fcd8c9361321"
+ },
+ "s03-engineer": {
+  "file": "/audio/paypal/s03-engineer.mp3",
+  "ms": 29856,
+  "hash": "e35a323356ba"
+ },
+ "s03-executive": {
+  "file": "/audio/paypal/s03-executive.mp3",
+  "ms": 9792,
+  "hash": "c0be2ecc8678"
+ },
+ "s04-engineer": {
+  "file": "/audio/paypal/s04-engineer.mp3",
+  "ms": 25584,
+  "hash": "5730a0104081"
+ },
+ "s04-executive": {
+  "file": "/audio/paypal/s04-executive.mp3",
+  "ms": 6888,
+  "hash": "9b80c9af9967"
+ },
+ "s05-engineer": {
+  "file": "/audio/paypal/s05-engineer.mp3",
+  "ms": 24240,
+  "hash": "6fc315044066"
+ },
+ "s05-executive": {
+  "file": "/audio/paypal/s05-executive.mp3",
+  "ms": 9192,
+  "hash": "71509ad0cdc4"
+ },
+ "s06-engineer": {
+  "file": "/audio/paypal/s06-engineer.mp3",
+  "ms": 31392,
+  "hash": "7db5b2a15abf"
+ },
+ "s06-executive": {
+  "file": "/audio/paypal/s06-executive.mp3",
+  "ms": 10176,
+  "hash": "96d3587f00d6"
+ },
+ "s07-engineer": {
+  "file": "/audio/paypal/s07-engineer.mp3",
+  "ms": 22704,
+  "hash": "a022ac79b691"
+ },
+ "s07-executive": {
+  "file": "/audio/paypal/s07-executive.mp3",
+  "ms": 8280,
+  "hash": "2ee3e6eab86a"
+ },
+ "s08-engineer": {
+  "file": "/audio/paypal/s08-engineer.mp3",
+  "ms": 24264,
+  "hash": "f27698187ab5"
+ },
+ "s08-executive": {
+  "file": "/audio/paypal/s08-executive.mp3",
+  "ms": 7056,
+  "hash": "d1f521829581"
+ },
+ "s09-engineer": {
+  "file": "/audio/paypal/s09-engineer.mp3",
+  "ms": 28752,
+  "hash": "f2f8c8574b45"
+ },
+ "s09-executive": {
+  "file": "/audio/paypal/s09-executive.mp3",
+  "ms": 8352,
+  "hash": "deb642105752"
+ },
+ "s10-engineer": {
+  "file": "/audio/paypal/s10-engineer.mp3",
+  "ms": 22296,
+  "hash": "1a4eb2800e1b"
+ },
+ "s10-executive": {
+  "file": "/audio/paypal/s10-executive.mp3",
+  "ms": 5616,
+  "hash": "d2d0e4b03220"
+ },
+ "s11-engineer": {
+  "file": "/audio/paypal/s11-engineer.mp3",
+  "ms": 27768,
+  "hash": "d6d493412877"
+ },
+ "s11-executive": {
+  "file": "/audio/paypal/s11-executive.mp3",
+  "ms": 8592,
+  "hash": "ff008a8eb5ae"
+ },
+ "s12-engineer": {
+  "file": "/audio/paypal/s12-engineer.mp3",
+  "ms": 27624,
+  "hash": "55a8cce7aa0a"
+ },
+ "s12-executive": {
+  "file": "/audio/paypal/s12-executive.mp3",
+  "ms": 8016,
+  "hash": "b7385ef22a46"
+ },
+ "s13-engineer": {
+  "file": "/audio/paypal/s13-engineer.mp3",
+  "ms": 25656,
+  "hash": "a2b58bb88e9c"
+ },
+ "s13-executive": {
+  "file": "/audio/paypal/s13-executive.mp3",
+  "ms": 6240,
+  "hash": "7b65f58cd2bd"
+ },
+ "s14-engineer": {
+  "file": "/audio/paypal/s14-engineer.mp3",
+  "ms": 27192,
+  "hash": "d9f04b658517"
+ },
+ "s14-executive": {
+  "file": "/audio/paypal/s14-executive.mp3",
+  "ms": 7104,
+  "hash": "1a7245358afe"
+ },
+ "s15-engineer": {
+  "file": "/audio/paypal/s15-engineer.mp3",
+  "ms": 25848,
+  "hash": "1d604ec59e64"
+ },
+ "s15-executive": {
+  "file": "/audio/paypal/s15-executive.mp3",
+  "ms": 7752,
+  "hash": "1a7653880b8a"
+ },
+ "s16-engineer": {
+  "file": "/audio/paypal/s16-engineer.mp3",
+  "ms": 25848,
+  "hash": "3057320dfbc2"
+ },
+ "s16-executive": {
+  "file": "/audio/paypal/s16-executive.mp3",
+  "ms": 6648,
+  "hash": "d7d428065f85"
+ },
+ "s17-engineer": {
+  "file": "/audio/paypal/s17-engineer.mp3",
+  "ms": 25416,
+  "hash": "49f16a64c658"
+ },
+ "s17-executive": {
+  "file": "/audio/paypal/s17-executive.mp3",
+  "ms": 5136,
+  "hash": "e7d7af318b28"
+ },
+ "s18-engineer": {
+  "file": "/audio/paypal/s18-engineer.mp3",
+  "ms": 24744,
+  "hash": "bf2d79965fbd"
+ },
+ "s18-executive": {
+  "file": "/audio/paypal/s18-executive.mp3",
+  "ms": 5856,
+  "hash": "816ff4c20f48"
+ },
+ "s19-engineer": {
+  "file": "/audio/paypal/s19-engineer.mp3",
+  "ms": 24432,
+  "hash": "fabe7a280079"
+ },
+ "s19-executive": {
+  "file": "/audio/paypal/s19-executive.mp3",
+  "ms": 6168,
+  "hash": "52b90727dd68"
+ },
+ "s20-engineer": {
+  "file": "/audio/paypal/s20-engineer.mp3",
+  "ms": 30480,
+  "hash": "9e7fe775eb6e"
+ },
+ "s20-executive": {
+  "file": "/audio/paypal/s20-executive.mp3",
+  "ms": 7728,
+  "hash": "b11acf347070"
+ },
+ "s21-engineer": {
+  "file": "/audio/paypal/s21-engineer.mp3",
+  "ms": 31800,
+  "hash": "5de1da8fbbf1"
+ },
+ "s21-executive": {
+  "file": "/audio/paypal/s21-executive.mp3",
+  "ms": 9024,
+  "hash": "dbdbaab3e395"
+ },
+ "s22-engineer": {
+  "file": "/audio/paypal/s22-engineer.mp3",
+  "ms": 28248,
+  "hash": "a1382a486585"
+ },
+ "s22-executive": {
+  "file": "/audio/paypal/s22-executive.mp3",
+  "ms": 8136,
+  "hash": "a1c020b28042"
+ },
+ "s23-engineer": {
+  "file": "/audio/paypal/s23-engineer.mp3",
+  "ms": 28728,
+  "hash": "5021940a4231"
+ },
+ "s23-executive": {
+  "file": "/audio/paypal/s23-executive.mp3",
+  "ms": 8352,
+  "hash": "6dff88f4dfb1"
+ },
+ "s24-engineer": {
+  "file": "/audio/paypal/s24-engineer.mp3",
+  "ms": 28776,
+  "hash": "40d86ac77ea5"
+ },
+ "s24-executive": {
+  "file": "/audio/paypal/s24-executive.mp3",
+  "ms": 9744,
+  "hash": "8c3a6e061832"
+ },
+ "s25-engineer": {
+  "file": "/audio/paypal/s25-engineer.mp3",
+  "ms": 29760,
+  "hash": "6b87d52b65d5"
+ },
+ "s25-executive": {
+  "file": "/audio/paypal/s25-executive.mp3",
+  "ms": 9024,
+  "hash": "0860581a4136"
+ },
+ "s26-engineer": {
+  "file": "/audio/paypal/s26-engineer.mp3",
+  "ms": 29256,
+  "hash": "d52b8515533d"
+ },
+ "s26-executive": {
+  "file": "/audio/paypal/s26-executive.mp3",
+  "ms": 7248,
+  "hash": "98efa6781b1d"
+ }
+}

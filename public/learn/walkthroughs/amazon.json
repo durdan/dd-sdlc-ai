@@ -1,0 +1,1363 @@
+{
+ "id": "amazon",
+ "title": "Amazon: the shopping cart that never says no",
+ "subtitle": "Company case study",
+ "voice": "en-GB-SoniaNeural",
+ "template": "case-study",
+ "meta": {
+  "kind": "company",
+  "category": "E-commerce",
+  "level": "intermediate",
+  "uses": [
+   "consistent-hashing",
+   "sharding",
+   "cell-based-architecture",
+   "retry",
+   "timeout",
+   "rate-limiting"
+  ],
+  "related": [],
+  "blurb": "Why Amazon's cart always says yes: Dynamo's hash ring, sloppy quorums and vector clocks, then DynamoDB and cells.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14",
+  "changelog": [
+   {
+    "date": "2026-10-14",
+    "note": "First version."
+   }
+  ]
+ },
+ "diagrams": [
+  {
+   "id": "context",
+   "kind": "c4",
+   "title": "Level 1 · Context",
+   "direction": "DOWN",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request · response"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "asynchronous · reply"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "storage · repair"
+    }
+   ],
+   "elements": [
+    {
+     "id": "shopper",
+     "kind": "person",
+     "label": "Shopper",
+     "sub": "browses, adds to cart, checks out",
+     "rank": 0
+    },
+    {
+     "id": "seller",
+     "kind": "person",
+     "label": "Sellers",
+     "sub": "list products, keep stock · simplified",
+     "rank": 0
+    },
+    {
+     "id": "amazon",
+     "kind": "system",
+     "label": "Amazon retail site",
+     "sub": "many services behind every page",
+     "tone": "core",
+     "rank": 1
+    },
+    {
+     "id": "aws",
+     "kind": "external",
+     "label": "AWS",
+     "sub": "the cloud it runs on",
+     "tone": "external",
+     "rank": 2
+    },
+    {
+     "id": "payments",
+     "kind": "external",
+     "label": "Payment networks and banks",
+     "sub": "authorise payments · illustrative",
+     "tone": "external",
+     "rank": 2
+    },
+    {
+     "id": "fulfil",
+     "kind": "external",
+     "label": "Fulfilment centres and carriers",
+     "sub": "pick, pack, deliver",
+     "tone": "external",
+     "rank": 2
+    }
+   ],
+   "edges": [
+    {
+     "id": "c-shop",
+     "from": "shopper",
+     "to": "amazon",
+     "label": "browse, add to cart, order",
+     "style": "solid"
+    },
+    {
+     "id": "c-sell",
+     "from": "seller",
+     "to": "amazon",
+     "label": "listings, stock",
+     "style": "solid"
+    },
+    {
+     "id": "c-aws",
+     "from": "amazon",
+     "to": "aws",
+     "label": "runs on",
+     "style": "dotted"
+    },
+    {
+     "id": "c-pay",
+     "from": "amazon",
+     "to": "payments",
+     "label": "authorise",
+     "style": "solid"
+    },
+    {
+     "id": "c-ful",
+     "from": "amazon",
+     "to": "fulfil",
+     "label": "orders to ship",
+     "style": "dashed"
+    },
+    {
+     "id": "c-parcel",
+     "from": "fulfil",
+     "to": "shopper",
+     "label": "parcel",
+     "style": "dashed"
+    }
+   ]
+  },
+  {
+   "id": "containers",
+   "kind": "c4",
+   "title": "Level 2 · Containers (our design)",
+   "direction": "DOWN",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request · response"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "asynchronous · reply"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "storage · repair"
+    }
+   ],
+   "groups": [
+    {
+     "id": "svc",
+     "label": "Services · each team owns its data",
+     "tone": "core"
+    },
+    {
+     "id": "data",
+     "label": "Storage",
+     "tone": "data"
+    }
+   ],
+   "elements": [
+    {
+     "id": "client",
+     "kind": "container",
+     "label": "Browser and app",
+     "sub": "web and mobile",
+     "tone": "neutral",
+     "rank": 0
+    },
+    {
+     "id": "render",
+     "kind": "container",
+     "label": "Page rendering",
+     "sub": "calls 150+ services per page (2007)",
+     "tone": "core",
+     "rank": 1
+    },
+    {
+     "id": "catalog",
+     "kind": "container",
+     "label": "Product catalogue",
+     "sub": "titles, images, details",
+     "group": "svc",
+     "rank": 2
+    },
+    {
+     "id": "pricing",
+     "kind": "container",
+     "label": "Offers and pricing",
+     "sub": "price, seller, delivery",
+     "group": "svc",
+     "rank": 2
+    },
+    {
+     "id": "recs",
+     "kind": "container",
+     "label": "Recommendations",
+     "sub": "personalised lists",
+     "group": "svc",
+     "rank": 2
+    },
+    {
+     "id": "cart",
+     "kind": "container",
+     "label": "Shopping cart",
+     "sub": "accepts every write, merges later",
+     "group": "svc",
+     "rank": 2
+    },
+    {
+     "id": "checkout",
+     "kind": "container",
+     "label": "Checkout and orders",
+     "sub": "strict: price, stock, payment",
+     "group": "svc",
+     "rank": 3
+    },
+    {
+     "id": "ostore",
+     "kind": "store",
+     "label": "Each service's own store",
+     "sub": "our simplification",
+     "group": "data",
+     "rank": 4
+    },
+    {
+     "id": "dynamo",
+     "kind": "store",
+     "label": "Dynamo",
+     "sub": "cart, sessions, best sellers (2007)",
+     "group": "data",
+     "rank": 4
+    },
+    {
+     "id": "payments",
+     "kind": "external",
+     "label": "Payments",
+     "sub": "networks and banks",
+     "tone": "external",
+     "rank": 4
+    },
+    {
+     "id": "fulfil",
+     "kind": "external",
+     "label": "Fulfilment",
+     "sub": "centres and carriers",
+     "tone": "external",
+     "rank": 5
+    }
+   ],
+   "edges": [
+    {
+     "id": "k-client-render",
+     "from": "client",
+     "to": "render",
+     "label": "product page",
+     "style": "solid"
+    },
+    {
+     "id": "k-render-catalog",
+     "from": "render",
+     "to": "catalog",
+     "style": "solid"
+    },
+    {
+     "id": "k-render-pricing",
+     "from": "render",
+     "to": "pricing",
+     "style": "solid"
+    },
+    {
+     "id": "k-render-recs",
+     "from": "render",
+     "to": "recs",
+     "style": "solid"
+    },
+    {
+     "id": "k-render-cart",
+     "from": "render",
+     "to": "cart",
+     "label": "item count",
+     "style": "solid"
+    },
+    {
+     "id": "k-catalog-store",
+     "from": "catalog",
+     "to": "ostore",
+     "label": "own data",
+     "style": "dotted"
+    },
+    {
+     "id": "k-client-cart",
+     "from": "client",
+     "to": "cart",
+     "label": "add to cart",
+     "style": "solid"
+    },
+    {
+     "id": "k-cart-dynamo",
+     "from": "cart",
+     "to": "dynamo",
+     "label": "put(cart, context)",
+     "style": "dotted"
+    },
+    {
+     "id": "k-client-checkout",
+     "from": "client",
+     "to": "checkout",
+     "label": "place order",
+     "style": "solid"
+    },
+    {
+     "id": "k-checkout-cart",
+     "from": "checkout",
+     "to": "cart",
+     "label": "read final cart",
+     "style": "solid"
+    },
+    {
+     "id": "k-checkout-pay",
+     "from": "checkout",
+     "to": "payments",
+     "label": "authorise",
+     "style": "solid"
+    },
+    {
+     "id": "k-checkout-fulfil",
+     "from": "checkout",
+     "to": "fulfil",
+     "label": "order to ship",
+     "style": "dashed"
+    }
+   ]
+  },
+  {
+   "id": "dynamo",
+   "kind": "c4",
+   "title": "Level 3 · Inside Dynamo (from the 2007 paper)",
+   "direction": "DOWN",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request · response"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "asynchronous · reply"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "storage · repair"
+    }
+   ],
+   "groups": [
+    {
+     "id": "inst",
+     "label": "One Dynamo instance · every node equal, no leader",
+     "tone": "core"
+    }
+   ],
+   "elements": [
+    {
+     "id": "cartsvc",
+     "kind": "container",
+     "label": "Cart service",
+     "sub": "Dynamo's client",
+     "tone": "neutral",
+     "rank": 0
+    },
+    {
+     "id": "coord",
+     "kind": "component",
+     "label": "Request coordinator",
+     "sub": "a node that owns the key",
+     "group": "inst",
+     "rank": 1
+    },
+    {
+     "id": "ring",
+     "kind": "component",
+     "label": "Partitioner",
+     "sub": "consistent hashing, virtual nodes",
+     "group": "inst",
+     "rank": 1
+    },
+    {
+     "id": "membership",
+     "kind": "component",
+     "label": "Membership",
+     "sub": "gossip, failure detection",
+     "group": "inst",
+     "rank": 1
+    },
+    {
+     "id": "nodeB",
+     "kind": "store",
+     "label": "Node B",
+     "sub": "replica 1 of N = 3",
+     "group": "inst",
+     "tone": "data",
+     "rank": 2
+    },
+    {
+     "id": "nodeC",
+     "kind": "store",
+     "label": "Node C",
+     "sub": "replica 2",
+     "group": "inst",
+     "tone": "data",
+     "rank": 2
+    },
+    {
+     "id": "nodeD",
+     "kind": "store",
+     "label": "Node D",
+     "sub": "replica 3 · unreachable",
+     "group": "inst",
+     "tone": "data",
+     "rank": 2
+    },
+    {
+     "id": "merkle",
+     "kind": "component",
+     "label": "Anti-entropy",
+     "sub": "Merkle trees per key range",
+     "group": "inst",
+     "rank": 3
+    },
+    {
+     "id": "nodeE",
+     "kind": "store",
+     "label": "Node E",
+     "sub": "next healthy node · holds a hint",
+     "group": "inst",
+     "tone": "data",
+     "rank": 3
+    },
+    {
+     "id": "engine",
+     "kind": "store",
+     "label": "Local storage engine",
+     "sub": "Berkeley DB or MySQL, pluggable",
+     "group": "inst",
+     "tone": "data",
+     "rank": 4
+    }
+   ],
+   "edges": [
+    {
+     "id": "q-put",
+     "from": "cartsvc",
+     "to": "coord",
+     "label": "put(key, context, cart)",
+     "style": "solid"
+    },
+    {
+     "id": "q-ring",
+     "from": "coord",
+     "to": "ring",
+     "label": "preference list",
+     "style": "solid"
+    },
+    {
+     "id": "q-mem",
+     "from": "coord",
+     "to": "membership",
+     "label": "who is healthy?",
+     "style": "solid"
+    },
+    {
+     "id": "q-b",
+     "from": "coord",
+     "to": "nodeB",
+     "label": "write",
+     "style": "solid"
+    },
+    {
+     "id": "q-c",
+     "from": "coord",
+     "to": "nodeC",
+     "label": "write",
+     "style": "solid"
+    },
+    {
+     "id": "q-d",
+     "from": "coord",
+     "to": "nodeD",
+     "label": "times out",
+     "style": "dashed"
+    },
+    {
+     "id": "q-e",
+     "from": "coord",
+     "to": "nodeE",
+     "label": "write, hint: for D",
+     "style": "solid"
+    },
+    {
+     "id": "q-ack",
+     "from": "coord",
+     "to": "cartsvc",
+     "label": "ok once W = 2",
+     "style": "dashed"
+    },
+    {
+     "id": "q-handoff",
+     "from": "nodeE",
+     "to": "nodeD",
+     "label": "hand back on recovery",
+     "style": "dashed"
+    },
+    {
+     "id": "q-merkle",
+     "from": "merkle",
+     "to": "nodeC",
+     "label": "sync ranges that differ",
+     "style": "dotted"
+    },
+    {
+     "id": "q-engine",
+     "from": "nodeB",
+     "to": "engine",
+     "label": "persist",
+     "style": "dotted"
+    }
+   ]
+  },
+  {
+   "id": "add",
+   "kind": "sequence",
+   "title": "Add to cart while a replica is down",
+   "participants": [
+    {
+     "id": "a-shop",
+     "label": "Shopper"
+    },
+    {
+     "id": "a-cart",
+     "label": "Cart service"
+    },
+    {
+     "id": "a-b",
+     "label": "Node B (coordinator)"
+    },
+    {
+     "id": "a-c",
+     "label": "Node C"
+    },
+    {
+     "id": "a-d",
+     "label": "Node D"
+    },
+    {
+     "id": "a-e",
+     "label": "Node E"
+    }
+   ],
+   "messages": [
+    {
+     "id": "a1",
+     "from": "a-shop",
+     "to": "a-cart",
+     "label": "add item",
+     "style": "solid"
+    },
+    {
+     "id": "a2",
+     "from": "a-cart",
+     "to": "a-b",
+     "label": "put(cart, context)",
+     "style": "solid"
+    },
+    {
+     "id": "a3",
+     "from": "a-b",
+     "to": "a-c",
+     "label": "replicate, new vector clock",
+     "style": "solid"
+    },
+    {
+     "id": "a4",
+     "from": "a-b",
+     "to": "a-d",
+     "label": "replicate",
+     "style": "solid"
+    },
+    {
+     "id": "a5",
+     "from": "a-d",
+     "to": "a-b",
+     "label": "no reply",
+     "style": "dashed"
+    },
+    {
+     "id": "a6",
+     "from": "a-b",
+     "to": "a-e",
+     "label": "replicate, hint: for D",
+     "style": "solid"
+    },
+    {
+     "id": "a7",
+     "from": "a-c",
+     "to": "a-b",
+     "label": "stored",
+     "style": "dashed"
+    },
+    {
+     "id": "a8",
+     "from": "a-b",
+     "to": "a-cart",
+     "label": "ok: W = 2 met",
+     "style": "dashed"
+    },
+    {
+     "id": "a9",
+     "from": "a-cart",
+     "to": "a-shop",
+     "label": "item added",
+     "style": "dashed"
+    },
+    {
+     "id": "a10",
+     "from": "a-e",
+     "to": "a-d",
+     "label": "later: hinted handoff",
+     "style": "dashed"
+    }
+   ]
+  },
+  {
+   "id": "read",
+   "kind": "sequence",
+   "title": "Read a cart that has diverged",
+   "participants": [
+    {
+     "id": "r-cart",
+     "label": "Cart service"
+    },
+    {
+     "id": "r-b",
+     "label": "Node B (coordinator)"
+    },
+    {
+     "id": "r-c",
+     "label": "Node C"
+    },
+    {
+     "id": "r-e",
+     "label": "Node E"
+    }
+   ],
+   "messages": [
+    {
+     "id": "r1",
+     "from": "r-cart",
+     "to": "r-b",
+     "label": "get(cart key)",
+     "style": "solid"
+    },
+    {
+     "id": "r2",
+     "from": "r-b",
+     "to": "r-c",
+     "label": "read",
+     "style": "solid"
+    },
+    {
+     "id": "r3",
+     "from": "r-b",
+     "to": "r-e",
+     "label": "read",
+     "style": "solid"
+    },
+    {
+     "id": "r4",
+     "from": "r-c",
+     "to": "r-b",
+     "label": "cart v1, clock [B:2]",
+     "style": "dashed"
+    },
+    {
+     "id": "r5",
+     "from": "r-e",
+     "to": "r-b",
+     "label": "cart v2, clock [B:1, E:1]",
+     "style": "dashed"
+    },
+    {
+     "id": "r6",
+     "from": "r-b",
+     "to": "r-cart",
+     "label": "both versions + context",
+     "style": "dashed"
+    },
+    {
+     "id": "r7",
+     "from": "r-cart",
+     "to": "r-b",
+     "label": "put(merged cart, context)",
+     "style": "solid"
+    },
+    {
+     "id": "r8",
+     "from": "r-b",
+     "to": "r-c",
+     "label": "new version [B:3, E:1]",
+     "style": "solid"
+    },
+    {
+     "id": "r9",
+     "from": "r-b",
+     "to": "r-e",
+     "label": "read repair",
+     "style": "solid"
+    }
+   ]
+  },
+  {
+   "id": "cells",
+   "kind": "c4",
+   "title": "Cells for the cart (our design, after AWS guidance)",
+   "direction": "DOWN",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request · response"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "asynchronous · reply"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "storage · repair"
+    }
+   ],
+   "groups": [
+    {
+     "id": "cellg",
+     "label": "Cells · each a complete, independent copy",
+     "tone": "core"
+    }
+   ],
+   "elements": [
+    {
+     "id": "req",
+     "kind": "container",
+     "label": "Cart requests",
+     "sub": "carry a customer ID",
+     "tone": "neutral",
+     "rank": 0
+    },
+    {
+     "id": "router",
+     "kind": "component",
+     "label": "Cell router",
+     "sub": "thinnest possible layer",
+     "tone": "core",
+     "rank": 1
+    },
+    {
+     "id": "cp",
+     "kind": "component",
+     "label": "Control plane",
+     "sub": "create cells, move customers",
+     "tone": "stream",
+     "rank": 1
+    },
+    {
+     "id": "cell1",
+     "kind": "container",
+     "label": "Cell 1",
+     "sub": "cart service + own data",
+     "group": "cellg",
+     "rank": 2
+    },
+    {
+     "id": "cell2",
+     "kind": "container",
+     "label": "Cell 2",
+     "sub": "cart service + own data",
+     "group": "cellg",
+     "rank": 2
+    },
+    {
+     "id": "cell3",
+     "kind": "container",
+     "label": "Cell 3",
+     "sub": "bad deploy: only its customers",
+     "group": "cellg",
+     "rank": 2
+    }
+   ],
+   "edges": [
+    {
+     "id": "x-req",
+     "from": "req",
+     "to": "router",
+     "label": "route by customer ID",
+     "style": "solid"
+    },
+    {
+     "id": "x-1",
+     "from": "router",
+     "to": "cell1",
+     "style": "solid"
+    },
+    {
+     "id": "x-2",
+     "from": "router",
+     "to": "cell2",
+     "style": "solid"
+    },
+    {
+     "id": "x-3",
+     "from": "router",
+     "to": "cell3",
+     "style": "solid"
+    },
+    {
+     "id": "x-map",
+     "from": "cp",
+     "to": "router",
+     "label": "cell map",
+     "style": "dotted"
+    },
+    {
+     "id": "x-prov",
+     "from": "cp",
+     "to": "cell3",
+     "label": "provision, migrate",
+     "style": "dotted"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "overview",
+   "title": "Overview"
+  },
+  {
+   "id": "requirements",
+   "title": "Requirements and scale"
+  },
+  {
+   "id": "context",
+   "title": "Context"
+  },
+  {
+   "id": "containers",
+   "title": "Containers"
+  },
+  {
+   "id": "deep-dive",
+   "title": "Deep dive"
+  },
+  {
+   "id": "flows",
+   "title": "Core flows"
+  },
+  {
+   "id": "data",
+   "title": "Data and caching"
+  },
+  {
+   "id": "growth",
+   "title": "Growth"
+  },
+  {
+   "id": "failures",
+   "title": "Failure modes"
+  },
+  {
+   "id": "patterns",
+   "title": "Patterns used"
+  },
+  {
+   "id": "decisions",
+   "title": "Key decisions"
+  },
+  {
+   "id": "mvp",
+   "title": "What we would build first"
+  }
+ ],
+ "shots": [
+  {
+   "id": "a01",
+   "chapter": "overview",
+   "diagram": "context",
+   "focus": [],
+   "trace": [],
+   "engineer": "This is Amazon's retail site, seen from the outside. Shoppers browse, add things to a cart and check out. Sellers list products, and orders go to fulfilment centres and carriers. Behind one product page, Amazon wrote in 2007, sit more than a hundred and fifty services. The one idea this video follows is a small promise with big consequences: adding to the cart must never fail. Not during a server crash, not during a network split, and not on Prime Day.",
+   "executive": "Amazon's store is built from many small services. Its central promise here: adding something to your cart should never fail."
+  },
+  {
+   "id": "a02",
+   "chapter": "requirements",
+   "card": {
+    "heading": "Scale, from Amazon and AWS publications",
+    "kind": "numbers",
+    "points": [
+     "3M+ | checkouts in a single day (Dynamo paper, 2007)",
+     "150+ | services called to build one page (2007)",
+     "300 ms | for 99.9% of requests: a typical Dynamo SLA (2007)",
+     "192M | DynamoDB requests a second, Prime Day 2026 peak",
+     "59T+ | DynamoDB requests, 23–26 June 2026, across Amazon"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "First, the scale, with dates. Amazon's 2007 Dynamo paper reported well over three million checkouts in a single day, and pages built from over a hundred and fifty services. A typical Dynamo service promised three hundred milliseconds for ninety-nine point nine per cent of requests. For Prime Day 2026, the twenty-third to the twenty-sixth of June, AWS says DynamoDB peaked at a hundred and ninety-two million requests a second, across Amazon.com, Alexa and the fulfilment centres. That is not the cart alone.",
+   "executive": "In 2007 Amazon handled over three million checkouts a day; on Prime Day 2026 its main database service peaked at 192 million requests a second."
+  },
+  {
+   "id": "a03",
+   "chapter": "requirements",
+   "card": {
+    "heading": "What the system must do",
+    "points": [
+     "Add to cart succeeds amid server and network failures (paper)",
+     "Fast for nearly everyone: judge the 99.9th percentile (paper)",
+     "Survive the loss of a whole data centre (paper)",
+     "Grow one node at a time (paper)",
+     "Checkout is exact about price, stock and payment (ours)",
+     "Peak days are routine, not heroic (ours)"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Now the requirements. The first four come straight from the Dynamo paper. Adding to the cart must succeed even amid network and server failures. Latency is judged at the ninety-nine point nine percentile, not the average, so nearly every shopper gets a fast page. The store must survive losing a whole data centre. And capacity grows one node at a time. The last two are ours: checkout must be exact about price, stock and payment, and peak days must be routine.",
+   "executive": "The cart must always accept changes, stay fast for nearly every shopper and survive a data centre failure, while checkout stays exact."
+  },
+  {
+   "id": "a04",
+   "title": "Shoppers and sellers",
+   "chapter": "context",
+   "diagram": "context",
+   "focus": [
+    "shopper",
+    "seller",
+    "amazon"
+   ],
+   "trace": [
+    "c-shop",
+    "c-sell"
+   ],
+   "engineer": "At level one, two kinds of people use the site. Shoppers browse, search, add to the cart and place orders, on the web or in the app. Sellers list products and keep their stock up to date; we have folded everything about selling into one simplified box. The retail site itself is the system we care about. From the outside it looks like one website. Inside, as we will see, it is anything but.",
+   "executive": "Shoppers and sellers both use the site, which looks like one website but is built from many parts."
+  },
+  {
+   "id": "a05",
+   "title": "Cloud, payments, delivery",
+   "chapter": "context",
+   "diagram": "context",
+   "focus": [
+    "amazon",
+    "aws",
+    "payments",
+    "fulfil",
+    "shopper"
+   ],
+   "trace": [
+    "c-aws",
+    "c-pay",
+    "c-ful",
+    "c-parcel"
+   ],
+   "engineer": "Three outside parties matter. The site runs on AWS; AWS says its Graviton processors powered up to forty-nine per cent of the EC2 compute Amazon.com used on Prime Day 2026. Payment networks and banks authorise payments; that box is illustrative, because Amazon publishes little about it. And orders go to fulfilment centres and carriers, which pick, pack and deliver. AWS also says DynamoDB backs all of Amazon's fulfilment centres.",
+   "executive": "The site runs on AWS, uses banks to take payment, and sends orders to fulfilment centres and carriers."
+  },
+  {
+   "id": "a06",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [],
+   "trace": [],
+   "engineer": "One level in. Amazon has not published a container diagram, so this level is our design, built from what Amazon has said. The key fact is old. In 1998 an internal Distributed Computing Manifesto proposed leaving a two-tier, data-bound design for services that reach data only through interfaces. So here, a page rendering layer calls many services, each owned by a small team with its own data, and Dynamo sits underneath the cart.",
+   "executive": "Inside, a page is assembled from many services, each owned by one team. This layout is our reconstruction."
+  },
+  {
+   "id": "a07",
+   "title": "Show a product page",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "client",
+    "render",
+    "catalog",
+    "pricing",
+    "recs",
+    "cart",
+    "ostore"
+   ],
+   "trace": [
+    "k-client-render",
+    "k-render-catalog",
+    "k-render-pricing",
+    "k-render-recs",
+    "k-render-cart",
+    "k-catalog-store"
+   ],
+   "engineer": "First path: showing a product page. The request reaches page rendering, which, the Dynamo paper says, calls more than a hundred and fifty services to build one page. Catalogue, pricing, recommendations and the cart's item count are our examples. Each service keeps its own data behind its interface. In 2006 Werner Vogels summed up the team model in five words: you build it, you run it. And each team is kept small enough to be fed by two pizzas.",
+   "executive": "One page calls many services, each run by the small team that built it."
+  },
+  {
+   "id": "a08",
+   "title": "Add to cart",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "client",
+    "cart",
+    "dynamo"
+   ],
+   "trace": [
+    "k-client-cart",
+    "k-cart-dynamo"
+   ],
+   "engineer": "Second path: add to cart. The request goes to the shopping cart service, which writes the new cart to Dynamo. This is the write that must never be refused. The paper is explicit: customers must be able to add and remove items even amid network and server failures. So the cart service accepts the write even when it cannot see the latest version, and deals with any disagreement later, when the cart is read.",
+   "executive": "Adding to the cart writes to Dynamo, which accepts the change even during failures and sorts out conflicts later."
+  },
+  {
+   "id": "a09",
+   "title": "Check out",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "client",
+    "checkout",
+    "cart",
+    "payments",
+    "fulfil"
+   ],
+   "trace": [
+    "k-client-checkout",
+    "k-checkout-cart",
+    "k-checkout-pay",
+    "k-checkout-fulfil"
+   ],
+   "engineer": "Third path: checkout. Checkout reads the final cart, takes payment and hands the order on for fulfilment. This part is our design; Amazon has not published how its order pipeline works. Our assumption is that the strict checks live here, not in the cart. Price and stock are confirmed at checkout, and payment is taken exactly once. The cart can afford to be relaxed precisely because checkout is not.",
+   "executive": "Checkout is where prices, stock and payment are checked strictly; that part is our assumption."
+  },
+  {
+   "id": "a10",
+   "chapter": "deep-dive",
+   "diagram": "dynamo",
+   "focus": [],
+   "trace": [],
+   "engineer": "Inside Dynamo, as the 2007 paper describes it. Every node is equal; there is no leader. A get or put for a key is handled by a coordinator, one of the nodes responsible for that key. A partitioner maps keys to nodes. A gossip-based membership layer tells each node who is up. Each item is copied to N nodes, commonly three, and background repair keeps the copies in step. Underneath, storage is pluggable: Berkeley DB or MySQL.",
+   "executive": "Dynamo is a set of equal servers that share out the data, keep three copies of each item, and repair themselves."
+  },
+  {
+   "id": "a11",
+   "title": "The ring",
+   "chapter": "deep-dive",
+   "diagram": "dynamo",
+   "focus": [
+    "cartsvc",
+    "coord",
+    "ring",
+    "nodeB",
+    "nodeC",
+    "nodeD"
+   ],
+   "trace": [
+    "q-put",
+    "q-ring"
+   ],
+   "engineer": "First, where a key lives. Dynamo treats the output of a hash function as a ring. Each node takes positions on the ring, and a key belongs to the first node clockwise from its hash; the next nodes along hold the copies. That is consistent hashing, and adding a node moves only its neighbours' keys. Dynamo adds virtual nodes: each physical machine takes many positions, so load spreads evenly and bigger machines can take more.",
+   "executive": "Keys are placed on a ring, so adding a server only moves a small share of the data."
+  },
+  {
+   "id": "a12",
+   "title": "Sloppy quorum",
+   "chapter": "deep-dive",
+   "diagram": "dynamo",
+   "focus": [
+    "coord",
+    "membership",
+    "nodeB",
+    "nodeC",
+    "nodeD",
+    "nodeE",
+    "cartsvc"
+   ],
+   "trace": [
+    "q-mem",
+    "q-b",
+    "q-c",
+    "q-d",
+    "q-e",
+    "q-ack"
+   ],
+   "engineer": "Now the write. The coordinator sends the new version to the first N healthy nodes on the key's preference list. The paper's common setting is N three, R two, W two: a write succeeds once two nodes have stored it. If node D is unreachable, its copy goes to the next healthy node, E, with a hint saying it belongs to D. That is a sloppy quorum, and it is why the cart stays writeable.",
+   "executive": "If a server is down, its copy goes to a stand-in, so the write still succeeds."
+  },
+  {
+   "id": "a13",
+   "title": "Repair",
+   "chapter": "deep-dive",
+   "diagram": "dynamo",
+   "focus": [
+    "nodeE",
+    "nodeD",
+    "merkle",
+    "nodeC",
+    "nodeB",
+    "engine"
+   ],
+   "trace": [
+    "q-handoff",
+    "q-merkle",
+    "q-engine"
+   ],
+   "engineer": "Then the repairs. When D recovers, E hands its hinted copy back and deletes it: hinted handoff. Gossip spreads membership changes, with each node contacting a random peer every second. For longer drift, replicas compare Merkle trees, which are hash trees over their key ranges, and copy only the ranges that differ. Each node persists through its local engine. None of this repair work sits on the shopper's path.",
+   "executive": "In the background, copies are handed back and compared, so every server catches up."
+  },
+  {
+   "id": "a14",
+   "title": "Write during a failure",
+   "chapter": "flows",
+   "diagram": "add",
+   "focus": [
+    "a-shop",
+    "a-cart",
+    "a-b",
+    "a-c",
+    "a-d"
+   ],
+   "trace": [
+    "a1",
+    "a2",
+    "a3",
+    "a4",
+    "a5"
+   ],
+   "engineer": "Step by step: adding to the cart while a replica is down. The shopper adds an item. The cart service sends a put with the cart and a context, which carries the version it last read. The coordinator stores the new version locally, stamped with a new vector clock: a list of node and counter pairs that records its history. It replicates to node C, and tries node D, which does not answer.",
+   "executive": "The shopper adds an item; the cart is saved with a version stamp and copied to other servers, one of which is down."
+  },
+  {
+   "id": "a15",
+   "title": "Hint and hand back",
+   "chapter": "flows",
+   "diagram": "add",
+   "focus": [
+    "a-b",
+    "a-e",
+    "a-c",
+    "a-cart",
+    "a-shop",
+    "a-d"
+   ],
+   "trace": [
+    "a6",
+    "a7",
+    "a8",
+    "a9",
+    "a10"
+   ],
+   "engineer": "So the coordinator sends D's copy to node E, with a hint. As soon as C confirms, two copies exist, which meets W of two, and the shopper sees the item added. Later, when D comes back, E hands the copy over. The paper also tested letting the client coordinate requests itself, which cut ninety-nine point nine percentile read latency from about sixty-nine milliseconds to about thirty.",
+   "executive": "A stand-in server takes the missing copy, the shopper sees success at once, and the copy is handed back later."
+  },
+  {
+   "id": "a16",
+   "title": "Read and merge",
+   "chapter": "flows",
+   "diagram": "read",
+   "focus": [],
+   "trace": [],
+   "engineer": "The second flow: reading a cart that has diverged. The coordinator asks the replicas and waits for R of two. Here they disagree: one version has the clock B two, the other B one, E one. Neither descends from the other, so Dynamo returns both. The cart service merges them into one cart and writes it back with a clock that supersedes both, and stale replicas are updated too. The paper calls that read repair.",
+   "executive": "If two copies of a cart disagree, both are returned, merged into one cart and saved back."
+  },
+  {
+   "id": "a17",
+   "chapter": "data",
+   "card": {
+    "heading": "What is stored where",
+    "kind": "compare",
+    "points": [
+     "Data | Where, and how",
+     "Shopping cart | Dynamo, by key; every version has a vector clock",
+     "Sessions, preferences, best sellers, sales rank | Dynamo: primary-key access only (2007)",
+     "Copies of each item | N nodes, across data centres",
+     "Vector clock | (node, counter) pairs; oldest dropped past about 10",
+     "Orders, payments | Not published",
+     "Hot reads (catalogue, prices) | Our design: caches in front"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "What is stored where. In 2007 Dynamo held the cart and, the paper says, session state, customer preferences, best seller lists, sales rank and parts of the product catalogue: anything that only needs primary-key access. Each version carries a vector clock; once a clock passes about ten entries, the oldest pair is dropped. How often does a cart diverge? In one day, ninety-nine point nine four per cent of requests saw exactly one version. How orders and payments are stored is not published.",
+   "executive": "Dynamo held carts, sessions and other simple lookups, and in practice carts almost never disagreed."
+  },
+  {
+   "id": "a18",
+   "chapter": "data",
+   "card": {
+    "heading": "Dynamo is not DynamoDB",
+    "kind": "compare",
+    "points": [
+     "Dynamo (2007) | DynamoDB (2012 →)",
+     "Each team runs its own, single-tenant | Fully managed, multi-tenant",
+     "No leader; sloppy quorum, hinted handoff | Multi-Paxos leader per partition",
+     "Consistent hashing ring | Key-range partitions, metadata service",
+     "Client merges versions | Strong or eventual reads, chosen per request",
+     "Copies across data centres | Three replicas across Availability Zones"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Dynamo is not DynamoDB. AWS's 2022 paper explains that Dynamo was single-tenant: each team ran its own installation, and that operational load put engineers off. DynamoDB, launched in 2012, is a managed, multi-tenant service. Tables split into key-range partitions, each with replicas across Availability Zones. Each partition's replicas elect a leader with Multi-Paxos; the leader takes writes and strongly consistent reads, and any replica can serve eventually consistent ones.",
+   "executive": "DynamoDB, the AWS service, kept Dynamo's scale but is fully managed and uses a leader per partition instead of client-side merging."
+  },
+  {
+   "id": "a19",
+   "chapter": "growth",
+   "card": {
+    "heading": "How it grew, from Amazon's own sources",
+    "kind": "compare",
+    "points": [
+     "Year | Milestone",
+     "1998 | Distributed Computing Manifesto: leave the two-tier design",
+     "2006 | Vogels: a decentralised services platform; you build it, you run it",
+     "2007 | Dynamo paper at SOSP",
+     "2012 | DynamoDB launches",
+     "2021 | Prime Day: DynamoDB peaks at 89.2M requests/s",
+     "2025 | Prime Day peak: 151M requests/s",
+     "2026 | Prime Day peak: 192M requests/s"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "How it grew. In 1998 the Distributed Computing Manifesto called for leaving a two-tier design. By 2006 Vogels was describing a fully distributed, decentralised services platform, run by the teams that build it. In 2007 the Dynamo paper appeared at SOSP, and DynamoDB launched in 2012. On Prime Day 2021 DynamoDB peaked at eighty-nine point two million requests a second; in 2025 at a hundred and fifty-one million; and in 2026 at a hundred and ninety-two million.",
+   "executive": "From a 1998 plan to split the site into services, to a database peaking at 192 million requests a second on Prime Day 2026."
+  },
+  {
+   "id": "a20",
+   "chapter": "failures",
+   "card": {
+    "heading": "What fails, and what protects shoppers",
+    "kind": "compare",
+    "points": [
+     "Failure | Protection",
+     "A replica node is down | Sloppy quorum: next healthy node, with a hint",
+     "The network splits | Both sides take writes; carts merge later",
+     "Replicas drift apart | Read repair and Merkle-tree anti-entropy",
+     "A data centre fails | Copies in other data centres keep serving",
+     "A control plane fails | Static stability: run on what you already have",
+     "Two writers at once | Rare: 99.94% of requests saw one version"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "What breaks, and what protects shoppers. A replica is down: the sloppy quorum writes to the next healthy node, with a hint. The network splits: both sides keep taking writes, and carts merge later. Replicas drift: read repair and Merkle trees fix them. A data centre fails: copies elsewhere keep serving. A control plane fails: static stability, from AWS's Builders' Library, means the data plane keeps running on what it already has, with spare capacity provisioned in advance.",
+   "executive": "Every failure has a planned answer: stand-in servers, later merging, background repair, copies in other data centres, and systems that keep running without their control systems."
+  },
+  {
+   "id": "a21",
+   "title": "Cells",
+   "chapter": "failures",
+   "diagram": "cells",
+   "focus": [],
+   "trace": [
+    "x-req",
+    "x-1",
+    "x-2",
+    "x-3",
+    "x-map",
+    "x-prov"
+   ],
+   "engineer": "One more protection, from AWS's own guidance. In 2023 AWS wrote that its service teams have used cells for more than a decade: complete, independent copies of a workload, each serving a slice of customers, behind the thinnest possible router. A bad deploy then hurts one cell, not everyone. Shuffle sharding goes further, giving each customer its own combination of workers. Applying cells to the cart is our design; Amazon has not published that.",
+   "executive": "Splitting the service into independent cells means a bad change hurts a few customers, not all. Using it for the cart is our suggestion."
+  },
+  {
+   "id": "a22",
+   "chapter": "patterns",
+   "card": {
+    "heading": "Patterns used",
+    "points": [
+     "Consistent hashing with virtual nodes: Dynamo's ring",
+     "Sharding by key: Dynamo and DynamoDB partitions",
+     "Cell-based architecture and shuffle sharding: small blast radius",
+     "Timeouts from a latency percentile",
+     "Retries with backoff and jitter, at a single layer",
+     "Rate limiting: DynamoDB's token buckets and admission control"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The named patterns, each with its own walkthrough. Consistent hashing with virtual nodes, which is Dynamo's ring. Sharding by key, in both Dynamo and DynamoDB. Cell-based architecture and shuffle sharding, to keep the blast radius small. Timeouts set from a latency percentile, and retries with backoff and jitter at a single layer, as the Builders' Library advises. And rate limiting: DynamoDB admits requests with token buckets and global admission control.",
+   "executive": "Well-known patterns: a hash ring, splitting data by key, cells, timeouts, careful retries and rate limits."
+  },
+  {
+   "id": "a23",
+   "chapter": "decisions",
+   "card": {
+    "heading": "Key decisions",
+    "kind": "compare",
+    "points": [
+     "Decision | Trade-off",
+     "Availability over consistency for the cart | Deleted items can resurface",
+     "Applications reconcile, not the store | Each app writes its own merge",
+     "Every node equal, no leader | No single point of failure; harder to reason about",
+     "Latency judged at the 99.9th percentile | Costlier, but covers nearly everyone",
+     "Services own their data | Teams move alone; no shared database",
+     "Managed DynamoDB over self-run Dynamo | Less control, far less operations"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The decisions that shaped it. Choose availability over consistency for the cart, accepting, as the paper says, that a deleted item can resurface. Let the application, which knows how to merge a cart, reconcile versions, rather than the store picking a winner. Make every node equal, with no leader to lose. Judge latency at the ninety-nine point nine percentile. And later, move from self-run Dynamo to managed DynamoDB, because running databases had become the barrier.",
+   "executive": "Amazon chose an always-open cart over perfect consistency, let applications merge conflicts, and later moved to a managed database service."
+  },
+  {
+   "id": "a24",
+   "chapter": "mvp",
+   "card": {
+    "heading": "What we would build first",
+    "points": [
+     "One cart service on a managed key-value store, across zones",
+     "Cart items keyed by product; conditional writes, not vector clocks",
+     "The cart is a wish list: re-check price and stock at checkout",
+     "An idempotency key on place-order",
+     "Timeouts, and retries with jitter at one layer",
+     "Cells once blast radius matters"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "If we built a cart today, this is where we would start, and it is our recommendation, not Amazon's. One cart service on a managed key-value store, spread across zones from day one. Store cart items keyed by product, with conditional writes instead of vector clocks. Treat the cart as a wish list, and re-check price and stock at checkout. Put an idempotency key on place-order. Set timeouts, and retry with jitter at one layer. Add cells when blast radius starts to matter.",
+   "executive": "Start with a simple cart on a managed database, check everything strictly at checkout, and add isolation as you grow."
+  }
+ ]
+}

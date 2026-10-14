@@ -1,0 +1,349 @@
+{
+ "id": "service-mesh",
+ "title": "Sidecar and service mesh",
+ "subtitle": "Design pattern",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "diagrams": [
+  {
+   "id": "before", "kind": "c4", "title": "Every service carries its own plumbing", "direction": "DOWN",
+   "elements": [
+    {"id": "platform", "kind": "person", "tone": "neutral", "label": "Platform team", "sub": "one new security rule", "rank": 0},
+    {"id": "orders", "kind": "container", "tone": "core", "label": "Order service", "sub": "Java · TLS lib · retry lib v2", "rank": 1},
+    {"id": "payments", "kind": "container", "tone": "core", "label": "Payment service", "sub": "Go · hand-written TLS · no retries", "rank": 1},
+    {"id": "catalogue", "kind": "container", "tone": "core", "label": "Catalogue service", "sub": "Python · plain HTTP · retry lib v1", "rank": 1},
+    {"id": "monitoring", "kind": "store", "tone": "data", "label": "Monitoring", "sub": "three metric formats", "rank": 2}
+   ],
+   "edges": [
+    {"id": "b1", "from": "orders", "to": "payments", "style": "solid", "label": "TLS · 3 retries · 2 s timeout"},
+    {"id": "b2", "from": "payments", "to": "catalogue", "style": "dashed", "label": "plain HTTP · no timeout"},
+    {"id": "b3", "from": "platform", "to": "orders", "style": "dotted", "label": "patch the Java library"},
+    {"id": "b4", "from": "platform", "to": "payments", "style": "dotted", "label": "patch the Go code"},
+    {"id": "b5", "from": "platform", "to": "catalogue", "style": "dotted", "label": "patch the Python library"},
+    {"id": "b6", "from": "orders", "to": "monitoring", "style": "dotted", "label": "metrics, format A"},
+    {"id": "b7", "from": "payments", "to": "monitoring", "style": "dotted", "label": "metrics, format B"},
+    {"id": "b8", "from": "catalogue", "to": "monitoring", "style": "dotted", "label": "no traces"}
+   ],
+   "legend": [
+    {"style": "solid", "tone": "core", "label": "call"},
+    {"style": "dashed", "tone": "stream", "label": "failure or exposure"},
+    {"style": "dotted", "tone": "data", "label": "signal or change"}
+   ]
+  },
+  {
+   "id": "naive", "kind": "sequence", "title": "One shared library, ported by hand",
+   "participants": [
+    {"id": "platform", "label": "Platform team"},
+    {"id": "lib", "label": "Shared library"},
+    {"id": "orders", "label": "Orders (Java)"},
+    {"id": "payments", "label": "Payments (Go)"},
+    {"id": "catalogue", "label": "Catalogue (Python)"}
+   ],
+   "messages": [
+    {"id": "n1", "from": "platform", "to": "lib", "style": "solid", "label": "write mTLS + retries once, in Java"},
+    {"id": "n2", "from": "lib", "to": "orders", "style": "solid", "label": "upgrade to v3 · redeploy"},
+    {"id": "n3", "from": "platform", "to": "payments", "style": "solid", "label": "port it to Go by hand"},
+    {"id": "n4", "from": "platform", "to": "catalogue", "style": "dashed", "label": "Python port: next quarter"},
+    {"id": "n5", "from": "orders", "to": "payments", "style": "solid", "label": "mTLS · library v3 handshake"},
+    {"id": "n6", "from": "payments", "to": "catalogue", "style": "dashed", "label": "plain HTTP · port not shipped"},
+    {"id": "n7", "from": "catalogue", "to": "payments", "style": "dashed", "label": "hangs: this port has no timeout"}
+   ]
+  },
+  {
+   "id": "sidecar", "kind": "c4", "title": "A helper process next to every instance", "direction": "DOWN",
+   "groups": [{"id": "pod", "label": "One instance [Kubernetes pod: shared network and lifecycle]", "tone": "core"}],
+   "elements": [
+    {"id": "caller", "kind": "external", "tone": "external", "label": "Other services", "sub": "call orders", "rank": 0},
+    {"id": "app", "kind": "container", "tone": "core", "label": "Orders app", "sub": "business logic only · any language", "group": "pod", "rank": 1},
+    {"id": "proxy", "kind": "component", "tone": "stream", "label": "Sidecar proxy", "sub": "TLS · retries · timeouts · metrics", "group": "pod", "rank": 2},
+    {"id": "payments", "kind": "external", "tone": "external", "label": "Payment service", "sub": "has its own sidecar", "rank": 3},
+    {"id": "telemetry", "kind": "store", "tone": "data", "label": "Metrics and traces", "sub": "one format for everyone", "rank": 3}
+   ],
+   "edges": [
+    {"id": "e1", "from": "caller", "to": "proxy", "style": "solid", "label": "inbound · mTLS"},
+    {"id": "e2", "from": "proxy", "to": "app", "style": "solid", "label": "localhost · plain HTTP"},
+    {"id": "e3", "from": "app", "to": "proxy", "style": "solid", "label": "outbound call, via localhost"},
+    {"id": "e4", "from": "proxy", "to": "payments", "style": "solid", "label": "mTLS · retry · timeout"},
+    {"id": "e5", "from": "proxy", "to": "telemetry", "style": "dotted", "label": "every request"}
+   ],
+   "legend": [
+    {"style": "solid", "tone": "core", "label": "call"},
+    {"style": "dotted", "tone": "data", "label": "signal"}
+   ]
+  },
+  {
+   "id": "mesh", "kind": "c4", "title": "Data plane of proxies, one control plane", "direction": "DOWN",
+   "groups": [
+    {"id": "control", "label": "Control plane [e.g. istiod]", "tone": "neutral"},
+    {"id": "podA", "label": "Orders pod", "tone": "core"},
+    {"id": "podB", "label": "Payments pod", "tone": "core"}
+   ],
+   "elements": [
+    {"id": "users", "kind": "person", "tone": "neutral", "label": "Users", "sub": "outside the cluster", "rank": 0},
+    {"id": "operator", "kind": "person", "tone": "neutral", "label": "Platform team", "sub": "writes rules, not code", "rank": 0},
+    {"id": "gateway", "kind": "container", "tone": "stream", "label": "Ingress gateway", "sub": "north-south: traffic coming in", "rank": 1},
+    {"id": "cp", "kind": "component", "tone": "neutral", "label": "Config and discovery", "sub": "rules → proxy config", "group": "control", "rank": 1},
+    {"id": "ca", "kind": "component", "tone": "neutral", "label": "Certificate authority", "sub": "identity for each workload", "group": "control", "rank": 1},
+    {"id": "oapp", "kind": "container", "tone": "core", "label": "Orders app", "group": "podA", "rank": 2},
+    {"id": "oproxy", "kind": "component", "tone": "stream", "label": "Sidecar proxy", "group": "podA", "rank": 3},
+    {"id": "papp", "kind": "container", "tone": "core", "label": "Payments app", "group": "podB", "rank": 2},
+    {"id": "pproxy", "kind": "component", "tone": "stream", "label": "Sidecar proxy", "group": "podB", "rank": 3},
+    {"id": "telemetry", "kind": "store", "tone": "data", "label": "Metrics and traces", "rank": 4}
+   ],
+   "edges": [
+    {"id": "m1", "from": "operator", "to": "cp", "style": "solid", "label": "routing rules, policies"},
+    {"id": "m2", "from": "cp", "to": "oproxy", "style": "dotted", "label": "config"},
+    {"id": "m3", "from": "cp", "to": "pproxy", "style": "dotted", "label": "config"},
+    {"id": "m4", "from": "ca", "to": "oproxy", "style": "dotted", "label": "certificate"},
+    {"id": "m5", "from": "ca", "to": "pproxy", "style": "dotted", "label": "certificate"},
+    {"id": "m6", "from": "users", "to": "gateway", "style": "solid", "label": "HTTPS"},
+    {"id": "m7", "from": "gateway", "to": "oproxy", "style": "solid", "label": "into the mesh"},
+    {"id": "m8", "from": "oproxy", "to": "oapp", "style": "solid", "label": "localhost"},
+    {"id": "m9", "from": "oproxy", "to": "pproxy", "style": "solid", "label": "east-west · mTLS"},
+    {"id": "m10", "from": "pproxy", "to": "papp", "style": "solid", "label": "localhost"},
+    {"id": "m11", "from": "oproxy", "to": "telemetry", "style": "dotted", "label": "metrics, spans"},
+    {"id": "m12", "from": "pproxy", "to": "telemetry", "style": "dotted", "label": "metrics, spans"}
+   ],
+   "legend": [
+    {"style": "solid", "tone": "core", "label": "call"},
+    {"style": "dotted", "tone": "data", "label": "config or signal"}
+   ]
+  },
+  {
+   "id": "flow", "kind": "sequence", "title": "One call through the mesh, with a canary",
+   "participants": [
+    {"id": "oapp", "label": "Orders app"},
+    {"id": "oproxy", "label": "Orders sidecar"},
+    {"id": "cp", "label": "Control plane"},
+    {"id": "p1", "label": "Payments v1"},
+    {"id": "p2", "label": "Payments v2 (canary)"},
+    {"id": "tel", "label": "Telemetry"}
+   ],
+   "messages": [
+    {"id": "h1", "from": "cp", "to": "oproxy", "style": "dotted", "label": "routes: 90% v1, 10% v2 · certificate"},
+    {"id": "h2", "from": "oapp", "to": "oproxy", "style": "solid", "label": "POST payments/charge · plain HTTP"},
+    {"id": "h3", "from": "oproxy", "to": "p1", "style": "solid", "label": "mTLS · both sides check identity"},
+    {"id": "h4", "from": "p1", "to": "oproxy", "style": "solid", "label": "200"},
+    {"id": "h5", "from": "oproxy", "to": "oapp", "style": "solid", "label": "200"},
+    {"id": "h6", "from": "oapp", "to": "oproxy", "style": "solid", "label": "next request"},
+    {"id": "h7", "from": "oproxy", "to": "p2", "style": "solid", "label": "about 1 in 10 goes to the canary"},
+    {"id": "h8", "from": "p2", "to": "oproxy", "style": "solid", "label": "200"},
+    {"id": "h9", "from": "oproxy", "to": "tel", "style": "dotted", "label": "latency, status, trace span"}
+   ]
+  },
+  {
+   "id": "failure", "kind": "sequence", "title": "A bad pod, and retries that multiply",
+   "participants": [
+    {"id": "oapp", "label": "Orders app"},
+    {"id": "oproxy", "label": "Orders sidecar"},
+    {"id": "pa", "label": "Payments pod A"},
+    {"id": "pb", "label": "Payments pod B"}
+   ],
+   "messages": [
+    {"id": "f1", "from": "oapp", "to": "oproxy", "style": "solid", "label": "POST payments/charge"},
+    {"id": "f2", "from": "oproxy", "to": "pa", "style": "solid", "label": "attempt 1"},
+    {"id": "f3", "from": "pa", "to": "oproxy", "style": "dashed", "label": "503"},
+    {"id": "f4", "from": "oproxy", "to": "pb", "style": "solid", "label": "retry on another pod"},
+    {"id": "f5", "from": "pb", "to": "oproxy", "style": "solid", "label": "200"},
+    {"id": "f6", "from": "oproxy", "to": "oapp", "style": "solid", "label": "200 · app never saw the 503"},
+    {"id": "f7", "from": "oproxy", "to": "pa", "style": "dashed", "label": "5 errors in a row → ejected for 30 s"},
+    {"id": "r1", "from": "oapp", "to": "oproxy", "style": "solid", "label": "app library: try 1 of 3"},
+    {"id": "r2", "from": "oproxy", "to": "pb", "style": "solid", "label": "mesh: attempt 1"},
+    {"id": "r3", "from": "oproxy", "to": "pb", "style": "dashed", "label": "mesh: retry 1"},
+    {"id": "r4", "from": "oproxy", "to": "pb", "style": "dashed", "label": "mesh: retry 2"},
+    {"id": "r5", "from": "oproxy", "to": "oapp", "style": "dashed", "label": "503 after 3 attempts"},
+    {"id": "r6", "from": "oapp", "to": "oproxy", "style": "dashed", "label": "tries 2 and 3: up to 9 calls in all"}
+   ]
+  },
+  {
+   "id": "variants", "kind": "c4", "title": "Where the proxy runs: per pod or per node", "direction": "DOWN",
+   "groups": [
+    {"id": "sc", "label": "Sidecar mode [one proxy per pod]", "tone": "core"},
+    {"id": "amb", "label": "Istio ambient mode [per node]", "tone": "stream"},
+    {"id": "cil", "label": "Cilium [eBPF, per node]", "tone": "data"}
+   ],
+   "elements": [
+    {"id": "scapp", "kind": "container", "tone": "core", "label": "App", "sub": "in its pod", "group": "sc", "rank": 0},
+    {"id": "scproxy", "kind": "component", "tone": "core", "label": "Envoy sidecar", "sub": "L4 + L7 · one per pod", "group": "sc", "rank": 1},
+    {"id": "ambapp", "kind": "container", "tone": "stream", "label": "App", "sub": "no sidecar", "group": "amb", "rank": 0},
+    {"id": "zt", "kind": "component", "tone": "stream", "label": "ztunnel", "sub": "per node · L4 · mTLS", "group": "amb", "rank": 1},
+    {"id": "wp", "kind": "component", "tone": "stream", "label": "Waypoint proxy", "sub": "Envoy · L7 · optional", "group": "amb", "rank": 2},
+    {"id": "cilapp", "kind": "container", "tone": "data", "label": "App", "sub": "no sidecar", "group": "cil", "rank": 0},
+    {"id": "ebpf", "kind": "component", "tone": "data", "label": "eBPF datapath", "sub": "in the kernel · L3/L4", "group": "cil", "rank": 1},
+    {"id": "cenvoy", "kind": "component", "tone": "data", "label": "Envoy per node", "sub": "HTTP, gRPC parsing", "group": "cil", "rank": 2}
+   ],
+   "edges": [
+    {"id": "v1", "from": "scapp", "to": "scproxy", "style": "solid", "label": "localhost"},
+    {"id": "v2", "from": "ambapp", "to": "zt", "style": "solid", "label": "redirected"},
+    {"id": "v3", "from": "zt", "to": "wp", "style": "dashed", "label": "only if L7 needed"},
+    {"id": "v4", "from": "cilapp", "to": "ebpf", "style": "solid", "label": "kernel"},
+    {"id": "v5", "from": "ebpf", "to": "cenvoy", "style": "dashed", "label": "only for L7"}
+   ],
+   "legend": [
+    {"style": "solid", "tone": "core", "label": "always"},
+    {"style": "dashed", "tone": "stream", "label": "only when needed"}
+   ]
+  }
+ ],
+ "chapters": [
+  {"id": "problem", "title": "The problem"},
+  {"id": "naive", "title": "The naive fix"},
+  {"id": "pattern", "title": "The pattern"},
+  {"id": "how", "title": "How it works"},
+  {"id": "failure", "title": "When it goes wrong"},
+  {"id": "tradeoffs", "title": "Trade-offs"},
+  {"id": "wild", "title": "In the wild"},
+  {"id": "related", "title": "Related patterns"},
+  {"id": "recap", "title": "Recap"}
+ ],
+ "shots": [
+  {
+   "id": "sm-problem", "chapter": "problem", "title": "Plumbing everywhere", "diagram": "before", "focus": [],
+   "trace": ["b1", "b2", "b3", "b4", "b5", "b6", "b7", "b8"],
+   "engineer": "Here are three services written in three languages. Each one carries its own networking plumbing: TLS, retries, timeouts, metrics and tracing, through whatever library exists for its language, at whatever version it last upgraded to. Orders retries three times with a two-second timeout. Payments calls catalogue over plain HTTP with no timeout at all. When the platform team needs one new security rule, they patch three code bases, and monitoring receives metrics in three different formats.",
+   "executive": "Every service does its own security, retries and monitoring in its own way, so one company-wide change means changing every service."
+  },
+  {
+   "id": "sm-naive", "chapter": "naive", "title": "Shared library", "diagram": "naive", "focus": [],
+   "trace": ["n1", "n2", "n3", "n4", "n5", "n6", "n7"],
+   "engineer": "The obvious fix is one shared library for mutual TLS and retries. The platform team writes it once, in Java, and orders upgrades and redeploys. Then someone ports it to Go by hand, and the Python port slips to next quarter. So orders talks to payments over mutual TLS, but payments still calls catalogue in plain text, and that call hangs because the port has no timeout. A library per language gives you several versions of the same idea, each released on its own schedule.",
+   "executive": "A shared code library has to be rewritten for every language and upgraded by every team, so the services never quite agree."
+  },
+  {
+   "id": "sm-sidecar", "chapter": "pattern", "title": "Sidecar", "diagram": "sidecar", "focus": [],
+   "trace": ["e1", "e2", "e3", "e4", "e5"],
+   "engineer": "The sidecar pattern moves that plumbing into a separate process deployed next to every instance of the service. Microsoft describes it as attached to its parent and sharing its life cycle: created and retired together. In Kubernetes the sidecar is a second container in the same pod. Incoming calls reach the proxy first, over mutual TLS, and it hands them to the app on localhost. Outgoing calls go to the proxy too, which adds retries, timeouts and telemetry. The app keeps only business logic, in any language.",
+   "executive": "A small helper runs beside every copy of a service and handles security and networking for it, whatever language the service is written in."
+  },
+  {
+   "id": "sm-mesh", "chapter": "pattern", "title": "Control plane", "diagram": "mesh", "focus": [],
+   "trace": ["m1", "m2", "m3", "m4", "m5"],
+   "engineer": "Put a sidecar proxy beside every service and you have a service mesh. The proxies are the data plane: they carry every request between services. A control plane manages them. In Istio, a component called istiod does service discovery, turns high-level routing rules into proxy configuration and pushes it out at runtime, and acts as a certificate authority, giving each workload an identity for mutual TLS. The platform team changes a rule once, and every proxy picks it up, with no redeploy of the services.",
+   "executive": "Together the helpers form a mesh. One central control plane hands them their rules and security certificates, so a change is made once for everyone."
+  },
+  {
+   "id": "sm-eastwest", "chapter": "pattern", "title": "East-west", "diagram": "mesh", "focus": ["gateway", "oproxy", "pproxy"],
+   "trace": ["m6", "m7", "m8", "m9", "m10", "m11", "m12"],
+   "engineer": "Notice the two directions of traffic. A user's request comes in from outside through a gateway: that is north-south traffic, and an API gateway or ingress gateway owns it. Once inside, orders calls payments: that is east-west traffic, between services, and that is the mesh's main job. Each hop between pods is mutual TLS from proxy to proxy, while the hop from proxy to app stays on localhost. Both proxies report metrics and trace spans in the same format.",
+   "executive": "A gateway handles traffic coming into the system. The mesh handles the much larger volume of traffic between services inside it."
+  },
+  {
+   "id": "sm-how", "chapter": "how", "title": "Canary call", "diagram": "flow", "focus": [],
+   "trace": ["h1", "h2", "h3", "h4", "h5", "h6", "h7", "h8", "h9"],
+   "engineer": "Step by step. The control plane has already sent the orders sidecar its routes, say ninety per cent to payments version one and ten per cent to a canary of version two, plus its certificate. Orders makes an ordinary HTTP call to payments, on localhost. Its sidecar opens mutual TLS to the payments sidecar, and each side checks the other's identity. The reply comes back. The next request may land on the canary. Every call is recorded with latency, status and a trace span.",
+   "executive": "The service makes a plain call. The mesh encrypts it, checks who is on each end, sends a small share to a new version, and records everything."
+  },
+  {
+   "id": "sm-features", "chapter": "how",
+   "card": {
+    "heading": "What the mesh adds, with no code change",
+    "points": [
+     "Mutual TLS and a workload identity for every service",
+     "Traffic splitting by percentage: canaries and gradual rollouts",
+     "Retries, timeouts and circuit-breaking limits as config",
+     "Outlier detection: stop sending to a misbehaving pod",
+     "Metrics and trace spans for every request"
+    ]
+   },
+   "focus": [], "trace": [],
+   "engineer": "So what does the mesh give you without touching application code? Mutual TLS, with an identity for every workload. Traffic splitting by percentage, for canaries and gradual rollouts. Retries, timeouts and circuit-breaking limits, set as configuration. Outlier detection, which stops sending traffic to a pod that keeps failing. And metrics and distributed traces for every request. One caveat: tracing still needs the app to pass trace headers from incoming to outgoing calls.",
+   "executive": "Encryption, safe rollouts, retries and monitoring all come from configuration rather than from each team writing code."
+  },
+  {
+   "id": "sm-failure", "chapter": "failure", "title": "Bad pod", "diagram": "failure", "focus": [],
+   "trace": ["f1", "f2", "f3", "f4", "f5", "f6", "f7"],
+   "engineer": "Now one payments pod goes bad. The orders sidecar sends attempt one to pod A and gets a five-oh-three. It retries on pod B, which succeeds, and the app never sees the error. Meanwhile Envoy's outlier detection is counting. By default, five consecutive server errors eject a host from the load-balancing pool for thirty seconds, and the time grows each time it is ejected again. By default, no more than ten per cent of a cluster can be ejected at once.",
+   "executive": "When one copy of a service misbehaves, the mesh retries elsewhere and stops sending it traffic for a while, so users rarely notice."
+  },
+  {
+   "id": "sm-storm", "chapter": "failure", "title": "Retries multiply", "diagram": "failure", "focus": ["oapp", "oproxy", "pb"],
+   "trace": ["r1", "r2", "r3", "r4", "r5", "r6"],
+   "engineer": "But retries can multiply. Istio's documented default retries an HTTP request twice, so three attempts. If the app still uses its old library and tries three times as well, one user request can become nine calls to a service that is already struggling. Add another layer and it multiplies again. Istio's own docs warn that app and mesh timeouts can also conflict. So pick one layer to own retries and timeouts, give them a budget, and turn the other off.",
+   "executive": "If both the service and the mesh retry, one failed request can turn into many, so only one of them should be in charge of retrying."
+  },
+  {
+   "id": "sm-costs", "chapter": "tradeoffs",
+   "card": {
+    "heading": "Plumbing in the app, or in the mesh",
+    "kind": "compare",
+    "points": [
+     "Library in each service | Sidecar mesh",
+     "No extra hop | Two extra proxy hops per call",
+     "Memory only in the app | A proxy's CPU and memory per pod",
+     "One version per language | One proxy, any language",
+     "Change means redeploy | Change is config, pushed live",
+     "Nothing new to run | A control plane to run and upgrade"
+    ]
+   },
+   "focus": [], "trace": [],
+   "engineer": "The costs are real. Every call now passes through two extra proxies, one on each side, adding latency to every hop. Every pod carries a proxy that needs its own CPU and memory, which adds up across thousands of pods. And the control plane is another critical system to run, upgrade and debug. Microsoft says a sidecar may not be worth it for a small application, or where the platform already gives you the capability. In return, you get one implementation for every language, changed by configuration.",
+   "executive": "A mesh adds a little delay, extra computing cost and another system to run. In return, every service gets the same security and reliability."
+  },
+  {
+   "id": "sm-sidecarless", "chapter": "tradeoffs", "title": "Sidecarless", "diagram": "variants", "focus": [],
+   "trace": ["v1", "v2", "v3", "v4", "v5"],
+   "engineer": "Because of that cost, newer meshes drop the per-pod proxy. Istio's ambient mode, generally available since version one point twenty-four in November twenty twenty-four, runs a ztunnel on each node for layer four: mutual TLS, authentication and telemetry. A waypoint proxy, which is Envoy, is added only where you need layer seven features. Cilium uses eBPF in the kernel for the network path, and a per-node Envoy for HTTP and gRPC. Fewer proxies to run, with a different way to debug.",
+   "executive": "Newer designs share one helper per machine instead of one per service, which cuts the cost while keeping most of the benefits."
+  },
+  {
+   "id": "sm-wild", "chapter": "wild",
+   "card": {
+    "heading": "In the wild",
+    "kind": "compare",
+    "points": [
+     "Project | What it is",
+     "Envoy | C++ proxy built at Lyft · CNCF graduated",
+     "Istio | Envoy sidecars or ambient · CNCF graduated 2023",
+     "Linkerd | Rust micro-proxies · CNCF graduated 2021",
+     "Cilium | eBPF datapath, per-node Envoy",
+     "Kubernetes | Native sidecar containers, stable in v1.33"
+    ]
+   },
+   "focus": [], "trace": [],
+   "engineer": "In the wild. Envoy, originally built at Lyft, is a C++ proxy that runs beside each application and is the data plane for many meshes; it is a graduated CNCF project. Istio uses Envoy sidecars or ambient mode, and graduated in July twenty twenty-three. Linkerd uses its own Rust micro-proxies and graduated in twenty twenty-one. Cilium builds on eBPF. And Kubernetes now has native sidecar containers, stable since version one point thirty-three, which start before the app and stop after it.",
+   "executive": "Envoy, Istio, Linkerd and Cilium are the well-known open-source options, and Kubernetes now supports sidecars directly."
+  },
+  {
+   "id": "sm-related", "chapter": "related",
+   "card": {
+    "heading": "Related patterns",
+    "kind": "compare",
+    "points": [
+     "Pattern | How it relates",
+     "API gateway | North-south traffic in; the mesh handles east-west",
+     "Retry and timeout | Configured in the mesh; own them in one layer",
+     "Circuit breaker | Proxy limits and outlier detection",
+     "Ambassador | A sidecar that proxies outbound calls only"
+    ]
+   },
+   "focus": [], "trace": [],
+   "engineer": "Its neighbours. An API gateway handles north-south traffic coming in; the mesh handles east-west traffic between services, and many systems run both. Retries and timeouts are patterns the mesh implements for you, but only if one layer owns them. Circuit breaking shows up as connection limits in the proxy and outlier detection. And the ambassador pattern is a sidecar that only proxies outgoing calls, often for legacy apps you cannot change.",
+   "executive": "The mesh works alongside a gateway at the edge, and it provides retries, timeouts and circuit breakers so services do not have to."
+  },
+  {
+   "id": "sm-recap", "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "Move network plumbing out of the code, into a proxy beside it",
+     "Proxies are the data plane; one control plane gives rules and identity",
+     "It costs hops, CPU and operations: own retries in one layer"
+    ]
+   },
+   "focus": [], "trace": [],
+   "engineer": "Three things to remember. Move networking plumbing, such as TLS, retries, timeouts and telemetry, out of every service and into a proxy that runs beside it, so every language gets the same behaviour. The proxies form the data plane, and one control plane hands them configuration and identity. And it is not free: it adds hops, CPU and memory, and a system to operate, so own retries in one layer, and consider sidecarless modes.",
+   "executive": "Take networking out of the code. Run it centrally from one control plane. Mind the cost, and do not retry twice."
+  }
+ ],
+ "meta": {
+  "kind": "pattern",
+  "category": "APIs",
+  "level": "advanced",
+  "uses": ["retry", "timeout", "circuit-breaker"],
+  "related": ["api-gateway", "circuit-breaker", "retry"],
+  "blurb": "Move TLS, retries and telemetry out of every service into a proxy beside it, run centrally by one control plane.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ }
+}

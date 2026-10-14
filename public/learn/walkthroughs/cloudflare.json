@@ -1,0 +1,1246 @@
+{
+ "id": "cloudflare",
+ "title": "Cloudflare: one network at the edge",
+ "subtitle": "Company case study",
+ "voice": "en-GB-SoniaNeural",
+ "template": "case-study",
+ "meta": {
+  "kind": "company",
+  "category": "Infrastructure",
+  "level": "intermediate",
+  "uses": [
+   "cdn-caching",
+   "consistent-hashing",
+   "rate-limiting",
+   "feature-flags",
+   "graceful-degradation"
+  ],
+  "related": [],
+  "blurb": "One anycast network where every server runs every service: Unimog, Pingora, tiered cache, dosd, Workers and Quicksilver.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14",
+  "changelog": [
+   {
+    "date": "2026-10-14",
+    "note": "First version."
+   }
+  ]
+ },
+ "diagrams": [
+  {
+   "id": "context",
+   "kind": "c4",
+   "title": "Level 1 · Context",
+   "direction": "DOWN",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request · response"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "configuration"
+    },
+    {
+     "style": "dotted",
+     "tone": "external",
+     "label": "attack traffic"
+    }
+   ],
+   "elements": [
+    {
+     "id": "visitor",
+     "kind": "person",
+     "label": "Visitor",
+     "sub": "browser, app or API client"
+    },
+    {
+     "id": "owner",
+     "kind": "person",
+     "label": "Customer team",
+     "sub": "sets rules in the dashboard or API"
+    },
+    {
+     "id": "botnet",
+     "kind": "external",
+     "label": "Botnets",
+     "sub": "hijacked routers, cameras, servers"
+    },
+    {
+     "id": "isps",
+     "kind": "external",
+     "label": "ISPs and exchanges",
+     "sub": "13,000+ interconnections"
+    },
+    {
+     "id": "cf",
+     "kind": "system",
+     "label": "Cloudflare network",
+     "sub": "330+ cities · every service everywhere"
+    },
+    {
+     "id": "origin",
+     "kind": "external",
+     "label": "Customer origin",
+     "sub": "servers, a cloud, or none at all"
+    }
+   ],
+   "edges": [
+    {
+     "id": "c-v-isp",
+     "from": "visitor",
+     "to": "isps",
+     "label": "DNS, HTTPS",
+     "style": "solid"
+    },
+    {
+     "id": "c-b-isp",
+     "from": "botnet",
+     "to": "isps",
+     "label": "floods",
+     "style": "dotted"
+    },
+    {
+     "id": "c-isp-cf",
+     "from": "isps",
+     "to": "cf",
+     "label": "BGP anycast: nearest city",
+     "style": "solid"
+    },
+    {
+     "id": "c-cf-origin",
+     "from": "cf",
+     "to": "origin",
+     "label": "cache misses only",
+     "style": "solid"
+    },
+    {
+     "id": "c-owner-cf",
+     "from": "owner",
+     "to": "cf",
+     "label": "change a setting",
+     "style": "dashed"
+    }
+   ]
+  },
+  {
+   "id": "containers",
+   "kind": "c4",
+   "title": "Level 2 · Containers",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "edge",
+     "label": "Edge data centre · the same on every server",
+     "tone": "core"
+    },
+    {
+     "id": "core",
+     "label": "Core data centres",
+     "tone": "data"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request path"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "configuration · rules"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "samples · logs · reads"
+    }
+   ],
+   "elements": [
+    {
+     "id": "visitor",
+     "kind": "person",
+     "label": "Visitor",
+     "sub": "nearest city by anycast",
+     "rank": 0
+    },
+    {
+     "id": "botnet",
+     "kind": "external",
+     "label": "Botnet",
+     "sub": "attack traffic",
+     "rank": 0
+    },
+    {
+     "id": "owner",
+     "kind": "person",
+     "label": "Customer team",
+     "sub": "dashboard, API",
+     "rank": 0
+    },
+    {
+     "id": "routers",
+     "kind": "container",
+     "label": "Edge routers",
+     "sub": "spread packets across servers",
+     "group": "edge",
+     "rank": 1
+    },
+    {
+     "id": "api",
+     "kind": "container",
+     "label": "Control plane",
+     "sub": "dashboard and API",
+     "group": "core",
+     "rank": 1
+    },
+    {
+     "id": "l4",
+     "kind": "container",
+     "label": "Packet layer",
+     "sub": "XDP: l4drop, Unimog",
+     "group": "edge",
+     "rank": 2
+    },
+    {
+     "id": "qsroot",
+     "kind": "store",
+     "label": "Quicksilver root",
+     "sub": "source of all config",
+     "group": "core",
+     "rank": 2
+    },
+    {
+     "id": "logs",
+     "kind": "store",
+     "label": "Analytics and logs",
+     "sub": "analytics clusters, log delivery",
+     "group": "core",
+     "rank": 2
+    },
+    {
+     "id": "proxy",
+     "kind": "container",
+     "label": "HTTP proxy",
+     "sub": "TLS, FL2 rules, Pingora cache",
+     "group": "edge",
+     "rank": 3
+    },
+    {
+     "id": "dosd",
+     "kind": "container",
+     "label": "dosd",
+     "sub": "samples traffic, writes drop rules",
+     "group": "edge",
+     "rank": 3
+    },
+    {
+     "id": "workers",
+     "kind": "container",
+     "label": "Workers runtime",
+     "sub": "V8 isolates",
+     "group": "edge",
+     "rank": 3
+    },
+    {
+     "id": "qsr",
+     "kind": "store",
+     "label": "Quicksilver replica",
+     "sub": "config on every server",
+     "group": "edge",
+     "rank": 4
+    },
+    {
+     "id": "upper",
+     "kind": "container",
+     "label": "Upper-tier data centre",
+     "sub": "tiered cache",
+     "rank": 4
+    },
+    {
+     "id": "origin",
+     "kind": "external",
+     "label": "Customer origin",
+     "sub": "the customer's own servers",
+     "rank": 5
+    }
+   ],
+   "edges": [
+    {
+     "id": "k-v-r",
+     "from": "visitor",
+     "to": "routers",
+     "label": "HTTPS",
+     "style": "solid"
+    },
+    {
+     "id": "k-b-r",
+     "from": "botnet",
+     "to": "routers",
+     "label": "flood",
+     "style": "dotted"
+    },
+    {
+     "id": "k-r-l4",
+     "from": "routers",
+     "to": "l4",
+     "label": "any server",
+     "style": "solid"
+    },
+    {
+     "id": "k-l4-proxy",
+     "from": "l4",
+     "to": "proxy",
+     "label": "owning server",
+     "style": "solid"
+    },
+    {
+     "id": "k-l4-dosd",
+     "from": "l4",
+     "to": "dosd",
+     "label": "sampled packets",
+     "style": "dotted"
+    },
+    {
+     "id": "k-dosd-l4",
+     "from": "dosd",
+     "to": "l4",
+     "label": "drop rule",
+     "style": "dashed"
+    },
+    {
+     "id": "k-proxy-w",
+     "from": "proxy",
+     "to": "workers",
+     "label": "run a Worker",
+     "style": "solid"
+    },
+    {
+     "id": "k-proxy-up",
+     "from": "proxy",
+     "to": "upper",
+     "label": "cache miss",
+     "style": "solid"
+    },
+    {
+     "id": "k-up-o",
+     "from": "upper",
+     "to": "origin",
+     "label": "upper miss",
+     "style": "solid"
+    },
+    {
+     "id": "k-o-api",
+     "from": "owner",
+     "to": "api",
+     "label": "change a setting",
+     "style": "dashed"
+    },
+    {
+     "id": "k-api-qs",
+     "from": "api",
+     "to": "qsroot",
+     "label": "write",
+     "style": "dashed"
+    },
+    {
+     "id": "k-qs-qsr",
+     "from": "qsroot",
+     "to": "qsr",
+     "label": "replicate in seconds",
+     "style": "dashed"
+    },
+    {
+     "id": "k-qsr-proxy",
+     "from": "qsr",
+     "to": "proxy",
+     "label": "read config",
+     "style": "dotted"
+    },
+    {
+     "id": "k-proxy-logs",
+     "from": "proxy",
+     "to": "logs",
+     "label": "request logs",
+     "style": "dotted"
+    }
+   ]
+  },
+  {
+   "id": "server",
+   "kind": "c4",
+   "title": "Level 3 · One request through one server",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "srv",
+     "label": "One edge server",
+     "tone": "core"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request path"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "rules"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "samples · reads"
+    }
+   ],
+   "elements": [
+    {
+     "id": "pkt",
+     "kind": "external",
+     "label": "Edge router",
+     "sub": "a packet for an anycast address",
+     "rank": 0
+    },
+    {
+     "id": "xdp",
+     "kind": "component",
+     "label": "l4drop",
+     "sub": "XDP: drops attack packets in the driver",
+     "group": "srv",
+     "rank": 1
+    },
+    {
+     "id": "unimog",
+     "kind": "component",
+     "label": "Unimog",
+     "sub": "XDP: hash, forward to the owning server",
+     "group": "srv",
+     "rank": 1
+    },
+    {
+     "id": "dosd",
+     "kind": "component",
+     "label": "dosd",
+     "sub": "finds attacks in samples",
+     "group": "srv",
+     "rank": 2
+    },
+    {
+     "id": "tls",
+     "kind": "component",
+     "label": "TLS and HTTP",
+     "sub": "terminate the connection",
+     "group": "srv",
+     "rank": 2
+    },
+    {
+     "id": "fl",
+     "kind": "component",
+     "label": "FL2 core proxy",
+     "sub": "Rust · WAF, bots, rules, routing",
+     "group": "srv",
+     "rank": 3
+    },
+    {
+     "id": "cfg",
+     "kind": "store",
+     "label": "Quicksilver replica",
+     "sub": "this customer's config",
+     "tone": "data",
+     "group": "srv",
+     "rank": 3
+    },
+    {
+     "id": "worker",
+     "kind": "component",
+     "label": "Workers runtime",
+     "sub": "V8 isolates",
+     "group": "srv",
+     "rank": 4
+    },
+    {
+     "id": "pingora",
+     "kind": "component",
+     "label": "Pingora",
+     "sub": "Rust · cache lookup, origin fetch",
+     "group": "srv",
+     "rank": 4
+    },
+    {
+     "id": "cache",
+     "kind": "store",
+     "label": "Local cache",
+     "sub": "objects on this machine",
+     "tone": "data",
+     "group": "srv",
+     "rank": 5
+    },
+    {
+     "id": "out",
+     "kind": "external",
+     "label": "Upper tier or origin",
+     "sub": "pooled, reused connections",
+     "rank": 6
+    }
+   ],
+   "edges": [
+    {
+     "id": "e-pkt",
+     "from": "pkt",
+     "to": "xdp",
+     "label": "packet",
+     "style": "solid"
+    },
+    {
+     "id": "e-xdp-uni",
+     "from": "xdp",
+     "to": "unimog",
+     "style": "solid"
+    },
+    {
+     "id": "e-xdp-dosd",
+     "from": "xdp",
+     "to": "dosd",
+     "label": "samples",
+     "style": "dotted"
+    },
+    {
+     "id": "e-dosd-xdp",
+     "from": "dosd",
+     "to": "xdp",
+     "label": "new drop rule",
+     "style": "dashed"
+    },
+    {
+     "id": "e-uni-tls",
+     "from": "unimog",
+     "to": "tls",
+     "label": "local or forwarded",
+     "style": "solid"
+    },
+    {
+     "id": "e-tls-fl",
+     "from": "tls",
+     "to": "fl",
+     "label": "HTTP request",
+     "style": "solid"
+    },
+    {
+     "id": "e-fl-cfg",
+     "from": "fl",
+     "to": "cfg",
+     "label": "zone config",
+     "style": "dotted"
+    },
+    {
+     "id": "e-dosd-fl",
+     "from": "dosd",
+     "to": "fl",
+     "label": "HTTP flood rule",
+     "style": "dashed"
+    },
+    {
+     "id": "e-fl-w",
+     "from": "fl",
+     "to": "worker",
+     "label": "route to a Worker",
+     "style": "solid"
+    },
+    {
+     "id": "e-fl-ping",
+     "from": "fl",
+     "to": "pingora",
+     "label": "allowed",
+     "style": "solid"
+    },
+    {
+     "id": "e-ping-cache",
+     "from": "pingora",
+     "to": "cache",
+     "label": "look up",
+     "style": "dotted"
+    },
+    {
+     "id": "e-ping-out",
+     "from": "pingora",
+     "to": "out",
+     "label": "miss",
+     "style": "solid"
+    }
+   ]
+  },
+  {
+   "id": "miss",
+   "kind": "sequence",
+   "title": "A cache miss through tiered cache",
+   "participants": [
+    {
+     "id": "m-v",
+     "label": "Visitor"
+    },
+    {
+     "id": "m-dns",
+     "label": "Cloudflare DNS"
+    },
+    {
+     "id": "m-low",
+     "label": "Nearby data centre"
+    },
+    {
+     "id": "m-up",
+     "label": "Upper-tier data centre"
+    },
+    {
+     "id": "m-o",
+     "label": "Origin"
+    }
+   ],
+   "messages": [
+    {
+     "id": "m1",
+     "from": "m-v",
+     "to": "m-dns",
+     "label": "example.com?",
+     "style": "solid"
+    },
+    {
+     "id": "m2",
+     "from": "m-dns",
+     "to": "m-v",
+     "label": "an anycast address, same everywhere",
+     "style": "dashed"
+    },
+    {
+     "id": "m3",
+     "from": "m-v",
+     "to": "m-low",
+     "label": "TLS, GET /logo.png",
+     "style": "solid"
+    },
+    {
+     "id": "m4",
+     "from": "m-low",
+     "to": "m-up",
+     "label": "local miss: ask the upper tier",
+     "style": "solid"
+    },
+    {
+     "id": "m5",
+     "from": "m-up",
+     "to": "m-o",
+     "label": "upper miss: fetch from origin",
+     "style": "solid"
+    },
+    {
+     "id": "m6",
+     "from": "m-o",
+     "to": "m-up",
+     "label": "200, Cache-Control",
+     "style": "dashed"
+    },
+    {
+     "id": "m7",
+     "from": "m-up",
+     "to": "m-low",
+     "label": "response, now cached in the upper tier",
+     "style": "dashed"
+    },
+    {
+     "id": "m8",
+     "from": "m-low",
+     "to": "m-v",
+     "label": "response, now cached nearby too",
+     "style": "dashed"
+    }
+   ]
+  },
+  {
+   "id": "config",
+   "kind": "sequence",
+   "title": "A setting change reaches every server",
+   "participants": [
+    {
+     "id": "q-own",
+     "label": "Customer team"
+    },
+    {
+     "id": "q-api",
+     "label": "Control plane"
+    },
+    {
+     "id": "q-root",
+     "label": "Quicksilver root"
+    },
+    {
+     "id": "q-edge",
+     "label": "Quicksilver on every server"
+    },
+    {
+     "id": "q-proxy",
+     "label": "Edge proxy"
+    }
+   ],
+   "messages": [
+    {
+     "id": "q1",
+     "from": "q-own",
+     "to": "q-api",
+     "label": "turn on a firewall rule",
+     "style": "solid"
+    },
+    {
+     "id": "q2",
+     "from": "q-api",
+     "to": "q-root",
+     "label": "write key",
+     "style": "solid"
+    },
+    {
+     "id": "q3",
+     "from": "q-root",
+     "to": "q-edge",
+     "label": "replicate to every server, in seconds",
+     "style": "dashed"
+    },
+    {
+     "id": "q4",
+     "from": "q-proxy",
+     "to": "q-edge",
+     "label": "read config on the next request",
+     "style": "dotted"
+    },
+    {
+     "id": "q5",
+     "from": "q-edge",
+     "to": "q-proxy",
+     "label": "new rule",
+     "style": "dashed"
+    },
+    {
+     "id": "q6",
+     "from": "q-proxy",
+     "to": "q-own",
+     "label": "rule enforced worldwide",
+     "style": "dashed"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "overview",
+   "title": "Overview"
+  },
+  {
+   "id": "requirements",
+   "title": "Requirements and scale"
+  },
+  {
+   "id": "context",
+   "title": "Context"
+  },
+  {
+   "id": "containers",
+   "title": "Containers"
+  },
+  {
+   "id": "deep-dive",
+   "title": "Deep dive"
+  },
+  {
+   "id": "flows",
+   "title": "Core flows"
+  },
+  {
+   "id": "data",
+   "title": "Data and caching"
+  },
+  {
+   "id": "growth",
+   "title": "Growth"
+  },
+  {
+   "id": "failures",
+   "title": "Failure modes"
+  },
+  {
+   "id": "patterns",
+   "title": "Patterns used"
+  },
+  {
+   "id": "decisions",
+   "title": "Key decisions"
+  },
+  {
+   "id": "mvp",
+   "title": "What we would build first"
+  }
+ ],
+ "shots": [
+  {
+   "id": "s01",
+   "chapter": "overview",
+   "diagram": "context",
+   "focus": [],
+   "trace": [],
+   "engineer": "This is Cloudflare, seen from the outside. A website or API puts Cloudflare in front of it, and visitors reach Cloudflare instead of the origin servers. Cloudflare caches content, blocks attacks, runs code and passes the rest through. The one idea everything depends on is uniformity: one network, where every data centre announces the same addresses and every server can run every service. It grows by adding more identical machines.",
+   "executive": "Cloudflare sits in front of websites and APIs to make them faster and safer. Its central idea is one network where every server can do every job."
+  },
+  {
+   "id": "s02",
+   "chapter": "requirements",
+   "card": {
+    "heading": "Scale, from Cloudflare's own pages",
+    "kind": "numbers",
+    "points": [
+     "348 | cities on Cloudflare's network page (checked October 2026)",
+     "125+ | countries (April 2026)",
+     "500 Tbps | provisioned external capacity (April 2026), not peak traffic",
+     "95% | of Internet users within 50 ms",
+     "13,000+ | network interconnections",
+     "47.1M | DDoS attacks mitigated in 2025"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "First, the scale, each number dated. Cloudflare's network page listed three hundred and forty-eight cities when we checked in October 2026. In April 2026 it reported five hundred terabits per second of external capacity across more than a hundred and twenty-five countries; that is provisioned capacity, not peak traffic. It says ninety-five per cent of Internet users are within fifty milliseconds, and it mitigated forty-seven million DDoS attacks in 2025.",
+   "executive": "Cloudflare runs in several hundred cities, with capacity to spare for the biggest attacks ever seen."
+  },
+  {
+   "id": "s03",
+   "chapter": "requirements",
+   "card": {
+    "heading": "What the system must do (our list)",
+    "points": [
+     "Answer from a city near every user",
+     "Absorb the largest attacks without paging a human",
+     "Keep serving when the origin is slow or down",
+     "Apply a customer's change worldwide within seconds",
+     "Run customer code safely next to other customers' code",
+     "Keep the edge up even when the control plane is down"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Then the requirements. These are ours, written from the product rather than from a Cloudflare document. Answer from a city close to every user. Absorb the largest attacks automatically, with no human in the loop. Shield the origin, and keep serving cached content when it struggles. Apply a customer's change everywhere within seconds. Run customers' code safely side by side. And keep the edge serving traffic even when the dashboard and API are down.",
+   "executive": "Be close to everyone, soak up attacks automatically, protect customers' servers, change quickly, run code safely, and keep serving no matter what."
+  },
+  {
+   "id": "s04",
+   "title": "Visitors and anycast",
+   "chapter": "context",
+   "diagram": "context",
+   "focus": [
+    "visitor",
+    "isps",
+    "cf",
+    "origin"
+   ],
+   "trace": [
+    "c-v-isp",
+    "c-isp-cf",
+    "c-cf-origin"
+   ],
+   "engineer": "A visitor looks up a site and gets back a Cloudflare address. Cloudflare's anycast primer from 2011 explains the trick: many machines in many data centres answer on the same IP addresses, and ordinary Internet routing, BGP, carries each visitor to the nearest one. If a data centre goes offline, traffic simply shifts to the next closest. Only when Cloudflare cannot answer from cache does a request go on to the customer's origin.",
+   "executive": "Every Cloudflare location shares the same addresses, so the Internet itself sends each visitor to the nearest one."
+  },
+  {
+   "id": "s05",
+   "title": "Owners and attackers",
+   "chapter": "context",
+   "diagram": "context",
+   "focus": [
+    "owner",
+    "botnet",
+    "isps",
+    "cf"
+   ],
+   "trace": [
+    "c-owner-cf",
+    "c-b-isp",
+    "c-isp-cf"
+   ],
+   "engineer": "Two more actors. The customer's team changes settings through the dashboard or the API: a firewall rule, a cache setting, a new Worker. And botnets send floods. Anycast helps here too. A distributed botnet's traffic lands on whichever data centre is nearest to each infected device, so, in the words of that 2011 post, each data centre absorbs a portion of it. No single site has to take the whole attack.",
+   "executive": "Customers configure the network from a dashboard, and attack traffic is spread across every location instead of hitting one."
+  },
+  {
+   "id": "s06",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [],
+   "trace": [],
+   "engineer": "One level in. Cloudflare has not published a container diagram, so this grouping is our design, built from its engineering posts. In every edge data centre, routers spread packets over identical servers. Each server runs a packet layer, an HTTP proxy, a DDoS detector called dosd, the Workers runtime, and a local copy of Quicksilver, the configuration store. Core data centres hold the control plane, Quicksilver's root, and analytics and logs.",
+   "executive": "Every edge server runs the same stack. A few core sites hold the dashboard, configuration and analytics. The layout is our reconstruction."
+  },
+  {
+   "id": "s07",
+   "title": "Serve a request",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "visitor",
+    "routers",
+    "l4",
+    "proxy",
+    "upper",
+    "origin"
+   ],
+   "trace": [
+    "k-v-r",
+    "k-r-l4",
+    "k-l4-proxy",
+    "k-proxy-up",
+    "k-up-o"
+   ],
+   "engineer": "The main path. A visitor's request reaches the nearest data centre. Routers hand the packets to any server, and the packet layer passes them to the server that owns the connection. The HTTP proxy terminates TLS, applies the customer's rules and checks the cache. On a miss, with tiered cache on, it asks an upper-tier data centre first. Only the upper tier talks to the origin, which sees far fewer requests.",
+   "executive": "Requests are answered locally when possible; otherwise a second Cloudflare site is asked before the customer's own servers."
+  },
+  {
+   "id": "s08",
+   "title": "Stop an attack",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "botnet",
+    "routers",
+    "l4",
+    "dosd"
+   ],
+   "trace": [
+    "k-b-r",
+    "k-r-l4",
+    "k-l4-dosd",
+    "k-dosd-l4"
+   ],
+   "engineer": "The attack path. Cloudflare's 2021 post on autonomous edge DDoS protection says dosd runs on every server in every edge data centre. It analyses sampled packets and HTTP requests, and when it spots an attack it generates a signature and pushes a rule to the cheapest place to drop it, with no central agreement needed. Network floods die in the packet layer; HTTP floods are stopped in the proxy.",
+   "executive": "Every server watches for attacks itself and starts dropping them straight away, without asking anyone."
+  },
+  {
+   "id": "s09",
+   "title": "Change a setting",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "owner",
+    "api",
+    "qsroot",
+    "qsr",
+    "proxy"
+   ],
+   "trace": [
+    "k-o-api",
+    "k-api-qs",
+    "k-qs-qsr",
+    "k-qsr-proxy"
+   ],
+   "engineer": "The configuration path. A customer changes a setting. The control plane writes it to Quicksilver, which replicates it to a copy on every edge server, and the proxy reads it locally on the next request. Cloudflare's 2020 post says Quicksilver delivers changes within seconds, and then served two and a half trillion reads and thirty million writes a day. Reads are local, so the edge never waits on the core.",
+   "executive": "A customer's change is copied to every server in seconds, and each server reads it from its own local copy."
+  },
+  {
+   "id": "s10",
+   "chapter": "deep-dive",
+   "diagram": "server",
+   "focus": [],
+   "trace": [],
+   "engineer": "Inside one edge server, following a single request. Each stage comes from a Cloudflare post, but the posts span 2020 to 2025, so this single picture is our assembly. A packet passes two XDP programs in the network driver: l4drop, then Unimog. Then TLS and HTTP termination. Then FL2, the core proxy that applies each customer's configuration. Then either a Worker, or Pingora, which checks the cache and fetches on a miss.",
+   "executive": "Inside each server, a request passes attack filtering, load balancing, decryption, the customer's rules, then the cache or customer code."
+  },
+  {
+   "id": "s11",
+   "title": "Packets",
+   "chapter": "deep-dive",
+   "diagram": "server",
+   "focus": [
+    "pkt",
+    "xdp",
+    "unimog",
+    "dosd",
+    "tls"
+   ],
+   "trace": [
+    "e-pkt",
+    "e-xdp-uni",
+    "e-xdp-dosd",
+    "e-dosd-xdp",
+    "e-uni-tls"
+   ],
+   "engineer": "First, packets. l4drop applies dosd's drop rules inside the driver. Then Unimog, the layer four load balancer described in 2020. Every server is a load balancer: routers send a packet to any server, and Unimog hashes the connection into a shared forwarding table to find the owning server. The table is weighted by measured CPU load, since server generations are mixed, and daisy chaining keeps existing connections alive when it changes.",
+   "executive": "Attack packets are dropped at the very first step; good packets are balanced across servers according to how busy each one is."
+  },
+  {
+   "id": "s12",
+   "title": "Rules",
+   "chapter": "deep-dive",
+   "diagram": "server",
+   "focus": [
+    "tls",
+    "fl",
+    "cfg",
+    "dosd"
+   ],
+   "trace": [
+    "e-tls-fl",
+    "e-fl-cfg",
+    "e-dosd-fl"
+   ],
+   "engineer": "Next, the request. Cloudflare's September 2025 post describes the order: requests terminate at the HTTP and TLS layer, then pass into FL, which it calls the brain. FL looks up the customer's configuration and runs the firewall, bot detection, DDoS rules and routing. The old FL was built on NGINX, OpenResty and LuaJIT; FL2 is a rewrite in Rust. Cloudflare reported ten milliseconds off median response time, and less than half the CPU.",
+   "executive": "The core proxy reads each customer's settings and enforces their security rules; its Rust rewrite made Cloudflare noticeably faster."
+  },
+  {
+   "id": "s13",
+   "title": "Cache and origin",
+   "chapter": "deep-dive",
+   "diagram": "server",
+   "focus": [
+    "fl",
+    "worker",
+    "pingora",
+    "cache",
+    "out"
+   ],
+   "trace": [
+    "e-fl-w",
+    "e-fl-ping",
+    "e-ping-cache",
+    "e-ping-out"
+   ],
+   "engineer": "Last, Pingora, which does cache lookups and origin fetches. Cloudflare's 2022 post explains why it replaced NGINX here: each NGINX worker process kept its own connection pool, so connections were rarely reused. Pingora is multithreaded Rust with one shared pool. Cloudflare reported seventy per cent less CPU, sixty-seven per cent less memory, and one large customer's reuse ratio rising from eighty-seven to ninety-nine point nine two per cent. It was open-sourced in 2024.",
+   "executive": "A custom Rust proxy fetches content from customers' servers, reusing connections and needing about a third of the resources of what it replaced."
+  },
+  {
+   "id": "s14",
+   "title": "Find the edge",
+   "chapter": "flows",
+   "diagram": "miss",
+   "focus": [
+    "m-v",
+    "m-dns",
+    "m-low"
+   ],
+   "trace": [
+    "m1",
+    "m2",
+    "m3"
+   ],
+   "engineer": "Now step by step: a cache miss. The visitor asks Cloudflare's DNS for example dot com, and gets back an anycast address, the same answer wherever they are. Their connection goes to whichever data centre BGP considers nearest. There, the TLS handshake finishes and the request for the logo arrives at the proxy. The customer's rules run, and then the local cache is checked. This time the logo is not there.",
+   "executive": "The visitor is sent to the nearest Cloudflare location, which does not have the file yet."
+  },
+  {
+   "id": "s15",
+   "title": "Fill the tiers",
+   "chapter": "flows",
+   "diagram": "miss",
+   "focus": [
+    "m-low",
+    "m-up",
+    "m-o",
+    "m-v"
+   ],
+   "trace": [
+    "m4",
+    "m5",
+    "m6",
+    "m7",
+    "m8"
+   ],
+   "engineer": "With tiered cache, the nearby data centre asks an upper-tier data centre first. Smart Tiered Cache, available on all plans, picks the upper tier with the lowest latency to that origin. If the upper tier also misses, it alone fetches from the origin. The response is cached in the upper tier on the way back, then in the nearby data centre. The next visitor from any city that shares that upper tier never reaches the origin.",
+   "executive": "A second Cloudflare site fetches the file once and shares it, so the customer's server is asked far less often."
+  },
+  {
+   "id": "s16",
+   "title": "Change a rule",
+   "chapter": "flows",
+   "diagram": "config",
+   "focus": [],
+   "trace": [
+    "q1",
+    "q2",
+    "q3",
+    "q4",
+    "q5",
+    "q6"
+   ],
+   "engineer": "The second flow: a configuration change. A customer turns on a firewall rule. The control plane writes a key to Quicksilver's root, which replicates it to every server within seconds. Each proxy reads its local copy on the next request, so the rule is in force worldwide almost at once. That speed helps customers under attack, and, as we will see, hurts when the change itself is wrong.",
+   "executive": "A customer's new rule is in force across the whole world within seconds. That speed cuts both ways."
+  },
+  {
+   "id": "s17",
+   "chapter": "data",
+   "card": {
+    "heading": "What is stored where",
+    "kind": "compare",
+    "points": [
+     "Data | Where, and for how long",
+     "Cached responses | Local cache, then upper tier; as the customer's cache rules allow",
+     "Customer configuration | Quicksilver: root in the core, a copy on every server",
+     "Attack signatures | dosd, on each server; short-lived drop rules",
+     "Isolate state | Workers memory; may be evicted at any time",
+     "Logs and analytics | Core data centres"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "What is stored where. Cached responses live on the server and in the upper tier, for as long as the customer's cache rules allow. Configuration lives in Quicksilver, which replaced Kyoto Tycoon and is built on LMDB, with a copy on every server. Drop rules are short-lived and local. Workers must not keep state in global variables, because an isolate can be evicted at any time. Logs and analytics flow to the core.",
+   "executive": "Content and configuration are copied to every location; only logs and analytics live centrally."
+  },
+  {
+   "id": "s18",
+   "chapter": "growth",
+   "card": {
+    "heading": "How it got here, from Cloudflare's own posts",
+    "kind": "compare",
+    "points": [
+     "Year | Change",
+     "2010 | Launches with one transit provider and a reverse proxy",
+     "2011 | Anycast primer: same addresses everywhere",
+     "2017 | Workers: JavaScript on V8 at the edge",
+     "2018 | 31 new cities in 24 days",
+     "2020 | Quicksilver and Unimog written up",
+     "2022 | Pingora replaces NGINX; 1T+ requests a day",
+     "2025 | FL2 in Rust; 31.4 Tbps attack, 35 seconds",
+     "2026 | 500 Tbps of external capacity"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "How it grew. Cloudflare launched in 2010 with one transit provider and a reverse proxy. In 2011 it described anycast; in 2017 it launched Workers; in 2018 it opened thirty-one cities in twenty-four days. In 2020 it wrote up Quicksilver and Unimog. In 2022 Pingora replaced NGINX, at over a trillion requests a day. 2025 brought FL2, and a thirty-one point four terabit attack. 2026, five hundred terabits of capacity.",
+   "executive": "The design has stayed the same since 2010: add more identical servers in more cities, and rewrite the core software as it ages."
+  },
+  {
+   "id": "s19",
+   "title": "Isolates",
+   "chapter": "growth",
+   "diagram": "server",
+   "focus": [
+    "fl",
+    "worker"
+   ],
+   "trace": [
+    "e-fl-w"
+   ],
+   "engineer": "New products follow the same rule: they run on the same servers. Workers shows how. Instead of a container per customer, one runtime process holds hundreds or thousands of V8 isolates and switches between them. Cloudflare's documentation says an isolate starts around a hundred times faster than a Node process in a container, using an order of magnitude less memory. Cheap enough to run every customer's code in every city.",
+   "executive": "Customer code runs in lightweight sandboxes that start almost instantly, cheap enough to run everywhere."
+  },
+  {
+   "id": "s20",
+   "chapter": "failures",
+   "card": {
+    "heading": "What fails, and what protects users",
+    "kind": "compare",
+    "points": [
+     "Failure | Protection",
+     "A data centre goes offline | Anycast moves traffic to the next nearest",
+     "A server is overloaded | Unimog shifts new connections to less-loaded servers",
+     "A record-size flood | dosd on every server; 31.4 Tbps mitigated with no human",
+     "Origin is overloaded | Tiered cache; Pingora connection limits return 503",
+     "A bad global change | Staged rollouts and kill switches (lessons of 2019 and 2025)",
+     "Core site loses power | Edge keeps serving; control plane fails over (2023)"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "What breaks, and what protects people. A data centre goes offline: anycast sends its traffic to the next nearest. A server is busy: Unimog sends new connections elsewhere. A record flood: the thirty-one point four terabit attack, reported in February 2026, was mitigated automatically. An origin overloads: tiered cache shields it, and Pingora can cap connections with 503s. The hardest cases are a bad global change, and losing a core site.",
+   "executive": "Most failures are absorbed by the design itself; the dangerous ones are bad changes spreading everywhere and losing a central site."
+  },
+  {
+   "id": "s21",
+   "title": "2 July 2019",
+   "chapter": "failures",
+   "diagram": "config",
+   "focus": [
+    "q-root",
+    "q-edge",
+    "q-proxy"
+   ],
+   "trace": [
+    "q2",
+    "q3",
+    "q5"
+   ],
+   "engineer": "On 2 July 2019, a new managed firewall rule contained a regular expression that backtracked badly. It was deployed through Quicksilver to every server at once, because rule changes skipped the staged rollout. CPUs serving HTTP traffic hit nearly a hundred per cent, visitors saw 502 errors, and Cloudflare lost about eighty per cent of its traffic for twenty-seven minutes. Afterwards it staged rule rollouts, restored a CPU guard, and committed to regex engines with run-time guarantees.",
+   "executive": "In 2019 one faulty firewall rule, sent everywhere at once, took most of Cloudflare offline for 27 minutes. Rule changes are now rolled out in stages."
+  },
+  {
+   "id": "s22",
+   "title": "Core outages",
+   "chapter": "failures",
+   "diagram": "containers",
+   "focus": [
+    "api",
+    "qsroot",
+    "logs",
+    "proxy"
+   ],
+   "trace": [
+    "k-api-qs",
+    "k-proxy-logs"
+   ],
+   "engineer": "On 2 November 2023, a Portland-area data centre lost power, taking down Cloudflare's control plane and analytics. The edge kept serving; customers could not change settings for a while, and some logs were lost. Code Orange followed, to make the control plane survive the loss of any core site. Then on 18 November 2025, a permissions change doubled a bot-detection file, which reached every server within minutes and crashed FL2, causing hours of 5xx errors.",
+   "executive": "In 2023 a power failure stopped the dashboard but not the network. In 2025 a bad internal file, spread everywhere, caused hours of errors."
+  },
+  {
+   "id": "s23",
+   "chapter": "patterns",
+   "card": {
+    "heading": "Patterns used",
+    "points": [
+     "CDN caching: local cache, then tiered cache, then origin",
+     "Consistent hashing: Unimog's forwarding table; generic tiered cache",
+     "Rate limiting: dosd drop rules; Pingora connection limits",
+     "Feature flags: kill switches and staged rollouts for global changes",
+     "Graceful degradation: edge keeps serving when the core is down"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The named patterns, each with its own walkthrough. CDN caching, in two tiers in front of the origin. Hashing to pick an owner: Unimog's shared forwarding table, and the consistent hash in generic global tiered cache. Rate limiting, from dosd's drop rules to Pingora's connection limits. Feature flags, as kill switches and staged rollouts, the lesson of both global outages. And graceful degradation when the core goes dark.",
+   "executive": "Caching, hashing to spread load, rate limits, switches to turn features off fast, and an edge that keeps working on its own."
+  },
+  {
+   "id": "s24",
+   "chapter": "decisions",
+   "card": {
+    "heading": "Key decisions",
+    "kind": "compare",
+    "points": [
+     "Decision | Why, and the cost",
+     "Anycast everywhere | Nearest city, attacks spread out; hard to steer one user",
+     "Every server runs everything | No scrubbing centres or special boxes; one bug hits all",
+     "Load balancer on every server | No dedicated tier; needs XDP and a shared table",
+     "Own proxies in Rust | Pooled connections, memory safety; years of rewrites",
+     "Config replicated to every server | Local reads in seconds; bad changes spread fast",
+     "Isolates, not containers | Fast and dense; only V8-compatible code"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The decisions that shaped it. Anycast everywhere, rather than steering each user by DNS: simple and attack-resistant, but coarse. Every server runs every service, rather than scrubbing centres or special appliances: Cloudflare's 2016 post makes this point, and the cost is that one bad change touches everything. Load balancing on every server. Its own Rust proxies, replacing NGINX. Configuration copied everywhere for local reads. And isolates rather than containers.",
+   "executive": "Make every location and every server identical; it makes scaling and defence simple, but means mistakes must be rolled out with great care."
+  },
+  {
+   "id": "s25",
+   "chapter": "mvp",
+   "card": {
+    "heading": "What we would build first",
+    "points": [
+     "A handful of cities on anycast, through one or two transit providers",
+     "Identical servers: one Pingora-based proxy that caches and forwards",
+     "Per-customer config in a replicated local store, read on every request",
+     "XDP drop rules from a simple per-server traffic sampler",
+     "Every config change staged: one server, one city, then everywhere",
+     "A control plane the edge can live without"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "If we built a small edge network today, we would start here. A handful of cities on anycast, with one or two transit providers. Identical servers running one proxy, perhaps built on the open-source Pingora framework, that caches and forwards. Per-customer configuration in a replicated local store. A simple traffic sampler writing XDP drop rules. Every change, including internal files, staged from one server to one city to everywhere. And an edge that runs without its control plane.",
+   "executive": "Start small but uniform, roll out every change in stages, and make sure the edge never depends on the centre."
+  }
+ ]
+}

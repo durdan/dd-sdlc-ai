@@ -1,0 +1,152 @@
+{
+ "cdc-problem-engineer": {
+  "file": "/audio/change-data-capture/cdc-problem-engineer.mp3",
+  "ms": 27000,
+  "hash": "753447ad7812"
+ },
+ "cdc-problem-executive": {
+  "file": "/audio/change-data-capture/cdc-problem-executive.mp3",
+  "ms": 8928,
+  "hash": "9a6245ad7e26"
+ },
+ "cdc-naive-engineer": {
+  "file": "/audio/change-data-capture/cdc-naive-engineer.mp3",
+  "ms": 29232,
+  "hash": "8c3c1c203d09"
+ },
+ "cdc-naive-executive": {
+  "file": "/audio/change-data-capture/cdc-naive-executive.mp3",
+  "ms": 8232,
+  "hash": "6abe7faf5595"
+ },
+ "cdc-dual-engineer": {
+  "file": "/audio/change-data-capture/cdc-dual-engineer.mp3",
+  "ms": 28920,
+  "hash": "881e3dba82fd"
+ },
+ "cdc-dual-executive": {
+  "file": "/audio/change-data-capture/cdc-dual-executive.mp3",
+  "ms": 9312,
+  "hash": "f63775773c21"
+ },
+ "cdc-log-engineer": {
+  "file": "/audio/change-data-capture/cdc-log-engineer.mp3",
+  "ms": 29232,
+  "hash": "cc5718b27f82"
+ },
+ "cdc-log-executive": {
+  "file": "/audio/change-data-capture/cdc-log-executive.mp3",
+  "ms": 9888,
+  "hash": "3a76279ed055"
+ },
+ "cdc-fanout-engineer": {
+  "file": "/audio/change-data-capture/cdc-fanout-engineer.mp3",
+  "ms": 29112,
+  "hash": "a73d88eaeb4c"
+ },
+ "cdc-fanout-executive": {
+  "file": "/audio/change-data-capture/cdc-fanout-executive.mp3",
+  "ms": 9528,
+  "hash": "27ee6ea82dbb"
+ },
+ "cdc-snapshot-engineer": {
+  "file": "/audio/change-data-capture/cdc-snapshot-engineer.mp3",
+  "ms": 28008,
+  "hash": "81a38c9a70b9"
+ },
+ "cdc-snapshot-executive": {
+  "file": "/audio/change-data-capture/cdc-snapshot-executive.mp3",
+  "ms": 8616,
+  "hash": "b862bac559f0"
+ },
+ "cdc-stream-engineer": {
+  "file": "/audio/change-data-capture/cdc-stream-engineer.mp3",
+  "ms": 29544,
+  "hash": "1ee5559195a7"
+ },
+ "cdc-stream-executive": {
+  "file": "/audio/change-data-capture/cdc-stream-executive.mp3",
+  "ms": 8688,
+  "hash": "86fa70fe2a47"
+ },
+ "cdc-slot-engineer": {
+  "file": "/audio/change-data-capture/cdc-slot-engineer.mp3",
+  "ms": 30384,
+  "hash": "33b6a81ed352"
+ },
+ "cdc-slot-executive": {
+  "file": "/audio/change-data-capture/cdc-slot-executive.mp3",
+  "ms": 7776,
+  "hash": "11a07c070433"
+ },
+ "cdc-dup-engineer": {
+  "file": "/audio/change-data-capture/cdc-dup-engineer.mp3",
+  "ms": 29688,
+  "hash": "b0982958777f"
+ },
+ "cdc-dup-executive": {
+  "file": "/audio/change-data-capture/cdc-dup-executive.mp3",
+  "ms": 7416,
+  "hash": "f84eda797272"
+ },
+ "cdc-edges-engineer": {
+  "file": "/audio/change-data-capture/cdc-edges-engineer.mp3",
+  "ms": 30744,
+  "hash": "7404cb993c89"
+ },
+ "cdc-edges-executive": {
+  "file": "/audio/change-data-capture/cdc-edges-executive.mp3",
+  "ms": 8760,
+  "hash": "3beb48ea5c86"
+ },
+ "cdc-vs-outbox-engineer": {
+  "file": "/audio/change-data-capture/cdc-vs-outbox-engineer.mp3",
+  "ms": 29112,
+  "hash": "dd66def57328"
+ },
+ "cdc-vs-outbox-executive": {
+  "file": "/audio/change-data-capture/cdc-vs-outbox-executive.mp3",
+  "ms": 9480,
+  "hash": "6f641539f635"
+ },
+ "cdc-costs-engineer": {
+  "file": "/audio/change-data-capture/cdc-costs-engineer.mp3",
+  "ms": 30168,
+  "hash": "0cc27846a779"
+ },
+ "cdc-costs-executive": {
+  "file": "/audio/change-data-capture/cdc-costs-executive.mp3",
+  "ms": 9264,
+  "hash": "500906e2d5d2"
+ },
+ "cdc-wild-engineer": {
+  "file": "/audio/change-data-capture/cdc-wild-engineer.mp3",
+  "ms": 34176,
+  "hash": "a989fc4135d2"
+ },
+ "cdc-wild-executive": {
+  "file": "/audio/change-data-capture/cdc-wild-executive.mp3",
+  "ms": 9000,
+  "hash": "5d87d806cc96"
+ },
+ "cdc-related-engineer": {
+  "file": "/audio/change-data-capture/cdc-related-engineer.mp3",
+  "ms": 28416,
+  "hash": "c8ac2c0c3303"
+ },
+ "cdc-related-executive": {
+  "file": "/audio/change-data-capture/cdc-related-executive.mp3",
+  "ms": 8136,
+  "hash": "70e60718bb70"
+ },
+ "cdc-recap-engineer": {
+  "file": "/audio/change-data-capture/cdc-recap-engineer.mp3",
+  "ms": 23352,
+  "hash": "cfe3596cef98"
+ },
+ "cdc-recap-executive": {
+  "file": "/audio/change-data-capture/cdc-recap-executive.mp3",
+  "ms": 8640,
+  "hash": "aa199652dddd"
+ }
+}

@@ -1,0 +1,1256 @@
+{
+ "id": "twitter",
+ "title": "Twitter (X): the home timeline",
+ "subtitle": "Company case study",
+ "voice": "en-GB-SoniaNeural",
+ "template": "case-study",
+ "meta": {
+  "kind": "company",
+  "category": "Social",
+  "level": "intermediate",
+  "uses": [
+   "cache-aside",
+   "sharding",
+   "event-streaming",
+   "feature-flags",
+   "backpressure",
+   "graceful-degradation"
+  ],
+  "related": [
+   "instagram",
+   "meta"
+  ],
+  "blurb": "Fan-out on write into Redis timelines, read-time merges for huge accounts, Snowflake IDs, and the open-sourced For You ranking pipeline.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14",
+  "changelog": [
+   {
+    "date": "2026-10-14",
+    "note": "First version."
+   }
+  ]
+ },
+ "diagrams": [
+  {
+   "id": "context",
+   "kind": "c4",
+   "title": "Level 1 · Context",
+   "direction": "DOWN",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request · response"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "pushed"
+    }
+   ],
+   "elements": [
+    {
+     "id": "author",
+     "kind": "person",
+     "label": "Author",
+     "sub": "posts a tweet"
+    },
+    {
+     "id": "reader",
+     "kind": "person",
+     "label": "Reader",
+     "sub": "opens the home timeline"
+    },
+    {
+     "id": "devapp",
+     "kind": "external",
+     "label": "Developer apps",
+     "sub": "public API"
+    },
+    {
+     "id": "twitter",
+     "kind": "system",
+     "label": "Twitter (X)",
+     "sub": "tweets, graph, timelines, ranking"
+    },
+    {
+     "id": "push",
+     "kind": "external",
+     "label": "Push services",
+     "sub": "phone notifications · illustrative"
+    }
+   ],
+   "edges": [
+    {
+     "id": "c-post",
+     "from": "author",
+     "to": "twitter",
+     "label": "post a tweet",
+     "style": "solid"
+    },
+    {
+     "id": "c-read",
+     "from": "reader",
+     "to": "twitter",
+     "label": "read home timeline",
+     "style": "solid"
+    },
+    {
+     "id": "c-feed",
+     "from": "twitter",
+     "to": "reader",
+     "label": "Following, For You",
+     "style": "dashed"
+    },
+    {
+     "id": "c-api",
+     "from": "devapp",
+     "to": "twitter",
+     "label": "API calls",
+     "style": "solid"
+    },
+    {
+     "id": "c-push",
+     "from": "twitter",
+     "to": "push",
+     "label": "notify",
+     "style": "dashed"
+    },
+    {
+     "id": "c-push-reader",
+     "from": "push",
+     "to": "reader",
+     "label": "notification",
+     "style": "dashed"
+    }
+   ]
+  },
+  {
+   "id": "containers",
+   "kind": "c4",
+   "title": "Level 2 · Containers (our reconstruction, 2013 and 2023)",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "write",
+     "label": "Write path",
+     "tone": "core"
+    },
+    {
+     "id": "timeline",
+     "label": "Timelines",
+     "tone": "stream"
+    },
+    {
+     "id": "rank",
+     "label": "For You · Home Mixer (2023)",
+     "tone": "data"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "asynchronous fan-out"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "storage"
+    }
+   ],
+   "elements": [
+    {
+     "id": "client",
+     "kind": "container",
+     "label": "Apps and web",
+     "sub": "iOS, Android, browser",
+     "tone": "neutral",
+     "rank": 0
+    },
+    {
+     "id": "api",
+     "kind": "container",
+     "label": "API tier",
+     "sub": "JVM services on Finagle",
+     "tone": "core",
+     "rank": 1
+    },
+    {
+     "id": "tweets",
+     "kind": "container",
+     "label": "Tweet service",
+     "sub": "Tweetypie · memcache",
+     "group": "write",
+     "rank": 2
+    },
+    {
+     "id": "snowflake",
+     "kind": "container",
+     "label": "Snowflake",
+     "sub": "64-bit time-ordered IDs",
+     "group": "write",
+     "rank": 3
+    },
+    {
+     "id": "store",
+     "kind": "store",
+     "label": "Tweet store",
+     "sub": "T-bird: MySQL via Gizzard",
+     "group": "write",
+     "rank": 3
+    },
+    {
+     "id": "fanout",
+     "kind": "container",
+     "label": "Fan-out service",
+     "sub": "retired by 2023",
+     "group": "timeline",
+     "rank": 2
+    },
+    {
+     "id": "flock",
+     "kind": "store",
+     "label": "Social graph",
+     "sub": "Flock · who follows whom",
+     "group": "timeline",
+     "rank": 3
+    },
+    {
+     "id": "redis",
+     "kind": "store",
+     "label": "Home timelines",
+     "sub": "Redis · 800 IDs each",
+     "group": "timeline",
+     "rank": 3
+    },
+    {
+     "id": "tls",
+     "kind": "container",
+     "label": "Timeline service",
+     "sub": "Following, 2013",
+     "group": "timeline",
+     "rank": 2
+    },
+    {
+     "id": "mixer",
+     "kind": "container",
+     "label": "Home Mixer",
+     "sub": "Product Mixer · Scala",
+     "group": "rank",
+     "rank": 2
+    },
+    {
+     "id": "earlybird",
+     "kind": "store",
+     "label": "Search index",
+     "sub": "Earlybird · in-network",
+     "group": "rank",
+     "rank": 3
+    },
+    {
+     "id": "ranker",
+     "kind": "container",
+     "label": "Sources and ranker",
+     "sub": "out-of-network · 48M-parameter model",
+     "group": "rank",
+     "rank": 3
+    }
+   ],
+   "edges": [
+    {
+     "id": "k-cl-api",
+     "from": "client",
+     "to": "api",
+     "label": "HTTPS",
+     "style": "solid"
+    },
+    {
+     "id": "k-api-tw",
+     "from": "api",
+     "to": "tweets",
+     "label": "create tweet",
+     "style": "solid"
+    },
+    {
+     "id": "k-tw-sf",
+     "from": "tweets",
+     "to": "snowflake",
+     "label": "next ID",
+     "style": "solid"
+    },
+    {
+     "id": "k-tw-store",
+     "from": "tweets",
+     "to": "store",
+     "label": "write",
+     "style": "dotted"
+    },
+    {
+     "id": "k-tw-fan",
+     "from": "tweets",
+     "to": "fanout",
+     "label": "new tweet",
+     "style": "dashed"
+    },
+    {
+     "id": "k-fan-flock",
+     "from": "fanout",
+     "to": "flock",
+     "label": "followers?",
+     "style": "solid"
+    },
+    {
+     "id": "k-fan-redis",
+     "from": "fanout",
+     "to": "redis",
+     "label": "insert ID per follower",
+     "style": "dashed"
+    },
+    {
+     "id": "k-api-tls",
+     "from": "api",
+     "to": "tls",
+     "label": "home timeline",
+     "style": "solid"
+    },
+    {
+     "id": "k-tls-redis",
+     "from": "tls",
+     "to": "redis",
+     "label": "read IDs",
+     "style": "dotted"
+    },
+    {
+     "id": "k-tls-tw",
+     "from": "tls",
+     "to": "tweets",
+     "label": "hydrate",
+     "style": "solid"
+    },
+    {
+     "id": "k-api-mix",
+     "from": "api",
+     "to": "mixer",
+     "label": "For You",
+     "style": "solid"
+    },
+    {
+     "id": "k-mix-eb",
+     "from": "mixer",
+     "to": "earlybird",
+     "label": "~50% in-network",
+     "style": "solid"
+    },
+    {
+     "id": "k-mix-rank",
+     "from": "mixer",
+     "to": "ranker",
+     "label": "candidates, scores",
+     "style": "solid"
+    }
+   ]
+  },
+  {
+   "id": "fanout",
+   "kind": "c4",
+   "title": "Level 3 · Inside timeline fan-out (2012–13, from a secondary write-up)",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "writes",
+     "label": "Write side · asynchronous",
+     "tone": "stream"
+    },
+    {
+     "id": "reads",
+     "label": "Read side",
+     "tone": "core"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "fan-out writes"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "rebuild"
+    }
+   ],
+   "elements": [
+    {
+     "id": "ingest",
+     "kind": "component",
+     "label": "Tweet ingest",
+     "sub": "acknowledge, then queue",
+     "group": "writes",
+     "rank": 0
+    },
+    {
+     "id": "queue",
+     "kind": "component",
+     "label": "Fan-out queue",
+     "sub": "work off the request path",
+     "group": "writes",
+     "rank": 1
+    },
+    {
+     "id": "workers",
+     "kind": "component",
+     "label": "Fan-out workers",
+     "sub": "4,000 destinations per batch",
+     "group": "writes",
+     "rank": 2
+    },
+    {
+     "id": "flock",
+     "kind": "store",
+     "label": "Flock",
+     "sub": "follower lists",
+     "tone": "data",
+     "rank": 2
+    },
+    {
+     "id": "big",
+     "kind": "component",
+     "label": "Huge accounts",
+     "sub": "skip fan-out, merge on read",
+     "tone": "neutral",
+     "rank": 1
+    },
+    {
+     "id": "redis",
+     "kind": "store",
+     "label": "Redis timeline shards",
+     "sub": "tweet ID, user ID, 4 bytes of flags · ×3",
+     "tone": "data",
+     "rank": 3
+    },
+    {
+     "id": "tls",
+     "kind": "component",
+     "label": "Timeline read",
+     "sub": "find one replica, take IDs",
+     "group": "reads",
+     "rank": 4
+    },
+    {
+     "id": "rebuild",
+     "kind": "component",
+     "label": "Reconstruction",
+     "sub": "inactive 30+ days, or lost",
+     "group": "reads",
+     "rank": 4
+    },
+    {
+     "id": "hydrate",
+     "kind": "component",
+     "label": "Hydrate",
+     "sub": "tweets and users from caches",
+     "group": "reads",
+     "rank": 5
+    }
+   ],
+   "edges": [
+    {
+     "id": "f-in-q",
+     "from": "ingest",
+     "to": "queue",
+     "label": "enqueue",
+     "style": "dashed"
+    },
+    {
+     "id": "f-q-w",
+     "from": "queue",
+     "to": "workers",
+     "style": "dashed"
+    },
+    {
+     "id": "f-w-flock",
+     "from": "workers",
+     "to": "flock",
+     "label": "who follows?",
+     "style": "solid"
+    },
+    {
+     "id": "f-w-redis",
+     "from": "workers",
+     "to": "redis",
+     "label": "push ID, trim to 800",
+     "style": "dashed"
+    },
+    {
+     "id": "f-in-big",
+     "from": "ingest",
+     "to": "big",
+     "label": "author too big",
+     "style": "solid"
+    },
+    {
+     "id": "f-tls-redis",
+     "from": "tls",
+     "to": "redis",
+     "label": "read IDs",
+     "style": "solid"
+    },
+    {
+     "id": "f-tls-big",
+     "from": "tls",
+     "to": "big",
+     "label": "merge their recent tweets",
+     "style": "solid"
+    },
+    {
+     "id": "f-tls-rb",
+     "from": "tls",
+     "to": "rebuild",
+     "label": "miss",
+     "style": "dotted"
+    },
+    {
+     "id": "f-rb-redis",
+     "from": "rebuild",
+     "to": "redis",
+     "label": "refill",
+     "style": "dotted"
+    },
+    {
+     "id": "f-tls-hyd",
+     "from": "tls",
+     "to": "hydrate",
+     "label": "IDs to tweets",
+     "style": "solid"
+    }
+   ]
+  },
+  {
+   "id": "post",
+   "kind": "sequence",
+   "title": "Post a tweet: fan-out on write (2012–13)",
+   "participants": [
+    {
+     "id": "p-app",
+     "label": "Author's app"
+    },
+    {
+     "id": "p-api",
+     "label": "API"
+    },
+    {
+     "id": "p-tw",
+     "label": "Tweet service"
+    },
+    {
+     "id": "p-sf",
+     "label": "Snowflake"
+    },
+    {
+     "id": "p-fan",
+     "label": "Fan-out"
+    },
+    {
+     "id": "p-flock",
+     "label": "Flock"
+    },
+    {
+     "id": "p-redis",
+     "label": "Redis timelines"
+    }
+   ],
+   "messages": [
+    {
+     "id": "p1",
+     "from": "p-app",
+     "to": "p-api",
+     "label": "POST tweet",
+     "style": "solid"
+    },
+    {
+     "id": "p2",
+     "from": "p-api",
+     "to": "p-tw",
+     "label": "create",
+     "style": "solid"
+    },
+    {
+     "id": "p3",
+     "from": "p-tw",
+     "to": "p-sf",
+     "label": "next ID",
+     "style": "solid"
+    },
+    {
+     "id": "p4",
+     "from": "p-sf",
+     "to": "p-tw",
+     "label": "time · machine · sequence",
+     "style": "dashed"
+    },
+    {
+     "id": "p5",
+     "from": "p-tw",
+     "to": "p-app",
+     "label": "stored, 200",
+     "style": "dashed"
+    },
+    {
+     "id": "p6",
+     "from": "p-tw",
+     "to": "p-fan",
+     "label": "enqueue",
+     "style": "dashed"
+    },
+    {
+     "id": "p7",
+     "from": "p-fan",
+     "to": "p-flock",
+     "label": "followers of author",
+     "style": "solid"
+    },
+    {
+     "id": "p8",
+     "from": "p-flock",
+     "to": "p-fan",
+     "label": "follower IDs",
+     "style": "dashed"
+    },
+    {
+     "id": "p9",
+     "from": "p-fan",
+     "to": "p-redis",
+     "label": "push ID to each timeline, ×3",
+     "style": "dashed"
+    }
+   ]
+  },
+  {
+   "id": "foryou",
+   "kind": "sequence",
+   "title": "Serve For You (open-sourced March 2023)",
+   "participants": [
+    {
+     "id": "y-app",
+     "label": "Reader's app"
+    },
+    {
+     "id": "y-mix",
+     "label": "Home Mixer"
+    },
+    {
+     "id": "y-eb",
+     "label": "Search index"
+    },
+    {
+     "id": "y-oon",
+     "label": "Out-of-network sources"
+    },
+    {
+     "id": "y-rank",
+     "label": "Heavy ranker"
+    },
+    {
+     "id": "y-vis",
+     "label": "Filters"
+    }
+   ],
+   "messages": [
+    {
+     "id": "y1",
+     "from": "y-app",
+     "to": "y-mix",
+     "label": "GET For You",
+     "style": "solid"
+    },
+    {
+     "id": "y2",
+     "from": "y-mix",
+     "to": "y-eb",
+     "label": "recent tweets from follows",
+     "style": "solid"
+    },
+    {
+     "id": "y3",
+     "from": "y-mix",
+     "to": "y-oon",
+     "label": "graph, SimClusters",
+     "style": "solid"
+    },
+    {
+     "id": "y4",
+     "from": "y-oon",
+     "to": "y-mix",
+     "label": "~1,500 candidates in all",
+     "style": "dashed"
+    },
+    {
+     "id": "y5",
+     "from": "y-mix",
+     "to": "y-rank",
+     "label": "candidates + features",
+     "style": "solid"
+    },
+    {
+     "id": "y6",
+     "from": "y-rank",
+     "to": "y-mix",
+     "label": "10 engagement probabilities",
+     "style": "dashed"
+    },
+    {
+     "id": "y7",
+     "from": "y-mix",
+     "to": "y-vis",
+     "label": "blocks, mutes, diversity",
+     "style": "solid"
+    },
+    {
+     "id": "y8",
+     "from": "y-mix",
+     "to": "y-app",
+     "label": "tweets + ads, prompts",
+     "style": "dashed"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "overview",
+   "title": "Overview"
+  },
+  {
+   "id": "requirements",
+   "title": "Requirements and scale"
+  },
+  {
+   "id": "context",
+   "title": "Context"
+  },
+  {
+   "id": "containers",
+   "title": "Containers"
+  },
+  {
+   "id": "deep-dive",
+   "title": "Deep dive"
+  },
+  {
+   "id": "flows",
+   "title": "Core flows"
+  },
+  {
+   "id": "data",
+   "title": "Data and caching"
+  },
+  {
+   "id": "growth",
+   "title": "Growth"
+  },
+  {
+   "id": "failures",
+   "title": "Failure modes"
+  },
+  {
+   "id": "patterns",
+   "title": "Patterns used"
+  },
+  {
+   "id": "decisions",
+   "title": "Key decisions"
+  },
+  {
+   "id": "mvp",
+   "title": "What we would build first"
+  }
+ ],
+ "shots": [
+  {
+   "id": "s01",
+   "chapter": "overview",
+   "diagram": "context",
+   "focus": [],
+   "trace": [],
+   "engineer": "This is Twitter, now called X, seen from the outside. People post tweets, now called posts, and follow other accounts. Open the app and you see a home timeline: the recent tweets of everyone you follow, or a ranked mix called For You. The one idea everything here depends on is when to do the work. Reads far outnumber writes, so for years Twitter built each timeline in advance, when a tweet was posted.",
+   "executive": "Twitter shows each person a timeline of tweets from the accounts they follow. Because people read far more than they post, it builds those timelines ahead of time."
+  },
+  {
+   "id": "s02",
+   "chapter": "requirements",
+   "card": {
+    "heading": "Scale, dated (secondary source marked)",
+    "kind": "numbers",
+    "points": [
+     "500M+ | tweets a day, ~5,700 a second (Twitter, 2013)",
+     "143,199 | tweets in one second, a record (August 2013)",
+     "300K | timeline reads a second vs 6,000 writes (2012–13, secondary)",
+     "~75 | timeline inserts per tweet (our arithmetic: 30B ÷ 400M)",
+     "5B | For You pipeline runs a day, under 1.5 s (2023)"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Scale, with dates, because little recent traffic data is published. In August 2013 its engineering blog reported more than five hundred million tweets a day, about five thousand seven hundred a second, and a one-second record of a hundred and forty-three thousand. A write-up of a 2013 talk, a secondary source, gives three hundred thousand timeline reads a second against six thousand writes, and thirty billion timeline deliveries a day. In 2023, For You ran five billion times a day.",
+   "executive": "In 2013 Twitter took in over five hundred million tweets a day and served roughly fifty timeline reads for every write."
+  },
+  {
+   "id": "s03",
+   "chapter": "requirements",
+   "card": {
+    "heading": "What the system must do (our list)",
+    "points": [
+     "A new tweet reaches followers' timelines within seconds",
+     "Opening the app is fast, whatever the time of day",
+     "Accounts with tens of millions of followers do not stall everyone else",
+     "Spikes many times the average are absorbed without errors",
+     "Blocked, muted and unsafe content never appears",
+     "For You: relevant tweets from beyond the people you follow"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The requirements are ours, written from the product. A new tweet reaches followers within seconds; the 2013 talk write-up gives a goal of five. An account with tens of millions of followers must not stall everyone else. Spikes are absorbed. Blocked and muted accounts never appear. Our arithmetic shows the shape: each tweet landed in about seventy-five timelines on average, so reads were cheap only if writes did the work.",
+   "executive": "New tweets must appear within seconds, timelines must open instantly, and celebrities or sudden spikes must not slow everyone else down."
+  },
+  {
+   "id": "s04",
+   "title": "Who talks to it",
+   "chapter": "context",
+   "diagram": "context",
+   "focus": [
+    "author",
+    "reader",
+    "twitter",
+    "devapp",
+    "push"
+   ],
+   "trace": [
+    "c-post",
+    "c-read",
+    "c-feed",
+    "c-api",
+    "c-push",
+    "c-push-reader"
+   ],
+   "engineer": "Around the system there are three kinds of caller. An author posts a tweet. A reader opens the home timeline, choosing between Following, which is reverse chronological, and For You, which is ranked. Developer apps use the public API; in 2013 the secondary write-up counted more than a million registered apps. Twitter also sends notifications through phone push services; that box is our illustration.",
+   "executive": "People post and read through the apps, outside developers use the public API, and notifications go out through phone push services."
+  },
+  {
+   "id": "s05",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [],
+   "trace": [],
+   "engineer": "One level in. This layout is ours, combining two eras. On the left, the write path: a tweet service called Tweetypie, Snowflake for IDs, and a sharded MySQL store called T-bird. In the middle, the 2013 timeline system: a fan-out service, the Flock social graph, and home timelines in Redis. On the right, Home Mixer, which has served the ranked For You timeline since at least 2023. Everything sits behind JVM services built on Finagle.",
+   "executive": "Inside, there is a write path for tweets, a timeline system that copies tweets into followers' timelines, and a ranking service. The layout is our reconstruction."
+  },
+  {
+   "id": "s06",
+   "title": "Post",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "client",
+    "api",
+    "tweets",
+    "snowflake",
+    "store"
+   ],
+   "trace": [
+    "k-cl-api",
+    "k-api-tw",
+    "k-tw-sf",
+    "k-tw-store"
+   ],
+   "engineer": "First path: posting. The app calls the API tier, which passes the tweet to the tweet service. The tweet gets a Snowflake ID, a sixty-four-bit number that starts with a timestamp, so IDs sort roughly by time without any central counter. Then it is written to T-bird. Twitter described T-bird in 2013 as Gizzard, its sharding framework, hashing each tweet to one of many MySQL databases.",
+   "executive": "A new tweet gets a unique, time-ordered ID and is stored across many databases rather than one."
+  },
+  {
+   "id": "s07",
+   "title": "Fan out",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "tweets",
+    "fanout",
+    "flock",
+    "redis"
+   ],
+   "trace": [
+    "k-tw-fan",
+    "k-fan-flock",
+    "k-fan-redis"
+   ],
+   "engineer": "Second path: fan-out, as described in the 2013 talk write-up. Once the tweet is stored, the fan-out service asks Flock, the social graph, who follows the author. It then inserts the tweet's ID into each follower's home timeline in Redis. An author with twenty thousand followers means twenty thousand inserts. The work happens off the request path, so the author's app does not wait. Twitter later said this Fanout Service ran for twelve years.",
+   "executive": "After a tweet is saved, a background service copies its ID into the timeline of every follower."
+  },
+  {
+   "id": "s08",
+   "title": "Read Following",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "client",
+    "api",
+    "tls",
+    "redis",
+    "tweets"
+   ],
+   "trace": [
+    "k-cl-api",
+    "k-api-tls",
+    "k-tls-redis",
+    "k-tls-tw"
+   ],
+   "engineer": "Third path: reading the timeline in 2013. The app asks the API for the home timeline, and the timeline service finds the one Redis machine holding it. The timeline is just a list of up to eight hundred tweet IDs, so reading it is a single fast lookup. The service then hydrates those IDs into full tweets and authors from the tweet and user services, both backed by memcache. ",
+   "executive": "Opening the app reads a ready-made list of tweet IDs from memory, then fills in the tweets themselves."
+  },
+  {
+   "id": "s09",
+   "title": "For You",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "client",
+    "api",
+    "mixer",
+    "earlybird",
+    "ranker"
+   ],
+   "trace": [
+    "k-cl-api",
+    "k-api-mix",
+    "k-mix-eb",
+    "k-mix-rank"
+   ],
+   "engineer": "Fourth path: For You, from the code Twitter open-sourced in March 2023. Home Mixer builds the feed per request. About half the tweets come from people you follow, found and ranked in the Earlybird search index. The rest come from out-of-network sources, and a neural network scores them all. Twitter's post said it had recently stopped using the Fanout Service. In the open-sourced code, the Following tab is also built from the search index.",
+   "executive": "The ranked For You feed is assembled fresh on each request, half from people you follow and half from recommendations, then scored by a model."
+  },
+  {
+   "id": "s10",
+   "chapter": "deep-dive",
+   "diagram": "fanout",
+   "focus": [],
+   "trace": [],
+   "engineer": "Now inside timeline fan-out, as described in Raffi Krikorian's talk, Timelines at Scale, published on InfoQ in April 2013. The details come from a High Scalability write-up of that talk, a secondary source, and the arrangement on screen is our drawing. A write side queues and performs fan-out into Redis; a read side takes IDs, merges in huge accounts, and hydrates.",
+   "executive": "The timeline system has a write side that copies tweets into followers' lists and a read side that assembles and fills them in."
+  },
+  {
+   "id": "s11",
+   "title": "Write into Redis",
+   "chapter": "deep-dive",
+   "diagram": "fanout",
+   "focus": [
+    "ingest",
+    "queue",
+    "workers",
+    "flock",
+    "redis"
+   ],
+   "trace": [
+    "f-in-q",
+    "f-q-w",
+    "f-w-flock",
+    "f-w-redis"
+   ],
+   "engineer": "The write side. Ingest once ran synchronously, taking up to a hundred and forty-five milliseconds, so it moved behind a queue. Fan-out workers fetch the author's followers from Flock and pipeline writes four thousand destinations at a time. Each timeline entry is tiny: a tweet ID, a user ID and four bytes of flags. Timelines are capped at eight hundred entries and each is kept on three machines. Reaching a million followers took about three and a half seconds at the median.",
+   "executive": "Workers copy a few bytes per follower into memory, in big batches, and keep three copies of every timeline."
+  },
+  {
+   "id": "s12",
+   "title": "Huge accounts",
+   "chapter": "deep-dive",
+   "diagram": "fanout",
+   "focus": [
+    "ingest",
+    "big",
+    "tls",
+    "redis"
+   ],
+   "trace": [
+    "f-in-big",
+    "f-tls-redis",
+    "f-tls-big"
+   ],
+   "engineer": "The weakness of fan-out on write is the account with tens of millions of followers. The write-up lists Lady Gaga at thirty-one million in 2013: one tweet means thirty-one million inserts, and her tweets could arrive late or out of order next to replies. The answer was a hybrid. For the very largest accounts, Twitter stops fanning out and merges their recent tweets into your timeline when you read it.",
+   "executive": "For celebrities with tens of millions of followers, copying every tweet is too slow, so their tweets are mixed in when you open the app instead."
+  },
+  {
+   "id": "s13",
+   "title": "Rebuild",
+   "chapter": "deep-dive",
+   "diagram": "fanout",
+   "focus": [
+    "tls",
+    "rebuild",
+    "redis",
+    "hydrate"
+   ],
+   "trace": [
+    "f-tls-rb",
+    "f-rb-redis",
+    "f-tls-hyd"
+   ],
+   "engineer": "Not every timeline is kept. The write-up says only active users, those who logged in within thirty days, have a timeline in Redis. If you come back after longer, or a timeline is lost, a process called reconstruction rebuilds it from the stored tweets and the social graph, and refills the cache. Finally, the read hydrates the IDs into tweets and users from memcache, the only step that touches full tweet text.",
+   "executive": "Only people active in the last month keep a ready-made timeline; anyone else gets theirs rebuilt when they return."
+  },
+  {
+   "id": "s14",
+   "title": "Store the tweet",
+   "chapter": "flows",
+   "diagram": "post",
+   "focus": [
+    "p-app",
+    "p-api",
+    "p-tw",
+    "p-sf"
+   ],
+   "trace": [
+    "p1",
+    "p2",
+    "p3",
+    "p4",
+    "p5"
+   ],
+   "engineer": "Step by step: posting a tweet, in the 2013 design. The API calls the tweet service. The tweet service asks Snowflake for an ID. In the open-source Snowflake of 2010, that is forty-one bits of milliseconds since a custom epoch, ten bits naming the machine, and a twelve-bit sequence. The tweet is stored and the author gets a success response straight away. Nothing has reached any follower yet.",
+   "executive": "The tweet gets its ID, is saved, and the author is told it worked, before any follower sees it."
+  },
+  {
+   "id": "s15",
+   "title": "Fan out",
+   "chapter": "flows",
+   "diagram": "post",
+   "focus": [
+    "p-tw",
+    "p-fan",
+    "p-flock",
+    "p-redis"
+   ],
+   "trace": [
+    "p6",
+    "p7",
+    "p8",
+    "p9"
+   ],
+   "engineer": "Then the asynchronous half. The tweet service queues a fan-out job. The fan-out service asks Flock for the author's followers, then pushes the tweet ID onto each follower's Redis list, trimming each list to eight hundred. In our reading, followers with no cached timeline need no insert; theirs is rebuilt when they return. If the author is one of the very largest accounts, this step is skipped entirely and their tweets are merged at read time.",
+   "executive": "In the background, the tweet's ID is added to every follower's ready-made timeline, except for the very largest accounts."
+  },
+  {
+   "id": "s16",
+   "title": "Gather candidates",
+   "chapter": "flows",
+   "diagram": "foryou",
+   "focus": [
+    "y-app",
+    "y-mix",
+    "y-eb",
+    "y-oon"
+   ],
+   "trace": [
+    "y1",
+    "y2",
+    "y3",
+    "y4"
+   ],
+   "engineer": "Second flow: serving For You, from Twitter's March 2023 post and code. Home Mixer asks candidate sources for about fifteen hundred tweets from a pool of hundreds of millions. In-network tweets come from the search index, ranked by a model called Real Graph that predicts how likely you are to engage with an author. Out-of-network tweets come from walking the follow and engagement graph, and from SimClusters, about a hundred and forty-five thousand communities.",
+   "executive": "For each request, the system gathers about fifteen hundred possible tweets, half from people you follow and half from similar communities."
+  },
+  {
+   "id": "s17",
+   "title": "Rank, filter, mix",
+   "chapter": "flows",
+   "diagram": "foryou",
+   "focus": [
+    "y-mix",
+    "y-rank",
+    "y-vis",
+    "y-app"
+   ],
+   "trace": [
+    "y5",
+    "y6",
+    "y7",
+    "y8"
+   ],
+   "engineer": "Then ranking. A neural network of about forty-eight million parameters scores every candidate, predicting ten kinds of engagement such as a like, reply or retweet. Filters remove blocked and muted accounts and tweets you have seen, keep author diversity, and balance in-network and out-of-network. Home Mixer mixes in ads and follow suggestions. Twitter said the pipeline completed in under one and a half seconds on average, using two hundred and twenty seconds of CPU time.",
+   "executive": "A model scores each tweet for how likely you are to engage, filters remove anything you should not see, and the result arrives in about a second and a half."
+  },
+  {
+   "id": "s18",
+   "chapter": "data",
+   "card": {
+    "heading": "What lives where (dated)",
+    "kind": "compare",
+    "points": [
+     "Data | Where",
+     "Home timelines: IDs + 4 bytes of flags | Redis, 800 entries, 3 copies (2013, secondary)",
+     "Recent tweets | Tweetypie memcache, ~1.5 months (2013, secondary)",
+     "All users | Gizmoduck memcache (2013, secondary)",
+     "Every tweet | T-bird: MySQL sharded by Gizzard (2013)",
+     "Search and in-network | Earlybird, a Lucene index in memory",
+     "Many services' data | Manhattan key-value store (2014)",
+     "Full tweet text in timelines | Never: only IDs"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Where the data lived, with dates. Home timelines in Redis held only IDs and flags, never tweet text. The 2013 write-up says the tweet service cached about a month and a half of tweets in memcache, and the user service cached every user. All tweets were in T-bird. Search used Earlybird, an in-memory index built on Lucene. In 2014 Twitter described Manhattan, its own key-value database, eventually consistent by default.",
+   "executive": "Timelines hold only tweet IDs in memory; tweets and users are cached separately, and everything is stored durably in Twitter's own databases."
+  },
+  {
+   "id": "s19",
+   "chapter": "data",
+   "card": {
+    "heading": "A Snowflake ID (open-sourced June 2010)",
+    "kind": "numbers",
+    "points": [
+     "41 bits | milliseconds since a custom epoch (~69 years)",
+     "5 + 5 bits | datacentre and worker: 1,024 generators",
+     "12 bits | sequence: 4,096 IDs per millisecond each",
+     "10k+ | IDs a second per process, the stated minimum",
+     "< 1 s | k-sorted: close in time means close in ID"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "One small piece made sharding possible. Once tweets were hashed across many MySQL databases, auto-increment IDs no longer worked. Snowflake, open-sourced in June 2010, builds a sixty-four-bit ID from forty-one bits of time, ten bits identifying the generator, split into five for datacentre and five for worker, and a twelve-bit sequence. Machines never coordinate. IDs are k-sorted, roughly in time order, and the generator refuses to issue IDs if the clock runs backwards.",
+   "executive": "Every tweet gets a sixty-four-bit ID built from the time and the machine, so IDs are unique and sort by time without a central counter."
+  },
+  {
+   "id": "s20",
+   "chapter": "growth",
+   "card": {
+    "heading": "How it got here",
+    "kind": "compare",
+    "points": [
+     "Year | Change",
+     "2010 | Ruby on Rails monolith; World Cup spikes cause outages",
+     "2010 | Snowflake IDs open-sourced; T-bird sharding follows",
+     "2011 | Finagle open-sourced: one RPC library for the JVM",
+     "2012–13 | Fan-out on write into Redis; read-time merge for giants",
+     "2013 | 143,199 tweets/s peak; 10–20K requests/s per JVM host",
+     "2014 | Manhattan key-value store",
+     "2023 | For You code open-sourced; Fanout Service retired",
+     "2026 | xai-org/x-algorithm: Thunder and Phoenix"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "How it grew. In 2010 Twitter ran one of the largest Ruby on Rails installations, and the World Cup repeatedly made it unavailable for short periods. It re-architected onto the JVM, with Finagle for every service call. Rails hosts served two to three hundred requests a second each; by 2013 JVM hosts served ten to twenty thousand. Fan-out on write carried the timeline through 2013, and the ranked feed later replaced it.",
+   "executive": "Twitter moved from one Ruby application that struggled in 2010 to many JVM services, and later from pre-built timelines to timelines ranked on request."
+  },
+  {
+   "id": "s21",
+   "chapter": "growth",
+   "card": {
+    "heading": "From push to ranked pull",
+    "kind": "compare",
+    "points": [
+     "Then | Now",
+     "Built at write time, per follower | Built at read time, per request",
+     "Reverse chronological | Ranked by predicted engagement",
+     "Fan-out Service, Redis lists | Search index (2023), Thunder in memory (2026)",
+     "Logistic regression for in-network | One transformer ranks everything (2026)",
+     "Followed accounts only | About half from outside your follows (2023)"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The bigger shift was from push to ranked pull. In March 2023 Twitter wrote that it had recently stopped using its twelve-year-old Fanout Service. In-network tweets came from the search index instead. In January 2026, xAI published a new repository for the For You feed. There, Thunder keeps recent posts from the accounts you follow in memory, and a transformer model called Phoenix ranks in-network and out-of-network posts together, in a Rust serving layer.",
+   "executive": "Once every timeline was ranked anyway, Twitter stopped pre-building them, and now gathers and ranks candidates fresh for each request."
+  },
+  {
+   "id": "s22",
+   "chapter": "failures",
+   "card": {
+    "heading": "What fails, and what protects users",
+    "kind": "compare",
+    "points": [
+     "Failure | Protection",
+     "Spike: 25× normal tweets/s (2013) | Re-architected services; async fan-out",
+     "Redis timeline lost | Three replicas; reconstruction from storage",
+     "Celebrity tweet storms | Skip fan-out; merge at read time",
+     "Slow or crashed backend | Finagle: failure detectors, failover, back-pressure",
+     "Risky launch | Decider switches: percentage rollouts at runtime",
+     "Ranking pipeline fails | Backup reverse-chronological pipeline (2023 code)"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "What breaks, and what protects people. A spike twenty-five times normal in August 2013 passed without a blip. A lost Redis timeline has two replicas and can be reconstructed. Celebrity storms are handled by merging at read time. Slow backends meet Finagle's failure detectors and back-pressure. Risky features go out through Decider switches. And in the 2023 code, For You falls back to a reverse-chronological pipeline if ranking fails.",
+   "executive": "Copies of every timeline, background fan-out, safe rollout switches and a simple fallback feed keep the timeline working when parts fail."
+  },
+  {
+   "id": "s23",
+   "chapter": "patterns",
+   "card": {
+    "heading": "Patterns used",
+    "points": [
+     "Cache-aside: timelines and tweets in memory, rebuilt on a miss",
+     "Sharding: tweets hashed across MySQL by Gizzard; Redis timeline shards",
+     "Event streaming: new posts streamed into in-memory stores (2026 code)",
+     "Feature flags: Decider, percentage switches at runtime (2013)",
+     "Backpressure: Finagle's back-pressure against dogpiling (2011)",
+     "Graceful degradation: reverse-chronological backup for For You"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The named patterns, each with its own walkthrough. Cache-aside: timelines, tweets and users live in memory and are rebuilt from storage on a miss. Sharding: Gizzard hashing tweets across MySQL, and timelines spread across Redis. Event streaming: in the 2026 code, Thunder has a Kafka module and keeps recent posts in memory. Feature flags: Decider, which flips features for a percentage of traffic. Backpressure, built into Finagle. And graceful degradation, a simpler feed when ranking fails.",
+   "executive": "Six well-known patterns: caching, splitting data across machines, streaming events, feature switches, pushing back under load and falling back to something simpler."
+  },
+  {
+   "id": "s24",
+   "chapter": "decisions",
+   "card": {
+    "heading": "Key decisions",
+    "kind": "compare",
+    "points": [
+     "Decision | Trade-off",
+     "Fan-out on write | Cheap reads; costly writes for big accounts",
+     "Hybrid: pull for giants | Bounded writes; a merge on every read",
+     "IDs only in timelines | Tiny cache; every read must hydrate",
+     "Rails to JVM services | 10× throughput per host; a big rewrite",
+     "Snowflake IDs | No coordination; IDs only roughly ordered",
+     "Rank on request | Relevance and recall; seconds of CPU per view"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The decisions that shaped it. Fan-out on write made reads cheap and writes expensive, so the hybrid pulled the very largest accounts at read time instead. Storing only IDs kept the cache small, at the price of hydrating every read. Leaving Rails for JVM services gave over ten times the throughput per host. Snowflake dropped coordination and accepted rough ordering. And ranking on request bought relevance, at two hundred and twenty CPU seconds per pipeline run.",
+   "executive": "Twitter traded write cost for fast reads, rewrote its platform for efficiency, and later spent heavy compute per request to rank the feed."
+  },
+  {
+   "id": "s25",
+   "chapter": "mvp",
+   "card": {
+    "heading": "What we would build first",
+    "points": [
+     "Pull at first: query recent posts of followed accounts, with an index on (author, ID)",
+     "Time-ordered 64-bit IDs from day one; cursor pagination by ID",
+     "Add fan-out on write to a capped Redis list when reads dominate",
+     "A follower threshold above which authors are merged at read time",
+     "Store IDs only in timelines; hydrate from a cache",
+     "Ranking later: start with a simple, explainable score"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Our recommendations for a new social feed, not Twitter's. Start with pull: query recent posts from the accounts someone follows, with an index on author and ID. Use time-ordered sixty-four-bit IDs from day one and paginate by ID. When reads dominate, add fan-out on write into capped Redis lists, with a follower threshold above which authors are merged at read time. Keep only IDs in timelines. Rank with a simple, explainable score before reaching for a model.",
+   "executive": "Start simple by reading followed accounts' posts on request, then add pre-built timelines and a celebrity exception when reads grow, and rank last."
+  }
+ ]
+}

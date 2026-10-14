@@ -1,0 +1,262 @@
+{
+ "l01-engineer": {
+  "file": "/audio/linkedin/l01-engineer.mp3",
+  "ms": 25872,
+  "hash": "13f18c419aa9"
+ },
+ "l01-executive": {
+  "file": "/audio/linkedin/l01-executive.mp3",
+  "ms": 7848,
+  "hash": "eff146ede4a2"
+ },
+ "l02-engineer": {
+  "file": "/audio/linkedin/l02-engineer.mp3",
+  "ms": 26232,
+  "hash": "ae58f9d1ddad"
+ },
+ "l02-executive": {
+  "file": "/audio/linkedin/l02-executive.mp3",
+  "ms": 7272,
+  "hash": "a5d5998a26a2"
+ },
+ "l03-engineer": {
+  "file": "/audio/linkedin/l03-engineer.mp3",
+  "ms": 23352,
+  "hash": "f880084b5566"
+ },
+ "l03-executive": {
+  "file": "/audio/linkedin/l03-executive.mp3",
+  "ms": 7224,
+  "hash": "5458a2a0a84a"
+ },
+ "l04-engineer": {
+  "file": "/audio/linkedin/l04-engineer.mp3",
+  "ms": 24504,
+  "hash": "5acb2dd3d6f9"
+ },
+ "l04-executive": {
+  "file": "/audio/linkedin/l04-executive.mp3",
+  "ms": 8520,
+  "hash": "81838da9843e"
+ },
+ "l05-engineer": {
+  "file": "/audio/linkedin/l05-engineer.mp3",
+  "ms": 31008,
+  "hash": "df3d4d4a08a2"
+ },
+ "l05-executive": {
+  "file": "/audio/linkedin/l05-executive.mp3",
+  "ms": 7368,
+  "hash": "5ff6777640b4"
+ },
+ "l06-engineer": {
+  "file": "/audio/linkedin/l06-engineer.mp3",
+  "ms": 28104,
+  "hash": "62ceb7f57800"
+ },
+ "l06-executive": {
+  "file": "/audio/linkedin/l06-executive.mp3",
+  "ms": 9456,
+  "hash": "35b5287a7459"
+ },
+ "l07-engineer": {
+  "file": "/audio/linkedin/l07-engineer.mp3",
+  "ms": 29472,
+  "hash": "55561c9ae61e"
+ },
+ "l07-executive": {
+  "file": "/audio/linkedin/l07-executive.mp3",
+  "ms": 6600,
+  "hash": "636dabf9084a"
+ },
+ "l08-engineer": {
+  "file": "/audio/linkedin/l08-engineer.mp3",
+  "ms": 28080,
+  "hash": "3226fda8efee"
+ },
+ "l08-executive": {
+  "file": "/audio/linkedin/l08-executive.mp3",
+  "ms": 6048,
+  "hash": "f726ace01122"
+ },
+ "l09-engineer": {
+  "file": "/audio/linkedin/l09-engineer.mp3",
+  "ms": 29880,
+  "hash": "84af36e825bb"
+ },
+ "l09-executive": {
+  "file": "/audio/linkedin/l09-executive.mp3",
+  "ms": 5976,
+  "hash": "cefdda433033"
+ },
+ "l10-engineer": {
+  "file": "/audio/linkedin/l10-engineer.mp3",
+  "ms": 27864,
+  "hash": "ec06baf5e39d"
+ },
+ "l10-executive": {
+  "file": "/audio/linkedin/l10-executive.mp3",
+  "ms": 7728,
+  "hash": "0ffeb3138a5c"
+ },
+ "l11-engineer": {
+  "file": "/audio/linkedin/l11-engineer.mp3",
+  "ms": 26976,
+  "hash": "4a42f1338d51"
+ },
+ "l11-executive": {
+  "file": "/audio/linkedin/l11-executive.mp3",
+  "ms": 7080,
+  "hash": "5ab038363a1e"
+ },
+ "l12-engineer": {
+  "file": "/audio/linkedin/l12-engineer.mp3",
+  "ms": 25416,
+  "hash": "fa8a4beb54d9"
+ },
+ "l12-executive": {
+  "file": "/audio/linkedin/l12-executive.mp3",
+  "ms": 6456,
+  "hash": "104dab01eef4"
+ },
+ "l13-engineer": {
+  "file": "/audio/linkedin/l13-engineer.mp3",
+  "ms": 26064,
+  "hash": "50da602e73a7"
+ },
+ "l13-executive": {
+  "file": "/audio/linkedin/l13-executive.mp3",
+  "ms": 7824,
+  "hash": "0cc61ea7e0bc"
+ },
+ "l14-engineer": {
+  "file": "/audio/linkedin/l14-engineer.mp3",
+  "ms": 26280,
+  "hash": "9902b38a32c7"
+ },
+ "l14-executive": {
+  "file": "/audio/linkedin/l14-executive.mp3",
+  "ms": 7392,
+  "hash": "67e73e5b9caf"
+ },
+ "l15-engineer": {
+  "file": "/audio/linkedin/l15-engineer.mp3",
+  "ms": 24504,
+  "hash": "d09ba53c6b92"
+ },
+ "l15-executive": {
+  "file": "/audio/linkedin/l15-executive.mp3",
+  "ms": 4752,
+  "hash": "6112caaf3555"
+ },
+ "l16-engineer": {
+  "file": "/audio/linkedin/l16-engineer.mp3",
+  "ms": 29400,
+  "hash": "527fc980a53f"
+ },
+ "l16-executive": {
+  "file": "/audio/linkedin/l16-executive.mp3",
+  "ms": 7392,
+  "hash": "771c5a888187"
+ },
+ "l17-engineer": {
+  "file": "/audio/linkedin/l17-engineer.mp3",
+  "ms": 27312,
+  "hash": "b9a95b1d97e6"
+ },
+ "l17-executive": {
+  "file": "/audio/linkedin/l17-executive.mp3",
+  "ms": 5112,
+  "hash": "e7ff94f7370c"
+ },
+ "l18-engineer": {
+  "file": "/audio/linkedin/l18-engineer.mp3",
+  "ms": 29496,
+  "hash": "0e43c225ca3f"
+ },
+ "l18-executive": {
+  "file": "/audio/linkedin/l18-executive.mp3",
+  "ms": 6504,
+  "hash": "a8502eda8562"
+ },
+ "l19-engineer": {
+  "file": "/audio/linkedin/l19-engineer.mp3",
+  "ms": 27264,
+  "hash": "ef550ded0093"
+ },
+ "l19-executive": {
+  "file": "/audio/linkedin/l19-executive.mp3",
+  "ms": 6168,
+  "hash": "09f0363243d3"
+ },
+ "l20-engineer": {
+  "file": "/audio/linkedin/l20-engineer.mp3",
+  "ms": 27312,
+  "hash": "573dd669b581"
+ },
+ "l20-executive": {
+  "file": "/audio/linkedin/l20-executive.mp3",
+  "ms": 6120,
+  "hash": "0c9d9ae7be48"
+ },
+ "l21-engineer": {
+  "file": "/audio/linkedin/l21-engineer.mp3",
+  "ms": 29424,
+  "hash": "14079c4855ba"
+ },
+ "l21-executive": {
+  "file": "/audio/linkedin/l21-executive.mp3",
+  "ms": 7128,
+  "hash": "fec4d5f3c87c"
+ },
+ "l22-engineer": {
+  "file": "/audio/linkedin/l22-engineer.mp3",
+  "ms": 27840,
+  "hash": "fcbc4b417da6"
+ },
+ "l22-executive": {
+  "file": "/audio/linkedin/l22-executive.mp3",
+  "ms": 5928,
+  "hash": "f96f56565516"
+ },
+ "l23-engineer": {
+  "file": "/audio/linkedin/l23-engineer.mp3",
+  "ms": 28512,
+  "hash": "89df524ef6c8"
+ },
+ "l23-executive": {
+  "file": "/audio/linkedin/l23-executive.mp3",
+  "ms": 7896,
+  "hash": "b106371e3c55"
+ },
+ "l24-engineer": {
+  "file": "/audio/linkedin/l24-engineer.mp3",
+  "ms": 30456,
+  "hash": "81b98ca8ed85"
+ },
+ "l24-executive": {
+  "file": "/audio/linkedin/l24-executive.mp3",
+  "ms": 8544,
+  "hash": "be9306254ff5"
+ },
+ "l25-engineer": {
+  "file": "/audio/linkedin/l25-engineer.mp3",
+  "ms": 28896,
+  "hash": "424c16d935c9"
+ },
+ "l25-executive": {
+  "file": "/audio/linkedin/l25-executive.mp3",
+  "ms": 8736,
+  "hash": "9c8d3fbf91ff"
+ },
+ "l26-engineer": {
+  "file": "/audio/linkedin/l26-engineer.mp3",
+  "ms": 29352,
+  "hash": "c41183f1c313"
+ },
+ "l26-executive": {
+  "file": "/audio/linkedin/l26-executive.mp3",
+  "ms": 7632,
+  "hash": "34a35ae9f321"
+ }
+}

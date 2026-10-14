@@ -1,0 +1,941 @@
+{
+ "id": "write-ahead-log",
+ "title": "Write-ahead log",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "diagrams": [
+  {
+   "id": "torn",
+   "kind": "c4",
+   "title": "A crash halfway through writing pages",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "app",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Application",
+     "sub": "transfer £50 from A to B"
+    },
+    {
+     "id": "engine",
+     "kind": "container",
+     "tone": "core",
+     "label": "Database engine",
+     "sub": "changes two pages"
+    },
+    {
+     "id": "p7",
+     "kind": "store",
+     "tone": "data",
+     "label": "Data page 7",
+     "sub": "account A: debited"
+    },
+    {
+     "id": "p12",
+     "kind": "store",
+     "tone": "data",
+     "label": "Data page 12",
+     "sub": "account B: half-written"
+    },
+    {
+     "id": "power",
+     "kind": "external",
+     "tone": "external",
+     "label": "Power cut",
+     "sub": "between the two writes"
+    }
+   ],
+   "edges": [
+    {
+     "id": "t1",
+     "from": "app",
+     "to": "engine",
+     "style": "solid",
+     "label": "debit A, credit B"
+    },
+    {
+     "id": "t2",
+     "from": "engine",
+     "to": "p7",
+     "style": "solid",
+     "label": "write page 7 ✓"
+    },
+    {
+     "id": "t3",
+     "from": "engine",
+     "to": "p12",
+     "style": "dashed",
+     "label": "write page 12 · interrupted"
+    },
+    {
+     "id": "t4",
+     "from": "power",
+     "to": "engine",
+     "style": "dashed",
+     "label": "crash"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "write or call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or crash"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "later or background"
+    }
+   ]
+  },
+  {
+   "id": "force",
+   "kind": "sequence",
+   "title": "Force every page to disk at commit",
+   "participants": [
+    {
+     "id": "client",
+     "label": "Application"
+    },
+    {
+     "id": "engine",
+     "label": "Database engine"
+    },
+    {
+     "id": "disk",
+     "label": "Data files on disk"
+    }
+   ],
+   "messages": [
+    {
+     "id": "n1",
+     "from": "client",
+     "to": "engine",
+     "style": "solid",
+     "label": "COMMIT"
+    },
+    {
+     "id": "n2",
+     "from": "engine",
+     "to": "disk",
+     "style": "solid",
+     "label": "write + fsync table page 7 · seek"
+    },
+    {
+     "id": "n3",
+     "from": "engine",
+     "to": "disk",
+     "style": "solid",
+     "label": "write + fsync table page 12 · seek"
+    },
+    {
+     "id": "n4",
+     "from": "engine",
+     "to": "disk",
+     "style": "solid",
+     "label": "write + fsync index page 3 · seek"
+    },
+    {
+     "id": "n5",
+     "from": "disk",
+     "to": "engine",
+     "style": "solid",
+     "label": "each flush waits for the device"
+    },
+    {
+     "id": "n6",
+     "from": "engine",
+     "to": "client",
+     "style": "solid",
+     "label": "committed, many flushes later"
+    },
+    {
+     "id": "n7",
+     "from": "engine",
+     "to": "disk",
+     "style": "dashed",
+     "label": "crash between writes: still torn"
+    }
+   ]
+  },
+  {
+   "id": "parts",
+   "kind": "c4",
+   "title": "Log first, pages later",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "client",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Application",
+     "sub": "sends COMMIT"
+    },
+    {
+     "id": "buffer",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Buffer pool",
+     "sub": "pages changed in memory",
+     "group": "eng"
+    },
+    {
+     "id": "logbuf",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Log buffer",
+     "sub": "change records, in order",
+     "group": "eng"
+    },
+    {
+     "id": "ckpt",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Checkpointer",
+     "sub": "flushes dirty pages in the background",
+     "group": "eng"
+    },
+    {
+     "id": "wal",
+     "kind": "store",
+     "tone": "data",
+     "label": "Write-ahead log",
+     "sub": "append-only, sequential segments"
+    },
+    {
+     "id": "data",
+     "kind": "store",
+     "tone": "data",
+     "label": "Data files",
+     "sub": "tables and indexes, random pages"
+    }
+   ],
+   "edges": [
+    {
+     "id": "e1",
+     "from": "client",
+     "to": "buffer",
+     "style": "solid",
+     "label": "change rows"
+    },
+    {
+     "id": "e2",
+     "from": "buffer",
+     "to": "logbuf",
+     "style": "solid",
+     "label": "describe each change"
+    },
+    {
+     "id": "e3",
+     "from": "logbuf",
+     "to": "wal",
+     "style": "solid",
+     "label": "append + fsync at commit"
+    },
+    {
+     "id": "e4",
+     "from": "wal",
+     "to": "client",
+     "style": "dotted",
+     "label": "durable → acknowledge"
+    },
+    {
+     "id": "e5",
+     "from": "ckpt",
+     "to": "data",
+     "style": "dotted",
+     "label": "write dirty pages later"
+    },
+    {
+     "id": "e6",
+     "from": "ckpt",
+     "to": "wal",
+     "style": "dotted",
+     "label": "checkpoint record · recycle old segments"
+    },
+    {
+     "id": "e7",
+     "from": "wal",
+     "to": "data",
+     "style": "dotted",
+     "label": "rule: log record on disk before its page"
+    }
+   ],
+   "groups": [
+    {
+     "id": "eng",
+     "label": "Database engine [memory]",
+     "tone": "core"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "write or call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or crash"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "later or background"
+    }
+   ]
+  },
+  {
+   "id": "flow",
+   "kind": "sequence",
+   "title": "Commit, then checkpoint",
+   "participants": [
+    {
+     "id": "a",
+     "label": "Session A"
+    },
+    {
+     "id": "b",
+     "label": "Session B"
+    },
+    {
+     "id": "engine",
+     "label": "Database engine"
+    },
+    {
+     "id": "wal",
+     "label": "Write-ahead log"
+    },
+    {
+     "id": "ckpt",
+     "label": "Checkpointer"
+    },
+    {
+     "id": "pages",
+     "label": "Data files"
+    }
+   ],
+   "messages": [
+    {
+     "id": "h1",
+     "from": "a",
+     "to": "engine",
+     "style": "solid",
+     "label": "UPDATE two rows (in memory)"
+    },
+    {
+     "id": "h2",
+     "from": "engine",
+     "to": "wal",
+     "style": "solid",
+     "label": "append change records"
+    },
+    {
+     "id": "h3",
+     "from": "a",
+     "to": "engine",
+     "style": "solid",
+     "label": "COMMIT"
+    },
+    {
+     "id": "h4",
+     "from": "b",
+     "to": "engine",
+     "style": "solid",
+     "label": "COMMIT, a moment later"
+    },
+    {
+     "id": "h5",
+     "from": "engine",
+     "to": "wal",
+     "style": "solid",
+     "label": "commit records · one fsync"
+    },
+    {
+     "id": "h6",
+     "from": "wal",
+     "to": "engine",
+     "style": "solid",
+     "label": "flushed"
+    },
+    {
+     "id": "h7",
+     "from": "engine",
+     "to": "a",
+     "style": "solid",
+     "label": "committed"
+    },
+    {
+     "id": "h8",
+     "from": "engine",
+     "to": "b",
+     "style": "solid",
+     "label": "committed"
+    },
+    {
+     "id": "h9",
+     "from": "ckpt",
+     "to": "pages",
+     "style": "dotted",
+     "label": "later: write dirty pages"
+    },
+    {
+     "id": "h10",
+     "from": "ckpt",
+     "to": "wal",
+     "style": "dotted",
+     "label": "checkpoint record · recycle segments"
+    }
+   ]
+  },
+  {
+   "id": "recovery",
+   "kind": "sequence",
+   "title": "Redo after a crash",
+   "participants": [
+    {
+     "id": "engine",
+     "label": "Restarting engine"
+    },
+    {
+     "id": "wal",
+     "label": "Write-ahead log"
+    },
+    {
+     "id": "pages",
+     "label": "Data files"
+    }
+   ],
+   "messages": [
+    {
+     "id": "r1",
+     "from": "engine",
+     "to": "wal",
+     "style": "solid",
+     "label": "find the latest checkpoint"
+    },
+    {
+     "id": "r2",
+     "from": "wal",
+     "to": "engine",
+     "style": "solid",
+     "label": "redo starts at its redo point"
+    },
+    {
+     "id": "r3",
+     "from": "engine",
+     "to": "wal",
+     "style": "solid",
+     "label": "read every record after it"
+    },
+    {
+     "id": "r4",
+     "from": "engine",
+     "to": "pages",
+     "style": "solid",
+     "label": "reapply each change (redo)"
+    },
+    {
+     "id": "r5",
+     "from": "engine",
+     "to": "pages",
+     "style": "solid",
+     "label": "full page image repairs a torn page"
+    },
+    {
+     "id": "r6",
+     "from": "engine",
+     "to": "wal",
+     "style": "dashed",
+     "label": "no commit record → treated as aborted"
+    },
+    {
+     "id": "r7",
+     "from": "pages",
+     "to": "engine",
+     "style": "solid",
+     "label": "consistent as of the last flushed commit"
+    }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "aries",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "ARIES",
+     "sub": "Mohan et al. · ACM TODS, 1992"
+    },
+    {
+     "id": "pg",
+     "kind": "container",
+     "tone": "core",
+     "label": "PostgreSQL WAL",
+     "sub": "redo from the last checkpoint"
+    },
+    {
+     "id": "inno",
+     "kind": "container",
+     "tone": "core",
+     "label": "MySQL InnoDB redo log",
+     "sub": "replayed before connections"
+    },
+    {
+     "id": "sqlite",
+     "kind": "container",
+     "tone": "core",
+     "label": "SQLite WAL mode",
+     "sub": "since 3.7.0 · readers don't block writers"
+    },
+    {
+     "id": "kafka",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Apache Kafka",
+     "sub": "the log is the product"
+    },
+    {
+     "id": "raft",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Raft",
+     "sub": "consensus over a replicated log"
+    }
+   ],
+   "edges": [
+    {
+     "id": "w1",
+     "from": "aries",
+     "to": "pg",
+     "style": "solid",
+     "label": "write-ahead logging"
+    },
+    {
+     "id": "w2",
+     "from": "aries",
+     "to": "inno",
+     "style": "solid",
+     "label": "redo on restart"
+    },
+    {
+     "id": "w3",
+     "from": "aries",
+     "to": "sqlite",
+     "style": "solid",
+     "label": "log, then checkpoint"
+    },
+    {
+     "id": "w4",
+     "from": "pg",
+     "to": "kafka",
+     "style": "dotted",
+     "label": "same idea, as a service"
+    },
+    {
+     "id": "w5",
+     "from": "pg",
+     "to": "raft",
+     "style": "dotted",
+     "label": "same idea, across machines"
+    }
+   ]
+  },
+  {
+   "id": "related",
+   "kind": "c4",
+   "title": "One log, many readers",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "wal",
+     "kind": "store",
+     "tone": "data",
+     "label": "Write-ahead log",
+     "sub": "every committed change, in order"
+    },
+    {
+     "id": "rec",
+     "kind": "component",
+     "tone": "core",
+     "label": "Crash recovery",
+     "sub": "redo after restart"
+    },
+    {
+     "id": "rep",
+     "kind": "container",
+     "tone": "core",
+     "label": "Read replicas",
+     "sub": "WAL streamed as it is generated"
+    },
+    {
+     "id": "arch",
+     "kind": "store",
+     "tone": "data",
+     "label": "WAL archive",
+     "sub": "point-in-time recovery"
+    },
+    {
+     "id": "cdc",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Change data capture",
+     "sub": "logical decoding of the WAL"
+    },
+    {
+     "id": "es",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Event sourcing",
+     "sub": "the log as the system of record"
+    },
+    {
+     "id": "outbox",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Outbox",
+     "sub": "events committed with the data"
+    }
+   ],
+   "edges": [
+    {
+     "id": "r1",
+     "from": "wal",
+     "to": "rec",
+     "style": "solid",
+     "label": "replay"
+    },
+    {
+     "id": "r2",
+     "from": "wal",
+     "to": "rep",
+     "style": "solid",
+     "label": "stream and apply"
+    },
+    {
+     "id": "r3",
+     "from": "wal",
+     "to": "arch",
+     "style": "solid",
+     "label": "archive segments"
+    },
+    {
+     "id": "r4",
+     "from": "wal",
+     "to": "cdc",
+     "style": "solid",
+     "label": "decode row changes"
+    },
+    {
+     "id": "r5",
+     "from": "es",
+     "to": "wal",
+     "style": "dotted",
+     "label": "same shape, in the application"
+    },
+    {
+     "id": "r6",
+     "from": "outbox",
+     "to": "cdc",
+     "style": "dotted",
+     "label": "often relayed by it"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "problem",
+   "title": "The problem"
+  },
+  {
+   "id": "naive",
+   "title": "The naive fix"
+  },
+  {
+   "id": "pattern",
+   "title": "The pattern"
+  },
+  {
+   "id": "how",
+   "title": "How it works"
+  },
+  {
+   "id": "failure",
+   "title": "When it goes wrong"
+  },
+  {
+   "id": "tradeoffs",
+   "title": "Trade-offs"
+  },
+  {
+   "id": "wild",
+   "title": "In the wild"
+  },
+  {
+   "id": "related",
+   "title": "Related patterns"
+  },
+  {
+   "id": "recap",
+   "title": "Recap"
+  }
+ ],
+ "shots": [
+  {
+   "id": "wal-problem",
+   "chapter": "problem",
+   "diagram": "torn",
+   "focus": [],
+   "trace": [],
+   "engineer": "Here is a bank transfer. The application asks the database to take fifty pounds from account A and add it to account B. Those two balances live on two different pages of a data file, and the database must also say committed to the application at some point. To make the change permanent, the engine has to write both pages to disk. Nothing has gone wrong yet.",
+   "executive": "A single change to the database usually touches several places on disk."
+  },
+  {
+   "id": "wal-torn",
+   "chapter": "problem",
+   "title": "Torn write",
+   "diagram": "torn",
+   "focus": [],
+   "trace": [
+    "t1",
+    "t2",
+    "t3",
+    "t4"
+   ],
+   "engineer": "Now the power fails between the two writes. Page seven, with the debit, made it to disk. Page twelve did not, or was only half written: a torn page, part old and part new. After the restart, fifty pounds has simply vanished, and the database has no record of what it was in the middle of doing. It cannot finish the change, and it cannot undo it.",
+   "executive": "If the machine crashes partway through, the data on disk is left half-changed, and the database cannot tell what it was doing."
+  },
+  {
+   "id": "wal-naive",
+   "chapter": "naive",
+   "title": "Force every page",
+   "diagram": "force",
+   "focus": [],
+   "trace": [
+    "n1",
+    "n2",
+    "n3",
+    "n4",
+    "n5",
+    "n6",
+    "n7"
+   ],
+   "engineer": "The obvious fix is to force every changed page to disk before saying committed. That is slow. One transaction can touch table pages and index pages scattered across the file, so each write is random I/O, and each flush waits for the device. Commits back up behind the disk. And it still does not help with the crash itself: if power fails between two page writes, the data is still torn.",
+   "executive": "Writing every change straight to disk before confirming is slow, and still leaves a mess if the crash lands in the middle."
+  },
+  {
+   "id": "wal-parts",
+   "chapter": "pattern",
+   "title": "Log first",
+   "diagram": "parts",
+   "focus": [],
+   "trace": [
+    "e1",
+    "e2",
+    "e3",
+    "e4"
+   ],
+   "engineer": "The write-ahead log flips the order. Changes are made to pages in memory, and a record describing each change is added to a log buffer. At commit, the engine appends those records to the end of the log file and flushes it. Only then does it acknowledge the commit. The log is written sequentially, so syncing it is far cheaper than flushing every data page the transaction touched.",
+   "executive": "Before changing the real data, the database notes the change at the end of a log and saves that note. That single append is fast."
+  },
+  {
+   "id": "wal-checkpoint",
+   "chapter": "pattern",
+   "title": "Checkpoint",
+   "diagram": "parts",
+   "focus": [],
+   "trace": [
+    "e7",
+    "e5",
+    "e6"
+   ],
+   "engineer": "The data files catch up later. One rule holds everything together: a changed page may only be written once the log records describing it are safely on disk. A background checkpointer flushes dirty pages, then writes a checkpoint record into the log. Everything before that point is now in the data files, so older log segments can be recycled or removed.",
+   "executive": "The real data files are updated later, in the background, and old log is thrown away once it is no longer needed."
+  },
+  {
+   "id": "wal-how",
+   "chapter": "how",
+   "title": "Sequence",
+   "diagram": "flow",
+   "focus": [],
+   "trace": [
+    "h1",
+    "h2",
+    "h3",
+    "h5",
+    "h6",
+    "h7",
+    "h9",
+    "h10"
+   ],
+   "engineer": "Step by step. Session A updates two rows in memory, and the engine appends change records to the log. Session A sends commit. The engine appends a commit record and flushes the log. Once the flush returns, the client is told the transaction is committed. Minutes later the checkpointer writes the dirty pages to the data files, adds a checkpoint record, and old segments are recycled. In PostgreSQL, a checkpoint runs every five minutes by default, or sooner when the log approaches one gigabyte.",
+   "executive": "The database saves the log entry, confirms the commit, and writes the actual data later in the background."
+  },
+  {
+   "id": "wal-group",
+   "chapter": "how",
+   "title": "Group commit",
+   "diagram": "flow",
+   "focus": [],
+   "trace": [
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "h7",
+    "h8"
+   ],
+   "engineer": "Busy databases add group commit. When many small transactions commit at once, one flush of the log can cover all of them. Session B's commit record lands in the log buffer while Session A's flush is pending, and a single fsync makes both durable. PostgreSQL even lets the leader wait briefly, through commit delay, so more commits can join the same flush.",
+   "executive": "When lots of transactions commit together, the database saves them in one go, which keeps throughput high."
+  },
+  {
+   "id": "wal-recovery",
+   "chapter": "failure",
+   "title": "Redo",
+   "diagram": "recovery",
+   "focus": [],
+   "trace": [
+    "r1",
+    "r2",
+    "r3",
+    "r4",
+    "r5",
+    "r6",
+    "r7"
+   ],
+   "engineer": "Now the crash. On restart, the engine reads the latest checkpoint record to find the redo point, then replays every log record after it, reapplying changes the data files had not yet received. This is roll-forward recovery, or redo. A torn page is no problem: the first change to a page after each checkpoint logs the whole page, so it can be restored. Transactions with no commit record are treated as aborted. The transfer either happened completely or not at all.",
+   "executive": "After a crash, the database replays its log from the last checkpoint, so every confirmed change is restored and half-finished ones are discarded."
+  },
+  {
+   "id": "wal-edges",
+   "chapter": "failure",
+   "card": {
+    "heading": "Where it still goes wrong",
+    "points": [
+     "Disks that report a flush that has not happened",
+     "fsync turned off: corruption after a power cut",
+     "An abandoned replication slot keeps old log forever",
+     "Long gaps between checkpoints mean slow recovery"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "A few things still go wrong. Some disks and operating systems report a flush that has not happened; MySQL's manual warns that durability is then not guaranteed even with the recommended settings. Turning fsync off entirely can leave PostgreSQL unrecoverably corrupt after a power cut. And a log cannot be recycled while something still needs it: an abandoned replication slot keeps old log on disk until it is dropped.",
+   "executive": "The log only protects you if the disk tells the truth, flushing stays on, and nothing holds old log forever."
+  },
+  {
+   "id": "wal-dials",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "Durability dials",
+    "kind": "compare",
+    "points": [
+     "Setting | What a crash can cost",
+     "PostgreSQL synchronous_commit = on (default) | Nothing committed",
+     "synchronous_commit = off | Up to 3 × wal_writer_delay of commits",
+     "InnoDB flush_log_at_trx_commit = 1 (default) | Nothing committed",
+     "InnoDB flush_log_at_trx_commit = 0 or 2 | About one second of commits",
+     "PostgreSQL fsync = off | Possible unrecoverable corruption"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Databases let you trade durability for speed. PostgreSQL's synchronous commit, set to off, returns before the flush; you can lose roughly the last six hundred milliseconds of commits, three times the default writer delay, but the database stays consistent. InnoDB's flush log at transaction commit defaults to one, a flush per commit; zero or two flush about once a second, so about a second can be lost. Fsync off is different: it risks corruption, not just loss.",
+   "executive": "You can make commits faster by confirming before the log is saved, accepting that the last moment of work may be lost in a crash."
+  },
+  {
+   "id": "wal-costs",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "Costs and variants",
+    "points": [
+     "Every change written twice: log, then data files",
+     "Frequent checkpoints: quick recovery, more I/O",
+     "Rare checkpoints: less I/O, longer recovery",
+     "Variants: redo, or redo then roll back"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "What it costs. Every change is written twice: once to the log, once to the data files. Checkpoints trade recovery time against I/O: frequent ones keep restarts quick but write more, including more full page images. And the log needs its own disk space and fast flushes. Recovery varies too: PostgreSQL rolls forward with redo, while ARIES and InnoDB redo and then roll back unfinished transactions. SQLite offers the log as an option alongside its older rollback journal.",
+   "executive": "The price is writing everything twice and tuning how often to catch up, in exchange for speed and safety."
+  },
+  {
+   "id": "wal-wild",
+   "chapter": "wild",
+   "title": "Lineage",
+   "diagram": "wild",
+   "focus": [],
+   "trace": [
+    "w1",
+    "w2",
+    "w3",
+    "w4",
+    "w5"
+   ],
+   "engineer": "In the wild. ARIES, by Mohan and colleagues in 1992, is the classic write-ahead logging recovery algorithm: analyse, redo, then undo. PostgreSQL's WAL redoes from the last checkpoint. MySQL's InnoDB replays its redo log on start-up, before accepting connections. SQLite has had a WAL mode since version 3.7.0, where readers do not block writers. Kafka makes the log the product, and Raft keeps one log consistent across machines.",
+   "executive": "Every serious database uses a log this way, and systems such as Kafka and Raft are built around the same idea."
+  },
+  {
+   "id": "wal-related",
+   "chapter": "related",
+   "title": "Neighbours",
+   "diagram": "related",
+   "focus": [],
+   "trace": [
+    "r1",
+    "r2",
+    "r3",
+    "r4",
+    "r5",
+    "r6"
+   ],
+   "engineer": "Once you have an ordered log of every committed change, other things can read it. PostgreSQL streams WAL records to standby servers as they are generated: that is how read replicas stay current. Archived segments give point-in-time recovery. Logical decoding turns the log into row changes, which is change data capture. Event sourcing makes the same shape the system of record, and the outbox pattern is often relayed by change data capture.",
+   "executive": "The same log that protects against crashes also feeds replicas, backups and change data capture."
+  },
+  {
+   "id": "wal-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "Committed means the log record is flushed",
+     "Pages catch up later; checkpoints bound recovery",
+     "Relaxing the flush trades recent commits for speed"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. First, write the log first: a change is committed when its log record is flushed to disk, not when the data pages are. Second, sequential appends and group commit make that cheap, and checkpoints let the data files catch up and keep recovery short. Third, the durability dials are real trade-offs: relaxing the flush buys speed with your most recent commits.",
+   "executive": "Log first, apply later. Checkpoints keep recovery quick. Know what your durability settings give away."
+  }
+ ],
+ "subtitle": "Design pattern",
+ "meta": {
+  "kind": "pattern",
+  "category": "Data",
+  "level": "intermediate",
+  "uses": [],
+  "related": [
+   "read-replicas",
+   "change-data-capture",
+   "event-sourcing"
+  ],
+  "blurb": "Append each change to a sequential log and flush it before commit; apply to data pages later and redo after a crash.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ }
+}

@@ -1,0 +1,142 @@
+{
+ "tpc-problem-engineer": {
+  "file": "/audio/two-phase-commit/tpc-problem-engineer.mp3",
+  "ms": 23352,
+  "hash": "ab5fb52e229b"
+ },
+ "tpc-problem-executive": {
+  "file": "/audio/two-phase-commit/tpc-problem-executive.mp3",
+  "ms": 5112,
+  "hash": "f3376598f8f3"
+ },
+ "tpc-half-engineer": {
+  "file": "/audio/two-phase-commit/tpc-half-engineer.mp3",
+  "ms": 25176,
+  "hash": "6c77a67f44d9"
+ },
+ "tpc-half-executive": {
+  "file": "/audio/two-phase-commit/tpc-half-executive.mp3",
+  "ms": 6528,
+  "hash": "5836825b3905"
+ },
+ "tpc-naive-engineer": {
+  "file": "/audio/two-phase-commit/tpc-naive-engineer.mp3",
+  "ms": 27240,
+  "hash": "603a3af2b98b"
+ },
+ "tpc-naive-executive": {
+  "file": "/audio/two-phase-commit/tpc-naive-executive.mp3",
+  "ms": 4728,
+  "hash": "d308902d163e"
+ },
+ "tpc-structure-engineer": {
+  "file": "/audio/two-phase-commit/tpc-structure-engineer.mp3",
+  "ms": 25896,
+  "hash": "a0172a11441e"
+ },
+ "tpc-structure-executive": {
+  "file": "/audio/two-phase-commit/tpc-structure-executive.mp3",
+  "ms": 6192,
+  "hash": "736104f71a3c"
+ },
+ "tpc-how-engineer": {
+  "file": "/audio/two-phase-commit/tpc-how-engineer.mp3",
+  "ms": 29832,
+  "hash": "25d9c0257a73"
+ },
+ "tpc-how-executive": {
+  "file": "/audio/two-phase-commit/tpc-how-executive.mp3",
+  "ms": 8088,
+  "hash": "346e22be47f6"
+ },
+ "tpc-rules-engineer": {
+  "file": "/audio/two-phase-commit/tpc-rules-engineer.mp3",
+  "ms": 22848,
+  "hash": "7ed968fa3f3b"
+ },
+ "tpc-rules-executive": {
+  "file": "/audio/two-phase-commit/tpc-rules-executive.mp3",
+  "ms": 6792,
+  "hash": "96113596a922"
+ },
+ "tpc-blocking-engineer": {
+  "file": "/audio/two-phase-commit/tpc-blocking-engineer.mp3",
+  "ms": 27480,
+  "hash": "f9e31cf225a3"
+ },
+ "tpc-blocking-executive": {
+  "file": "/audio/two-phase-commit/tpc-blocking-executive.mp3",
+  "ms": 7608,
+  "hash": "dd404103d74d"
+ },
+ "tpc-recover-engineer": {
+  "file": "/audio/two-phase-commit/tpc-recover-engineer.mp3",
+  "ms": 30120,
+  "hash": "c9c85e071913"
+ },
+ "tpc-recover-executive": {
+  "file": "/audio/two-phase-commit/tpc-recover-executive.mp3",
+  "ms": 6336,
+  "hash": "112338d64b0f"
+ },
+ "tpc-costs-engineer": {
+  "file": "/audio/two-phase-commit/tpc-costs-engineer.mp3",
+  "ms": 26904,
+  "hash": "4fba7bdc8cfa"
+ },
+ "tpc-costs-executive": {
+  "file": "/audio/two-phase-commit/tpc-costs-executive.mp3",
+  "ms": 6192,
+  "hash": "3d54e9112ba7"
+ },
+ "tpc-paxos-engineer": {
+  "file": "/audio/two-phase-commit/tpc-paxos-engineer.mp3",
+  "ms": 34440,
+  "hash": "dbd2ded0e07b"
+ },
+ "tpc-paxos-executive": {
+  "file": "/audio/two-phase-commit/tpc-paxos-executive.mp3",
+  "ms": 6384,
+  "hash": "169a050aa985"
+ },
+ "tpc-whennot-engineer": {
+  "file": "/audio/two-phase-commit/tpc-whennot-engineer.mp3",
+  "ms": 28512,
+  "hash": "61a19a198d7e"
+ },
+ "tpc-whennot-executive": {
+  "file": "/audio/two-phase-commit/tpc-whennot-executive.mp3",
+  "ms": 7512,
+  "hash": "a4be6d925fcb"
+ },
+ "tpc-wild-engineer": {
+  "file": "/audio/two-phase-commit/tpc-wild-engineer.mp3",
+  "ms": 33696,
+  "hash": "105749f5669e"
+ },
+ "tpc-wild-executive": {
+  "file": "/audio/two-phase-commit/tpc-wild-executive.mp3",
+  "ms": 8472,
+  "hash": "521e80678978"
+ },
+ "tpc-related-engineer": {
+  "file": "/audio/two-phase-commit/tpc-related-engineer.mp3",
+  "ms": 29184,
+  "hash": "bdb4ae095d36"
+ },
+ "tpc-related-executive": {
+  "file": "/audio/two-phase-commit/tpc-related-executive.mp3",
+  "ms": 7440,
+  "hash": "d9b0fcc98e0c"
+ },
+ "tpc-recap-engineer": {
+  "file": "/audio/two-phase-commit/tpc-recap-engineer.mp3",
+  "ms": 25104,
+  "hash": "241ae3e8a400"
+ },
+ "tpc-recap-executive": {
+  "file": "/audio/two-phase-commit/tpc-recap-executive.mp3",
+  "ms": 7416,
+  "hash": "9e3598e14f68"
+ }
+}
