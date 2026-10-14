@@ -6,7 +6,9 @@ import Anthropic from "@anthropic-ai/sdk"
 import { z } from "zod/v4"
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { createServiceClient } from "@/lib/supabase/service"
+import { loadRequest, type WalkthroughRequest } from "./store"
+
+export type { RequestStatus, WalkthroughRequest } from "./store"
 
 export const SCRIPT_MODEL = "claude-sonnet-5-5"
 export const DIAGRAM_MODEL = "claude-sonnet-5-5"
@@ -16,32 +18,11 @@ export const MAX_REVISIONS = 3
 
 export const anthropic = () => new Anthropic()
 
-export type RequestStatus = "draft" | "queued" | "in_production" | "ready" | "cancelled"
-
-export interface WalkthroughRequest {
-  id: string
-  user_id: string
-  email: string | null
-  topic: string
-  audience: string | null
-  context: string | null
-  script: string | null
-  diagram: { diagram: unknown; svg: string } | null
-  revisions: number
-  status: RequestStatus
-  allow_feature: boolean
-  result_path: string | null
-  notes: string | null
-  created_at: string
-  approved_at: string | null
-  ready_at: string | null
-}
-
-/** The signed-in user, or a 401 response. */
+/** The signed-in user (Supabase sign-in), or a 401 response. */
 export async function currentUser() {
   const supabase = await createClient()
   const { data } = await supabase.auth.getUser()
-  if (!data.user) return { error: NextResponse.json({ error: "Sign in to request a walkthrough." }, { status: 401 }) }
+  if (!data.user) return { error: NextResponse.json({ error: "Sign in to continue." }, { status: 401 }) }
   return { user: data.user }
 }
 
@@ -54,12 +35,11 @@ export function isAdmin(email: string | null | undefined) {
 export async function ownedRequest(id: string) {
   const who = await currentUser()
   if (who.error) return { error: who.error }
-  const db = createServiceClient()
-  const { data } = await db.from("walkthrough_requests").select("*").eq("id", id).maybeSingle()
-  if (!data || (data.user_id !== who.user.id && !isAdmin(who.user.email))) {
+  const request = await loadRequest(id)
+  if (!request || (request.user_id !== who.user.id && !isAdmin(who.user.email))) {
     return { error: NextResponse.json({ error: "Not found." }, { status: 404 }) }
   }
-  return { user: who.user, request: data as WalkthroughRequest, db }
+  return { user: who.user, request }
 }
 
 export const RequestInput = z.object({
@@ -97,10 +77,10 @@ Write the script in Markdown with these chapters as "## " headings, in this orde
 
 Each chapter is two to four short paragraphs of spoken narration: plain sentences a listener can follow without seeing text, no bullet lists, no code. Refer to components by the names a system diagram would use. Where the user gave context, use it and do not invent facts about their organisation; where a number is an assumption, say so. Keep the whole script under 1,400 words.`
 
-export function scriptRequest(r: WalkthroughRequest, feedback?: string): Anthropic.MessageStreamParams {
+export function scriptRequest(r: WalkthroughRequest, previous?: string | null, feedback?: string): Anthropic.MessageStreamParams {
   const messages: Anthropic.MessageParam[] = [{ role: "user", content: brief(r) }]
-  if (feedback && r.script) {
-    messages.push({ role: "assistant", content: r.script })
+  if (feedback && previous) {
+    messages.push({ role: "assistant", content: previous })
     messages.push({ role: "user", content: `Revise the whole script with this feedback, keeping the same chapters:\n<feedback>${feedback}</feedback>` })
   }
   return {

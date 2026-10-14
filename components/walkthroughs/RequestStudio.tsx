@@ -168,14 +168,11 @@ export default function RequestStudio() {
   if (!user) {
     return (
       <Shell>
-        <div className={`${card} mx-auto max-w-xl p-8 text-center`}>
-          <h1 className="text-2xl font-bold">Explain your system</h1>
-          <p className="mt-3 text-[#4f5d5a]">
-            Describe a system and we turn it into a narrated, animated architecture walkthrough like the ones in the library. Sign in to start; we
-            email you when it is ready.
-          </p>
-          <Link href="/signin?next=/request" className={`${button} mt-6 inline-block`}>
-            Sign in to continue
+        <div className="mx-auto max-w-2xl space-y-6">
+          <Intro />
+          <HowItWorks />
+          <Link href="/signin?next=/request" className={`${button} inline-block`}>
+            Sign in to start
           </Link>
         </div>
       </Shell>
@@ -186,13 +183,8 @@ export default function RequestStudio() {
     return (
       <Shell>
         <form onSubmit={submit} className="mx-auto max-w-2xl space-y-5">
-          <div>
-            <h1 className="text-[28px] font-bold leading-tight">Explain your system</h1>
-            <p className="mt-2 text-[#4f5d5a]">
-              Tell us the system. You get a draft script and a system diagram in about a minute; approve it and we produce the narrated walkthrough,
-              usually within two working days.
-            </p>
-          </div>
+          <Intro />
+          <HowItWorks />
           <label className="block">
             <span className="mb-1 block text-sm font-semibold">What system?</span>
             <input
@@ -322,6 +314,41 @@ export default function RequestStudio() {
         )}
       </div>
     </Shell>
+  )
+}
+
+function Intro() {
+  return (
+    <div>
+      <h1 className="text-[28px] font-bold leading-tight">Explain your system</h1>
+      <p className="mt-2 text-[#4f5d5a]">
+        Tell us about a system you build or run. We turn it into a narrated, animated architecture walkthrough, like the ones in the library, that
+        you can share with your team, new joiners or stakeholders.
+      </p>
+    </div>
+  )
+}
+
+const STEPS = [
+  ["You describe it", "What the system does, who the walkthrough is for, and anything we should know. No secrets."],
+  ["You get a draft in about a minute", "A narration script in eight chapters and a system diagram. Ask for changes up to three times."],
+  ["You approve, we produce it", "We record the narration, animate the diagram shot by shot and check the details. Usually within two working days."],
+  ["You watch it here", "We email you a private link. Only you can open it, after signing in."],
+] as const
+
+function HowItWorks() {
+  return (
+    <ol className={`${card} grid gap-4 p-5 sm:grid-cols-2`}>
+      {STEPS.map(([title, text], i) => (
+        <li key={title} className="flex gap-3">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#e6efec] text-sm font-bold text-[#3d6b63]">{i + 1}</span>
+          <span>
+            <b className="block text-[15px]">{title}</b>
+            <span className="text-sm text-[#4f5d5a]">{text}</span>
+          </span>
+        </li>
+      ))}
+    </ol>
   )
 }
 

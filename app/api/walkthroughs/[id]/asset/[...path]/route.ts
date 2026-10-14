@@ -1,16 +1,15 @@
-// A finished walkthrough's files (walkthrough.json, layout.json, audio/…) live
-// in the private "walkthroughs" bucket. The owner gets a short-lived signed URL.
+// A finished walkthrough's files (walkthrough.json, layout.json, audio/…),
+// streamed from the private Blob store to the request's owner.
 import { NextResponse } from "next/server"
+import { deliveredFile } from "@/lib/walkthroughs/store"
 import { ownedRequest } from "@/lib/walkthroughs/server"
 
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string; path: string[] }> }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string; path: string[] }> }) {
   const { id, path } = await params
   const found = await ownedRequest(id)
   if (found.error) return found.error
   if (found.request.status !== "ready") return NextResponse.json({ error: "Not ready yet." }, { status: 404 })
-  if (path.some((p) => p === ".." || p.includes("/"))) return NextResponse.json({ error: "Bad path." }, { status: 400 })
-
-  const { data, error } = await found.db.storage.from("walkthroughs").createSignedUrl(`${id}/${path.join("/")}`, 3600)
-  if (error || !data) return NextResponse.json({ error: "Not found." }, { status: 404 })
-  return NextResponse.redirect(data.signedUrl, { status: 302, headers: { "cache-control": "private, max-age=600" } })
+  if (path.some((p) => p === ".." || p === "." || p.includes("/"))) return NextResponse.json({ error: "Bad path." }, { status: 400 })
+  const res = await deliveredFile(id, path.join("/"), req.headers.get("range"))
+  return res ?? NextResponse.json({ error: "Not found." }, { status: 404 })
 }
