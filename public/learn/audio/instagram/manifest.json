@@ -1,0 +1,242 @@
+{
+ "i01-engineer": {
+  "file": "/audio/instagram/i01-engineer.mp3",
+  "ms": 28008,
+  "hash": "2e635737aba8"
+ },
+ "i01-executive": {
+  "file": "/audio/instagram/i01-executive.mp3",
+  "ms": 11808,
+  "hash": "37b113a8a236"
+ },
+ "i02-engineer": {
+  "file": "/audio/instagram/i02-engineer.mp3",
+  "ms": 33216,
+  "hash": "238b5c1a3e8b"
+ },
+ "i02-executive": {
+  "file": "/audio/instagram/i02-executive.mp3",
+  "ms": 7104,
+  "hash": "fe10589bf006"
+ },
+ "i03-engineer": {
+  "file": "/audio/instagram/i03-engineer.mp3",
+  "ms": 30408,
+  "hash": "27418fd628a0"
+ },
+ "i03-executive": {
+  "file": "/audio/instagram/i03-executive.mp3",
+  "ms": 8016,
+  "hash": "f28312d05115"
+ },
+ "i04-engineer": {
+  "file": "/audio/instagram/i04-engineer.mp3",
+  "ms": 28416,
+  "hash": "4bf5b9e7fa86"
+ },
+ "i04-executive": {
+  "file": "/audio/instagram/i04-executive.mp3",
+  "ms": 7320,
+  "hash": "42ddd9b376a6"
+ },
+ "i05-engineer": {
+  "file": "/audio/instagram/i05-engineer.mp3",
+  "ms": 25104,
+  "hash": "c19c5087e918"
+ },
+ "i05-executive": {
+  "file": "/audio/instagram/i05-executive.mp3",
+  "ms": 6816,
+  "hash": "69c39d3d872b"
+ },
+ "i06-engineer": {
+  "file": "/audio/instagram/i06-engineer.mp3",
+  "ms": 34536,
+  "hash": "d999d246f93e"
+ },
+ "i06-executive": {
+  "file": "/audio/instagram/i06-executive.mp3",
+  "ms": 9000,
+  "hash": "e4377aa9a052"
+ },
+ "i07-engineer": {
+  "file": "/audio/instagram/i07-engineer.mp3",
+  "ms": 29928,
+  "hash": "e317cc58514e"
+ },
+ "i07-executive": {
+  "file": "/audio/instagram/i07-executive.mp3",
+  "ms": 7080,
+  "hash": "82121245eb64"
+ },
+ "i08-engineer": {
+  "file": "/audio/instagram/i08-engineer.mp3",
+  "ms": 28800,
+  "hash": "715b3704f4ca"
+ },
+ "i08-executive": {
+  "file": "/audio/instagram/i08-executive.mp3",
+  "ms": 7440,
+  "hash": "b0bc89eb4b03"
+ },
+ "i09-engineer": {
+  "file": "/audio/instagram/i09-engineer.mp3",
+  "ms": 28632,
+  "hash": "85fea71df5d1"
+ },
+ "i09-executive": {
+  "file": "/audio/instagram/i09-executive.mp3",
+  "ms": 6912,
+  "hash": "bdfe04d14648"
+ },
+ "i10-engineer": {
+  "file": "/audio/instagram/i10-engineer.mp3",
+  "ms": 31416,
+  "hash": "756ac63e82bb"
+ },
+ "i10-executive": {
+  "file": "/audio/instagram/i10-executive.mp3",
+  "ms": 7320,
+  "hash": "09211982722d"
+ },
+ "i11-engineer": {
+  "file": "/audio/instagram/i11-engineer.mp3",
+  "ms": 30096,
+  "hash": "46ae6b7d235c"
+ },
+ "i11-executive": {
+  "file": "/audio/instagram/i11-executive.mp3",
+  "ms": 6768,
+  "hash": "83dd29a9e5f0"
+ },
+ "i12-engineer": {
+  "file": "/audio/instagram/i12-engineer.mp3",
+  "ms": 32568,
+  "hash": "b5bf7725bc72"
+ },
+ "i12-executive": {
+  "file": "/audio/instagram/i12-executive.mp3",
+  "ms": 7512,
+  "hash": "b387d17a50a8"
+ },
+ "i13-engineer": {
+  "file": "/audio/instagram/i13-engineer.mp3",
+  "ms": 25992,
+  "hash": "dfe51895211c"
+ },
+ "i13-executive": {
+  "file": "/audio/instagram/i13-executive.mp3",
+  "ms": 6384,
+  "hash": "4f36a72f952c"
+ },
+ "i14-engineer": {
+  "file": "/audio/instagram/i14-engineer.mp3",
+  "ms": 27720,
+  "hash": "acc526febd1a"
+ },
+ "i14-executive": {
+  "file": "/audio/instagram/i14-executive.mp3",
+  "ms": 6480,
+  "hash": "c74af1c8831a"
+ },
+ "i15-engineer": {
+  "file": "/audio/instagram/i15-engineer.mp3",
+  "ms": 29208,
+  "hash": "90cad2362830"
+ },
+ "i15-executive": {
+  "file": "/audio/instagram/i15-executive.mp3",
+  "ms": 6024,
+  "hash": "52da1d5ffb34"
+ },
+ "i16-engineer": {
+  "file": "/audio/instagram/i16-engineer.mp3",
+  "ms": 27600,
+  "hash": "f3e0d01d4775"
+ },
+ "i16-executive": {
+  "file": "/audio/instagram/i16-executive.mp3",
+  "ms": 7128,
+  "hash": "d53d72e3084f"
+ },
+ "i17-engineer": {
+  "file": "/audio/instagram/i17-engineer.mp3",
+  "ms": 28536,
+  "hash": "cc4d48dbbe34"
+ },
+ "i17-executive": {
+  "file": "/audio/instagram/i17-executive.mp3",
+  "ms": 6936,
+  "hash": "1947f121ca51"
+ },
+ "i18-engineer": {
+  "file": "/audio/instagram/i18-engineer.mp3",
+  "ms": 35496,
+  "hash": "a3380abfaee9"
+ },
+ "i18-executive": {
+  "file": "/audio/instagram/i18-executive.mp3",
+  "ms": 9336,
+  "hash": "6ee5d8c5a9ed"
+ },
+ "i19-engineer": {
+  "file": "/audio/instagram/i19-engineer.mp3",
+  "ms": 31080,
+  "hash": "61a77f9bbf73"
+ },
+ "i19-executive": {
+  "file": "/audio/instagram/i19-executive.mp3",
+  "ms": 7296,
+  "hash": "27956e4142cd"
+ },
+ "i20-engineer": {
+  "file": "/audio/instagram/i20-engineer.mp3",
+  "ms": 28272,
+  "hash": "5ff49f1da2bd"
+ },
+ "i20-executive": {
+  "file": "/audio/instagram/i20-executive.mp3",
+  "ms": 7128,
+  "hash": "17bf17aea241"
+ },
+ "i21-engineer": {
+  "file": "/audio/instagram/i21-engineer.mp3",
+  "ms": 26976,
+  "hash": "01648cbad799"
+ },
+ "i21-executive": {
+  "file": "/audio/instagram/i21-executive.mp3",
+  "ms": 8448,
+  "hash": "38c8b44f87f3"
+ },
+ "i22-engineer": {
+  "file": "/audio/instagram/i22-engineer.mp3",
+  "ms": 31056,
+  "hash": "f00f1a44f7d1"
+ },
+ "i22-executive": {
+  "file": "/audio/instagram/i22-executive.mp3",
+  "ms": 7584,
+  "hash": "ff3586c04ee9"
+ },
+ "i23-engineer": {
+  "file": "/audio/instagram/i23-engineer.mp3",
+  "ms": 31680,
+  "hash": "0ec4391344e8"
+ },
+ "i23-executive": {
+  "file": "/audio/instagram/i23-executive.mp3",
+  "ms": 8784,
+  "hash": "48d96f720f83"
+ },
+ "i24-engineer": {
+  "file": "/audio/instagram/i24-engineer.mp3",
+  "ms": 30768,
+  "hash": "7fb7ac5e805b"
+ },
+ "i24-executive": {
+  "file": "/audio/instagram/i24-executive.mp3",
+  "ms": 8496,
+  "hash": "2ac4f788fb8a"
+ }
+}

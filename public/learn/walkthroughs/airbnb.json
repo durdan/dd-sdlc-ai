@@ -1,0 +1,1329 @@
+{
+ "id": "airbnb",
+ "title": "Airbnb: search to booking",
+ "subtitle": "Company case study",
+ "voice": "en-GB-SoniaNeural",
+ "template": "case-study",
+ "meta": {
+  "kind": "company",
+  "category": "Travel",
+  "level": "intermediate",
+  "uses": [
+   "server-driven-ui",
+   "idempotency",
+   "retry",
+   "change-data-capture",
+   "event-streaming",
+   "strangler-fig",
+   "api-gateway"
+  ],
+  "related": [],
+  "blurb": "From search to a paid booking: two-stage search, server-driven UI, and payments that never charge twice.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14",
+  "changelog": [
+   {
+    "date": "2026-10-14",
+    "note": "First version."
+   }
+  ]
+ },
+ "diagrams": [
+  {
+   "id": "context",
+   "kind": "c4",
+   "title": "Level 1 · Context",
+   "direction": "DOWN",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request · response"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "push · asynchronous"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "money · storage"
+    }
+   ],
+   "elements": [
+    {
+     "id": "guest",
+     "kind": "person",
+     "label": "Guest",
+     "sub": "searches, books, pays"
+    },
+    {
+     "id": "host",
+     "kind": "person",
+     "label": "Host",
+     "sub": "lists a home, sets calendar and price"
+    },
+    {
+     "id": "airbnb",
+     "kind": "system",
+     "label": "Airbnb",
+     "sub": "search, listings, booking, payments"
+    },
+    {
+     "id": "psp",
+     "kind": "external",
+     "label": "Payment service providers",
+     "sub": "cards and local methods · simplified"
+    },
+    {
+     "id": "banks",
+     "kind": "external",
+     "label": "Card issuers and banks",
+     "sub": "approve or decline"
+    },
+    {
+     "id": "payout",
+     "kind": "external",
+     "label": "Host's payout account",
+     "sub": "bank or other payout method"
+    }
+   ],
+   "edges": [
+    {
+     "id": "c-guest",
+     "from": "guest",
+     "to": "airbnb",
+     "label": "search, book, pay",
+     "style": "solid"
+    },
+    {
+     "id": "c-host",
+     "from": "host",
+     "to": "airbnb",
+     "label": "list, price, accept",
+     "style": "solid"
+    },
+    {
+     "id": "c-to-host",
+     "from": "airbnb",
+     "to": "host",
+     "label": "booking requests, messages",
+     "style": "dashed"
+    },
+    {
+     "id": "c-to-guest",
+     "from": "airbnb",
+     "to": "guest",
+     "label": "confirmation",
+     "style": "dashed"
+    },
+    {
+     "id": "c-psp",
+     "from": "airbnb",
+     "to": "psp",
+     "label": "charge, refund",
+     "style": "dotted"
+    },
+    {
+     "id": "c-banks",
+     "from": "psp",
+     "to": "banks",
+     "label": "authorise",
+     "style": "dotted"
+    },
+    {
+     "id": "c-payout",
+     "from": "airbnb",
+     "to": "payout",
+     "label": "payouts",
+     "style": "dotted"
+    }
+   ]
+  },
+  {
+   "id": "containers",
+   "kind": "c4",
+   "title": "Level 2 · Containers (our design, from Airbnb's posts)",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "product",
+     "label": "Guest-facing services · our grouping",
+     "tone": "core"
+    },
+    {
+     "id": "money",
+     "label": "Payments",
+     "tone": "core"
+    },
+    {
+     "id": "dataplat",
+     "label": "Data platform",
+     "tone": "data"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request · response"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "events · asynchronous"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "storage · offline"
+    }
+   ],
+   "elements": [
+    {
+     "id": "apps",
+     "kind": "container",
+     "label": "Apps and web",
+     "sub": "iOS, Android, web · Ghost Platform renderers",
+     "tone": "neutral",
+     "rank": 0
+    },
+    {
+     "id": "gateway",
+     "kind": "container",
+     "label": "API gateway",
+     "sub": "routes each request to a service",
+     "tone": "core",
+     "rank": 1
+    },
+    {
+     "id": "viaduct",
+     "kind": "container",
+     "label": "Viaduct",
+     "sub": "GraphQL, one central schema",
+     "tone": "core",
+     "rank": 2
+    },
+    {
+     "id": "search",
+     "kind": "container",
+     "label": "Search",
+     "sub": "retrieve, then rank",
+     "group": "product",
+     "rank": 3
+    },
+    {
+     "id": "listings",
+     "kind": "container",
+     "label": "Listings and availability",
+     "sub": "homes, calendars, prices",
+     "group": "product",
+     "rank": 3
+    },
+    {
+     "id": "reservations",
+     "kind": "container",
+     "label": "Reservations",
+     "sub": "the booking record",
+     "group": "product",
+     "rank": 3
+    },
+    {
+     "id": "billing",
+     "kind": "container",
+     "label": "Pricing and billing",
+     "sub": "what the guest pays",
+     "group": "money",
+     "rank": 4
+    },
+    {
+     "id": "orch",
+     "kind": "container",
+     "label": "Payment orchestration",
+     "sub": "idempotent steps, Orpheus",
+     "group": "money",
+     "rank": 4
+    },
+    {
+     "id": "paygw",
+     "kind": "container",
+     "label": "Payment gateway",
+     "sub": "one adapter per provider",
+     "group": "money",
+     "rank": 5
+    },
+    {
+     "id": "psp",
+     "kind": "external",
+     "label": "Payment service providers",
+     "rank": 6
+    },
+    {
+     "id": "index",
+     "kind": "store",
+     "label": "Search index",
+     "sub": "listing embeddings · IVF",
+     "group": "dataplat",
+     "rank": 4
+    },
+    {
+     "id": "dbs",
+     "kind": "store",
+     "label": "Service databases",
+     "sub": "MySQL and others",
+     "group": "dataplat",
+     "rank": 4
+    },
+    {
+     "id": "spinaltap",
+     "kind": "container",
+     "label": "SpinalTap",
+     "sub": "change data capture",
+     "tone": "stream",
+     "group": "dataplat",
+     "rank": 5
+    },
+    {
+     "id": "kafka",
+     "kind": "store",
+     "label": "Kafka",
+     "sub": "the event bus",
+     "tone": "stream",
+     "group": "dataplat",
+     "rank": 6
+    },
+    {
+     "id": "warehouse",
+     "kind": "store",
+     "label": "Warehouse and Airflow",
+     "sub": "offline jobs, daily embeddings",
+     "group": "dataplat",
+     "rank": 7
+    }
+   ],
+   "edges": [
+    {
+     "id": "k-app-gw",
+     "from": "apps",
+     "to": "gateway",
+     "label": "GraphQL request",
+     "style": "solid"
+    },
+    {
+     "id": "k-gw-via",
+     "from": "gateway",
+     "to": "viaduct",
+     "style": "solid"
+    },
+    {
+     "id": "k-via-search",
+     "from": "viaduct",
+     "to": "search",
+     "label": "search",
+     "style": "solid"
+    },
+    {
+     "id": "k-search-index",
+     "from": "search",
+     "to": "index",
+     "label": "nearest homes, with filters",
+     "style": "solid"
+    },
+    {
+     "id": "k-via-list",
+     "from": "viaduct",
+     "to": "listings",
+     "label": "listing page",
+     "style": "solid"
+    },
+    {
+     "id": "k-via-app",
+     "from": "viaduct",
+     "to": "apps",
+     "label": "sections and screens",
+     "style": "dashed"
+    },
+    {
+     "id": "k-via-res",
+     "from": "viaduct",
+     "to": "reservations",
+     "label": "request to book",
+     "style": "solid"
+    },
+    {
+     "id": "k-res-bill",
+     "from": "reservations",
+     "to": "billing",
+     "label": "price the stay",
+     "style": "solid"
+    },
+    {
+     "id": "k-res-orch",
+     "from": "reservations",
+     "to": "orch",
+     "label": "take payment",
+     "style": "solid"
+    },
+    {
+     "id": "k-orch-pg",
+     "from": "orch",
+     "to": "paygw",
+     "label": "charge, with key",
+     "style": "solid"
+    },
+    {
+     "id": "k-pg-psp",
+     "from": "paygw",
+     "to": "psp",
+     "label": "charge",
+     "style": "solid"
+    },
+    {
+     "id": "k-res-db",
+     "from": "reservations",
+     "to": "dbs",
+     "label": "commit",
+     "style": "dotted"
+    },
+    {
+     "id": "k-db-st",
+     "from": "dbs",
+     "to": "spinaltap",
+     "label": "binlog",
+     "style": "dashed"
+    },
+    {
+     "id": "k-st-kafka",
+     "from": "spinaltap",
+     "to": "kafka",
+     "label": "change events",
+     "style": "dashed"
+    },
+    {
+     "id": "k-kafka-list",
+     "from": "kafka",
+     "to": "listings",
+     "label": "block the nights",
+     "style": "dashed"
+    },
+    {
+     "id": "k-kafka-index",
+     "from": "kafka",
+     "to": "index",
+     "label": "refresh",
+     "style": "dashed"
+    },
+    {
+     "id": "k-kafka-wh",
+     "from": "kafka",
+     "to": "warehouse",
+     "label": "land offline",
+     "style": "dashed"
+    },
+    {
+     "id": "k-wh-index",
+     "from": "warehouse",
+     "to": "index",
+     "label": "listing embeddings, daily",
+     "style": "dotted"
+    }
+   ]
+  },
+  {
+   "id": "orpheus",
+   "kind": "c4",
+   "title": "Level 3 · One payment step, wrapped in Orpheus",
+   "direction": "DOWN",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call path"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "response · replay"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "one database transaction"
+    }
+   ],
+   "elements": [
+    {
+     "id": "caller",
+     "kind": "container",
+     "label": "Reservations",
+     "sub": "saves its key, then calls",
+     "rank": 0
+    },
+    {
+     "id": "pre",
+     "kind": "component",
+     "label": "Pre-RPC",
+     "sub": "look up key, record request, take lease",
+     "tone": "core",
+     "rank": 1
+    },
+    {
+     "id": "idem",
+     "kind": "store",
+     "label": "Idempotency table",
+     "sub": "sharded by key · primary only",
+     "tone": "data",
+     "rank": 1
+    },
+    {
+     "id": "rpc",
+     "kind": "component",
+     "label": "RPC",
+     "sub": "network call only, no database",
+     "tone": "core",
+     "rank": 2
+    },
+    {
+     "id": "psp",
+     "kind": "external",
+     "label": "Payment provider",
+     "sub": "via the payment gateway",
+     "rank": 2
+    },
+    {
+     "id": "post",
+     "kind": "component",
+     "label": "Post-RPC",
+     "sub": "record outcome: success, retryable or not",
+     "tone": "core",
+     "rank": 3
+    }
+   ],
+   "edges": [
+    {
+     "id": "o-call",
+     "from": "caller",
+     "to": "pre",
+     "label": "request + idempotency key",
+     "style": "solid"
+    },
+    {
+     "id": "o-pre-idem",
+     "from": "pre",
+     "to": "idem",
+     "label": "row lock, lease",
+     "style": "dotted"
+    },
+    {
+     "id": "o-replay",
+     "from": "pre",
+     "to": "caller",
+     "label": "saved response, if finished",
+     "style": "dashed"
+    },
+    {
+     "id": "o-pre-rpc",
+     "from": "pre",
+     "to": "rpc",
+     "label": "new, or lease expired",
+     "style": "solid"
+    },
+    {
+     "id": "o-rpc-psp",
+     "from": "rpc",
+     "to": "psp",
+     "label": "charge",
+     "style": "solid"
+    },
+    {
+     "id": "o-psp-rpc",
+     "from": "psp",
+     "to": "rpc",
+     "label": "result or timeout",
+     "style": "dashed"
+    },
+    {
+     "id": "o-rpc-post",
+     "from": "rpc",
+     "to": "post",
+     "label": "classify",
+     "style": "solid"
+    },
+    {
+     "id": "o-post-idem",
+     "from": "post",
+     "to": "idem",
+     "label": "outcome + app writes, one commit",
+     "style": "dotted"
+    },
+    {
+     "id": "o-post-call",
+     "from": "post",
+     "to": "caller",
+     "label": "response",
+     "style": "dashed"
+    }
+   ]
+  },
+  {
+   "id": "searchflow",
+   "kind": "sequence",
+   "title": "A search, then a listing page",
+   "participants": [
+    {
+     "id": "q-app",
+     "label": "Guest's app"
+    },
+    {
+     "id": "q-via",
+     "label": "Viaduct"
+    },
+    {
+     "id": "q-search",
+     "label": "Search service"
+    },
+    {
+     "id": "q-index",
+     "label": "Search index"
+    },
+    {
+     "id": "q-rank",
+     "label": "Ranking models"
+    }
+   ],
+   "messages": [
+    {
+     "id": "q1",
+     "from": "q-app",
+     "to": "q-via",
+     "label": "search: place, dates, guests",
+     "style": "solid"
+    },
+    {
+     "id": "q2",
+     "from": "q-via",
+     "to": "q-search",
+     "label": "search query",
+     "style": "solid"
+    },
+    {
+     "id": "q3",
+     "from": "q-search",
+     "to": "q-index",
+     "label": "query embedding + filters",
+     "style": "solid"
+    },
+    {
+     "id": "q4",
+     "from": "q-index",
+     "to": "q-search",
+     "label": "candidate homes",
+     "style": "dashed"
+    },
+    {
+     "id": "q5",
+     "from": "q-search",
+     "to": "q-rank",
+     "label": "score the candidates",
+     "style": "solid"
+    },
+    {
+     "id": "q6",
+     "from": "q-rank",
+     "to": "q-search",
+     "label": "ranked list",
+     "style": "dashed"
+    },
+    {
+     "id": "q7",
+     "from": "q-search",
+     "to": "q-via",
+     "label": "results",
+     "style": "dashed"
+    },
+    {
+     "id": "q8",
+     "from": "q-via",
+     "to": "q-app",
+     "label": "Ghost Platform sections, screen",
+     "style": "dashed"
+    },
+    {
+     "id": "q9",
+     "from": "q-app",
+     "to": "q-via",
+     "label": "open a listing",
+     "style": "solid"
+    },
+    {
+     "id": "q10",
+     "from": "q-via",
+     "to": "q-app",
+     "label": "listing page sections",
+     "style": "dashed"
+    }
+   ]
+  },
+  {
+   "id": "bookflow",
+   "kind": "sequence",
+   "title": "Request to book, with a timed-out charge",
+   "participants": [
+    {
+     "id": "b-app",
+     "label": "Guest's app"
+    },
+    {
+     "id": "b-res",
+     "label": "Reservations"
+    },
+    {
+     "id": "b-orch",
+     "label": "Payment orchestration"
+    },
+    {
+     "id": "b-db",
+     "label": "Idempotency table"
+    },
+    {
+     "id": "b-psp",
+     "label": "Payment provider"
+    }
+   ],
+   "messages": [
+    {
+     "id": "b1",
+     "from": "b-app",
+     "to": "b-res",
+     "label": "request to book",
+     "style": "solid"
+    },
+    {
+     "id": "b2",
+     "from": "b-res",
+     "to": "b-orch",
+     "label": "charge, key saved first",
+     "style": "solid"
+    },
+    {
+     "id": "b3",
+     "from": "b-orch",
+     "to": "b-db",
+     "label": "pre-RPC: record, take lease",
+     "style": "solid"
+    },
+    {
+     "id": "b4",
+     "from": "b-orch",
+     "to": "b-psp",
+     "label": "charge",
+     "style": "solid"
+    },
+    {
+     "id": "b5",
+     "from": "b-psp",
+     "to": "b-orch",
+     "label": "no answer: timeout",
+     "style": "dashed"
+    },
+    {
+     "id": "b6",
+     "from": "b-orch",
+     "to": "b-res",
+     "label": "retryable error",
+     "style": "dashed"
+    },
+    {
+     "id": "b7",
+     "from": "b-res",
+     "to": "b-orch",
+     "label": "retry, same key, after lease",
+     "style": "solid"
+    },
+    {
+     "id": "b8",
+     "from": "b-orch",
+     "to": "b-db",
+     "label": "new lease",
+     "style": "solid"
+    },
+    {
+     "id": "b9",
+     "from": "b-orch",
+     "to": "b-psp",
+     "label": "check status, same key",
+     "style": "solid"
+    },
+    {
+     "id": "b10",
+     "from": "b-psp",
+     "to": "b-orch",
+     "label": "already charged",
+     "style": "dashed"
+    },
+    {
+     "id": "b11",
+     "from": "b-orch",
+     "to": "b-db",
+     "label": "post-RPC: save success",
+     "style": "solid"
+    },
+    {
+     "id": "b12",
+     "from": "b-orch",
+     "to": "b-res",
+     "label": "succeeded",
+     "style": "dashed"
+    },
+    {
+     "id": "b13",
+     "from": "b-res",
+     "to": "b-app",
+     "label": "booking confirmed",
+     "style": "dashed"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "overview",
+   "title": "Overview"
+  },
+  {
+   "id": "requirements",
+   "title": "Requirements and scale"
+  },
+  {
+   "id": "context",
+   "title": "Context"
+  },
+  {
+   "id": "containers",
+   "title": "Containers"
+  },
+  {
+   "id": "deep-dive",
+   "title": "Deep dive"
+  },
+  {
+   "id": "flows",
+   "title": "Core flows"
+  },
+  {
+   "id": "data",
+   "title": "Data and caching"
+  },
+  {
+   "id": "growth",
+   "title": "Growth"
+  },
+  {
+   "id": "failures",
+   "title": "Failure modes"
+  },
+  {
+   "id": "patterns",
+   "title": "Patterns used"
+  },
+  {
+   "id": "decisions",
+   "title": "Key decisions"
+  },
+  {
+   "id": "mvp",
+   "title": "What we would build first"
+  }
+ ],
+ "shots": [
+  {
+   "id": "s01",
+   "chapter": "overview",
+   "diagram": "context",
+   "focus": [],
+   "trace": [],
+   "engineer": "This is Airbnb, seen from the outside. Hosts list a spare room, a flat or a whole house; guests search for a place, book it and pay. Airbnb sits in the middle, taking the guest's money and paying the host. The one idea everything depends on: a booking is a promise to two people at once. The guest must not be charged twice, and the host's nights must not be sold twice.",
+   "executive": "Airbnb connects hosts who have places to stay with guests who want them. Everything depends on each booking and each payment happening exactly once."
+  },
+  {
+   "id": "s02",
+   "chapter": "requirements",
+   "card": {
+    "heading": "Scale, from Airbnb's shareholder letters",
+    "kind": "numbers",
+    "points": [
+     "533M | nights and experience seats booked in 2025, up 8%",
+     "$91.3B | gross booking value in 2025",
+     "9M+ | active listings at the end of 2025",
+     "5.5M+ | hosts (Q2 2026 letter)",
+     "64% | of nights booked in the app (Q2 2026)",
+     "~17 | nights booked a second, on average (533M ÷ 31.5M s)"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "First, the scale, from Airbnb's own shareholder letters. In 2025, guests booked five hundred and thirty-three million nights and experience seats, up eight per cent, worth ninety-one point three billion dollars. Airbnb ended the year with more than nine million active listings, and in 2026 reported over five and a half million hosts. Sixty-four per cent of nights are now booked in the app. On average, that is about seventeen nights booked every second.",
+   "executive": "Over half a billion nights were booked on Airbnb in 2025, worth more than ninety billion dollars, across nine million listings."
+  },
+  {
+   "id": "s03",
+   "chapter": "requirements",
+   "card": {
+    "heading": "What the system must do (our list)",
+    "points": [
+     "Search millions of homes by place, dates and guests, quickly",
+     "Never sell the same night of the same home twice",
+     "Never charge a guest twice, even when calls time out",
+     "Ship new screens to iOS, Android and web without app releases",
+     "Get every change to calendars, search and analytics within seconds",
+     "Let guests pay the way people pay where they live"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Then the requirements. These are ours, not Airbnb's. Search millions of homes by place, dates and number of guests, and answer quickly. Never sell the same night of the same home twice. Never charge a guest twice, even when a call to a bank times out. Ship new screens to every platform without waiting for app releases. Spread every change within seconds. And let people pay in their local way.",
+   "executive": "Fast search, no double bookings, no double charges, quick product changes on every device, and local ways to pay."
+  },
+  {
+   "id": "s04",
+   "title": "Guests and hosts",
+   "chapter": "context",
+   "diagram": "context",
+   "focus": [
+    "guest",
+    "host",
+    "airbnb"
+   ],
+   "trace": [
+    "c-guest",
+    "c-host",
+    "c-to-host",
+    "c-to-guest"
+   ],
+   "engineer": "Two kinds of user meet here. Guests search, request a booking and pay. Hosts list their homes, keep a calendar of free nights, set prices and accept bookings. Airbnb talks back to both: the host gets the booking request and messages, the guest gets a confirmation. Airbnb's newsroom counts listings in more than two hundred and twenty countries and regions.",
+   "executive": "Guests search and book; hosts list and accept; Airbnb keeps both sides informed, in over two hundred and twenty countries and regions."
+  },
+  {
+   "id": "s05",
+   "title": "The money side",
+   "chapter": "context",
+   "diagram": "context",
+   "focus": [
+    "airbnb",
+    "psp",
+    "banks",
+    "payout"
+   ],
+   "trace": [
+    "c-psp",
+    "c-banks",
+    "c-payout"
+   ],
+   "engineer": "Behind Airbnb sits the money. This part is simplified. Airbnb charges the guest through payment service providers, which reach the card networks and the guest's bank. Airbnb's Pay as a Local post counts more than three hundred payment options worldwide; it launched over twenty local methods. Later, Airbnb pays the host out to a bank account or another payout method. Every one of these calls crosses a network, and networks fail.",
+   "executive": "Airbnb takes the guest's payment through payment providers and later pays the host. Each step crosses a network that can fail."
+  },
+  {
+   "id": "s06",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [],
+   "trace": [],
+   "engineer": "One level in. Airbnb has not published a container diagram, so this is our design, built from its posts. Apps and web in front, rendering screens the server describes. An API gateway and Viaduct, Airbnb's GraphQL layer with one central schema. Then services: search, listings and availability, reservations, pricing and payments. Underneath, a data platform: service databases, SpinalTap for change data capture, Kafka, a search index, and a warehouse fed by Airflow jobs.",
+   "executive": "Inside, a front door, product services for search and booking, a payments group, and a data platform. The layout is our reconstruction."
+  },
+  {
+   "id": "s07",
+   "title": "Search",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "apps",
+    "gateway",
+    "viaduct",
+    "search",
+    "index"
+   ],
+   "trace": [
+    "k-app-gw",
+    "k-gw-via",
+    "k-via-search",
+    "k-search-index"
+   ],
+   "engineer": "The first path: a search. The app's request passes the gateway and Viaduct to the search service. Search works in two stages. Retrieval narrows millions of homes to a smaller pool, using an index of listing embeddings with filters such as location. Airbnb's 2026 paper says a popular place can have around a hundred thousand available homes. Then heavier ranking models score only that smaller pool.",
+   "executive": "A search first narrows the field to a manageable pool of homes, then carefully ranks just those."
+  },
+  {
+   "id": "s08",
+   "title": "Listing page",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "viaduct",
+    "listings",
+    "apps"
+   ],
+   "trace": [
+    "k-via-list",
+    "k-via-app"
+   ],
+   "engineer": "The second path: a listing page. Viaduct gathers the home, its calendar and its price from listings and availability, and answers in the shape of the Ghost Platform, Airbnb's server-driven UI. The response is a set of sections, such as a photo hero or a title, and screens that say where each section goes. Airbnb's 2021 post says search, listing pages and checkout are all built this way, on iOS, Android and web.",
+   "executive": "The server describes the page as building blocks, and every app draws them, so a change ships everywhere at once."
+  },
+  {
+   "id": "s09",
+   "title": "Book and pay",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "viaduct",
+    "reservations",
+    "billing",
+    "orch",
+    "paygw",
+    "psp"
+   ],
+   "trace": [
+    "k-via-res",
+    "k-res-bill",
+    "k-res-orch",
+    "k-orch-pg",
+    "k-pg-psp"
+   ],
+   "engineer": "The third path: booking. The request reaches reservations, which asks pricing and billing what the guest owes, then asks payment orchestration to take the money. Airbnb's 2022 post says orchestration was rebuilt as a directed graph of retryable, idempotent steps, built on its Orpheus idempotency library, and that this gives five nines of consistency for payments. The service split here is ours.",
+   "executive": "A booking is priced, then paid through a chain of steps that can each be safely repeated."
+  },
+  {
+   "id": "s10",
+   "title": "Spread the change",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "reservations",
+    "dbs",
+    "spinaltap",
+    "kafka",
+    "listings",
+    "index",
+    "warehouse"
+   ],
+   "trace": [
+    "k-res-db",
+    "k-db-st",
+    "k-st-kafka",
+    "k-kafka-list",
+    "k-kafka-index",
+    "k-kafka-wh",
+    "k-wh-index"
+   ],
+   "engineer": "The fourth path: telling everyone else. Reservations commits the booking to its database. SpinalTap, Airbnb's change data capture service, reads the MySQL binlog and publishes each change to Kafka, at least once and in commit order for each row. Airbnb's 2018 post gives this exact example: availability reacting to bookings from reservations. Refreshing the search index from the same stream is our simplification.",
+   "executive": "When a booking is saved, a change feed tells calendars, search and analytics, without anyone calling them directly."
+  },
+  {
+   "id": "s11",
+   "chapter": "deep-dive",
+   "diagram": "orpheus",
+   "focus": [],
+   "trace": [],
+   "engineer": "Now inside the most interesting part: one payment step. Airbnb described Orpheus, its idempotency library, in a 2019 post by Jon Chew and Ninad Khisti. Every call that moves money is split into three phases. Pre-RPC records the request in the database. RPC makes the network call. Post-RPC records the outcome. Putting Reservations as the caller is our choice for this video; the phases and rules are Airbnb's.",
+   "executive": "Every payment call is wrapped in three phases: write down what you are about to do, do it, then write down what happened."
+  },
+  {
+   "id": "s12",
+   "title": "Three phases",
+   "chapter": "deep-dive",
+   "diagram": "orpheus",
+   "focus": [
+    "pre",
+    "rpc",
+    "post",
+    "psp"
+   ],
+   "trace": [
+    "o-call",
+    "o-pre-rpc",
+    "o-rpc-psp",
+    "o-psp-rpc",
+    "o-rpc-post",
+    "o-post-call"
+   ],
+   "engineer": "Two ground rules make the phases work. No network calls in pre-RPC or post-RPC. No database work in the RPC phase. That keeps the unreliable part, the network, separate from the part that must be correct, the database. Post-RPC classifies the outcome. Server errors, the five hundreds, are retryable. Validation errors, the four hundreds, are not, and every retry should fail the same way. Airbnb warns that a mislabelled error causes either a permanent failure or a double payment.",
+   "executive": "Network calls and database writes never mix, and every failure is labelled as safe to retry or not."
+  },
+  {
+   "id": "s13",
+   "title": "Keys and leases",
+   "chapter": "deep-dive",
+   "diagram": "orpheus",
+   "focus": [
+    "caller",
+    "pre",
+    "idem",
+    "post"
+   ],
+   "trace": [
+    "o-pre-idem",
+    "o-replay",
+    "o-post-idem"
+   ],
+   "engineer": "Now the keys. The caller saves its idempotency key before calling, so it can retry later. Pre-RPC looks the key up; if the work already finished, it replays the saved response. Otherwise it takes a row-level lock that acts as a lease with an expiry, longer than the RPC timeout. Reads and writes go to the primary database only, never a replica, because replica lag could hide an earlier attempt. And the service's own changes commit in the same transaction as the Orpheus record.",
+   "executive": "Each payment has a key; a repeat gets the saved answer, and only one attempt can run at a time."
+  },
+  {
+   "id": "s15",
+   "title": "Retrieve",
+   "chapter": "flows",
+   "diagram": "searchflow",
+   "focus": [
+    "q-app",
+    "q-via",
+    "q-search",
+    "q-index"
+   ],
+   "trace": [
+    "q1",
+    "q2",
+    "q3",
+    "q4"
+   ],
+   "engineer": "Step by step, a search; the exact calls are our design. The guest asks for a place, dates and a number of guests. Viaduct passes the query to search. Airbnb's post on embedding-based retrieval describes a two-tower model: the listing side is computed offline every day, and only the query side is computed in real time. The index finds nearby embeddings, with filters applied, and returns a pool of candidate homes.",
+   "executive": "The guest's search is turned into a pattern, and the closest matching homes are pulled out of millions."
+  },
+  {
+   "id": "s16",
+   "title": "Rank and render",
+   "chapter": "flows",
+   "diagram": "searchflow",
+   "focus": [
+    "q-search",
+    "q-rank",
+    "q-via",
+    "q-app"
+   ],
+   "trace": [
+    "q5",
+    "q6",
+    "q7",
+    "q8",
+    "q9",
+    "q10"
+   ],
+   "engineer": "Ranking models then score the candidates. Airbnb's 2018 paper calls search ranking one of its biggest machine-learning successes: gradient-boosted trees first, then neural networks when those gains levelled off. The ranked list goes back through Viaduct, which answers as Ghost Platform sections and a screen. The app draws them. When the guest opens a listing, the listing page arrives the same way, as sections.",
+   "executive": "Machine-learned models put the best matches first, and the server tells the app exactly how to show them."
+  },
+  {
+   "id": "s17",
+   "title": "Charge times out",
+   "chapter": "flows",
+   "diagram": "bookflow",
+   "focus": [
+    "b-app",
+    "b-res",
+    "b-orch",
+    "b-db",
+    "b-psp"
+   ],
+   "trace": [
+    "b1",
+    "b2",
+    "b3",
+    "b4",
+    "b5"
+   ],
+   "engineer": "The second flow: a booking where the charge times out. This sequence is our design, built on the Orpheus rules. The guest requests to book. Reservations saves an idempotency key and asks orchestration to charge. Orpheus pauses in pre-RPC to record the request and take a lease. Then it calls the payment provider, and hears nothing back. Did the money move? Nobody knows. That is how double payments happen.",
+   "executive": "The guest books, the payment is sent to the bank, and the answer never comes back."
+  },
+  {
+   "id": "s18",
+   "title": "Retry safely",
+   "chapter": "flows",
+   "diagram": "bookflow",
+   "focus": [
+    "b-res",
+    "b-orch",
+    "b-db",
+    "b-psp",
+    "b-app"
+   ],
+   "trace": [
+    "b6",
+    "b7",
+    "b8",
+    "b9",
+    "b10",
+    "b11",
+    "b12",
+    "b13"
+   ],
+   "engineer": "A timeout is retryable, so reservations tries again with the same key, but only after the lease has expired, so two attempts never run at once. Our design then sends the same key downstream, or asks the provider for the charge status, rather than charging blind. The provider says it is already charged. Post-RPC saves the success, and any later retry simply gets that saved answer. The guest sees one booking and one charge.",
+   "executive": "The retry uses the same key, finds the payment already went through, and the guest is charged once."
+  },
+  {
+   "id": "s19",
+   "chapter": "data",
+   "card": {
+    "heading": "What is stored where",
+    "kind": "compare",
+    "points": [
+     "Data | Where, and for how long",
+     "Reservations, listings, calendars | Each service's own database",
+     "Every committed change | MySQL binlog → SpinalTap → Kafka",
+     "Idempotency keys and outcomes | Sharded tables on the primary; grow quickly",
+     "Listing embeddings | Rebuilt offline daily; query side in real time",
+     "Analytics | Warehouse, built by Airflow jobs",
+     "Card numbers | Our design: tokens only, held by the provider"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Where the data lives. Each service owns its own database, and others learn about changes through SpinalTap and Kafka rather than reading its tables. Idempotency keys and outcomes sit in sharded tables on the primary database; Airbnb notes this table grows quickly. Listing embeddings are rebuilt offline every day. What we would never store: card numbers. In our design those stay with the payment provider, as tokens.",
+   "executive": "Each service owns its data and shares changes through a feed. Card numbers, in our design, never reach Airbnb's own databases."
+  },
+  {
+   "id": "s20",
+   "title": "Offline data",
+   "chapter": "data",
+   "diagram": "containers",
+   "focus": [
+    "kafka",
+    "warehouse",
+    "index"
+   ],
+   "trace": [
+    "k-kafka-wh",
+    "k-wh-index"
+   ],
+   "engineer": "The offline side. Apache Airflow, the workflow scheduler, was started at Airbnb by Maxime Beauchemin in October 2014, and is now an Apache top-level project. In our diagram, jobs like these build the daily listing embeddings. For the index, Airbnb compared two nearest-neighbour methods. HNSW had slightly better recall, but Airbnb chose IVF: it copes better with filters and with prices and availability that change all day.",
+   "executive": "Nightly jobs, run by Airflow, which Airbnb created, rebuild what search needs to find homes."
+  },
+  {
+   "id": "s21",
+   "chapter": "growth",
+   "card": {
+    "heading": "How it got here, from Airbnb's own posts",
+    "kind": "compare",
+    "points": [
+     "Year | Change",
+     "2007 | Two hosts welcome three guests in San Francisco",
+     "2014 | Airflow started at Airbnb; Apache top-level project in 2019",
+     "2015 → | 200 engineers become 1,000; the Rails monolith splits into services",
+     "2018 | SpinalTap CDC; neural networks for search ranking",
+     "2019 | Orpheus: five nines of payment consistency",
+     "2021 | Ghost Platform: server-driven UI on every client",
+     "2022 | Payment orchestration rebuilt for services",
+     "2025 | 533M nights and experience seats booked",
+     "2026 | Embedding-based retrieval paper; 64% of nights in the app"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "How it grew. Airbnb began in 2007, when two hosts welcomed three guests in San Francisco. Airflow started there in 2014. InfoQ reports that from 2015 engineering grew from two hundred people to a thousand, as the Rails monolith was split into services. Then came SpinalTap and neural search ranking, Orpheus, the Ghost Platform, and rebuilt payment orchestration. In 2025, guests booked five hundred and thirty-three million nights and seats.",
+   "executive": "From one shared app to hundreds of services over a decade, while bookings grew to over half a billion a year."
+  },
+  {
+   "id": "s22",
+   "title": "Out of the monolith",
+   "chapter": "growth",
+   "diagram": "containers",
+   "focus": [
+    "apps",
+    "gateway",
+    "viaduct",
+    "search",
+    "listings",
+    "reservations"
+   ],
+   "trace": [
+    "k-app-gw",
+    "k-gw-via",
+    "k-via-search",
+    "k-via-list",
+    "k-via-res"
+   ],
+   "engineer": "The biggest change was leaving the monolith. Airbnb's Ruby on Rails app was called Monorail. According to InfoQ's report of a 2018 conference talk, engineers lost about fifteen hours a week to reverts and rollbacks. Requests now go through an API gateway to services. New services first took one per cent of traffic, then more, until results matched at a hundred per cent. Pages loaded up to ten times faster.",
+   "executive": "Airbnb moved from one large app to many services, a slice of traffic at a time, and pages got much faster."
+  },
+  {
+   "id": "s23",
+   "chapter": "failures",
+   "card": {
+    "heading": "What fails, and what protects users",
+    "kind": "compare",
+    "points": [
+     "Failure | Protection",
+     "Payment call times out | Retry with the same key after the lease; saved outcome replayed",
+     "Replica lag hides an attempt | Idempotency reads and writes on the primary only",
+     "Error labelled wrongly | 5xx retryable, 4xx final; custom errors default to final",
+     "Kafka delivers an event twice | Idempotent consumers: exactly-once processing",
+     "Two guests want the same nights | Our design: one row per listing and night, unique",
+     "Ranking model slow | Our design: fall back to a simpler ranker"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "What breaks. A payment call times out: retry with the same key after the lease, and get the saved outcome. Replica lag hides an earlier attempt: Orpheus reads only from the primary. An error is mislabelled: five hundreds retry, four hundreds do not. Kafka delivers twice: Airbnb's 2022 post says Orpheus turns that into exactly-once processing. Our design adds a unique row per listing and night, and a fallback ranker.",
+   "executive": "Retries are safe, duplicates are ignored, and in our design a night can only be sold once."
+  },
+  {
+   "id": "s24",
+   "chapter": "patterns",
+   "card": {
+    "heading": "Patterns used",
+    "points": [
+     "Idempotency keys: Orpheus wraps every money-moving call",
+     "Retry: retryable errors only, after the lease expires",
+     "Server-driven UI: Ghost Platform sections, screens and actions",
+     "Change data capture: SpinalTap reads the binlog",
+     "Event streaming: Kafka as the event bus",
+     "Strangler fig: services take 1% of traffic, then all of it",
+     "API gateway: one front door for every client"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The named patterns, each with its own walkthrough. Idempotency keys, in Orpheus. Retry, but only for retryable errors and only after the lease expires. Server-driven UI, in the Ghost Platform. Change data capture, in SpinalTap, feeding event streaming on Kafka. The strangler fig, for leaving Monorail a slice of traffic at a time. And an API gateway as the one front door for every client.",
+   "executive": "Safe retries, server-described screens, change feeds, and a gradual move away from one big app."
+  },
+  {
+   "id": "s25",
+   "chapter": "decisions",
+   "card": {
+    "heading": "Key decisions",
+    "kind": "compare",
+    "points": [
+     "Decision | Trade-off",
+     "Monolith → services | Independent deploys; more calls and data to keep in step",
+     "Redesign payments, not copy them | Fits Experiences and new products; took longer",
+     "Idempotency as a shared library | Same rules everywhere; primary-only reads",
+     "Server-driven UI | Ship without app releases; apps draw only known sections",
+     "Share changes through CDC | No schema coupling; consumers must handle repeats",
+     "IVF over HNSW for retrieval | Better with filters and fresh prices; slightly lower recall"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The decisions that shaped it. Split the monolith into services, for independent deploys, at the cost of more network calls. Redesign payments rather than copy them, which Airbnb says took longer but freed payments from the idea of a stay. Put idempotency in one shared library. Describe screens on the server. Share changes through CDC, not by calling every consumer. And choose IVF for retrieval, trading a little recall for filters and freshness.",
+   "executive": "Small services, payments rebuilt for every product, one shared rule for safe retries, and screens defined on the server."
+  },
+  {
+   "id": "s26",
+   "chapter": "mvp",
+   "card": {
+    "heading": "What we would build first",
+    "points": [
+     "One service and Postgres; a unique row per listing and night",
+     "Payments in three phases, with idempotency keys on the primary",
+     "A hosted payment provider; never hold card numbers",
+     "Search in Postgres with a geo index; a simple score before any model",
+     "An outbox table feeding search and email, not a CDC platform",
+     "A few server-described sections for the listing page"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "If we built a small booking platform today, we would start here. One service and Postgres, with a unique row per listing and night, so a night cannot be sold twice. Payments in three phases, with idempotency keys on the primary. A hosted payment provider, so we never hold card numbers. Search with a geographic index and a simple score. An outbox instead of a CDC platform. And a few server-described sections.",
+   "executive": "Start with one service and one database, but build in safe payments and no double bookings from day one."
+  }
+ ]
+}

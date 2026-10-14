@@ -1,0 +1,1257 @@
+{
+ "id": "figma",
+ "title": "Figma: real-time collaboration",
+ "subtitle": "Company case study",
+ "voice": "en-GB-SoniaNeural",
+ "template": "case-study",
+ "meta": {
+  "kind": "company",
+  "category": "Developer tools",
+  "level": "intermediate",
+  "uses": [
+   "write-ahead-log",
+   "sharding",
+   "read-replicas",
+   "change-data-capture"
+  ],
+  "related": [],
+  "blurb": "Many people, one design file: a process per document, last-writer-wins properties, a change journal and sharded Postgres.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14",
+  "changelog": [
+   {
+    "date": "2026-10-14",
+    "note": "First version."
+   }
+  ]
+ },
+ "diagrams": [
+  {
+   "id": "context",
+   "kind": "c4",
+   "title": "Level 1 · Context",
+   "direction": "DOWN",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request · edit"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "live push"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "hosting and storage"
+    }
+   ],
+   "elements": [
+    {
+     "id": "people",
+     "kind": "person",
+     "label": "Collaborators",
+     "sub": "designers, developers, PMs in one file"
+    },
+    {
+     "id": "idp",
+     "kind": "external",
+     "label": "Identity provider",
+     "sub": "single sign-on for organisations"
+    },
+    {
+     "id": "figma",
+     "kind": "system",
+     "label": "Figma",
+     "sub": "editor, multiplayer, files, comments"
+    },
+    {
+     "id": "integrations",
+     "kind": "external",
+     "label": "Plugins and integrations",
+     "sub": "plugin code, REST API clients"
+    },
+    {
+     "id": "aws",
+     "kind": "external",
+     "label": "Amazon Web Services",
+     "sub": "compute, Postgres on RDS, S3, DynamoDB"
+    }
+   ],
+   "edges": [
+    {
+     "id": "c-people-figma",
+     "from": "people",
+     "to": "figma",
+     "label": "edits over a WebSocket",
+     "style": "solid"
+    },
+    {
+     "id": "c-figma-people",
+     "from": "figma",
+     "to": "people",
+     "label": "everyone else's changes",
+     "style": "dashed"
+    },
+    {
+     "id": "c-idp-figma",
+     "from": "idp",
+     "to": "figma",
+     "label": "sign-in",
+     "style": "solid"
+    },
+    {
+     "id": "c-int-figma",
+     "from": "integrations",
+     "to": "figma",
+     "label": "read and change files",
+     "style": "solid"
+    },
+    {
+     "id": "c-figma-aws",
+     "from": "figma",
+     "to": "aws",
+     "label": "runs on, stores in",
+     "style": "dotted"
+    }
+   ]
+  },
+  {
+   "id": "containers",
+   "kind": "c4",
+   "title": "Level 2 · Containers (our reconstruction)",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "live",
+     "label": "Real-time services",
+     "tone": "core"
+    },
+    {
+     "id": "storage",
+     "label": "Storage",
+     "tone": "data"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request · edit"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "live push · change stream"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "storage"
+    }
+   ],
+   "elements": [
+    {
+     "id": "client",
+     "kind": "container",
+     "label": "Editor client",
+     "sub": "C++ compiled to WebAssembly",
+     "tone": "neutral",
+     "rank": 0
+    },
+    {
+     "id": "web",
+     "kind": "container",
+     "label": "Web application",
+     "sub": "pages, files, permissions",
+     "rank": 1
+    },
+    {
+     "id": "mp",
+     "kind": "container",
+     "label": "Multiplayer service",
+     "sub": "one process per open file",
+     "group": "live",
+     "rank": 1
+    },
+    {
+     "id": "lg",
+     "kind": "container",
+     "label": "LiveGraph",
+     "sub": "live queries for non-canvas data",
+     "group": "live",
+     "rank": 1
+    },
+    {
+     "id": "proxy",
+     "kind": "container",
+     "label": "DBProxy",
+     "sub": "Go · routes SQL to shards",
+     "rank": 2
+    },
+    {
+     "id": "pg",
+     "kind": "store",
+     "label": "Postgres on RDS",
+     "sub": "files, teams, comments, permissions",
+     "group": "storage",
+     "rank": 3
+    },
+    {
+     "id": "journal",
+     "kind": "store",
+     "label": "Journal",
+     "sub": "DynamoDB · recent changes",
+     "group": "storage",
+     "rank": 3
+    },
+    {
+     "id": "s3",
+     "kind": "store",
+     "label": "Checkpoints",
+     "sub": "S3 · whole-file snapshots",
+     "group": "storage",
+     "rank": 3
+    }
+   ],
+   "edges": [
+    {
+     "id": "k-c-mp",
+     "from": "client",
+     "to": "mp",
+     "label": "property changes",
+     "style": "solid"
+    },
+    {
+     "id": "k-mp-c",
+     "from": "mp",
+     "to": "client",
+     "label": "others' changes",
+     "style": "dashed"
+    },
+    {
+     "id": "k-mp-j",
+     "from": "mp",
+     "to": "journal",
+     "label": "batched, numbered",
+     "style": "dotted"
+    },
+    {
+     "id": "k-mp-s3",
+     "from": "mp",
+     "to": "s3",
+     "label": "checkpoint",
+     "style": "dotted"
+    },
+    {
+     "id": "k-c-web",
+     "from": "client",
+     "to": "web",
+     "label": "open file",
+     "style": "solid"
+    },
+    {
+     "id": "k-web-proxy",
+     "from": "web",
+     "to": "proxy",
+     "label": "SQL",
+     "style": "solid"
+    },
+    {
+     "id": "k-proxy-pg",
+     "from": "proxy",
+     "to": "pg",
+     "label": "right shard",
+     "style": "solid"
+    },
+    {
+     "id": "k-c-lg",
+     "from": "client",
+     "to": "lg",
+     "label": "subscribe to a view",
+     "style": "solid"
+    },
+    {
+     "id": "k-pg-lg",
+     "from": "pg",
+     "to": "lg",
+     "label": "replication stream",
+     "style": "dashed"
+    },
+    {
+     "id": "k-lg-c",
+     "from": "lg",
+     "to": "client",
+     "label": "live comments, file lists",
+     "style": "dashed"
+    }
+   ]
+  },
+  {
+   "id": "session",
+   "kind": "c4",
+   "title": "Level 3 · Inside a multiplayer session (our reconstruction)",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "proc",
+     "label": "Document process · Rust, one per file",
+     "tone": "core"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "change path"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "broadcast · rejection"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "durability"
+    }
+   ],
+   "elements": [
+    {
+     "id": "a",
+     "kind": "external",
+     "label": "Editor A",
+     "sub": "applies its own change at once",
+     "rank": 0
+    },
+    {
+     "id": "b",
+     "kind": "external",
+     "label": "Editor B",
+     "sub": "same file, another browser",
+     "rank": 0
+    },
+    {
+     "id": "host",
+     "kind": "component",
+     "label": "Node.js host",
+     "sub": "WebSockets and HTTP",
+     "tone": "neutral",
+     "rank": 1
+    },
+    {
+     "id": "validate",
+     "kind": "component",
+     "label": "Validator",
+     "sub": "rejects cycles and bad edits",
+     "group": "proc",
+     "rank": 2
+    },
+    {
+     "id": "doc",
+     "kind": "component",
+     "label": "Document in memory",
+     "sub": "ObjectID → property → value",
+     "group": "proc",
+     "rank": 3
+    },
+    {
+     "id": "jw",
+     "kind": "component",
+     "label": "Journal writer",
+     "sub": "batches, holds the file lock",
+     "group": "proc",
+     "rank": 4
+    },
+    {
+     "id": "cp",
+     "kind": "component",
+     "label": "Checkpointer",
+     "sub": "encode, compress, upload",
+     "group": "proc",
+     "rank": 4
+    },
+    {
+     "id": "dynamo",
+     "kind": "store",
+     "label": "DynamoDB",
+     "sub": "journal and lock table",
+     "tone": "data",
+     "rank": 5
+    },
+    {
+     "id": "s3",
+     "kind": "store",
+     "label": "S3",
+     "sub": "checkpoints, replicated",
+     "tone": "data",
+     "rank": 5
+    }
+   ],
+   "edges": [
+    {
+     "id": "e-a-host",
+     "from": "a",
+     "to": "host",
+     "label": "set fill = red",
+     "style": "solid"
+    },
+    {
+     "id": "e-host-val",
+     "from": "host",
+     "to": "validate",
+     "label": "stdin, stdout messages",
+     "style": "solid"
+    },
+    {
+     "id": "e-val-host",
+     "from": "validate",
+     "to": "host",
+     "label": "reject",
+     "style": "dashed"
+    },
+    {
+     "id": "e-val-doc",
+     "from": "validate",
+     "to": "doc",
+     "label": "apply: last writer wins",
+     "style": "solid"
+    },
+    {
+     "id": "e-doc-host",
+     "from": "doc",
+     "to": "host",
+     "label": "broadcast, ack",
+     "style": "dashed"
+    },
+    {
+     "id": "e-host-b",
+     "from": "host",
+     "to": "b",
+     "label": "fill = red",
+     "style": "dashed"
+    },
+    {
+     "id": "e-doc-jw",
+     "from": "doc",
+     "to": "jw",
+     "label": "sequence numbers",
+     "style": "dotted"
+    },
+    {
+     "id": "e-jw-dyn",
+     "from": "jw",
+     "to": "dynamo",
+     "label": "write if lock held",
+     "style": "dotted"
+    },
+    {
+     "id": "e-doc-cp",
+     "from": "doc",
+     "to": "cp",
+     "label": "whole file",
+     "style": "dotted"
+    },
+    {
+     "id": "e-cp-s3",
+     "from": "cp",
+     "to": "s3",
+     "label": "snapshot + sequence",
+     "style": "dotted"
+    }
+   ]
+  },
+  {
+   "id": "conflict",
+   "kind": "sequence",
+   "title": "Two people change the same property",
+   "participants": [
+    {
+     "id": "q-a",
+     "label": "Editor A"
+    },
+    {
+     "id": "q-m",
+     "label": "Multiplayer"
+    },
+    {
+     "id": "q-b",
+     "label": "Editor B"
+    },
+    {
+     "id": "q-j",
+     "label": "Journal"
+    }
+   ],
+   "messages": [
+    {
+     "id": "q1",
+     "from": "q-a",
+     "to": "q-m",
+     "label": "fill = red (already on A's screen)",
+     "style": "solid"
+    },
+    {
+     "id": "q2",
+     "from": "q-b",
+     "to": "q-m",
+     "label": "fill = blue (already on B's screen)",
+     "style": "solid"
+    },
+    {
+     "id": "q3",
+     "from": "q-m",
+     "to": "q-a",
+     "label": "ack red",
+     "style": "dashed"
+    },
+    {
+     "id": "q4",
+     "from": "q-m",
+     "to": "q-b",
+     "label": "fill = red: B ignores, own edit unacked",
+     "style": "dashed"
+    },
+    {
+     "id": "q5",
+     "from": "q-m",
+     "to": "q-b",
+     "label": "ack blue",
+     "style": "dashed"
+    },
+    {
+     "id": "q6",
+     "from": "q-m",
+     "to": "q-a",
+     "label": "fill = blue: A applies",
+     "style": "dashed"
+    },
+    {
+     "id": "q7",
+     "from": "q-m",
+     "to": "q-j",
+     "label": "batch with start and end sequence",
+     "style": "solid"
+    }
+   ]
+  },
+  {
+   "id": "recover",
+   "kind": "sequence",
+   "title": "Reconnect after a crash or deploy",
+   "participants": [
+    {
+     "id": "r-c",
+     "label": "Editor"
+    },
+    {
+     "id": "r-n",
+     "label": "New multiplayer process"
+    },
+    {
+     "id": "r-d",
+     "label": "DynamoDB"
+    },
+    {
+     "id": "r-s",
+     "label": "S3"
+    }
+   ],
+   "messages": [
+    {
+     "id": "r1",
+     "from": "r-c",
+     "to": "r-n",
+     "label": "reconnect; keeps unsent edits",
+     "style": "solid"
+    },
+    {
+     "id": "r2",
+     "from": "r-n",
+     "to": "r-d",
+     "label": "take the file's lock",
+     "style": "solid"
+    },
+    {
+     "id": "r3",
+     "from": "r-n",
+     "to": "r-s",
+     "label": "latest checkpoint, say sequence 900",
+     "style": "solid"
+    },
+    {
+     "id": "r4",
+     "from": "r-n",
+     "to": "r-d",
+     "label": "journal entries after 900",
+     "style": "solid"
+    },
+    {
+     "id": "r5",
+     "from": "r-d",
+     "to": "r-n",
+     "label": "901 onwards, strongly consistent read",
+     "style": "dashed"
+    },
+    {
+     "id": "r6",
+     "from": "r-n",
+     "to": "r-c",
+     "label": "fresh copy of the file",
+     "style": "dashed"
+    },
+    {
+     "id": "r7",
+     "from": "r-c",
+     "to": "r-n",
+     "label": "reapply offline edits",
+     "style": "solid"
+    },
+    {
+     "id": "r8",
+     "from": "r-n",
+     "to": "r-c",
+     "label": "acks, then live again",
+     "style": "dashed"
+    }
+   ]
+  },
+  {
+   "id": "postgres",
+   "kind": "c4",
+   "title": "Level 3 · Postgres: partitions, then shards",
+   "direction": "DOWN",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "query"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "replication stream"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "replication"
+    }
+   ],
+   "elements": [
+    {
+     "id": "app",
+     "kind": "container",
+     "label": "Application services",
+     "sub": "for example the web app",
+     "rank": 0
+    },
+    {
+     "id": "dbproxy",
+     "kind": "component",
+     "label": "DBProxy",
+     "sub": "Go · parser, logical and physical planners",
+     "tone": "core",
+     "rank": 1
+    },
+    {
+     "id": "pgb",
+     "kind": "component",
+     "label": "PgBouncer",
+     "sub": "connection pooling",
+     "tone": "core",
+     "rank": 2
+    },
+    {
+     "id": "vp",
+     "kind": "store",
+     "label": "Vertical partitions",
+     "sub": "about a dozen databases, by table group",
+     "tone": "data",
+     "rank": 3
+    },
+    {
+     "id": "colo",
+     "kind": "store",
+     "label": "Sharded colos",
+     "sub": "hash of FileID, OrgID or UserID",
+     "tone": "data",
+     "rank": 3
+    },
+    {
+     "id": "replica",
+     "kind": "store",
+     "label": "Read replicas",
+     "sub": "spread read load",
+     "tone": "data",
+     "rank": 4
+    },
+    {
+     "id": "inval",
+     "kind": "component",
+     "label": "LiveGraph invalidator",
+     "sub": "sharded like the databases",
+     "tone": "stream",
+     "rank": 4
+    }
+   ],
+   "edges": [
+    {
+     "id": "d-app-proxy",
+     "from": "app",
+     "to": "dbproxy",
+     "label": "SQL",
+     "style": "solid"
+    },
+    {
+     "id": "d-proxy-pgb",
+     "from": "dbproxy",
+     "to": "pgb",
+     "label": "per shard",
+     "style": "solid"
+    },
+    {
+     "id": "d-pgb-vp",
+     "from": "pgb",
+     "to": "vp",
+     "label": "unsharded tables",
+     "style": "solid"
+    },
+    {
+     "id": "d-pgb-colo",
+     "from": "pgb",
+     "to": "colo",
+     "label": "one shard, or scatter-gather",
+     "style": "solid"
+    },
+    {
+     "id": "d-colo-rep",
+     "from": "colo",
+     "to": "replica",
+     "label": "replicate",
+     "style": "dotted"
+    },
+    {
+     "id": "d-colo-inv",
+     "from": "colo",
+     "to": "inval",
+     "label": "write-ahead log",
+     "style": "dashed"
+    },
+    {
+     "id": "d-vp-inv",
+     "from": "vp",
+     "to": "inval",
+     "label": "write-ahead log",
+     "style": "dashed"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "overview",
+   "title": "Overview"
+  },
+  {
+   "id": "requirements",
+   "title": "Requirements and scale"
+  },
+  {
+   "id": "context",
+   "title": "Context"
+  },
+  {
+   "id": "containers",
+   "title": "Containers"
+  },
+  {
+   "id": "deep-dive",
+   "title": "Deep dive"
+  },
+  {
+   "id": "flows",
+   "title": "Core flows"
+  },
+  {
+   "id": "data",
+   "title": "Data and caching"
+  },
+  {
+   "id": "growth",
+   "title": "Growth"
+  },
+  {
+   "id": "failures",
+   "title": "Failure modes"
+  },
+  {
+   "id": "patterns",
+   "title": "Patterns used"
+  },
+  {
+   "id": "decisions",
+   "title": "Key decisions"
+  },
+  {
+   "id": "mvp",
+   "title": "What we would build first"
+  }
+ ],
+ "shots": [
+  {
+   "id": "s01",
+   "chapter": "overview",
+   "diagram": "context",
+   "focus": [],
+   "trace": [],
+   "engineer": "This is Figma, seen from the outside. It is a design tool that runs in the browser, and its defining feature is multiplayer: many people editing the same file at once, seeing each other's changes within moments. Designers work there, and so do developers, product managers and writers. The one idea everything depends on is modest. One server holds each open file and decides the final value of every property, so conflicts are settled in one place.",
+   "executive": "Figma is a browser-based design tool where many people edit the same file at once. One server per file settles every conflict."
+  },
+  {
+   "id": "s02",
+   "chapter": "requirements",
+   "card": {
+    "heading": "Scale, from Figma's own publications",
+    "kind": "numbers",
+    "points": [
+     "13M+ | monthly active users, Q1 2025 (S-1)",
+     "2/3 | of them not designers",
+     "$1.056B | revenue in 2025, up 41%",
+     "2.2B+ | changes a day into the journal (2022)",
+     "~25k | changes a second, on average (our arithmetic)",
+     "~600 ms | for 95% of edits to be saved (2022)"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "First, the scale, from Figma's own filings and posts. Its 2025 listing prospectus reported more than thirteen million monthly active users in early 2025, two-thirds of them not designers. Revenue in 2025 was about one point zero six billion dollars, up forty-one per cent. And in 2022, Figma wrote that its multiplayer journal took in more than two point two billion changes a day: roughly twenty-five thousand a second, by our arithmetic.",
+   "executive": "More than thirteen million people use Figma each month, and its servers record billions of small edits a day."
+  },
+  {
+   "id": "s03",
+   "chapter": "requirements",
+   "card": {
+    "heading": "What the system must do (our list)",
+    "points": [
+     "Your own edit appears instantly, without waiting for the server",
+     "Everyone converges on the same document",
+     "No edit is lost when a server crashes or is deployed",
+     "Keep working through a flaky connection, then catch up",
+     "Huge files must not slow down small ones",
+     "Comments, file lists and permissions stay live too"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Then the requirements. These are ours, written from the product. Your own edit must appear instantly, without waiting for the server. Everyone must end up with the same document. A crash or a deploy must not lose work. You can keep editing through a flaky connection and catch up afterwards. One enormous file must not slow down everyone else. And comments and file lists must stay live too.",
+   "executive": "Edits feel instant, everyone sees the same result, nothing is lost, and one huge file cannot slow the rest."
+  },
+  {
+   "id": "s04",
+   "title": "Who connects",
+   "chapter": "context",
+   "diagram": "context",
+   "focus": [
+    "people",
+    "figma",
+    "idp",
+    "integrations",
+    "aws"
+   ],
+   "trace": [
+    "c-idp-figma",
+    "c-people-figma",
+    "c-figma-people",
+    "c-int-figma",
+    "c-figma-aws"
+   ],
+   "engineer": "Who talks to Figma. People sign in, and organisations can use their own identity provider. A collaborator opens a file, and Figma's 2019 post explains that the client connects over a WebSocket; every change then flows both ways over that one connection. Plugins and integrations read and change files through Figma's APIs. And Figma's annual report says the platform is hosted on Amazon Web Services, which supplies the Postgres, S3 and DynamoDB we will meet later.",
+   "executive": "People sign in and keep a live connection open for edits; plugins use Figma's APIs; everything runs on Amazon Web Services."
+  },
+  {
+   "id": "s05",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [],
+   "trace": [],
+   "engineer": "One level in. Figma has not published a container diagram, so this layout is our design, built from its engineering posts. The editor client is C++ compiled to WebAssembly. A web application serves pages, files and permissions. Beside it, two real-time services: multiplayer, with one process per open file, and LiveGraph, which keeps everything else live. Underneath sit Postgres behind DBProxy, the journal, and checkpoints.",
+   "executive": "Inside: the editor in the browser, a web app, two live services, and three kinds of storage. The layout is our reconstruction."
+  },
+  {
+   "id": "s06",
+   "title": "Edit",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "client",
+    "mp"
+   ],
+   "trace": [
+    "k-c-mp",
+    "k-mp-c"
+   ],
+   "engineer": "The main path is an edit. You change a colour, and the client applies it at once, then sends the property change to the multiplayer process that holds the file. That process checks it, applies it to its own copy, and sends it to every other client with the file open. Figma's 2022 post says clients send updates about every thirty-three milliseconds, which is about thirty times a second. Nothing on this path touches a database.",
+   "executive": "An edit goes from your screen to the file's server and straight out to everyone else, without waiting on a database."
+  },
+  {
+   "id": "s07",
+   "title": "Make it durable",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "mp",
+    "journal",
+    "s3"
+   ],
+   "trace": [
+    "k-mp-j",
+    "k-mp-s3"
+   ],
+   "engineer": "The file lives in memory, so it has to be saved somewhere. Figma's 2022 post on reliability describes two stores. Every change gets a rising sequence number and goes, in batches, to a journal kept in DynamoDB. Separately, the whole file is encoded, compressed and uploaded to S3 as a checkpoint, which records the sequence number it includes. Figma says ninety-five per cent of edits are saved within about six hundred milliseconds.",
+   "executive": "Each small change is logged within a fraction of a second, and full snapshots of the file are saved separately."
+  },
+  {
+   "id": "s08",
+   "title": "Open a file",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "client",
+    "web",
+    "proxy",
+    "pg"
+   ],
+   "trace": [
+    "k-c-web",
+    "k-web-proxy",
+    "k-proxy-pg"
+   ],
+   "engineer": "Not everything is multiplayer. Which files you can see, your team, permissions and comments are ordinary relational data in Postgres on Amazon RDS. The web application asks for them in SQL, through DBProxy, a Go service Figma built for sharding in 2023, which works out which database or shard holds the rows. How a client is routed to the right multiplayer process is not published.",
+   "executive": "Ordinary data such as files, teams and permissions sits in Postgres, behind a routing layer Figma built."
+  },
+  {
+   "id": "s09",
+   "title": "Live data",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "client",
+    "lg",
+    "pg"
+   ],
+   "trace": [
+    "k-c-lg",
+    "k-pg-lg",
+    "k-lg-c"
+   ],
+   "engineer": "Those lists must be live too. When a teammate comments or adds a file, your sidebar should update. Figma built LiveGraph for this, described in a 2021 post. The client subscribes to a view written like a GraphQL query. LiveGraph reads Postgres's replication stream, its write-ahead log, and when a row changes it updates the affected queries and pushes new results, within milliseconds. Before LiveGraph, engineers had to hand-write an event for every database write.",
+   "executive": "A second live service watches the database's own change log and pushes updates to comments and file lists."
+  },
+  {
+   "id": "s10",
+   "chapter": "deep-dive",
+   "diagram": "session",
+   "focus": [],
+   "trace": [],
+   "engineer": "Inside a multiplayer session. Figma's posts describe each piece, but not this exact wiring, so the arrangement is our reconstruction. Clients connect to a Node.js host that handles the WebSockets. For each open file, the host runs a separate document process written in Rust. Inside it, a validator checks each change, the document is updated in memory, and two writers make it durable: a journal writer to DynamoDB and a checkpointer to S3.",
+   "executive": "Each open file gets its own small program that checks changes, applies them, and saves them."
+  },
+  {
+   "id": "s11",
+   "title": "A process per file",
+   "chapter": "deep-dive",
+   "diagram": "session",
+   "focus": [
+    "a",
+    "host",
+    "validate"
+   ],
+   "trace": [
+    "e-a-host",
+    "e-host-val"
+   ],
+   "engineer": "Why a process per file? Figma's 2018 post explains. The multiplayer server was once TypeScript on a single thread, so one slow operation, like encoding a very large file, stalled every file on that worker. Figma kept Node.js for networking and rewrote the hot path in Rust. The host now starts a Rust child process for each document and talks to it over standard input and output. Serialisation became more than ten times faster.",
+   "executive": "Giving each file its own process means one huge file can no longer freeze everyone else's."
+  },
+  {
+   "id": "s12",
+   "title": "Apply a change",
+   "chapter": "deep-dive",
+   "diagram": "session",
+   "focus": [
+    "validate",
+    "doc",
+    "host",
+    "b"
+   ],
+   "trace": [
+    "e-val-host",
+    "e-val-doc",
+    "e-doc-host",
+    "e-host-b"
+   ],
+   "engineer": "Now a change arrives. Figma's 2019 post says a document is a tree of objects, best pictured as a map from object ID to properties and values. Two people changing different properties never conflict. On the same property, the server keeps the last value it received. Order among siblings is a fraction between zero and one, so an object can slot between two others. A move that would create a cycle is rejected.",
+   "executive": "The file is a set of objects with properties; if two people change the same property, the last change to arrive wins."
+  },
+  {
+   "id": "s13",
+   "title": "Journal and checkpoint",
+   "chapter": "deep-dive",
+   "diagram": "session",
+   "focus": [
+    "doc",
+    "jw",
+    "cp",
+    "dynamo",
+    "s3"
+   ],
+   "trace": [
+    "e-doc-jw",
+    "e-jw-dyn",
+    "e-doc-cp",
+    "e-cp-s3"
+   ],
+   "engineer": "Finally, durability. Before 2022, multiplayer wrote a checkpoint every thirty to sixty seconds, so a crash could lose up to a minute of work. The journal fixed that. Changes are batched with a start and end sequence number, which is safe because last writer wins. A lock table in DynamoDB makes sure only one process writes a file's journal, and every write is conditional on holding that lock. Checkpoints still go to S3.",
+   "executive": "Changes are logged continuously, and a lock ensures only one server ever writes a given file's log."
+  },
+  {
+   "id": "s14",
+   "title": "Both send",
+   "chapter": "flows",
+   "diagram": "conflict",
+   "focus": [
+    "q-a",
+    "q-m",
+    "q-b"
+   ],
+   "trace": [
+    "q1",
+    "q2",
+    "q3",
+    "q4"
+   ],
+   "engineer": "Step by step: two people change the same rectangle's fill. Editor A sets red and Editor B sets blue, at almost the same moment. Each sees their own colour at once, because the client never waits. Red reaches the server first. The server acknowledges A and sends red to B. But B has an unacknowledged change to that property, so, as Figma's post explains, B ignores red to avoid flicker.",
+   "executive": "Two people change the same colour at once; each sees their own choice straight away."
+  },
+  {
+   "id": "s15",
+   "title": "Converge",
+   "chapter": "flows",
+   "diagram": "conflict",
+   "focus": [
+    "q-m",
+    "q-a",
+    "q-b",
+    "q-j"
+   ],
+   "trace": [
+    "q5",
+    "q6",
+    "q7"
+   ],
+   "engineer": "Then blue arrives. The server acknowledges B and sends blue to A, which applies it. Both screens show blue, the last value the server received, and the server agrees. No transform, no merge: one rule in one place. The batch then goes to the journal with its sequence numbers. The cost is that text works the same way: two people typing in one text box do not merge.",
+   "executive": "The server's order decides the winner, and everyone ends up seeing the same colour within a moment."
+  },
+  {
+   "id": "s16",
+   "title": "Recover",
+   "chapter": "flows",
+   "diagram": "recover",
+   "focus": [
+    "r-c",
+    "r-n",
+    "r-d",
+    "r-s"
+   ],
+   "trace": [
+    "r1",
+    "r2",
+    "r3",
+    "r4",
+    "r5"
+   ],
+   "engineer": "The second flow: the server holding a file goes away, after a crash or during a deploy. The client keeps its unsent edits and reconnects. A new process takes the file's lock in DynamoDB; that ordering is our design. It loads the latest checkpoint from S3, which records the last sequence number it contains, say nine hundred. It then reads every journal entry after nine hundred, with a strongly consistent read, and replays them.",
+   "executive": "A new server rebuilds the file from its last snapshot plus the log of every change since."
+  },
+  {
+   "id": "s17",
+   "title": "Catch up",
+   "chapter": "flows",
+   "diagram": "recover",
+   "focus": [
+    "r-n",
+    "r-c"
+   ],
+   "trace": [
+    "r6",
+    "r7",
+    "r8"
+   ],
+   "engineer": "Now the client catches up. Figma's 2019 post describes the same steps for going offline: download a fresh copy, reapply your own edits on top, and carry on over a new WebSocket. Because object IDs include a client ID, things created offline never clash. And Figma says that during a deploy, waiting for unsaved changes to reach the journal takes under a second at the ninety-ninth percentile.",
+   "executive": "The person's screen reloads the latest file and reapplies their unsent edits, usually in under a second."
+  },
+  {
+   "id": "s18",
+   "title": "Postgres",
+   "chapter": "data",
+   "diagram": "postgres",
+   "focus": [
+    "app",
+    "dbproxy",
+    "pgb",
+    "vp"
+   ],
+   "trace": [
+    "d-app-proxy",
+    "d-proxy-pgb",
+    "d-pgb-vp"
+   ],
+   "engineer": "Where the rest of the data lives. In 2020 Figma ran most metadata, files, permissions and comments, on a single Postgres database on Amazon RDS, and traffic was growing about threefold a year. It added read replicas, PgBouncer for connection pooling, and then split the database vertically: groups of related tables moved to their own databases. By the end of 2022 there were about a dozen. Each move cost around thirty seconds of partial availability.",
+   "executive": "Figma's ordinary data began on one large database and was split into about a dozen by 2022."
+  },
+  {
+   "id": "s19",
+   "title": "Shards",
+   "chapter": "data",
+   "diagram": "postgres",
+   "focus": [
+    "dbproxy",
+    "pgb",
+    "colo",
+    "replica"
+   ],
+   "trace": [
+    "d-pgb-colo",
+    "d-colo-rep"
+   ],
+   "engineer": "Then single tables outgrew a machine: several terabytes, billions of rows, slow vacuums. So Figma sharded horizontally, still on Postgres. Related tables sharing a key, such as file, organisation or user, form a colo, and the key is hashed to pick a shard. DBProxy routes each query to one shard, or scatters it and gathers the answers. The canvas itself is never in Postgres; it lives in checkpoints and the journal.",
+   "executive": "The biggest tables are now split across many databases by file, organisation or user."
+  },
+  {
+   "id": "s20",
+   "chapter": "growth",
+   "card": {
+    "heading": "How it got here, from Figma's own posts",
+    "kind": "compare",
+    "points": [
+     "Year | Change",
+     "2017 | C++ editor moves from asm.js to WebAssembly: loads over 3× faster",
+     "2018 | Multiplayer's hot path rewritten in Rust, a process per file",
+     "2019 | Multiplayer design published: last writer wins, no OT",
+     "2020 | One Postgres database on RDS for most metadata",
+     "2021 | LiveGraph: live queries from the write-ahead log",
+     "2022 | Journal in DynamoDB; about a dozen vertical partitions",
+     "2023 | First horizontally sharded table, in September",
+     "2024 | Database stack almost 100× since 2020; LiveGraph rebuilt",
+     "2025 | Renderer moves to WebGPU; revenue $1.056B"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "How it grew. In 2017 the C++ editor moved from asm.js to WebAssembly and loaded over three times faster. In 2018 multiplayer's hot path moved to Rust, and in 2019 Figma published the design. LiveGraph arrived in 2021, the journal and vertical partitions in 2022, the first sharded table in 2023. By 2024 the database stack had grown almost a hundredfold since 2020. In 2025 rendering moved to WebGPU.",
+   "executive": "The core design from 2018 and 2019 still holds; most of the change since has been in storage."
+  },
+  {
+   "id": "s21",
+   "title": "LiveGraph at scale",
+   "chapter": "growth",
+   "diagram": "postgres",
+   "focus": [
+    "colo",
+    "vp",
+    "inval"
+   ],
+   "trace": [
+    "d-colo-inv",
+    "d-vp-inv"
+   ],
+   "engineer": "Sharding broke an assumption. LiveGraph was built to read one globally ordered replication stream, and splitting the database meant many streams. Figma's 2024 post describes the fix. With sessions tripled since 2021, LiveGraph was rebuilt in Go: an edge, a cache sharded by query hash, and invalidators sharded like the databases, each tailing one stream. Order matters less, because an invalidation simply re-runs the query.",
+   "executive": "When the database was split, the live-update service was rebuilt to follow each piece separately."
+  },
+  {
+   "id": "s22",
+   "chapter": "failures",
+   "card": {
+    "heading": "What fails, and what protects users",
+    "kind": "compare",
+    "points": [
+     "Failure | Protection",
+     "Two people set the same property | Last writer wins at the server; everyone converges",
+     "Concurrent moves would form a cycle | The server rejects the parent change",
+     "A multiplayer process crashes | Checkpoint plus journal; under a second lost (the goal)",
+     "A deploy restarts servers | Wait for the journal; p99 under one second",
+     "Two processes claim one file | DynamoDB lock; journal writes are conditional",
+     "A connection drops | Keep editing, reload, reapply edits",
+     "A region is lost | Checkpoints replicated within 30 minutes; journal is not"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "What breaks, and what protects people. Two people set the same property: the server keeps the last value. Two moves would make a cycle: the server rejects one. A process crashes: a new one replays the checkpoint and journal, aiming to lose under a second. Two processes claim one file: the DynamoDB lock stops one writing. And for a lost region, the journal is not replicated; checkpoints are, within thirty minutes.",
+   "executive": "Each failure has a planned answer: one server settles conflicts, a log replays lost work, and a lock prevents two writers."
+  },
+  {
+   "id": "s23",
+   "chapter": "patterns",
+   "card": {
+    "heading": "Patterns used",
+    "points": [
+     "Write-ahead log: the multiplayer journal, replayed after a checkpoint",
+     "Sharding: Postgres colos behind DBProxy",
+     "Read replicas: added early to spread read load",
+     "Change data capture: LiveGraph tails Postgres's write-ahead log",
+     "Last-writer-wins registers: CRDT-inspired, with a central server",
+     "Fractional indexing: order children without renumbering"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The named patterns, each with its own walkthrough where we have one. A write-ahead log: the multiplayer journal, replayed on top of the last checkpoint. Sharding: Postgres split into colos behind DBProxy. Read replicas, added early to take reads off the primary. Change data capture: LiveGraph tailing Postgres's own write-ahead log. And two ideas from collaborative editing: last-writer-wins registers, borrowed from CRDTs but settled by a server, and fractional indexing for order.",
+   "executive": "Familiar patterns: a change log for safety, splitting data across databases, and watching the database's own log for updates."
+  },
+  {
+   "id": "s24",
+   "chapter": "decisions",
+   "card": {
+    "heading": "Key decisions",
+    "kind": "compare",
+    "points": [
+     "Decision | Why",
+     "A central server, last writer wins per property | Far simpler than operational transforms",
+     "A process per open file | One heavy file cannot stall the others",
+     "Rust for the hot path only | Speed and low memory without a full rewrite",
+     "C++ editor compiled to WebAssembly | Near-native speed in a browser",
+     "Journal in DynamoDB, not Postgres | Write volume; Postgres not yet scaled out",
+     "Shard Postgres in-house | Keep RDS skills; avoid a risky database migration"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The decisions that shaped it. A central server with last writer wins per property, because Figma found operational transforms unnecessarily complex. A process per file, so one heavy file cannot stall others. Rust for the hot path only. A C++ editor shipped as WebAssembly. The journal in DynamoDB, because Postgres was not yet horizontally scalable. And sharding Postgres in-house, rather than migrating databases under deadline.",
+   "executive": "Keep conflict rules simple, isolate each file, rewrite only what is slow, and scale the database they already knew."
+  },
+  {
+   "id": "s25",
+   "chapter": "mvp",
+   "card": {
+    "heading": "What we would build first",
+    "points": [
+     "One WebSocket server process per open document, routed by file ID",
+     "Document as object → property → value; last writer wins per property",
+     "Client-prefixed IDs and fractional indexes, so clients never wait",
+     "An append-only change log with sequence numbers, plus snapshots in object storage",
+     "Postgres for metadata on one database until it hurts",
+     "Plain-property text first; a text CRDT only if co-typing matters"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "If we built a small collaborative editor today, we would start here. One WebSocket server process per open document, with clients routed by file ID. The document as objects mapped to properties, last writer wins. Client-prefixed IDs and fractional indexes, so nobody waits. An append-only change log with sequence numbers, plus snapshots in object storage. And Postgres for everything else, on one database for as long as it lasts.",
+   "executive": "Start with one server per open file, simple conflict rules, a change log with snapshots, and one ordinary database."
+  }
+ ]
+}

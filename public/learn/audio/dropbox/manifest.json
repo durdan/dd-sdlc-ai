@@ -1,0 +1,242 @@
+{
+ "s01-engineer": {
+  "file": "/audio/dropbox/s01-engineer.mp3",
+  "ms": 22848,
+  "hash": "aecadb4592b6"
+ },
+ "s01-executive": {
+  "file": "/audio/dropbox/s01-executive.mp3",
+  "ms": 10224,
+  "hash": "0606b5c0f4b8"
+ },
+ "s02-engineer": {
+  "file": "/audio/dropbox/s02-engineer.mp3",
+  "ms": 26520,
+  "hash": "f7a7449e1d6b"
+ },
+ "s02-executive": {
+  "file": "/audio/dropbox/s02-executive.mp3",
+  "ms": 7536,
+  "hash": "96d0a019bbc1"
+ },
+ "s03-engineer": {
+  "file": "/audio/dropbox/s03-engineer.mp3",
+  "ms": 29520,
+  "hash": "e40fc07105f5"
+ },
+ "s03-executive": {
+  "file": "/audio/dropbox/s03-executive.mp3",
+  "ms": 7488,
+  "hash": "b79d24ca7cde"
+ },
+ "s04-engineer": {
+  "file": "/audio/dropbox/s04-engineer.mp3",
+  "ms": 26016,
+  "hash": "85ec72bc470f"
+ },
+ "s04-executive": {
+  "file": "/audio/dropbox/s04-executive.mp3",
+  "ms": 7224,
+  "hash": "798f787ece99"
+ },
+ "s05-engineer": {
+  "file": "/audio/dropbox/s05-engineer.mp3",
+  "ms": 27600,
+  "hash": "a15a7ba13cae"
+ },
+ "s05-executive": {
+  "file": "/audio/dropbox/s05-executive.mp3",
+  "ms": 7344,
+  "hash": "ae2710494fea"
+ },
+ "s06-engineer": {
+  "file": "/audio/dropbox/s06-engineer.mp3",
+  "ms": 30864,
+  "hash": "082b58cfa393"
+ },
+ "s06-executive": {
+  "file": "/audio/dropbox/s06-executive.mp3",
+  "ms": 7656,
+  "hash": "a9975484547f"
+ },
+ "s07-engineer": {
+  "file": "/audio/dropbox/s07-engineer.mp3",
+  "ms": 26400,
+  "hash": "469ec7e51ed5"
+ },
+ "s07-executive": {
+  "file": "/audio/dropbox/s07-executive.mp3",
+  "ms": 7056,
+  "hash": "fbc9e9b4242b"
+ },
+ "s08-engineer": {
+  "file": "/audio/dropbox/s08-engineer.mp3",
+  "ms": 33624,
+  "hash": "0a3bb245c7c8"
+ },
+ "s08-executive": {
+  "file": "/audio/dropbox/s08-executive.mp3",
+  "ms": 7056,
+  "hash": "0c3f7febd2fa"
+ },
+ "s09-engineer": {
+  "file": "/audio/dropbox/s09-engineer.mp3",
+  "ms": 26664,
+  "hash": "6deb897e738e"
+ },
+ "s09-executive": {
+  "file": "/audio/dropbox/s09-executive.mp3",
+  "ms": 6624,
+  "hash": "45580f5d9ab3"
+ },
+ "s10-engineer": {
+  "file": "/audio/dropbox/s10-engineer.mp3",
+  "ms": 27456,
+  "hash": "3015446962cb"
+ },
+ "s10-executive": {
+  "file": "/audio/dropbox/s10-executive.mp3",
+  "ms": 6816,
+  "hash": "bead08ca74fd"
+ },
+ "s11-engineer": {
+  "file": "/audio/dropbox/s11-engineer.mp3",
+  "ms": 25104,
+  "hash": "612d2ea02037"
+ },
+ "s11-executive": {
+  "file": "/audio/dropbox/s11-executive.mp3",
+  "ms": 7704,
+  "hash": "46ff542a5810"
+ },
+ "s12-engineer": {
+  "file": "/audio/dropbox/s12-engineer.mp3",
+  "ms": 27120,
+  "hash": "1e4110035b97"
+ },
+ "s12-executive": {
+  "file": "/audio/dropbox/s12-executive.mp3",
+  "ms": 6696,
+  "hash": "b7207bc02d70"
+ },
+ "s13-engineer": {
+  "file": "/audio/dropbox/s13-engineer.mp3",
+  "ms": 26496,
+  "hash": "f341adb6b560"
+ },
+ "s13-executive": {
+  "file": "/audio/dropbox/s13-executive.mp3",
+  "ms": 5472,
+  "hash": "a9e93def6194"
+ },
+ "s14-engineer": {
+  "file": "/audio/dropbox/s14-engineer.mp3",
+  "ms": 25488,
+  "hash": "7817c1a9edba"
+ },
+ "s14-executive": {
+  "file": "/audio/dropbox/s14-executive.mp3",
+  "ms": 6312,
+  "hash": "99cd51a0cf97"
+ },
+ "s15-engineer": {
+  "file": "/audio/dropbox/s15-engineer.mp3",
+  "ms": 25872,
+  "hash": "1e8a43551c8d"
+ },
+ "s15-executive": {
+  "file": "/audio/dropbox/s15-executive.mp3",
+  "ms": 6288,
+  "hash": "b066c5717fd5"
+ },
+ "s16-engineer": {
+  "file": "/audio/dropbox/s16-engineer.mp3",
+  "ms": 29832,
+  "hash": "65ca523a0d7d"
+ },
+ "s16-executive": {
+  "file": "/audio/dropbox/s16-executive.mp3",
+  "ms": 6240,
+  "hash": "89b2a0e83361"
+ },
+ "s17-engineer": {
+  "file": "/audio/dropbox/s17-engineer.mp3",
+  "ms": 26304,
+  "hash": "461e5a2783e8"
+ },
+ "s17-executive": {
+  "file": "/audio/dropbox/s17-executive.mp3",
+  "ms": 7800,
+  "hash": "f18c06fdc7f5"
+ },
+ "s18-engineer": {
+  "file": "/audio/dropbox/s18-engineer.mp3",
+  "ms": 26184,
+  "hash": "79c47eb68355"
+ },
+ "s18-executive": {
+  "file": "/audio/dropbox/s18-executive.mp3",
+  "ms": 7824,
+  "hash": "ab781916c24b"
+ },
+ "s19-engineer": {
+  "file": "/audio/dropbox/s19-engineer.mp3",
+  "ms": 34968,
+  "hash": "9c7a177f9fc1"
+ },
+ "s19-executive": {
+  "file": "/audio/dropbox/s19-executive.mp3",
+  "ms": 10104,
+  "hash": "3ba27bbacfac"
+ },
+ "s20-engineer": {
+  "file": "/audio/dropbox/s20-engineer.mp3",
+  "ms": 32664,
+  "hash": "e0f1d79aa407"
+ },
+ "s20-executive": {
+  "file": "/audio/dropbox/s20-executive.mp3",
+  "ms": 6840,
+  "hash": "a664aed0bcb0"
+ },
+ "s21-engineer": {
+  "file": "/audio/dropbox/s21-engineer.mp3",
+  "ms": 28992,
+  "hash": "21200775b6d6"
+ },
+ "s21-executive": {
+  "file": "/audio/dropbox/s21-executive.mp3",
+  "ms": 8880,
+  "hash": "a540f58af575"
+ },
+ "s22-engineer": {
+  "file": "/audio/dropbox/s22-engineer.mp3",
+  "ms": 29256,
+  "hash": "b0e0c2f30f2c"
+ },
+ "s22-executive": {
+  "file": "/audio/dropbox/s22-executive.mp3",
+  "ms": 8448,
+  "hash": "ff4afaa5778a"
+ },
+ "s23-engineer": {
+  "file": "/audio/dropbox/s23-engineer.mp3",
+  "ms": 28704,
+  "hash": "14a35033c7d0"
+ },
+ "s23-executive": {
+  "file": "/audio/dropbox/s23-executive.mp3",
+  "ms": 8736,
+  "hash": "5380b78d0f45"
+ },
+ "s24-engineer": {
+  "file": "/audio/dropbox/s24-engineer.mp3",
+  "ms": 31704,
+  "hash": "1e939520ce12"
+ },
+ "s24-executive": {
+  "file": "/audio/dropbox/s24-executive.mp3",
+  "ms": 7440,
+  "hash": "44c17f436f63"
+ }
+}

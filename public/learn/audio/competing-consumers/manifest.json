@@ -1,0 +1,142 @@
+{
+ "cc-problem-engineer": {
+  "file": "/audio/competing-consumers/cc-problem-engineer.mp3",
+  "ms": 21552,
+  "hash": "9bafa758d4e2"
+ },
+ "cc-problem-executive": {
+  "file": "/audio/competing-consumers/cc-problem-executive.mp3",
+  "ms": 6936,
+  "hash": "b6633deddd0e"
+ },
+ "cc-burst-engineer": {
+  "file": "/audio/competing-consumers/cc-burst-engineer.mp3",
+  "ms": 27408,
+  "hash": "6412f7a14cdf"
+ },
+ "cc-burst-executive": {
+  "file": "/audio/competing-consumers/cc-burst-executive.mp3",
+  "ms": 5688,
+  "hash": "abb32d503741"
+ },
+ "cc-naive-engineer": {
+  "file": "/audio/competing-consumers/cc-naive-engineer.mp3",
+  "ms": 26616,
+  "hash": "c2b833a22855"
+ },
+ "cc-naive-executive": {
+  "file": "/audio/competing-consumers/cc-naive-executive.mp3",
+  "ms": 6768,
+  "hash": "158dc4e5c52a"
+ },
+ "cc-structure-engineer": {
+  "file": "/audio/competing-consumers/cc-structure-engineer.mp3",
+  "ms": 28752,
+  "hash": "44d3fc2ca535"
+ },
+ "cc-structure-executive": {
+  "file": "/audio/competing-consumers/cc-structure-executive.mp3",
+  "ms": 8064,
+  "hash": "3146aa837aef"
+ },
+ "cc-scale-engineer": {
+  "file": "/audio/competing-consumers/cc-scale-engineer.mp3",
+  "ms": 25800,
+  "hash": "2f16667afe05"
+ },
+ "cc-scale-executive": {
+  "file": "/audio/competing-consumers/cc-scale-executive.mp3",
+  "ms": 7128,
+  "hash": "448219368f98"
+ },
+ "cc-how-engineer": {
+  "file": "/audio/competing-consumers/cc-how-engineer.mp3",
+  "ms": 31392,
+  "hash": "f85e583e6988"
+ },
+ "cc-how-executive": {
+  "file": "/audio/competing-consumers/cc-how-executive.mp3",
+  "ms": 6360,
+  "hash": "3267c7492871"
+ },
+ "cc-crash-engineer": {
+  "file": "/audio/competing-consumers/cc-crash-engineer.mp3",
+  "ms": 31656,
+  "hash": "828ba13683f5"
+ },
+ "cc-crash-executive": {
+  "file": "/audio/competing-consumers/cc-crash-executive.mp3",
+  "ms": 8520,
+  "hash": "deb12d421a8d"
+ },
+ "cc-poison-engineer": {
+  "file": "/audio/competing-consumers/cc-poison-engineer.mp3",
+  "ms": 29112,
+  "hash": "9920d1b39d3b"
+ },
+ "cc-poison-executive": {
+  "file": "/audio/competing-consumers/cc-poison-executive.mp3",
+  "ms": 6672,
+  "hash": "bc7276a0561b"
+ },
+ "cc-knobs-engineer": {
+  "file": "/audio/competing-consumers/cc-knobs-engineer.mp3",
+  "ms": 35208,
+  "hash": "c6715e392f41"
+ },
+ "cc-knobs-executive": {
+  "file": "/audio/competing-consumers/cc-knobs-executive.mp3",
+  "ms": 8184,
+  "hash": "7e52b54e9d2b"
+ },
+ "cc-whennot-engineer": {
+  "file": "/audio/competing-consumers/cc-whennot-engineer.mp3",
+  "ms": 24648,
+  "hash": "5dff2337ab14"
+ },
+ "cc-whennot-executive": {
+  "file": "/audio/competing-consumers/cc-whennot-executive.mp3",
+  "ms": 8136,
+  "hash": "175918ee9cb1"
+ },
+ "cc-wild-engineer": {
+  "file": "/audio/competing-consumers/cc-wild-engineer.mp3",
+  "ms": 37320,
+  "hash": "692f849ce563"
+ },
+ "cc-wild-executive": {
+  "file": "/audio/competing-consumers/cc-wild-executive.mp3",
+  "ms": 7584,
+  "hash": "67b5f55ba64b"
+ },
+ "cc-versus-engineer": {
+  "file": "/audio/competing-consumers/cc-versus-engineer.mp3",
+  "ms": 33288,
+  "hash": "630ce6aaace1"
+ },
+ "cc-versus-executive": {
+  "file": "/audio/competing-consumers/cc-versus-executive.mp3",
+  "ms": 7776,
+  "hash": "9984e96906e2"
+ },
+ "cc-neighbours-engineer": {
+  "file": "/audio/competing-consumers/cc-neighbours-engineer.mp3",
+  "ms": 29064,
+  "hash": "a793547f6278"
+ },
+ "cc-neighbours-executive": {
+  "file": "/audio/competing-consumers/cc-neighbours-executive.mp3",
+  "ms": 6600,
+  "hash": "19815ed506c1"
+ },
+ "cc-recap-engineer": {
+  "file": "/audio/competing-consumers/cc-recap-engineer.mp3",
+  "ms": 19512,
+  "hash": "11804362edf3"
+ },
+ "cc-recap-executive": {
+  "file": "/audio/competing-consumers/cc-recap-executive.mp3",
+  "ms": 7632,
+  "hash": "dc5f3537a523"
+ }
+}

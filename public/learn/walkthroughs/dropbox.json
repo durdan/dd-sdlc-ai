@@ -1,0 +1,1292 @@
+{
+ "id": "dropbox",
+ "title": "Dropbox: keeping files in sync",
+ "subtitle": "Company case study",
+ "template": "case-study",
+ "voice": "en-GB-SoniaNeural",
+ "meta": {
+  "kind": "company",
+  "category": "Storage",
+  "level": "intermediate",
+  "uses": [
+   "sharding",
+   "two-phase-commit",
+   "cache-aside",
+   "idempotency",
+   "strangler-fig"
+  ],
+  "related": [],
+  "blurb": "From a saved file to every device: 4 MB blocks named by hash, a metadata journal, long-poll notifications and Magic Pocket.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14",
+  "changelog": [
+   {
+    "date": "2026-10-14",
+    "note": "First version."
+   }
+  ]
+ },
+ "diagrams": [
+  {
+   "id": "context",
+   "kind": "c4",
+   "title": "Level 1 · Context",
+   "direction": "DOWN",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request · upload"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "notify · asynchronous"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "storage"
+    }
+   ],
+   "elements": [
+    {
+     "id": "user",
+     "kind": "person",
+     "label": "You",
+     "sub": "laptop, phone, browser"
+    },
+    {
+     "id": "collab",
+     "kind": "person",
+     "label": "Collaborators",
+     "sub": "shared folders and links"
+    },
+    {
+     "id": "dropbox",
+     "kind": "system",
+     "label": "Dropbox",
+     "sub": "sync, storage, sharing"
+    },
+    {
+     "id": "apps",
+     "kind": "external",
+     "label": "Third-party apps",
+     "sub": "built on the Dropbox API"
+    },
+    {
+     "id": "aws",
+     "kind": "external",
+     "label": "Amazon Web Services",
+     "sub": "S3 · some storage, e.g. Germany (2016)"
+    }
+   ],
+   "edges": [
+    {
+     "id": "c-sync",
+     "from": "user",
+     "to": "dropbox",
+     "label": "save a file on any device",
+     "style": "solid"
+    },
+    {
+     "id": "c-notify",
+     "from": "dropbox",
+     "to": "user",
+     "label": "your other devices update",
+     "style": "dashed"
+    },
+    {
+     "id": "c-share",
+     "from": "collab",
+     "to": "dropbox",
+     "label": "edit shared folders",
+     "style": "solid"
+    },
+    {
+     "id": "c-collab",
+     "from": "dropbox",
+     "to": "collab",
+     "label": "their copies update",
+     "style": "dashed"
+    },
+    {
+     "id": "c-api",
+     "from": "apps",
+     "to": "dropbox",
+     "label": "API calls",
+     "style": "solid"
+    },
+    {
+     "id": "c-aws",
+     "from": "dropbox",
+     "to": "aws",
+     "label": "storage in some regions",
+     "style": "dotted"
+    }
+   ]
+  },
+  {
+   "id": "containers",
+   "kind": "c4",
+   "title": "Level 2 · Containers",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "metag",
+     "label": "Metadata",
+     "tone": "core"
+    },
+    {
+     "id": "blockg",
+     "label": "File content",
+     "tone": "data"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request · response"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "notify · reply"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "storage"
+    }
+   ],
+   "elements": [
+    {
+     "id": "desktop",
+     "kind": "container",
+     "label": "Desktop app",
+     "sub": "Nucleus sync engine, in Rust",
+     "tone": "neutral",
+     "rank": 0
+    },
+    {
+     "id": "other",
+     "kind": "container",
+     "label": "Your other devices",
+     "sub": "desktop, mobile, web",
+     "tone": "neutral",
+     "rank": 0
+    },
+    {
+     "id": "notify",
+     "kind": "container",
+     "label": "Notification service",
+     "sub": "long-poll · carries no file data",
+     "tone": "stream",
+     "rank": 1
+    },
+    {
+     "id": "metasrv",
+     "kind": "container",
+     "label": "Metadata servers",
+     "sub": "commit, list, sharing",
+     "group": "metag",
+     "rank": 1
+    },
+    {
+     "id": "blocksrv",
+     "kind": "container",
+     "label": "Block servers",
+     "sub": "blocks in and out, by hash",
+     "group": "blockg",
+     "rank": 1
+    },
+    {
+     "id": "journal",
+     "kind": "store",
+     "label": "Server File Journal",
+     "sub": "file metadata · sharded MySQL",
+     "group": "metag",
+     "rank": 2
+    },
+    {
+     "id": "edgestore",
+     "kind": "store",
+     "label": "Edgestore",
+     "sub": "users, sharing, other metadata",
+     "group": "metag",
+     "rank": 2
+    },
+    {
+     "id": "panda",
+     "kind": "store",
+     "label": "Panda",
+     "sub": "key-value layer under Edgestore (2022)",
+     "group": "metag",
+     "rank": 3
+    },
+    {
+     "id": "mp",
+     "kind": "store",
+     "label": "Magic Pocket",
+     "sub": "immutable blocks · exabytes",
+     "group": "blockg",
+     "rank": 2
+    }
+   ],
+   "edges": [
+    {
+     "id": "k-commit",
+     "from": "desktop",
+     "to": "metasrv",
+     "label": "commit blocklist",
+     "style": "solid"
+    },
+    {
+     "id": "k-need",
+     "from": "metasrv",
+     "to": "desktop",
+     "label": "need blocks",
+     "style": "dashed"
+    },
+    {
+     "id": "k-put",
+     "from": "desktop",
+     "to": "blocksrv",
+     "label": "upload missing blocks",
+     "style": "solid"
+    },
+    {
+     "id": "k-mp",
+     "from": "blocksrv",
+     "to": "mp",
+     "label": "store by hash",
+     "style": "dotted"
+    },
+    {
+     "id": "k-journal",
+     "from": "metasrv",
+     "to": "journal",
+     "label": "new revision",
+     "style": "dotted"
+    },
+    {
+     "id": "k-edge",
+     "from": "metasrv",
+     "to": "edgestore",
+     "label": "accounts, sharing",
+     "style": "dotted"
+    },
+    {
+     "id": "k-panda",
+     "from": "edgestore",
+     "to": "panda",
+     "label": "stored on",
+     "style": "dotted"
+    },
+    {
+     "id": "k-ping",
+     "from": "metasrv",
+     "to": "notify",
+     "label": "namespace changed",
+     "style": "dashed"
+    },
+    {
+     "id": "k-wake",
+     "from": "notify",
+     "to": "other",
+     "label": "something changed",
+     "style": "dashed"
+    },
+    {
+     "id": "k-list",
+     "from": "other",
+     "to": "metasrv",
+     "label": "list from cursor",
+     "style": "solid"
+    },
+    {
+     "id": "k-get",
+     "from": "other",
+     "to": "blocksrv",
+     "label": "fetch blocks it lacks",
+     "style": "solid"
+    }
+   ]
+  },
+  {
+   "id": "nucleus",
+   "kind": "c4",
+   "title": "Level 3 · Inside the desktop sync engine (Nucleus)",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "nuc",
+     "label": "Nucleus · Rust, mostly on one control thread",
+     "tone": "core"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "planning · work"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "observed changes"
+    }
+   ],
+   "elements": [
+    {
+     "id": "server",
+     "kind": "external",
+     "label": "Dropbox servers",
+     "sub": "metadata and blocks",
+     "rank": 0
+    },
+    {
+     "id": "remote",
+     "kind": "store",
+     "label": "Remote Tree",
+     "sub": "latest state in the cloud",
+     "tone": "data",
+     "group": "nuc",
+     "rank": 1
+    },
+    {
+     "id": "synced",
+     "kind": "store",
+     "label": "Synced Tree",
+     "sub": "last fully synced state · merge base",
+     "tone": "data",
+     "group": "nuc",
+     "rank": 1
+    },
+    {
+     "id": "local",
+     "kind": "store",
+     "label": "Local Tree",
+     "sub": "last observed state on disk",
+     "tone": "data",
+     "group": "nuc",
+     "rank": 1
+    },
+    {
+     "id": "planner",
+     "kind": "component",
+     "label": "Planner",
+     "sub": "operations that make the trees converge",
+     "group": "nuc",
+     "rank": 2
+    },
+    {
+     "id": "exec",
+     "kind": "component",
+     "label": "I/O and hashing",
+     "sub": "event loop, file-system thread, thread pool",
+     "group": "nuc",
+     "rank": 3
+    },
+    {
+     "id": "disk",
+     "kind": "external",
+     "label": "Local disk",
+     "sub": "the Dropbox folder",
+     "rank": 4
+    }
+   ],
+   "edges": [
+    {
+     "id": "n-remote",
+     "from": "server",
+     "to": "remote",
+     "label": "changes from list",
+     "style": "dashed"
+    },
+    {
+     "id": "n-r-p",
+     "from": "remote",
+     "to": "planner",
+     "style": "solid"
+    },
+    {
+     "id": "n-s-p",
+     "from": "synced",
+     "to": "planner",
+     "label": "which side changed?",
+     "style": "solid"
+    },
+    {
+     "id": "n-l-p",
+     "from": "local",
+     "to": "planner",
+     "style": "solid"
+    },
+    {
+     "id": "n-p-x",
+     "from": "planner",
+     "to": "exec",
+     "label": "planned operations",
+     "style": "solid"
+    },
+    {
+     "id": "n-x-server",
+     "from": "exec",
+     "to": "server",
+     "label": "upload, commit, download",
+     "style": "solid"
+    },
+    {
+     "id": "n-x-disk",
+     "from": "exec",
+     "to": "disk",
+     "label": "write, move, delete",
+     "style": "solid"
+    },
+    {
+     "id": "n-local",
+     "from": "disk",
+     "to": "local",
+     "label": "file-system events",
+     "style": "dashed"
+    }
+   ]
+  },
+  {
+   "id": "upload",
+   "kind": "sequence",
+   "title": "Saving a file: commit, need blocks, upload, commit",
+   "participants": [
+    {
+     "id": "u-desk",
+     "label": "Desktop app"
+    },
+    {
+     "id": "u-meta",
+     "label": "Metadata server"
+    },
+    {
+     "id": "u-block",
+     "label": "Block server"
+    },
+    {
+     "id": "u-mp",
+     "label": "Magic Pocket"
+    },
+    {
+     "id": "u-journal",
+     "label": "Server File Journal"
+    }
+   ],
+   "messages": [
+    {
+     "id": "u1",
+     "from": "u-desk",
+     "to": "u-meta",
+     "label": "commit path, blocklist of SHA-256 hashes",
+     "style": "solid"
+    },
+    {
+     "id": "u2",
+     "from": "u-meta",
+     "to": "u-desk",
+     "label": "need blocks: only the unknown ones",
+     "style": "dashed"
+    },
+    {
+     "id": "u3",
+     "from": "u-desk",
+     "to": "u-block",
+     "label": "PutBlock: block and its hash",
+     "style": "solid"
+    },
+    {
+     "id": "u4",
+     "from": "u-block",
+     "to": "u-mp",
+     "label": "put, keyed by hash",
+     "style": "solid"
+    },
+    {
+     "id": "u5",
+     "from": "u-mp",
+     "to": "u-block",
+     "label": "stored",
+     "style": "dashed"
+    },
+    {
+     "id": "u6",
+     "from": "u-block",
+     "to": "u-desk",
+     "label": "ok",
+     "style": "dashed"
+    },
+    {
+     "id": "u7",
+     "from": "u-desk",
+     "to": "u-meta",
+     "label": "commit again",
+     "style": "solid"
+    },
+    {
+     "id": "u8",
+     "from": "u-meta",
+     "to": "u-journal",
+     "label": "append new revision",
+     "style": "solid"
+    },
+    {
+     "id": "u9",
+     "from": "u-meta",
+     "to": "u-desk",
+     "label": "committed",
+     "style": "dashed"
+    }
+   ]
+  },
+  {
+   "id": "fanout",
+   "kind": "sequence",
+   "title": "The change reaches your other devices",
+   "participants": [
+    {
+     "id": "f-dev",
+     "label": "Other device"
+    },
+    {
+     "id": "f-notify",
+     "label": "Notification service"
+    },
+    {
+     "id": "f-meta",
+     "label": "Metadata server"
+    },
+    {
+     "id": "f-block",
+     "label": "Block server"
+    },
+    {
+     "id": "f-disk",
+     "label": "Its local disk"
+    }
+   ],
+   "messages": [
+    {
+     "id": "f1",
+     "from": "f-dev",
+     "to": "f-notify",
+     "label": "long-poll: anything new?",
+     "style": "solid"
+    },
+    {
+     "id": "f2",
+     "from": "f-meta",
+     "to": "f-notify",
+     "label": "namespace changed",
+     "style": "dashed"
+    },
+    {
+     "id": "f3",
+     "from": "f-notify",
+     "to": "f-dev",
+     "label": "changes available",
+     "style": "dashed"
+    },
+    {
+     "id": "f4",
+     "from": "f-dev",
+     "to": "f-meta",
+     "label": "list, with cursor per namespace",
+     "style": "solid"
+    },
+    {
+     "id": "f5",
+     "from": "f-meta",
+     "to": "f-dev",
+     "label": "new entries, blocklists, new cursor",
+     "style": "dashed"
+    },
+    {
+     "id": "f6",
+     "from": "f-dev",
+     "to": "f-block",
+     "label": "get the blocks it lacks",
+     "style": "solid"
+    },
+    {
+     "id": "f7",
+     "from": "f-block",
+     "to": "f-dev",
+     "label": "block bytes",
+     "style": "dashed"
+    },
+    {
+     "id": "f8",
+     "from": "f-dev",
+     "to": "f-disk",
+     "label": "write the file, update the trees",
+     "style": "solid"
+    }
+   ]
+  },
+  {
+   "id": "mp",
+   "kind": "c4",
+   "title": "Level 3 · Inside Magic Pocket (2016 description)",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "zone",
+     "label": "One zone, e.g. western US",
+     "tone": "core"
+    },
+    {
+     "id": "cell",
+     "label": "Cell · about 50 PB raw",
+     "tone": "data"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "data path"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "background · replication"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "lookup"
+    }
+   ],
+   "elements": [
+    {
+     "id": "bsrv",
+     "kind": "container",
+     "label": "Block servers",
+     "sub": "put or get a block by hash",
+     "tone": "neutral",
+     "rank": 0
+    },
+    {
+     "id": "fe",
+     "kind": "component",
+     "label": "Frontends",
+     "sub": "gateway: choose where a block goes",
+     "group": "zone",
+     "rank": 1
+    },
+    {
+     "id": "bindex",
+     "kind": "store",
+     "label": "Block Index",
+     "sub": "sharded MySQL · hash → cell, bucket",
+     "group": "zone",
+     "rank": 1
+    },
+    {
+     "id": "xzone",
+     "kind": "component",
+     "label": "Cross-zone replication",
+     "sub": "remote copy within a second",
+     "tone": "stream",
+     "group": "zone",
+     "rank": 2
+    },
+    {
+     "id": "rtable",
+     "kind": "store",
+     "label": "Replication Table",
+     "sub": "bucket → volume → OSDs",
+     "group": "cell",
+     "rank": 2
+    },
+    {
+     "id": "osd",
+     "kind": "store",
+     "label": "OSDs",
+     "sub": "storage boxes full of disks",
+     "group": "cell",
+     "rank": 3
+    },
+    {
+     "id": "master",
+     "kind": "component",
+     "label": "Master",
+     "sub": "repairs, garbage collection · off the data path",
+     "group": "cell",
+     "rank": 3
+    },
+    {
+     "id": "volmgr",
+     "kind": "component",
+     "label": "Volume Manager",
+     "sub": "moves and erasure-codes volumes",
+     "group": "cell",
+     "rank": 4
+    },
+    {
+     "id": "zone2",
+     "kind": "external",
+     "label": "Another zone",
+     "sub": "every block in at least two",
+     "rank": 2
+    }
+   ],
+   "edges": [
+    {
+     "id": "m-put",
+     "from": "bsrv",
+     "to": "fe",
+     "label": "put(hash, block)",
+     "style": "solid"
+    },
+    {
+     "id": "m-idx",
+     "from": "fe",
+     "to": "bindex",
+     "label": "stored already? then record it",
+     "style": "dotted"
+    },
+    {
+     "id": "m-rt",
+     "from": "fe",
+     "to": "rtable",
+     "label": "which OSDs?",
+     "style": "dotted"
+    },
+    {
+     "id": "m-osd",
+     "from": "fe",
+     "to": "osd",
+     "label": "store, flushed to disk",
+     "style": "solid"
+    },
+    {
+     "id": "m-xz",
+     "from": "fe",
+     "to": "xzone",
+     "label": "new puts",
+     "style": "dashed"
+    },
+    {
+     "id": "m-zone2",
+     "from": "xzone",
+     "to": "zone2",
+     "label": "replicate",
+     "style": "dashed"
+    },
+    {
+     "id": "m-master",
+     "from": "master",
+     "to": "osd",
+     "label": "repair after 15 min offline",
+     "style": "dashed"
+    },
+    {
+     "id": "m-vm",
+     "from": "volmgr",
+     "to": "osd",
+     "label": "erasure-code buckets",
+     "style": "dashed"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "overview",
+   "title": "Overview"
+  },
+  {
+   "id": "requirements",
+   "title": "Requirements and scale"
+  },
+  {
+   "id": "context",
+   "title": "Context"
+  },
+  {
+   "id": "containers",
+   "title": "Containers"
+  },
+  {
+   "id": "deep-dive",
+   "title": "Deep dive"
+  },
+  {
+   "id": "flows",
+   "title": "Core flows"
+  },
+  {
+   "id": "data",
+   "title": "Data and caching"
+  },
+  {
+   "id": "growth",
+   "title": "Growth"
+  },
+  {
+   "id": "failures",
+   "title": "Failure modes"
+  },
+  {
+   "id": "patterns",
+   "title": "Patterns used"
+  },
+  {
+   "id": "decisions",
+   "title": "Key decisions"
+  },
+  {
+   "id": "mvp",
+   "title": "What we would build first"
+  }
+ ],
+ "shots": [
+  {
+   "id": "s01",
+   "chapter": "overview",
+   "diagram": "context",
+   "focus": [],
+   "trace": [],
+   "engineer": "This is Dropbox, seen from the outside. You save a file in a folder on your laptop, and a moment later it is on your phone, in your browser, and on the computers of anyone you share it with. The one idea everything depends on is this: a file is not stored as a file. It is cut into blocks of up to four megabytes, and each block is named by the hash of its contents.",
+   "executive": "Dropbox keeps the same files on all your devices and your colleagues' devices. Its central idea is to store files as small blocks named by their contents."
+  },
+  {
+   "id": "s02",
+   "chapter": "requirements",
+   "card": {
+    "heading": "Scale, from Dropbox's own publications",
+    "kind": "numbers",
+    "points": [
+     "700M+ | registered users, about 180 countries (Aug 2026)",
+     "18.19M | paying users at 30 June 2026",
+     "$139.68 | average revenue per paying user (Q2 2026)",
+     "100s of billions | of files, trillions of revisions (2020)",
+     "Exabytes | of customer data (2020)"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "First, the scale. Dropbox's results for the second quarter of 2026, published in August, report more than seven hundred million registered users in about a hundred and eighty countries, and eighteen point one nine million paying users, each paying on average about a hundred and forty dollars a year. In 2020 its engineers wrote that Dropbox holds hundreds of billions of files, trillions of file revisions, and exabytes of customer data.",
+   "executive": "Over seven hundred million people have signed up, about eighteen million pay, and Dropbox holds hundreds of billions of files."
+  },
+  {
+   "id": "s03",
+   "chapter": "requirements",
+   "card": {
+    "heading": "What the system must do (our list)",
+    "points": [
+     "Never lose a file: durability comes first",
+     "A change on one device shows up on the others in seconds",
+     "Send only what changed, not the whole file again",
+     "Work offline, and merge safely when back online",
+     "Shared folders: many people, one consistent view",
+     "Keep old versions so mistakes can be undone"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Then the requirements. These are ours, written from the product rather than taken from a Dropbox document. Never lose a file; durability comes before everything. A change on one device should reach the others within seconds. Send only what changed, not the whole file again. Keep working offline, and merge safely when the connection returns. Give everyone in a shared folder the same view. And keep old versions, so a mistake can be undone.",
+   "executive": "Never lose data, sync quickly, send as little as possible, work offline, share safely, and keep history."
+  },
+  {
+   "id": "s04",
+   "title": "People and devices",
+   "chapter": "context",
+   "diagram": "context",
+   "focus": [
+    "user",
+    "collab",
+    "dropbox"
+   ],
+   "trace": [
+    "c-sync",
+    "c-notify",
+    "c-share",
+    "c-collab"
+   ],
+   "engineer": "Two kinds of user meet here. You, with several devices: a laptop running the desktop app, a phone, a browser. And collaborators, who see the same files through shared folders and links. When anyone saves a change, Dropbox takes it in, and then every other device that can see that folder hears about it and catches up. The hard part is not storing one copy. It is keeping many copies in agreement.",
+   "executive": "Each person has several devices, and folders are shared between people; Dropbox keeps every copy in agreement."
+  },
+  {
+   "id": "s05",
+   "title": "Apps and cloud",
+   "chapter": "context",
+   "diagram": "context",
+   "focus": [
+    "apps",
+    "dropbox",
+    "aws"
+   ],
+   "trace": [
+    "c-api",
+    "c-aws"
+   ],
+   "engineer": "Two more neighbours. Third-party apps reach the same files through the public Dropbox API. And Amazon Web Services: Dropbox was an early user of Amazon S3 and kept its file contents there until it built its own storage in 2015. In 2016 it wrote that Amazon remained a partner, for example to store data in Germany for European business customers. So the arrow to Amazon is real, but much smaller than it once was.",
+   "executive": "Other apps use Dropbox through its API, and Amazon's cloud, once its main store, now holds only some data."
+  },
+  {
+   "id": "s06",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [],
+   "trace": [],
+   "engineer": "One level in. Dropbox describes these parts on its security architecture page and in engineering posts; the arrows between them are our simplification. On the left, metadata: metadata servers, a file journal on sharded MySQL, and Edgestore for accounts and sharing, with a newer layer called Panda beneath it. On the right, file content: block servers and Magic Pocket, Dropbox's own block store. And a notification service, which never carries file data at all.",
+   "executive": "Inside, metadata and file contents live in separate systems, with a small service that tells devices when to look."
+  },
+  {
+   "id": "s07",
+   "title": "Upload",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "desktop",
+    "metasrv",
+    "blocksrv",
+    "mp"
+   ],
+   "trace": [
+    "k-commit",
+    "k-need",
+    "k-put",
+    "k-mp"
+   ],
+   "engineer": "The upload path, as Dropbox described it in 2014. The desktop app hashes each four-megabyte block with SHA-256, and sends the list of hashes, the blocklist, to the metadata server as a commit. The server checks which hashes it already knows and answers with need blocks, naming only the missing ones. The app uploads just those to the block servers, which store them in Magic Pocket, keyed by hash.",
+   "executive": "The app first says which pieces the file is made of, then uploads only the pieces Dropbox does not already have."
+  },
+  {
+   "id": "s08",
+   "title": "Record",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "metasrv",
+    "journal",
+    "edgestore",
+    "panda"
+   ],
+   "trace": [
+    "k-journal",
+    "k-edge",
+    "k-panda"
+   ],
+   "engineer": "When every block is in place, the commit succeeds and the metadata servers record a new revision. Dropbox says file metadata lives in a MySQL-backed database service, sharded and replicated. Each user's root folder, and each shared folder, is a namespace, and its changes get journal numbers that only ever go up. Accounts and sharing live in Edgestore; in 2022 Dropbox described Panda, a transactional key-value layer it built between Edgestore and MySQL. Note that no file bytes ever enter this side.",
+   "executive": "A successful upload becomes a new entry in a change log for that folder; file contents are never stored here."
+  },
+  {
+   "id": "s09",
+   "title": "Notify and download",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "metasrv",
+    "notify",
+    "other",
+    "blocksrv"
+   ],
+   "trace": [
+    "k-ping",
+    "k-wake",
+    "k-list",
+    "k-get"
+   ],
+   "engineer": "Now your other devices. An idle client holds a long-poll connection to the notification service. When a namespace changes, the service tells it something changed, and nothing more. The device then asks the metadata servers for a list of changes since its cursor, gets the new blocklists, and fetches from the block servers only the blocks it does not have. How the metadata servers signal the notification service is our simplification.",
+   "executive": "Other devices are told only that something changed; they then ask what, and download just the missing pieces."
+  },
+  {
+   "id": "s10",
+   "chapter": "deep-dive",
+   "diagram": "nucleus",
+   "focus": [],
+   "trace": [],
+   "engineer": "Inside the desktop app. In 2020 Dropbox wrote that it had rebuilt its sync engine from scratch, in Rust, under the codename Nucleus, and shipped it to all users. The old engine, now called Sync Engine Classic, had problems in its data model that only showed up at scale; for example, files had no stable identifier across moves. Nucleus keeps three trees and a planner, and runs almost all its code on a single control thread.",
+   "executive": "Dropbox rewrote the heart of its desktop app in Rust, with a cleaner model of what is on disk and in the cloud."
+  },
+  {
+   "id": "s11",
+   "title": "Three trees",
+   "chapter": "deep-dive",
+   "diagram": "nucleus",
+   "focus": [
+    "remote",
+    "synced",
+    "local",
+    "planner",
+    "exec"
+   ],
+   "trace": [
+    "n-remote",
+    "n-local",
+    "n-r-p",
+    "n-s-p",
+    "n-l-p",
+    "n-p-x",
+    "n-x-server",
+    "n-x-disk"
+   ],
+   "engineer": "The three trees. The Remote Tree is the latest state in the cloud. The Local Tree is the last state observed on disk. The Synced Tree is the last state where both agreed; like a merge base, it tells the planner which side changed. The planner produces operations that bring the trees together. Network work goes to an event loop, disk work to a dedicated thread, and hashing to a thread pool.",
+   "executive": "The app compares what the cloud has, what the disk has, and what they last agreed on, to decide which way each change should flow."
+  },
+  {
+   "id": "s12",
+   "title": "Commit first",
+   "chapter": "flows",
+   "diagram": "upload",
+   "focus": [
+    "u-desk",
+    "u-meta"
+   ],
+   "trace": [
+    "u1",
+    "u2"
+   ],
+   "engineer": "Now step by step: saving a file. Say you edit a two-hundred-megabyte video. The desktop app splits it into fifty blocks of up to four megabytes, hashes each one, and sends the path and the blocklist to the metadata server. If you changed only the start, most hashes are the same as before. The server replies need blocks, listing only the hashes it does not yet have. For a brand-new file, that is often all of them.",
+   "executive": "The app sends the file's list of piece fingerprints first; Dropbox replies with only the pieces it is missing."
+  },
+  {
+   "id": "s13",
+   "title": "Upload and commit",
+   "chapter": "flows",
+   "diagram": "upload",
+   "focus": [
+    "u-desk",
+    "u-block",
+    "u-mp",
+    "u-meta",
+    "u-journal"
+   ],
+   "trace": [
+    "u3",
+    "u4",
+    "u5",
+    "u6",
+    "u7",
+    "u8",
+    "u9"
+   ],
+   "engineer": "The app uploads each missing block with PutBlock, sending the block and its hash, so the server can check nothing was corrupted on the way. The block goes to Magic Pocket, stored by its hash. Because the name is the hash, uploading the same block twice is harmless; that makes retries safe, which is our observation. Then the app commits again. This time every block is present, so a new revision is appended to the folder's journal.",
+   "executive": "The missing pieces are uploaded and checked, then the file is committed as a new version."
+  },
+  {
+   "id": "s14",
+   "title": "Wake up",
+   "chapter": "flows",
+   "diagram": "fanout",
+   "focus": [
+    "f-dev",
+    "f-notify",
+    "f-meta"
+   ],
+   "trace": [
+    "f1",
+    "f2",
+    "f3",
+    "f4",
+    "f5"
+   ],
+   "engineer": "The second flow: the change reaching your phone or another laptop. That device has been waiting on a long-poll to the notification service. The namespace changes, and the service answers: changes available. The device calls list, passing a cursor for each namespace it follows, so only new entries come back. It gets the new revision, its blocklist, and an updated cursor to use next time.",
+   "executive": "The other device is woken up, asks what changed since it last looked, and gets just the new entries."
+  },
+  {
+   "id": "s15",
+   "title": "Fetch and write",
+   "chapter": "flows",
+   "diagram": "fanout",
+   "focus": [
+    "f-dev",
+    "f-block",
+    "f-disk"
+   ],
+   "trace": [
+    "f6",
+    "f7",
+    "f8"
+   ],
+   "engineer": "The device compares the new blocklist with the blocks it already has, and fetches only the rest from the block servers. In 2014 Dropbox described streaming sync, where a second device prefetches blocks of a file before the first has even finished its commit; it measured about a quarter off sync time in one test. Finally the sync engine writes the file to disk and updates its trees, so the Synced Tree records that cloud and disk agree again.",
+   "executive": "It downloads only the new pieces, rebuilds the file on disk, and notes that it is now up to date."
+  },
+  {
+   "id": "s16",
+   "title": "Two kinds of data",
+   "chapter": "data",
+   "diagram": "containers",
+   "focus": [
+    "journal",
+    "edgestore",
+    "panda",
+    "mp"
+   ],
+   "trace": [],
+   "engineer": "What is stored where. File contents are encrypted blocks in Magic Pocket, retrieved by hash, and encrypted at rest with AES two-five-six. Metadata, the index of names, folders, revisions and sharing, lives in separate MySQL-backed systems. Edgestore keeps a caching layer in front, and because it is strongly consistent by default, it invalidates the cache on writes. The notification service stores no file data and no metadata at all.",
+   "executive": "File contents and the index that describes them are kept in different, separately secured systems."
+  },
+  {
+   "id": "s17",
+   "title": "Putting a block",
+   "chapter": "data",
+   "diagram": "mp",
+   "focus": [
+    "bsrv",
+    "fe",
+    "bindex",
+    "rtable",
+    "osd"
+   ],
+   "trace": [
+    "m-put",
+    "m-idx",
+    "m-rt",
+    "m-osd"
+   ],
+   "engineer": "Inside Magic Pocket, as described in 2016. A block arrives at a frontend. The frontend checks the Block Index, a giant sharded MySQL cluster mapping each hash to a cell and bucket, to see whether it is already stored. It picks a volume, asks the Replication Table which storage boxes hold it, and sends the block to them; they flush it to disk before answering. Only then is the index entry written.",
+   "executive": "Dropbox's own storage checks whether a piece already exists, writes it to disk on several machines, then records where it is."
+  },
+  {
+   "id": "s18",
+   "title": "Zones and erasure coding",
+   "chapter": "data",
+   "diagram": "mp",
+   "focus": [
+    "xzone",
+    "zone2",
+    "volmgr",
+    "master",
+    "osd"
+   ],
+   "trace": [
+    "m-xz",
+    "m-zone2",
+    "m-vm",
+    "m-master"
+   ],
+   "engineer": "Blocks are immutable: once written, they never change. Every block is stored in at least two zones, in the western, central and eastern United States, and the aim is to write the remote copy within a second. New blocks are first replicated on several machines; buckets are later erasure-coded by the Volume Manager, to save space. If a storage box is offline for fifteen minutes, the Master starts a repair.",
+   "executive": "Each piece is kept in at least two regions, packed efficiently once it settles, and repaired automatically when a machine fails."
+  },
+  {
+   "id": "s19",
+   "chapter": "growth",
+   "card": {
+    "heading": "How it got here, from Dropbox's own posts",
+    "kind": "compare",
+    "points": [
+     "Year | Change",
+     "2008 | Sync enters beta; Dropbox an early adopter of Amazon S3",
+     "2014 | Streaming sync; Magic Pocket dark launch (Aug)",
+     "2015 | Serving from own storage (Feb); 90% moved by October",
+     "2016 | 500 PB of user data on Magic Pocket",
+     "2018 | First petabyte-scale SMR drive deployment",
+     "2020 | Nucleus, the Rust sync engine, ships to all users",
+     "2022 | Panda: a new layer under Edgestore"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "How it grew. Sync entered beta in 2008, and Dropbox was an early adopter of Amazon S3. In August 2014 Magic Pocket was dark-launched, mirroring data. In February 2015 Dropbox began serving files from its own storage, and by October it had moved ninety per cent of user data; in 2016 that was five hundred petabytes. In 2018 it deployed shingled drives at petabyte scale. Nucleus shipped in 2020, and Panda, a new layer under Edgestore, was described in 2022.",
+   "executive": "Dropbox moved its storage off Amazon in 2015, rewrote its desktop sync engine by 2020, and rebuilt its metadata layer in 2022."
+  },
+  {
+   "id": "s20",
+   "title": "Growing metadata",
+   "chapter": "growth",
+   "diagram": "containers",
+   "focus": [
+    "metasrv",
+    "edgestore",
+    "panda"
+   ],
+   "trace": [
+    "k-edge",
+    "k-panda"
+   ],
+   "engineer": "Metadata had its own growing pains. In 2016 Edgestore ran on thousands of machines, held several trillion entries, and served millions of queries a second. To grow, Dropbox split each MySQL machine in two, which doubled the fleet every time. So Dropbox built Panda, a layer between Edgestore and MySQL that splits keys into ranges, moves ranges between nodes, and adds global transactions with two-phase commit. It looked at FoundationDB and Vitess first, and found neither fitted.",
+   "executive": "Metadata growth forced a new storage layer that can rebalance data a piece at a time instead of doubling the fleet."
+  },
+  {
+   "id": "s21",
+   "chapter": "failures",
+   "card": {
+    "heading": "What fails, and what protects users",
+    "kind": "compare",
+    "points": [
+     "Failure | Protection",
+     "Upload interrupted | Blocks named by hash; resend only the missing ones",
+     "Block corrupted on the wire | Server checks the hash in PutBlock",
+     "Storage box dies | Repair after 15 minutes offline",
+     "A whole zone is lost | Every block lives in at least two zones",
+     "Edits on two devices at once | Synced Tree, as merge base, shows which side changed",
+     "A sync engine bug | Tens of millions of randomised test runs a night"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "What breaks, and what protects people. An upload is interrupted: blocks are named by hash, so the app just resends the missing ones. A block is corrupted on the way: the server checks its hash. A storage box dies: repair starts after fifteen minutes. A whole zone is lost: every block lives in at least two. And sync engine bugs are hunted by tests called Trinity and CanopyCheck, run tens of millions of times a night with random seeds.",
+   "executive": "Interrupted uploads resume, damaged data is detected, lost machines are repaired, and the sync logic is tested millions of times a night."
+  },
+  {
+   "id": "s22",
+   "chapter": "patterns",
+   "card": {
+    "heading": "Patterns used",
+    "points": [
+     "Sharding: the Block Index, file metadata and Edgestore",
+     "Two-phase commit: Panda's global transactions",
+     "Cache-aside: Edgestore's caches, invalidated on write",
+     "Idempotency: blocks named by hash, so re-uploads are harmless",
+     "Strangler fig: S3 to Magic Pocket, a piece at a time (our framing)"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The named patterns, each with its own walkthrough. Sharding, in the Block Index, the file metadata and Edgestore. Two-phase commit, which Panda uses for transactions across storage nodes. Caching in front of Edgestore, invalidated on writes. Idempotency, which content addressing gives for free: uploading the same block twice changes nothing. And a strangler-fig migration, our framing of how storage moved off S3 one step at a time.",
+   "executive": "Familiar patterns: splitting data across servers, safe transactions, caching, safe retries, and gradual migration."
+  },
+  {
+   "id": "s23",
+   "chapter": "decisions",
+   "card": {
+    "heading": "Key decisions",
+    "kind": "compare",
+    "points": [
+     "Decision | Why",
+     "4 MB blocks named by SHA-256 | Send only what changed; safe retries",
+     "Metadata apart from block storage | Different sizes, shapes and access patterns",
+     "Long-poll notifications, no data | Cheap for idle clients; real work on demand",
+     "Own storage instead of S3 | Control and cost at exabyte scale",
+     "Rewrite sync in Rust | Fix the data model; testable by design"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The decisions that shaped it. Cut files into blocks named by their hash, so only changes travel and retries are safe. Keep metadata apart from file contents, because they differ in size, shape and access. Notify devices with a long-poll that carries no data, and let them fetch on demand. Build Magic Pocket rather than stay on S3. And rewrite the sync engine in Rust, rather than keep patching a model that had stopped fitting.",
+   "executive": "Split files into fingerprinted pieces, separate the index from the contents, own the storage, and rebuild the sync engine for correctness."
+  },
+  {
+   "id": "s24",
+   "chapter": "mvp",
+   "card": {
+    "heading": "What we would build first",
+    "points": [
+     "Files as blocks named by SHA-256 hash, in an object store",
+     "One Postgres database: namespaces, journals, cursors",
+     "Commit, need blocks, upload, commit again",
+     "Long-poll or WebSocket nudges; clients list from a cursor",
+     "Three trees on the client, and a deterministic core",
+     "Randomised tests with seeds from the first week"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "If we built a small sync service today, this is where we would start. Content-addressed blocks in an ordinary object store such as S3; no custom storage until the bill demands it. One Postgres database for namespaces, journals and cursors. The commit, need blocks, upload, commit protocol. A long-poll or WebSocket nudge, with clients listing from a cursor. And on the client, three trees and a deterministic core, tested with seeded random tests from day one.",
+   "executive": "Start with fingerprinted blocks in a standard cloud store and one database, and invest early in testing the sync logic."
+  }
+ ]
+}

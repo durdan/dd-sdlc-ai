@@ -1,0 +1,1017 @@
+{
+ "id": "competing-consumers",
+ "title": "Competing consumers",
+ "subtitle": "Design pattern",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "diagrams": [
+  {
+   "id": "inline",
+   "kind": "c4",
+   "title": "Slow work inside the request",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "user",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Users",
+     "sub": "uploading photos"
+    },
+    {
+     "id": "web",
+     "kind": "container",
+     "tone": "core",
+     "label": "Web app",
+     "sub": "fixed pool of request threads"
+    },
+    {
+     "id": "resize",
+     "kind": "component",
+     "tone": "core",
+     "label": "Image resizing",
+     "sub": "4 sizes · seconds of CPU"
+    },
+    {
+     "id": "email",
+     "kind": "external",
+     "tone": "external",
+     "label": "Email provider",
+     "sub": "confirmation email"
+    }
+   ],
+   "edges": [
+    {
+     "id": "i1",
+     "from": "user",
+     "to": "web",
+     "style": "solid",
+     "label": "upload photo"
+    },
+    {
+     "id": "i2",
+     "from": "web",
+     "to": "resize",
+     "style": "solid",
+     "label": "resize inline · user waits"
+    },
+    {
+     "id": "i3",
+     "from": "web",
+     "to": "email",
+     "style": "solid",
+     "label": "send email inline"
+    },
+    {
+     "id": "i4",
+     "from": "web",
+     "to": "user",
+     "style": "dashed",
+     "label": "burst: threads gone, timeouts"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "work or call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or slow"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "signal"
+    }
+   ]
+  },
+  {
+   "id": "naive",
+   "kind": "c4",
+   "title": "A background thread in the web app",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "user",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Users",
+     "sub": "uploading photos"
+    },
+    {
+     "id": "web",
+     "kind": "container",
+     "tone": "core",
+     "label": "Web app",
+     "sub": "replies at once",
+     "group": "proc"
+    },
+    {
+     "id": "list",
+     "kind": "store",
+     "tone": "data",
+     "label": "Job list",
+     "sub": "in process memory",
+     "group": "proc"
+    },
+    {
+     "id": "thread",
+     "kind": "component",
+     "tone": "core",
+     "label": "Background thread",
+     "sub": "resizes and emails · one per server",
+     "group": "proc"
+    }
+   ],
+   "edges": [
+    {
+     "id": "n1",
+     "from": "user",
+     "to": "web",
+     "style": "solid",
+     "label": "upload"
+    },
+    {
+     "id": "n2",
+     "from": "web",
+     "to": "list",
+     "style": "solid",
+     "label": "append job · reply"
+    },
+    {
+     "id": "n3",
+     "from": "list",
+     "to": "thread",
+     "style": "solid",
+     "label": "next job"
+    },
+    {
+     "id": "n4",
+     "from": "list",
+     "to": "thread",
+     "style": "dashed",
+     "label": "burst: backlog grows"
+    },
+    {
+     "id": "n5",
+     "from": "web",
+     "to": "list",
+     "style": "dashed",
+     "label": "crash: jobs lost"
+    }
+   ],
+   "groups": [
+    {
+     "id": "proc",
+     "label": "One web server process",
+     "tone": "core"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "work or call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or slow"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "signal"
+    }
+   ]
+  },
+  {
+   "id": "structure",
+   "kind": "c4",
+   "title": "One queue, a pool of competing workers",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "web",
+     "kind": "container",
+     "tone": "core",
+     "label": "Web app",
+     "sub": "any instance enqueues"
+    },
+    {
+     "id": "queue",
+     "kind": "store",
+     "tone": "data",
+     "label": "Work queue",
+     "sub": "durable · each message to one worker"
+    },
+    {
+     "id": "w1",
+     "kind": "container",
+     "tone": "core",
+     "label": "Worker 1",
+     "sub": "takes the next message",
+     "group": "pool"
+    },
+    {
+     "id": "w2",
+     "kind": "container",
+     "tone": "core",
+     "label": "Worker 2",
+     "sub": "identical copy",
+     "group": "pool"
+    },
+    {
+     "id": "w3",
+     "kind": "container",
+     "tone": "core",
+     "label": "Worker 3",
+     "sub": "identical copy",
+     "group": "pool"
+    },
+    {
+     "id": "out",
+     "kind": "store",
+     "tone": "data",
+     "label": "Results",
+     "sub": "image store · email sent"
+    },
+    {
+     "id": "scaler",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Autoscaler",
+     "sub": "e.g. KEDA"
+    },
+    {
+     "id": "dlq",
+     "kind": "store",
+     "tone": "stream",
+     "label": "Dead-letter queue",
+     "sub": "messages that keep failing"
+    }
+   ],
+   "edges": [
+    {
+     "id": "p1",
+     "from": "web",
+     "to": "queue",
+     "style": "solid",
+     "label": "enqueue job, reply 202"
+    },
+    {
+     "id": "p2",
+     "from": "queue",
+     "to": "w1",
+     "style": "solid",
+     "label": "message A"
+    },
+    {
+     "id": "p3",
+     "from": "queue",
+     "to": "w2",
+     "style": "solid",
+     "label": "message B"
+    },
+    {
+     "id": "p4",
+     "from": "queue",
+     "to": "w3",
+     "style": "solid",
+     "label": "message C"
+    },
+    {
+     "id": "p5",
+     "from": "w1",
+     "to": "out",
+     "style": "solid",
+     "label": "write result"
+    },
+    {
+     "id": "p6",
+     "from": "scaler",
+     "to": "queue",
+     "style": "dotted",
+     "label": "read queue depth"
+    },
+    {
+     "id": "p7",
+     "from": "scaler",
+     "to": "w3",
+     "style": "dotted",
+     "label": "add or remove workers"
+    },
+    {
+     "id": "p8",
+     "from": "queue",
+     "to": "dlq",
+     "style": "dashed",
+     "label": "after N failed receives"
+    }
+   ],
+   "groups": [
+    {
+     "id": "pool",
+     "label": "Worker pool [scales on its own]",
+     "tone": "core"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "work or call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or slow"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "signal"
+    }
+   ]
+  },
+  {
+   "id": "flow",
+   "kind": "sequence",
+   "title": "Receive, hide, process, delete",
+   "participants": [
+    {
+     "id": "web",
+     "label": "Web app"
+    },
+    {
+     "id": "queue",
+     "label": "Queue"
+    },
+    {
+     "id": "w1",
+     "label": "Worker 1"
+    },
+    {
+     "id": "w2",
+     "label": "Worker 2"
+    },
+    {
+     "id": "store",
+     "label": "Image store"
+    }
+   ],
+   "messages": [
+    {
+     "id": "h1",
+     "from": "web",
+     "to": "queue",
+     "style": "solid",
+     "label": "send job 42: resize photo"
+    },
+    {
+     "id": "h2",
+     "from": "queue",
+     "to": "web",
+     "style": "solid",
+     "label": "stored durably · user gets 202"
+    },
+    {
+     "id": "h3",
+     "from": "w1",
+     "to": "queue",
+     "style": "solid",
+     "label": "receive"
+    },
+    {
+     "id": "h4",
+     "from": "queue",
+     "to": "w1",
+     "style": "solid",
+     "label": "job 42 · hidden for 30 s"
+    },
+    {
+     "id": "h5",
+     "from": "w2",
+     "to": "queue",
+     "style": "solid",
+     "label": "receive"
+    },
+    {
+     "id": "h6",
+     "from": "queue",
+     "to": "w2",
+     "style": "solid",
+     "label": "job 43 · not 42"
+    },
+    {
+     "id": "h7",
+     "from": "w1",
+     "to": "store",
+     "style": "solid",
+     "label": "write 4 thumbnails"
+    },
+    {
+     "id": "h8",
+     "from": "w1",
+     "to": "queue",
+     "style": "solid",
+     "label": "delete job 42 = acknowledge"
+    }
+   ]
+  },
+  {
+   "id": "crash",
+   "kind": "sequence",
+   "title": "A worker dies; a message keeps failing",
+   "participants": [
+    {
+     "id": "queue",
+     "label": "Queue"
+    },
+    {
+     "id": "w1",
+     "label": "Worker 1"
+    },
+    {
+     "id": "w2",
+     "label": "Worker 2"
+    },
+    {
+     "id": "store",
+     "label": "Image store"
+    },
+    {
+     "id": "dlq",
+     "label": "Dead-letter queue"
+    }
+   ],
+   "messages": [
+    {
+     "id": "f1",
+     "from": "queue",
+     "to": "w1",
+     "style": "solid",
+     "label": "job 42 · hidden for 30 s"
+    },
+    {
+     "id": "f2",
+     "from": "w1",
+     "to": "store",
+     "style": "dashed",
+     "label": "2 of 4 thumbnails, then crash"
+    },
+    {
+     "id": "f3",
+     "from": "queue",
+     "to": "w2",
+     "style": "solid",
+     "label": "timeout expires → job 42 again"
+    },
+    {
+     "id": "f4",
+     "from": "w2",
+     "to": "store",
+     "style": "solid",
+     "label": "write all 4 to the same keys"
+    },
+    {
+     "id": "f5",
+     "from": "w2",
+     "to": "queue",
+     "style": "solid",
+     "label": "delete job 42"
+    },
+    {
+     "id": "f6",
+     "from": "queue",
+     "to": "w1",
+     "style": "solid",
+     "label": "job 99: corrupt image"
+    },
+    {
+     "id": "f7",
+     "from": "w1",
+     "to": "queue",
+     "style": "dashed",
+     "label": "fails · not deleted · reappears"
+    },
+    {
+     "id": "f8",
+     "from": "queue",
+     "to": "w2",
+     "style": "solid",
+     "label": "job 99 again · fails again"
+    },
+    {
+     "id": "f9",
+     "from": "queue",
+     "to": "dlq",
+     "style": "dashed",
+     "label": "receive count > maxReceiveCount → move"
+    }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "eip",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Enterprise Integration Patterns",
+     "sub": "named the pattern, 2003"
+    },
+    {
+     "id": "azure",
+     "kind": "container",
+     "tone": "core",
+     "label": "Azure Service Bus + Functions",
+     "sub": "peek-lock · dead-letter"
+    },
+    {
+     "id": "sqs",
+     "kind": "container",
+     "tone": "core",
+     "label": "Amazon SQS",
+     "sub": "visibility timeout · DLQ · FIFO groups"
+    },
+    {
+     "id": "rabbit",
+     "kind": "container",
+     "tone": "core",
+     "label": "RabbitMQ work queues",
+     "sub": "acks · prefetch · fair dispatch"
+    },
+    {
+     "id": "keda",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "KEDA",
+     "sub": "scale pods on queue length"
+    },
+    {
+     "id": "kafka",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Kafka consumer groups",
+     "sub": "one consumer per partition"
+    }
+   ],
+   "edges": [
+    {
+     "id": "x1",
+     "from": "eip",
+     "to": "azure",
+     "style": "solid",
+     "label": "pattern guide"
+    },
+    {
+     "id": "x2",
+     "from": "eip",
+     "to": "sqs",
+     "style": "solid",
+     "label": "managed queue"
+    },
+    {
+     "id": "x3",
+     "from": "eip",
+     "to": "rabbit",
+     "style": "solid",
+     "label": "broker"
+    },
+    {
+     "id": "x4",
+     "from": "keda",
+     "to": "sqs",
+     "style": "dotted",
+     "label": "reads depth"
+    },
+    {
+     "id": "x5",
+     "from": "eip",
+     "to": "kafka",
+     "style": "dotted",
+     "label": "partitioned variant"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "implements"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "variant or helper"
+    }
+   ]
+  },
+  {
+   "id": "versus",
+   "kind": "c4",
+   "title": "Queue: one copy shared. Topic: one copy each.",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "prod",
+     "kind": "container",
+     "tone": "neutral",
+     "label": "Producer",
+     "sub": "sends one message"
+    },
+    {
+     "id": "queue",
+     "kind": "store",
+     "tone": "data",
+     "label": "Queue",
+     "sub": "competing consumers"
+    },
+    {
+     "id": "wa",
+     "kind": "container",
+     "tone": "core",
+     "label": "Worker A",
+     "group": "pool"
+    },
+    {
+     "id": "wb",
+     "kind": "container",
+     "tone": "core",
+     "label": "Worker B",
+     "sub": "gets this one",
+     "group": "pool"
+    },
+    {
+     "id": "topic",
+     "kind": "store",
+     "tone": "stream",
+     "label": "Topic",
+     "sub": "publish–subscribe"
+    },
+    {
+     "id": "sa",
+     "kind": "container",
+     "tone": "core",
+     "label": "Search indexer",
+     "group": "subs"
+    },
+    {
+     "id": "sb",
+     "kind": "container",
+     "tone": "core",
+     "label": "Analytics",
+     "group": "subs"
+    }
+   ],
+   "edges": [
+    {
+     "id": "v1",
+     "from": "prod",
+     "to": "queue",
+     "style": "solid",
+     "label": "send"
+    },
+    {
+     "id": "v2",
+     "from": "queue",
+     "to": "wb",
+     "style": "solid",
+     "label": "one worker gets it"
+    },
+    {
+     "id": "v3",
+     "from": "prod",
+     "to": "topic",
+     "style": "solid",
+     "label": "publish"
+    },
+    {
+     "id": "v4",
+     "from": "topic",
+     "to": "sa",
+     "style": "solid",
+     "label": "own copy"
+    },
+    {
+     "id": "v5",
+     "from": "topic",
+     "to": "sb",
+     "style": "solid",
+     "label": "own copy"
+    }
+   ],
+   "groups": [
+    {
+     "id": "pool",
+     "label": "Worker pool",
+     "tone": "core"
+    },
+    {
+     "id": "subs",
+     "label": "Subscribers",
+     "tone": "stream"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "delivery"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "problem",
+   "title": "The problem"
+  },
+  {
+   "id": "naive",
+   "title": "The naive fix"
+  },
+  {
+   "id": "pattern",
+   "title": "The pattern"
+  },
+  {
+   "id": "how",
+   "title": "How it works"
+  },
+  {
+   "id": "failure",
+   "title": "When it goes wrong"
+  },
+  {
+   "id": "tradeoffs",
+   "title": "Trade-offs"
+  },
+  {
+   "id": "wild",
+   "title": "In the wild"
+  },
+  {
+   "id": "related",
+   "title": "Related patterns"
+  },
+  {
+   "id": "recap",
+   "title": "Recap"
+  }
+ ],
+ "shots": [
+  {
+   "id": "cc-problem",
+   "chapter": "problem",
+   "diagram": "inline",
+   "focus": [],
+   "trace": [],
+   "engineer": "Here is a photo-sharing app. A user uploads a picture, and the web app does all the work inside that request: it resizes the image into four sizes and sends a confirmation email, and only then replies. On a quiet day that takes a few seconds and nobody complains. But the slow work and the fast work share the same request, and the same thread.",
+   "executive": "Our app does slow jobs, like resizing photos and sending emails, while the customer waits for the page."
+  },
+  {
+   "id": "cc-burst",
+   "chapter": "problem",
+   "title": "Burst",
+   "diagram": "inline",
+   "focus": [],
+   "trace": [
+    "i1",
+    "i2",
+    "i3",
+    "i4"
+   ],
+   "engineer": "Now a burst arrives: a campaign goes out and thousands of people upload at once. Every request holds a web thread for seconds while it resizes and emails. The threads run out, new requests wait, and they start timing out. Worse, a request that timed out may have resized the photo but never sent the email, so the user retries and the work is done twice. The work itself is fine. Doing it inline is the problem.",
+   "executive": "When traffic spikes, those slow jobs use up the web servers and customers see timeouts."
+  },
+  {
+   "id": "cc-naive",
+   "chapter": "naive",
+   "title": "Background thread",
+   "diagram": "naive",
+   "focus": [],
+   "trace": [
+    "n1",
+    "n2",
+    "n3",
+    "n4",
+    "n5"
+   ],
+   "engineer": "The obvious fix is a background thread inside the web app. The request appends a job to an in-memory list and replies at once, and a thread works through the list. Replies are fast now, but two things break. The list lives in one process's memory, so a deploy or a crash loses every job on it. And there is one worker per server, so in a burst the backlog just grows, with no way to add capacity for the slow work alone.",
+   "executive": "Doing the work in the background on the same server is faster, but jobs are lost on a restart and it cannot scale."
+  },
+  {
+   "id": "cc-structure",
+   "chapter": "pattern",
+   "title": "Share the work",
+   "diagram": "structure",
+   "focus": [],
+   "trace": [
+    "p1",
+    "p2",
+    "p3",
+    "p4",
+    "p5"
+   ],
+   "engineer": "The competing consumers pattern moves the work onto a durable queue. Any web instance enqueues a job and replies straight away. A pool of identical workers all read from that one queue, and each takes the next message. Message A goes to worker one, B to worker two, C to worker three. Each message goes to one worker, not to all of them. The workers compete for messages, which is where the name comes from, and none of them needs to know about the others.",
+   "executive": "Slow jobs go onto a queue, and a pool of identical workers each takes the next job. Every job is done by one worker."
+  },
+  {
+   "id": "cc-scale",
+   "chapter": "pattern",
+   "title": "Scale on depth",
+   "diagram": "structure",
+   "focus": [
+    "queue",
+    "scaler",
+    "w1",
+    "w2",
+    "w3"
+   ],
+   "trace": [
+    "p6",
+    "p7"
+   ],
+   "engineer": "Because work waits in the queue, its depth tells you how far behind you are. An autoscaler reads that depth and adds or removes workers. KEDA does this on Kubernetes. Its Amazon SQS scaler takes a target number of messages per pod, so thirty messages with a target of ten gives three pods, and when the queue is empty it can scale all the way to zero. The web tier and the worker tier now scale separately.",
+   "executive": "The length of the queue tells us how many workers to run, so capacity grows with the backlog and shrinks when it clears."
+  },
+  {
+   "id": "cc-how",
+   "chapter": "how",
+   "title": "Sequence",
+   "diagram": "flow",
+   "focus": [],
+   "trace": [
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "h7",
+    "h8"
+   ],
+   "engineer": "Step by step. The web app sends job forty-two to the queue, which stores it and confirms, and the user gets an immediate reply. Worker one asks for a message and receives job forty-two. The message is not removed; it is hidden from other workers for the visibility timeout, thirty seconds by default on Amazon SQS. Worker two asks next and gets job forty-three instead. Worker one writes the thumbnails, then deletes the message. That delete is the acknowledgement: only now is the job done.",
+   "executive": "A worker borrows a job, hides it from the others while it works, and removes it only when it has finished."
+  },
+  {
+   "id": "cc-crash",
+   "chapter": "failure",
+   "title": "Worker dies",
+   "diagram": "crash",
+   "focus": [],
+   "trace": [
+    "f1",
+    "f2",
+    "f3",
+    "f4",
+    "f5"
+   ],
+   "engineer": "Now worker one crashes halfway, after writing two of the four thumbnails. It never deletes the message, so when the visibility timeout expires, job forty-two becomes visible again and worker two picks it up. Nothing is lost, but the job ran twice. That is at-least-once delivery, and Amazon warns that a standard queue can occasionally deliver a copy twice even without a crash. So handlers must be idempotent: write thumbnails to fixed keys, and check a record before sending the email again.",
+   "executive": "If a worker dies, its job reappears and another worker finishes it. Jobs can run twice, so they must be safe to repeat."
+  },
+  {
+   "id": "cc-poison",
+   "chapter": "failure",
+   "title": "Poison message",
+   "diagram": "crash",
+   "focus": [],
+   "trace": [
+    "f6",
+    "f7",
+    "f8",
+    "f9"
+   ],
+   "engineer": "Some messages can never succeed, say a corrupt image. Each attempt fails, the message reappears, and it fails again, round and round, using up a worker every time. The fix is a dead-letter queue. On Amazon SQS, a redrive policy sets a maximum receive count: once a message has been received that many times without being deleted, it is moved to the dead-letter queue. Alert on that queue, inspect the message, fix the bug, then move it back.",
+   "executive": "A job that always fails is set aside in a separate queue after a few attempts, so it cannot block the rest."
+  },
+  {
+   "id": "cc-knobs",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "The knobs",
+    "kind": "compare",
+    "points": [
+     "Choice | Trade-off",
+     "Visibility timeout | Too short: a second worker starts a live job; too long: slow retry after a crash",
+     "Prefetch | High: fewer round trips, but one worker hoards work; 1: fair dispatch",
+     "Ordering | Lost across workers; FIFO message groups or partitions keep order per key",
+     "More workers | More throughput, until whatever they write to is the bottleneck"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The knobs. Set the visibility timeout to your real processing time: too short and a slow job is handed to a second worker while the first is still on it; too long and a crashed job waits before its retry. Prefetch decides how many messages a worker holds. RabbitMQ deals messages round-robin by default; a prefetch of one means a busy worker is not handed more. Order is lost across workers, so when it matters, use FIFO message groups or partitions keyed by customer. And more workers help only until the database behind them becomes the bottleneck.",
+   "executive": "The main settings trade speed against fairness and order. Adding workers helps only until the systems behind them are the limit."
+  },
+  {
+   "id": "cc-whennot",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "When not to use it",
+    "points": [
+     "The work cannot be split into independent tasks",
+     "The caller must wait for the result before carrying on",
+     "Tasks must run in a strict sequence",
+     "Workers cannot reply to the user: results need a shared store or reply queue"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "When does it not fit? Microsoft's guidance lists three cases: when the work cannot easily be split into independent tasks, when the caller has to wait for each task to finish before it carries on, and when tasks must run in a specific sequence. And remember that a worker cannot answer the user directly. If the result matters, write it to a shared store or a reply queue, and tell the user when it is ready.",
+   "executive": "It suits independent jobs nobody has to wait for. It is the wrong fit when steps depend on each other or must happen in order."
+  },
+  {
+   "id": "cc-wild",
+   "chapter": "wild",
+   "title": "Implementations",
+   "diagram": "wild",
+   "focus": [],
+   "trace": [
+    "x1",
+    "x2",
+    "x3",
+    "x4",
+    "x5"
+   ],
+   "engineer": "In the wild. Enterprise Integration Patterns named it in 2003: several competing consumers on a single channel. Microsoft's pattern page builds it with Service Bus queues and Azure Functions, using peek-lock and a dead-letter queue. Amazon SQS gives you visibility timeouts, dead-letter queues and FIFO message groups. RabbitMQ's work queues tutorial teaches acknowledgements and prefetch. KEDA scales Kubernetes workers on queue length. And Kafka consumer groups are the partitioned variant: each partition is read by exactly one consumer in the group.",
+   "executive": "Every major cloud and message broker supports this pattern out of the box, along with tools that scale workers automatically."
+  },
+  {
+   "id": "cc-versus",
+   "chapter": "related",
+   "title": "Queue versus topic",
+   "diagram": "versus",
+   "focus": [],
+   "trace": [
+    "v1",
+    "v2",
+    "v3",
+    "v4",
+    "v5"
+   ],
+   "engineer": "It is easily confused with publish and subscribe, because both have one sender and many receivers. The difference is who gets each message. On a queue, the workers share one copy: one worker gets it, and the others get the next ones. On a topic, every subscriber gets its own copy. Microsoft puts it plainly: with competing consumers, one consumer receives each message; with publish and subscribe, all consumers receive every message. Often you combine them, with a pool of competing workers behind each subscription.",
+   "executive": "A queue shares out the work so each job is done once. A topic tells everyone, so each listener gets its own copy."
+  },
+  {
+   "id": "cc-neighbours",
+   "chapter": "related",
+   "card": {
+    "heading": "Neighbours",
+    "kind": "compare",
+    "points": [
+     "Pattern | How it fits",
+     "Idempotent consumer | Makes redelivery safe",
+     "Queue-based load levelling | The queue absorbs the burst",
+     "Backpressure | What to do when the backlog outruns scaling",
+     "Event streaming | Consumer groups: one consumer per partition"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Its neighbours. The idempotent consumer makes redelivery safe, and you will need it. Queue-based load levelling is the buffer half of this pattern: the queue soaks up the burst so the workers see a steady stream. Backpressure decides what happens when the backlog grows faster than you can scale. And event streaming is the partitioned variant: a Kafka consumer group gives each partition to one member, which keeps order per key but means extra consumers beyond the partition count sit idle.",
+   "executive": "It works hand in hand with safe retries, buffering bursts, and limits on how much work can pile up."
+  },
+  {
+   "id": "cc-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "Take slow work out of the request: put it on a durable queue",
+     "Many workers, one message each; scale them on queue depth",
+     "Delivery is at least once: idempotent handlers and a dead-letter queue"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. Take slow work out of the request and put it on a durable queue. Let a pool of workers compete for it, one message each, and scale them on the depth of the queue. And because delivery is at least once, make every handler safe to run twice, and send poison messages to a dead-letter queue.",
+   "executive": "Queue the slow work. Let many workers share it and scale with the backlog. Make every job safe to repeat."
+  }
+ ],
+ "meta": {
+  "kind": "pattern",
+  "category": "Messaging",
+  "level": "beginner",
+  "uses": [
+   "idempotency"
+  ],
+  "related": [
+   "pub-sub",
+   "backpressure",
+   "event-streaming",
+   "idempotency"
+  ],
+  "blurb": "Put slow work on a queue and let a pool of workers each take the next message; scale on queue depth.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ }
+}

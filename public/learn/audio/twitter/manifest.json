@@ -1,0 +1,252 @@
+{
+ "s01-engineer": {
+  "file": "/audio/twitter/s01-engineer.mp3",
+  "ms": 26304,
+  "hash": "bb0ff707961e"
+ },
+ "s01-executive": {
+  "file": "/audio/twitter/s01-executive.mp3",
+  "ms": 9600,
+  "hash": "9ae08728426a"
+ },
+ "s02-engineer": {
+  "file": "/audio/twitter/s02-engineer.mp3",
+  "ms": 31200,
+  "hash": "abc16642f087"
+ },
+ "s02-executive": {
+  "file": "/audio/twitter/s02-executive.mp3",
+  "ms": 7392,
+  "hash": "133629c66915"
+ },
+ "s03-engineer": {
+  "file": "/audio/twitter/s03-engineer.mp3",
+  "ms": 27576,
+  "hash": "ba599e29ca86"
+ },
+ "s03-executive": {
+  "file": "/audio/twitter/s03-executive.mp3",
+  "ms": 8904,
+  "hash": "298544177d41"
+ },
+ "s04-engineer": {
+  "file": "/audio/twitter/s04-engineer.mp3",
+  "ms": 26280,
+  "hash": "c05924d93201"
+ },
+ "s04-executive": {
+  "file": "/audio/twitter/s04-executive.mp3",
+  "ms": 8304,
+  "hash": "189013077030"
+ },
+ "s05-engineer": {
+  "file": "/audio/twitter/s05-engineer.mp3",
+  "ms": 31704,
+  "hash": "52272da5a2d3"
+ },
+ "s05-executive": {
+  "file": "/audio/twitter/s05-executive.mp3",
+  "ms": 10464,
+  "hash": "00a225316531"
+ },
+ "s06-engineer": {
+  "file": "/audio/twitter/s06-engineer.mp3",
+  "ms": 26640,
+  "hash": "7b8bb4450921"
+ },
+ "s06-executive": {
+  "file": "/audio/twitter/s06-executive.mp3",
+  "ms": 6312,
+  "hash": "1e7f7be93489"
+ },
+ "s07-engineer": {
+  "file": "/audio/twitter/s07-engineer.mp3",
+  "ms": 29640,
+  "hash": "05f62b3e06b3"
+ },
+ "s07-executive": {
+  "file": "/audio/twitter/s07-executive.mp3",
+  "ms": 6168,
+  "hash": "5128fe1221eb"
+ },
+ "s08-engineer": {
+  "file": "/audio/twitter/s08-engineer.mp3",
+  "ms": 24768,
+  "hash": "a7d7c8b4e332"
+ },
+ "s08-executive": {
+  "file": "/audio/twitter/s08-executive.mp3",
+  "ms": 6264,
+  "hash": "b27610fe6376"
+ },
+ "s09-engineer": {
+  "file": "/audio/twitter/s09-engineer.mp3",
+  "ms": 28944,
+  "hash": "f29d2e90b75a"
+ },
+ "s09-executive": {
+  "file": "/audio/twitter/s09-executive.mp3",
+  "ms": 8352,
+  "hash": "10e3374e5661"
+ },
+ "s10-engineer": {
+  "file": "/audio/twitter/s10-engineer.mp3",
+  "ms": 24816,
+  "hash": "d2aa248d5242"
+ },
+ "s10-executive": {
+  "file": "/audio/twitter/s10-executive.mp3",
+  "ms": 7248,
+  "hash": "7ac2818d207d"
+ },
+ "s11-engineer": {
+  "file": "/audio/twitter/s11-engineer.mp3",
+  "ms": 30456,
+  "hash": "b43c6ef0b8b0"
+ },
+ "s11-executive": {
+  "file": "/audio/twitter/s11-executive.mp3",
+  "ms": 6888,
+  "hash": "bf664b825628"
+ },
+ "s12-engineer": {
+  "file": "/audio/twitter/s12-engineer.mp3",
+  "ms": 24432,
+  "hash": "0e75e470b3b7"
+ },
+ "s12-executive": {
+  "file": "/audio/twitter/s12-executive.mp3",
+  "ms": 8184,
+  "hash": "b518d44ab465"
+ },
+ "s13-engineer": {
+  "file": "/audio/twitter/s13-engineer.mp3",
+  "ms": 26064,
+  "hash": "78fabaa4ab71"
+ },
+ "s13-executive": {
+  "file": "/audio/twitter/s13-executive.mp3",
+  "ms": 6720,
+  "hash": "11202b824e1f"
+ },
+ "s14-engineer": {
+  "file": "/audio/twitter/s14-engineer.mp3",
+  "ms": 26928,
+  "hash": "450adba7bdaf"
+ },
+ "s14-executive": {
+  "file": "/audio/twitter/s14-executive.mp3",
+  "ms": 6528,
+  "hash": "1c84e8dae7cf"
+ },
+ "s15-engineer": {
+  "file": "/audio/twitter/s15-engineer.mp3",
+  "ms": 26880,
+  "hash": "c122a624cedd"
+ },
+ "s15-executive": {
+  "file": "/audio/twitter/s15-executive.mp3",
+  "ms": 7392,
+  "hash": "c9db7a94d589"
+ },
+ "s16-engineer": {
+  "file": "/audio/twitter/s16-engineer.mp3",
+  "ms": 28248,
+  "hash": "ec1bb508a576"
+ },
+ "s16-executive": {
+  "file": "/audio/twitter/s16-executive.mp3",
+  "ms": 8328,
+  "hash": "95b30a62e4d6"
+ },
+ "s17-engineer": {
+  "file": "/audio/twitter/s17-engineer.mp3",
+  "ms": 29832,
+  "hash": "75f22f7b5aa0"
+ },
+ "s17-executive": {
+  "file": "/audio/twitter/s17-executive.mp3",
+  "ms": 8880,
+  "hash": "880064633346"
+ },
+ "s18-engineer": {
+  "file": "/audio/twitter/s18-engineer.mp3",
+  "ms": 29400,
+  "hash": "f1240580fc7c"
+ },
+ "s18-executive": {
+  "file": "/audio/twitter/s18-executive.mp3",
+  "ms": 8928,
+  "hash": "c31ef6f63fd4"
+ },
+ "s19-engineer": {
+  "file": "/audio/twitter/s19-engineer.mp3",
+  "ms": 32640,
+  "hash": "493e757dd760"
+ },
+ "s19-executive": {
+  "file": "/audio/twitter/s19-executive.mp3",
+  "ms": 8136,
+  "hash": "8b286e6e00da"
+ },
+ "s20-engineer": {
+  "file": "/audio/twitter/s20-engineer.mp3",
+  "ms": 28848,
+  "hash": "869bb2cc25f3"
+ },
+ "s20-executive": {
+  "file": "/audio/twitter/s20-executive.mp3",
+  "ms": 9744,
+  "hash": "cd71edabe288"
+ },
+ "s21-engineer": {
+  "file": "/audio/twitter/s21-engineer.mp3",
+  "ms": 29520,
+  "hash": "2bbe0283fd6b"
+ },
+ "s21-executive": {
+  "file": "/audio/twitter/s21-executive.mp3",
+  "ms": 8016,
+  "hash": "68ec9677fa2b"
+ },
+ "s22-engineer": {
+  "file": "/audio/twitter/s22-engineer.mp3",
+  "ms": 30816,
+  "hash": "22172b0c1347"
+ },
+ "s22-executive": {
+  "file": "/audio/twitter/s22-executive.mp3",
+  "ms": 8544,
+  "hash": "2514ea0c87c3"
+ },
+ "s23-engineer": {
+  "file": "/audio/twitter/s23-engineer.mp3",
+  "ms": 34416,
+  "hash": "4b9443dfeeca"
+ },
+ "s23-executive": {
+  "file": "/audio/twitter/s23-executive.mp3",
+  "ms": 10320,
+  "hash": "dfc12040dbba"
+ },
+ "s24-engineer": {
+  "file": "/audio/twitter/s24-engineer.mp3",
+  "ms": 30216,
+  "hash": "e0327f21f07f"
+ },
+ "s24-executive": {
+  "file": "/audio/twitter/s24-executive.mp3",
+  "ms": 8784,
+  "hash": "45b95d99c752"
+ },
+ "s25-engineer": {
+  "file": "/audio/twitter/s25-engineer.mp3",
+  "ms": 31176,
+  "hash": "cbabe8fe4cb2"
+ },
+ "s25-executive": {
+  "file": "/audio/twitter/s25-executive.mp3",
+  "ms": 9216,
+  "hash": "cdfc10906022"
+ }
+}

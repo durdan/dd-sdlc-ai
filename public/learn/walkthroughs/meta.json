@@ -1,0 +1,1350 @@
+{
+ "id": "meta",
+ "title": "Meta: serving the social graph",
+ "subtitle": "Company case study",
+ "voice": "en-GB-SoniaNeural",
+ "template": "case-study",
+ "meta": {
+  "kind": "company",
+  "category": "Social",
+  "level": "intermediate",
+  "uses": [
+   "cache-aside",
+   "read-replicas",
+   "sharding",
+   "change-data-capture",
+   "consistent-hashing",
+   "feature-flags",
+   "cdn-caching"
+  ],
+  "related": [],
+  "blurb": "How a billion reads a second hit cache: TAO's objects and edges, memcache leases, and invalidations from the database log.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14",
+  "changelog": [
+   {
+    "date": "2026-10-14",
+    "note": "First version."
+   }
+  ]
+ },
+ "diagrams": [
+  {
+   "id": "context",
+   "kind": "c4",
+   "title": "Level 1 · Context",
+   "direction": "DOWN",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request · response"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "push · asynchronous"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "network"
+    }
+   ],
+   "elements": [
+    {
+     "id": "people",
+     "kind": "person",
+     "label": "People",
+     "sub": "use Facebook, Instagram, WhatsApp, Messenger, Threads"
+    },
+    {
+     "id": "advertisers",
+     "kind": "person",
+     "label": "Advertisers",
+     "sub": "buy and measure ads"
+    },
+    {
+     "id": "isp",
+     "kind": "external",
+     "label": "Internet and DNS resolvers",
+     "sub": "ISPs route to Meta's addresses"
+    },
+    {
+     "id": "meta",
+     "kind": "system",
+     "label": "Meta",
+     "sub": "apps, social graph, feeds, media"
+    },
+    {
+     "id": "devs",
+     "kind": "external",
+     "label": "Third-party apps",
+     "sub": "Graph API"
+    }
+   ],
+   "edges": [
+    {
+     "id": "c-people-isp",
+     "from": "people",
+     "to": "isp",
+     "label": "DNS lookup, HTTPS",
+     "style": "solid"
+    },
+    {
+     "id": "c-isp-meta",
+     "from": "isp",
+     "to": "meta",
+     "label": "routes learned over BGP",
+     "style": "dotted"
+    },
+    {
+     "id": "c-meta-people",
+     "from": "meta",
+     "to": "people",
+     "label": "feed, notifications",
+     "style": "dashed"
+    },
+    {
+     "id": "c-adv-meta",
+     "from": "advertisers",
+     "to": "meta",
+     "label": "campaigns",
+     "style": "solid"
+    },
+    {
+     "id": "c-devs-meta",
+     "from": "devs",
+     "to": "meta",
+     "label": "Graph API calls",
+     "style": "solid"
+    }
+   ]
+  },
+  {
+   "id": "containers",
+   "kind": "c4",
+   "title": "Level 2 · Containers (our design, from Meta's papers)",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "region",
+     "label": "A data centre region",
+     "tone": "core"
+    },
+    {
+     "id": "store",
+     "label": "Storage",
+     "tone": "data"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request · response"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "invalidation · asynchronous"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "storage · replication"
+    }
+   ],
+   "elements": [
+    {
+     "id": "client",
+     "kind": "external",
+     "label": "Apps and browsers",
+     "sub": "phones, web",
+     "rank": 0
+    },
+    {
+     "id": "edge",
+     "kind": "container",
+     "label": "Edge facilities",
+     "sub": "DNS, connect backbone to the internet",
+     "tone": "neutral",
+     "rank": 1
+    },
+    {
+     "id": "cdn",
+     "kind": "container",
+     "label": "CDN",
+     "sub": "serves popular photos",
+     "tone": "neutral",
+     "rank": 1
+    },
+    {
+     "id": "web",
+     "kind": "container",
+     "label": "Web and app servers",
+     "sub": "build each page",
+     "group": "region",
+     "rank": 2
+    },
+    {
+     "id": "feed",
+     "kind": "container",
+     "label": "Feed ranking",
+     "sub": "1,000+ candidates → ranked list",
+     "group": "region",
+     "rank": 2
+    },
+    {
+     "id": "config",
+     "kind": "container",
+     "label": "Configerator · Gatekeeper",
+     "sub": "live config and feature gates",
+     "group": "region",
+     "tone": "stream",
+     "rank": 2
+    },
+    {
+     "id": "tao",
+     "kind": "container",
+     "label": "TAO",
+     "sub": "graph cache: followers and leaders",
+     "group": "region",
+     "rank": 3
+    },
+    {
+     "id": "memcache",
+     "kind": "container",
+     "label": "Memcache",
+     "sub": "look-aside key-value cache",
+     "group": "region",
+     "rank": 3
+    },
+    {
+     "id": "udb",
+     "kind": "store",
+     "label": "MySQL · UDB",
+     "sub": "sharded, MyRocks engine",
+     "group": "store",
+     "rank": 4
+    },
+    {
+     "id": "blob",
+     "kind": "store",
+     "label": "Haystack · f4",
+     "sub": "photo and video BLOBs",
+     "group": "store",
+     "rank": 4
+    },
+    {
+     "id": "wormhole",
+     "kind": "container",
+     "label": "Wormhole",
+     "sub": "binlog pub-sub → invalidations",
+     "tone": "stream",
+     "rank": 5
+    }
+   ],
+   "edges": [
+    {
+     "id": "k-client-edge",
+     "from": "client",
+     "to": "edge",
+     "label": "HTTPS",
+     "style": "solid"
+    },
+    {
+     "id": "k-edge-web",
+     "from": "edge",
+     "to": "web",
+     "label": "over the backbone",
+     "style": "solid"
+    },
+    {
+     "id": "k-web-tao",
+     "from": "web",
+     "to": "tao",
+     "label": "obj_get, assoc_range",
+     "style": "solid"
+    },
+    {
+     "id": "k-tao-udb",
+     "from": "tao",
+     "to": "udb",
+     "label": "miss · write-through",
+     "style": "dotted"
+    },
+    {
+     "id": "k-web-feed",
+     "from": "web",
+     "to": "feed",
+     "label": "rank my feed",
+     "style": "solid"
+    },
+    {
+     "id": "k-feed-tao",
+     "from": "feed",
+     "to": "tao",
+     "label": "candidates, signals · our simplification",
+     "style": "solid"
+    },
+    {
+     "id": "k-web-mc",
+     "from": "web",
+     "to": "memcache",
+     "label": "get · set · delete",
+     "style": "solid"
+    },
+    {
+     "id": "k-client-cdn",
+     "from": "client",
+     "to": "cdn",
+     "label": "photo URL",
+     "style": "solid"
+    },
+    {
+     "id": "k-cdn-blob",
+     "from": "cdn",
+     "to": "blob",
+     "label": "long-tail miss",
+     "style": "solid"
+    },
+    {
+     "id": "k-udb-worm",
+     "from": "udb",
+     "to": "wormhole",
+     "label": "binary log",
+     "style": "dashed"
+    },
+    {
+     "id": "k-worm-tao",
+     "from": "wormhole",
+     "to": "tao",
+     "label": "invalidate remote caches",
+     "style": "dashed"
+    },
+    {
+     "id": "k-config-web",
+     "from": "config",
+     "to": "web",
+     "label": "pushed in seconds",
+     "style": "dashed"
+    }
+   ]
+  },
+  {
+   "id": "tao",
+   "kind": "c4",
+   "title": "Level 3 · Inside TAO, across two regions",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "replica",
+     "label": "Replica region",
+     "tone": "core"
+    },
+    {
+     "id": "master",
+     "label": "Master region for this shard",
+     "tone": "data"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request · response"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "invalidation · asynchronous"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "storage · replication"
+    }
+   ],
+   "elements": [
+    {
+     "id": "app",
+     "kind": "container",
+     "label": "Web server",
+     "sub": "replica region",
+     "group": "replica",
+     "rank": 0,
+     "tone": "neutral"
+    },
+    {
+     "id": "folB",
+     "kind": "component",
+     "label": "Follower tier",
+     "sub": "cache: objects, edge lists, counts",
+     "group": "replica",
+     "rank": 1
+    },
+    {
+     "id": "leadB",
+     "kind": "component",
+     "label": "Leader tier",
+     "sub": "one leader per shard",
+     "group": "replica",
+     "rank": 2
+    },
+    {
+     "id": "dbB",
+     "kind": "store",
+     "label": "MySQL replica",
+     "sub": "full copy of the graph",
+     "group": "replica",
+     "rank": 3
+    },
+    {
+     "id": "folA",
+     "kind": "component",
+     "label": "Follower tiers",
+     "sub": "master region",
+     "group": "master",
+     "rank": 1
+    },
+    {
+     "id": "leadA",
+     "kind": "component",
+     "label": "Leader tier",
+     "sub": "serialises writes",
+     "group": "master",
+     "rank": 2
+    },
+    {
+     "id": "dbA",
+     "kind": "store",
+     "label": "MySQL master",
+     "sub": "shard's writes land here",
+     "group": "master",
+     "rank": 3
+    }
+   ],
+   "edges": [
+    {
+     "id": "t-app-folB",
+     "from": "app",
+     "to": "folB",
+     "label": "reads and writes",
+     "style": "solid"
+    },
+    {
+     "id": "t-folB-leadB",
+     "from": "folB",
+     "to": "leadB",
+     "label": "read miss or write",
+     "style": "solid"
+    },
+    {
+     "id": "t-leadB-dbB",
+     "from": "leadB",
+     "to": "dbB",
+     "label": "read miss",
+     "style": "dotted"
+    },
+    {
+     "id": "t-leadB-leadA",
+     "from": "leadB",
+     "to": "leadA",
+     "label": "write forwarded",
+     "style": "solid"
+    },
+    {
+     "id": "t-leadA-dbA",
+     "from": "leadA",
+     "to": "dbA",
+     "label": "synchronous write",
+     "style": "dotted"
+    },
+    {
+     "id": "t-dbA-dbB",
+     "from": "dbA",
+     "to": "dbB",
+     "label": "async replication + invalidations",
+     "style": "dotted"
+    },
+    {
+     "id": "t-dbB-leadB",
+     "from": "dbB",
+     "to": "leadB",
+     "label": "consistency messages",
+     "style": "dashed"
+    },
+    {
+     "id": "t-leadB-folB",
+     "from": "leadB",
+     "to": "folB",
+     "label": "invalidate · refill",
+     "style": "dashed"
+    },
+    {
+     "id": "t-leadA-folA",
+     "from": "leadA",
+     "to": "folA",
+     "label": "invalidate · refill",
+     "style": "dashed"
+    }
+   ]
+  },
+  {
+   "id": "read",
+   "kind": "sequence",
+   "title": "Read: 50 newest comments on a post",
+   "participants": [
+    {
+     "id": "r-web",
+     "label": "Web server"
+    },
+    {
+     "id": "r-fol",
+     "label": "Follower (local)"
+    },
+    {
+     "id": "r-lead",
+     "label": "Leader (local)"
+    },
+    {
+     "id": "r-db",
+     "label": "MySQL (local replica)"
+    }
+   ],
+   "messages": [
+    {
+     "id": "r1",
+     "from": "r-web",
+     "to": "r-fol",
+     "label": "assoc_range(post, COMMENT, 0, 50)",
+     "style": "solid"
+    },
+    {
+     "id": "r2",
+     "from": "r-fol",
+     "to": "r-web",
+     "label": "hit: edges, newest first",
+     "style": "dashed"
+    },
+    {
+     "id": "r3",
+     "from": "r-web",
+     "to": "r-fol",
+     "label": "obj_get(each commenter)",
+     "style": "solid"
+    },
+    {
+     "id": "r4",
+     "from": "r-fol",
+     "to": "r-lead",
+     "label": "miss: forward to leader",
+     "style": "solid"
+    },
+    {
+     "id": "r5",
+     "from": "r-lead",
+     "to": "r-db",
+     "label": "query the shard",
+     "style": "solid"
+    },
+    {
+     "id": "r6",
+     "from": "r-db",
+     "to": "r-lead",
+     "label": "rows",
+     "style": "dashed"
+    },
+    {
+     "id": "r7",
+     "from": "r-lead",
+     "to": "r-fol",
+     "label": "object, now cached",
+     "style": "dashed"
+    },
+    {
+     "id": "r8",
+     "from": "r-fol",
+     "to": "r-web",
+     "label": "objects",
+     "style": "dashed"
+    }
+   ]
+  },
+  {
+   "id": "write",
+   "kind": "sequence",
+   "title": "Write: a comment from a replica region",
+   "participants": [
+    {
+     "id": "w-web",
+     "label": "Web server"
+    },
+    {
+     "id": "w-fol",
+     "label": "Follower B"
+    },
+    {
+     "id": "w-leadB",
+     "label": "Leader B"
+    },
+    {
+     "id": "w-leadA",
+     "label": "Leader A (master)"
+    },
+    {
+     "id": "w-dbA",
+     "label": "MySQL master"
+    },
+    {
+     "id": "w-dbB",
+     "label": "MySQL replica"
+    }
+   ],
+   "messages": [
+    {
+     "id": "w1",
+     "from": "w-web",
+     "to": "w-fol",
+     "label": "assoc_add(post, COMMENT, comment)",
+     "style": "solid"
+    },
+    {
+     "id": "w2",
+     "from": "w-fol",
+     "to": "w-leadB",
+     "label": "forward write",
+     "style": "solid"
+    },
+    {
+     "id": "w3",
+     "from": "w-leadB",
+     "to": "w-leadA",
+     "label": "forward to master region",
+     "style": "solid"
+    },
+    {
+     "id": "w4",
+     "from": "w-leadA",
+     "to": "w-dbA",
+     "label": "write row · inter-region round trip",
+     "style": "solid"
+    },
+    {
+     "id": "w5",
+     "from": "w-leadA",
+     "to": "w-leadB",
+     "label": "ok",
+     "style": "dashed"
+    },
+    {
+     "id": "w6",
+     "from": "w-leadB",
+     "to": "w-fol",
+     "label": "ok, update cache",
+     "style": "dashed"
+    },
+    {
+     "id": "w7",
+     "from": "w-fol",
+     "to": "w-web",
+     "label": "ok: author sees the comment",
+     "style": "dashed"
+    },
+    {
+     "id": "w8",
+     "from": "w-dbA",
+     "to": "w-dbB",
+     "label": "replication stream",
+     "style": "dotted"
+    },
+    {
+     "id": "w9",
+     "from": "w-dbB",
+     "to": "w-leadB",
+     "label": "embedded invalidation",
+     "style": "dashed"
+    },
+    {
+     "id": "w10",
+     "from": "w-leadB",
+     "to": "w-fol",
+     "label": "refill other followers",
+     "style": "dashed"
+    }
+   ]
+  },
+  {
+   "id": "memcache",
+   "kind": "c4",
+   "title": "Memcache in a region (NSDI 2013)",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "front",
+     "label": "Frontend cluster",
+     "tone": "core"
+    },
+    {
+     "id": "storage",
+     "label": "Storage cluster",
+     "tone": "data"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request · response"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "invalidation · asynchronous"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "storage · replication"
+    }
+   ],
+   "elements": [
+    {
+     "id": "mweb",
+     "kind": "container",
+     "label": "Web server",
+     "sub": "owns cache logic",
+     "group": "front",
+     "rank": 0
+    },
+    {
+     "id": "mcr",
+     "kind": "component",
+     "label": "mcrouter",
+     "sub": "proxy, batches, routes",
+     "group": "front",
+     "rank": 1
+    },
+    {
+     "id": "mcd",
+     "kind": "store",
+     "label": "memcached servers",
+     "sub": "keys spread by consistent hashing",
+     "group": "front",
+     "rank": 2,
+     "tone": "core"
+    },
+    {
+     "id": "gutter",
+     "kind": "store",
+     "label": "Gutter pool",
+     "sub": "~1% of servers, short TTL",
+     "group": "front",
+     "rank": 2,
+     "tone": "neutral"
+    },
+    {
+     "id": "mdb",
+     "kind": "store",
+     "label": "MySQL",
+     "sub": "authoritative copy",
+     "group": "storage",
+     "rank": 3
+    },
+    {
+     "id": "squeal",
+     "kind": "component",
+     "label": "mcsqueal",
+     "sub": "reads commit log, sends deletes",
+     "group": "storage",
+     "rank": 4,
+     "tone": "stream"
+    }
+   ],
+   "edges": [
+    {
+     "id": "m-web-mcd",
+     "from": "mweb",
+     "to": "mcd",
+     "label": "get over UDP · lease on miss",
+     "style": "solid"
+    },
+    {
+     "id": "m-web-mdb",
+     "from": "mweb",
+     "to": "mdb",
+     "label": "miss: query · write: SQL",
+     "style": "dotted"
+    },
+    {
+     "id": "m-web-mcr",
+     "from": "mweb",
+     "to": "mcr",
+     "label": "set with lease, delete · TCP",
+     "style": "solid"
+    },
+    {
+     "id": "m-mcr-mcd",
+     "from": "mcr",
+     "to": "mcd",
+     "style": "solid"
+    },
+    {
+     "id": "m-web-gutter",
+     "from": "mweb",
+     "to": "gutter",
+     "label": "server down: retry here",
+     "style": "solid"
+    },
+    {
+     "id": "m-mdb-squeal",
+     "from": "mdb",
+     "to": "squeal",
+     "label": "commit log",
+     "style": "dashed"
+    },
+    {
+     "id": "m-squeal-mcr",
+     "from": "squeal",
+     "to": "mcr",
+     "label": "batched deletes",
+     "style": "dashed"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "overview",
+   "title": "Overview"
+  },
+  {
+   "id": "requirements",
+   "title": "Requirements and scale"
+  },
+  {
+   "id": "context",
+   "title": "Context"
+  },
+  {
+   "id": "containers",
+   "title": "Containers"
+  },
+  {
+   "id": "deep-dive",
+   "title": "Deep dive"
+  },
+  {
+   "id": "flows",
+   "title": "Core flows"
+  },
+  {
+   "id": "data",
+   "title": "Data and caching"
+  },
+  {
+   "id": "growth",
+   "title": "Growth"
+  },
+  {
+   "id": "failures",
+   "title": "Failure modes"
+  },
+  {
+   "id": "patterns",
+   "title": "Patterns used"
+  },
+  {
+   "id": "decisions",
+   "title": "Key decisions"
+  },
+  {
+   "id": "mvp",
+   "title": "What we would build first"
+  }
+ ],
+ "shots": [
+  {
+   "id": "m01",
+   "chapter": "overview",
+   "diagram": "context",
+   "focus": [],
+   "trace": [],
+   "engineer": "This is Meta, seen from the outside, and one part in particular: how it serves the social graph. People, posts, photos, comments and likes are nodes, and the links between them are edges. Every page is assembled when it is viewed, from hundreds of these pieces, each with its own privacy checks. So the one idea everything depends on is this: reads vastly outnumber writes, and reading the graph must be cheap.",
+   "executive": "Meta builds every screen on the fly from a huge graph of people and things. Reading that graph quickly and cheaply is the core problem."
+  },
+  {
+   "id": "m02",
+   "chapter": "requirements",
+   "card": {
+    "heading": "Scale, from Meta's own publications",
+    "kind": "numbers",
+    "points": [
+     "3.60B | daily active people across the family of apps (June 2026)",
+     "1B | TAO reads per second (2013 paper)",
+     "Millions | of TAO writes per second (2013)",
+     "99.8% | of TAO requests were reads (2013)",
+     "Hundreds | of objects and edges to render one page (2013)"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The scale, from Meta's own sources. Its results for the second quarter of 2026 report three point six billion daily active people across its family of apps, on average for June. The TAO paper, from 2013, describes a billion reads and millions of writes a second, and says ninety-nine point eight per cent of requests were reads. Rendering one page commonly meant querying hundreds of objects and edges.",
+   "executive": "About three point six billion people use Meta's apps every day, and almost every request only reads data."
+  },
+  {
+   "id": "m03",
+   "chapter": "requirements",
+   "card": {
+    "heading": "What the system must do (our list)",
+    "points": [
+     "Reads served from memory, in a few milliseconds",
+     "You see your own writes immediately",
+     "Others may see a change a moment later, never a lost one",
+     "Survive losing a server, a cluster or a whole region",
+     "Change behaviour safely, many times a day, without redeploying"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Then the requirements. These are ours, not Meta's. Reads must be fast and almost always served from memory. A person should see their own writes straight away. Everyone else can see a change a moment later; slightly stale is acceptable, missing is not. The graph must survive losing a server, a cluster or a region. And engineers must be able to change behaviour safely, many times a day.",
+   "executive": "Fast reads from memory, people see their own changes at once, small delays for everyone else are fine, and nothing is lost when machines fail."
+  },
+  {
+   "id": "m04",
+   "title": "People",
+   "chapter": "context",
+   "diagram": "context",
+   "focus": [
+    "people",
+    "isp",
+    "meta"
+   ],
+   "trace": [
+    "c-people-isp",
+    "c-isp-meta",
+    "c-meta-people"
+   ],
+   "engineer": "At the top level. People use Facebook, Instagram, WhatsApp, Messenger and Threads. Their phones first look up Meta's addresses through DNS, and the internet routes them using paths that Meta announces with the border gateway protocol, BGP. Remember that detail; it matters later. Meta answers each request, and also pushes things to people, such as notifications and fresh posts in their feed.",
+   "executive": "People reach Meta's apps over the public internet, which finds Meta through DNS and routing announcements."
+  },
+  {
+   "id": "m05",
+   "title": "Advertisers and developers",
+   "chapter": "context",
+   "diagram": "context",
+   "focus": [
+    "advertisers",
+    "devs",
+    "meta"
+   ],
+   "trace": [
+    "c-adv-meta",
+    "c-devs-meta"
+   ],
+   "engineer": "Two other kinds of user. Advertisers create campaigns and measure how they perform. And third-party developers call the Graph API, the public interface that Meta describes as nodes, edges and fields, within the permissions people grant. Both sit on top of the same graph, so everything that follows serves them as well.",
+   "executive": "Advertisers and outside developers use the same underlying graph of people and content."
+  },
+  {
+   "id": "m06",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [],
+   "trace": [],
+   "engineer": "One level in. Meta has not published a container diagram, so this is our design, built from its papers. Edge facilities connect Meta's backbone to the internet. Web and app servers build each page. TAO caches the graph, memcache caches everything else, and MySQL stores it, in a database called UDB. Haystack and f4 hold photos. Configerator pushes live settings, and Wormhole streams database changes outward.",
+   "executive": "Inside: front doors at the edge, servers that build pages, caches for the graph, databases and photo stores. The arrangement is our reconstruction."
+  },
+  {
+   "id": "m07",
+   "title": "Render a page",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "client",
+    "edge",
+    "web",
+    "tao",
+    "udb"
+   ],
+   "trace": [
+    "k-client-edge",
+    "k-edge-web",
+    "k-web-tao",
+    "k-tao-udb"
+   ],
+   "engineer": "The main path: rendering a page. A request arrives at an edge facility and crosses the backbone to a data centre. A web server asks TAO for objects and edge lists, such as a post and its newest comments. TAO answers almost everything from memory. Only on a miss, or a write, does it go to MySQL. TAO is a write-through cache: a write goes to the database first, and the cache is updated as the answer comes back.",
+   "executive": "A page request crosses Meta's network to a web server, which reads almost everything from the graph cache."
+  },
+  {
+   "id": "m08",
+   "title": "Rank the feed",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "web",
+    "feed",
+    "tao"
+   ],
+   "trace": [
+    "k-web-feed",
+    "k-feed-tao"
+   ],
+   "engineer": "The feed. Meta's 2021 post on feed ranking says each person has, on average, more than a thousand candidate posts a day. A light first pass picks about five hundred. Neural networks then predict how likely you are to like, comment or share each one, and combine those into a single relevance score. A final pass adds rules such as variety. Reading candidates and signals from TAO is our simplification.",
+   "executive": "The feed starts from over a thousand posts, scores each for how likely you are to engage, and shows the best first."
+  },
+  {
+   "id": "m09",
+   "title": "Fetch a photo",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "client",
+    "cdn",
+    "blob"
+   ],
+   "trace": [
+    "k-client-cdn",
+    "k-cdn-blob"
+   ],
+   "engineer": "Photos take a different road. A photo URL usually points at a content delivery network, which serves popular images. The 2010 Haystack paper explains the catch: a long tail of old photos misses in the CDN. Haystack stores many photos in large files and keeps their small metadata in memory, so fetching one needs at most one disk read. Rarely viewed photos later moved to f4.",
+   "executive": "Popular photos come from a delivery network; the long tail comes from Meta's own photo store, which needs one disk read per photo."
+  },
+  {
+   "id": "m10",
+   "title": "Write and invalidate",
+   "chapter": "containers",
+   "diagram": "containers",
+   "focus": [
+    "web",
+    "tao",
+    "udb",
+    "wormhole"
+   ],
+   "trace": [
+    "k-web-tao",
+    "k-tao-udb",
+    "k-udb-worm",
+    "k-worm-tao"
+   ],
+   "engineer": "And a write. When someone comments, TAO writes to MySQL. MySQL's binary log is then the source of truth for everything downstream. Meta's MyRocks paper describes Wormhole, a publish-subscribe service that reads that log; one of its jobs is invalidating TAO caches in other regions. So caches learn about changes from the database's own log, not from the web server that made them.",
+   "executive": "Each change is written to the database, and the database's own change log tells caches everywhere to refresh."
+  },
+  {
+   "id": "m11",
+   "chapter": "deep-dive",
+   "diagram": "tao",
+   "focus": [],
+   "trace": [],
+   "engineer": "Inside TAO, from the 2013 paper. The data model is tiny. An object is a sixty-four-bit id with a type and some key-value data. An association is a typed, directed edge from one id to another, with a time. Each id embeds its shard, and an edge lives on the shard of its source, so one server answers any edge query. Queries are fixed: get an object, or the newest edges of one type.",
+   "executive": "TAO stores just two things, objects and the links between them, which keeps every query simple and fast."
+  },
+  {
+   "id": "m12",
+   "title": "Followers and leaders",
+   "chapter": "deep-dive",
+   "diagram": "tao",
+   "focus": [
+    "app",
+    "folB",
+    "leadB",
+    "dbB"
+   ],
+   "trace": [
+    "t-app-folB",
+    "t-folB-leadB",
+    "t-leadB-dbB"
+   ],
+   "engineer": "Caching comes in two tiers. Clients talk only to a nearby follower tier, which caches objects, edge lists and counts. A miss or a write goes to the leader tier, where one leader owns each shard. Only the leader talks to MySQL, so it can serialise writes and protect the database from a thundering herd. The paper reports a ninety-six point four per cent hit rate for reads, in 2013.",
+   "executive": "Readers hit a nearby cache; a single owner per shard handles misses and writes, protecting the database."
+  },
+  {
+   "id": "m13",
+   "title": "Across regions",
+   "chapter": "deep-dive",
+   "diagram": "tao",
+   "focus": [
+    "leadB",
+    "leadA",
+    "dbA",
+    "dbB",
+    "folB",
+    "folA"
+   ],
+   "trace": [
+    "t-leadB-leadA",
+    "t-leadA-dbA",
+    "t-dbA-dbB",
+    "t-dbB-leadB",
+    "t-leadB-folB",
+    "t-leadA-folA"
+   ],
+   "engineer": "Now regions. The graph is too connected to split by user, so each region holds a complete copy. For each shard, one region is the master. Reads stay local, so their latency ignores distance. Writes go from the local leader to the master region's leader, then to the master database. Replication carries the change back, with invalidation messages embedded in the stream, so caches refresh only after the local replica has the data.",
+   "executive": "Every region has a full copy for reading; writes travel to one home region and flow back out."
+  },
+  {
+   "id": "m14",
+   "title": "Read with a miss",
+   "chapter": "flows",
+   "diagram": "read",
+   "focus": [
+    "r-web",
+    "r-fol",
+    "r-lead",
+    "r-db"
+   ],
+   "trace": [
+    "r1",
+    "r2",
+    "r3",
+    "r4",
+    "r5",
+    "r6",
+    "r7",
+    "r8"
+   ],
+   "engineer": "Step by step: showing a post with its comments. The web server asks its follower for the fifty newest comment edges; that exact call appears in the paper. It is a hit, returned newest first. Next it fetches each commenter's object. One is missing, so the follower asks its leader, which queries the local MySQL replica and fills the cache on the way back. The paper's median hit took about a millisecond.",
+   "executive": "To show a post, the server reads the comment list and each commenter from cache, going to the database only for what is missing."
+  },
+  {
+   "id": "m15",
+   "title": "Forward the write",
+   "chapter": "flows",
+   "diagram": "write",
+   "focus": [
+    "w-web",
+    "w-fol",
+    "w-leadB",
+    "w-leadA",
+    "w-dbA"
+   ],
+   "trace": [
+    "w1",
+    "w2",
+    "w3",
+    "w4",
+    "w5"
+   ],
+   "engineer": "The second flow: writing a comment from a region that is not the master. The web server calls assoc add. The follower forwards it to its leader, which forwards it to the master region's leader, which writes to MySQL synchronously. In the paper's example the regions were fifty-eight milliseconds apart, and remote writes averaged seventy-four milliseconds. On success, the local leader updates its own cache straight away.",
+   "executive": "A new comment travels to the shard's home region to be saved, which costs one long round trip."
+  },
+  {
+   "id": "m16",
+   "title": "Replicate and refill",
+   "chapter": "flows",
+   "diagram": "write",
+   "focus": [
+    "w-leadB",
+    "w-fol",
+    "w-web",
+    "w-dbA",
+    "w-dbB"
+   ],
+   "trace": [
+    "w6",
+    "w7",
+    "w8",
+    "w9",
+    "w10"
+   ],
+   "engineer": "The reply flows back, and the follower that took the write updates synchronously, so the author sees their comment at once. Everyone else catches up through replication. When the change reaches the local replica, the embedded message tells the leader to refill other followers. In 2013 replicas lagged by under a second most of the time. A comment with an inverse edge touches two shards, without atomicity; a repair job fixes stragglers.",
+   "executive": "The author sees their comment immediately; everyone else sees it a moment later, once the copy in their region updates."
+  },
+  {
+   "id": "m17",
+   "title": "Look-aside and leases",
+   "chapter": "data",
+   "diagram": "memcache",
+   "focus": [
+    "mweb",
+    "mcr",
+    "mcd",
+    "mdb"
+   ],
+   "trace": [
+    "m-web-mcd",
+    "m-web-mdb",
+    "m-web-mcr",
+    "m-mcr-mcd"
+   ],
+   "engineer": "Before TAO, and still for many other keys, there is memcache, described in the 2013 NSDI paper. It is a look-aside cache: the web server reads from memcached, and on a miss reads MySQL and sets the value. On a write, it deletes the key rather than updating it. Leases stop stale sets and thundering herds: a miss gets a token, at most one every ten seconds per key, and others wait briefly. In one test, peak database load fell from seventeen thousand queries a second to thirteen hundred.",
+   "executive": "Memcache keeps copies of data in memory; small tokens stop many servers from hammering the database for the same item."
+  },
+  {
+   "id": "m18",
+   "title": "Invalidation",
+   "chapter": "data",
+   "diagram": "memcache",
+   "focus": [
+    "mdb",
+    "squeal",
+    "mcr",
+    "mcd"
+   ],
+   "trace": [
+    "m-mdb-squeal",
+    "m-squeal-mcr",
+    "m-mcr-mcd"
+   ],
+   "engineer": "Invalidation comes from the database, not the client. A daemon called mcsqueal reads MySQL's commit log, extracts deletes, and sends them in batches through mcrouter to every frontend cluster in the region. In replica regions, a remote marker flags a key whose fresh value may only be in the master region, so a read goes there instead.",
+   "executive": "The database's own log drives cache clean-up, so caches stay close to the truth everywhere."
+  },
+  {
+   "id": "m19",
+   "chapter": "data",
+   "card": {
+    "heading": "What lives where",
+    "kind": "compare",
+    "points": [
+     "Data | Where",
+     "Objects and edges, durable | MySQL UDB on MyRocks, tens of PB (2020)",
+     "Hot graph reads | TAO followers and leaders, in memory",
+     "Other cached keys | memcache, look-aside, deleted on write",
+     "Photos and videos | Haystack when hot, f4 when warm",
+     "Live settings and gates | Configerator: git, then pushed to servers"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "What is stored where. The graph's durable copy is MySQL, in UDB, which the 2020 MyRocks paper says holds tens of petabytes. TAO and memcache hold copies in memory, evicted when space runs out, never the only copy. Photos and videos live in Haystack while hot and move to f4 when warm. Configuration lives in git and is pushed to every server. And no request touches MySQL directly if TAO can answer it.",
+   "executive": "Databases hold the truth; caches hold copies; photos and settings each have their own store."
+  },
+  {
+   "id": "m20",
+   "chapter": "growth",
+   "card": {
+    "heading": "How it got here, from Meta's papers",
+    "kind": "compare",
+    "points": [
+     "Year | Change",
+     "Early | PHP, MySQL and look-aside memcache",
+     "2010 | Haystack: 260B images, 1M+ images a second at peak",
+     "2013 | TAO and memcache papers: a billion reads a second",
+     "2014 | f4 stores 65+ PB of warm BLOBs; replication 3.6 → 2.8 or 2.1",
+     "2015 | Configerator: thousands of config changes a day",
+     "2017 | UDB moves to MyRocks: 62.3% smaller, under half the servers",
+     "2026 | 3.60B daily active people"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "How it grew. Facebook started with PHP, MySQL and memcache. By 2010 Haystack served over a million images a second at peak. In 2013 the TAO and memcache papers described billion-a-second reads. In 2014 f4 held over sixty-five petabytes of warm data. In 2017 UDB moved from InnoDB to MyRocks, cutting storage by sixty-two per cent and servers by more than half. By 2026, three point six billion daily people.",
+   "executive": "The same layered design, database plus caches, grew from one website to billions of daily users, with storage swapped underneath."
+  },
+  {
+   "id": "m21",
+   "chapter": "failures",
+   "card": {
+    "heading": "What fails, and what protects users",
+    "kind": "compare",
+    "points": [
+     "Failure | Protection",
+     "A memcached server dies | Retry in the Gutter pool; client failures cut by 99%",
+     "A TAO leader is unavailable | Followers read the database directly",
+     "A shard's master database fails | Another region is promoted master",
+     "One very hot object | Shard cloning across followers; client-side versions",
+     "A new, empty cluster | Cold cluster warmup from a warm neighbour",
+     "Many misses on one key | Leases: one refill, others wait"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "What breaks, and what protects people. A memcached server fails: clients retry against Gutter, a small spare pool, which the paper says cuts client-visible failures by ninety-nine per cent. A TAO leader is down: followers go straight to the database. A master database fails: another region is promoted for that shard. A hot key overloads one follower: TAO clones the shard across followers. A new cluster warms from a neighbour.",
+   "executive": "Every common failure has a planned fallback: spare caches, direct database access, a backup region and warm-up from neighbours."
+  },
+  {
+   "id": "m22",
+   "title": "Safe config changes",
+   "chapter": "failures",
+   "diagram": "containers",
+   "focus": [
+    "config",
+    "web"
+   ],
+   "trace": [
+    "k-config-web"
+   ],
+   "engineer": "Configuration errors are a major cause of outages, and the 2015 Configerator paper is frank about it: sixteen per cent of high-impact incidents in a three-month study involved configuration. So every change is reviewed, tested, and then canaried, for example on twenty servers and then a full cluster, with automatic rollback. A committed change then reaches hundreds of thousands of servers in about fifteen seconds. Gatekeeper turns features on for a growing share of users.",
+   "executive": "Settings change thousands of times a day, so each change is tested on a few servers first and rolled back automatically if anything looks wrong."
+  },
+  {
+   "id": "m23",
+   "chapter": "failures",
+   "card": {
+    "heading": "4 October 2021, from Meta's engineering post",
+    "points": [
+     "A maintenance command to assess backbone capacity disconnects the whole backbone",
+     "An audit tool meant to block it has a bug",
+     "DNS servers cannot reach the data centres, so they withdraw their BGP routes",
+     "Internal tools depend on the same network and DNS",
+     "Engineers go on site; load and power are restored gradually",
+     "Prior storm drills helped; a global backbone loss had not been drilled"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "And the outage that caches cannot help. On the fourth of October 2021, a command meant to assess backbone capacity took down every backbone connection; a bug in the audit tool failed to stop it. Data centres were cut off. Meta's DNS servers, unable to reach them, withdrew their BGP routes, so the internet could no longer find Meta at all. Engineers had to go on site, then restore power and load gradually.",
+   "executive": "In October 2021 one maintenance command cut Meta's network, its addresses disappeared from the internet, and recovery needed people on site."
+  },
+  {
+   "id": "m24",
+   "chapter": "patterns",
+   "card": {
+    "heading": "Patterns used",
+    "points": [
+     "Cache-aside: memcache's look-aside design",
+     "Read replicas: a full copy of the graph per region",
+     "Sharding: every id carries its shard",
+     "Change data capture: binlog → Wormhole, mcsqueal → invalidations",
+     "Consistent hashing: keys across cache servers",
+     "Feature flags: Gatekeeper rollouts",
+     "CDN caching: popular photos at the edge"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The named patterns, each with its own walkthrough. Cache-aside, which is memcache's look-aside design. Read replicas, a full copy of the graph in every region. Sharding, with the shard embedded in every id. Change data capture: Wormhole and mcsqueal turn the database's log into invalidations. Consistent hashing to spread keys across cache servers. Feature flags through Gatekeeper. And a CDN in front of the photo store.",
+   "executive": "Well-known patterns, applied at huge scale: caches, copies per region, splitting data, change streams, feature switches and a delivery network."
+  },
+  {
+   "id": "m25",
+   "chapter": "decisions",
+   "card": {
+    "heading": "Key decisions",
+    "kind": "compare",
+    "points": [
+     "Decision | Trade-off",
+     "Objects and edges, fixed queries | Cache can be smart; no ad-hoc joins",
+     "Full graph copy per region | Fast local reads; costly replication",
+     "Availability over consistency | Others may see stale data briefly",
+     "Database log drives invalidation | Correct ordering; a pipeline to run",
+     "Keep MySQL, change the engine | Same tools and replication; LSM tuning work"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The decisions that shaped it. Model everything as objects and edges with a fixed set of queries, rather than arbitrary SQL, so the cache understands the data. Keep a full copy per region, accepting replication cost so reads never cross oceans. Favour availability over consistency, with read-your-own-writes as the promise. Let the database log drive invalidation. And swap the storage engine underneath, InnoDB to MyRocks, rather than rewrite the system.",
+   "executive": "A simple data model, local reads everywhere, eventual consistency, log-driven cache clean-up, and upgrading storage in place."
+  },
+  {
+   "id": "m26",
+   "chapter": "mvp",
+   "card": {
+    "heading": "What we would build first",
+    "points": [
+     "Two tables: objects and edges, indexed by (source, type, time)",
+     "A graph API with a few fixed queries, no ad-hoc SQL",
+     "A cache in front, invalidated from the database's change log",
+     "Leases or request coalescing on cache misses",
+     "Shard bits in every id from day one",
+     "Feature flags and staged config rollout"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "If we built a social graph service today, this is where we would start. Two Postgres tables, objects and edges, with an index on source, type and time. A small graph API with a handful of fixed queries. A read-through cache in front, refreshed from the database's change log rather than from application code. Shard ids built into every id from day one. And feature flags, so every change can be turned off.",
+   "executive": "Start small: objects and edges in one database, a cache refreshed from its change log, and room to shard later."
+  }
+ ]
+}

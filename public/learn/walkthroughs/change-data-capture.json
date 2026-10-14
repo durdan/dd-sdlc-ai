@@ -1,0 +1,1046 @@
+{
+ "id": "change-data-capture",
+ "title": "Change data capture",
+ "subtitle": "Design pattern",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "diagrams": [
+  {
+   "id": "drift",
+   "kind": "c4",
+   "title": "Copies of the data drift from the database",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "user",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Shopper",
+     "sub": "searches the catalogue"
+    },
+    {
+     "id": "admin",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Merchandiser",
+     "sub": "changes a price"
+    },
+    {
+     "id": "app",
+     "kind": "container",
+     "tone": "core",
+     "label": "Catalogue service",
+     "sub": "owns the products"
+    },
+    {
+     "id": "db",
+     "kind": "store",
+     "tone": "data",
+     "label": "Products database",
+     "sub": "the source of truth"
+    },
+    {
+     "id": "export",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Nightly export",
+     "sub": "runs at 02:00"
+    },
+    {
+     "id": "search",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Search index",
+     "sub": "yesterday's prices"
+    },
+    {
+     "id": "cache",
+     "kind": "store",
+     "tone": "data",
+     "label": "Cache",
+     "sub": "expires… eventually"
+    },
+    {
+     "id": "warehouse",
+     "kind": "store",
+     "tone": "data",
+     "label": "Analytics warehouse",
+     "sub": "a day behind"
+    }
+   ],
+   "edges": [
+    {
+     "id": "p1",
+     "from": "admin",
+     "to": "app",
+     "style": "solid",
+     "label": "price 20 → 15"
+    },
+    {
+     "id": "p2",
+     "from": "app",
+     "to": "db",
+     "style": "solid",
+     "label": "commit"
+    },
+    {
+     "id": "p3",
+     "from": "export",
+     "to": "db",
+     "style": "dotted",
+     "label": "dump everything, nightly"
+    },
+    {
+     "id": "p4",
+     "from": "export",
+     "to": "search",
+     "style": "dashed",
+     "label": "stale until tomorrow"
+    },
+    {
+     "id": "p5",
+     "from": "export",
+     "to": "warehouse",
+     "style": "dashed",
+     "label": "stale until tomorrow"
+    },
+    {
+     "id": "p6",
+     "from": "app",
+     "to": "cache",
+     "style": "dashed",
+     "label": "old price until expiry"
+    },
+    {
+     "id": "p7",
+     "from": "user",
+     "to": "search",
+     "style": "dotted",
+     "label": "sees price 20"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "write or call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "stale or failed"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "read"
+    }
+   ]
+  },
+  {
+   "id": "polling",
+   "kind": "sequence",
+   "title": "Polling with updated_at",
+   "participants": [
+    {
+     "id": "app",
+     "label": "Catalogue service"
+    },
+    {
+     "id": "db",
+     "label": "Products database"
+    },
+    {
+     "id": "poller",
+     "label": "Poller"
+    },
+    {
+     "id": "search",
+     "label": "Search index"
+    }
+   ],
+   "messages": [
+    {
+     "id": "q1",
+     "from": "poller",
+     "to": "db",
+     "style": "dotted",
+     "label": "SELECT … WHERE updated_at > last"
+    },
+    {
+     "id": "q2",
+     "from": "db",
+     "to": "poller",
+     "style": "solid",
+     "label": "rows 17 and 42"
+    },
+    {
+     "id": "q3",
+     "from": "poller",
+     "to": "search",
+     "style": "solid",
+     "label": "upsert 17, 42"
+    },
+    {
+     "id": "q4",
+     "from": "app",
+     "to": "db",
+     "style": "solid",
+     "label": "DELETE product 99"
+    },
+    {
+     "id": "q5",
+     "from": "app",
+     "to": "db",
+     "style": "solid",
+     "label": "update 7 twice in one interval"
+    },
+    {
+     "id": "q6",
+     "from": "poller",
+     "to": "db",
+     "style": "dotted",
+     "label": "SELECT again · scans the table"
+    },
+    {
+     "id": "q7",
+     "from": "db",
+     "to": "poller",
+     "style": "dashed",
+     "label": "7's final state only · 99 is gone"
+    },
+    {
+     "id": "q8",
+     "from": "poller",
+     "to": "search",
+     "style": "dashed",
+     "label": "99 still searchable"
+    }
+   ]
+  },
+  {
+   "id": "structure",
+   "kind": "c4",
+   "title": "Read the database's own change log",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "app",
+     "kind": "container",
+     "tone": "core",
+     "label": "Catalogue service",
+     "sub": "no extra writes"
+    },
+    {
+     "id": "tables",
+     "kind": "store",
+     "tone": "data",
+     "label": "Tables",
+     "sub": "products, prices",
+     "group": "db"
+    },
+    {
+     "id": "log",
+     "kind": "store",
+     "tone": "data",
+     "label": "Change log",
+     "sub": "Postgres WAL · MySQL binlog",
+     "group": "db"
+    },
+    {
+     "id": "connector",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "CDC connector",
+     "sub": "e.g. Debezium"
+    },
+    {
+     "id": "broker",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Event stream",
+     "sub": "topic per table · key = id"
+    },
+    {
+     "id": "indexer",
+     "kind": "container",
+     "tone": "core",
+     "label": "Search indexer",
+     "sub": "upsert or delete"
+    },
+    {
+     "id": "invalidator",
+     "kind": "container",
+     "tone": "core",
+     "label": "Cache invalidator",
+     "sub": "evict the key"
+    },
+    {
+     "id": "loader",
+     "kind": "container",
+     "tone": "core",
+     "label": "Warehouse loader",
+     "sub": "append history"
+    }
+   ],
+   "edges": [
+    {
+     "id": "s1",
+     "from": "app",
+     "to": "tables",
+     "style": "solid",
+     "label": "writes"
+    },
+    {
+     "id": "s2",
+     "from": "tables",
+     "to": "log",
+     "style": "dotted",
+     "label": "logged"
+    },
+    {
+     "id": "s3",
+     "from": "connector",
+     "to": "log",
+     "style": "dotted",
+     "label": "tail"
+    },
+    {
+     "id": "s4",
+     "from": "connector",
+     "to": "broker",
+     "style": "solid",
+     "label": "change events"
+    },
+    {
+     "id": "s5",
+     "from": "broker",
+     "to": "indexer",
+     "style": "solid",
+     "label": "deliver"
+    },
+    {
+     "id": "s6",
+     "from": "broker",
+     "to": "invalidator",
+     "style": "solid",
+     "label": "deliver"
+    },
+    {
+     "id": "s7",
+     "from": "broker",
+     "to": "loader",
+     "style": "solid",
+     "label": "deliver"
+    }
+   ],
+   "groups": [
+    {
+     "id": "db",
+     "label": "Products database",
+     "tone": "data"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "write or publish"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "lost or failed"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "read or log"
+    }
+   ]
+  },
+  {
+   "id": "flow",
+   "kind": "sequence",
+   "title": "Snapshot first, then stream",
+   "participants": [
+    {
+     "id": "app",
+     "label": "Catalogue service"
+    },
+    {
+     "id": "db",
+     "label": "Products database"
+    },
+    {
+     "id": "connector",
+     "label": "CDC connector"
+    },
+    {
+     "id": "broker",
+     "label": "Event stream"
+    },
+    {
+     "id": "indexer",
+     "label": "Search indexer"
+    }
+   ],
+   "messages": [
+    {
+     "id": "h1",
+     "from": "connector",
+     "to": "db",
+     "style": "solid",
+     "label": "create slot · note log position"
+    },
+    {
+     "id": "h2",
+     "from": "db",
+     "to": "connector",
+     "style": "dotted",
+     "label": "consistent read of existing rows"
+    },
+    {
+     "id": "h3",
+     "from": "connector",
+     "to": "broker",
+     "style": "solid",
+     "label": "op r (read) · one per row"
+    },
+    {
+     "id": "h4",
+     "from": "app",
+     "to": "db",
+     "style": "solid",
+     "label": "UPDATE product 42 · COMMIT"
+    },
+    {
+     "id": "h5",
+     "from": "db",
+     "to": "connector",
+     "style": "dotted",
+     "label": "change from the log"
+    },
+    {
+     "id": "h6",
+     "from": "connector",
+     "to": "broker",
+     "style": "solid",
+     "label": "op u · key 42 · before + after"
+    },
+    {
+     "id": "h7",
+     "from": "app",
+     "to": "db",
+     "style": "solid",
+     "label": "DELETE product 99 · COMMIT"
+    },
+    {
+     "id": "h8",
+     "from": "connector",
+     "to": "broker",
+     "style": "solid",
+     "label": "op d · key 99 · then tombstone"
+    },
+    {
+     "id": "h9",
+     "from": "broker",
+     "to": "indexer",
+     "style": "solid",
+     "label": "in order for each key"
+    },
+    {
+     "id": "h10",
+     "from": "connector",
+     "to": "db",
+     "style": "dotted",
+     "label": "confirm position · log can be freed"
+    }
+   ]
+  },
+  {
+   "id": "slot",
+   "kind": "sequence",
+   "title": "The consumer stops; the log keeps growing",
+   "participants": [
+    {
+     "id": "app",
+     "label": "Catalogue service"
+    },
+    {
+     "id": "wal",
+     "label": "pg_wal on disk"
+    },
+    {
+     "id": "slot",
+     "label": "Replication slot"
+    },
+    {
+     "id": "connector",
+     "label": "CDC connector"
+    },
+    {
+     "id": "indexer",
+     "label": "Search indexer"
+    }
+   ],
+   "messages": [
+    {
+     "id": "f1",
+     "from": "connector",
+     "to": "slot",
+     "style": "dashed",
+     "label": "connector down · stops confirming"
+    },
+    {
+     "id": "f2",
+     "from": "app",
+     "to": "wal",
+     "style": "solid",
+     "label": "writes carry on"
+    },
+    {
+     "id": "f3",
+     "from": "slot",
+     "to": "wal",
+     "style": "dotted",
+     "label": "keep everything since restart_lsn"
+    },
+    {
+     "id": "f4",
+     "from": "wal",
+     "to": "wal",
+     "style": "dashed",
+     "label": "grows until the disk fills"
+    },
+    {
+     "id": "f5",
+     "from": "connector",
+     "to": "slot",
+     "style": "solid",
+     "label": "restart · resume from saved position"
+    },
+    {
+     "id": "f6",
+     "from": "slot",
+     "to": "connector",
+     "style": "solid",
+     "label": "some changes sent again"
+    },
+    {
+     "id": "f7",
+     "from": "connector",
+     "to": "indexer",
+     "style": "solid",
+     "label": "update 42 · twice"
+    },
+    {
+     "id": "f8",
+     "from": "indexer",
+     "to": "indexer",
+     "style": "solid",
+     "label": "upsert by key · same result"
+    }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "pg",
+     "kind": "system",
+     "tone": "data",
+     "label": "PostgreSQL logical decoding",
+     "sub": "WAL · slots · pgoutput"
+    },
+    {
+     "id": "mysql",
+     "kind": "system",
+     "tone": "data",
+     "label": "MySQL binary log",
+     "sub": "binlog_format = ROW"
+    },
+    {
+     "id": "debezium",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Debezium",
+     "sub": "Kafka Connect · Server · engine"
+    },
+    {
+     "id": "dms",
+     "kind": "external",
+     "tone": "external",
+     "label": "AWS DMS",
+     "sub": "full load + CDC"
+    },
+    {
+     "id": "dblog",
+     "kind": "external",
+     "tone": "external",
+     "label": "Netflix DBLog",
+     "sub": "watermarked snapshots (2020)"
+    },
+    {
+     "id": "databus",
+     "kind": "external",
+     "tone": "external",
+     "label": "LinkedIn Databus",
+     "sub": "SoCC paper (2012)"
+    }
+   ],
+   "edges": [
+    {
+     "id": "w1",
+     "from": "debezium",
+     "to": "pg",
+     "style": "dotted",
+     "label": "reads"
+    },
+    {
+     "id": "w2",
+     "from": "debezium",
+     "to": "mysql",
+     "style": "dotted",
+     "label": "reads"
+    },
+    {
+     "id": "w3",
+     "from": "dms",
+     "to": "pg",
+     "style": "dotted",
+     "label": "slots + test_decoding"
+    },
+    {
+     "id": "w4",
+     "from": "dms",
+     "to": "mysql",
+     "style": "dotted",
+     "label": "row-based binlog"
+    },
+    {
+     "id": "w5",
+     "from": "dblog",
+     "to": "mysql",
+     "style": "dotted",
+     "label": "binlog · replication slots"
+    },
+    {
+     "id": "w6",
+     "from": "dblog",
+     "to": "databus",
+     "style": "dotted",
+     "label": "evaluated it first"
+    }
+   ],
+   "legend": [
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "reads the change log"
+    }
+   ]
+  },
+  {
+   "id": "related",
+   "kind": "c4",
+   "title": "Related patterns",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "cdc",
+     "kind": "container",
+     "tone": "core",
+     "label": "Change data capture",
+     "sub": "stream the database's changes"
+    },
+    {
+     "id": "wal",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Write-ahead log",
+     "sub": "what it reads"
+    },
+    {
+     "id": "outbox",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Transactional outbox",
+     "sub": "explicit events; CDC can relay them"
+    },
+    {
+     "id": "stream",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Event streaming",
+     "sub": "where the events go"
+    },
+    {
+     "id": "cqrs",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "CQRS",
+     "sub": "read models it keeps fresh"
+    },
+    {
+     "id": "idem",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Idempotent consumer",
+     "sub": "absorbs replays"
+    }
+   ],
+   "edges": [
+    {
+     "id": "x1",
+     "from": "cdc",
+     "to": "wal",
+     "style": "dotted",
+     "label": "built on"
+    },
+    {
+     "id": "x2",
+     "from": "cdc",
+     "to": "outbox",
+     "style": "solid",
+     "label": "relays it"
+    },
+    {
+     "id": "x3",
+     "from": "cdc",
+     "to": "stream",
+     "style": "solid",
+     "label": "publishes to"
+    },
+    {
+     "id": "x4",
+     "from": "stream",
+     "to": "cqrs",
+     "style": "solid",
+     "label": "feeds"
+    },
+    {
+     "id": "x5",
+     "from": "stream",
+     "to": "idem",
+     "style": "solid",
+     "label": "at least once needs"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "problem",
+   "title": "The problem"
+  },
+  {
+   "id": "naive",
+   "title": "The naive fix"
+  },
+  {
+   "id": "pattern",
+   "title": "The pattern"
+  },
+  {
+   "id": "how",
+   "title": "How it works"
+  },
+  {
+   "id": "failure",
+   "title": "When it goes wrong"
+  },
+  {
+   "id": "tradeoffs",
+   "title": "Trade-offs"
+  },
+  {
+   "id": "wild",
+   "title": "In the wild"
+  },
+  {
+   "id": "related",
+   "title": "Related patterns"
+  },
+  {
+   "id": "recap",
+   "title": "Recap"
+  }
+ ],
+ "shots": [
+  {
+   "id": "cdc-problem",
+   "chapter": "problem",
+   "title": "Drift",
+   "diagram": "drift",
+   "focus": [],
+   "trace": [
+    "p1",
+    "p2",
+    "p3",
+    "p4",
+    "p5",
+    "p6",
+    "p7"
+   ],
+   "engineer": "A merchandiser drops a price from twenty to fifteen. The catalogue service commits it to the products database, which is the source of truth. But the same data also lives in a search index, a cache and an analytics warehouse, and they are filled by a nightly export. Until that runs, search shows the old price, the cache serves it until it expires, and the reports are a day behind. Every copy drifts from the database.",
+   "executive": "The main database is correct, but search, caches and reports are copies refreshed overnight, so customers and analysts see yesterday's data."
+  },
+  {
+   "id": "cdc-naive",
+   "chapter": "naive",
+   "title": "Polling",
+   "diagram": "polling",
+   "focus": [],
+   "trace": [
+    "q1",
+    "q2",
+    "q3",
+    "q4",
+    "q5",
+    "q6",
+    "q7",
+    "q8"
+   ],
+   "engineer": "The obvious fix is to poll more often: every minute, select the rows whose updated at column is newer than last time. It finds rows seventeen and forty-two. Then product ninety-nine is deleted. A deleted row has no updated at, so the next query simply cannot see it, and ninety-nine stays searchable. A row changed twice between polls shows only its final state. And every poll is another query against the busiest database you own.",
+   "executive": "Asking the database every minute what has changed misses deletions, misses in-between changes, and adds load to the main database."
+  },
+  {
+   "id": "cdc-dual",
+   "chapter": "naive",
+   "card": {
+    "heading": "Or write to every copy from the app?",
+    "kind": "compare",
+    "points": [
+     "What happens | Result",
+     "Database commits, index update times out | Index disagrees, silently",
+     "Two requests race to both systems | Writes land in different orders",
+     "A script or migration edits the database | Copies never hear about it",
+     "Add another copy | Change every service that writes"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The other obvious fix is dual writes: the service updates the database, then the search index, then the cache. Those writes share no transaction. If the index call times out after the commit, the two disagree and nothing says so. Two concurrent requests can reach the two systems in different orders. Anything that bypasses the service, such as a migration script, is never copied. And each new copy means changing every service that writes.",
+   "executive": "Having the application update every copy itself is not atomic: one failed call or one script that bypasses it, and the copies quietly disagree."
+  },
+  {
+   "id": "cdc-log",
+   "chapter": "pattern",
+   "title": "Read the log",
+   "diagram": "structure",
+   "focus": [],
+   "trace": [
+    "s1",
+    "s2",
+    "s3",
+    "s4"
+   ],
+   "engineer": "Change data capture starts from a fact: the database already records every committed change, in order, in its own log. In PostgreSQL that is the write-ahead log; in MySQL, the binary log. A CDC connector, such as Debezium, reads that log and turns every insert, update and delete into an event. The service does nothing extra. Even a change made by hand in a SQL console is captured, because it goes through the same log.",
+   "executive": "Every database keeps a journal of its changes. Change data capture reads that journal and turns each change into a message, without touching the application."
+  },
+  {
+   "id": "cdc-fanout",
+   "chapter": "pattern",
+   "title": "Fan out",
+   "diagram": "structure",
+   "focus": [],
+   "trace": [
+    "s4",
+    "s5",
+    "s6",
+    "s7"
+   ],
+   "engineer": "The connector publishes those events to a stream. By default Debezium writes one topic per table, and keys each event by the row's primary key, so all changes to product forty-two stay together and in order. Each copy now has its own consumer. The search indexer upserts or deletes documents. A cache invalidator evicts keys. A warehouse loader appends history. Adding a new copy means adding a consumer, not changing the service.",
+   "executive": "The changes go onto a shared stream, and each copy, search, cache or reporting, follows it independently and stays seconds behind rather than a day."
+  },
+  {
+   "id": "cdc-snapshot",
+   "chapter": "how",
+   "title": "Snapshot",
+   "diagram": "flow",
+   "focus": [],
+   "trace": [
+    "h1",
+    "h2",
+    "h3"
+   ],
+   "engineer": "Step by step, starting from nothing. The log does not hold the full history, so a new copy needs the existing rows first. When the Debezium PostgreSQL connector first connects, it creates a replication slot, which fixes a position in the log, and takes a consistent snapshot of the tables. Each existing row becomes an event with operation r, for read. Then it streams from exactly that position, so no change falls in the gap.",
+   "executive": "On day one the connector copies everything that already exists, marking exactly where it started, so it can then follow changes without missing any."
+  },
+  {
+   "id": "cdc-stream",
+   "chapter": "how",
+   "title": "Stream",
+   "diagram": "flow",
+   "focus": [],
+   "trace": [
+    "h4",
+    "h5",
+    "h6",
+    "h7",
+    "h8",
+    "h9",
+    "h10"
+   ],
+   "engineer": "Now the service updates product forty-two and commits. The change appears in the log, and the connector emits an event with operation u, keyed by forty-two, carrying the row before and after. A delete produces operation d, followed by a tombstone, a message with the same key and no value, so a compacted topic can forget the row. Consumers see each key's changes in order. Finally the connector confirms its position, so the database can free old log.",
+   "executive": "Each committed change becomes a message with the old and new values, in order for each record, and the connector tells the database how far it has read."
+  },
+  {
+   "id": "cdc-slot",
+   "chapter": "failure",
+   "title": "Full disk",
+   "diagram": "slot",
+   "focus": [],
+   "trace": [
+    "f1",
+    "f2",
+    "f3",
+    "f4"
+   ],
+   "engineer": "Here is the failure that bites in production. The connector goes down and stops confirming its position. The replication slot does not know or care why. It keeps every piece of log the connector might still need, and the application keeps writing. The PostgreSQL documentation warns that slots can retain so much log that they fill the space allocated for it. A stopped consumer can fill the primary database's disk. Monitor slot lag, and drop slots you no longer use.",
+   "executive": "If the reader stops, the database keeps its journal for it, and that journal can grow until the main database runs out of disk."
+  },
+  {
+   "id": "cdc-dup",
+   "chapter": "failure",
+   "title": "Replay",
+   "diagram": "slot",
+   "focus": [],
+   "trace": [
+    "f5",
+    "f6",
+    "f7",
+    "f8"
+   ],
+   "engineer": "When the connector restarts, it resumes from the last position it saved, and anything read after that is sent again. PostgreSQL itself only persists a slot's position at checkpoints, and says clients must cope with the same change twice. Debezium describes this as at-least-once delivery after a fault. So consumers must be idempotent. Applying the row's latest state by key, an upsert or a delete, gives the same result however many times it arrives.",
+   "executive": "After a restart some changes are delivered twice, so every reader must be able to apply the same change again without harm."
+  },
+  {
+   "id": "cdc-edges",
+   "chapter": "failure",
+   "card": {
+    "heading": "Other sharp edges",
+    "points": [
+     "Schema changes: logical decoding does not carry DDL",
+     "Primary key update: delete and tombstone, then a new key",
+     "Order holds per key, not across keys",
+     "Quiet tables on a busy server: use heartbeats",
+     "Cap retention: max_slot_wal_keep_size, at a price"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "A few more sharp edges. PostgreSQL's logical decoding does not carry schema changes, so plan migrations with your consumers in mind. Changing a primary key arrives as a delete and tombstone for the old key, then an event for the new one. Ordering holds per key, not across the whole table. If the captured tables are quiet but the server is busy, Debezium's heartbeats keep the position moving. You can cap how much log a slot retains, but past that cap the slot can be lost.",
+   "executive": "Schema changes, key changes and quiet tables all need care, and capping the journal's size protects the disk at the risk of breaking the reader."
+  },
+  {
+   "id": "cdc-vs-outbox",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "Raw CDC or an outbox?",
+    "kind": "compare",
+    "points": [
+     "Raw table CDC | Transactional outbox",
+     "Captures every change, even by hand | Only what the code chooses to publish",
+     "Events mirror internal tables | Events are an explicit contract",
+     "No change to the application | The service writes an outbox row",
+     "Best for copies of the same data | Best for telling other domains"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The big trade-off is what you expose. Raw CDC publishes your tables as they are: nothing is missed, and the application is untouched, but consumers couple to your internal schema, and renaming a column becomes a breaking change. The transactional outbox, covered in its own walkthrough, writes explicit events to an outbox table, and CDC is a good way to relay them. Use raw CDC for copies of your own data, and the outbox for events other teams depend on.",
+   "executive": "Streaming raw tables is complete and needs no code changes, but ties others to your internal design; publishing deliberate events is cleaner for other teams."
+  },
+  {
+   "id": "cdc-costs",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "What it costs",
+    "points": [
+     "A connector and a stream to run and monitor",
+     "Database setup: logical WAL, or binlog in row format",
+     "Replication privileges and a slot per connector",
+     "Copies are eventually consistent, not instant",
+     "Skip it when one nightly batch is good enough"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "It is not free. You run a connector and usually a stream, and both need monitoring. The database needs configuring: logical decoding in PostgreSQL, or the binary log in row format in MySQL, which is the default and the only format Debezium accepts. The connector needs replication privileges. The copies are still eventually consistent, typically seconds behind. And if a report is only read once a day, a nightly batch is simpler and perfectly fine.",
+   "executive": "It adds infrastructure and database setup, copies are seconds behind rather than instant, and a nightly batch is still fine for data nobody needs fresh."
+  },
+  {
+   "id": "cdc-wild",
+   "chapter": "wild",
+   "title": "Tools",
+   "diagram": "wild",
+   "focus": [],
+   "trace": [
+    "w1",
+    "w2",
+    "w3",
+    "w4",
+    "w5",
+    "w6"
+   ],
+   "engineer": "In the wild. Debezium is the common open-source choice; it runs on Kafka Connect, as a standalone server, or embedded as a library. It reads PostgreSQL through logical decoding with the built-in pgoutput plug-in, and MySQL through a row-format binary log. AWS Database Migration Service offers full load plus CDC, using replication slots on PostgreSQL and the row-based binlog on MySQL. Netflix described DBLog in 2020, and LinkedIn described Databus in a 2012 paper.",
+   "executive": "It is mature and widely available: open-source tools, managed cloud services, and systems published by large engineering teams all do it."
+  },
+  {
+   "id": "cdc-related",
+   "chapter": "related",
+   "title": "Neighbours",
+   "diagram": "related",
+   "focus": [],
+   "trace": [
+    "x1",
+    "x2",
+    "x3",
+    "x4",
+    "x5"
+   ],
+   "engineer": "Its neighbours. CDC is built on the database's write-ahead log, the same mechanism that makes commits durable. It is often the relay for a transactional outbox, which decides what the events say. It publishes to event streaming, where a log of events is kept for many readers. It is a common way to keep CQRS read models fresh from a write model. And because delivery is at least once, every consumer is an idempotent consumer.",
+   "executive": "It builds on the database's own journal, works with the outbox and event streams, and keeps separate read-optimised copies up to date."
+  },
+  {
+   "id": "cdc-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "Don't poll or dual-write: read the database's own log",
+     "Snapshot once, then stream ordered events per key",
+     "Watch the slot, and make every consumer idempotent"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. Polling misses deletes and dual writes are not atomic, so read the change log the database already keeps. Take a snapshot once, then stream every insert, update and delete as an ordered event per key. And operate it carefully: alert on slot lag before the log fills the disk, and expect replays, so make every consumer idempotent.",
+   "executive": "Follow the database's own journal, start with a full copy then stream changes, and watch the reader so it never falls behind or double-applies."
+  }
+ ],
+ "meta": {
+  "kind": "pattern",
+  "category": "Data",
+  "level": "intermediate",
+  "uses": [
+   "write-ahead-log",
+   "event-streaming"
+  ],
+  "related": [
+   "outbox",
+   "event-streaming",
+   "cqrs",
+   "write-ahead-log"
+  ],
+  "blurb": "Read the database's own change log and stream every insert, update and delete as an ordered event to keep copies fresh.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ }
+}

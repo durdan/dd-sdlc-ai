@@ -1,0 +1,152 @@
+{
+ "dl-problem-engineer": {
+  "file": "/audio/distributed-locks/dl-problem-engineer.mp3",
+  "ms": 23232,
+  "hash": "11a81c37ce24"
+ },
+ "dl-problem-executive": {
+  "file": "/audio/distributed-locks/dl-problem-executive.mp3",
+  "ms": 5880,
+  "hash": "e7b7665c545d"
+ },
+ "dl-race-engineer": {
+  "file": "/audio/distributed-locks/dl-race-engineer.mp3",
+  "ms": 25200,
+  "hash": "fb5d244e9eb0"
+ },
+ "dl-race-executive": {
+  "file": "/audio/distributed-locks/dl-race-executive.mp3",
+  "ms": 8544,
+  "hash": "990bf1db2c3f"
+ },
+ "dl-naive-engineer": {
+  "file": "/audio/distributed-locks/dl-naive-engineer.mp3",
+  "ms": 27504,
+  "hash": "243590b04395"
+ },
+ "dl-naive-executive": {
+  "file": "/audio/distributed-locks/dl-naive-executive.mp3",
+  "ms": 6408,
+  "hash": "8f148e915cc1"
+ },
+ "dl-pattern-engineer": {
+  "file": "/audio/distributed-locks/dl-pattern-engineer.mp3",
+  "ms": 31176,
+  "hash": "bd9ff571965f"
+ },
+ "dl-pattern-executive": {
+  "file": "/audio/distributed-locks/dl-pattern-executive.mp3",
+  "ms": 8736,
+  "hash": "0364efaf5569"
+ },
+ "dl-how-engineer": {
+  "file": "/audio/distributed-locks/dl-how-engineer.mp3",
+  "ms": 28872,
+  "hash": "6fcc1f7d1d92"
+ },
+ "dl-how-executive": {
+  "file": "/audio/distributed-locks/dl-how-executive.mp3",
+  "ms": 9576,
+  "hash": "6426f9f12393"
+ },
+ "dl-why-value-engineer": {
+  "file": "/audio/distributed-locks/dl-why-value-engineer.mp3",
+  "ms": 27816,
+  "hash": "414d88c2268e"
+ },
+ "dl-why-value-executive": {
+  "file": "/audio/distributed-locks/dl-why-value-executive.mp3",
+  "ms": 8760,
+  "hash": "9ebce0327c12"
+ },
+ "dl-pause-engineer": {
+  "file": "/audio/distributed-locks/dl-pause-engineer.mp3",
+  "ms": 28872,
+  "hash": "3bc5b1a64979"
+ },
+ "dl-pause-executive": {
+  "file": "/audio/distributed-locks/dl-pause-executive.mp3",
+  "ms": 7824,
+  "hash": "a0a1f3083313"
+ },
+ "dl-fencing-engineer": {
+  "file": "/audio/distributed-locks/dl-fencing-engineer.mp3",
+  "ms": 30192,
+  "hash": "60f42b4ce55d"
+ },
+ "dl-fencing-executive": {
+  "file": "/audio/distributed-locks/dl-fencing-executive.mp3",
+  "ms": 7656,
+  "hash": "d715c97e5f11"
+ },
+ "dl-edges-engineer": {
+  "file": "/audio/distributed-locks/dl-edges-engineer.mp3",
+  "ms": 25176,
+  "hash": "1134a09e949c"
+ },
+ "dl-edges-executive": {
+  "file": "/audio/distributed-locks/dl-edges-executive.mp3",
+  "ms": 8688,
+  "hash": "b7fcf6f33262"
+ },
+ "dl-kinds-engineer": {
+  "file": "/audio/distributed-locks/dl-kinds-engineer.mp3",
+  "ms": 26352,
+  "hash": "038b26f2e956"
+ },
+ "dl-kinds-executive": {
+  "file": "/audio/distributed-locks/dl-kinds-executive.mp3",
+  "ms": 9864,
+  "hash": "b034d3db917d"
+ },
+ "dl-redlock-engineer": {
+  "file": "/audio/distributed-locks/dl-redlock-engineer.mp3",
+  "ms": 30144,
+  "hash": "63c697432b4f"
+ },
+ "dl-redlock-executive": {
+  "file": "/audio/distributed-locks/dl-redlock-executive.mp3",
+  "ms": 11064,
+  "hash": "f49bd97181eb"
+ },
+ "dl-alternatives-engineer": {
+  "file": "/audio/distributed-locks/dl-alternatives-engineer.mp3",
+  "ms": 24936,
+  "hash": "410924443585"
+ },
+ "dl-alternatives-executive": {
+  "file": "/audio/distributed-locks/dl-alternatives-executive.mp3",
+  "ms": 8640,
+  "hash": "bf5e08bcab38"
+ },
+ "dl-wild-engineer": {
+  "file": "/audio/distributed-locks/dl-wild-engineer.mp3",
+  "ms": 34704,
+  "hash": "8e3def9da244"
+ },
+ "dl-wild-executive": {
+  "file": "/audio/distributed-locks/dl-wild-executive.mp3",
+  "ms": 10968,
+  "hash": "3cd0036e958e"
+ },
+ "dl-related-engineer": {
+  "file": "/audio/distributed-locks/dl-related-engineer.mp3",
+  "ms": 28416,
+  "hash": "d38de79938ec"
+ },
+ "dl-related-executive": {
+  "file": "/audio/distributed-locks/dl-related-executive.mp3",
+  "ms": 8832,
+  "hash": "4cc93ab553cb"
+ },
+ "dl-recap-engineer": {
+  "file": "/audio/distributed-locks/dl-recap-engineer.mp3",
+  "ms": 23016,
+  "hash": "64e415f0e32c"
+ },
+ "dl-recap-executive": {
+  "file": "/audio/distributed-locks/dl-recap-executive.mp3",
+  "ms": 9912,
+  "hash": "2cc80861cb52"
+ }
+}

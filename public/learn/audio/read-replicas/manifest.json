@@ -1,0 +1,142 @@
+{
+ "rr-problem-engineer": {
+  "file": "/audio/read-replicas/rr-problem-engineer.mp3",
+  "ms": 31536,
+  "hash": "84940328b19e"
+ },
+ "rr-problem-executive": {
+  "file": "/audio/read-replicas/rr-problem-executive.mp3",
+  "ms": 6048,
+  "hash": "e80045bbff9b"
+ },
+ "rr-naive-engineer": {
+  "file": "/audio/read-replicas/rr-naive-engineer.mp3",
+  "ms": 28008,
+  "hash": "a2bc0eb3ea53"
+ },
+ "rr-naive-executive": {
+  "file": "/audio/read-replicas/rr-naive-executive.mp3",
+  "ms": 6792,
+  "hash": "d94e7306da93"
+ },
+ "rr-structure-engineer": {
+  "file": "/audio/read-replicas/rr-structure-engineer.mp3",
+  "ms": 32688,
+  "hash": "9762c92330fb"
+ },
+ "rr-structure-executive": {
+  "file": "/audio/read-replicas/rr-structure-executive.mp3",
+  "ms": 7032,
+  "hash": "c4eac96ca5df"
+ },
+ "rr-flow-engineer": {
+  "file": "/audio/read-replicas/rr-flow-engineer.mp3",
+  "ms": 33360,
+  "hash": "74aada739684"
+ },
+ "rr-flow-executive": {
+  "file": "/audio/read-replicas/rr-flow-executive.mp3",
+  "ms": 7296,
+  "hash": "8185abed45ab"
+ },
+ "rr-routing-engineer": {
+  "file": "/audio/read-replicas/rr-routing-engineer.mp3",
+  "ms": 33144,
+  "hash": "15afe41f0634"
+ },
+ "rr-routing-executive": {
+  "file": "/audio/read-replicas/rr-routing-executive.mp3",
+  "ms": 8016,
+  "hash": "336bbe616140"
+ },
+ "rr-lag-engineer": {
+  "file": "/audio/read-replicas/rr-lag-engineer.mp3",
+  "ms": 30600,
+  "hash": "d9fa20dcfbf0"
+ },
+ "rr-lag-executive": {
+  "file": "/audio/read-replicas/rr-lag-executive.mp3",
+  "ms": 6336,
+  "hash": "03aa0693cc4f"
+ },
+ "rr-monotonic-engineer": {
+  "file": "/audio/read-replicas/rr-monotonic-engineer.mp3",
+  "ms": 28200,
+  "hash": "ceea7f529b02"
+ },
+ "rr-monotonic-executive": {
+  "file": "/audio/read-replicas/rr-monotonic-executive.mp3",
+  "ms": 6024,
+  "hash": "6839e1b8b51b"
+ },
+ "rr-sticky-engineer": {
+  "file": "/audio/read-replicas/rr-sticky-engineer.mp3",
+  "ms": 28056,
+  "hash": "3fde9a2fd6d9"
+ },
+ "rr-sticky-executive": {
+  "file": "/audio/read-replicas/rr-sticky-executive.mp3",
+  "ms": 7512,
+  "hash": "f998f53701e9"
+ },
+ "rr-failover-engineer": {
+  "file": "/audio/read-replicas/rr-failover-engineer.mp3",
+  "ms": 33672,
+  "hash": "0c4770102c53"
+ },
+ "rr-failover-executive": {
+  "file": "/audio/read-replicas/rr-failover-executive.mp3",
+  "ms": 9120,
+  "hash": "e395b10359f3"
+ },
+ "rr-modes-engineer": {
+  "file": "/audio/read-replicas/rr-modes-engineer.mp3",
+  "ms": 33408,
+  "hash": "b9434a72a5e7"
+ },
+ "rr-modes-executive": {
+  "file": "/audio/read-replicas/rr-modes-executive.mp3",
+  "ms": 6840,
+  "hash": "30b33ae919db"
+ },
+ "rr-limits-engineer": {
+  "file": "/audio/read-replicas/rr-limits-engineer.mp3",
+  "ms": 29760,
+  "hash": "b7457bb87f49"
+ },
+ "rr-limits-executive": {
+  "file": "/audio/read-replicas/rr-limits-executive.mp3",
+  "ms": 7848,
+  "hash": "0b2727d81f35"
+ },
+ "rr-wild-engineer": {
+  "file": "/audio/read-replicas/rr-wild-engineer.mp3",
+  "ms": 34968,
+  "hash": "f1522f420aef"
+ },
+ "rr-wild-executive": {
+  "file": "/audio/read-replicas/rr-wild-executive.mp3",
+  "ms": 10200,
+  "hash": "b5d58cae39ce"
+ },
+ "rr-related-engineer": {
+  "file": "/audio/read-replicas/rr-related-engineer.mp3",
+  "ms": 28464,
+  "hash": "5f7643a96e75"
+ },
+ "rr-related-executive": {
+  "file": "/audio/read-replicas/rr-related-executive.mp3",
+  "ms": 7152,
+  "hash": "0ab342b4eaed"
+ },
+ "rr-recap-engineer": {
+  "file": "/audio/read-replicas/rr-recap-engineer.mp3",
+  "ms": 25824,
+  "hash": "8dfc6a9e1167"
+ },
+ "rr-recap-executive": {
+  "file": "/audio/read-replicas/rr-recap-executive.mp3",
+  "ms": 7728,
+  "hash": "aac09fcce330"
+ }
+}
