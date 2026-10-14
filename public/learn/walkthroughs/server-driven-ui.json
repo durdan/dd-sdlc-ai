@@ -1,0 +1,999 @@
+{
+ "id": "server-driven-ui",
+ "title": "Server-driven UI",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "diagrams": [
+  {
+   "id": "release",
+   "kind": "c4",
+   "title": "Every layout change waits for an app release",
+   "direction": "RIGHT",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request or render"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "lag or fallback"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "check or signal"
+    }
+   ],
+   "elements": [
+    {
+     "id": "team",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Product team",
+     "sub": "move deals up"
+    },
+    {
+     "id": "app",
+     "kind": "container",
+     "tone": "core",
+     "label": "Travel app",
+     "sub": "layout in the code"
+    },
+    {
+     "id": "store",
+     "kind": "external",
+     "tone": "external",
+     "label": "App stores",
+     "sub": "review, then release"
+    },
+    {
+     "id": "new",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Updated users",
+     "sub": "see the new layout"
+    },
+    {
+     "id": "old",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Older versions",
+     "sub": "old layout for weeks"
+    }
+   ],
+   "edges": [
+    {
+     "id": "p1",
+     "from": "team",
+     "to": "app",
+     "style": "solid",
+     "label": "change both apps"
+    },
+    {
+     "id": "p2",
+     "from": "app",
+     "to": "store",
+     "style": "solid",
+     "label": "submit build"
+    },
+    {
+     "id": "p3",
+     "from": "store",
+     "to": "new",
+     "style": "solid",
+     "label": "updated"
+    },
+    {
+     "id": "p4",
+     "from": "store",
+     "to": "old",
+     "style": "dashed",
+     "label": "not updated yet"
+    }
+   ]
+  },
+  {
+   "id": "naive",
+   "kind": "c4",
+   "title": "Flags pick from what shipped; web views feel foreign",
+   "direction": "RIGHT",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request or render"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "lag or fallback"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "check or signal"
+    }
+   ],
+   "elements": [
+    {
+     "id": "flags",
+     "kind": "container",
+     "tone": "core",
+     "label": "Remote config",
+     "sub": "flag picks A, B or C"
+    },
+    {
+     "id": "app",
+     "kind": "container",
+     "tone": "core",
+     "label": "Travel app",
+     "sub": "variants A, B, C built in"
+    },
+    {
+     "id": "store",
+     "kind": "external",
+     "tone": "external",
+     "label": "App stores",
+     "sub": "variant D: a release"
+    },
+    {
+     "id": "web",
+     "kind": "external",
+     "tone": "external",
+     "label": "Web view",
+     "sub": "HTML in the app"
+    },
+    {
+     "id": "user",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Traveller",
+     "sub": "feels the difference"
+    }
+   ],
+   "edges": [
+    {
+     "id": "n1",
+     "from": "flags",
+     "to": "app",
+     "style": "solid",
+     "label": "pick"
+    },
+    {
+     "id": "n2",
+     "from": "app",
+     "to": "store",
+     "style": "dashed",
+     "label": "variant D?"
+    },
+    {
+     "id": "n3",
+     "from": "app",
+     "to": "web",
+     "style": "solid",
+     "label": "embed"
+    },
+    {
+     "id": "n4",
+     "from": "web",
+     "to": "user",
+     "style": "dashed",
+     "label": "slower, less native"
+    }
+   ]
+  },
+  {
+   "id": "structure",
+   "kind": "c4",
+   "title": "The server describes the screen; the app draws it",
+   "direction": "DOWN",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request or render"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "lag or fallback"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "check or signal"
+    }
+   ],
+   "groups": [
+    {
+     "id": "server",
+     "label": "Server [deploys any time]",
+     "tone": "core"
+    },
+    {
+     "id": "client",
+     "label": "Mobile app [ships through the stores]",
+     "tone": "stream"
+    }
+   ],
+   "elements": [
+    {
+     "id": "user",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Traveller",
+     "sub": "opens the home screen"
+    },
+    {
+     "id": "renderer",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Renderer",
+     "sub": "maps each type to a native view",
+     "group": "client"
+    },
+    {
+     "id": "library",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Native components",
+     "sub": "fixed library: hero, carousel, list",
+     "group": "client"
+    },
+    {
+     "id": "actions",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Action handlers",
+     "sub": "navigate, open link, save, track",
+     "group": "client"
+    },
+    {
+     "id": "screen",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Screen service",
+     "sub": "chooses sections and order",
+     "group": "server"
+    },
+    {
+     "id": "registry",
+     "kind": "store",
+     "tone": "data",
+     "label": "Component registry",
+     "sub": "versioned schema of types",
+     "group": "server"
+    },
+    {
+     "id": "data",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Data services",
+     "sub": "search, deals, trips",
+     "group": "server"
+    }
+   ],
+   "edges": [
+    {
+     "id": "s1",
+     "from": "user",
+     "to": "renderer",
+     "style": "solid",
+     "label": "open home"
+    },
+    {
+     "id": "s2",
+     "from": "renderer",
+     "to": "screen",
+     "style": "solid",
+     "label": "request screen · what I support"
+    },
+    {
+     "id": "s3",
+     "from": "screen",
+     "to": "data",
+     "style": "solid",
+     "label": "fetch content"
+    },
+    {
+     "id": "s4",
+     "from": "screen",
+     "to": "registry",
+     "style": "dotted",
+     "label": "validate against schema"
+    },
+    {
+     "id": "s5",
+     "from": "screen",
+     "to": "renderer",
+     "style": "solid",
+     "label": "screen description"
+    },
+    {
+     "id": "s6",
+     "from": "renderer",
+     "to": "library",
+     "style": "solid",
+     "label": "build native views"
+    },
+    {
+     "id": "s7",
+     "from": "renderer",
+     "to": "actions",
+     "style": "solid",
+     "label": "wire taps to actions"
+    },
+    {
+     "id": "s8",
+     "from": "actions",
+     "to": "screen",
+     "style": "dotted",
+     "label": "next screen"
+    }
+   ]
+  },
+  {
+   "id": "request",
+   "kind": "sequence",
+   "title": "Opening the home screen",
+   "participants": [
+    {
+     "id": "cache",
+     "label": "On-device cache"
+    },
+    {
+     "id": "app",
+     "label": "App renderer"
+    },
+    {
+     "id": "screen",
+     "label": "Screen service"
+    },
+    {
+     "id": "data",
+     "label": "Data services"
+    }
+   ],
+   "messages": [
+    {
+     "id": "h1",
+     "from": "cache",
+     "to": "app",
+     "style": "solid",
+     "label": "last good home screen, shown at once"
+    },
+    {
+     "id": "h2",
+     "from": "app",
+     "to": "screen",
+     "style": "solid",
+     "label": "GET home · schema 7 · hero, carousel, list"
+    },
+    {
+     "id": "h3",
+     "from": "screen",
+     "to": "data",
+     "style": "solid",
+     "label": "deals and recent trips"
+    },
+    {
+     "id": "h4",
+     "from": "data",
+     "to": "screen",
+     "style": "solid",
+     "label": "content"
+    },
+    {
+     "id": "h5",
+     "from": "screen",
+     "to": "app",
+     "style": "solid",
+     "label": "3 sections + actions, as data"
+    },
+    {
+     "id": "h6",
+     "from": "app",
+     "to": "cache",
+     "style": "solid",
+     "label": "save as last good screen"
+    },
+    {
+     "id": "h7",
+     "from": "app",
+     "to": "screen",
+     "style": "solid",
+     "label": "tap deal → action: navigate to deal 42"
+    },
+    {
+     "id": "h8",
+     "from": "screen",
+     "to": "app",
+     "style": "solid",
+     "label": "deal screen description"
+    }
+   ]
+  },
+  {
+   "id": "degrade",
+   "kind": "sequence",
+   "title": "An older app, and a failing server",
+   "participants": [
+    {
+     "id": "cache",
+     "label": "On-device cache"
+    },
+    {
+     "id": "old",
+     "label": "App, schema 5"
+    },
+    {
+     "id": "screen",
+     "label": "Screen service"
+    },
+    {
+     "id": "registry",
+     "label": "Component registry"
+    }
+   ],
+   "messages": [
+    {
+     "id": "f1",
+     "from": "old",
+     "to": "screen",
+     "style": "solid",
+     "label": "GET home · schema 5 · hero, list"
+    },
+    {
+     "id": "f2",
+     "from": "screen",
+     "to": "registry",
+     "style": "dotted",
+     "label": "what can schema 5 draw?"
+    },
+    {
+     "id": "f3",
+     "from": "registry",
+     "to": "screen",
+     "style": "dotted",
+     "label": "no carousel: added in 7"
+    },
+    {
+     "id": "f4",
+     "from": "screen",
+     "to": "old",
+     "style": "dashed",
+     "label": "carousel swapped for a list"
+    },
+    {
+     "id": "f5",
+     "from": "old",
+     "to": "screen",
+     "style": "dashed",
+     "label": "next launch: request times out"
+    },
+    {
+     "id": "f6",
+     "from": "cache",
+     "to": "old",
+     "style": "dashed",
+     "label": "last good screen instead"
+    }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request or render"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "lag or fallback"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "check or signal"
+    }
+   ],
+   "elements": [
+    {
+     "id": "sdui",
+     "kind": "container",
+     "tone": "core",
+     "label": "Server-driven UI",
+     "sub": "server describes, client renders"
+    },
+    {
+     "id": "airbnb",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Airbnb Ghost Platform",
+     "sub": "sections, screens, actions · 2021"
+    },
+    {
+     "id": "graphql",
+     "kind": "store",
+     "tone": "data",
+     "label": "One GraphQL schema",
+     "sub": "shared by web, iOS and Android"
+    },
+    {
+     "id": "lyft",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Lyft",
+     "sub": "protobuf primitives · bikes and scooters"
+    },
+    {
+     "id": "cards",
+     "kind": "external",
+     "tone": "external",
+     "label": "Adaptive Cards",
+     "sub": "Microsoft's open JSON card format"
+    },
+    {
+     "id": "hosts",
+     "kind": "external",
+     "tone": "external",
+     "label": "Teams, Outlook and others",
+     "sub": "same card, native look"
+    },
+    {
+     "id": "radar",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Thoughtworks Radar",
+     "sub": "Trial, April 2026, with cautions"
+    }
+   ],
+   "edges": [
+    {
+     "id": "w1",
+     "from": "sdui",
+     "to": "airbnb",
+     "style": "solid",
+     "label": "across three platforms"
+    },
+    {
+     "id": "w2",
+     "from": "airbnb",
+     "to": "graphql",
+     "style": "solid",
+     "label": "typed models"
+    },
+    {
+     "id": "w3",
+     "from": "sdui",
+     "to": "lyft",
+     "style": "solid",
+     "label": "semantic components and actions"
+    },
+    {
+     "id": "w4",
+     "from": "sdui",
+     "to": "cards",
+     "style": "solid",
+     "label": "a public schema"
+    },
+    {
+     "id": "w5",
+     "from": "cards",
+     "to": "hosts",
+     "style": "solid",
+     "label": "version, fallback, requires"
+    },
+    {
+     "id": "w6",
+     "from": "radar",
+     "to": "sdui",
+     "style": "dotted",
+     "label": "for dynamic areas, not everything"
+    }
+   ]
+  },
+  {
+   "id": "related",
+   "kind": "c4",
+   "title": "Related patterns",
+   "direction": "DOWN",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request or render"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "lag or fallback"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "check or signal"
+    }
+   ],
+   "elements": [
+    {
+     "id": "sdui",
+     "kind": "container",
+     "tone": "core",
+     "label": "Server-driven UI",
+     "sub": "the server sends the screen"
+    },
+    {
+     "id": "bff",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Backend for frontend",
+     "sub": "often hosts the screen service"
+    },
+    {
+     "id": "flags",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Feature flags",
+     "sub": "decide which screen to serve"
+    },
+    {
+     "id": "contract",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Contract testing",
+     "sub": "schema checked on every change"
+    },
+    {
+     "id": "degrade",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Graceful degradation",
+     "sub": "older clients get a fallback"
+    },
+    {
+     "id": "web",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Web views and hybrid apps",
+     "sub": "the alternative: ship HTML"
+    }
+   ],
+   "edges": [
+    {
+     "id": "r1",
+     "from": "bff",
+     "to": "sdui",
+     "style": "solid",
+     "label": "per-client server"
+    },
+    {
+     "id": "r2",
+     "from": "flags",
+     "to": "sdui",
+     "style": "solid",
+     "label": "variants and rollouts"
+    },
+    {
+     "id": "r3",
+     "from": "contract",
+     "to": "sdui",
+     "style": "solid",
+     "label": "keeps old clients safe"
+    },
+    {
+     "id": "r4",
+     "from": "sdui",
+     "to": "degrade",
+     "style": "solid",
+     "label": "unknown types"
+    },
+    {
+     "id": "r5",
+     "from": "sdui",
+     "to": "web",
+     "style": "dotted",
+     "label": "trade native feel for reach"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "problem",
+   "title": "The problem"
+  },
+  {
+   "id": "naive",
+   "title": "The naive fix"
+  },
+  {
+   "id": "pattern",
+   "title": "The pattern"
+  },
+  {
+   "id": "how",
+   "title": "How it works"
+  },
+  {
+   "id": "failure",
+   "title": "When it goes wrong"
+  },
+  {
+   "id": "tradeoffs",
+   "title": "Trade-offs"
+  },
+  {
+   "id": "wild",
+   "title": "In the wild"
+  },
+  {
+   "id": "related",
+   "title": "Related patterns"
+  },
+  {
+   "id": "recap",
+   "title": "Recap"
+  }
+ ],
+ "shots": [
+  {
+   "id": "sdui-problem",
+   "chapter": "problem",
+   "title": "Release lag",
+   "diagram": "release",
+   "trace": [
+    "p1",
+    "p2",
+    "p3",
+    "p4"
+   ],
+   "focus": [],
+   "engineer": "Here is a travel app's home screen: a search box, a carousel of deals, and recent trips. The layout is written into the iOS and Android code. To move deals above recent trips, the team changes both apps, builds them, and submits them to the app stores for review. Some users update within days. Many do not: Lyft has said it supports rider apps up to two years old. So for weeks, different users see different home screens.",
+   "executive": "On mobile, every layout change needs an app release, and users update slowly, so a change takes weeks to reach everyone."
+  },
+  {
+   "id": "sdui-naive",
+   "chapter": "naive",
+   "title": "Flags and web views",
+   "diagram": "naive",
+   "trace": [
+    "n1",
+    "n2",
+    "n3",
+    "n4"
+   ],
+   "focus": [],
+   "engineer": "The first obvious fix is remote configuration. Build three home-screen variants into the app, and let a flag choose one. That works until someone wants a fourth variant: a new layout is new code, so it still needs a release. The second obvious fix is a web view: render an HTML page inside the app. It changes instantly, but it loads more slowly, looks out of place next to native screens, and struggles with native features.",
+   "executive": "Flags can only choose between layouts already shipped, and web pages inside an app feel slow and out of place."
+  },
+  {
+   "id": "sdui-pattern",
+   "chapter": "pattern",
+   "title": "Describe and render",
+   "diagram": "structure",
+   "trace": [
+    "s1",
+    "s2",
+    "s3",
+    "s4",
+    "s5",
+    "s6"
+   ],
+   "focus": [],
+   "engineer": "Server-driven UI moves the layout decision to the server. When the traveller opens the home screen, the app asks a screen service for a description of it, and says what it can draw. The service fetches deals and trips, chooses which sections to show and in what order, checks the result against a versioned component schema, and sends it back. The app's renderer maps each section type to a native component already compiled into the app.",
+   "executive": "The server sends a description of the screen, and the app draws it with native building blocks it already has."
+  },
+  {
+   "id": "sdui-vocab",
+   "chapter": "pattern",
+   "title": "Vocabulary",
+   "diagram": "structure",
+   "focus": [
+    "registry",
+    "library",
+    "renderer",
+    "screen"
+   ],
+   "trace": [
+    "s4",
+    "s5",
+    "s6"
+   ],
+   "engineer": "The heart of it is the vocabulary: the list of component types both sides agree on, kept in a registry with a version number. Keep it closed: the server may only use types the app already knows. And keep it shallow: a screen is a list of sections, each a self-contained component with typed fields, not an arbitrary tree of boxes. Airbnb's Ghost Platform works this way, with sections, screens and actions defined in one GraphQL schema.",
+   "executive": "Both sides share a short, versioned list of building blocks. Keeping that list small and simple is what keeps it testable."
+  },
+  {
+   "id": "sdui-how",
+   "chapter": "how",
+   "title": "Request",
+   "diagram": "request",
+   "trace": [
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6"
+   ],
+   "focus": [],
+   "engineer": "Step by step. The app first shows the last good home screen from its own cache, so the traveller never stares at a blank page. In the background it requests the home screen, sending its schema version and the components it supports. The screen service gathers deals and recent trips and returns three sections, with their actions, as plain data. The app draws them and saves the response as the new last good screen.",
+   "executive": "The app shows its last copy straight away, asks the server for the latest screen, draws it, and keeps it for next time."
+  },
+  {
+   "id": "sdui-actions",
+   "chapter": "how",
+   "title": "Actions",
+   "diagram": "request",
+   "trace": [
+    "h7",
+    "h8"
+   ],
+   "focus": [],
+   "engineer": "Behaviour is data too. Every tappable thing carries an action: navigate to a screen, open a link, save a trip, log an event. The app has a fixed set of action handlers, just as it has a fixed set of components. Tap a deal and the app runs a navigate action, which asks the server for the deal screen. Because the action is data, the server can point that button somewhere new tomorrow without a release.",
+   "executive": "Taps are described by the server too, so even navigation can change without an app update."
+  },
+  {
+   "id": "sdui-degrade",
+   "chapter": "failure",
+   "title": "Older app",
+   "diagram": "degrade",
+   "trace": [
+    "f1",
+    "f2",
+    "f3",
+    "f4",
+    "f5",
+    "f6"
+   ],
+   "focus": [],
+   "engineer": "Now an older app asks for the home screen. It declares schema version five, which knows heroes and lists, but not the carousel added in version seven. The server checks the registry and degrades: it swaps the carousel for a plain list, or drops the section. If an unknown type ever slips through, the app skips it and logs it rather than crashing. And when the service is slow or down, the app keeps showing the last good screen.",
+   "executive": "Older apps get a simpler version of the screen, and if the server is down the app shows the last screen it had."
+  },
+  {
+   "id": "sdui-edges",
+   "chapter": "failure",
+   "card": {
+    "heading": "Where it still goes wrong",
+    "points": [
+     "A new type reaches an old client: skip it and log, never crash",
+     "A section with no sensible fallback: show an update prompt",
+     "A slow screen service delays every screen: cache and time out",
+     "A server change breaks an app version nobody tested"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Four things still catch teams out. A new component reaching an old client must be skipped and logged, not crash the app. Some sections have no sensible fallback, so the server needs to know which app versions support what, and may show an update prompt instead. Every screen now waits on a server call, so the timeout and the cache matter. And a server change can break an app version nobody tested.",
+   "executive": "The danger moves from slow releases to untested combinations of server and app versions."
+  },
+  {
+   "id": "sdui-tradeoffs",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "What you gain, what you pay",
+    "kind": "compare",
+    "points": [
+     "Gain | Cost",
+     "Layout changes ship in minutes | Each change can break every live app version",
+     "One screen logic for iOS, Android and web | A renderer and registry to build and own",
+     "Experiments without a release | The screen is now data, so harder to test",
+     "Native look and speed | Rich interaction and animation stay hard"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The trade-offs. Layout changes ship in minutes, but every change can now break every app version in the field. One screen logic can serve iOS, Android and web, but you build and own a renderer and a registry on each. Experiments no longer need a release, but the screen is data now, which is harder to test. And you keep a native look and speed, while rich interaction and animation stay hard.",
+   "executive": "You trade slow releases for a platform you must build, own and test carefully."
+  },
+  {
+   "id": "sdui-testing",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "Testing across clients",
+    "points": [
+     "Contract tests: every response validates against the schema",
+     "Snapshot every component on each supported app version",
+     "Preview screens before they go live",
+     "Roll out screen changes gradually and watch crash rates"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Testing changes shape. Contract tests check that every server response matches the schema, and that the schema never removes something an old app still needs. Snapshot tests render each component on every supported app version. A preview tool lets people see a screen before it goes live. And screen changes roll out gradually, like any release, with crash rates and errors watched by app version.",
+   "executive": "Every server response is checked against the shared schema, and changes go out gradually."
+  },
+  {
+   "id": "sdui-whennot",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "When not to use it",
+    "points": [
+     "Highly interactive screens: maps, editors, games",
+     "Small teams with one platform and frequent releases",
+     "Screens that rarely change",
+     "As a general UI language with arbitrary nesting"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "When not to use it. Highly interactive screens, such as maps, editors or games, need real client code. A small team on one platform that releases often gains little and pays for a whole framework. Stable screens that rarely change do not need it. And do not grow it into a general UI language: Thoughtworks' Technology Radar warns of overly configurable messes, and of a god protocol that becomes hard to maintain.",
+   "executive": "Use it for screens that change often, not for highly interactive ones, and not as a general-purpose UI language."
+  },
+  {
+   "id": "sdui-wild",
+   "chapter": "wild",
+   "title": "Who uses it",
+   "diagram": "wild",
+   "trace": [
+    "w1",
+    "w2",
+    "w3",
+    "w4",
+    "w5",
+    "w6"
+   ],
+   "focus": [],
+   "engineer": "In the wild. Airbnb described its Ghost Platform in 2021: sections, screens and actions, defined in one shared GraphQL schema and rendered on web, iOS and Android. Lyft's bikes and scooters team wrote about moving to server-driven UI, using semantic components and actions defined in protobuf. Microsoft's Adaptive Cards are a public example: JSON cards that Teams and Outlook render natively, with a version, a fallback and a requires property for clients that lack a feature.",
+   "executive": "Airbnb, Lyft and Microsoft's Adaptive Cards all use the idea, and Thoughtworks recommends it for dynamic areas only."
+  },
+  {
+   "id": "sdui-related",
+   "chapter": "related",
+   "title": "Neighbours",
+   "diagram": "related",
+   "trace": [
+    "r1",
+    "r2",
+    "r3",
+    "r4",
+    "r5"
+   ],
+   "focus": [],
+   "engineer": "Its neighbours. The screen service is often a backend for frontend, shaped for one client. Feature flags decide which screen description a user receives, which makes experiments cheap. Contract testing keeps the schema honest so old apps keep working. Graceful degradation is how older clients get a simpler screen rather than an error. And web views are the alternative: instant changes, but without the native feel.",
+   "executive": "It works with backends for frontends, feature flags, contract tests and graceful degradation."
+  },
+  {
+   "id": "sdui-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "The server describes the screen; the app draws it natively",
+     "Keep the vocabulary closed, versioned and shallow",
+     "Degrade for old clients, and test every live version"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. The server describes the screen and the app draws it from native components it already has, so layouts change without a release. Keep the vocabulary closed, versioned and shallow, so it stays testable. And plan for old clients: they declare what they support, the server degrades for them, and contract tests protect every app version still in use.",
+   "executive": "The server describes, the app draws. Keep the building blocks few. Look after older app versions."
+  }
+ ],
+ "subtitle": "Design pattern",
+ "meta": {
+  "kind": "pattern",
+  "category": "APIs",
+  "level": "advanced",
+  "uses": [
+   "bff",
+   "graceful-degradation"
+  ],
+  "related": [
+   "bff",
+   "feature-flags",
+   "contract-testing"
+  ],
+  "blurb": "Ship screen layouts from the server, rendered with native components the app already has.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ }
+}

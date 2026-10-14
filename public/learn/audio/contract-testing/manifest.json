@@ -1,0 +1,142 @@
+{
+ "ct-problem-engineer": {
+  "file": "/audio/contract-testing/ct-problem-engineer.mp3",
+  "ms": 29040,
+  "hash": "02241f4d0382"
+ },
+ "ct-problem-executive": {
+  "file": "/audio/contract-testing/ct-problem-executive.mp3",
+  "ms": 10848,
+  "hash": "4bdcacad3d94"
+ },
+ "ct-e2e-engineer": {
+  "file": "/audio/contract-testing/ct-e2e-engineer.mp3",
+  "ms": 27696,
+  "hash": "3240da3e3b01"
+ },
+ "ct-e2e-executive": {
+  "file": "/audio/contract-testing/ct-e2e-executive.mp3",
+  "ms": 9600,
+  "hash": "eccceb83672b"
+ },
+ "ct-mocks-engineer": {
+  "file": "/audio/contract-testing/ct-mocks-engineer.mp3",
+  "ms": 28824,
+  "hash": "5a475a7e6c82"
+ },
+ "ct-mocks-executive": {
+  "file": "/audio/contract-testing/ct-mocks-executive.mp3",
+  "ms": 8088,
+  "hash": "34df2ae16c7c"
+ },
+ "ct-consumer-engineer": {
+  "file": "/audio/contract-testing/ct-consumer-engineer.mp3",
+  "ms": 28632,
+  "hash": "3cb85fcabd6f"
+ },
+ "ct-consumer-executive": {
+  "file": "/audio/contract-testing/ct-consumer-executive.mp3",
+  "ms": 9936,
+  "hash": "aeebd34bc0c8"
+ },
+ "ct-provider-engineer": {
+  "file": "/audio/contract-testing/ct-provider-engineer.mp3",
+  "ms": 28584,
+  "hash": "c51005733a2a"
+ },
+ "ct-provider-executive": {
+  "file": "/audio/contract-testing/ct-provider-executive.mp3",
+  "ms": 10944,
+  "hash": "edf24f65dc89"
+ },
+ "ct-how-engineer": {
+  "file": "/audio/contract-testing/ct-how-engineer.mp3",
+  "ms": 35808,
+  "hash": "8350bbcfe8ac"
+ },
+ "ct-how-executive": {
+  "file": "/audio/contract-testing/ct-how-executive.mp3",
+  "ms": 8880,
+  "hash": "2a25cbea42bd"
+ },
+ "ct-events-engineer": {
+  "file": "/audio/contract-testing/ct-events-engineer.mp3",
+  "ms": 29688,
+  "hash": "9ba67beae4af"
+ },
+ "ct-events-executive": {
+  "file": "/audio/contract-testing/ct-events-executive.mp3",
+  "ms": 8880,
+  "hash": "dc8ab0997ed5"
+ },
+ "ct-failure-engineer": {
+  "file": "/audio/contract-testing/ct-failure-engineer.mp3",
+  "ms": 29952,
+  "hash": "9c10f2ece212"
+ },
+ "ct-failure-executive": {
+  "file": "/audio/contract-testing/ct-failure-executive.mp3",
+  "ms": 7536,
+  "hash": "964b636f9035"
+ },
+ "ct-expand-engineer": {
+  "file": "/audio/contract-testing/ct-expand-engineer.mp3",
+  "ms": 31248,
+  "hash": "e294952e1a54"
+ },
+ "ct-expand-executive": {
+  "file": "/audio/contract-testing/ct-expand-executive.mp3",
+  "ms": 8424,
+  "hash": "84eceab6991c"
+ },
+ "ct-compare-engineer": {
+  "file": "/audio/contract-testing/ct-compare-engineer.mp3",
+  "ms": 31104,
+  "hash": "acb31c7326e1"
+ },
+ "ct-compare-executive": {
+  "file": "/audio/contract-testing/ct-compare-executive.mp3",
+  "ms": 10968,
+  "hash": "e5ca290d1192"
+ },
+ "ct-limits-engineer": {
+  "file": "/audio/contract-testing/ct-limits-engineer.mp3",
+  "ms": 30024,
+  "hash": "ca0405a67e96"
+ },
+ "ct-limits-executive": {
+  "file": "/audio/contract-testing/ct-limits-executive.mp3",
+  "ms": 8568,
+  "hash": "df5453efb320"
+ },
+ "ct-wild-engineer": {
+  "file": "/audio/contract-testing/ct-wild-engineer.mp3",
+  "ms": 37920,
+  "hash": "b4d18cf693fa"
+ },
+ "ct-wild-executive": {
+  "file": "/audio/contract-testing/ct-wild-executive.mp3",
+  "ms": 10176,
+  "hash": "02f2229b3673"
+ },
+ "ct-related-engineer": {
+  "file": "/audio/contract-testing/ct-related-engineer.mp3",
+  "ms": 32280,
+  "hash": "cd22a90c601b"
+ },
+ "ct-related-executive": {
+  "file": "/audio/contract-testing/ct-related-executive.mp3",
+  "ms": 10320,
+  "hash": "aa9d6ea84b65"
+ },
+ "ct-recap-engineer": {
+  "file": "/audio/contract-testing/ct-recap-engineer.mp3",
+  "ms": 22776,
+  "hash": "c7376e88bf23"
+ },
+ "ct-recap-executive": {
+  "file": "/audio/contract-testing/ct-recap-executive.mp3",
+  "ms": 8112,
+  "hash": "d38c7302aa84"
+ }
+}

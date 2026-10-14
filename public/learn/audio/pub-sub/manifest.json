@@ -1,0 +1,142 @@
+{
+ "ps-problem-engineer": {
+  "file": "/audio/pub-sub/ps-problem-engineer.mp3",
+  "ms": 29784,
+  "hash": "895c28cf7421"
+ },
+ "ps-problem-executive": {
+  "file": "/audio/pub-sub/ps-problem-executive.mp3",
+  "ms": 6864,
+  "hash": "8960506f3665"
+ },
+ "ps-naive-engineer": {
+  "file": "/audio/pub-sub/ps-naive-engineer.mp3",
+  "ms": 31176,
+  "hash": "bbdf6f5e3b43"
+ },
+ "ps-naive-executive": {
+  "file": "/audio/pub-sub/ps-naive-executive.mp3",
+  "ms": 8088,
+  "hash": "b74d754d990a"
+ },
+ "ps-structure-engineer": {
+  "file": "/audio/pub-sub/ps-structure-engineer.mp3",
+  "ms": 27864,
+  "hash": "2205beaa4d4e"
+ },
+ "ps-structure-executive": {
+  "file": "/audio/pub-sub/ps-structure-executive.mp3",
+  "ms": 7824,
+  "hash": "94bec858c934"
+ },
+ "ps-add-engineer": {
+  "file": "/audio/pub-sub/ps-add-engineer.mp3",
+  "ms": 30504,
+  "hash": "5177097ba497"
+ },
+ "ps-add-executive": {
+  "file": "/audio/pub-sub/ps-add-executive.mp3",
+  "ms": 8472,
+  "hash": "24525d1217c5"
+ },
+ "ps-how-engineer": {
+  "file": "/audio/pub-sub/ps-how-engineer.mp3",
+  "ms": 29064,
+  "hash": "b8ca22242024"
+ },
+ "ps-how-executive": {
+  "file": "/audio/pub-sub/ps-how-executive.mp3",
+  "ms": 6744,
+  "hash": "825465a468b8"
+ },
+ "ps-push-engineer": {
+  "file": "/audio/pub-sub/ps-push-engineer.mp3",
+  "ms": 30696,
+  "hash": "2906ff175feb"
+ },
+ "ps-push-executive": {
+  "file": "/audio/pub-sub/ps-push-executive.mp3",
+  "ms": 5976,
+  "hash": "a6e4bf06dae0"
+ },
+ "ps-redeliver-engineer": {
+  "file": "/audio/pub-sub/ps-redeliver-engineer.mp3",
+  "ms": 29784,
+  "hash": "794357d43d40"
+ },
+ "ps-redeliver-executive": {
+  "file": "/audio/pub-sub/ps-redeliver-executive.mp3",
+  "ms": 8280,
+  "hash": "26131888479e"
+ },
+ "ps-poison-engineer": {
+  "file": "/audio/pub-sub/ps-poison-engineer.mp3",
+  "ms": 32328,
+  "hash": "ed8ab8e7e718"
+ },
+ "ps-poison-executive": {
+  "file": "/audio/pub-sub/ps-poison-executive.mp3",
+  "ms": 8784,
+  "hash": "89c6d97b3d40"
+ },
+ "ps-slow-engineer": {
+  "file": "/audio/pub-sub/ps-slow-engineer.mp3",
+  "ms": 31152,
+  "hash": "516e77899aed"
+ },
+ "ps-slow-executive": {
+  "file": "/audio/pub-sub/ps-slow-executive.mp3",
+  "ms": 7920,
+  "hash": "f5127ab99314"
+ },
+ "ps-tradeoffs-engineer": {
+  "file": "/audio/pub-sub/ps-tradeoffs-engineer.mp3",
+  "ms": 32640,
+  "hash": "05f96ab827b5"
+ },
+ "ps-tradeoffs-executive": {
+  "file": "/audio/pub-sub/ps-tradeoffs-executive.mp3",
+  "ms": 8784,
+  "hash": "fbd60f7648f0"
+ },
+ "ps-whennot-engineer": {
+  "file": "/audio/pub-sub/ps-whennot-engineer.mp3",
+  "ms": 27216,
+  "hash": "d94b8bf96e8a"
+ },
+ "ps-whennot-executive": {
+  "file": "/audio/pub-sub/ps-whennot-executive.mp3",
+  "ms": 5808,
+  "hash": "01179b6ac6df"
+ },
+ "ps-wild-engineer": {
+  "file": "/audio/pub-sub/ps-wild-engineer.mp3",
+  "ms": 34392,
+  "hash": "c44ff969e2b7"
+ },
+ "ps-wild-executive": {
+  "file": "/audio/pub-sub/ps-wild-executive.mp3",
+  "ms": 7080,
+  "hash": "b67268025f78"
+ },
+ "ps-related-engineer": {
+  "file": "/audio/pub-sub/ps-related-engineer.mp3",
+  "ms": 32112,
+  "hash": "82aa2bf93d13"
+ },
+ "ps-related-executive": {
+  "file": "/audio/pub-sub/ps-related-executive.mp3",
+  "ms": 7272,
+  "hash": "7e15e2eae8e9"
+ },
+ "ps-recap-engineer": {
+  "file": "/audio/pub-sub/ps-recap-engineer.mp3",
+  "ms": 26328,
+  "hash": "cd5ec07b60b5"
+ },
+ "ps-recap-executive": {
+  "file": "/audio/pub-sub/ps-recap-executive.mp3",
+  "ms": 5904,
+  "hash": "071132cf2d4c"
+ }
+}

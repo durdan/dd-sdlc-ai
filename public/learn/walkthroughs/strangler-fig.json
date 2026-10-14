@@ -1,0 +1,1130 @@
+{
+ "id": "strangler-fig",
+ "title": "Strangler fig",
+ "subtitle": "Design pattern",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "diagrams": [
+  {
+   "id": "monolith",
+   "kind": "c4",
+   "title": "One deployable, one database, every change risky",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "mono",
+     "label": "Order monolith [one deployable, 15 years old]",
+     "tone": "external"
+    }
+   ],
+   "elements": [
+    {
+     "id": "customers",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Customers",
+     "sub": "web and mobile"
+    },
+    {
+     "id": "staff",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Warehouse and finance staff",
+     "sub": "back office"
+    },
+    {
+     "id": "backlog",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Feature backlog",
+     "sub": "new returns policy, waiting"
+    },
+    {
+     "id": "orders",
+     "kind": "component",
+     "tone": "external",
+     "label": "Orders",
+     "sub": "module",
+     "group": "mono"
+    },
+    {
+     "id": "stock",
+     "kind": "component",
+     "tone": "external",
+     "label": "Stock",
+     "sub": "module",
+     "group": "mono"
+    },
+    {
+     "id": "returns",
+     "kind": "component",
+     "tone": "external",
+     "label": "Returns",
+     "sub": "module",
+     "group": "mono"
+    },
+    {
+     "id": "invoices",
+     "kind": "component",
+     "tone": "external",
+     "label": "Invoices",
+     "sub": "module",
+     "group": "mono"
+    },
+    {
+     "id": "db",
+     "kind": "store",
+     "tone": "external",
+     "label": "Shared database",
+     "sub": "every module reads every table"
+    }
+   ],
+   "edges": [
+    {
+     "id": "m1",
+     "from": "customers",
+     "to": "orders",
+     "style": "solid",
+     "label": "place order"
+    },
+    {
+     "id": "m2",
+     "from": "orders",
+     "to": "stock",
+     "style": "solid",
+     "label": "reserve stock"
+    },
+    {
+     "id": "m3",
+     "from": "orders",
+     "to": "db",
+     "style": "solid",
+     "label": "shared tables"
+    },
+    {
+     "id": "m4",
+     "from": "staff",
+     "to": "returns",
+     "style": "solid",
+     "label": "process return"
+    },
+    {
+     "id": "m5",
+     "from": "returns",
+     "to": "orders",
+     "style": "dashed",
+     "label": "reaches into internals"
+    },
+    {
+     "id": "m6",
+     "from": "invoices",
+     "to": "db",
+     "style": "solid",
+     "label": "shared tables"
+    },
+    {
+     "id": "m7",
+     "from": "returns",
+     "to": "db",
+     "style": "solid",
+     "label": "shared tables"
+    },
+    {
+     "id": "m8",
+     "from": "backlog",
+     "to": "returns",
+     "style": "dashed",
+     "label": "one change → retest everything"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "hidden coupling or risk"
+    }
+   ]
+  },
+  {
+   "id": "bigbang",
+   "kind": "sequence",
+   "title": "The big-bang rewrite",
+   "participants": [
+    {
+     "id": "biz",
+     "label": "The business"
+    },
+    {
+     "id": "old",
+     "label": "Old system"
+    },
+    {
+     "id": "new",
+     "label": "Rewrite"
+    },
+    {
+     "id": "users",
+     "label": "Users"
+    }
+   ],
+   "messages": [
+    {
+     "id": "b1",
+     "from": "biz",
+     "to": "new",
+     "style": "solid",
+     "label": "start rewrite: “eighteen months”"
+    },
+    {
+     "id": "b2",
+     "from": "biz",
+     "to": "old",
+     "style": "solid",
+     "label": "freeze new features"
+    },
+    {
+     "id": "b3",
+     "from": "users",
+     "to": "biz",
+     "style": "solid",
+     "label": "we need a new returns policy now"
+    },
+    {
+     "id": "b4",
+     "from": "biz",
+     "to": "old",
+     "style": "solid",
+     "label": "build it in the old system anyway"
+    },
+    {
+     "id": "b5",
+     "from": "biz",
+     "to": "new",
+     "style": "solid",
+     "label": "…and again in the rewrite"
+    },
+    {
+     "id": "b6",
+     "from": "new",
+     "to": "old",
+     "style": "solid",
+     "label": "rediscover undocumented behaviour"
+    },
+    {
+     "id": "b7",
+     "from": "new",
+     "to": "users",
+     "style": "solid",
+     "label": "cut-over weekend, year three"
+    },
+    {
+     "id": "b8",
+     "from": "users",
+     "to": "new",
+     "style": "solid",
+     "label": "missing behaviour found in production"
+    },
+    {
+     "id": "b9",
+     "from": "new",
+     "to": "old",
+     "style": "solid",
+     "label": "roll back? data has already moved"
+    }
+   ]
+  },
+  {
+   "id": "structure",
+   "kind": "c4",
+   "title": "A facade in front, new services behind it, one slice at a time",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "fac",
+     "label": "Strangler facade [reverse proxy or API gateway]",
+     "tone": "core"
+    },
+    {
+     "id": "new",
+     "label": "New services",
+     "tone": "core"
+    }
+   ],
+   "elements": [
+    {
+     "id": "clients",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Customers and staff",
+     "sub": "same addresses as before",
+     "rank": 0
+    },
+    {
+     "id": "proxy",
+     "kind": "component",
+     "tone": "core",
+     "label": "Router",
+     "sub": "every request passes here",
+     "group": "fac",
+     "rank": 1
+    },
+    {
+     "id": "rules",
+     "kind": "component",
+     "tone": "core",
+     "label": "Routing rules",
+     "sub": "path · cohort · percentage flag",
+     "group": "fac",
+     "rank": 1
+    },
+    {
+     "id": "legacy",
+     "kind": "system",
+     "tone": "external",
+     "label": "Order monolith",
+     "sub": "orders, stock, the rest",
+     "rank": 4
+    },
+    {
+     "id": "legacydb",
+     "kind": "store",
+     "tone": "external",
+     "label": "Monolith database",
+     "rank": 5
+    },
+    {
+     "id": "returns",
+     "kind": "container",
+     "tone": "core",
+     "label": "Returns service",
+     "sub": "slice 1: fully moved",
+     "group": "new",
+     "rank": 2
+    },
+    {
+     "id": "invoicing",
+     "kind": "container",
+     "tone": "core",
+     "label": "Invoicing service",
+     "sub": "slice 2: 10% of traffic",
+     "group": "new",
+     "rank": 2
+    },
+    {
+     "id": "returnsdb",
+     "kind": "store",
+     "tone": "data",
+     "label": "Returns database",
+     "sub": "new system of record",
+     "group": "new",
+     "rank": 3
+    },
+    {
+     "id": "acl",
+     "kind": "component",
+     "tone": "stream",
+     "label": "Anti-corruption layer",
+     "sub": "translates the old model",
+     "rank": 3
+    },
+    {
+     "id": "sync",
+     "kind": "component",
+     "tone": "data",
+     "label": "Sync agent",
+     "sub": "change data capture or events",
+     "rank": 4
+    }
+   ],
+   "edges": [
+    {
+     "id": "s1",
+     "from": "clients",
+     "to": "proxy",
+     "style": "solid",
+     "label": "all requests"
+    },
+    {
+     "id": "s2",
+     "from": "proxy",
+     "to": "rules",
+     "style": "solid",
+     "label": "which side?"
+    },
+    {
+     "id": "s3",
+     "from": "proxy",
+     "to": "legacy",
+     "style": "solid",
+     "label": "everything else"
+    },
+    {
+     "id": "s4",
+     "from": "proxy",
+     "to": "returns",
+     "style": "solid",
+     "label": "/returns/*"
+    },
+    {
+     "id": "s5",
+     "from": "proxy",
+     "to": "invoicing",
+     "style": "solid",
+     "label": "/invoices/* · 10%"
+    },
+    {
+     "id": "s6",
+     "from": "returns",
+     "to": "acl",
+     "style": "dashed",
+     "label": "needs order details"
+    },
+    {
+     "id": "s7",
+     "from": "acl",
+     "to": "legacy",
+     "style": "dashed",
+     "label": "legacy API"
+    },
+    {
+     "id": "s8",
+     "from": "legacy",
+     "to": "legacydb",
+     "style": "solid",
+     "label": "read and write"
+    },
+    {
+     "id": "s9",
+     "from": "returns",
+     "to": "returnsdb",
+     "style": "solid",
+     "label": "read and write"
+    },
+    {
+     "id": "s10",
+     "from": "returnsdb",
+     "to": "sync",
+     "style": "dotted",
+     "label": "changes"
+    },
+    {
+     "id": "s11",
+     "from": "sync",
+     "to": "legacydb",
+     "style": "dotted",
+     "label": "copy back for old reports"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "transitional: deleted at the end"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "data sync"
+    }
+   ]
+  },
+  {
+   "id": "route",
+   "kind": "sequence",
+   "title": "Two requests, two owners",
+   "participants": [
+    {
+     "id": "client",
+     "label": "Customer app"
+    },
+    {
+     "id": "facade",
+     "label": "Facade"
+    },
+    {
+     "id": "legacy",
+     "label": "Order monolith"
+    },
+    {
+     "id": "returns",
+     "label": "Returns service"
+    }
+   ],
+   "messages": [
+    {
+     "id": "r1",
+     "from": "client",
+     "to": "facade",
+     "style": "solid",
+     "label": "GET /orders/42"
+    },
+    {
+     "id": "r2",
+     "from": "facade",
+     "to": "legacy",
+     "style": "solid",
+     "label": "no rule matches → legacy"
+    },
+    {
+     "id": "r3",
+     "from": "legacy",
+     "to": "client",
+     "style": "solid",
+     "label": "order page"
+    },
+    {
+     "id": "r4",
+     "from": "client",
+     "to": "facade",
+     "style": "solid",
+     "label": "POST /returns"
+    },
+    {
+     "id": "r5",
+     "from": "facade",
+     "to": "returns",
+     "style": "solid",
+     "label": "rule matches → new service"
+    },
+    {
+     "id": "r6",
+     "from": "returns",
+     "to": "legacy",
+     "style": "solid",
+     "label": "fetch order 42 (via translation layer)"
+    },
+    {
+     "id": "r7",
+     "from": "legacy",
+     "to": "returns",
+     "style": "solid",
+     "label": "order, in the new model"
+    },
+    {
+     "id": "r8",
+     "from": "returns",
+     "to": "client",
+     "style": "solid",
+     "label": "return created · same response shape"
+    }
+   ]
+  },
+  {
+   "id": "rollout",
+   "kind": "sequence",
+   "title": "Moving one slice: shadow, cohort, all, delete",
+   "participants": [
+    {
+     "id": "team",
+     "label": "Team"
+    },
+    {
+     "id": "facade",
+     "label": "Facade"
+    },
+    {
+     "id": "legacy",
+     "label": "Order monolith"
+    },
+    {
+     "id": "new",
+     "label": "Returns service"
+    }
+   ],
+   "messages": [
+    {
+     "id": "o1",
+     "from": "facade",
+     "to": "legacy",
+     "style": "solid",
+     "label": "serve every return"
+    },
+    {
+     "id": "o2",
+     "from": "facade",
+     "to": "new",
+     "style": "solid",
+     "label": "shadow copy · result discarded"
+    },
+    {
+     "id": "o3",
+     "from": "new",
+     "to": "team",
+     "style": "solid",
+     "label": "diff report: fix mismatches"
+    },
+    {
+     "id": "o4",
+     "from": "team",
+     "to": "facade",
+     "style": "solid",
+     "label": "flag on: staff only"
+    },
+    {
+     "id": "o5",
+     "from": "team",
+     "to": "facade",
+     "style": "solid",
+     "label": "flag on: 5% of customers"
+    },
+    {
+     "id": "o6",
+     "from": "new",
+     "to": "team",
+     "style": "solid",
+     "label": "errors rise → flag off, back on legacy"
+    },
+    {
+     "id": "o7",
+     "from": "team",
+     "to": "facade",
+     "style": "solid",
+     "label": "fix, then 25%, then 100%"
+    },
+    {
+     "id": "o8",
+     "from": "team",
+     "to": "legacy",
+     "style": "solid",
+     "label": "delete the legacy returns code"
+    }
+   ]
+  },
+  {
+   "id": "data",
+   "kind": "c4",
+   "title": "Keeping two databases in step",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "returns",
+     "kind": "container",
+     "tone": "core",
+     "label": "Returns service",
+     "sub": "owns returns now"
+    },
+    {
+     "id": "newdb",
+     "kind": "store",
+     "tone": "data",
+     "label": "Returns database",
+     "sub": "system of record"
+    },
+    {
+     "id": "sync",
+     "kind": "component",
+     "tone": "data",
+     "label": "Sync agent",
+     "sub": "change data capture or events"
+    },
+    {
+     "id": "olddb",
+     "kind": "store",
+     "tone": "external",
+     "label": "Monolith database",
+     "sub": "old copy"
+    },
+    {
+     "id": "legacy",
+     "kind": "system",
+     "tone": "external",
+     "label": "Order monolith",
+     "sub": "reports still read returns"
+    },
+    {
+     "id": "recon",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Reconciliation job",
+     "sub": "compares both, reports drift"
+    }
+   ],
+   "edges": [
+    {
+     "id": "d1",
+     "from": "returns",
+     "to": "newdb",
+     "style": "solid",
+     "label": "write return"
+    },
+    {
+     "id": "d2",
+     "from": "returns",
+     "to": "olddb",
+     "style": "dashed",
+     "label": "second write: fails"
+    },
+    {
+     "id": "d3",
+     "from": "newdb",
+     "to": "sync",
+     "style": "dotted",
+     "label": "change log"
+    },
+    {
+     "id": "d4",
+     "from": "sync",
+     "to": "olddb",
+     "style": "dotted",
+     "label": "apply, eventually"
+    },
+    {
+     "id": "d5",
+     "from": "recon",
+     "to": "newdb",
+     "style": "dotted",
+     "label": "read"
+    },
+    {
+     "id": "d6",
+     "from": "recon",
+     "to": "olddb",
+     "style": "dotted",
+     "label": "compare"
+    },
+    {
+     "id": "d7",
+     "from": "legacy",
+     "to": "olddb",
+     "style": "solid",
+     "label": "report: refund missing"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "read or write"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "data sync"
+    }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "f2004",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Strangler Application",
+     "sub": "Martin Fowler · bliki, June 2004"
+    },
+    {
+     "id": "f2024",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Strangler Fig Application",
+     "sub": "rewritten · August 2024"
+    },
+    {
+     "id": "pld",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Patterns of Legacy Displacement",
+     "sub": "Cartwright, Horn, Lewis · 2024"
+    },
+    {
+     "id": "ms",
+     "kind": "container",
+     "tone": "core",
+     "label": "Microsoft Azure Architecture Center",
+     "sub": "facade, four phases, database example"
+    },
+    {
+     "id": "aws",
+     "kind": "container",
+     "tone": "core",
+     "label": "AWS Prescriptive Guidance",
+     "sub": "API Gateway as the proxy"
+    },
+    {
+     "id": "shopify",
+     "kind": "external",
+     "tone": "external",
+     "label": "Shopify, 2020",
+     "sub": "inside one Rails codebase"
+    }
+   ],
+   "edges": [
+    {
+     "id": "w1",
+     "from": "f2004",
+     "to": "f2024",
+     "style": "solid",
+     "label": "renamed and rewritten"
+    },
+    {
+     "id": "w2",
+     "from": "f2024",
+     "to": "pld",
+     "style": "solid",
+     "label": "links to the detailed moves"
+    },
+    {
+     "id": "w3",
+     "from": "f2004",
+     "to": "ms",
+     "style": "solid",
+     "label": "facade and phases"
+    },
+    {
+     "id": "w4",
+     "from": "f2004",
+     "to": "aws",
+     "style": "solid",
+     "label": "monolith to microservices"
+    },
+    {
+     "id": "w5",
+     "from": "f2004",
+     "to": "shopify",
+     "style": "dotted",
+     "label": "same steps, one codebase"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "problem",
+   "title": "The problem"
+  },
+  {
+   "id": "naive",
+   "title": "The naive fix"
+  },
+  {
+   "id": "pattern",
+   "title": "The pattern"
+  },
+  {
+   "id": "how",
+   "title": "How it works"
+  },
+  {
+   "id": "failure",
+   "title": "When it goes wrong"
+  },
+  {
+   "id": "tradeoffs",
+   "title": "Trade-offs"
+  },
+  {
+   "id": "wild",
+   "title": "In the wild"
+  },
+  {
+   "id": "related",
+   "title": "Related patterns"
+  },
+  {
+   "id": "recap",
+   "title": "Recap"
+  }
+ ],
+ "shots": [
+  {
+   "id": "sf-problem",
+   "chapter": "problem",
+   "title": "Monolith",
+   "diagram": "monolith",
+   "focus": [],
+   "trace": [
+    "m1",
+    "m2",
+    "m3",
+    "m4",
+    "m5",
+    "m7",
+    "m8"
+   ],
+   "engineer": "Here is an order-management monolith, fifteen years old. Customers place orders, staff process returns and invoices, and every module shares one database. Returns even reaches straight into the order module's internals. Now the business wants a new returns policy. Changing returns means retesting and redeploying everything, because nobody is sure what else touches those tables. Releases slow down, the technology ages, and the people who understood it move on.",
+   "executive": "An old order system does everything in one place, so even a small change is slow and risky to release."
+  },
+  {
+   "id": "sf-naive",
+   "chapter": "naive",
+   "title": "Big bang",
+   "diagram": "bigbang",
+   "focus": [],
+   "trace": [
+    "b1",
+    "b2",
+    "b3",
+    "b4",
+    "b5",
+    "b6",
+    "b7",
+    "b8",
+    "b9"
+   ],
+   "engineer": "The obvious fix is to rewrite it. The business hears eighteen months and freezes features in the old system. But users do not wait: an urgent change is built in the old system anyway, then again in the rewrite, which is now chasing a moving target. The team keeps rediscovering undocumented behaviour. Cut-over comes as one weekend, years late. Missing behaviour turns up in production, and rolling back is hard because the data has already moved.",
+   "executive": "Rewriting everything at once freezes progress for years and ends in one risky switch-over that is hard to undo."
+  },
+  {
+   "id": "sf-structure",
+   "chapter": "pattern",
+   "title": "Facade",
+   "diagram": "structure",
+   "focus": [],
+   "trace": [
+    "s1",
+    "s2",
+    "s3",
+    "s4",
+    "s9",
+    "s5"
+   ],
+   "engineer": "The strangler fig does the opposite. First, put a routing facade in front of the monolith: a reverse proxy or an API gateway that every client calls. At first, its rules send everything to the old system. Then build one capability, say returns, as a new service with its own database, and add one rule: return URLs go to the new service. Invoicing follows later, perhaps for ten percent of traffic. Clients never change the address they call.",
+   "executive": "Put a single front door in front of the old system, then move one piece at a time behind it to new services."
+  },
+  {
+   "id": "sf-coexist",
+   "chapter": "pattern",
+   "title": "Coexist",
+   "diagram": "structure",
+   "focus": [],
+   "trace": [
+    "s6",
+    "s7",
+    "s10",
+    "s11"
+   ],
+   "engineer": "While both systems live, they need each other. The returns service still needs order details from the monolith, so it calls through an anti-corruption layer, which translates the old model into the new one and keeps legacy names out of the new code. The monolith's reports still read returns, so a sync agent copies changes back. Both are transitional architecture: code you build knowing you will delete it when the migration is done.",
+   "executive": "During the move, a translator lets the new and old parts talk, and a sync keeps the old reports correct. Both are temporary."
+  },
+  {
+   "id": "sf-how",
+   "chapter": "how",
+   "title": "Routing",
+   "diagram": "route",
+   "focus": [],
+   "trace": [
+    "r1",
+    "r2",
+    "r3",
+    "r4",
+    "r5",
+    "r6",
+    "r7",
+    "r8"
+   ],
+   "engineer": "Step by step. A customer opens order forty-two. No rule matches, so the facade forwards the request to the monolith, unchanged. Then the customer starts a return. That path matches a rule, so the facade sends it to the returns service. The new service fetches the order from the monolith through the translation layer, creates the return, and answers in the same response shape. The customer cannot tell which system answered.",
+   "executive": "Each request goes to whichever system owns it today; customers see no difference."
+  },
+  {
+   "id": "sf-rollout",
+   "chapter": "how",
+   "title": "Rollout",
+   "diagram": "rollout",
+   "focus": [],
+   "trace": [
+    "o1",
+    "o2",
+    "o3",
+    "o4",
+    "o5",
+    "o6",
+    "o7",
+    "o8"
+   ],
+   "engineer": "Moving a slice is gradual too. First, shadow it: the facade still serves the legacy answer, but sends a copy to the new service and discards the result, and a diff report shows where the two disagree. Then a flag turns the new path on for staff only, then for five percent of customers. When errors rise, the flag goes off and traffic is back on legacy in seconds. Fix, then twenty-five percent, then all. Only then delete the legacy code.",
+   "executive": "Try the new part quietly, then on a few users, then on everyone, with a switch to go back instantly. Delete the old code at the end."
+  },
+  {
+   "id": "sf-finish",
+   "chapter": "how",
+   "card": {
+    "heading": "Four phases to the finish",
+    "points": [
+     "The facade sends most requests to the old system",
+     "Slice by slice, it shifts requests to the new one",
+     "Nothing depends on the old system: decommission it",
+     "Remove the facade; clients call the new system directly"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Repeat that for every slice, and Microsoft's guidance describes four phases. The facade starts by sending most requests to the old system. Slice by slice, it shifts them to the new one. When nothing depends on the old system any more, decommission it. Finally, remove the facade and point clients straight at the new system, or keep it deliberately as an adapter for old clients.",
+   "executive": "Move every piece, switch the old system off, then take away the temporary front door."
+  },
+  {
+   "id": "sf-dual",
+   "chapter": "failure",
+   "title": "Dual write",
+   "diagram": "data",
+   "focus": [],
+   "trace": [
+    "d1",
+    "d2",
+    "d7"
+   ],
+   "engineer": "Data is where it usually goes wrong. The tempting shortcut is a dual write: the new service writes the return to its own database, then writes it to the old one too. The second write fails, or times out after it actually succeeded. Now the two copies disagree, and the monolith's reports are missing a refund nobody knows about. Two writes to two databases are not one transaction, and blind retries can create duplicates.",
+   "executive": "Writing every change to both old and new databases looks simple, but when one write fails the two silently disagree."
+  },
+  {
+   "id": "sf-sync",
+   "chapter": "failure",
+   "title": "Write once, sync",
+   "diagram": "data",
+   "focus": [],
+   "trace": [
+    "d1",
+    "d3",
+    "d4",
+    "d5",
+    "d6"
+   ],
+   "engineer": "Safer: write once, to the system of record, and let a sync agent carry changes across, either with change data capture reading the database log, or with events the service publishes. The old copy is eventually consistent, not instant. Then run a reconciliation job that compares both stores and reports drift. Microsoft's database example goes the other way: copy the data in bulk, keep it in step with change data capture, validate, then cut over.",
+   "executive": "Write each change once, copy it across automatically, and check regularly that both copies match."
+  },
+  {
+   "id": "sf-facade",
+   "chapter": "failure",
+   "title": "Facade risk",
+   "diagram": "structure",
+   "focus": [
+    "proxy",
+    "rules"
+   ],
+   "trace": [
+    "s1",
+    "s2",
+    "s3",
+    "s4",
+    "s5"
+   ],
+   "engineer": "The facade itself is a risk. Every request now passes through it, so Microsoft and AWS both warn it can become a single point of failure or a performance bottleneck. One bad routing rule can send all traffic to the wrong system. So run it highly available, keep its rules in version control with tests, watch the latency it adds, and make sure it keeps up with the migration. AWS's example uses API Gateway, a managed, multi-zone service, for this reason.",
+   "executive": "Everything now goes through the front door, so it must be reliable, fast and changed carefully."
+  },
+  {
+   "id": "sf-tradeoffs",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "What you gain, what you pay",
+    "kind": "compare",
+    "points": [
+     "Gain | Cost",
+     "Value ships every few weeks | Transitional code you will throw away",
+     "Roll back one slice in seconds | Two systems to run, patch and pay for",
+     "Learn the real behaviour as you go | Data kept in step between stores",
+     "Features keep flowing | Risk of stalling at eighty percent"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The trade-off. You gain value every few weeks instead of in years, rollback of one slice in seconds, and you learn the old system's real behaviour as you go. You pay for transitional code you will throw away, two systems to run and patch, and data kept in step between them. The biggest risk is stalling: the easy eighty percent moves, the hard core stays, and you run both for ever. Plan the finish from the start.",
+   "executive": "Steady progress and easy rollback, paid for with temporary code and two systems to run. The danger is never finishing."
+  },
+  {
+   "id": "sf-whennot",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "When not to use it",
+    "points": [
+     "Requests to the old system cannot be intercepted",
+     "You cannot change the legacy source code",
+     "The system is small: replace it whole",
+     "The old system must be switched off quickly"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "When not to use it. Microsoft lists four cases. If requests to the old system cannot be intercepted, there is nowhere to put the facade. If you cannot change the legacy source code, you cannot redirect its internal calls. If the system is small, replacing it whole is simpler. And if the old system must be switched off quickly, a long coexistence does not fit. AWS adds that splitting before the domain boundaries are clear is costly.",
+   "executive": "Skip it for small systems, when you cannot intercept calls to the old one, or when it must go away quickly."
+  },
+  {
+   "id": "sf-wild",
+   "chapter": "wild",
+   "title": "Lineage",
+   "diagram": "wild",
+   "focus": [],
+   "trace": [
+    "w1",
+    "w2",
+    "w3",
+    "w4",
+    "w5"
+   ],
+   "engineer": "In the wild. Martin Fowler named it Strangler Application in June 2004, after the strangler figs he saw in Queensland's rain forests, and rewrote it in 2024 as Strangler Fig Application. Ian Cartwright, Rob Horn and James Lewis catalogue the supporting moves in Patterns of Legacy Displacement. Microsoft and AWS both document it, AWS with API Gateway as the proxy. And Shopify used the same steps inside one Rails codebase, with dual writes, a backfill, then switching reads.",
+   "executive": "Martin Fowler named it in 2004; Microsoft and AWS both recommend it, and Shopify used it to untangle its own code."
+  },
+  {
+   "id": "sf-related",
+   "chapter": "related",
+   "card": {
+    "heading": "Related patterns",
+    "kind": "compare",
+    "points": [
+     "Pattern | How it relates",
+     "API gateway | Often is the facade",
+     "Anti-corruption layer | Old and new call each other without leaking models",
+     "Feature flags | Steer cohorts and percentages; instant rollback",
+     "Branch by abstraction | The same idea inside one codebase",
+     "Dark launching | Exercise the new path before it serves anyone",
+     "Contract testing | Proves the new service keeps the old promises"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Its neighbours. An API gateway is often the facade itself. An anti-corruption layer lets old and new call each other without leaking the old model. Feature flags steer cohorts and percentages and give instant rollback. Branch by abstraction is the same idea inside one codebase. Dark launching exercises the new path before it serves anyone. And contract tests prove the new service still keeps the promises the old one made.",
+   "executive": "It leans on a gateway for routing, flags for control, a translation layer between old and new, and tests that the new part keeps the old promises."
+  },
+  {
+   "id": "sf-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "Never stop the world: replace one slice at a time",
+     "Keep every step reversible: shadow, small cohorts, a flag",
+     "Plan the data and the finish: delete the old system, then the facade"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. Never stop the world: replace one slice at a time, behind a facade that decides where each request goes. Keep every step reversible, with shadow traffic, small cohorts and a flag to go back. And plan the data and the finish: write once and sync, then delete the old code, the old system, and finally the facade itself.",
+   "executive": "Replace one piece at a time. Keep every step reversible. Finish the job and switch the old system off."
+  }
+ ],
+ "meta": {
+  "kind": "pattern",
+  "category": "Evolution",
+  "level": "intermediate",
+  "uses": [
+   "api-gateway",
+   "feature-flags"
+  ],
+  "related": [
+   "anti-corruption-layer",
+   "contract-testing",
+   "feature-flags"
+  ],
+  "blurb": "Replace a legacy system one slice at a time behind a routing facade, until the old one can be switched off.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ }
+}

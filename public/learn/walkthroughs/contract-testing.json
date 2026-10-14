@@ -1,0 +1,1141 @@
+{
+ "id": "contract-testing",
+ "title": "Contract testing",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "diagrams": [
+  {
+   "id": "breakage",
+   "kind": "c4",
+   "title": "A renamed field breaks a consumer in production",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "users",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Customers",
+     "sub": "viewing an order"
+    },
+    {
+     "id": "consumer",
+     "kind": "container",
+     "tone": "core",
+     "label": "Checkout web app",
+     "sub": "reads order.total"
+    },
+    {
+     "id": "provider",
+     "kind": "container",
+     "tone": "core",
+     "label": "Orders API",
+     "sub": "renames total → totalAmount"
+    },
+    {
+     "id": "team",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Orders team",
+     "sub": "owns the API"
+    },
+    {
+     "id": "ptests",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Orders unit tests",
+     "sub": "all green"
+    }
+   ],
+   "edges": [
+    {
+     "id": "b1",
+     "from": "team",
+     "to": "provider",
+     "style": "solid",
+     "label": "rename and deploy"
+    },
+    {
+     "id": "b2",
+     "from": "ptests",
+     "to": "provider",
+     "style": "dotted",
+     "label": "pass: nothing checks consumers"
+    },
+    {
+     "id": "b3",
+     "from": "users",
+     "to": "consumer",
+     "style": "solid",
+     "label": "open order 42"
+    },
+    {
+     "id": "b4",
+     "from": "consumer",
+     "to": "provider",
+     "style": "solid",
+     "label": "GET /orders/42"
+    },
+    {
+     "id": "b5",
+     "from": "provider",
+     "to": "consumer",
+     "style": "dashed",
+     "label": "{ totalAmount: 42.50 }"
+    },
+    {
+     "id": "b6",
+     "from": "consumer",
+     "to": "users",
+     "style": "dashed",
+     "label": "total shows blank"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call or publish"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "breaking or failing"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "result or signal"
+    }
+   ]
+  },
+  {
+   "id": "naive",
+   "kind": "c4",
+   "title": "Two naive fixes: a shared test environment, or mocks",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "stg",
+     "label": "Shared end-to-end environment",
+     "tone": "stream"
+    },
+    {
+     "id": "unit",
+     "label": "Checkout unit tests",
+     "tone": "core"
+    }
+   ],
+   "elements": [
+    {
+     "id": "cic",
+     "kind": "container",
+     "tone": "neutral",
+     "label": "Checkout pipeline",
+     "sub": "queues for the environment"
+    },
+    {
+     "id": "cio",
+     "kind": "container",
+     "tone": "neutral",
+     "label": "Orders pipeline",
+     "sub": "queues for the environment"
+    },
+    {
+     "id": "sc",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Checkout",
+     "sub": "the build under test",
+     "group": "stg"
+    },
+    {
+     "id": "so",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Orders",
+     "sub": "someone else's branch",
+     "group": "stg"
+    },
+    {
+     "id": "sp",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Payments",
+     "sub": "down for a migration",
+     "group": "stg"
+    },
+    {
+     "id": "ct",
+     "kind": "component",
+     "tone": "core",
+     "label": "Checkout client code",
+     "sub": "tested against the mock",
+     "group": "unit"
+    },
+    {
+     "id": "mock",
+     "kind": "component",
+     "tone": "core",
+     "label": "Hand-written Orders mock",
+     "sub": "still returns total",
+     "group": "unit"
+    }
+   ],
+   "edges": [
+    {
+     "id": "n1",
+     "from": "cic",
+     "to": "sc",
+     "style": "solid",
+     "label": "deploy, run the suite"
+    },
+    {
+     "id": "n2",
+     "from": "cio",
+     "to": "so",
+     "style": "solid",
+     "label": "deploy a branch over it"
+    },
+    {
+     "id": "n3",
+     "from": "sc",
+     "to": "sp",
+     "style": "dashed",
+     "label": "charge: times out"
+    },
+    {
+     "id": "n4",
+     "from": "so",
+     "to": "sp",
+     "style": "dashed",
+     "label": "call: times out"
+    },
+    {
+     "id": "n5",
+     "from": "ct",
+     "to": "mock",
+     "style": "dashed",
+     "label": "expects total: mock agrees, real API doesn't"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call or publish"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "breaking or failing"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "result or signal"
+    }
+   ]
+  },
+  {
+   "id": "structure",
+   "kind": "c4",
+   "title": "Consumer-driven contracts: record, share, verify, gate",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "cons",
+     "label": "Consumer: Checkout [its own CI]",
+     "tone": "core"
+    },
+    {
+     "id": "prov",
+     "label": "Provider: Orders [its own CI]",
+     "tone": "core"
+    }
+   ],
+   "elements": [
+    {
+     "id": "ctest",
+     "kind": "component",
+     "tone": "core",
+     "label": "Consumer tests",
+     "sub": "drive the real client code",
+     "group": "cons"
+    },
+    {
+     "id": "mockp",
+     "kind": "component",
+     "tone": "core",
+     "label": "Mock provider",
+     "sub": "records each interaction",
+     "group": "cons"
+    },
+    {
+     "id": "broker",
+     "kind": "store",
+     "tone": "data",
+     "label": "Contract broker",
+     "sub": "contracts · results · deployments"
+    },
+    {
+     "id": "gate",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Can I deploy?",
+     "sub": "a check in every pipeline"
+    },
+    {
+     "id": "verifier",
+     "kind": "component",
+     "tone": "core",
+     "label": "Provider verifier",
+     "sub": "replays recorded requests",
+     "group": "prov"
+    },
+    {
+     "id": "states",
+     "kind": "component",
+     "tone": "core",
+     "label": "Provider states",
+     "sub": "\"order 42 exists\"",
+     "group": "prov"
+    },
+    {
+     "id": "api",
+     "kind": "container",
+     "tone": "core",
+     "label": "Orders API",
+     "sub": "the real code",
+     "group": "prov"
+    }
+   ],
+   "edges": [
+    {
+     "id": "p1",
+     "from": "ctest",
+     "to": "mockp",
+     "style": "solid",
+     "label": "request, expected response"
+    },
+    {
+     "id": "p2",
+     "from": "mockp",
+     "to": "broker",
+     "style": "solid",
+     "label": "publish contract"
+    },
+    {
+     "id": "p3",
+     "from": "broker",
+     "to": "verifier",
+     "style": "solid",
+     "label": "fetch contracts"
+    },
+    {
+     "id": "p4",
+     "from": "verifier",
+     "to": "states",
+     "style": "solid",
+     "label": "set up"
+    },
+    {
+     "id": "p5",
+     "from": "verifier",
+     "to": "api",
+     "style": "solid",
+     "label": "replay, compare"
+    },
+    {
+     "id": "p6",
+     "from": "verifier",
+     "to": "broker",
+     "style": "dotted",
+     "label": "publish result"
+    },
+    {
+     "id": "p7",
+     "from": "gate",
+     "to": "broker",
+     "style": "dotted",
+     "label": "compatible with production?"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call or publish"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "breaking or failing"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "result or signal"
+    }
+   ]
+  },
+  {
+   "id": "flow",
+   "kind": "sequence",
+   "title": "Record, publish, verify, deploy",
+   "participants": [
+    {
+     "id": "ctest",
+     "label": "Checkout tests"
+    },
+    {
+     "id": "mock",
+     "label": "Mock provider"
+    },
+    {
+     "id": "broker",
+     "label": "Broker"
+    },
+    {
+     "id": "verifier",
+     "label": "Orders verifier"
+    },
+    {
+     "id": "api",
+     "label": "Orders API"
+    },
+    {
+     "id": "ci",
+     "label": "Checkout deploy"
+    }
+   ],
+   "messages": [
+    {
+     "id": "f1",
+     "from": "ctest",
+     "to": "mock",
+     "style": "solid",
+     "label": "expect GET /orders/42 → { total }"
+    },
+    {
+     "id": "f2",
+     "from": "ctest",
+     "to": "mock",
+     "style": "solid",
+     "label": "real client code calls the mock"
+    },
+    {
+     "id": "f3",
+     "from": "mock",
+     "to": "ctest",
+     "style": "solid",
+     "label": "expected response · test passes"
+    },
+    {
+     "id": "f4",
+     "from": "mock",
+     "to": "broker",
+     "style": "solid",
+     "label": "publish contract for checkout v23"
+    },
+    {
+     "id": "f5",
+     "from": "broker",
+     "to": "verifier",
+     "style": "solid",
+     "label": "webhook: contract changed"
+    },
+    {
+     "id": "f6",
+     "from": "verifier",
+     "to": "api",
+     "style": "solid",
+     "label": "given order 42 exists: replay request"
+    },
+    {
+     "id": "f7",
+     "from": "api",
+     "to": "verifier",
+     "style": "solid",
+     "label": "{ total, currency, … } · extra fields fine"
+    },
+    {
+     "id": "f8",
+     "from": "verifier",
+     "to": "broker",
+     "style": "solid",
+     "label": "orders v56 verified against checkout v23"
+    },
+    {
+     "id": "f9",
+     "from": "ci",
+     "to": "broker",
+     "style": "solid",
+     "label": "can-i-deploy checkout v23 to production?"
+    },
+    {
+     "id": "f10",
+     "from": "broker",
+     "to": "ci",
+     "style": "solid",
+     "label": "yes: production runs orders v56"
+    }
+   ]
+  },
+  {
+   "id": "failure",
+   "kind": "sequence",
+   "title": "The rename, caught before it ships",
+   "participants": [
+    {
+     "id": "dev",
+     "label": "Orders team"
+    },
+    {
+     "id": "verifier",
+     "label": "Orders CI"
+    },
+    {
+     "id": "broker",
+     "label": "Broker"
+    },
+    {
+     "id": "ci",
+     "label": "Orders deploy"
+    },
+    {
+     "id": "cons",
+     "label": "Checkout team"
+    }
+   ],
+   "messages": [
+    {
+     "id": "x1",
+     "from": "dev",
+     "to": "verifier",
+     "style": "solid",
+     "label": "rename total → totalAmount"
+    },
+    {
+     "id": "x2",
+     "from": "verifier",
+     "to": "broker",
+     "style": "solid",
+     "label": "fetch contracts of deployed consumers"
+    },
+    {
+     "id": "x3",
+     "from": "broker",
+     "to": "verifier",
+     "style": "solid",
+     "label": "checkout v23 expects total"
+    },
+    {
+     "id": "x4",
+     "from": "verifier",
+     "to": "broker",
+     "style": "dashed",
+     "label": "verification failed: total missing"
+    },
+    {
+     "id": "x5",
+     "from": "ci",
+     "to": "broker",
+     "style": "solid",
+     "label": "can-i-deploy orders v57 to production?"
+    },
+    {
+     "id": "x6",
+     "from": "broker",
+     "to": "ci",
+     "style": "dashed",
+     "label": "no: breaks checkout v23 · exit code 1"
+    },
+    {
+     "id": "x7",
+     "from": "dev",
+     "to": "verifier",
+     "style": "solid",
+     "label": "expand: add totalAmount, keep total"
+    },
+    {
+     "id": "x8",
+     "from": "verifier",
+     "to": "broker",
+     "style": "solid",
+     "label": "verified ✓ · orders v58 deploys"
+    },
+    {
+     "id": "x9",
+     "from": "dev",
+     "to": "cons",
+     "style": "solid",
+     "label": "please move to totalAmount"
+    },
+    {
+     "id": "x10",
+     "from": "cons",
+     "to": "broker",
+     "style": "solid",
+     "label": "new contract no longer uses total"
+    }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "robinson",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Consumer-Driven Contracts",
+     "sub": "Ian Robinson · martinfowler.com, 2006",
+     "rank": 0
+    },
+    {
+     "id": "schema",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Schema compatibility",
+     "sub": "provider-driven",
+     "rank": 0
+    },
+    {
+     "id": "pact",
+     "kind": "container",
+     "tone": "core",
+     "label": "Pact",
+     "sub": "HTTP and message contracts",
+     "rank": 1
+    },
+    {
+     "id": "scc",
+     "kind": "container",
+     "tone": "core",
+     "label": "Spring Cloud Contract",
+     "sub": "contracts → tests and WireMock stubs",
+     "rank": 1
+    },
+    {
+     "id": "buf",
+     "kind": "container",
+     "tone": "stream",
+     "label": "buf breaking",
+     "sub": "protobuf · against main",
+     "rank": 1
+    },
+    {
+     "id": "csr",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Confluent Schema Registry",
+     "sub": "BACKWARD by default",
+     "rank": 1
+    },
+    {
+     "id": "oasdiff",
+     "kind": "container",
+     "tone": "stream",
+     "label": "oasdiff",
+     "sub": "OpenAPI breaking changes",
+     "rank": 1
+    },
+    {
+     "id": "broker",
+     "kind": "store",
+     "tone": "data",
+     "label": "Pact Broker · PactFlow",
+     "sub": "matrix · can-i-deploy",
+     "rank": 2
+    }
+   ],
+   "edges": [
+    {
+     "id": "w1",
+     "from": "robinson",
+     "to": "pact",
+     "style": "solid",
+     "label": "consumer-driven"
+    },
+    {
+     "id": "w2",
+     "from": "robinson",
+     "to": "scc",
+     "style": "solid",
+     "label": "consumer-driven"
+    },
+    {
+     "id": "w3",
+     "from": "pact",
+     "to": "broker",
+     "style": "solid",
+     "label": "share and gate"
+    },
+    {
+     "id": "w4",
+     "from": "schema",
+     "to": "buf",
+     "style": "solid",
+     "label": "protobuf"
+    },
+    {
+     "id": "w5",
+     "from": "schema",
+     "to": "csr",
+     "style": "solid",
+     "label": "Avro · Protobuf · JSON Schema"
+    },
+    {
+     "id": "w6",
+     "from": "schema",
+     "to": "oasdiff",
+     "style": "solid",
+     "label": "OpenAPI"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call or publish"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "breaking or failing"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "result or signal"
+    }
+   ]
+  },
+  {
+   "id": "related",
+   "kind": "c4",
+   "title": "Related patterns",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "ct",
+     "kind": "container",
+     "tone": "core",
+     "label": "Contract testing",
+     "sub": "prove compatibility before deploy",
+     "rank": 1
+    },
+    {
+     "id": "tolerant",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Tolerant reader",
+     "sub": "read only what you use",
+     "rank": 0
+    },
+    {
+     "id": "expand",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Expand and contract",
+     "sub": "add, migrate, then remove",
+     "rank": 0
+    },
+    {
+     "id": "e2e",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "A few end-to-end smoke tests",
+     "sub": "the whole journey, sparingly",
+     "rank": 0
+    },
+    {
+     "id": "gw",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "API gateway",
+     "sub": "one front door, many contracts",
+     "rank": 2
+    },
+    {
+     "id": "bff",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Backend for frontend",
+     "sub": "one consumer, one API",
+     "rank": 2
+    },
+    {
+     "id": "strangler",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Strangler fig",
+     "sub": "new service must honour old contracts",
+     "rank": 2
+    }
+   ],
+   "edges": [
+    {
+     "id": "r1",
+     "from": "tolerant",
+     "to": "ct",
+     "style": "solid",
+     "label": "keeps contracts small"
+    },
+    {
+     "id": "r2",
+     "from": "expand",
+     "to": "ct",
+     "style": "solid",
+     "label": "how to change safely"
+    },
+    {
+     "id": "r3",
+     "from": "e2e",
+     "to": "ct",
+     "style": "dotted",
+     "label": "still check behaviour"
+    },
+    {
+     "id": "r4",
+     "from": "ct",
+     "to": "gw",
+     "style": "solid",
+     "label": "verify routes and transforms"
+    },
+    {
+     "id": "r5",
+     "from": "ct",
+     "to": "bff",
+     "style": "solid",
+     "label": "consumer and provider in step"
+    },
+    {
+     "id": "r6",
+     "from": "ct",
+     "to": "strangler",
+     "style": "solid",
+     "label": "replacement passes old contracts"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call or publish"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "breaking or failing"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "result or signal"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "problem",
+   "title": "The problem"
+  },
+  {
+   "id": "naive",
+   "title": "The naive fix"
+  },
+  {
+   "id": "pattern",
+   "title": "The pattern"
+  },
+  {
+   "id": "how",
+   "title": "How it works"
+  },
+  {
+   "id": "failure",
+   "title": "When it goes wrong"
+  },
+  {
+   "id": "tradeoffs",
+   "title": "Trade-offs"
+  },
+  {
+   "id": "wild",
+   "title": "In the wild"
+  },
+  {
+   "id": "related",
+   "title": "Related patterns"
+  },
+  {
+   "id": "recap",
+   "title": "Recap"
+  }
+ ],
+ "shots": [
+  {
+   "id": "ct-problem",
+   "chapter": "problem",
+   "title": "Rename",
+   "diagram": "breakage",
+   "focus": [],
+   "trace": [
+    "b1",
+    "b2",
+    "b3",
+    "b4",
+    "b5",
+    "b6"
+   ],
+   "engineer": "Here is a small, illustrative accident. The orders team renames a field in their API, from total to total amount. It reads better, their unit tests are all green, and they deploy. But the checkout web app still reads order dot total. A customer opens order forty-two, the API answers with the new name, and checkout shows a blank total. Nothing in either team's pipeline knew what the other side relied on, so production found out first.",
+   "executive": "One team renamed a field in its API and another team's checkout page broke in production. Each team's own tests passed, because nothing checked what the other side relied on."
+  },
+  {
+   "id": "ct-e2e",
+   "chapter": "naive",
+   "title": "Shared environment",
+   "diagram": "naive",
+   "focus": [
+    "cic",
+    "cio",
+    "sc",
+    "so",
+    "sp"
+   ],
+   "trace": [
+    "n1",
+    "n2",
+    "n3",
+    "n4"
+   ],
+   "engineer": "The obvious fix is an end-to-end test environment: deploy everything together and run the whole journey. It does catch the rename, eventually. But every team shares one environment, so pipelines queue for it. Someone deploys their branch over yours; payments is down for a migration; the test times out, and nobody knows whose fault it is. The tests are slow, flaky and hard to debug, and you only find the problem after you have deployed.",
+   "executive": "Testing everything together in one shared environment catches the problem, but it is slow, unreliable and shared by every team, so it becomes a bottleneck."
+  },
+  {
+   "id": "ct-mocks",
+   "chapter": "naive",
+   "title": "Stale mock",
+   "diagram": "naive",
+   "focus": [
+    "ct",
+    "mock"
+   ],
+   "trace": [
+    "n5"
+   ],
+   "engineer": "The other obvious fix is to mock the provider in the consumer's own tests. That is fast and reliable, but the mock is written by the consumer, from memory or old documentation. When orders renames the field, the hand-written mock still returns total, and checkout's tests stay green. The mock has drifted from reality, and nothing tells you. As the Spring Cloud Contract documentation puts it, you can go to production with passing tests and failing production.",
+   "executive": "Faking the other service in tests is fast, but the fake quietly drifts from the real thing, so the tests pass while production fails."
+  },
+  {
+   "id": "ct-consumer",
+   "chapter": "pattern",
+   "title": "Record",
+   "diagram": "structure",
+   "focus": [
+    "ctest",
+    "mockp",
+    "broker"
+   ],
+   "trace": [
+    "p1",
+    "p2"
+   ],
+   "engineer": "Consumer-driven contracts keep the mock, but make it honest. The consumer's tests drive its real client code against a mock provider. Every request the client makes, and the response it needs back, is recorded as an interaction. Together these form the contract, which Pact calls a pact. It only contains what this consumer actually uses, not the whole API. The consumer publishes the contract to a broker, labelled with its own version.",
+   "executive": "The consumer's own tests write down exactly which requests it makes and which answers it needs. That record is the contract, and it is shared with the provider."
+  },
+  {
+   "id": "ct-provider",
+   "chapter": "pattern",
+   "title": "Verify",
+   "diagram": "structure",
+   "focus": [],
+   "trace": [
+    "p3",
+    "p4",
+    "p5",
+    "p6",
+    "p7"
+   ],
+   "engineer": "On the other side, the provider fetches every contract that applies to it and verifies them in its own pipeline. For each interaction it sets up a provider state, such as order forty-two exists, replays the recorded request against the real code, and checks the response contains at least what the consumer expected. It publishes the result back to the broker. Before anything deploys, a can I deploy check asks the broker whether this version is compatible with what is already running.",
+   "executive": "The provider replays those recorded requests against its real code in its own pipeline. A deploy check then asks whether each new version is compatible with what is already live."
+  },
+  {
+   "id": "ct-how",
+   "chapter": "how",
+   "title": "Sequence",
+   "diagram": "flow",
+   "focus": [],
+   "trace": [
+    "f1",
+    "f2",
+    "f3",
+    "f4",
+    "f5",
+    "f6",
+    "f7",
+    "f8",
+    "f9",
+    "f10"
+   ],
+   "engineer": "Step by step. Checkout's test tells the mock to expect a get on order forty-two and return a total. The real client calls the mock, and the test passes. The contract for checkout version twenty-three is published. A broker webhook starts the orders verification. Given order forty-two exists, the request is replayed; extra fields such as currency are fine. The result is recorded. Finally, checkout asks: can I deploy version twenty-three to production? Production runs a verified orders version, so the answer is yes.",
+   "executive": "The consumer records, the provider verifies, the broker remembers which versions work together, and the deploy pipeline asks before it ships."
+  },
+  {
+   "id": "ct-events",
+   "chapter": "how",
+   "card": {
+    "heading": "Events have contracts too",
+    "points": [
+     "The producer is the provider; each subscriber is a consumer",
+     "Contract is the message body, not the transport",
+     "Test the code that builds and handles the message",
+     "Same broker, same can-i-deploy check"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The same idea works for events. The service that publishes a message is the provider, and each subscriber is a consumer. Pact supports message contracts without caring whether the transport is Kafka, a cloud queue or anything else: in the test, Pact stands in for the message broker. The consumer's test feeds the recorded message to the code that handles it; the provider's test checks the code that builds it. Contracts and deploy checks work exactly as they do for HTTP.",
+   "executive": "Events and queues get the same treatment: whoever publishes a message must keep producing what subscribers rely on, and this is checked before deploying."
+  },
+  {
+   "id": "ct-failure",
+   "chapter": "failure",
+   "title": "Caught",
+   "diagram": "failure",
+   "focus": [],
+   "trace": [
+    "x1",
+    "x2",
+    "x3",
+    "x4",
+    "x5",
+    "x6"
+   ],
+   "engineer": "Now replay the original accident. The orders team renames total. Their pipeline fetches the contracts of the consumer versions that are deployed, and checkout version twenty-three still expects total. Verification fails, in the orders build, on a developer's machine if they like, with the consumer and interaction named. When they try to deploy anyway, can I deploy answers no, and exits with code one, so the pipeline stops. Production never sees the change.",
+   "executive": "The same rename now fails in the provider's own build, naming the consumer it would break, and the deploy check blocks the release."
+  },
+  {
+   "id": "ct-expand",
+   "chapter": "failure",
+   "title": "Expand, contract",
+   "diagram": "failure",
+   "focus": [],
+   "trace": [
+    "x7",
+    "x8",
+    "x9",
+    "x10"
+   ],
+   "engineer": "The contract does not forbid change; it tells you how to sequence it. Orders adds total amount and keeps total, so every existing contract still passes, and that version ships. The teams talk, and checkout moves to the new field. Once no deployed consumer's contract mentions total, orders can remove it safely. Watch for the edge cases: a contract that over-specifies exact values fails on harmless changes, and a consumer that never publishes a contract gets no protection at all.",
+   "executive": "Changes still happen, in a safe order: add the new field, move consumers over, then remove the old one once nothing relies on it."
+  },
+  {
+   "id": "ct-compare",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "Consumer-driven or schema-based",
+    "kind": "compare",
+    "points": [
+     "Consumer-driven (Pact) | Schema-based (OpenAPI, protobuf, Avro)",
+     "Checks what consumers actually use | Checks the whole published schema",
+     "Provider may change anything unused | Any breaking schema change fails",
+     "Needs consumers you know and can reach | Works for public APIs too",
+     "Proves the provider's real responses | Proves the schema, not the code"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The main alternative is provider-driven and schema-based. The provider publishes a schema, and a tool compares each new version with the last: oasdiff for OpenAPI, buf for protobuf, a schema registry for Avro. That works for public APIs, where you cannot know every consumer. But it checks the schema, not the running code, and it blocks changes nobody uses. Consumer-driven contracts check the real responses, and only for fields someone relies on, but need consumers you know.",
+   "executive": "You can check what consumers actually use, or check the published schema for breaking changes. The first is more precise; the second works when you do not know all your consumers."
+  },
+  {
+   "id": "ct-limits",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "What contract tests do not cover",
+    "points": [
+     "Business rules and side effects: the provider's own tests",
+     "Performance and load",
+     "Public APIs with unknown consumers",
+     "Pass-through APIs that forward without checking",
+     "A few end-to-end smoke tests still earn their keep"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Know the limits. A contract test checks the shape of requests and responses, not behaviour. It does not check that an order was saved, or that a discount was applied correctly; those are the provider's own functional tests. It says nothing about performance or load. The Pact documentation also warns about public APIs, where consumers are unknown, and pass-through services that forward requests without checking them. So keep a small number of end-to-end smoke tests alongside.",
+   "executive": "Contract tests check that services speak the same language, not that they do the right thing or do it quickly. Other tests still cover those."
+  },
+  {
+   "id": "ct-wild",
+   "chapter": "wild",
+   "title": "Tools",
+   "diagram": "wild",
+   "focus": [],
+   "trace": [
+    "w1",
+    "w2",
+    "w3",
+    "w4",
+    "w5",
+    "w6"
+   ],
+   "engineer": "In the wild. Ian Robinson described consumer-driven contracts in a 2006 article on Martin Fowler's site. Pact implements the idea for HTTP and messages, with the Pact Broker, or the hosted PactFlow, sharing contracts and answering can I deploy. Spring Cloud Contract turns contracts into provider tests and WireMock stubs; its repository was archived in July 2026, with maintenance taken over by Stubborn. On the schema side: buf breaking for protobuf, Confluent Schema Registry, which defaults to backward compatibility, and oasdiff for OpenAPI.",
+   "executive": "Pact is a tool built for consumer-driven contracts. For schemas, protobuf, Avro and OpenAPI each have tools that reject breaking changes."
+  },
+  {
+   "id": "ct-related",
+   "chapter": "related",
+   "title": "Neighbours",
+   "diagram": "related",
+   "focus": [],
+   "trace": [
+    "r1",
+    "r2",
+    "r3",
+    "r4",
+    "r5",
+    "r6"
+   ],
+   "engineer": "Its neighbours. A tolerant reader only reads the fields it needs, which keeps contracts small. Expand and contract is how you change an API safely once the contract tells you who depends on what. A few end-to-end smoke tests still check behaviour. An API gateway or a backend for frontend sits between consumers and providers, so it is both a consumer and a provider and needs contracts on each side. And when a strangler fig replaces an old system, the old contracts tell you what the replacement must honour.",
+   "executive": "Contract testing pairs with careful readers, safe step-by-step API changes, gateways and system replacements, wherever one service must keep another working."
+  },
+  {
+   "id": "ct-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "Consumers record exactly what they rely on",
+     "Providers verify those contracts in their own build",
+     "Ask the broker before you deploy, every time"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. Let each consumer record exactly what it relies on, from its real client code, so the contract cannot drift. Make the provider verify those contracts in its own build, so a breaking change fails where it was made, not in production. And ask before you deploy: check that this version is compatible with what is already running, every time.",
+   "executive": "Consumers write down what they need. Providers prove they still deliver it. Nothing ships until the check says yes."
+  }
+ ],
+ "subtitle": "Design pattern",
+ "meta": {
+  "kind": "pattern",
+  "category": "APIs",
+  "level": "intermediate",
+  "uses": [],
+  "related": [
+   "api-gateway",
+   "bff",
+   "strangler-fig"
+  ],
+  "blurb": "Each consumer records what it relies on; the provider proves it still delivers before either side deploys.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ }
+}

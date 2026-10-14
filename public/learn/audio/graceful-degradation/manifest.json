@@ -1,0 +1,142 @@
+{
+ "gd-problem-engineer": {
+  "file": "/audio/graceful-degradation/gd-problem-engineer.mp3",
+  "ms": 20832,
+  "hash": "b0fe6a944808"
+ },
+ "gd-problem-executive": {
+  "file": "/audio/graceful-degradation/gd-problem-executive.mp3",
+  "ms": 5928,
+  "hash": "c40aa43d2e32"
+ },
+ "gd-cascade-engineer": {
+  "file": "/audio/graceful-degradation/gd-cascade-engineer.mp3",
+  "ms": 21936,
+  "hash": "70f8befd5a77"
+ },
+ "gd-cascade-executive": {
+  "file": "/audio/graceful-degradation/gd-cascade-executive.mp3",
+  "ms": 7104,
+  "hash": "c4efecf9aeea"
+ },
+ "gd-naive-engineer": {
+  "file": "/audio/graceful-degradation/gd-naive-engineer.mp3",
+  "ms": 22344,
+  "hash": "4fb450f334bb"
+ },
+ "gd-naive-executive": {
+  "file": "/audio/graceful-degradation/gd-naive-executive.mp3",
+  "ms": 8976,
+  "hash": "84dece7fd67d"
+ },
+ "gd-classify-engineer": {
+  "file": "/audio/graceful-degradation/gd-classify-engineer.mp3",
+  "ms": 25368,
+  "hash": "adc8c299cbcf"
+ },
+ "gd-classify-executive": {
+  "file": "/audio/graceful-degradation/gd-classify-executive.mp3",
+  "ms": 8280,
+  "hash": "ea43337d08e8"
+ },
+ "gd-structure-engineer": {
+  "file": "/audio/graceful-degradation/gd-structure-engineer.mp3",
+  "ms": 25536,
+  "hash": "1e04022c14b5"
+ },
+ "gd-structure-executive": {
+  "file": "/audio/graceful-degradation/gd-structure-executive.mp3",
+  "ms": 9984,
+  "hash": "17c6867b1286"
+ },
+ "gd-ladder-engineer": {
+  "file": "/audio/graceful-degradation/gd-ladder-engineer.mp3",
+  "ms": 27288,
+  "hash": "663805a5f067"
+ },
+ "gd-ladder-executive": {
+  "file": "/audio/graceful-degradation/gd-ladder-executive.mp3",
+  "ms": 8712,
+  "hash": "08c20de3888b"
+ },
+ "gd-how-engineer": {
+  "file": "/audio/graceful-degradation/gd-how-engineer.mp3",
+  "ms": 27960,
+  "hash": "99a031d9ec88"
+ },
+ "gd-how-executive": {
+  "file": "/audio/graceful-degradation/gd-how-executive.mp3",
+  "ms": 7680,
+  "hash": "fda9a84010e7"
+ },
+ "gd-shed-engineer": {
+  "file": "/audio/graceful-degradation/gd-shed-engineer.mp3",
+  "ms": 28464,
+  "hash": "2d14b824f72a"
+ },
+ "gd-shed-executive": {
+  "file": "/audio/graceful-degradation/gd-shed-executive.mp3",
+  "ms": 8304,
+  "hash": "3b1a8c1fd94d"
+ },
+ "gd-storm-engineer": {
+  "file": "/audio/graceful-degradation/gd-storm-engineer.mp3",
+  "ms": 27432,
+  "hash": "2077b88cf5b4"
+ },
+ "gd-storm-executive": {
+  "file": "/audio/graceful-degradation/gd-storm-executive.mp3",
+  "ms": 7680,
+  "hash": "28ba4f810dc9"
+ },
+ "gd-dangers-engineer": {
+  "file": "/audio/graceful-degradation/gd-dangers-engineer.mp3",
+  "ms": 29520,
+  "hash": "f04e394938cf"
+ },
+ "gd-dangers-executive": {
+  "file": "/audio/graceful-degradation/gd-dangers-executive.mp3",
+  "ms": 7632,
+  "hash": "3dff0ac5eb7f"
+ },
+ "gd-tradeoffs-engineer": {
+  "file": "/audio/graceful-degradation/gd-tradeoffs-engineer.mp3",
+  "ms": 29760,
+  "hash": "f1810372a611"
+ },
+ "gd-tradeoffs-executive": {
+  "file": "/audio/graceful-degradation/gd-tradeoffs-executive.mp3",
+  "ms": 8400,
+  "hash": "d0fc3dd7c4d1"
+ },
+ "gd-wild-engineer": {
+  "file": "/audio/graceful-degradation/gd-wild-engineer.mp3",
+  "ms": 32424,
+  "hash": "9b774b274b62"
+ },
+ "gd-wild-executive": {
+  "file": "/audio/graceful-degradation/gd-wild-executive.mp3",
+  "ms": 7992,
+  "hash": "840d4610087f"
+ },
+ "gd-related-engineer": {
+  "file": "/audio/graceful-degradation/gd-related-engineer.mp3",
+  "ms": 27312,
+  "hash": "b6894eade21e"
+ },
+ "gd-related-executive": {
+  "file": "/audio/graceful-degradation/gd-related-executive.mp3",
+  "ms": 8424,
+  "hash": "be219f5ae6f3"
+ },
+ "gd-recap-engineer": {
+  "file": "/audio/graceful-degradation/gd-recap-engineer.mp3",
+  "ms": 21792,
+  "hash": "cdef9c2b92af"
+ },
+ "gd-recap-executive": {
+  "file": "/audio/graceful-degradation/gd-recap-executive.mp3",
+  "ms": 6072,
+  "hash": "687309374fd0"
+ }
+}

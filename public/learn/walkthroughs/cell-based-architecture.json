@@ -1,0 +1,1062 @@
+{
+ "id": "cell-based-architecture",
+ "title": "Cell-based architecture",
+ "subtitle": "Design pattern",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "diagrams": [
+  {
+   "id": "shared",
+   "kind": "c4",
+   "title": "One deployment serves every customer",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "stack",
+     "label": "One deployment [serves 100% of customers]",
+     "tone": "core"
+    }
+   ],
+   "elements": [
+    {
+     "id": "custs",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Customers",
+     "sub": "every customer, large and small"
+    },
+    {
+     "id": "noisy",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "One customer",
+     "sub": "a poison request or a traffic spike"
+    },
+    {
+     "id": "pipeline",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Deploy pipeline",
+     "sub": "ships each release to the fleet"
+    },
+    {
+     "id": "lb",
+     "kind": "component",
+     "tone": "core",
+     "label": "Load balancer",
+     "sub": "any request to any server",
+     "group": "stack"
+    },
+    {
+     "id": "app",
+     "kind": "container",
+     "tone": "core",
+     "label": "App services",
+     "sub": "one fleet, one version",
+     "group": "stack"
+    },
+    {
+     "id": "db",
+     "kind": "store",
+     "tone": "data",
+     "label": "Database",
+     "sub": "every customer's data",
+     "group": "stack"
+    }
+   ],
+   "edges": [
+    {
+     "id": "s1",
+     "from": "custs",
+     "to": "lb",
+     "style": "solid",
+     "label": "requests"
+    },
+    {
+     "id": "s2",
+     "from": "lb",
+     "to": "app",
+     "style": "solid",
+     "label": "any replica"
+    },
+    {
+     "id": "s3",
+     "from": "app",
+     "to": "db",
+     "style": "solid",
+     "label": "shared tables and capacity"
+    },
+    {
+     "id": "s4",
+     "from": "pipeline",
+     "to": "app",
+     "style": "dashed",
+     "label": "bad release: everyone at once"
+    },
+    {
+     "id": "s5",
+     "from": "noisy",
+     "to": "lb",
+     "style": "dashed",
+     "label": "crashes or starves the shared fleet"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "control"
+    }
+   ]
+  },
+  {
+   "id": "replicas",
+   "kind": "sequence",
+   "title": "More replicas, more zones",
+   "participants": [
+    {
+     "id": "cust",
+     "label": "Customer A"
+    },
+    {
+     "id": "lb",
+     "label": "Load balancer"
+    },
+    {
+     "id": "r1",
+     "label": "Replica · zone a"
+    },
+    {
+     "id": "r2",
+     "label": "Replica · zone b"
+    },
+    {
+     "id": "r3",
+     "label": "Replica · zone c"
+    },
+    {
+     "id": "others",
+     "label": "Every other customer"
+    }
+   ],
+   "messages": [
+    {
+     "id": "n1",
+     "from": "cust",
+     "to": "lb",
+     "style": "solid",
+     "label": "request that hits a bug"
+    },
+    {
+     "id": "n2",
+     "from": "lb",
+     "to": "r1",
+     "style": "solid",
+     "label": "zone a replica crashes"
+    },
+    {
+     "id": "n3",
+     "from": "cust",
+     "to": "lb",
+     "style": "solid",
+     "label": "client retries"
+    },
+    {
+     "id": "n4",
+     "from": "lb",
+     "to": "r2",
+     "style": "solid",
+     "label": "zone b replica crashes"
+    },
+    {
+     "id": "n5",
+     "from": "lb",
+     "to": "r3",
+     "style": "solid",
+     "label": "another retry: zone c crashes"
+    },
+    {
+     "id": "n6",
+     "from": "lb",
+     "to": "others",
+     "style": "solid",
+     "label": "errors for 100% of customers"
+    }
+   ]
+  },
+  {
+   "id": "cells",
+   "kind": "c4",
+   "title": "Identical, independent cells behind a thin router",
+   "direction": "DOWN",
+   "groups": [
+    {
+     "id": "global",
+     "label": "Shared [kept thin and small]",
+     "tone": "neutral"
+    },
+    {
+     "id": "cell1",
+     "label": "Cell 1 [customers A–H]",
+     "tone": "core"
+    },
+    {
+     "id": "cell2",
+     "label": "Cell 2 [customers I–P]",
+     "tone": "core"
+    },
+    {
+     "id": "cell3",
+     "label": "Cell 3 [customers Q–Z]",
+     "tone": "core"
+    }
+   ],
+   "elements": [
+    {
+     "id": "custa",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Customer A",
+     "sub": "sends a poison request"
+    },
+    {
+     "id": "others",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Other customers",
+     "sub": "business as usual"
+    },
+    {
+     "id": "router",
+     "kind": "component",
+     "tone": "core",
+     "label": "Cell router",
+     "sub": "partition key → cell, nothing else",
+     "group": "global"
+    },
+    {
+     "id": "control",
+     "kind": "system",
+     "tone": "data",
+     "label": "Control plane",
+     "sub": "creates cells, moves customers",
+     "group": "global"
+    },
+    {
+     "id": "c1app",
+     "kind": "container",
+     "tone": "core",
+     "label": "Services",
+     "sub": "complete stack",
+     "group": "cell1"
+    },
+    {
+     "id": "c1db",
+     "kind": "store",
+     "tone": "data",
+     "label": "Database",
+     "sub": "cell 1's data only",
+     "group": "cell1"
+    },
+    {
+     "id": "c2app",
+     "kind": "container",
+     "tone": "core",
+     "label": "Services",
+     "sub": "complete stack",
+     "group": "cell2"
+    },
+    {
+     "id": "c2db",
+     "kind": "store",
+     "tone": "data",
+     "label": "Database",
+     "sub": "cell 2's data only",
+     "group": "cell2"
+    },
+    {
+     "id": "c3app",
+     "kind": "container",
+     "tone": "core",
+     "label": "Services",
+     "sub": "complete stack",
+     "group": "cell3"
+    },
+    {
+     "id": "c3db",
+     "kind": "store",
+     "tone": "data",
+     "label": "Database",
+     "sub": "cell 3's data only",
+     "group": "cell3"
+    },
+    {
+     "id": "alarms",
+     "kind": "store",
+     "tone": "data",
+     "label": "Per-cell health",
+     "sub": "alarms for each cell"
+    }
+   ],
+   "edges": [
+    {
+     "id": "p1",
+     "from": "custa",
+     "to": "router",
+     "style": "solid",
+     "label": "request · customer ID A"
+    },
+    {
+     "id": "p2",
+     "from": "others",
+     "to": "router",
+     "style": "solid",
+     "label": "requests"
+    },
+    {
+     "id": "p3",
+     "from": "router",
+     "to": "c1app",
+     "style": "solid",
+     "label": "A–H"
+    },
+    {
+     "id": "p4",
+     "from": "router",
+     "to": "c2app",
+     "style": "solid",
+     "label": "I–P"
+    },
+    {
+     "id": "p5",
+     "from": "router",
+     "to": "c3app",
+     "style": "solid",
+     "label": "Q–Z"
+    },
+    {
+     "id": "p6",
+     "from": "c1app",
+     "to": "c1db",
+     "style": "solid",
+     "label": "own data"
+    },
+    {
+     "id": "p7",
+     "from": "c2app",
+     "to": "c2db",
+     "style": "solid",
+     "label": "own data"
+    },
+    {
+     "id": "p8",
+     "from": "c3app",
+     "to": "c3db",
+     "style": "solid",
+     "label": "own data"
+    },
+    {
+     "id": "p9",
+     "from": "control",
+     "to": "router",
+     "style": "dotted",
+     "label": "routing map"
+    },
+    {
+     "id": "p10",
+     "from": "control",
+     "to": "c1app",
+     "style": "dotted",
+     "label": "provision, deploy, migrate"
+    },
+    {
+     "id": "f1",
+     "from": "c1app",
+     "to": "alarms",
+     "style": "dashed",
+     "label": "cell 1 fails: only A–H affected"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "control"
+    }
+   ]
+  },
+  {
+   "id": "request",
+   "kind": "sequence",
+   "title": "Route a request, add a cell, move a customer",
+   "participants": [
+    {
+     "id": "client",
+     "label": "Customer 42's app"
+    },
+    {
+     "id": "router",
+     "label": "Cell router"
+    },
+    {
+     "id": "cell2",
+     "label": "Cell 2"
+    },
+    {
+     "id": "cell4",
+     "label": "Cell 4 (new)"
+    },
+    {
+     "id": "control",
+     "label": "Control plane"
+    }
+   ],
+   "messages": [
+    {
+     "id": "r1",
+     "from": "client",
+     "to": "router",
+     "style": "solid",
+     "label": "GET /orders · customer 42"
+    },
+    {
+     "id": "r2",
+     "from": "router",
+     "to": "cell2",
+     "style": "solid",
+     "label": "map in memory: 42 → cell 2"
+    },
+    {
+     "id": "r3",
+     "from": "cell2",
+     "to": "router",
+     "style": "solid",
+     "label": "answered entirely inside cell 2"
+    },
+    {
+     "id": "r4",
+     "from": "router",
+     "to": "client",
+     "style": "solid",
+     "label": "200 OK"
+    },
+    {
+     "id": "m1",
+     "from": "control",
+     "to": "cell4",
+     "style": "dotted",
+     "label": "provision from the same template"
+    },
+    {
+     "id": "m2",
+     "from": "control",
+     "to": "router",
+     "style": "dotted",
+     "label": "new sign-ups → cell 4"
+    },
+    {
+     "id": "m3",
+     "from": "cell2",
+     "to": "cell4",
+     "style": "dotted",
+     "label": "1. clone 42's data, not authoritative"
+    },
+    {
+     "id": "m4",
+     "from": "control",
+     "to": "cell4",
+     "style": "dotted",
+     "label": "2. flip: cell 4 is authoritative"
+    },
+    {
+     "id": "m5",
+     "from": "control",
+     "to": "router",
+     "style": "dotted",
+     "label": "3. redirect: 42 → cell 4"
+    },
+    {
+     "id": "m6",
+     "from": "control",
+     "to": "cell2",
+     "style": "dotted",
+     "label": "4. forget customer 42"
+    }
+   ]
+  },
+  {
+   "id": "waves",
+   "kind": "sequence",
+   "title": "Deploy cell by cell, in waves",
+   "participants": [
+    {
+     "id": "pipe",
+     "label": "Deploy pipeline"
+    },
+    {
+     "id": "cell1",
+     "label": "Wave 1: cell 1"
+    },
+    {
+     "id": "rest",
+     "label": "Later waves: cells 2–10"
+    },
+    {
+     "id": "alarms",
+     "label": "Per-cell alarms"
+    }
+   ],
+   "messages": [
+    {
+     "id": "d1",
+     "from": "pipe",
+     "to": "cell1",
+     "style": "solid",
+     "label": "v2 to one cell only"
+    },
+    {
+     "id": "d2",
+     "from": "cell1",
+     "to": "alarms",
+     "style": "dashed",
+     "label": "errors rise for cell 1's customers"
+    },
+    {
+     "id": "d3",
+     "from": "alarms",
+     "to": "pipe",
+     "style": "dashed",
+     "label": "halt the rollout"
+    },
+    {
+     "id": "d4",
+     "from": "pipe",
+     "to": "cell1",
+     "style": "solid",
+     "label": "roll back to v1"
+    },
+    {
+     "id": "d5",
+     "from": "pipe",
+     "to": "rest",
+     "style": "solid",
+     "label": "never received the bad v2"
+    },
+    {
+     "id": "d6",
+     "from": "pipe",
+     "to": "rest",
+     "style": "solid",
+     "label": "after a fix: a few cells per wave, wait, repeat"
+    }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "idea",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Cell-based architecture",
+     "sub": "router, cells, control plane"
+    },
+    {
+     "id": "aws",
+     "kind": "container",
+     "tone": "core",
+     "label": "AWS whitepaper",
+     "sub": "Sept 2023 · cells for over a decade"
+    },
+    {
+     "id": "builders",
+     "kind": "container",
+     "tone": "core",
+     "label": "AWS Builders' Library",
+     "sub": "shuffle sharding · static stability"
+    },
+    {
+     "id": "r53",
+     "kind": "external",
+     "tone": "external",
+     "label": "Amazon Route 53",
+     "sub": "4 of 2,048 name servers per domain"
+    },
+    {
+     "id": "azure",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Microsoft Deployment Stamps",
+     "sub": "stamps, scale units or cells"
+    },
+    {
+     "id": "slack",
+     "kind": "external",
+     "tone": "external",
+     "label": "Slack (2023)",
+     "sub": "each availability zone a cell"
+    }
+   ],
+   "edges": [
+    {
+     "id": "w1",
+     "from": "idea",
+     "to": "aws",
+     "style": "solid",
+     "label": "the reference guide"
+    },
+    {
+     "id": "w2",
+     "from": "idea",
+     "to": "builders",
+     "style": "solid",
+     "label": "the techniques"
+    },
+    {
+     "id": "w3",
+     "from": "builders",
+     "to": "r53",
+     "style": "solid",
+     "label": "shuffle sharding in production"
+    },
+    {
+     "id": "w4",
+     "from": "idea",
+     "to": "azure",
+     "style": "solid",
+     "label": "same idea, Azure's name"
+    },
+    {
+     "id": "w5",
+     "from": "idea",
+     "to": "slack",
+     "style": "dotted",
+     "label": "drain a zone in 5 minutes (goal)"
+    }
+   ]
+  },
+  {
+   "id": "related",
+   "kind": "c4",
+   "title": "Related patterns",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "cba",
+     "kind": "container",
+     "tone": "core",
+     "label": "Cell-based architecture",
+     "sub": "isolate the whole stack"
+    },
+    {
+     "id": "bh",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Bulkhead",
+     "sub": "same idea inside one process"
+    },
+    {
+     "id": "shard",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Sharding",
+     "sub": "splits the data, not the stack"
+    },
+    {
+     "id": "ch",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Consistent hashing",
+     "sub": "one way to map keys to cells"
+    },
+    {
+     "id": "ss",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Shuffle sharding",
+     "sub": "a random mix of workers per customer"
+    },
+    {
+     "id": "gd",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Graceful degradation",
+     "sub": "what a bad cell's users still get"
+    }
+   ],
+   "edges": [
+    {
+     "id": "x1",
+     "from": "bh",
+     "to": "cba",
+     "style": "solid",
+     "label": "scaled up to whole systems"
+    },
+    {
+     "id": "x2",
+     "from": "cba",
+     "to": "shard",
+     "style": "solid",
+     "label": "cells shard data implicitly"
+    },
+    {
+     "id": "x3",
+     "from": "ch",
+     "to": "cba",
+     "style": "solid",
+     "label": "partition key → cell"
+    },
+    {
+     "id": "x4",
+     "from": "cba",
+     "to": "ss",
+     "style": "dotted",
+     "label": "overlapping shards"
+    },
+    {
+     "id": "x5",
+     "from": "cba",
+     "to": "gd",
+     "style": "dotted",
+     "label": "inside a failing cell"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "problem",
+   "title": "The problem"
+  },
+  {
+   "id": "naive",
+   "title": "The naive fix"
+  },
+  {
+   "id": "pattern",
+   "title": "The pattern"
+  },
+  {
+   "id": "how",
+   "title": "How it works"
+  },
+  {
+   "id": "failure",
+   "title": "When it goes wrong"
+  },
+  {
+   "id": "tradeoffs",
+   "title": "Trade-offs"
+  },
+  {
+   "id": "wild",
+   "title": "In the wild"
+  },
+  {
+   "id": "related",
+   "title": "Related patterns"
+  },
+  {
+   "id": "recap",
+   "title": "Recap"
+  }
+ ],
+ "shots": [
+  {
+   "id": "cba-problem",
+   "chapter": "problem",
+   "title": "One stack",
+   "diagram": "shared",
+   "focus": [],
+   "trace": [
+    "s1",
+    "s2",
+    "s3"
+   ],
+   "engineer": "Here is a typical software-as-a-service product. Every customer, large and small, comes through one load balancer to one fleet of services and one database. It is simple, and for a while it works well. But look at what it means. Every request from every customer shares the same code version, the same database and the same capacity. Whatever goes wrong anywhere in this stack goes wrong for everybody.",
+   "executive": "Every customer is served by one shared system. That is simple, but it means any problem is everyone's problem."
+  },
+  {
+   "id": "cba-blast",
+   "chapter": "problem",
+   "title": "Blast radius",
+   "diagram": "shared",
+   "focus": [],
+   "trace": [
+    "s4",
+    "s5"
+   ],
+   "engineer": "Three things go wrong. A release ships a bug, and because there is one fleet, it reaches every customer at once. One malformed request, a so-called poison pill, crashes each server it is sent to. Or one customer's traffic surges and starves everyone else. Each time, the blast radius is a hundred per cent. AWS asks: is it better for all customers to see a five per cent failure rate, or for five per cent of customers to see a hundred per cent?",
+   "executive": "One bad release, one bad request or one very busy customer can take everyone down at the same time."
+  },
+  {
+   "id": "cba-naive",
+   "chapter": "naive",
+   "title": "More replicas",
+   "diagram": "replicas",
+   "focus": [],
+   "trace": [
+    "n1",
+    "n2",
+    "n3",
+    "n4",
+    "n5",
+    "n6"
+   ],
+   "engineer": "The obvious fix is redundancy: more replicas, spread across three availability zones. That protects you when a machine or a data centre dies. It does nothing for a poison request. Customer A sends a request that hits a bug, and the replica in zone a crashes. The client retries, as it should, and the load balancer sends it to zone b, which crashes too. One more retry takes out zone c. Every replica runs the same code, so every replica has the same bug.",
+   "executive": "Extra copies protect against hardware failure, but identical copies of the same code fail identically, one after another."
+  },
+  {
+   "id": "cba-cells",
+   "chapter": "pattern",
+   "title": "Cells",
+   "diagram": "cells",
+   "focus": [],
+   "trace": [
+    "p2",
+    "p3",
+    "p4",
+    "p5",
+    "p6",
+    "p7",
+    "p8",
+    "p9",
+    "p10"
+   ],
+   "engineer": "A cell-based architecture splits the whole stack into identical, independent copies called cells. Each cell is a complete workload, services and data, serving only a subset of customers, and cells share no state with each other. In front sits the cell router, which AWS calls the thinnest possible layer: it reads a partition key, such as a customer ID, forwards the request to that customer's cell, and does nothing else. A separate control plane creates cells and moves customers between them.",
+   "executive": "Split the system into several identical, self-contained copies, each serving its own group of customers, with a very thin router in front."
+  },
+  {
+   "id": "cba-global",
+   "chapter": "pattern",
+   "card": {
+    "heading": "What is shared, and what lives in a cell",
+    "kind": "compare",
+    "points": [
+     "Shared: keep it tiny | Inside each cell",
+     "Cell router: partition key → cell | Services and business logic",
+     "Routing map, cached in memory | Databases, caches and queues",
+     "Control plane: create cells, move customers | Its own capacity limits and alarms",
+     "Keeps routing if the control plane is down | Shares no state with other cells"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The hard discipline is deciding what stays shared. Anything global is a path for one failure to reach every cell, so keep it as small and simple as you can. The router holds only the map from key to cell, cached in memory. The control plane does the administration: creating cells, deploying, migrating customers. AWS recommends static stability here: if the control plane is down, the router keeps its last map and existing cells keep serving. Everything else lives inside a cell.",
+   "executive": "Only a tiny router and an admin layer are shared. If the admin layer fails, customers keep being served from the last known map."
+  },
+  {
+   "id": "cba-request",
+   "chapter": "how",
+   "title": "Route",
+   "diagram": "request",
+   "focus": [],
+   "trace": [
+    "r1",
+    "r2",
+    "r3",
+    "r4"
+   ],
+   "engineer": "Here is a normal request. Customer forty-two's app calls the one public endpoint. The router looks up forty-two in its in-memory map, finds cell two, and forwards the request. Cell two does all the work: its own services, its own database, no calls to other cells. The answer goes back the way it came, and the client never knows that cells exist. Because the router does one lookup and nothing more, it is far easier to scale and harden than the application behind it.",
+   "executive": "A request carries a customer ID; the router looks up that customer's cell and passes it on. The customer never sees cells."
+  },
+  {
+   "id": "cba-grow",
+   "chapter": "how",
+   "title": "Grow and move",
+   "diagram": "request",
+   "focus": [],
+   "trace": [
+    "m1",
+    "m2",
+    "m3",
+    "m4",
+    "m5",
+    "m6"
+   ],
+   "engineer": "You grow by adding cells, not by making them bigger. Each cell has a fixed maximum size that you have load-tested, so when cells fill up, the control plane provisions a new one from the same template and sends new sign-ups to it. Sometimes a customer has to move, perhaps because it has outgrown a shared cell. AWS describes four phases: clone the data as a non-authoritative copy, flip the new copy to authoritative, redirect traffic to it, and forget the old one.",
+   "executive": "To grow, add another identical cell rather than enlarging one. Moving a customer is a careful copy, switch-over, redirect and clean-up."
+  },
+  {
+   "id": "cba-poison",
+   "chapter": "failure",
+   "title": "Poison request",
+   "diagram": "cells",
+   "focus": [],
+   "trace": [
+    "p1",
+    "p3",
+    "f1",
+    "p2",
+    "p4",
+    "p5"
+   ],
+   "engineer": "Now replay the poison request. Customer A's request reaches the router and goes to cell one, the only cell that serves A. Cell one crashes, just as every replica did before. But the damage stops at the cell wall. Customers in cells two and three never see that request, so they are served as normal. AWS's example: with ten cells, a failure in one leaves ninety per cent of requests unaffected. With N cells, the blast radius is roughly one in N.",
+   "executive": "The bad request only ever reaches one cell, so only that cell's customers are hurt. With ten cells, nine in ten customers notice nothing."
+  },
+  {
+   "id": "cba-waves",
+   "chapter": "failure",
+   "title": "Deploy in waves",
+   "diagram": "waves",
+   "focus": [],
+   "trace": [
+    "d1",
+    "d2",
+    "d3",
+    "d4",
+    "d5",
+    "d6"
+   ],
+   "engineer": "Cells also contain bad releases, as long as you deploy one wave at a time. The pipeline ships version two to cell one only. Alarms show errors rising for cell one's customers, so the pipeline halts and rolls cell one back. Cells two to ten never ran the bad version. Once it is fixed, the release goes out in waves, a few cells at a time, with a pause between waves to watch for trouble. AWS and Microsoft both describe rolling out cell by cell.",
+   "executive": "Releases go to one cell first, then a few more, then the rest. A bad release is caught while it only affects a small group."
+  },
+  {
+   "id": "cba-sizing",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "Smaller cells or larger cells",
+    "kind": "compare",
+    "points": [
+     "Smaller cells | Larger cells",
+     "An outage hits a small share of customers | An outage hits a large share",
+     "Easier and cheaper to test at full size | Fewer copies to deploy and operate",
+     "Less likely to hit service or account limits | Better capacity use and economies of scale",
+     "Your biggest customer may not fit | Room for your largest workload"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "How big should a cell be? AWS names three opposing forces. Big enough to fit your largest workload. Small enough to test at full scale and to stay clear of service limits. And big enough to gain economies of scale. Smaller cells shrink the blast radius: with ten cells each holds ten per cent of customers; with a hundred, one per cent. But you deploy, watch and pay for every one. Whatever size you pick, cap it, test it, and shed load beyond it.",
+   "executive": "Small cells limit the damage of any failure; large cells are cheaper and simpler to run. Pick a size, test it to its limit, and stick to it."
+  },
+  {
+   "id": "cba-costs",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "What you gain, what you pay",
+    "kind": "compare",
+    "points": [
+     "You gain | You pay",
+     "A failure stays inside one cell | Per-cell overhead: more copies to run and watch",
+     "Cells you can test to their limit | A router that must be highly available",
+     "Releases that roll out cell by cell | Automated pipelines for many deployments",
+     "Growth by adding cells | Cross-cell queries: ask every cell, or a warehouse",
+     "Customers isolated from each other | Moving a customer between cells is hard"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The costs are real. Microsoft warns that copying the stack substantially increases cost, though AWS notes that sometimes the same hosts can simply be regrouped into cells. You need a highly available router, specialised tooling, and automated pipelines for many deployments. A question that spans customers, such as how many customers do we have, now means querying every cell or a central warehouse. Skip cells if your system is small, or if sharding the database alone solves your scaling problem.",
+   "executive": "Cells cost more money and tooling, and make company-wide reporting harder. Use them where an outage for everyone is unacceptable."
+  },
+  {
+   "id": "cba-shuffle",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "Shuffle sharding: eight workers",
+    "kind": "numbers",
+    "points": [
+     "4 × 2 | fixed shards: one bad customer hits 25%",
+     "28 | unique pairs of workers from 8",
+     "1 / 28 | scope of impact with shuffle shards",
+     "730 bn | Route 53: 4 of 2,048 name servers"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "A refinement from the AWS Builders' Library is shuffle sharding. Take eight workers. Split them into four fixed shards of two, and a bad customer takes down its whole shard: twenty-five per cent of customers. Instead, give each customer its own pair of workers. There are twenty-eight different pairs, so the scope of impact falls to one twenty-eighth, provided clients retry on another worker. Route fifty-three gives each domain four of two thousand and forty-eight virtual name servers: about seven hundred and thirty billion combinations.",
+   "executive": "Shuffle sharding gives each customer its own mix of servers, so a bad customer's exact mix is shared by almost nobody else."
+  },
+  {
+   "id": "cba-wild",
+   "chapter": "wild",
+   "title": "In the wild",
+   "diagram": "wild",
+   "focus": [],
+   "trace": [
+    "w1",
+    "w2",
+    "w3",
+    "w4",
+    "w5"
+   ],
+   "engineer": "In the wild. AWS published Reducing the Scope of Impact with Cell-Based Architecture in September twenty twenty-three, and says its service teams have used cells for more than a decade. Its Builders' Library covers shuffle sharding and static stability. Microsoft's Deployment Stamps pattern is the same idea, and notes that stamps are sometimes called scale units or cells. And Slack, after a network fault in one availability zone in twenty twenty-one, made each zone a cell, aiming to drain one within five minutes.",
+   "executive": "AWS has used cells for over a decade, Microsoft calls them deployment stamps, and Slack treats each availability zone as a cell."
+  },
+  {
+   "id": "cba-related",
+   "chapter": "related",
+   "title": "Neighbours",
+   "diagram": "related",
+   "focus": [],
+   "trace": [
+    "x1",
+    "x2",
+    "x3",
+    "x4",
+    "x5"
+   ],
+   "engineer": "Its neighbours. A bulkhead is the same idea inside one process: separate thread pools or connection limits. Cells apply it to the whole stack. Sharding splits the data but often leaves the services shared; Microsoft suggests sharding the data store alone if that is all you need to scale. Consistent hashing is one of the ways AWS lists for mapping keys to cells, alongside a full mapping table. Shuffle sharding overlaps shards per customer. And graceful degradation decides what users of a failing cell still get.",
+   "executive": "Cells are bulkheads for whole systems. Sharding splits only the data; consistent hashing and shuffle sharding decide who goes where."
+  },
+  {
+   "id": "cba-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "Split the whole stack into independent cells: blast radius about 1 in N",
+     "Keep the shared router and control plane tiny and statically stable",
+     "Grow by adding cells, deploy in waves, build migration from day one"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. Split the whole stack, services and data, into identical independent cells, so a bad release, a poison request or a noisy customer hurts one cell, not everyone. Keep what is shared, the router and the control plane, tiny, and make sure cells keep serving when the control plane is down. And grow by adding cells of a tested size, deploy one wave at a time, and build customer migration from day one, as AWS recommends.",
+   "executive": "Split everything into independent cells. Keep the shared parts tiny. Grow by adding cells and release one wave at a time."
+  }
+ ],
+ "meta": {
+  "kind": "pattern",
+  "category": "Resilience",
+  "level": "advanced",
+  "uses": [
+   "bulkhead",
+   "sharding"
+  ],
+  "related": [
+   "bulkhead",
+   "sharding",
+   "graceful-degradation",
+   "consistent-hashing"
+  ],
+  "blurb": "Split the whole stack into identical, independent cells behind a thin router, so one failure hurts one cell, not every customer.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ }
+}

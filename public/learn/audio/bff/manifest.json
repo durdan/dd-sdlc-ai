@@ -1,0 +1,142 @@
+{
+ "bff-problem-engineer": {
+  "file": "/audio/bff/bff-problem-engineer.mp3",
+  "ms": 23376,
+  "hash": "4449ebb85ee7"
+ },
+ "bff-problem-executive": {
+  "file": "/audio/bff/bff-problem-executive.mp3",
+  "ms": 8064,
+  "hash": "e0feb7085015"
+ },
+ "bff-chatty-engineer": {
+  "file": "/audio/bff/bff-chatty-engineer.mp3",
+  "ms": 22320,
+  "hash": "21bc6a131d7b"
+ },
+ "bff-chatty-executive": {
+  "file": "/audio/bff/bff-chatty-executive.mp3",
+  "ms": 5856,
+  "hash": "307f2c1b5b3d"
+ },
+ "bff-coupling-engineer": {
+  "file": "/audio/bff/bff-coupling-engineer.mp3",
+  "ms": 27648,
+  "hash": "89892f0d05ec"
+ },
+ "bff-coupling-executive": {
+  "file": "/audio/bff/bff-coupling-executive.mp3",
+  "ms": 6624,
+  "hash": "a39eb1c0b6cd"
+ },
+ "bff-naive-engineer": {
+  "file": "/audio/bff/bff-naive-engineer.mp3",
+  "ms": 29136,
+  "hash": "f08305fa2e67"
+ },
+ "bff-naive-executive": {
+  "file": "/audio/bff/bff-naive-executive.mp3",
+  "ms": 6528,
+  "hash": "56318aaa5abf"
+ },
+ "bff-structure-engineer": {
+  "file": "/audio/bff/bff-structure-engineer.mp3",
+  "ms": 31440,
+  "hash": "19b5efa9c087"
+ },
+ "bff-structure-executive": {
+  "file": "/audio/bff/bff-structure-executive.mp3",
+  "ms": 7296,
+  "hash": "5ccdeba14a95"
+ },
+ "bff-experience-engineer": {
+  "file": "/audio/bff/bff-experience-engineer.mp3",
+  "ms": 26232,
+  "hash": "224a60597051"
+ },
+ "bff-experience-executive": {
+  "file": "/audio/bff/bff-experience-executive.mp3",
+  "ms": 6864,
+  "hash": "b818fcd466ca"
+ },
+ "bff-how-engineer": {
+  "file": "/audio/bff/bff-how-engineer.mp3",
+  "ms": 30984,
+  "hash": "1b53a1cdb7df"
+ },
+ "bff-how-executive": {
+  "file": "/audio/bff/bff-how-executive.mp3",
+  "ms": 8016,
+  "hash": "3c90bfc8a7e4"
+ },
+ "bff-failure-engineer": {
+  "file": "/audio/bff/bff-failure-engineer.mp3",
+  "ms": 30336,
+  "hash": "27f2cd08e5c3"
+ },
+ "bff-failure-executive": {
+  "file": "/audio/bff/bff-failure-executive.mp3",
+  "ms": 7176,
+  "hash": "2969a719be3e"
+ },
+ "bff-essential-engineer": {
+  "file": "/audio/bff/bff-essential-engineer.mp3",
+  "ms": 23232,
+  "hash": "b7d26b730cad"
+ },
+ "bff-essential-executive": {
+  "file": "/audio/bff/bff-essential-executive.mp3",
+  "ms": 7104,
+  "hash": "954a835f4e0c"
+ },
+ "bff-sharing-engineer": {
+  "file": "/audio/bff/bff-sharing-engineer.mp3",
+  "ms": 32256,
+  "hash": "2331b51c1428"
+ },
+ "bff-sharing-executive": {
+  "file": "/audio/bff/bff-sharing-executive.mp3",
+  "ms": 8520,
+  "hash": "fcac10327639"
+ },
+ "bff-tradeoffs-engineer": {
+  "file": "/audio/bff/bff-tradeoffs-engineer.mp3",
+  "ms": 28152,
+  "hash": "e9a235f91a06"
+ },
+ "bff-tradeoffs-executive": {
+  "file": "/audio/bff/bff-tradeoffs-executive.mp3",
+  "ms": 8040,
+  "hash": "dad32c2ddb31"
+ },
+ "bff-wild-engineer": {
+  "file": "/audio/bff/bff-wild-engineer.mp3",
+  "ms": 33936,
+  "hash": "f71fb0d7b9d5"
+ },
+ "bff-wild-executive": {
+  "file": "/audio/bff/bff-wild-executive.mp3",
+  "ms": 7944,
+  "hash": "bb7b7c77eab4"
+ },
+ "bff-related-engineer": {
+  "file": "/audio/bff/bff-related-engineer.mp3",
+  "ms": 25944,
+  "hash": "8a1c74b04187"
+ },
+ "bff-related-executive": {
+  "file": "/audio/bff/bff-related-executive.mp3",
+  "ms": 7944,
+  "hash": "e5be5660b5ed"
+ },
+ "bff-recap-engineer": {
+  "file": "/audio/bff/bff-recap-engineer.mp3",
+  "ms": 24240,
+  "hash": "0bd42cb5ecbb"
+ },
+ "bff-recap-executive": {
+  "file": "/audio/bff/bff-recap-executive.mp3",
+  "ms": 8784,
+  "hash": "946e8ffd58f7"
+ }
+}

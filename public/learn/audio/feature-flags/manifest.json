@@ -1,0 +1,142 @@
+{
+ "ff-problem-engineer": {
+  "file": "/audio/feature-flags/ff-problem-engineer.mp3",
+  "ms": 20520,
+  "hash": "2ddc861d40a1"
+ },
+ "ff-problem-executive": {
+  "file": "/audio/feature-flags/ff-problem-executive.mp3",
+  "ms": 7128,
+  "hash": "14b8256d052b"
+ },
+ "ff-coupled-engineer": {
+  "file": "/audio/feature-flags/ff-coupled-engineer.mp3",
+  "ms": 26016,
+  "hash": "41fa1f5b9f45"
+ },
+ "ff-coupled-executive": {
+  "file": "/audio/feature-flags/ff-coupled-executive.mp3",
+  "ms": 7056,
+  "hash": "12b22d957a09"
+ },
+ "ff-naive-engineer": {
+  "file": "/audio/feature-flags/ff-naive-engineer.mp3",
+  "ms": 25896,
+  "hash": "f49ac2f6452f"
+ },
+ "ff-naive-executive": {
+  "file": "/audio/feature-flags/ff-naive-executive.mp3",
+  "ms": 7128,
+  "hash": "42ce64f55999"
+ },
+ "ff-pattern-engineer": {
+  "file": "/audio/feature-flags/ff-pattern-engineer.mp3",
+  "ms": 29544,
+  "hash": "e8effa178cc6"
+ },
+ "ff-pattern-executive": {
+  "file": "/audio/feature-flags/ff-pattern-executive.mp3",
+  "ms": 8832,
+  "hash": "8682ba3744e3"
+ },
+ "ff-types-engineer": {
+  "file": "/audio/feature-flags/ff-types-engineer.mp3",
+  "ms": 28224,
+  "hash": "370518f1de47"
+ },
+ "ff-types-executive": {
+  "file": "/audio/feature-flags/ff-types-executive.mp3",
+  "ms": 8232,
+  "hash": "53c99eafb875"
+ },
+ "ff-how-engineer": {
+  "file": "/audio/feature-flags/ff-how-engineer.mp3",
+  "ms": 33528,
+  "hash": "80439c7aadc5"
+ },
+ "ff-how-executive": {
+  "file": "/audio/feature-flags/ff-how-executive.mp3",
+  "ms": 9288,
+  "hash": "4e2dbb992c22"
+ },
+ "ff-rollout-engineer": {
+  "file": "/audio/feature-flags/ff-rollout-engineer.mp3",
+  "ms": 29592,
+  "hash": "fa00b77e2e5b"
+ },
+ "ff-rollout-executive": {
+  "file": "/audio/feature-flags/ff-rollout-executive.mp3",
+  "ms": 6864,
+  "hash": "f4b90768a698"
+ },
+ "ff-rollback-engineer": {
+  "file": "/audio/feature-flags/ff-rollback-engineer.mp3",
+  "ms": 27096,
+  "hash": "3fa26ab61737"
+ },
+ "ff-rollback-executive": {
+  "file": "/audio/feature-flags/ff-rollback-executive.mp3",
+  "ms": 7824,
+  "hash": "da6fd93aa317"
+ },
+ "ff-outage-engineer": {
+  "file": "/audio/feature-flags/ff-outage-engineer.mp3",
+  "ms": 30768,
+  "hash": "35de2b24c05f"
+ },
+ "ff-outage-executive": {
+  "file": "/audio/feature-flags/ff-outage-executive.mp3",
+  "ms": 8592,
+  "hash": "123ee63ae523"
+ },
+ "ff-tradeoffs-engineer": {
+  "file": "/audio/feature-flags/ff-tradeoffs-engineer.mp3",
+  "ms": 30288,
+  "hash": "9da343661b65"
+ },
+ "ff-tradeoffs-executive": {
+  "file": "/audio/feature-flags/ff-tradeoffs-executive.mp3",
+  "ms": 6768,
+  "hash": "f98697bd8813"
+ },
+ "ff-whennot-engineer": {
+  "file": "/audio/feature-flags/ff-whennot-engineer.mp3",
+  "ms": 26904,
+  "hash": "4869222190bf"
+ },
+ "ff-whennot-executive": {
+  "file": "/audio/feature-flags/ff-whennot-executive.mp3",
+  "ms": 6432,
+  "hash": "065430351c53"
+ },
+ "ff-wild-engineer": {
+  "file": "/audio/feature-flags/ff-wild-engineer.mp3",
+  "ms": 35904,
+  "hash": "2bfc98f0b91e"
+ },
+ "ff-wild-executive": {
+  "file": "/audio/feature-flags/ff-wild-executive.mp3",
+  "ms": 7584,
+  "hash": "fa50715884b3"
+ },
+ "ff-related-engineer": {
+  "file": "/audio/feature-flags/ff-related-engineer.mp3",
+  "ms": 30216,
+  "hash": "1fb92569848c"
+ },
+ "ff-related-executive": {
+  "file": "/audio/feature-flags/ff-related-executive.mp3",
+  "ms": 7896,
+  "hash": "f1012d1b1fdc"
+ },
+ "ff-recap-engineer": {
+  "file": "/audio/feature-flags/ff-recap-engineer.mp3",
+  "ms": 21120,
+  "hash": "160b18621758"
+ },
+ "ff-recap-executive": {
+  "file": "/audio/feature-flags/ff-recap-executive.mp3",
+  "ms": 5736,
+  "hash": "dce1b9b89698"
+ }
+}

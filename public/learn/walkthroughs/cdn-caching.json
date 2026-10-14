@@ -1,0 +1,994 @@
+{
+ "id": "cdn-caching",
+ "title": "CDN and edge caching",
+ "subtitle": "Design pattern",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "diagrams": [
+  {
+   "id": "far",
+   "kind": "c4",
+   "title": "Every request crosses the world to one origin",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "sydney",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Users in Sydney",
+     "sub": "far from the origin"
+    },
+    {
+     "id": "london",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Users in London",
+     "sub": "near the origin"
+    },
+    {
+     "id": "crowd",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Launch-day crowd",
+     "sub": "everyone at once"
+    },
+    {
+     "id": "origin",
+     "kind": "container",
+     "tone": "core",
+     "label": "Origin",
+     "sub": "app servers in one region"
+    },
+    {
+     "id": "db",
+     "kind": "store",
+     "tone": "data",
+     "label": "Database",
+     "sub": "every page built again"
+    }
+   ],
+   "edges": [
+    {
+     "id": "f1",
+     "from": "sydney",
+     "to": "origin",
+     "style": "dashed",
+     "label": "each request · long round trip"
+    },
+    {
+     "id": "f2",
+     "from": "london",
+     "to": "origin",
+     "style": "solid",
+     "label": "each request · short round trip"
+    },
+    {
+     "id": "f3",
+     "from": "origin",
+     "to": "db",
+     "style": "solid",
+     "label": "same query, again"
+    },
+    {
+     "id": "f4",
+     "from": "crowd",
+     "to": "origin",
+     "style": "dashed",
+     "label": "same logo and page, 100× over"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "slow or overloaded"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "control or signal"
+    }
+   ]
+  },
+  {
+   "id": "naive",
+   "kind": "sequence",
+   "title": "Cache everything for an hour",
+   "participants": [
+    {
+     "id": "alice",
+     "label": "Alice"
+    },
+    {
+     "id": "bob",
+     "label": "Bob"
+    },
+    {
+     "id": "edge",
+     "label": "Edge cache"
+    },
+    {
+     "id": "origin",
+     "label": "Origin"
+    }
+   ],
+   "messages": [
+    {
+     "id": "n1",
+     "from": "alice",
+     "to": "edge",
+     "style": "solid",
+     "label": "GET /account · Alice's cookie"
+    },
+    {
+     "id": "n2",
+     "from": "edge",
+     "to": "origin",
+     "style": "solid",
+     "label": "miss · forward"
+    },
+    {
+     "id": "n3",
+     "from": "origin",
+     "to": "edge",
+     "style": "solid",
+     "label": "200 · Alice's details"
+    },
+    {
+     "id": "n4",
+     "from": "edge",
+     "to": "alice",
+     "style": "solid",
+     "label": "stored under /account for an hour"
+    },
+    {
+     "id": "n5",
+     "from": "bob",
+     "to": "edge",
+     "style": "solid",
+     "label": "GET /account · Bob's cookie"
+    },
+    {
+     "id": "n6",
+     "from": "edge",
+     "to": "bob",
+     "style": "dashed",
+     "label": "HIT: Bob sees Alice's details"
+    }
+   ]
+  },
+  {
+   "id": "structure",
+   "kind": "c4",
+   "title": "Edges near users, a shield near the origin",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "user",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Users",
+     "sub": "anywhere",
+     "rank": 0
+    },
+    {
+     "id": "edge",
+     "kind": "container",
+     "tone": "core",
+     "label": "Edge servers",
+     "sub": "many locations, near users",
+     "group": "cdn",
+     "rank": 1
+    },
+    {
+     "id": "shield",
+     "kind": "container",
+     "tone": "core",
+     "label": "Shield / upper tier",
+     "sub": "one location near the origin",
+     "group": "cdn",
+     "rank": 2
+    },
+    {
+     "id": "purge",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Purge API",
+     "sub": "by URL, tag or prefix",
+     "group": "cdn",
+     "rank": 1
+    },
+    {
+     "id": "origin",
+     "kind": "container",
+     "tone": "external",
+     "label": "Origin",
+     "sub": "app servers · sets Cache-Control",
+     "rank": 3
+    },
+    {
+     "id": "assets",
+     "kind": "store",
+     "tone": "data",
+     "label": "Asset bucket",
+     "sub": "fingerprinted files",
+     "rank": 3
+    }
+   ],
+   "edges": [
+    {
+     "id": "s1",
+     "from": "user",
+     "to": "edge",
+     "style": "solid",
+     "label": "request · nearest edge"
+    },
+    {
+     "id": "s2",
+     "from": "edge",
+     "to": "shield",
+     "style": "solid",
+     "label": "miss"
+    },
+    {
+     "id": "s3",
+     "from": "shield",
+     "to": "origin",
+     "style": "solid",
+     "label": "miss · one request"
+    },
+    {
+     "id": "s4",
+     "from": "shield",
+     "to": "assets",
+     "style": "solid",
+     "label": "static files"
+    },
+    {
+     "id": "s5",
+     "from": "origin",
+     "to": "shield",
+     "style": "dotted",
+     "label": "response + caching headers"
+    },
+    {
+     "id": "s6",
+     "from": "purge",
+     "to": "edge",
+     "style": "dotted",
+     "label": "remove cached copies"
+    }
+   ],
+   "groups": [
+    {
+     "id": "cdn",
+     "label": "CDN [shared, managed cache]",
+     "tone": "core"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "slow or overloaded"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "control or signal"
+    }
+   ]
+  },
+  {
+   "id": "headers",
+   "kind": "c4",
+   "title": "The origin's headers decide who may store what",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "asset",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "app.3f9a.js",
+     "sub": "public, max-age=31536000, immutable"
+    },
+    {
+     "id": "list",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "GET /products",
+     "sub": "max-age=60, s-maxage=300"
+    },
+    {
+     "id": "page",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "GET /account",
+     "sub": "private, no-cache"
+    },
+    {
+     "id": "card",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "GET /payment-details",
+     "sub": "no-store"
+    },
+    {
+     "id": "edge",
+     "kind": "store",
+     "tone": "core",
+     "label": "Edge cache",
+     "sub": "shared by everyone"
+    },
+    {
+     "id": "browser",
+     "kind": "store",
+     "tone": "data",
+     "label": "Browser cache",
+     "sub": "one user only"
+    },
+    {
+     "id": "origin",
+     "kind": "container",
+     "tone": "external",
+     "label": "Origin",
+     "sub": "asked every time"
+    }
+   ],
+   "edges": [
+    {
+     "id": "h1",
+     "from": "asset",
+     "to": "edge",
+     "style": "solid",
+     "label": "a year"
+    },
+    {
+     "id": "h2",
+     "from": "asset",
+     "to": "browser",
+     "style": "solid",
+     "label": "a year"
+    },
+    {
+     "id": "h3",
+     "from": "list",
+     "to": "edge",
+     "style": "solid",
+     "label": "5 minutes"
+    },
+    {
+     "id": "h4",
+     "from": "list",
+     "to": "browser",
+     "style": "solid",
+     "label": "1 minute"
+    },
+    {
+     "id": "h5",
+     "from": "page",
+     "to": "browser",
+     "style": "solid",
+     "label": "stored, checked each use"
+    },
+    {
+     "id": "h6",
+     "from": "card",
+     "to": "origin",
+     "style": "dashed",
+     "label": "never stored"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "may be stored for"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "never stored"
+    }
+   ]
+  },
+  {
+   "id": "flow",
+   "kind": "sequence",
+   "title": "Miss, fill, hit, revalidate",
+   "participants": [
+    {
+     "id": "user",
+     "label": "User"
+    },
+    {
+     "id": "edge",
+     "label": "Edge"
+    },
+    {
+     "id": "shield",
+     "label": "Shield"
+    },
+    {
+     "id": "origin",
+     "label": "Origin"
+    }
+   ],
+   "messages": [
+    {
+     "id": "w1",
+     "from": "user",
+     "to": "edge",
+     "style": "solid",
+     "label": "GET /app.3f9a.js"
+    },
+    {
+     "id": "w2",
+     "from": "edge",
+     "to": "shield",
+     "style": "solid",
+     "label": "miss"
+    },
+    {
+     "id": "w3",
+     "from": "shield",
+     "to": "origin",
+     "style": "solid",
+     "label": "miss · fetch once"
+    },
+    {
+     "id": "w4",
+     "from": "origin",
+     "to": "shield",
+     "style": "solid",
+     "label": "200 · max-age=31536000, immutable"
+    },
+    {
+     "id": "w5",
+     "from": "shield",
+     "to": "edge",
+     "style": "solid",
+     "label": "stored at the shield"
+    },
+    {
+     "id": "w6",
+     "from": "edge",
+     "to": "user",
+     "style": "solid",
+     "label": "stored at the edge · served"
+    },
+    {
+     "id": "w7",
+     "from": "user",
+     "to": "edge",
+     "style": "solid",
+     "label": "next user nearby, same URL"
+    },
+    {
+     "id": "w8",
+     "from": "edge",
+     "to": "user",
+     "style": "solid",
+     "label": "HIT · no trip to the origin"
+    },
+    {
+     "id": "w9",
+     "from": "edge",
+     "to": "origin",
+     "style": "solid",
+     "label": "page is stale: If-None-Match: \"v7\""
+    },
+    {
+     "id": "w10",
+     "from": "origin",
+     "to": "edge",
+     "style": "solid",
+     "label": "304 Not Modified · no body"
+    }
+   ]
+  },
+  {
+   "id": "stale",
+   "kind": "sequence",
+   "title": "Keep serving when the origin is slow or down",
+   "participants": [
+    {
+     "id": "users",
+     "label": "Many users"
+    },
+    {
+     "id": "edge",
+     "label": "Edge"
+    },
+    {
+     "id": "origin",
+     "label": "Origin"
+    }
+   ],
+   "messages": [
+    {
+     "id": "x1",
+     "from": "users",
+     "to": "edge",
+     "style": "solid",
+     "label": "1,000 requests · copy just went stale"
+    },
+    {
+     "id": "x2",
+     "from": "edge",
+     "to": "users",
+     "style": "solid",
+     "label": "stale copy at once (stale-while-revalidate)"
+    },
+    {
+     "id": "x3",
+     "from": "edge",
+     "to": "origin",
+     "style": "solid",
+     "label": "one background refresh (collapsed)"
+    },
+    {
+     "id": "x4",
+     "from": "origin",
+     "to": "edge",
+     "style": "dashed",
+     "label": "503 · origin is down"
+    },
+    {
+     "id": "x5",
+     "from": "users",
+     "to": "edge",
+     "style": "solid",
+     "label": "more requests"
+    },
+    {
+     "id": "x6",
+     "from": "edge",
+     "to": "users",
+     "style": "solid",
+     "label": "stale copy still (stale-if-error)"
+    },
+    {
+     "id": "x7",
+     "from": "edge",
+     "to": "origin",
+     "style": "solid",
+     "label": "try the refresh again"
+    },
+    {
+     "id": "x8",
+     "from": "origin",
+     "to": "edge",
+     "style": "solid",
+     "label": "200 · fresh copy stored"
+    }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "mdn",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "MDN HTTP caching guide",
+     "sub": "shared vs private caches",
+     "rank": 0
+    },
+    {
+     "id": "rfc9111",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "RFC 9111",
+     "sub": "HTTP Caching standard, 2022",
+     "rank": 1
+    },
+    {
+     "id": "rfc5861",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "RFC 5861",
+     "sub": "stale-while-revalidate, stale-if-error",
+     "rank": 1
+    },
+    {
+     "id": "cloudflare",
+     "kind": "container",
+     "tone": "core",
+     "label": "Cloudflare",
+     "sub": "Tiered Cache: lower and upper tiers",
+     "rank": 2
+    },
+    {
+     "id": "cloudfront",
+     "kind": "container",
+     "tone": "core",
+     "label": "Amazon CloudFront",
+     "sub": "regional edge caches + Origin Shield",
+     "rank": 2
+    },
+    {
+     "id": "fastly",
+     "kind": "container",
+     "tone": "core",
+     "label": "Fastly",
+     "sub": "request collapsing + shielding",
+     "rank": 2
+    },
+    {
+     "id": "netflix",
+     "kind": "external",
+     "tone": "external",
+     "label": "Netflix Open Connect",
+     "sub": "its own appliances inside ISPs",
+     "rank": 2
+    }
+   ],
+   "edges": [
+    {
+     "id": "y1",
+     "from": "mdn",
+     "to": "rfc9111",
+     "style": "dotted",
+     "label": "explains"
+    },
+    {
+     "id": "y2",
+     "from": "rfc9111",
+     "to": "cloudflare",
+     "style": "solid",
+     "label": "origin Cache-Control"
+    },
+    {
+     "id": "y3",
+     "from": "rfc9111",
+     "to": "cloudfront",
+     "style": "solid",
+     "label": "max-age, s-maxage"
+    },
+    {
+     "id": "y4",
+     "from": "rfc5861",
+     "to": "cloudfront",
+     "style": "solid",
+     "label": "serve stale"
+    },
+    {
+     "id": "y5",
+     "from": "rfc5861",
+     "to": "fastly",
+     "style": "solid",
+     "label": "serve stale"
+    },
+    {
+     "id": "y6",
+     "from": "mdn",
+     "to": "netflix",
+     "style": "dotted",
+     "label": "same idea, own hardware"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "problem",
+   "title": "The problem"
+  },
+  {
+   "id": "naive",
+   "title": "The naive fix"
+  },
+  {
+   "id": "pattern",
+   "title": "The pattern"
+  },
+  {
+   "id": "how",
+   "title": "How it works"
+  },
+  {
+   "id": "failure",
+   "title": "When it goes wrong"
+  },
+  {
+   "id": "tradeoffs",
+   "title": "Trade-offs"
+  },
+  {
+   "id": "wild",
+   "title": "In the wild"
+  },
+  {
+   "id": "related",
+   "title": "Related patterns"
+  },
+  {
+   "id": "recap",
+   "title": "Recap"
+  }
+ ],
+ "shots": [
+  {
+   "id": "cdn-problem",
+   "chapter": "problem",
+   "diagram": "far",
+   "focus": [],
+   "trace": [],
+   "engineer": "Here is a website with one origin: a set of app servers in one region, backed by a database. Users near that region get quick answers. Users on the other side of the world do not, and every page, script and image they load pays that distance again. Nothing is broken yet.",
+   "executive": "The site runs in one place, so people far away wait longer for every page."
+  },
+  {
+   "id": "cdn-distance",
+   "chapter": "problem",
+   "title": "Distance and load",
+   "diagram": "far",
+   "focus": [],
+   "trace": [
+    "f2",
+    "f1",
+    "f3",
+    "f4"
+   ],
+   "engineer": "Follow the requests. A user in London makes a short round trip. A user in Sydney makes a long one, and a single page needs dozens of them: the HTML, the styles, the scripts, every image. Each one is served by the origin, which builds the same answer from the same query, again and again. Then launch day arrives, and a crowd asks for the same logo and the same home page a hundred times over. The origin does all of it.",
+   "executive": "Every request, from everyone, goes all the way to the origin, which repeats the same work. A busy day can overwhelm it."
+  },
+  {
+   "id": "cdn-naive",
+   "chapter": "naive",
+   "title": "Cache everything",
+   "diagram": "naive",
+   "focus": [],
+   "trace": [
+    "n1",
+    "n2",
+    "n3",
+    "n4",
+    "n5",
+    "n6"
+   ],
+   "engineer": "The obvious fix is to put a cache in front and store everything for an hour. Alice asks for her account page. The cache misses, fetches it, and stores it under the address slash account. Then Bob asks for slash account. The cache sees the same address, and hands Bob Alice's details. A shared cache that ignores who is asking leaks personal data. The opposite mistake, caching nothing, leaves us where we started.",
+   "executive": "Caching everything blindly is dangerous: one customer can be shown another customer's page."
+  },
+  {
+   "id": "cdn-structure",
+   "chapter": "pattern",
+   "title": "Tiers",
+   "diagram": "structure",
+   "focus": [],
+   "trace": [
+    "s1",
+    "s2",
+    "s3",
+    "s5",
+    "s4",
+    "s6"
+   ],
+   "engineer": "A content delivery network is a shared cache, run for you, in many places. Users reach the nearest edge server. On a miss, the edge asks a shield, or upper tier, near the origin, so the origin sees one request instead of one per edge. The origin answers with caching headers, and those headers, not the CDN, decide what is stored and for how long. Static files often come from a bucket. A purge API removes copies when you must.",
+   "executive": "Copies of the site's content sit in many places close to users. Only a missing copy goes back to the origin, and only once."
+  },
+  {
+   "id": "cdn-headers",
+   "chapter": "pattern",
+   "title": "Headers",
+   "diagram": "headers",
+   "focus": [],
+   "trace": [
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6"
+   ],
+   "engineer": "Four responses, four header choices. A fingerprinted script is public, kept for a year, and immutable. A product list gets max-age sixty for browsers and s-maxage three hundred, which only shared caches obey; Fastly uses its own Surrogate-Control header instead. The account page is private, so no shared cache may store it, and no-cache makes the browser check before each use. Payment details are no-store: never kept anywhere.",
+   "executive": "Each response carries a label saying who may keep a copy and for how long. Personal pages are never shared."
+  },
+  {
+   "id": "cdn-how",
+   "chapter": "how",
+   "title": "Miss then hit",
+   "diagram": "flow",
+   "focus": [],
+   "trace": [
+    "w1",
+    "w2",
+    "w3",
+    "w4",
+    "w5",
+    "w6",
+    "w7",
+    "w8"
+   ],
+   "engineer": "Step by step. A user asks for the script. The edge misses and asks the shield, which misses too and fetches it once from the origin. The response says: keep this for a year. The shield stores it, the edge stores it, and the user gets it. The next user nearby asks for the same URL, and the edge answers on its own. No trip to the origin at all. The cache key here is the method and the URL.",
+   "executive": "The first request fetches the file and leaves copies along the way. Everyone after that is served from the nearest copy."
+  },
+  {
+   "id": "cdn-revalidate",
+   "chapter": "how",
+   "title": "Revalidate",
+   "diagram": "flow",
+   "focus": [
+    "edge",
+    "origin"
+   ],
+   "trace": [
+    "w9",
+    "w10"
+   ],
+   "engineer": "Pages that change get a short life instead, and an ETag: a version tag from the origin. When the edge's copy goes stale, it does not download the page again. It asks, with If-None-Match and that tag, whether anything changed. If not, the origin answers three-oh-four, Not Modified, with no body, and the stored copy is fresh again. The round trip still happens, but the origin skips the work of sending the page.",
+   "executive": "When a copy expires, the edge just asks whether it changed. Usually the answer is a cheap no."
+  },
+  {
+   "id": "cdn-stale",
+   "chapter": "failure",
+   "title": "Serve stale",
+   "diagram": "stale",
+   "focus": [],
+   "trace": [
+    "x1",
+    "x2",
+    "x3",
+    "x4",
+    "x5",
+    "x6",
+    "x7",
+    "x8"
+   ],
+   "engineer": "What happens when a popular copy expires and a thousand requests arrive? With request collapsing, the edge sends one request to the origin, not a thousand. With stale-while-revalidate, from RFC fifty-eight sixty-one, users get the stale copy at once while the edge refreshes in the background. If the origin is down, stale-if-error lets the edge keep serving the stale copy for a set number of seconds, until a refresh succeeds.",
+   "executive": "When content expires or the origin fails, the edge keeps serving the last good copy and checks back quietly."
+  },
+  {
+   "id": "cdn-purge",
+   "chapter": "failure",
+   "title": "Purge",
+   "diagram": "structure",
+   "focus": [
+    "purge",
+    "edge",
+    "shield",
+    "origin"
+   ],
+   "trace": [
+    "s6",
+    "s2",
+    "s3"
+   ],
+   "engineer": "Changing content is the hard part. A purge removes cached copies, but a purge of everything means every edge misses at once, and they all head for the origin together. And a purge cannot reach copies already sitting in browsers. For scripts, styles and images, use versioned file names instead: a new build gets a new URL, so there is nothing to purge. Amazon recommends exactly this for files that change often.",
+   "executive": "Wiping the whole cache sends everyone back to the origin at once. Giving new files new names avoids the problem."
+  },
+  {
+   "id": "cdn-gotchas",
+   "chapter": "failure",
+   "card": {
+    "heading": "Where it still goes wrong",
+    "points": [
+     "Set-Cookie on a response stops many CDNs storing it",
+     "Vary: User-Agent splits one URL into thousands of copies",
+     "Uncacheable answers make collapsed requests queue in turn",
+     "A missing private lets a shared cache store personal data"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Four things catch teams out. A stray Set-Cookie header, often from a session library, can stop the CDN storing a response at all; Cloudflare, for one, will not cache it. Vary on User-Agent splits one URL into thousands of variants, so the hit ratio collapses. If an answer turns out uncacheable, requests queued behind a collapsed fetch go to the origin one after another. And a personalised response without private can still leak.",
+   "executive": "Small header mistakes either stop caching altogether or, worse, share one person's page with another."
+  },
+  {
+   "id": "cdn-tradeoffs",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "The knobs",
+    "kind": "compare",
+    "points": [
+     "Choice | Trade-off",
+     "Long time to live | Fewer origin hits; stale until it expires or is purged",
+     "Short life + ETag | Fresher; a cheap round trip to the origin each time",
+     "Shield or upper tier | Higher hit ratio; an extra hop and cost on a miss",
+     "More in the cache key | Right variant per user group; lower hit ratio"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Every knob is a trade. A long lifetime saves the origin but serves old content until it expires or is purged. A short lifetime with an ETag stays fresher, at the cost of a small check each time. A shield or upper tier raises the hit ratio, but adds a hop and, on some CDNs, a charge on misses. And each extra header or cookie in the cache key gives more exact answers, and fewer hits.",
+   "executive": "Keep copies longer and the origin rests but content ages. Keep them shorter and content is fresh but the origin works harder."
+  },
+  {
+   "id": "cdn-limits",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "What a CDN cannot cache",
+    "points": [
+     "Writes: POST, PUT, DELETE go to the origin",
+     "Responses for one user only: private or no-store",
+     "Data that must never be even seconds old",
+     "Rarely requested content: it expires before a second hit"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Know the limits. Writes always go to the origin. Responses for one user, marked private or no-store, are not shared. Data that must never be even a few seconds old, such as a balance just after a payment, needs the origin. And content requested rarely may expire before anyone asks twice; Amazon says Origin Shield is a poor fit for it. Even uncached requests can still benefit from the CDN's network on the way to the origin.",
+   "executive": "A CDN speeds up what many people share. Personal, changing or rarely used data still comes from the origin."
+  },
+  {
+   "id": "cdn-wild",
+   "chapter": "wild",
+   "title": "Who does it",
+   "diagram": "wild",
+   "focus": [],
+   "trace": [
+    "y1",
+    "y2",
+    "y3",
+    "y4",
+    "y5",
+    "y6"
+   ],
+   "engineer": "In the wild. RFC ninety-one eleven is the HTTP caching standard, and MDN's guide explains it well. RFC fifty-eight sixty-one adds the two stale directives, which CloudFront and Fastly both support. Cloudflare's Tiered Cache splits its data centres into lower and upper tiers, and only upper tiers ask the origin. Fastly collapses requests and funnels misses through a shield. CloudFront adds regional edge caches and Origin Shield. Netflix goes further: Open Connect places its own appliances inside internet providers' networks.",
+   "executive": "The rules are an open web standard. Every major CDN follows them and adds layers to protect the origin; Netflix built its own."
+  },
+  {
+   "id": "cdn-related",
+   "chapter": "related",
+   "card": {
+    "heading": "Related patterns",
+    "kind": "compare",
+    "points": [
+     "Pattern | How it relates",
+     "Cache-aside | The same idea inside your service, in front of a database",
+     "Graceful degradation | stale-if-error is one way to do it",
+     "Request coalescing | What request collapsing does at the edge",
+     "Rate limiting | Often enforced at the edge too, before the origin"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Its neighbours. Cache-aside is the same idea one level down: your service keeps hot data in memory in front of a database. Graceful degradation is the wider idea that a stale answer beats an error, and stale-if-error is one way to get it. Request coalescing, sometimes called single flight, is what request collapsing does at the edge. And rate limiting is often enforced at the edge too, before abusive traffic reaches the origin.",
+   "executive": "A CDN works alongside caching inside the service, fallbacks for failures, and limits on abusive traffic."
+  },
+  {
+   "id": "cdn-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "Serve shared content from near the user, and fetch it once",
+     "Headers decide: s-maxage, private, no-store, ETag",
+     "Change URLs, not caches; serve stale when the origin fails"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. Serve shared content from close to the user, and let tiers make sure the origin is asked once. Let the origin's headers decide what may be stored, and mark anything personal as private. And change URLs instead of purging caches, while stale-while-revalidate and stale-if-error keep users served when the origin is slow or down.",
+   "executive": "Keep copies near users. Never share personal pages. Rename files when they change and serve the last good copy if the origin fails."
+  }
+ ],
+ "meta": {
+  "kind": "pattern",
+  "category": "Caching",
+  "level": "beginner",
+  "uses": [],
+  "related": [
+   "cache-aside",
+   "graceful-degradation",
+   "rate-limiting"
+  ],
+  "blurb": "Serve shared content from servers near users, let HTTP headers decide what is stored, and keep serving when the origin fails.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ }
+}

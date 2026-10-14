@@ -1,0 +1,142 @@
+{
+ "ca-problem-engineer": {
+  "file": "/audio/cache-aside/ca-problem-engineer.mp3",
+  "ms": 30720,
+  "hash": "105d8364107e"
+ },
+ "ca-problem-executive": {
+  "file": "/audio/cache-aside/ca-problem-executive.mp3",
+  "ms": 6840,
+  "hash": "0e9c28ae5712"
+ },
+ "ca-naive-engineer": {
+  "file": "/audio/cache-aside/ca-naive-engineer.mp3",
+  "ms": 31464,
+  "hash": "62dbcd30e580"
+ },
+ "ca-naive-executive": {
+  "file": "/audio/cache-aside/ca-naive-executive.mp3",
+  "ms": 8424,
+  "hash": "de7a2175cf4e"
+ },
+ "ca-structure-engineer": {
+  "file": "/audio/cache-aside/ca-structure-engineer.mp3",
+  "ms": 30576,
+  "hash": "4b0e26d92fe5"
+ },
+ "ca-structure-executive": {
+  "file": "/audio/cache-aside/ca-structure-executive.mp3",
+  "ms": 8472,
+  "hash": "087cfe036786"
+ },
+ "ca-read-engineer": {
+  "file": "/audio/cache-aside/ca-read-engineer.mp3",
+  "ms": 32520,
+  "hash": "8b96bfe9be42"
+ },
+ "ca-read-executive": {
+  "file": "/audio/cache-aside/ca-read-executive.mp3",
+  "ms": 6744,
+  "hash": "c2dbec51e209"
+ },
+ "ca-write-engineer": {
+  "file": "/audio/cache-aside/ca-write-engineer.mp3",
+  "ms": 30408,
+  "hash": "7b852e714c24"
+ },
+ "ca-write-executive": {
+  "file": "/audio/cache-aside/ca-write-executive.mp3",
+  "ms": 7200,
+  "hash": "a616d6ee5c98"
+ },
+ "ca-race-engineer": {
+  "file": "/audio/cache-aside/ca-race-engineer.mp3",
+  "ms": 29616,
+  "hash": "31a5de2d0906"
+ },
+ "ca-race-executive": {
+  "file": "/audio/cache-aside/ca-race-executive.mp3",
+  "ms": 9792,
+  "hash": "c0b6f8558c6d"
+ },
+ "ca-stampede-engineer": {
+  "file": "/audio/cache-aside/ca-stampede-engineer.mp3",
+  "ms": 27696,
+  "hash": "c7ed236b5177"
+ },
+ "ca-stampede-executive": {
+  "file": "/audio/cache-aside/ca-stampede-executive.mp3",
+  "ms": 6456,
+  "hash": "12aa2a1eb46c"
+ },
+ "ca-fixes-engineer": {
+  "file": "/audio/cache-aside/ca-fixes-engineer.mp3",
+  "ms": 35520,
+  "hash": "e4fbc4116665"
+ },
+ "ca-fixes-executive": {
+  "file": "/audio/cache-aside/ca-fixes-executive.mp3",
+  "ms": 8928,
+  "hash": "77cbd566f3f3"
+ },
+ "ca-down-engineer": {
+  "file": "/audio/cache-aside/ca-down-engineer.mp3",
+  "ms": 31512,
+  "hash": "1bee03ae5ae4"
+ },
+ "ca-down-executive": {
+  "file": "/audio/cache-aside/ca-down-executive.mp3",
+  "ms": 7752,
+  "hash": "8653b7c60662"
+ },
+ "ca-compare-engineer": {
+  "file": "/audio/cache-aside/ca-compare-engineer.mp3",
+  "ms": 29928,
+  "hash": "fc106dabd2f6"
+ },
+ "ca-compare-executive": {
+  "file": "/audio/cache-aside/ca-compare-executive.mp3",
+  "ms": 9216,
+  "hash": "a52a36f3c452"
+ },
+ "ca-whennot-engineer": {
+  "file": "/audio/cache-aside/ca-whennot-engineer.mp3",
+  "ms": 31464,
+  "hash": "3d2590fadb86"
+ },
+ "ca-whennot-executive": {
+  "file": "/audio/cache-aside/ca-whennot-executive.mp3",
+  "ms": 8328,
+  "hash": "12e04cba8393"
+ },
+ "ca-wild-engineer": {
+  "file": "/audio/cache-aside/ca-wild-engineer.mp3",
+  "ms": 34248,
+  "hash": "9a2f56ba3ee8"
+ },
+ "ca-wild-executive": {
+  "file": "/audio/cache-aside/ca-wild-executive.mp3",
+  "ms": 8136,
+  "hash": "7539daa11744"
+ },
+ "ca-related-engineer": {
+  "file": "/audio/cache-aside/ca-related-engineer.mp3",
+  "ms": 32640,
+  "hash": "6e52b0123eab"
+ },
+ "ca-related-executive": {
+  "file": "/audio/cache-aside/ca-related-executive.mp3",
+  "ms": 6888,
+  "hash": "4a2c1e846a86"
+ },
+ "ca-recap-engineer": {
+  "file": "/audio/cache-aside/ca-recap-engineer.mp3",
+  "ms": 24624,
+  "hash": "d311ac692159"
+ },
+ "ca-recap-executive": {
+  "file": "/audio/cache-aside/ca-recap-executive.mp3",
+  "ms": 9504,
+  "hash": "bf8b3ae09099"
+ }
+}

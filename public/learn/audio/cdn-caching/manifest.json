@@ -1,0 +1,152 @@
+{
+ "cdn-problem-engineer": {
+  "file": "/audio/cdn-caching/cdn-problem-engineer.mp3",
+  "ms": 18048,
+  "hash": "8db2bb355dc2"
+ },
+ "cdn-problem-executive": {
+  "file": "/audio/cdn-caching/cdn-problem-executive.mp3",
+  "ms": 5280,
+  "hash": "3d3fd20363ac"
+ },
+ "cdn-distance-engineer": {
+  "file": "/audio/cdn-caching/cdn-distance-engineer.mp3",
+  "ms": 27984,
+  "hash": "fc85b793f7be"
+ },
+ "cdn-distance-executive": {
+  "file": "/audio/cdn-caching/cdn-distance-executive.mp3",
+  "ms": 8376,
+  "hash": "4a4d204b70d6"
+ },
+ "cdn-naive-engineer": {
+  "file": "/audio/cdn-caching/cdn-naive-engineer.mp3",
+  "ms": 27240,
+  "hash": "86ef302cbdba"
+ },
+ "cdn-naive-executive": {
+  "file": "/audio/cdn-caching/cdn-naive-executive.mp3",
+  "ms": 6168,
+  "hash": "ac3f660f48f5"
+ },
+ "cdn-structure-engineer": {
+  "file": "/audio/cdn-caching/cdn-structure-engineer.mp3",
+  "ms": 29448,
+  "hash": "9b5cbf018911"
+ },
+ "cdn-structure-executive": {
+  "file": "/audio/cdn-caching/cdn-structure-executive.mp3",
+  "ms": 8544,
+  "hash": "830ab82f9ef5"
+ },
+ "cdn-headers-engineer": {
+  "file": "/audio/cdn-caching/cdn-headers-engineer.mp3",
+  "ms": 28200,
+  "hash": "d2783a536705"
+ },
+ "cdn-headers-executive": {
+  "file": "/audio/cdn-caching/cdn-headers-executive.mp3",
+  "ms": 7176,
+  "hash": "9178b0eb26f5"
+ },
+ "cdn-how-engineer": {
+  "file": "/audio/cdn-caching/cdn-how-engineer.mp3",
+  "ms": 27504,
+  "hash": "60d03451d768"
+ },
+ "cdn-how-executive": {
+  "file": "/audio/cdn-caching/cdn-how-executive.mp3",
+  "ms": 7680,
+  "hash": "bcb6b9d3c653"
+ },
+ "cdn-revalidate-engineer": {
+  "file": "/audio/cdn-caching/cdn-revalidate-engineer.mp3",
+  "ms": 26832,
+  "hash": "00d6a6e2f727"
+ },
+ "cdn-revalidate-executive": {
+  "file": "/audio/cdn-caching/cdn-revalidate-executive.mp3",
+  "ms": 6816,
+  "hash": "808d7cb13992"
+ },
+ "cdn-stale-engineer": {
+  "file": "/audio/cdn-caching/cdn-stale-engineer.mp3",
+  "ms": 26832,
+  "hash": "cbd6f672b1e8"
+ },
+ "cdn-stale-executive": {
+  "file": "/audio/cdn-caching/cdn-stale-executive.mp3",
+  "ms": 7056,
+  "hash": "29e0667aa5e2"
+ },
+ "cdn-purge-engineer": {
+  "file": "/audio/cdn-caching/cdn-purge-engineer.mp3",
+  "ms": 26808,
+  "hash": "229905c382f9"
+ },
+ "cdn-purge-executive": {
+  "file": "/audio/cdn-caching/cdn-purge-executive.mp3",
+  "ms": 7488,
+  "hash": "01c6b1f1e950"
+ },
+ "cdn-gotchas-engineer": {
+  "file": "/audio/cdn-caching/cdn-gotchas-engineer.mp3",
+  "ms": 28680,
+  "hash": "fa11a1e1a505"
+ },
+ "cdn-gotchas-executive": {
+  "file": "/audio/cdn-caching/cdn-gotchas-executive.mp3",
+  "ms": 6504,
+  "hash": "1478f26ad240"
+ },
+ "cdn-tradeoffs-engineer": {
+  "file": "/audio/cdn-caching/cdn-tradeoffs-engineer.mp3",
+  "ms": 25776,
+  "hash": "05686156318f"
+ },
+ "cdn-tradeoffs-executive": {
+  "file": "/audio/cdn-caching/cdn-tradeoffs-executive.mp3",
+  "ms": 8568,
+  "hash": "33bdcd5e8d51"
+ },
+ "cdn-limits-engineer": {
+  "file": "/audio/cdn-caching/cdn-limits-engineer.mp3",
+  "ms": 28800,
+  "hash": "83db52661923"
+ },
+ "cdn-limits-executive": {
+  "file": "/audio/cdn-caching/cdn-limits-executive.mp3",
+  "ms": 7944,
+  "hash": "62219841fad2"
+ },
+ "cdn-wild-engineer": {
+  "file": "/audio/cdn-caching/cdn-wild-engineer.mp3",
+  "ms": 36648,
+  "hash": "c25da6177342"
+ },
+ "cdn-wild-executive": {
+  "file": "/audio/cdn-caching/cdn-wild-executive.mp3",
+  "ms": 8904,
+  "hash": "0e9e26a13d65"
+ },
+ "cdn-related-engineer": {
+  "file": "/audio/cdn-caching/cdn-related-engineer.mp3",
+  "ms": 27576,
+  "hash": "8e99be682b99"
+ },
+ "cdn-related-executive": {
+  "file": "/audio/cdn-caching/cdn-related-executive.mp3",
+  "ms": 7344,
+  "hash": "6d1ba56419e9"
+ },
+ "cdn-recap-engineer": {
+  "file": "/audio/cdn-caching/cdn-recap-engineer.mp3",
+  "ms": 22320,
+  "hash": "219169d8efca"
+ },
+ "cdn-recap-executive": {
+  "file": "/audio/cdn-caching/cdn-recap-executive.mp3",
+  "ms": 9816,
+  "hash": "974d3bd7dc73"
+ }
+}

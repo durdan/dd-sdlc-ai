@@ -1,0 +1,1027 @@
+{
+ "id": "graceful-degradation",
+ "title": "Graceful degradation",
+ "subtitle": "Design pattern",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "diagrams": [
+  {
+   "id": "page",
+   "kind": "c4",
+   "title": "One optional widget takes down the page",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "user",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Shoppers",
+     "sub": "open a product page"
+    },
+    {
+     "id": "page",
+     "kind": "container",
+     "tone": "core",
+     "label": "Product page service",
+     "sub": "waits for every call"
+    },
+    {
+     "id": "catalogue",
+     "kind": "container",
+     "tone": "core",
+     "label": "Product details",
+     "sub": "name, photos, description"
+    },
+    {
+     "id": "stock",
+     "kind": "container",
+     "tone": "core",
+     "label": "Price and stock",
+     "sub": "healthy"
+    },
+    {
+     "id": "reviews",
+     "kind": "container",
+     "tone": "core",
+     "label": "Reviews",
+     "sub": "healthy"
+    },
+    {
+     "id": "recs",
+     "kind": "external",
+     "tone": "external",
+     "label": "Recommendations",
+     "sub": "slow: no answer for 10 s"
+    }
+   ],
+   "edges": [
+    {
+     "id": "p1",
+     "from": "user",
+     "to": "page",
+     "style": "solid",
+     "label": "GET /product/42"
+    },
+    {
+     "id": "p2",
+     "from": "page",
+     "to": "catalogue",
+     "style": "solid",
+     "label": "details"
+    },
+    {
+     "id": "p3",
+     "from": "page",
+     "to": "stock",
+     "style": "solid",
+     "label": "price and stock"
+    },
+    {
+     "id": "p4",
+     "from": "page",
+     "to": "reviews",
+     "style": "solid",
+     "label": "reviews"
+    },
+    {
+     "id": "p5",
+     "from": "page",
+     "to": "recs",
+     "style": "dashed",
+     "label": "picks · waits 10 s"
+    },
+    {
+     "id": "p6",
+     "from": "page",
+     "to": "user",
+     "style": "dashed",
+     "label": "500 error page"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or slow"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "signal"
+    }
+   ]
+  },
+  {
+   "id": "retries",
+   "kind": "sequence",
+   "title": "Wait longer, retry harder",
+   "participants": [
+    {
+     "id": "browser",
+     "label": "Browser"
+    },
+    {
+     "id": "page",
+     "label": "Product page"
+    },
+    {
+     "id": "recs",
+     "label": "Recommendations"
+    }
+   ],
+   "messages": [
+    {
+     "id": "n1",
+     "from": "browser",
+     "to": "page",
+     "style": "solid",
+     "label": "GET /product/42"
+    },
+    {
+     "id": "n2",
+     "from": "page",
+     "to": "recs",
+     "style": "solid",
+     "label": "picks · timeout raised to 10 s"
+    },
+    {
+     "id": "n3",
+     "from": "recs",
+     "to": "page",
+     "style": "dashed",
+     "label": "nothing for 10 s"
+    },
+    {
+     "id": "n4",
+     "from": "page",
+     "to": "recs",
+     "style": "solid",
+     "label": "retry · more load on a struggling service"
+    },
+    {
+     "id": "n5",
+     "from": "recs",
+     "to": "page",
+     "style": "dashed",
+     "label": "nothing for another 10 s"
+    },
+    {
+     "id": "n6",
+     "from": "page",
+     "to": "browser",
+     "style": "dashed",
+     "label": "500 after 20 s; shopper already gone"
+    }
+   ]
+  },
+  {
+   "id": "structure",
+   "kind": "c4",
+   "title": "Critical calls must work; optional calls get a budget and a fallback",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "page",
+     "kind": "container",
+     "tone": "neutral",
+     "label": "Product page service",
+     "sub": "assembles the response"
+    },
+    {
+     "id": "catalogue",
+     "kind": "container",
+     "tone": "core",
+     "label": "Product details",
+     "sub": "no page without it",
+     "group": "critical"
+    },
+    {
+     "id": "stock",
+     "kind": "container",
+     "tone": "core",
+     "label": "Price and stock",
+     "sub": "needed to buy",
+     "group": "critical"
+    },
+    {
+     "id": "guard",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Guard",
+     "sub": "time budget, e.g. 200 ms",
+     "group": "optional"
+    },
+    {
+     "id": "fallback",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Fallback",
+     "sub": "stale · default · hide",
+     "group": "optional"
+    },
+    {
+     "id": "switch",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Feature switch",
+     "sub": "turn a feature off by hand",
+     "group": "optional"
+    },
+    {
+     "id": "recs",
+     "kind": "external",
+     "tone": "external",
+     "label": "Recommendations and reviews",
+     "sub": "nice to have"
+    },
+    {
+     "id": "cache",
+     "kind": "store",
+     "tone": "data",
+     "label": "Last-known-good cache",
+     "sub": "copies of recent answers"
+    },
+    {
+     "id": "metrics",
+     "kind": "store",
+     "tone": "data",
+     "label": "Metrics and alerts",
+     "sub": "degraded responses counted"
+    }
+   ],
+   "edges": [
+    {
+     "id": "s1",
+     "from": "page",
+     "to": "catalogue",
+     "style": "solid",
+     "label": "must succeed"
+    },
+    {
+     "id": "s2",
+     "from": "page",
+     "to": "stock",
+     "style": "solid",
+     "label": "must succeed"
+    },
+    {
+     "id": "s3",
+     "from": "page",
+     "to": "guard",
+     "style": "solid",
+     "label": "optional call"
+    },
+    {
+     "id": "s4",
+     "from": "guard",
+     "to": "recs",
+     "style": "solid",
+     "label": "within budget"
+    },
+    {
+     "id": "s5",
+     "from": "guard",
+     "to": "fallback",
+     "style": "dashed",
+     "label": "error, timeout or switched off"
+    },
+    {
+     "id": "s6",
+     "from": "fallback",
+     "to": "cache",
+     "style": "solid",
+     "label": "last-known-good"
+    },
+    {
+     "id": "s7",
+     "from": "switch",
+     "to": "guard",
+     "style": "dotted",
+     "label": "off → skip the call"
+    },
+    {
+     "id": "s8",
+     "from": "fallback",
+     "to": "metrics",
+     "style": "dotted",
+     "label": "every degraded answer"
+    }
+   ],
+   "groups": [
+    {
+     "id": "critical",
+     "label": "Critical: fail the request if these fail",
+     "tone": "core"
+    },
+    {
+     "id": "optional",
+     "label": "Optional: degrade instead of failing",
+     "tone": "stream"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or slow"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "signal"
+    }
+   ]
+  },
+  {
+   "id": "flow",
+   "kind": "sequence",
+   "title": "A degraded page, step by step",
+   "participants": [
+    {
+     "id": "browser",
+     "label": "Browser"
+    },
+    {
+     "id": "page",
+     "label": "Product page"
+    },
+    {
+     "id": "critical",
+     "label": "Details, price, stock"
+    },
+    {
+     "id": "recs",
+     "label": "Recommendations"
+    },
+    {
+     "id": "cache",
+     "label": "Last-known-good cache"
+    },
+    {
+     "id": "metrics",
+     "label": "Metrics"
+    }
+   ],
+   "messages": [
+    {
+     "id": "h1",
+     "from": "browser",
+     "to": "page",
+     "style": "solid",
+     "label": "GET /product/42"
+    },
+    {
+     "id": "h2",
+     "from": "page",
+     "to": "critical",
+     "style": "solid",
+     "label": "details, price, stock (in parallel)"
+    },
+    {
+     "id": "h3",
+     "from": "critical",
+     "to": "page",
+     "style": "solid",
+     "label": "all answered"
+    },
+    {
+     "id": "h4",
+     "from": "page",
+     "to": "recs",
+     "style": "solid",
+     "label": "picks · budget 200 ms"
+    },
+    {
+     "id": "h5",
+     "from": "recs",
+     "to": "page",
+     "style": "dashed",
+     "label": "no answer in 200 ms → give up"
+    },
+    {
+     "id": "h6",
+     "from": "page",
+     "to": "cache",
+     "style": "solid",
+     "label": "last-known-good picks?"
+    },
+    {
+     "id": "h7",
+     "from": "cache",
+     "to": "page",
+     "style": "solid",
+     "label": "popular items, an hour old"
+    },
+    {
+     "id": "h8",
+     "from": "page",
+     "to": "metrics",
+     "style": "dotted",
+     "label": "degraded: recommendations"
+    },
+    {
+     "id": "h9",
+     "from": "page",
+     "to": "browser",
+     "style": "solid",
+     "label": "200 OK · \"popular right now\""
+    }
+   ]
+  },
+  {
+   "id": "overload",
+   "kind": "c4",
+   "title": "Under overload, shed the least important work first",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "buyers",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Shoppers checking out",
+     "sub": "highest priority"
+    },
+    {
+     "id": "browsers",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Shoppers browsing",
+     "sub": "normal priority"
+    },
+    {
+     "id": "batch",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Prefetch and batch jobs",
+     "sub": "can wait"
+    },
+    {
+     "id": "front",
+     "kind": "container",
+     "tone": "core",
+     "label": "Front door",
+     "sub": "admits by priority when busy"
+    },
+    {
+     "id": "app",
+     "kind": "container",
+     "tone": "core",
+     "label": "Shop servers",
+     "sub": "near capacity"
+    },
+    {
+     "id": "switches",
+     "kind": "store",
+     "tone": "data",
+     "label": "Feature switches",
+     "sub": "brownout: optional features off"
+    }
+   ],
+   "edges": [
+    {
+     "id": "o1",
+     "from": "buyers",
+     "to": "front",
+     "style": "solid",
+     "label": "checkout"
+    },
+    {
+     "id": "o2",
+     "from": "front",
+     "to": "app",
+     "style": "solid",
+     "label": "always admitted"
+    },
+    {
+     "id": "o3",
+     "from": "browsers",
+     "to": "front",
+     "style": "solid",
+     "label": "product pages"
+    },
+    {
+     "id": "o4",
+     "from": "batch",
+     "to": "front",
+     "style": "dashed",
+     "label": "503 · try later"
+    },
+    {
+     "id": "o5",
+     "from": "switches",
+     "to": "app",
+     "style": "dotted",
+     "label": "recommendations off"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "rejected"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "switch"
+    }
+   ]
+  },
+  {
+   "id": "storm",
+   "kind": "sequence",
+   "title": "A fallback that overloads another system",
+   "participants": [
+    {
+     "id": "page",
+     "label": "Every page server"
+    },
+    {
+     "id": "cache",
+     "label": "Reviews cache"
+    },
+    {
+     "id": "db",
+     "label": "Shared database"
+    },
+    {
+     "id": "browser",
+     "label": "Browser"
+    }
+   ],
+   "messages": [
+    {
+     "id": "f1",
+     "from": "page",
+     "to": "cache",
+     "style": "solid",
+     "label": "get reviews"
+    },
+    {
+     "id": "f2",
+     "from": "cache",
+     "to": "page",
+     "style": "dashed",
+     "label": "cache cluster down"
+    },
+    {
+     "id": "f3",
+     "from": "page",
+     "to": "db",
+     "style": "solid",
+     "label": "fallback: query the database directly"
+    },
+    {
+     "id": "f4",
+     "from": "db",
+     "to": "page",
+     "style": "dashed",
+     "label": "100× normal load → timeouts"
+    },
+    {
+     "id": "f5",
+     "from": "page",
+     "to": "db",
+     "style": "solid",
+     "label": "price and stock (critical)"
+    },
+    {
+     "id": "f6",
+     "from": "db",
+     "to": "page",
+     "style": "dashed",
+     "label": "also times out"
+    },
+    {
+     "id": "f7",
+     "from": "page",
+     "to": "browser",
+     "style": "dashed",
+     "label": "whole page fails"
+    }
+   ]
+  },
+  {
+   "id": "related",
+   "kind": "c4",
+   "title": "Related patterns",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "gd",
+     "kind": "container",
+     "tone": "core",
+     "label": "Graceful degradation",
+     "sub": "a reduced but working answer"
+    },
+    {
+     "id": "timeout",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Timeout",
+     "sub": "a budget for each optional call"
+    },
+    {
+     "id": "cb",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Circuit breaker",
+     "sub": "stop calling what is failing"
+    },
+    {
+     "id": "bulkhead",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Bulkhead",
+     "sub": "optional calls in their own pool"
+    },
+    {
+     "id": "cdn",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "CDN caching",
+     "sub": "static and stale pages"
+    },
+    {
+     "id": "flags",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Feature flags",
+     "sub": "kill switches and brownouts"
+    },
+    {
+     "id": "shed",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Load shedding",
+     "sub": "refuse work before overload"
+    }
+   ],
+   "edges": [
+    {
+     "id": "r1",
+     "from": "timeout",
+     "to": "gd",
+     "style": "solid",
+     "label": "decides when to give up"
+    },
+    {
+     "id": "r2",
+     "from": "cb",
+     "to": "gd",
+     "style": "solid",
+     "label": "skips the call when open"
+    },
+    {
+     "id": "r3",
+     "from": "bulkhead",
+     "to": "gd",
+     "style": "solid",
+     "label": "protects the critical path"
+    },
+    {
+     "id": "r4",
+     "from": "gd",
+     "to": "cdn",
+     "style": "solid",
+     "label": "last resort: static page"
+    },
+    {
+     "id": "r5",
+     "from": "flags",
+     "to": "gd",
+     "style": "dotted",
+     "label": "manual switch"
+    },
+    {
+     "id": "r6",
+     "from": "shed",
+     "to": "gd",
+     "style": "dotted",
+     "label": "same idea under overload"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "problem",
+   "title": "The problem"
+  },
+  {
+   "id": "naive",
+   "title": "The naive fix"
+  },
+  {
+   "id": "pattern",
+   "title": "The pattern"
+  },
+  {
+   "id": "how",
+   "title": "How it works"
+  },
+  {
+   "id": "failure",
+   "title": "When it goes wrong"
+  },
+  {
+   "id": "tradeoffs",
+   "title": "Trade-offs"
+  },
+  {
+   "id": "wild",
+   "title": "In the wild"
+  },
+  {
+   "id": "related",
+   "title": "Related patterns"
+  },
+  {
+   "id": "recap",
+   "title": "Recap"
+  }
+ ],
+ "shots": [
+  {
+   "id": "gd-problem",
+   "chapter": "problem",
+   "title": "Normal page",
+   "diagram": "page",
+   "focus": [],
+   "trace": [
+    "p1",
+    "p2",
+    "p3",
+    "p4",
+    "p5"
+   ],
+   "engineer": "Here is a product page in an online shop. To build it, the page service calls four others: product details, price and stock, reviews, and recommendations. It waits for all four, then renders the page. On a good day every call answers in a few milliseconds, and nobody thinks about which of them actually matter.",
+   "executive": "A single product page is built from four separate services, and the page waits for all of them."
+  },
+  {
+   "id": "gd-cascade",
+   "chapter": "problem",
+   "title": "All or nothing",
+   "diagram": "page",
+   "focus": [
+    "page",
+    "recs"
+   ],
+   "trace": [
+    "p1",
+    "p5",
+    "p6"
+   ],
+   "engineer": "Now the recommendations service gets slow and stops answering. The page service keeps waiting, then gives up and returns an error page. Details, price, stock and reviews were all fine. The shopper could have bought the product. But a widget at the bottom of the page, one they might not even scroll to, has turned a small fault into a full outage.",
+   "executive": "When the least important service fails, the whole page fails, even though everything needed to buy the product was working."
+  },
+  {
+   "id": "gd-naive",
+   "chapter": "naive",
+   "title": "Retry harder",
+   "diagram": "retries",
+   "focus": [],
+   "trace": [
+    "n1",
+    "n2",
+    "n3",
+    "n4",
+    "n5",
+    "n6"
+   ],
+   "engineer": "The obvious fixes are to wait longer and retry. Raise the timeout to ten seconds, and retry once. Now the page fails after twenty seconds instead of ten, and the retries add load to a service that is already struggling. The real mistake is not the timeout. It is treating every dependency as required, so the page is all or nothing.",
+   "executive": "Waiting longer and retrying just makes the failure slower and adds load. The real problem is that the page treats every part as essential."
+  },
+  {
+   "id": "gd-classify",
+   "chapter": "pattern",
+   "title": "Classify",
+   "diagram": "structure",
+   "focus": [
+    "catalogue",
+    "stock",
+    "guard",
+    "recs"
+   ],
+   "trace": [
+    "s1",
+    "s2",
+    "s3",
+    "s4"
+   ],
+   "engineer": "Graceful degradation starts with a decision: which features are critical, and which are optional. Without product details, price and stock there is no page, so those calls must succeed or the request fails. Recommendations and reviews are nice to have. AWS's Well-Architected guidance calls this turning hard dependencies into soft ones, and notes it is as much a business discussion as a technical one.",
+   "executive": "First decide which parts of the page are essential and which are nice to have. That is a business decision as much as a technical one."
+  },
+  {
+   "id": "gd-structure",
+   "chapter": "pattern",
+   "title": "Fallback",
+   "diagram": "structure",
+   "focus": [],
+   "trace": [
+    "s3",
+    "s5",
+    "s6",
+    "s7",
+    "s8"
+   ],
+   "engineer": "Each optional call goes through a guard with a short time budget. If the call fails, times out, or has been switched off, the guard hands over to a fallback. The fallback might use the last good answer from a cache, show a sensible default, or simply hide the widget. A feature switch lets operators turn the feature off by hand. And every degraded answer is counted, so someone knows it is happening.",
+   "executive": "Each optional feature gets a short time limit and a plan B: older data, a default, or hiding it. Every time plan B is used, it is recorded."
+  },
+  {
+   "id": "gd-ladder",
+   "chapter": "pattern",
+   "card": {
+    "heading": "Ways to degrade, mildest first",
+    "kind": "compare",
+    "points": [
+     "Fallback | Example",
+     "Last-known-good data | Reviews cached an hour ago",
+     "A sensible default | Bestsellers instead of personal picks",
+     "Hide the feature | No recommendations panel at all",
+     "Read-only mode | Browse freely; writes paused",
+     "Static fallback page | A cached page served from the CDN"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "There is a ladder of options, mildest first. Serve last-known-good data, such as reviews cached an hour ago. Use a sensible default, like bestsellers instead of personal picks. Hide the feature altogether. If the database that takes writes is down, go read-only: shoppers can still browse. And as a last resort, serve a static page from the content delivery network, so people see something better than an error.",
+   "executive": "Options range from slightly old data, to a generic default, to hiding a feature, to a read-only or static site as a last resort."
+  },
+  {
+   "id": "gd-how",
+   "chapter": "how",
+   "title": "Sequence",
+   "diagram": "flow",
+   "focus": [],
+   "trace": [
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "h7",
+    "h8",
+    "h9"
+   ],
+   "engineer": "Step by step. The request arrives. The page fetches details, price and stock in parallel, and all three answer. It asks recommendations for picks with a budget of two hundred milliseconds. Nothing comes back in time, so it gives up and asks the cache for the last good list: popular items from an hour ago. It records a degraded response, and returns a normal page labelled honestly as popular right now, not picked for you.",
+   "executive": "The page loads the essentials, gives the optional part a short time, then fills the gap with older data and labels it honestly."
+  },
+  {
+   "id": "gd-shed",
+   "chapter": "failure",
+   "title": "Overload",
+   "diagram": "overload",
+   "focus": [],
+   "trace": [
+    "o1",
+    "o2",
+    "o3",
+    "o4",
+    "o5"
+   ],
+   "engineer": "Degradation also matters when your own servers are overloaded. Google's SRE book describes load shedding: as a server nears overload, it drops some traffic, for example with a 503, and drops low-priority work before interactive users. Here checkout is always admitted, browsing comes next, and prefetch and batch jobs are told to try later. Operators can also brown out, switching optional features off to cut the work per request.",
+   "executive": "When demand outstrips capacity, refuse the least important work first and switch off expensive extras, so checkout keeps working."
+  },
+  {
+   "id": "gd-storm",
+   "chapter": "failure",
+   "title": "Fallback storm",
+   "diagram": "storm",
+   "focus": [],
+   "trace": [
+    "f1",
+    "f2",
+    "f3",
+    "f4",
+    "f5",
+    "f6",
+    "f7"
+   ],
+   "engineer": "Fallbacks can cause the outage they were meant to prevent. Amazon's Builders' Library describes falling back from a cache to direct database queries: it worked for months, until the caches failed together and the database locked up. Here every page server does the same. The shared database is flooded, so even the critical price and stock lookups time out, and the whole page fails. A fallback must never quietly send far more load somewhere else.",
+   "executive": "A plan B that shifts all the load onto another shared system can bring that system down too, turning a small fault into a big one."
+  },
+  {
+   "id": "gd-dangers",
+   "chapter": "failure",
+   "card": {
+    "heading": "Where it still goes wrong",
+    "points": [
+     "Silent degradation: nobody notices for weeks",
+     "A fallback path never exercised, broken when needed",
+     "Degraded mode trips when it is not needed",
+     "Test it: game days and chaos experiments"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three more traps. Silent degradation: the page looks fine, so nobody notices recommendations have been off for weeks. Alert when degraded responses rise. Untested fallbacks: as the SRE book puts it, the code path you never use often does not work. And complex triggers can trip into degraded mode when it is not needed. So test it: break dependencies on purpose in game days and chaos experiments, and keep the degraded path simple.",
+   "executive": "Alert when the system is running degraded, keep plan B simple, and rehearse failures on purpose so plan B is known to work."
+  },
+  {
+   "id": "gd-tradeoffs",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "The choices",
+    "kind": "compare",
+    "points": [
+     "Choice | Trade-off",
+     "Stale data or hide it | Something useful, but possibly wrong",
+     "Automatic or manual switch | Fast reaction, or fewer false trips",
+     "Fallback or failover | Rarely used path, or one exercised all the time",
+     "Degrade or fail | Some features must be correct or nothing"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The trade-offs. Stale data is useful but can be wrong, so never show an old price as current. Automatic triggers react fast; manual switches avoid false trips. Amazon prefers failover to fallback: run both paths all the time, so neither goes untested. And some features must not degrade. AWS notes that for payment processing, consistency may matter more than availability. Failing clearly beats pretending an order went through.",
+   "executive": "Old data is better than nothing only when it cannot mislead. For payments and orders, a clear failure beats a fake success."
+  },
+  {
+   "id": "gd-wild",
+   "chapter": "wild",
+   "focus": [],
+   "trace": [],
+   "engineer": "In the wild. Google's SRE book covers load shedding and graceful degradation in its chapter on cascading failures, and advises a quick way to turn degradation off. AWS Well-Architected makes it a reliability best practice, while Amazon's Builders' Library warns against complex fallback. Pete Hodgson's article on feature toggles describes kill switches for non-vital features. And Netflix's Chaos Monkey terminates instances in production, so teams find out whether their degraded paths really work.",
+   "executive": "Google, Amazon and Netflix all write about it: degrade what is optional, keep the fallback simple, and test it in production.",
+   "card": {
+    "heading": "In the wild",
+    "points": [
+     "Google SRE book: load shedding and graceful degradation",
+     "AWS Well-Architected REL05-BP01: hard into soft dependencies",
+     "Amazon Builders' Library: avoid complex fallback",
+     "Feature toggles: kill switches for non-vital features",
+     "Netflix Chaos Monkey: terminates instances in production"
+    ]
+   }
+  },
+  {
+   "id": "gd-related",
+   "chapter": "related",
+   "title": "Neighbours",
+   "diagram": "related",
+   "focus": [],
+   "trace": [
+    "r1",
+    "r2",
+    "r3",
+    "r4",
+    "r5",
+    "r6"
+   ],
+   "engineer": "Its neighbours. A timeout decides when to give up on an optional call. A circuit breaker skips the call entirely while a dependency is failing. A bulkhead keeps optional calls in their own pool, so they cannot starve the critical path. CDN caching supplies static and stale pages as the last resort. Feature flags are the manual switch. And load shedding is the same idea applied to your own overloaded servers.",
+   "executive": "Timeouts, circuit breakers, separate pools, caching and feature switches are the building blocks that make graceful degradation work."
+  },
+  {
+   "id": "gd-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "Decide what is critical; everything else is optional",
+     "Give optional features a budget and a simple fallback",
+     "Alert on degradation, and rehearse it on purpose"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. Decide what is critical; everything else should be allowed to fail on its own. Give each optional feature a time budget and a simple fallback, and make sure that fallback cannot overload something else. And treat degradation as an incident in its own right: alert on it, and rehearse it on purpose, so it works on the day you need it.",
+   "executive": "Know what is essential, give the rest a simple plan B, and test that plan B before you need it."
+  }
+ ],
+ "meta": {
+  "kind": "pattern",
+  "category": "Resilience",
+  "level": "intermediate",
+  "uses": [
+   "timeout",
+   "circuit-breaker"
+  ],
+  "related": [
+   "circuit-breaker",
+   "bulkhead",
+   "cdn-caching",
+   "feature-flags"
+  ],
+  "blurb": "When an optional part fails, serve a reduced but working answer instead of an error.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ }
+}

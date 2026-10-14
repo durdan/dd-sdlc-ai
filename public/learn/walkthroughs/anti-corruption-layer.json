@@ -1,0 +1,996 @@
+{
+ "id": "anti-corruption-layer",
+ "title": "Anti-corruption layer",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "diagrams": [
+  {
+   "id": "leak",
+   "kind": "c4",
+   "title": "Their model leaks everywhere",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "checkout",
+     "kind": "container",
+     "tone": "core",
+     "label": "Checkout",
+     "sub": "books shipments"
+    },
+    {
+     "id": "tracking",
+     "kind": "container",
+     "tone": "core",
+     "label": "Tracking page",
+     "sub": "shows delivery status"
+    },
+    {
+     "id": "returns",
+     "kind": "container",
+     "tone": "core",
+     "label": "Returns",
+     "sub": "books collections"
+    },
+    {
+     "id": "db",
+     "kind": "store",
+     "tone": "data",
+     "label": "Orders database",
+     "sub": "stores consignment_no, status 'D3'"
+    },
+    {
+     "id": "carrier",
+     "kind": "external",
+     "tone": "external",
+     "label": "Carrier API",
+     "sub": "consignment_no · codes D1–D9 · pounds"
+    }
+   ],
+   "edges": [
+    {
+     "id": "lk1",
+     "from": "checkout",
+     "to": "carrier",
+     "style": "solid",
+     "label": "POST consignment · weight_lb"
+    },
+    {
+     "id": "lk2",
+     "from": "tracking",
+     "to": "carrier",
+     "style": "solid",
+     "label": "GET status · if code == 'D3'"
+    },
+    {
+     "id": "lk3",
+     "from": "returns",
+     "to": "carrier",
+     "style": "solid",
+     "label": "POST collection · service 'EXP'"
+    },
+    {
+     "id": "lk4",
+     "from": "checkout",
+     "to": "db",
+     "style": "dotted",
+     "label": "save consignment_no as our key"
+    },
+    {
+     "id": "lk5",
+     "from": "carrier",
+     "to": "tracking",
+     "style": "dashed",
+     "label": "v2 renames fields and codes"
+    },
+    {
+     "id": "lk6",
+     "from": "carrier",
+     "to": "returns",
+     "style": "dashed",
+     "label": "v2 breaks this too"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or change"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "event or data"
+    }
+   ]
+  },
+  {
+   "id": "naive",
+   "kind": "c4",
+   "title": "A shared client that passes their types through",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "checkout",
+     "kind": "container",
+     "tone": "core",
+     "label": "Checkout"
+    },
+    {
+     "id": "tracking",
+     "kind": "container",
+     "tone": "core",
+     "label": "Tracking page"
+    },
+    {
+     "id": "returns",
+     "kind": "container",
+     "tone": "core",
+     "label": "Returns"
+    },
+    {
+     "id": "client",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "carrier-client library",
+     "sub": "thin wrapper: returns CarrierConsignment"
+    },
+    {
+     "id": "carrier",
+     "kind": "external",
+     "tone": "external",
+     "label": "Carrier API",
+     "sub": "v2"
+    },
+    {
+     "id": "other",
+     "kind": "external",
+     "tone": "external",
+     "label": "Second carrier",
+     "sub": "different fields again"
+    }
+   ],
+   "edges": [
+    {
+     "id": "nv1",
+     "from": "checkout",
+     "to": "client",
+     "style": "solid",
+     "label": "CarrierConsignment"
+    },
+    {
+     "id": "nv2",
+     "from": "tracking",
+     "to": "client",
+     "style": "solid",
+     "label": "status code 'D3'"
+    },
+    {
+     "id": "nv3",
+     "from": "returns",
+     "to": "client",
+     "style": "solid",
+     "label": "service 'EXP'"
+    },
+    {
+     "id": "nv4",
+     "from": "client",
+     "to": "carrier",
+     "style": "solid",
+     "label": "HTTP"
+    },
+    {
+     "id": "nv5",
+     "from": "carrier",
+     "to": "client",
+     "style": "dashed",
+     "label": "rename → new types"
+    },
+    {
+     "id": "nv6",
+     "from": "client",
+     "to": "tracking",
+     "style": "dashed",
+     "label": "every caller recompiles"
+    },
+    {
+     "id": "nv7",
+     "from": "other",
+     "to": "client",
+     "style": "dashed",
+     "label": "no fit: rewrite callers"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or change"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "event or data"
+    }
+   ]
+  },
+  {
+   "id": "structure",
+   "kind": "c4",
+   "title": "One boundary that speaks both languages",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "domain",
+     "kind": "container",
+     "tone": "core",
+     "label": "Our services",
+     "sub": "Shipment · ShipmentStatus · kg"
+    },
+    {
+     "id": "facade",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Facade",
+     "sub": "ShippingService in our terms",
+     "group": "acl"
+    },
+    {
+     "id": "translator",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Translator",
+     "sub": "fields, codes, units",
+     "group": "acl"
+    },
+    {
+     "id": "idmap",
+     "kind": "store",
+     "tone": "data",
+     "label": "ID map",
+     "sub": "our shipment id ↔ their consignment",
+     "group": "acl"
+    },
+    {
+     "id": "adapter",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Adapter",
+     "sub": "HTTP, auth, retries, timeouts",
+     "group": "acl"
+    },
+    {
+     "id": "webhook",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Event receiver",
+     "sub": "their webhooks in",
+     "group": "acl"
+    },
+    {
+     "id": "carrier",
+     "kind": "external",
+     "tone": "external",
+     "label": "Carrier API",
+     "sub": "their model, unchanged"
+    },
+    {
+     "id": "bus",
+     "kind": "store",
+     "tone": "data",
+     "label": "Our event bus",
+     "sub": "ShipmentDelivered"
+    }
+   ],
+   "edges": [
+    {
+     "id": "st1",
+     "from": "domain",
+     "to": "facade",
+     "style": "solid",
+     "label": "book(shipment)"
+    },
+    {
+     "id": "st2",
+     "from": "facade",
+     "to": "translator",
+     "style": "solid",
+     "label": "our model"
+    },
+    {
+     "id": "st3",
+     "from": "translator",
+     "to": "idmap",
+     "style": "dotted",
+     "label": "look up · store ids"
+    },
+    {
+     "id": "st4",
+     "from": "translator",
+     "to": "adapter",
+     "style": "solid",
+     "label": "their model"
+    },
+    {
+     "id": "st5",
+     "from": "adapter",
+     "to": "carrier",
+     "style": "solid",
+     "label": "their API"
+    },
+    {
+     "id": "st6",
+     "from": "carrier",
+     "to": "webhook",
+     "style": "dotted",
+     "label": "status 'D3'"
+    },
+    {
+     "id": "st7",
+     "from": "webhook",
+     "to": "translator",
+     "style": "dotted",
+     "label": "translate inbound"
+    },
+    {
+     "id": "st8",
+     "from": "translator",
+     "to": "bus",
+     "style": "dotted",
+     "label": "ShipmentDelivered"
+    }
+   ],
+   "groups": [
+    {
+     "id": "acl",
+     "label": "Anti-corruption layer [module or service]",
+     "tone": "core"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or change"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "event or data"
+    }
+   ]
+  },
+  {
+   "id": "flow",
+   "kind": "sequence",
+   "title": "Booking a shipment",
+   "participants": [
+    {
+     "id": "orders",
+     "label": "Order service"
+    },
+    {
+     "id": "facade",
+     "label": "Facade"
+    },
+    {
+     "id": "tr",
+     "label": "Translator"
+    },
+    {
+     "id": "ids",
+     "label": "ID map"
+    },
+    {
+     "id": "adapter",
+     "label": "Adapter"
+    },
+    {
+     "id": "carrier",
+     "label": "Carrier API"
+    }
+   ],
+   "messages": [
+    {
+     "id": "h1",
+     "from": "orders",
+     "to": "facade",
+     "style": "solid",
+     "label": "book shipment S-42 · 2.5 kg · next day"
+    },
+    {
+     "id": "h2",
+     "from": "facade",
+     "to": "tr",
+     "style": "solid",
+     "label": "translate request"
+    },
+    {
+     "id": "h3",
+     "from": "tr",
+     "to": "adapter",
+     "style": "solid",
+     "label": "weight_lb 5.51 · service 'EXP'"
+    },
+    {
+     "id": "h4",
+     "from": "adapter",
+     "to": "carrier",
+     "style": "solid",
+     "label": "POST /consignments"
+    },
+    {
+     "id": "h5",
+     "from": "carrier",
+     "to": "adapter",
+     "style": "solid",
+     "label": "consignment_no CN-88"
+    },
+    {
+     "id": "h6",
+     "from": "tr",
+     "to": "ids",
+     "style": "solid",
+     "label": "store S-42 ↔ CN-88"
+    },
+    {
+     "id": "h7",
+     "from": "facade",
+     "to": "orders",
+     "style": "solid",
+     "label": "Shipment S-42 · status Booked"
+    }
+   ]
+  },
+  {
+   "id": "events",
+   "kind": "sequence",
+   "title": "Translating their events",
+   "participants": [
+    {
+     "id": "carrier",
+     "label": "Carrier API"
+    },
+    {
+     "id": "rx",
+     "label": "Event receiver"
+    },
+    {
+     "id": "tr",
+     "label": "Translator"
+    },
+    {
+     "id": "ids",
+     "label": "ID map"
+    },
+    {
+     "id": "bus",
+     "label": "Our event bus"
+    },
+    {
+     "id": "tracking",
+     "label": "Tracking page"
+    }
+   ],
+   "messages": [
+    {
+     "id": "ev1",
+     "from": "carrier",
+     "to": "rx",
+     "style": "solid",
+     "label": "webhook · CN-88 · code 'D3'"
+    },
+    {
+     "id": "ev2",
+     "from": "rx",
+     "to": "rx",
+     "style": "solid",
+     "label": "check signature · drop duplicates"
+    },
+    {
+     "id": "ev3",
+     "from": "rx",
+     "to": "tr",
+     "style": "solid",
+     "label": "raw event"
+    },
+    {
+     "id": "ev4",
+     "from": "tr",
+     "to": "ids",
+     "style": "solid",
+     "label": "CN-88 → S-42"
+    },
+    {
+     "id": "ev5",
+     "from": "tr",
+     "to": "bus",
+     "style": "dotted",
+     "label": "ShipmentDelivered(S-42)"
+    },
+    {
+     "id": "ev6",
+     "from": "bus",
+     "to": "tracking",
+     "style": "dotted",
+     "label": "show 'Delivered'"
+    }
+   ]
+  },
+  {
+   "id": "failure",
+   "kind": "sequence",
+   "title": "Their failures stop at the boundary",
+   "participants": [
+    {
+     "id": "orders",
+     "label": "Order service"
+    },
+    {
+     "id": "facade",
+     "label": "Facade"
+    },
+    {
+     "id": "adapter",
+     "label": "Adapter"
+    },
+    {
+     "id": "carrier",
+     "label": "Carrier API"
+    },
+    {
+     "id": "tr",
+     "label": "Translator"
+    },
+    {
+     "id": "ops",
+     "label": "Alerts and review queue"
+    }
+   ],
+   "messages": [
+    {
+     "id": "f1",
+     "from": "orders",
+     "to": "facade",
+     "style": "solid",
+     "label": "book shipment S-43"
+    },
+    {
+     "id": "f2",
+     "from": "adapter",
+     "to": "carrier",
+     "style": "dashed",
+     "label": "POST · times out after 3 s"
+    },
+    {
+     "id": "f3",
+     "from": "adapter",
+     "to": "carrier",
+     "style": "dashed",
+     "label": "retry with backoff · same key"
+    },
+    {
+     "id": "f4",
+     "from": "adapter",
+     "to": "adapter",
+     "style": "solid",
+     "label": "breaker opens"
+    },
+    {
+     "id": "f5",
+     "from": "facade",
+     "to": "orders",
+     "style": "solid",
+     "label": "ShippingUnavailable · try later"
+    },
+    {
+     "id": "f6",
+     "from": "carrier",
+     "to": "tr",
+     "style": "dotted",
+     "label": "webhook · unknown code 'X9'"
+    },
+    {
+     "id": "f7",
+     "from": "tr",
+     "to": "ops",
+     "style": "dashed",
+     "label": "park event · alert: unmapped code"
+    },
+    {
+     "id": "f8",
+     "from": "carrier",
+     "to": "tr",
+     "style": "dotted",
+     "label": "weight 0 lb · missing postcode"
+    },
+    {
+     "id": "f9",
+     "from": "tr",
+     "to": "ops",
+     "style": "dashed",
+     "label": "reject: fails validation"
+    }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "evans",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Domain-Driven Design",
+     "sub": "Eric Evans · 2003"
+    },
+    {
+     "id": "ref",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "DDD Reference",
+     "sub": "Evans · free summary, 2015"
+    },
+    {
+     "id": "fowler",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Martin Fowler",
+     "sub": "Bounded Context, 2014"
+    },
+    {
+     "id": "ms",
+     "kind": "container",
+     "tone": "core",
+     "label": "Microsoft Azure Architecture Center",
+     "sub": "facade or adapter between subsystems"
+    },
+    {
+     "id": "aws",
+     "kind": "container",
+     "tone": "core",
+     "label": "AWS Prescriptive Guidance",
+     "sub": "ACL while migrating a monolith"
+    }
+   ],
+   "edges": [
+    {
+     "id": "w1",
+     "from": "evans",
+     "to": "ref",
+     "style": "solid",
+     "label": "defines Anticorruption Layer"
+    },
+    {
+     "id": "w2",
+     "from": "evans",
+     "to": "fowler",
+     "style": "solid",
+     "label": "explains bounded contexts"
+    },
+    {
+     "id": "w3",
+     "from": "evans",
+     "to": "ms",
+     "style": "solid",
+     "label": "credited as origin"
+    },
+    {
+     "id": "w4",
+     "from": "ms",
+     "to": "aws",
+     "style": "dotted",
+     "label": "same idea, cloud migration"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "problem",
+   "title": "The problem"
+  },
+  {
+   "id": "naive",
+   "title": "The naive fix"
+  },
+  {
+   "id": "pattern",
+   "title": "The pattern"
+  },
+  {
+   "id": "how",
+   "title": "How it works"
+  },
+  {
+   "id": "failure",
+   "title": "When it goes wrong"
+  },
+  {
+   "id": "tradeoffs",
+   "title": "Trade-offs"
+  },
+  {
+   "id": "wild",
+   "title": "In the wild"
+  },
+  {
+   "id": "related",
+   "title": "Related patterns"
+  },
+  {
+   "id": "recap",
+   "title": "Recap"
+  }
+ ],
+ "shots": [
+  {
+   "id": "acl-problem",
+   "chapter": "problem",
+   "title": "Leak",
+   "diagram": "leak",
+   "focus": [],
+   "trace": [
+    "lk1",
+    "lk2",
+    "lk3",
+    "lk4"
+   ],
+   "engineer": "Here is an online shop that sends parcels through a shipping carrier. Checkout books a consignment using the carrier's field names and its weight in pounds. The tracking page checks whether the status code equals D3. Returns books collections with the carrier's service code. And the orders database stores the carrier's consignment number as our own key. Nothing is broken. But the carrier's model is now our model, in every service.",
+   "executive": "Our shop talks to a shipping company, and its codes and field names have spread into every part of our system."
+  },
+  {
+   "id": "acl-ripple",
+   "chapter": "problem",
+   "title": "Ripple",
+   "diagram": "leak",
+   "focus": [],
+   "trace": [
+    "lk5",
+    "lk6"
+   ],
+   "engineer": "Then the carrier releases version two of its API. Fields are renamed, and the status codes change. Every service that touched the carrier's model breaks at once, and each team has to fix it on the carrier's timetable. Worse, the business wants to add a second carrier, or switch carriers to save money. With their identifiers in our database and their codes in our logic, switching is not a change. It is a rewrite.",
+   "executive": "When the carrier changes its system, every part of ours breaks, and switching to another carrier would mean rewriting most of the integration."
+  },
+  {
+   "id": "acl-naive",
+   "chapter": "naive",
+   "title": "Thin wrapper",
+   "diagram": "naive",
+   "focus": [],
+   "trace": [
+    "nv1",
+    "nv2",
+    "nv3",
+    "nv4",
+    "nv5",
+    "nv6",
+    "nv7"
+   ],
+   "engineer": "The obvious fix is a shared client library: one place that makes the HTTP calls. That removes duplicated code, but look at what it returns. Carrier consignments, carrier status codes, carrier service names. The wrapper hides the transport, not the model. When the carrier renames a field, the library's types change and every caller still has to change. And a second carrier, with different fields again, does not fit at all.",
+   "executive": "Wrapping the carrier's API in a shared library helps a little, but it still hands the carrier's terms to everyone, so changes still spread."
+  },
+  {
+   "id": "acl-structure",
+   "chapter": "pattern",
+   "title": "Boundary",
+   "diagram": "structure",
+   "focus": [],
+   "trace": [
+    "st1",
+    "st2",
+    "st3",
+    "st4",
+    "st5"
+   ],
+   "engineer": "An anti-corruption layer is a boundary that speaks both languages. Our services call a facade that uses only our terms: a shipment, a status, a weight in kilograms. A translator maps fields, codes and units into the carrier's model. An ID map keeps our own shipment identifiers and records which carrier consignment each one became. An adapter makes the actual calls, with authentication, timeouts and retries. Only the adapter knows the carrier's API exists.",
+   "executive": "We put one layer between us and the carrier. It speaks our language on one side and theirs on the other, and nothing else needs to know about the carrier."
+  },
+  {
+   "id": "acl-mapping",
+   "chapter": "pattern",
+   "card": {
+    "heading": "What the layer translates",
+    "kind": "compare",
+    "points": [
+     "Their model | Our model",
+     "consignment_no CN-88 | Our shipment id S-42, mapped to theirs",
+     "Status codes D1 to D9 | Booked · In transit · Delivered · Failed",
+     "weight_lb, inches | Kilograms and centimetres",
+     "Service code 'EXP' | Delivery speed: next day",
+     "HTTP 500, odd error bodies | ShippingUnavailable, in our terms"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Here is what gets translated, with illustrative values. Identifiers: we mint our own shipment id and map it to theirs, so a new carrier only needs a new row in the map. Statuses: nine carrier codes collapse into the four states our business actually cares about. Units: pounds and inches become kilograms and centimetres. Service codes become a delivery speed. And their errors become ours, so callers never parse a carrier's error body.",
+   "executive": "The layer converts their identifiers, statuses, units and errors into ours, so the rest of the shop only ever sees our own terms."
+  },
+  {
+   "id": "acl-how",
+   "chapter": "how",
+   "title": "Outbound",
+   "diagram": "flow",
+   "focus": [],
+   "trace": [
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "h7"
+   ],
+   "engineer": "Step by step. The order service asks the facade to book shipment S-42, two and a half kilograms, next day. The translator turns that into the carrier's request: weight in pounds, service code EXP. The adapter posts it. The carrier answers with consignment number CN-88. The layer stores the pair, S-42 and CN-88, in the ID map, and hands back a shipment in our terms, status booked. The order service never sees CN-88.",
+   "executive": "When we book a delivery, the layer converts our request into the carrier's format, records their reference against ours, and replies in our terms."
+  },
+  {
+   "id": "acl-events",
+   "chapter": "how",
+   "title": "Inbound",
+   "diagram": "events",
+   "focus": [],
+   "trace": [
+    "ev1",
+    "ev2",
+    "ev3",
+    "ev4",
+    "ev5",
+    "ev6"
+   ],
+   "engineer": "Translation runs in both directions, and for events too. The carrier sends a webhook: consignment CN-88, code D3. The receiver checks the signature and drops duplicates, because webhooks are often delivered more than once. The translator looks up CN-88 in the ID map and finds S-42, turns D3 into delivered, and publishes ShipmentDelivered on our own event bus. The tracking page subscribes to our event, not to the carrier.",
+   "executive": "Updates from the carrier come in through the same layer, get converted into our own events, and the rest of the shop reacts to those."
+  },
+  {
+   "id": "acl-failure",
+   "chapter": "failure",
+   "title": "Outage",
+   "diagram": "failure",
+   "focus": [],
+   "trace": [
+    "f1",
+    "f2",
+    "f3",
+    "f4",
+    "f5"
+   ],
+   "engineer": "When the carrier fails, the layer is the one place that deals with it. The booking call times out after three seconds. The adapter retries with backoff, reusing the same idempotency key so a slow success is not booked twice. If failures keep coming, a circuit breaker opens. The facade returns ShippingUnavailable, in our terms, and the order service can queue the booking for later. AWS's guidance recommends exactly this: retries and circuit breakers in the layer.",
+   "executive": "If the carrier is down, the layer retries carefully, then stops and tells the shop clearly that shipping is unavailable for now."
+  },
+  {
+   "id": "acl-quirks",
+   "chapter": "failure",
+   "title": "Quirks",
+   "diagram": "failure",
+   "focus": [],
+   "trace": [
+    "f6",
+    "f7",
+    "f8",
+    "f9"
+   ],
+   "engineer": "The quieter failures are quirks. The carrier sends a status code nobody mapped, X9. The worst thing the layer can do is pass it through or guess. Instead it parks the event and raises an alert, so someone adds the mapping. Bad data is handled the same way: a parcel weighing zero, a missing postcode. Microsoft's guidance suggests validating input at this boundary, because the two sides may not trust each other equally.",
+   "executive": "When the carrier sends something unexpected, the layer holds it back and raises an alert, rather than letting bad data into the shop."
+  },
+  {
+   "id": "acl-testing",
+   "chapter": "failure",
+   "card": {
+    "heading": "Testing the layer",
+    "points": [
+     "Unit-test the translator with recorded carrier responses",
+     "Include the odd ones: unknown codes, nulls, error bodies",
+     "Run contract tests against the real sandbox on a schedule",
+     "A failing contract test means their model moved, not ours"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Because all the translation lives in one place, it is easy to test. Record real carrier responses, including the odd ones: unknown codes, missing fields, error bodies. Feed them to the translator in fast unit tests. Then, as Martin Fowler describes for contract tests, run a separate set on a schedule against the carrier's sandbox, to check your recordings still match what the carrier really returns. When one fails, you know their model has moved.",
+   "executive": "All the carrier logic sits in one place, so it can be tested with recorded responses and checked regularly against the real carrier."
+  },
+  {
+   "id": "acl-tradeoffs",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "What it costs",
+    "kind": "compare",
+    "points": [
+     "Cost | What it means",
+     "Extra hop | Added latency on every call",
+     "Another component | Monitoring, releases, on-call",
+     "Mapping code | Grows with every field you use",
+     "Single point of failure | Scale it with what it fronts",
+     "Models already match | Then skip it: pure overhead"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "It is not free. Microsoft and AWS both list the costs. There is an extra hop, so every call is a little slower. It is another component to deploy, monitor and own. If it fails, the carrier is unreachable, so it must scale and stay up like the things it fronts. The mapping code grows with every field you use. And if the other system's model already matches yours, there is nothing to translate; Microsoft says the pattern may not be suitable then.",
+   "executive": "The layer adds a little delay and something else to run. Skip it when the other system already works the way yours does."
+  },
+  {
+   "id": "acl-wild",
+   "chapter": "wild",
+   "title": "Sources",
+   "diagram": "wild",
+   "focus": [],
+   "trace": [
+    "w1",
+    "w2",
+    "w3",
+    "w4"
+   ],
+   "engineer": "In the wild. Eric Evans named the pattern in Domain-Driven Design in 2003, among his patterns for relating bounded contexts. His free DDD Reference states it plainly: as a downstream client, build an isolating layer that gives you the upstream system's functionality in terms of your own model, translating in one or both directions. Martin Fowler explains bounded contexts. Microsoft's Azure Architecture Center credits Evans, and AWS's prescriptive guidance uses it to migrate a monolith piece by piece.",
+   "executive": "The idea comes from Eric Evans' 2003 book on domain-driven design, and Microsoft and AWS both publish it as a standard cloud pattern."
+  },
+  {
+   "id": "acl-related",
+   "chapter": "related",
+   "card": {
+    "heading": "Often confused or combined",
+    "kind": "compare",
+    "points": [
+     "Pattern | Relationship",
+     "Adapter or facade | The building blocks inside the layer",
+     "API gateway | Routes and protects; does not own a domain model",
+     "Strangler fig | Migration; the layer bridges old and new",
+     "Contract testing | Checks the layer's assumptions about them",
+     "Circuit breaker and retry | Handle their failures inside the layer"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Its neighbours. Adapter and facade are the code-level building blocks; the anti-corruption layer is the boundary they form. An API gateway sits at the edge too, but it routes and protects traffic rather than owning a translation between models. The strangler fig pattern migrates a legacy system piece by piece, and AWS pairs it with this layer. Contract tests check its assumptions about the other side. Circuit breakers and retries handle that side's failures.",
+   "executive": "It works alongside gradual migrations, contract tests and resilience patterns, and it is different from a gateway, which routes traffic rather than translating meaning."
+  },
+  {
+   "id": "acl-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "Don't let their model become yours",
+     "Translate at one boundary: ids, statuses, units, events",
+     "Handle their failures and quirks there too"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. Don't let someone else's model become yours: their identifiers, codes and odd states belong at the edge. Translate at one boundary, in both directions: identifiers, statuses, units and events. And handle their failures and quirks in the same place, with retries, breakers, validation and tests, so a change on their side is one change on yours.",
+   "executive": "Keep the other system's terms at the edge. Translate in one place. Deal with its failures there too."
+  }
+ ],
+ "subtitle": "Design pattern",
+ "meta": {
+  "kind": "pattern",
+  "category": "Evolution",
+  "level": "intermediate",
+  "uses": [],
+  "related": [
+   "strangler-fig",
+   "contract-testing",
+   "api-gateway"
+  ],
+  "blurb": "Translate a vendor's or legacy system's model into yours at one boundary, so their changes stop rippling through your code.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ }
+}
