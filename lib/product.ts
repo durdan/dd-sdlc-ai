@@ -4,6 +4,6 @@
  */
 export const SDLC_PRODUCT = process.env.NEXT_PUBLIC_SDLC_PRODUCT === "on"
 
-/** Routes that belong to the product and are hidden while it is off. */
+/** Routes that belong to the product and are hidden while it is off. Sign-in stays available. */
 export const PRODUCT_ROUTES =
-  /^\/(idea-to-spec|dashboard|project|spec|epic-to-spec|analyze|claude-code|claude-stream-test|usage-dashboard|prompts|signin|admin|test-oauth|about)(\/|$)/
+  /^\/(idea-to-spec|dashboard|project|spec|epic-to-spec|analyze|claude-code|claude-stream-test|usage-dashboard|prompts|admin|test-oauth|about)(\/|$)/

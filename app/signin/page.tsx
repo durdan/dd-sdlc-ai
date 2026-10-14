@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { SDLC_PRODUCT } from "@/lib/product";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { SimpleAuthModal } from "@/components/auth/SimpleAuthModal";
 import { Cpu, Badge } from "lucide-react"; // Add your logo/icon and badge if needed
@@ -15,7 +16,8 @@ export default function SignInPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      router.push('/dashboard');
+      // While the product is off there is no dashboard: return to the library.
+      router.push(SDLC_PRODUCT ? '/dashboard' : '/');
     }
   }, [user, loading, router]);
 

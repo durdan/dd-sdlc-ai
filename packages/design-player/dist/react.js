@@ -476,12 +476,14 @@ var W = [
 	.75
 ], G = "(max-width: 700px), (max-height: 500px) and (orientation: landscape)";
 function se() {
-	let e = new URLSearchParams(location.search).get("watch") === "1", [t, n] = D(() => e || matchMedia(G).matches);
+	let e = typeof window < "u", t = e && new URLSearchParams(location.search).get("watch") === "1", [n, r] = D(() => e && (t || matchMedia(G).matches));
 	return C(() => {
-		if (e) return;
-		let t = matchMedia(G), r = () => n(t.matches);
-		return t.addEventListener("change", r), () => t.removeEventListener("change", r);
-	}, [e]), t;
+		if (t || !e) return;
+		let n = matchMedia(G);
+		r(n.matches);
+		let i = () => r(n.matches);
+		return n.addEventListener("change", i), () => n.removeEventListener("change", i);
+	}, [t, e]), n;
 }
 function ce(n) {
 	let { w: r, chapters: i, time: s, total: c } = n, [l, u] = D(null), d = E(null), f = Math.max(0, i.findLastIndex((e) => e.start <= s)), m = i[f], h = n.nav?.next, _ = (e) => n.nav?.open(a(e)), v = s > 0 || n.playing, y = !n.playing && s >= c - 2;

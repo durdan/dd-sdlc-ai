@@ -11877,12 +11877,14 @@ var Ts = [
 	.75
 ], Es = "(max-width: 700px), (max-height: 500px) and (orientation: landscape)";
 function Ds() {
-	let e = new URLSearchParams(location.search).get("watch") === "1", [t, n] = (0, x.useState)(() => e || matchMedia(Es).matches);
+	let e = typeof window < "u", t = e && new URLSearchParams(location.search).get("watch") === "1", [n, r] = (0, x.useState)(() => e && (t || matchMedia(Es).matches));
 	return (0, x.useEffect)(() => {
-		if (e) return;
-		let t = matchMedia(Es), r = () => n(t.matches);
-		return t.addEventListener("change", r), () => t.removeEventListener("change", r);
-	}, [e]), t;
+		if (t || !e) return;
+		let n = matchMedia(Es);
+		r(n.matches);
+		let i = () => r(n.matches);
+		return n.addEventListener("change", i), () => n.removeEventListener("change", i);
+	}, [t, e]), n;
 }
 function Os(e) {
 	let { w: t, chapters: n, time: r, total: i } = e, [a, o] = (0, x.useState)(null), s = (0, x.useRef)(null), c = Math.max(0, n.findLastIndex((e) => e.start <= r)), l = n[c], u = e.nav?.next, d = (t) => e.nav?.open(_(t)), f = r > 0 || e.playing, p = !e.playing && r >= i - 2;
