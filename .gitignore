@@ -140,5 +140,3 @@ temp/
 test-signup.js
 cookies.txt
 
-# Learning library narration (about 85 MB): kept out of git; served from NEXT_PUBLIC_LEARN_AUDIO_BASE in production
-public/learn/audio/**/*.mp3
