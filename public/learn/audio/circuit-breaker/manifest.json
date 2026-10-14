@@ -1,0 +1,132 @@
+{
+ "cb-problem-engineer": {
+  "file": "/audio/circuit-breaker/cb-problem-engineer.mp3",
+  "ms": 11400,
+  "hash": "9d89e058b4ab"
+ },
+ "cb-problem-executive": {
+  "file": "/audio/circuit-breaker/cb-problem-executive.mp3",
+  "ms": 6240,
+  "hash": "d1cca6413fd8"
+ },
+ "cb-cascade-engineer": {
+  "file": "/audio/circuit-breaker/cb-cascade-engineer.mp3",
+  "ms": 23424,
+  "hash": "39b54097d97c"
+ },
+ "cb-cascade-executive": {
+  "file": "/audio/circuit-breaker/cb-cascade-executive.mp3",
+  "ms": 9096,
+  "hash": "a234c81b33e0"
+ },
+ "cb-naive-engineer": {
+  "file": "/audio/circuit-breaker/cb-naive-engineer.mp3",
+  "ms": 23136,
+  "hash": "fa4d5dab17d1"
+ },
+ "cb-naive-executive": {
+  "file": "/audio/circuit-breaker/cb-naive-executive.mp3",
+  "ms": 6432,
+  "hash": "be6e32065aa6"
+ },
+ "cb-structure-engineer": {
+  "file": "/audio/circuit-breaker/cb-structure-engineer.mp3",
+  "ms": 25512,
+  "hash": "9f1d7b787335"
+ },
+ "cb-structure-executive": {
+  "file": "/audio/circuit-breaker/cb-structure-executive.mp3",
+  "ms": 9192,
+  "hash": "2622636c9313"
+ },
+ "cb-states-engineer": {
+  "file": "/audio/circuit-breaker/cb-states-engineer.mp3",
+  "ms": 24864,
+  "hash": "fd0930d333a3"
+ },
+ "cb-states-executive": {
+  "file": "/audio/circuit-breaker/cb-states-executive.mp3",
+  "ms": 6744,
+  "hash": "e7cf399993fc"
+ },
+ "cb-how-engineer": {
+  "file": "/audio/circuit-breaker/cb-how-engineer.mp3",
+  "ms": 33144,
+  "hash": "d8835af4bcf3"
+ },
+ "cb-how-executive": {
+  "file": "/audio/circuit-breaker/cb-how-executive.mp3",
+  "ms": 8088,
+  "hash": "89644bd3349d"
+ },
+ "cb-failure-engineer": {
+  "file": "/audio/circuit-breaker/cb-failure-engineer.mp3",
+  "ms": 16536,
+  "hash": "7051f7d2a0e5"
+ },
+ "cb-failure-executive": {
+  "file": "/audio/circuit-breaker/cb-failure-executive.mp3",
+  "ms": 5040,
+  "hash": "da68b7d9b5c3"
+ },
+ "cb-edges-engineer": {
+  "file": "/audio/circuit-breaker/cb-edges-engineer.mp3",
+  "ms": 24888,
+  "hash": "a73ce59c9604"
+ },
+ "cb-edges-executive": {
+  "file": "/audio/circuit-breaker/cb-edges-executive.mp3",
+  "ms": 8736,
+  "hash": "e7bf93c3b920"
+ },
+ "cb-tradeoffs-engineer": {
+  "file": "/audio/circuit-breaker/cb-tradeoffs-engineer.mp3",
+  "ms": 27048,
+  "hash": "b15ab43d7a86"
+ },
+ "cb-tradeoffs-executive": {
+  "file": "/audio/circuit-breaker/cb-tradeoffs-executive.mp3",
+  "ms": 7392,
+  "hash": "3cd982954d54"
+ },
+ "cb-whennot-engineer": {
+  "file": "/audio/circuit-breaker/cb-whennot-engineer.mp3",
+  "ms": 19752,
+  "hash": "3000194150ee"
+ },
+ "cb-whennot-executive": {
+  "file": "/audio/circuit-breaker/cb-whennot-executive.mp3",
+  "ms": 7368,
+  "hash": "ca1834ff234e"
+ },
+ "cb-wild-engineer": {
+  "file": "/audio/circuit-breaker/cb-wild-engineer.mp3",
+  "ms": 30936,
+  "hash": "be5dbfbf8865"
+ },
+ "cb-wild-executive": {
+  "file": "/audio/circuit-breaker/cb-wild-executive.mp3",
+  "ms": 7512,
+  "hash": "6aa34b9a0d36"
+ },
+ "cb-related-engineer": {
+  "file": "/audio/circuit-breaker/cb-related-engineer.mp3",
+  "ms": 26832,
+  "hash": "523aca5f9299"
+ },
+ "cb-related-executive": {
+  "file": "/audio/circuit-breaker/cb-related-executive.mp3",
+  "ms": 9024,
+  "hash": "6775aabd0109"
+ },
+ "cb-recap-engineer": {
+  "file": "/audio/circuit-breaker/cb-recap-engineer.mp3",
+  "ms": 16704,
+  "hash": "508ae7057be6"
+ },
+ "cb-recap-executive": {
+  "file": "/audio/circuit-breaker/cb-recap-executive.mp3",
+  "ms": 6600,
+  "hash": "a375c6bd2ba0"
+ }
+}

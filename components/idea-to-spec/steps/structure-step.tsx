@@ -13,7 +13,8 @@ export function StructureStep() {
   const mindmapDsl = diagrams.mindmap.dsl;
   const [currentGenerating, setCurrentGenerating] = useState<DiagramType | null>(null);
 
-  const generateDiagram = useCallback(async (diagramType: DiagramType, context?: string) => {
+  const generateDiagram = useCallback(async (diagramType: DiagramType, context?: string, retryCount = 0) => {
+    const MAX_RETRIES = 2;
     const diagramData = diagrams[diagramType];
     if (diagramData.generated || isGenerating) return;
 
@@ -32,7 +33,8 @@ export function StructureStep() {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to generate ${diagramType}`);
+        const errorText = await response.text().catch(() => '');
+        throw new Error(`Failed to generate ${diagramType}: ${response.status} ${errorText}`);
       }
 
       const reader = response.body?.getReader();
@@ -67,7 +69,18 @@ export function StructureStep() {
         }
       }
     } catch (error) {
-      console.error(`${diagramType} generation error:`, error);
+      console.error(`${diagramType} generation error (attempt ${retryCount + 1}):`, error);
+
+      // Retry on failure
+      if (retryCount < MAX_RETRIES) {
+        console.log(`Retrying ${diagramType} generation... (attempt ${retryCount + 2})`);
+        setGenerating(false, null);
+        setCurrentGenerating(null);
+        // Wait a bit before retrying
+        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+        return generateDiagram(diagramType, context, retryCount + 1);
+      }
+
       setDiagramError(diagramType, error instanceof Error ? error.message : `Failed to generate ${diagramType}`);
     } finally {
       setGenerating(false, null);

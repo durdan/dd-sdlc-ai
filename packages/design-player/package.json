@@ -1,0 +1,35 @@
+{
+  "name": "design-player",
+  "version": "0.1.0",
+  "description": "Narrated, animated architecture walkthroughs: player, library, web component and authoring tools.",
+  "type": "module",
+  "exports": {
+    "./core": {
+      "types": "./dist/types/lib/core.d.ts",
+      "import": "./dist/core.js"
+    },
+    "./layout": {
+      "types": "./dist/types/lib/layout.d.ts",
+      "import": "./dist/layout.js"
+    },
+    "./react": {
+      "types": "./dist/types/lib/react.d.ts",
+      "import": "./dist/react.js"
+    },
+    "./element": {
+      "types": "./dist/types/lib/element.d.ts",
+      "import": "./dist/element.js"
+    },
+    "./style.css": "./dist/style.css"
+  },
+  "peerDependencies": {
+    "react": ">=19",
+    "react-dom": ">=19"
+  },
+  "dependencies": {
+    "gsap": "^3.15.0"
+  },
+  "optionalDependencies": {
+    "elkjs": "^0.12.0"
+  }
+}

@@ -1,0 +1,282 @@
+{
+ "u01-engineer": {
+  "file": "/audio/uber/u01-engineer.mp3",
+  "ms": 14616,
+  "hash": "e89a9c5d3980"
+ },
+ "u01-executive": {
+  "file": "/audio/uber/u01-executive.mp3",
+  "ms": 6912,
+  "hash": "07112a2a1e0e"
+ },
+ "u-req-scale-engineer": {
+  "file": "/audio/uber/u-req-scale-engineer.mp3",
+  "ms": 26328,
+  "hash": "10bc06012a42"
+ },
+ "u-req-scale-executive": {
+  "file": "/audio/uber/u-req-scale-executive.mp3",
+  "ms": 5088,
+  "hash": "735ca501566f"
+ },
+ "u-req-needs-engineer": {
+  "file": "/audio/uber/u-req-needs-engineer.mp3",
+  "ms": 24456,
+  "hash": "a732f5aa2a2e"
+ },
+ "u-req-needs-executive": {
+  "file": "/audio/uber/u-req-needs-executive.mp3",
+  "ms": 7440,
+  "hash": "b0de860b6ed2"
+ },
+ "u02-engineer": {
+  "file": "/audio/uber/u02-engineer.mp3",
+  "ms": 15744,
+  "hash": "43eeb46e8c44"
+ },
+ "u02-executive": {
+  "file": "/audio/uber/u02-executive.mp3",
+  "ms": 6168,
+  "hash": "df3f8cd6b201"
+ },
+ "u03-engineer": {
+  "file": "/audio/uber/u03-engineer.mp3",
+  "ms": 18552,
+  "hash": "051287fa445d"
+ },
+ "u03-executive": {
+  "file": "/audio/uber/u03-executive.mp3",
+  "ms": 5256,
+  "hash": "33baada01954"
+ },
+ "u04-engineer": {
+  "file": "/audio/uber/u04-engineer.mp3",
+  "ms": 14808,
+  "hash": "e975055dcd5f"
+ },
+ "u04-executive": {
+  "file": "/audio/uber/u04-executive.mp3",
+  "ms": 5136,
+  "hash": "952b8bcaad7a"
+ },
+ "u05-engineer": {
+  "file": "/audio/uber/u05-engineer.mp3",
+  "ms": 9528,
+  "hash": "32d0819eb14b"
+ },
+ "u05-executive": {
+  "file": "/audio/uber/u05-executive.mp3",
+  "ms": 4680,
+  "hash": "c89805e1295e"
+ },
+ "u06-engineer": {
+  "file": "/audio/uber/u06-engineer.mp3",
+  "ms": 13728,
+  "hash": "016941367670"
+ },
+ "u06-executive": {
+  "file": "/audio/uber/u06-executive.mp3",
+  "ms": 4896,
+  "hash": "8a638653d67d"
+ },
+ "u07-engineer": {
+  "file": "/audio/uber/u07-engineer.mp3",
+  "ms": 12912,
+  "hash": "153191015681"
+ },
+ "u07-executive": {
+  "file": "/audio/uber/u07-executive.mp3",
+  "ms": 5256,
+  "hash": "29325c489687"
+ },
+ "u08-engineer": {
+  "file": "/audio/uber/u08-engineer.mp3",
+  "ms": 11616,
+  "hash": "48755151cfeb"
+ },
+ "u08-executive": {
+  "file": "/audio/uber/u08-executive.mp3",
+  "ms": 5304,
+  "hash": "8fc78be1e2a2"
+ },
+ "u09-engineer": {
+  "file": "/audio/uber/u09-engineer.mp3",
+  "ms": 11280,
+  "hash": "b3523bd20b73"
+ },
+ "u09-executive": {
+  "file": "/audio/uber/u09-executive.mp3",
+  "ms": 3960,
+  "hash": "5cc0dad3a5dc"
+ },
+ "u10-engineer": {
+  "file": "/audio/uber/u10-engineer.mp3",
+  "ms": 10104,
+  "hash": "8a2bd5bbdf87"
+ },
+ "u10-executive": {
+  "file": "/audio/uber/u10-executive.mp3",
+  "ms": 4752,
+  "hash": "51b9af1de68e"
+ },
+ "u11-engineer": {
+  "file": "/audio/uber/u11-engineer.mp3",
+  "ms": 10248,
+  "hash": "02000e1abf6e"
+ },
+ "u11-executive": {
+  "file": "/audio/uber/u11-executive.mp3",
+  "ms": 4392,
+  "hash": "41f9ff7df914"
+ },
+ "u12-engineer": {
+  "file": "/audio/uber/u12-engineer.mp3",
+  "ms": 11160,
+  "hash": "897eeb17efd7"
+ },
+ "u12-executive": {
+  "file": "/audio/uber/u12-executive.mp3",
+  "ms": 4680,
+  "hash": "fcfd3ab21a16"
+ },
+ "u13-engineer": {
+  "file": "/audio/uber/u13-engineer.mp3",
+  "ms": 6816,
+  "hash": "700fd7005834"
+ },
+ "u13-executive": {
+  "file": "/audio/uber/u13-executive.mp3",
+  "ms": 4176,
+  "hash": "c888a2c60bb3"
+ },
+ "u14-engineer": {
+  "file": "/audio/uber/u14-engineer.mp3",
+  "ms": 7080,
+  "hash": "c038551fa824"
+ },
+ "u14-executive": {
+  "file": "/audio/uber/u14-executive.mp3",
+  "ms": 3744,
+  "hash": "8cc43ea13686"
+ },
+ "u15-engineer": {
+  "file": "/audio/uber/u15-engineer.mp3",
+  "ms": 11520,
+  "hash": "51373669ee90"
+ },
+ "u15-executive": {
+  "file": "/audio/uber/u15-executive.mp3",
+  "ms": 4128,
+  "hash": "77cbbdb49e98"
+ },
+ "u16-engineer": {
+  "file": "/audio/uber/u16-engineer.mp3",
+  "ms": 7248,
+  "hash": "a0b4f9c25bf9"
+ },
+ "u16-executive": {
+  "file": "/audio/uber/u16-executive.mp3",
+  "ms": 2496,
+  "hash": "0b1c022cff9a"
+ },
+ "u17-engineer": {
+  "file": "/audio/uber/u17-engineer.mp3",
+  "ms": 8328,
+  "hash": "7d0a589e8acf"
+ },
+ "u17-executive": {
+  "file": "/audio/uber/u17-executive.mp3",
+  "ms": 4248,
+  "hash": "ceebf6f82c7f"
+ },
+ "u-data-engineer": {
+  "file": "/audio/uber/u-data-engineer.mp3",
+  "ms": 29448,
+  "hash": "c3a9ce36b438"
+ },
+ "u-data-executive": {
+  "file": "/audio/uber/u-data-executive.mp3",
+  "ms": 7848,
+  "hash": "5f655b2f2e8c"
+ },
+ "u-data-events-engineer": {
+  "file": "/audio/uber/u-data-events-engineer.mp3",
+  "ms": 27888,
+  "hash": "59ba8c22ede6"
+ },
+ "u-data-events-executive": {
+  "file": "/audio/uber/u-data-events-executive.mp3",
+  "ms": 7848,
+  "hash": "001b36212ecf"
+ },
+ "u-growth-engineer": {
+  "file": "/audio/uber/u-growth-engineer.mp3",
+  "ms": 34368,
+  "hash": "9563357d9035"
+ },
+ "u-growth-executive": {
+  "file": "/audio/uber/u-growth-executive.mp3",
+  "ms": 6600,
+  "hash": "ba608efe3ac0"
+ },
+ "u-failures-engineer": {
+  "file": "/audio/uber/u-failures-engineer.mp3",
+  "ms": 33888,
+  "hash": "617a8782635a"
+ },
+ "u-failures-executive": {
+  "file": "/audio/uber/u-failures-executive.mp3",
+  "ms": 7008,
+  "hash": "98e5411cae91"
+ },
+ "u-fail-signal-engineer": {
+  "file": "/audio/uber/u-fail-signal-engineer.mp3",
+  "ms": 24744,
+  "hash": "c63ebd5c5f37"
+ },
+ "u-fail-signal-executive": {
+  "file": "/audio/uber/u-fail-signal-executive.mp3",
+  "ms": 7056,
+  "hash": "977e0fa7b786"
+ },
+ "u-patterns-engineer": {
+  "file": "/audio/uber/u-patterns-engineer.mp3",
+  "ms": 28824,
+  "hash": "63d7f42bc5a8"
+ },
+ "u-patterns-executive": {
+  "file": "/audio/uber/u-patterns-executive.mp3",
+  "ms": 8040,
+  "hash": "e8d809dd4921"
+ },
+ "u-decisions-engineer": {
+  "file": "/audio/uber/u-decisions-engineer.mp3",
+  "ms": 29016,
+  "hash": "cb5d3bb65689"
+ },
+ "u-decisions-executive": {
+  "file": "/audio/uber/u-decisions-executive.mp3",
+  "ms": 9360,
+  "hash": "71c6a5f9bb62"
+ },
+ "u-mvp-engineer": {
+  "file": "/audio/uber/u-mvp-engineer.mp3",
+  "ms": 28704,
+  "hash": "7c90cf96c7f4"
+ },
+ "u-mvp-executive": {
+  "file": "/audio/uber/u-mvp-executive.mp3",
+  "ms": 7896,
+  "hash": "4431750b7fcf"
+ },
+ "u18-engineer": {
+  "file": "/audio/uber/u18-engineer.mp3",
+  "ms": 19896,
+  "hash": "066942fbaf55"
+ },
+ "u18-executive": {
+  "file": "/audio/uber/u18-executive.mp3",
+  "ms": 6384,
+  "hash": "57a057fd9067"
+ }
+}

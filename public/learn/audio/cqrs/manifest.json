@@ -1,0 +1,142 @@
+{
+ "cqrs-problem-engineer": {
+  "file": "/audio/cqrs/cqrs-problem-engineer.mp3",
+  "ms": 26784,
+  "hash": "e7c66af61a97"
+ },
+ "cqrs-problem-executive": {
+  "file": "/audio/cqrs/cqrs-problem-executive.mp3",
+  "ms": 5856,
+  "hash": "0fce5d9f195b"
+ },
+ "cqrs-compromise-engineer": {
+  "file": "/audio/cqrs/cqrs-compromise-engineer.mp3",
+  "ms": 26400,
+  "hash": "0fcab67f8cd0"
+ },
+ "cqrs-compromise-executive": {
+  "file": "/audio/cqrs/cqrs-compromise-executive.mp3",
+  "ms": 6576,
+  "hash": "8fc20d4339f1"
+ },
+ "cqrs-naive-engineer": {
+  "file": "/audio/cqrs/cqrs-naive-engineer.mp3",
+  "ms": 24384,
+  "hash": "405aec01ad11"
+ },
+ "cqrs-naive-executive": {
+  "file": "/audio/cqrs/cqrs-naive-executive.mp3",
+  "ms": 6768,
+  "hash": "a03cc60e33f1"
+ },
+ "cqrs-pattern-engineer": {
+  "file": "/audio/cqrs/cqrs-pattern-engineer.mp3",
+  "ms": 30192,
+  "hash": "6a680f9e4b81"
+ },
+ "cqrs-pattern-executive": {
+  "file": "/audio/cqrs/cqrs-pattern-executive.mp3",
+  "ms": 7776,
+  "hash": "a5573484edb9"
+ },
+ "cqrs-readmodels-engineer": {
+  "file": "/audio/cqrs/cqrs-readmodels-engineer.mp3",
+  "ms": 24288,
+  "hash": "dcd95e589ed8"
+ },
+ "cqrs-readmodels-executive": {
+  "file": "/audio/cqrs/cqrs-readmodels-executive.mp3",
+  "ms": 7464,
+  "hash": "27963a3c3199"
+ },
+ "cqrs-how-engineer": {
+  "file": "/audio/cqrs/cqrs-how-engineer.mp3",
+  "ms": 29376,
+  "hash": "54e4d73ead4f"
+ },
+ "cqrs-how-executive": {
+  "file": "/audio/cqrs/cqrs-how-executive.mp3",
+  "ms": 7944,
+  "hash": "95e32e44dd2d"
+ },
+ "cqrs-stale-engineer": {
+  "file": "/audio/cqrs/cqrs-stale-engineer.mp3",
+  "ms": 24216,
+  "hash": "73b693d57ff7"
+ },
+ "cqrs-stale-executive": {
+  "file": "/audio/cqrs/cqrs-stale-executive.mp3",
+  "ms": 6576,
+  "hash": "724f5f758882"
+ },
+ "cqrs-ryow-engineer": {
+  "file": "/audio/cqrs/cqrs-ryow-engineer.mp3",
+  "ms": 23808,
+  "hash": "3fd40eca67f1"
+ },
+ "cqrs-ryow-executive": {
+  "file": "/audio/cqrs/cqrs-ryow-executive.mp3",
+  "ms": 6168,
+  "hash": "498f521396ec"
+ },
+ "cqrs-edges-engineer": {
+  "file": "/audio/cqrs/cqrs-edges-engineer.mp3",
+  "ms": 28032,
+  "hash": "074dbcf5b5bd"
+ },
+ "cqrs-edges-executive": {
+  "file": "/audio/cqrs/cqrs-edges-executive.mp3",
+  "ms": 7896,
+  "hash": "c5a6ab2543cd"
+ },
+ "cqrs-es-engineer": {
+  "file": "/audio/cqrs/cqrs-es-engineer.mp3",
+  "ms": 26952,
+  "hash": "bb4f9c534517"
+ },
+ "cqrs-es-executive": {
+  "file": "/audio/cqrs/cqrs-es-executive.mp3",
+  "ms": 8616,
+  "hash": "f79d0420e02d"
+ },
+ "cqrs-whennot-engineer": {
+  "file": "/audio/cqrs/cqrs-whennot-engineer.mp3",
+  "ms": 26928,
+  "hash": "04c36031afd9"
+ },
+ "cqrs-whennot-executive": {
+  "file": "/audio/cqrs/cqrs-whennot-executive.mp3",
+  "ms": 8424,
+  "hash": "d173ae8cc66d"
+ },
+ "cqrs-wild-engineer": {
+  "file": "/audio/cqrs/cqrs-wild-engineer.mp3",
+  "ms": 33336,
+  "hash": "f840db2fe315"
+ },
+ "cqrs-wild-executive": {
+  "file": "/audio/cqrs/cqrs-wild-executive.mp3",
+  "ms": 8184,
+  "hash": "ab1e48eace71"
+ },
+ "cqrs-related-engineer": {
+  "file": "/audio/cqrs/cqrs-related-engineer.mp3",
+  "ms": 27648,
+  "hash": "24244eee34bc"
+ },
+ "cqrs-related-executive": {
+  "file": "/audio/cqrs/cqrs-related-executive.mp3",
+  "ms": 8184,
+  "hash": "3b706234fbc5"
+ },
+ "cqrs-recap-engineer": {
+  "file": "/audio/cqrs/cqrs-recap-engineer.mp3",
+  "ms": 23232,
+  "hash": "2a57cbd40f63"
+ },
+ "cqrs-recap-executive": {
+  "file": "/audio/cqrs/cqrs-recap-executive.mp3",
+  "ms": 7320,
+  "hash": "bfd88344431d"
+ }
+}

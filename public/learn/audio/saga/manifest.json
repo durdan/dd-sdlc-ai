@@ -1,0 +1,142 @@
+{
+ "saga-problem-engineer": {
+  "file": "/audio/saga/saga-problem-engineer.mp3",
+  "ms": 25224,
+  "hash": "c61c4ec53c72"
+ },
+ "saga-problem-executive": {
+  "file": "/audio/saga/saga-problem-executive.mp3",
+  "ms": 7440,
+  "hash": "4836eefdd62a"
+ },
+ "saga-partial-engineer": {
+  "file": "/audio/saga/saga-partial-engineer.mp3",
+  "ms": 26400,
+  "hash": "9936972bcc51"
+ },
+ "saga-partial-executive": {
+  "file": "/audio/saga/saga-partial-executive.mp3",
+  "ms": 7320,
+  "hash": "e5daec72315a"
+ },
+ "saga-2pc-engineer": {
+  "file": "/audio/saga/saga-2pc-engineer.mp3",
+  "ms": 33504,
+  "hash": "fee7a90e6920"
+ },
+ "saga-2pc-executive": {
+  "file": "/audio/saga/saga-2pc-executive.mp3",
+  "ms": 9720,
+  "hash": "65c9745d51de"
+ },
+ "saga-structure-engineer": {
+  "file": "/audio/saga/saga-structure-engineer.mp3",
+  "ms": 35328,
+  "hash": "a8043909ee82"
+ },
+ "saga-structure-executive": {
+  "file": "/audio/saga/saga-structure-executive.mp3",
+  "ms": 9168,
+  "hash": "a1adcd9206c7"
+ },
+ "saga-semantic-engineer": {
+  "file": "/audio/saga/saga-semantic-engineer.mp3",
+  "ms": 31992,
+  "hash": "96f14bac759a"
+ },
+ "saga-semantic-executive": {
+  "file": "/audio/saga/saga-semantic-executive.mp3",
+  "ms": 7728,
+  "hash": "ab3f21616e4f"
+ },
+ "saga-choreo-engineer": {
+  "file": "/audio/saga/saga-choreo-engineer.mp3",
+  "ms": 34896,
+  "hash": "6512a9e212ae"
+ },
+ "saga-choreo-executive": {
+  "file": "/audio/saga/saga-choreo-executive.mp3",
+  "ms": 7056,
+  "hash": "5679077d2f53"
+ },
+ "saga-how-engineer": {
+  "file": "/audio/saga/saga-how-engineer.mp3",
+  "ms": 34296,
+  "hash": "e27bb4d54ff7"
+ },
+ "saga-how-executive": {
+  "file": "/audio/saga/saga-how-executive.mp3",
+  "ms": 8184,
+  "hash": "8d4315363ab4"
+ },
+ "saga-compensate-engineer": {
+  "file": "/audio/saga/saga-compensate-engineer.mp3",
+  "ms": 33336,
+  "hash": "18b02abbc39d"
+ },
+ "saga-compensate-executive": {
+  "file": "/audio/saga/saga-compensate-executive.mp3",
+  "ms": 7080,
+  "hash": "962ce8a8b343"
+ },
+ "saga-isolation-engineer": {
+  "file": "/audio/saga/saga-isolation-engineer.mp3",
+  "ms": 36216,
+  "hash": "a929ae18022a"
+ },
+ "saga-isolation-executive": {
+  "file": "/audio/saga/saga-isolation-executive.mp3",
+  "ms": 8448,
+  "hash": "d6713822e7bc"
+ },
+ "saga-styles-engineer": {
+  "file": "/audio/saga/saga-styles-engineer.mp3",
+  "ms": 30600,
+  "hash": "a2b6f1ba1859"
+ },
+ "saga-styles-executive": {
+  "file": "/audio/saga/saga-styles-executive.mp3",
+  "ms": 9360,
+  "hash": "ab63ac74babf"
+ },
+ "saga-whennot-engineer": {
+  "file": "/audio/saga/saga-whennot-engineer.mp3",
+  "ms": 30504,
+  "hash": "7ba900cded7f"
+ },
+ "saga-whennot-executive": {
+  "file": "/audio/saga/saga-whennot-executive.mp3",
+  "ms": 8544,
+  "hash": "ea9fd149dcce"
+ },
+ "saga-wild-engineer": {
+  "file": "/audio/saga/saga-wild-engineer.mp3",
+  "ms": 39576,
+  "hash": "88c9f350ccfa"
+ },
+ "saga-wild-executive": {
+  "file": "/audio/saga/saga-wild-executive.mp3",
+  "ms": 9744,
+  "hash": "39f987898738"
+ },
+ "saga-related-engineer": {
+  "file": "/audio/saga/saga-related-engineer.mp3",
+  "ms": 31200,
+  "hash": "2c0f189b8145"
+ },
+ "saga-related-executive": {
+  "file": "/audio/saga/saga-related-executive.mp3",
+  "ms": 6984,
+  "hash": "9063b05c1e3e"
+ },
+ "saga-recap-engineer": {
+  "file": "/audio/saga/saga-recap-engineer.mp3",
+  "ms": 25968,
+  "hash": "f9f1a4eaba12"
+ },
+ "saga-recap-executive": {
+  "file": "/audio/saga/saga-recap-executive.mp3",
+  "ms": 7656,
+  "hash": "f80e88bf0b91"
+ }
+}

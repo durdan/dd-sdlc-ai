@@ -1,0 +1,272 @@
+{
+ "s01-engineer": {
+  "file": "/audio/discord/s01-engineer.mp3",
+  "ms": 28584,
+  "hash": "f2e71f9f4576"
+ },
+ "s01-executive": {
+  "file": "/audio/discord/s01-executive.mp3",
+  "ms": 10080,
+  "hash": "1d68d399aedc"
+ },
+ "s02-engineer": {
+  "file": "/audio/discord/s02-engineer.mp3",
+  "ms": 30192,
+  "hash": "6251b96da5e6"
+ },
+ "s02-executive": {
+  "file": "/audio/discord/s02-executive.mp3",
+  "ms": 6528,
+  "hash": "cb26bc928544"
+ },
+ "s03-engineer": {
+  "file": "/audio/discord/s03-engineer.mp3",
+  "ms": 32016,
+  "hash": "fd32af2ff938"
+ },
+ "s03-executive": {
+  "file": "/audio/discord/s03-executive.mp3",
+  "ms": 8688,
+  "hash": "af132c7b6e32"
+ },
+ "s04-engineer": {
+  "file": "/audio/discord/s04-engineer.mp3",
+  "ms": 27192,
+  "hash": "091ad1865af5"
+ },
+ "s04-executive": {
+  "file": "/audio/discord/s04-executive.mp3",
+  "ms": 6960,
+  "hash": "5fa5df81f490"
+ },
+ "s05-engineer": {
+  "file": "/audio/discord/s05-engineer.mp3",
+  "ms": 28848,
+  "hash": "7740d69e4e15"
+ },
+ "s05-executive": {
+  "file": "/audio/discord/s05-executive.mp3",
+  "ms": 6480,
+  "hash": "2c93eeec0f58"
+ },
+ "s06-engineer": {
+  "file": "/audio/discord/s06-engineer.mp3",
+  "ms": 33456,
+  "hash": "4d66ba9021a2"
+ },
+ "s06-executive": {
+  "file": "/audio/discord/s06-executive.mp3",
+  "ms": 10008,
+  "hash": "a3e51228203d"
+ },
+ "s07-engineer": {
+  "file": "/audio/discord/s07-engineer.mp3",
+  "ms": 28656,
+  "hash": "c8b1a485e82e"
+ },
+ "s07-executive": {
+  "file": "/audio/discord/s07-executive.mp3",
+  "ms": 6384,
+  "hash": "bcf78ba9f297"
+ },
+ "s08-engineer": {
+  "file": "/audio/discord/s08-engineer.mp3",
+  "ms": 30408,
+  "hash": "9e165ca37bee"
+ },
+ "s08-executive": {
+  "file": "/audio/discord/s08-executive.mp3",
+  "ms": 5952,
+  "hash": "b972cdbaab09"
+ },
+ "s09-engineer": {
+  "file": "/audio/discord/s09-engineer.mp3",
+  "ms": 27240,
+  "hash": "c7b359c961df"
+ },
+ "s09-executive": {
+  "file": "/audio/discord/s09-executive.mp3",
+  "ms": 6696,
+  "hash": "0e85f904a0b5"
+ },
+ "s10-engineer": {
+  "file": "/audio/discord/s10-engineer.mp3",
+  "ms": 30288,
+  "hash": "02b13849d50a"
+ },
+ "s10-executive": {
+  "file": "/audio/discord/s10-executive.mp3",
+  "ms": 5904,
+  "hash": "b4d157198354"
+ },
+ "s11-engineer": {
+  "file": "/audio/discord/s11-engineer.mp3",
+  "ms": 27840,
+  "hash": "f3a63549f68c"
+ },
+ "s11-executive": {
+  "file": "/audio/discord/s11-executive.mp3",
+  "ms": 7512,
+  "hash": "08d2114a5e47"
+ },
+ "s12-engineer": {
+  "file": "/audio/discord/s12-engineer.mp3",
+  "ms": 30384,
+  "hash": "b0d934725677"
+ },
+ "s12-executive": {
+  "file": "/audio/discord/s12-executive.mp3",
+  "ms": 7224,
+  "hash": "aec2ee891672"
+ },
+ "s13-engineer": {
+  "file": "/audio/discord/s13-engineer.mp3",
+  "ms": 31728,
+  "hash": "80959eef35bb"
+ },
+ "s13-executive": {
+  "file": "/audio/discord/s13-executive.mp3",
+  "ms": 6480,
+  "hash": "7a0c01bdea0a"
+ },
+ "s14-engineer": {
+  "file": "/audio/discord/s14-engineer.mp3",
+  "ms": 26328,
+  "hash": "290416db6a8e"
+ },
+ "s14-executive": {
+  "file": "/audio/discord/s14-executive.mp3",
+  "ms": 7944,
+  "hash": "9de09c89bc84"
+ },
+ "s15-engineer": {
+  "file": "/audio/discord/s15-engineer.mp3",
+  "ms": 26736,
+  "hash": "9335ba471a94"
+ },
+ "s15-executive": {
+  "file": "/audio/discord/s15-executive.mp3",
+  "ms": 7200,
+  "hash": "45fa884e0df5"
+ },
+ "s16-engineer": {
+  "file": "/audio/discord/s16-engineer.mp3",
+  "ms": 25968,
+  "hash": "7ef8a9d904e3"
+ },
+ "s16-executive": {
+  "file": "/audio/discord/s16-executive.mp3",
+  "ms": 6384,
+  "hash": "b503f8a0e566"
+ },
+ "s17-engineer": {
+  "file": "/audio/discord/s17-engineer.mp3",
+  "ms": 28680,
+  "hash": "a0c285463efb"
+ },
+ "s17-executive": {
+  "file": "/audio/discord/s17-executive.mp3",
+  "ms": 7392,
+  "hash": "a66b25c87f5d"
+ },
+ "s18-engineer": {
+  "file": "/audio/discord/s18-engineer.mp3",
+  "ms": 26280,
+  "hash": "7b05942ebad7"
+ },
+ "s18-executive": {
+  "file": "/audio/discord/s18-executive.mp3",
+  "ms": 7320,
+  "hash": "20c1a46d443d"
+ },
+ "s19-engineer": {
+  "file": "/audio/discord/s19-engineer.mp3",
+  "ms": 33024,
+  "hash": "9f4128a9499c"
+ },
+ "s19-executive": {
+  "file": "/audio/discord/s19-executive.mp3",
+  "ms": 9048,
+  "hash": "389c5dcbcb58"
+ },
+ "s20-engineer": {
+  "file": "/audio/discord/s20-engineer.mp3",
+  "ms": 30456,
+  "hash": "884485bf29ae"
+ },
+ "s20-executive": {
+  "file": "/audio/discord/s20-executive.mp3",
+  "ms": 7752,
+  "hash": "f1f5537369aa"
+ },
+ "s21-engineer": {
+  "file": "/audio/discord/s21-engineer.mp3",
+  "ms": 36384,
+  "hash": "316f582f542f"
+ },
+ "s21-executive": {
+  "file": "/audio/discord/s21-executive.mp3",
+  "ms": 9816,
+  "hash": "85e7e2b8bf49"
+ },
+ "s22-engineer": {
+  "file": "/audio/discord/s22-engineer.mp3",
+  "ms": 31704,
+  "hash": "67f582e0f1dd"
+ },
+ "s22-executive": {
+  "file": "/audio/discord/s22-executive.mp3",
+  "ms": 6408,
+  "hash": "b28fc62c3006"
+ },
+ "s23-engineer": {
+  "file": "/audio/discord/s23-engineer.mp3",
+  "ms": 34536,
+  "hash": "cbf0b0f36f77"
+ },
+ "s23-executive": {
+  "file": "/audio/discord/s23-executive.mp3",
+  "ms": 8376,
+  "hash": "9380db5c3f4a"
+ },
+ "s24-engineer": {
+  "file": "/audio/discord/s24-engineer.mp3",
+  "ms": 30216,
+  "hash": "67ce6b119289"
+ },
+ "s24-executive": {
+  "file": "/audio/discord/s24-executive.mp3",
+  "ms": 5304,
+  "hash": "26c5a8accb1e"
+ },
+ "s25-engineer": {
+  "file": "/audio/discord/s25-engineer.mp3",
+  "ms": 29784,
+  "hash": "f9b477f901c4"
+ },
+ "s25-executive": {
+  "file": "/audio/discord/s25-executive.mp3",
+  "ms": 8040,
+  "hash": "063145412d6f"
+ },
+ "s26-engineer": {
+  "file": "/audio/discord/s26-engineer.mp3",
+  "ms": 30816,
+  "hash": "0e977cfc4fa8"
+ },
+ "s26-executive": {
+  "file": "/audio/discord/s26-executive.mp3",
+  "ms": 9432,
+  "hash": "11da9aa36298"
+ },
+ "s27-engineer": {
+  "file": "/audio/discord/s27-engineer.mp3",
+  "ms": 30624,
+  "hash": "7b76695063b0"
+ },
+ "s27-executive": {
+  "file": "/audio/discord/s27-executive.mp3",
+  "ms": 9192,
+  "hash": "a798cbc09360"
+ }
+}

@@ -1,0 +1,997 @@
+{
+ "id": "rate-limiting",
+ "title": "Rate limiting",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "diagrams": [
+  {
+   "id": "noisy",
+   "kind": "c4",
+   "title": "One noisy client overwhelms a shared API",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "alice",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Shop app",
+     "sub": "normal traffic"
+    },
+    {
+     "id": "bob",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Partner app",
+     "sub": "normal traffic"
+    },
+    {
+     "id": "noisy",
+     "kind": "external",
+     "tone": "external",
+     "label": "Buggy script",
+     "sub": "retries in a tight loop"
+    },
+    {
+     "id": "api",
+     "kind": "container",
+     "tone": "core",
+     "label": "Orders API",
+     "sub": "shared by every client"
+    },
+    {
+     "id": "db",
+     "kind": "store",
+     "tone": "data",
+     "label": "Database",
+     "sub": "fixed connection pool"
+    }
+   ],
+   "edges": [
+    {
+     "id": "n1",
+     "from": "alice",
+     "to": "api",
+     "style": "solid",
+     "label": "place order"
+    },
+    {
+     "id": "n2",
+     "from": "bob",
+     "to": "api",
+     "style": "solid",
+     "label": "list orders"
+    },
+    {
+     "id": "n3",
+     "from": "noisy",
+     "to": "api",
+     "style": "dashed",
+     "label": "thousands per second"
+    },
+    {
+     "id": "n4",
+     "from": "api",
+     "to": "db",
+     "style": "dashed",
+     "label": "pool exhausted"
+    },
+    {
+     "id": "n5",
+     "from": "api",
+     "to": "alice",
+     "style": "dashed",
+     "label": "timeouts for everyone"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "overload or rejected"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "count or signal"
+    }
+   ]
+  },
+  {
+   "id": "naive",
+   "kind": "sequence",
+   "title": "One global cap",
+   "participants": [
+    {
+     "id": "noisy",
+     "label": "Buggy script"
+    },
+    {
+     "id": "alice",
+     "label": "Shop app"
+    },
+    {
+     "id": "api",
+     "label": "Orders API"
+    },
+    {
+     "id": "db",
+     "label": "Database"
+    }
+   ],
+   "messages": [
+    {
+     "id": "nv1",
+     "from": "noisy",
+     "to": "api",
+     "style": "solid",
+     "label": "4,900 requests this second"
+    },
+    {
+     "id": "nv2",
+     "from": "api",
+     "to": "db",
+     "style": "solid",
+     "label": "all accepted: under the cap"
+    },
+    {
+     "id": "nv3",
+     "from": "alice",
+     "to": "api",
+     "style": "solid",
+     "label": "one checkout"
+    },
+    {
+     "id": "nv4",
+     "from": "api",
+     "to": "alice",
+     "style": "solid",
+     "label": "rejected: global cap of 5,000 reached"
+    },
+    {
+     "id": "nv5",
+     "from": "noisy",
+     "to": "api",
+     "style": "solid",
+     "label": "keeps retrying"
+    },
+    {
+     "id": "nv6",
+     "from": "api",
+     "to": "alice",
+     "style": "solid",
+     "label": "rejected again"
+    }
+   ]
+  },
+  {
+   "id": "structure",
+   "kind": "c4",
+   "title": "A limiter counts per key before the API does any work",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "client",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Client",
+     "sub": "API key k1"
+    },
+    {
+     "id": "key",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Key extractor",
+     "sub": "API key, user or IP",
+     "group": "rl"
+    },
+    {
+     "id": "policy",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Policy",
+     "sub": "e.g. 100 per minute per key",
+     "group": "rl"
+    },
+    {
+     "id": "decide",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Decision",
+     "sub": "allow, or reject with 429",
+     "group": "rl"
+    },
+    {
+     "id": "store",
+     "kind": "store",
+     "tone": "data",
+     "label": "Counter store",
+     "sub": "Redis, or memory per instance"
+    },
+    {
+     "id": "api",
+     "kind": "container",
+     "tone": "core",
+     "label": "Orders API",
+     "sub": "only sees allowed traffic"
+    }
+   ],
+   "groups": [
+    {
+     "id": "rl",
+     "label": "Rate limiter [gateway, proxy or middleware]",
+     "tone": "core"
+    }
+   ],
+   "edges": [
+    {
+     "id": "s1",
+     "from": "client",
+     "to": "key",
+     "style": "solid",
+     "label": "request"
+    },
+    {
+     "id": "s2",
+     "from": "key",
+     "to": "policy",
+     "style": "solid",
+     "label": "which limit applies"
+    },
+    {
+     "id": "s3",
+     "from": "policy",
+     "to": "store",
+     "style": "dotted",
+     "label": "read and update count"
+    },
+    {
+     "id": "s4",
+     "from": "store",
+     "to": "decide",
+     "style": "dotted",
+     "label": "count for this key"
+    },
+    {
+     "id": "s5",
+     "from": "decide",
+     "to": "api",
+     "style": "solid",
+     "label": "under the limit: forward"
+    },
+    {
+     "id": "s6",
+     "from": "decide",
+     "to": "client",
+     "style": "dashed",
+     "label": "over: 429 + Retry-After"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "overload or rejected"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "count or signal"
+    }
+   ]
+  },
+  {
+   "id": "algorithms",
+   "kind": "c4",
+   "title": "Five ways to count",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "count",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Count requests in a window",
+     "sub": "answers: how many recently?"
+    },
+    {
+     "id": "meter",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Meter a flow",
+     "sub": "answers: how fast, how bursty?"
+    },
+    {
+     "id": "fixed",
+     "kind": "component",
+     "tone": "core",
+     "label": "Fixed window",
+     "sub": "one counter per minute"
+    },
+    {
+     "id": "log",
+     "kind": "component",
+     "tone": "core",
+     "label": "Sliding window log",
+     "sub": "a timestamp per request"
+    },
+    {
+     "id": "swc",
+     "kind": "component",
+     "tone": "core",
+     "label": "Sliding window counter",
+     "sub": "two counters, weighted"
+    },
+    {
+     "id": "token",
+     "kind": "component",
+     "tone": "stream",
+     "label": "Token bucket",
+     "sub": "refill rate + bucket size"
+    },
+    {
+     "id": "leaky",
+     "kind": "component",
+     "tone": "stream",
+     "label": "Leaky bucket",
+     "sub": "queue drains at a fixed rate"
+    }
+   ],
+   "edges": [
+    {
+     "id": "a1",
+     "from": "count",
+     "to": "fixed",
+     "style": "solid",
+     "label": "cheap; bursts at the edges"
+    },
+    {
+     "id": "a2",
+     "from": "count",
+     "to": "log",
+     "style": "solid",
+     "label": "exact; memory per request"
+    },
+    {
+     "id": "a3",
+     "from": "count",
+     "to": "swc",
+     "style": "solid",
+     "label": "close to exact; two numbers"
+    },
+    {
+     "id": "a4",
+     "from": "meter",
+     "to": "token",
+     "style": "solid",
+     "label": "allows bursts up to bucket size"
+    },
+    {
+     "id": "a5",
+     "from": "meter",
+     "to": "leaky",
+     "style": "solid",
+     "label": "smooths output; delays or drops"
+    }
+   ]
+  },
+  {
+   "id": "flow",
+   "kind": "sequence",
+   "title": "Token bucket at the gateway",
+   "participants": [
+    {
+     "id": "client",
+     "label": "Client"
+    },
+    {
+     "id": "gw",
+     "label": "API gateway"
+    },
+    {
+     "id": "redis",
+     "label": "Redis"
+    },
+    {
+     "id": "api",
+     "label": "Orders API"
+    }
+   ],
+   "messages": [
+    {
+     "id": "h1",
+     "from": "client",
+     "to": "gw",
+     "style": "solid",
+     "label": "GET /orders · key k1"
+    },
+    {
+     "id": "h2",
+     "from": "gw",
+     "to": "redis",
+     "style": "solid",
+     "label": "take 1 token for k1 (atomic)"
+    },
+    {
+     "id": "h3",
+     "from": "redis",
+     "to": "gw",
+     "style": "solid",
+     "label": "ok · 9 left"
+    },
+    {
+     "id": "h4",
+     "from": "gw",
+     "to": "api",
+     "style": "solid",
+     "label": "forward"
+    },
+    {
+     "id": "h5",
+     "from": "api",
+     "to": "gw",
+     "style": "solid",
+     "label": "200"
+    },
+    {
+     "id": "h6",
+     "from": "gw",
+     "to": "client",
+     "style": "solid",
+     "label": "200 + RateLimit: r=9"
+    },
+    {
+     "id": "h7",
+     "from": "client",
+     "to": "gw",
+     "style": "solid",
+     "label": "burst of 10 more"
+    },
+    {
+     "id": "h8",
+     "from": "gw",
+     "to": "redis",
+     "style": "solid",
+     "label": "take 1 token for k1"
+    },
+    {
+     "id": "h9",
+     "from": "redis",
+     "to": "gw",
+     "style": "solid",
+     "label": "empty · next token in 2 s"
+    },
+    {
+     "id": "h10",
+     "from": "gw",
+     "to": "client",
+     "style": "solid",
+     "label": "429 · Retry-After: 2"
+    }
+   ]
+  },
+  {
+   "id": "distributed",
+   "kind": "c4",
+   "title": "Per-instance counters versus one shared count",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "client",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Client",
+     "sub": "limit: 100 per minute"
+    },
+    {
+     "id": "lb",
+     "kind": "container",
+     "tone": "neutral",
+     "label": "Load balancer",
+     "sub": "round robin"
+    },
+    {
+     "id": "g1",
+     "kind": "container",
+     "tone": "core",
+     "label": "Gateway 1",
+     "sub": "local count"
+    },
+    {
+     "id": "g2",
+     "kind": "container",
+     "tone": "core",
+     "label": "Gateway 2",
+     "sub": "local count"
+    },
+    {
+     "id": "g3",
+     "kind": "container",
+     "tone": "core",
+     "label": "Gateway 3",
+     "sub": "local count"
+    },
+    {
+     "id": "redis",
+     "kind": "store",
+     "tone": "data",
+     "label": "Redis",
+     "sub": "shared counters"
+    }
+   ],
+   "edges": [
+    {
+     "id": "d1",
+     "from": "client",
+     "to": "lb",
+     "style": "solid",
+     "label": "300 requests"
+    },
+    {
+     "id": "d2",
+     "from": "lb",
+     "to": "g1",
+     "style": "solid",
+     "label": "100 allowed"
+    },
+    {
+     "id": "d3",
+     "from": "lb",
+     "to": "g2",
+     "style": "solid",
+     "label": "100 allowed"
+    },
+    {
+     "id": "d4",
+     "from": "lb",
+     "to": "g3",
+     "style": "dashed",
+     "label": "100 allowed: 3× the limit"
+    },
+    {
+     "id": "d5",
+     "from": "g1",
+     "to": "redis",
+     "style": "dotted",
+     "label": "shared count"
+    },
+    {
+     "id": "d6",
+     "from": "g2",
+     "to": "redis",
+     "style": "dotted",
+     "label": "shared count"
+    },
+    {
+     "id": "d7",
+     "from": "g3",
+     "to": "redis",
+     "style": "dashed",
+     "label": "times out: fail open or closed?"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "request"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "overload or rejected"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "count or signal"
+    }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "rl",
+     "kind": "container",
+     "tone": "core",
+     "label": "Rate limiting",
+     "sub": "same idea, many places"
+    },
+    {
+     "id": "stripe",
+     "kind": "external",
+     "tone": "external",
+     "label": "Stripe",
+     "sub": "four limiters · token bucket in Redis"
+    },
+    {
+     "id": "envoy",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Envoy",
+     "sub": "local token bucket + global service"
+    },
+    {
+     "id": "nginx",
+     "kind": "container",
+     "tone": "stream",
+     "label": "NGINX limit_req",
+     "sub": "leaky bucket · burst, nodelay"
+    },
+    {
+     "id": "aws",
+     "kind": "external",
+     "tone": "external",
+     "label": "AWS API Gateway",
+     "sub": "token bucket · rate + burst"
+    },
+    {
+     "id": "github",
+     "kind": "external",
+     "tone": "external",
+     "label": "GitHub REST API",
+     "sub": "5,000 per hour per user"
+    },
+    {
+     "id": "ietf",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "IETF RateLimit draft",
+     "sub": "RateLimit-Policy + RateLimit"
+    }
+   ],
+   "edges": [
+    {
+     "id": "w1",
+     "from": "rl",
+     "to": "stripe",
+     "style": "solid",
+     "label": "in the application"
+    },
+    {
+     "id": "w2",
+     "from": "rl",
+     "to": "envoy",
+     "style": "solid",
+     "label": "in the proxy"
+    },
+    {
+     "id": "w3",
+     "from": "rl",
+     "to": "nginx",
+     "style": "solid",
+     "label": "at the web server"
+    },
+    {
+     "id": "w4",
+     "from": "rl",
+     "to": "aws",
+     "style": "solid",
+     "label": "in the managed gateway"
+    },
+    {
+     "id": "w5",
+     "from": "rl",
+     "to": "github",
+     "style": "solid",
+     "label": "as a published contract"
+    },
+    {
+     "id": "w6",
+     "from": "rl",
+     "to": "ietf",
+     "style": "dotted",
+     "label": "standard headers"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "problem",
+   "title": "The problem"
+  },
+  {
+   "id": "naive",
+   "title": "The naive fix"
+  },
+  {
+   "id": "pattern",
+   "title": "The pattern"
+  },
+  {
+   "id": "how",
+   "title": "How it works"
+  },
+  {
+   "id": "failure",
+   "title": "When it goes wrong"
+  },
+  {
+   "id": "tradeoffs",
+   "title": "Trade-offs"
+  },
+  {
+   "id": "wild",
+   "title": "In the wild"
+  },
+  {
+   "id": "related",
+   "title": "Related patterns"
+  },
+  {
+   "id": "recap",
+   "title": "Recap"
+  }
+ ],
+ "shots": [
+  {
+   "id": "rl-problem",
+   "chapter": "problem",
+   "diagram": "noisy",
+   "focus": [],
+   "trace": [],
+   "engineer": "Here is a shared API. A shop app places orders, a partner app lists them, and both go through the same orders service and the same database. The database has a fixed pool of connections. Every client gets a fair share only because nobody is asking for very much. Nothing actually protects that fairness. It holds only because, so far, every client has behaved.",
+   "executive": "Many clients share one API and one database. Today they get along because nobody asks for too much."
+  },
+  {
+   "id": "rl-storm",
+   "chapter": "problem",
+   "title": "Noisy client",
+   "diagram": "noisy",
+   "focus": [],
+   "trace": [
+    "n1",
+    "n2",
+    "n3",
+    "n4",
+    "n5"
+   ],
+   "engineer": "Then one client misbehaves. A buggy script retries in a tight loop, or a partner's job runs a thousand times faster than intended. It sends thousands of requests a second. The connection pool fills, queries queue, and now the shop app's checkout times out too. The noisy client did not break the API; it simply took all of it. Without a limit, the loudest caller decides how everyone else is served.",
+   "executive": "One misbehaving client sends so many requests that everyone else's requests start failing. Without limits, the loudest caller wins."
+  },
+  {
+   "id": "rl-naive",
+   "chapter": "naive",
+   "title": "Global cap",
+   "diagram": "naive",
+   "focus": [],
+   "trace": [
+    "nv1",
+    "nv2",
+    "nv3",
+    "nv4",
+    "nv5",
+    "nv6"
+   ],
+   "engineer": "The obvious fix is one global cap: five thousand requests a second for the whole API, and reject anything above it. The database is safe now, but look who gets rejected. The script has already used four thousand nine hundred of the budget, so the shop app's one checkout is refused. The cap protects the server and punishes the innocent. Adding servers has the same flaw: the script simply grows to fill them.",
+   "executive": "A single limit for everyone protects the server but lets the noisy client use the whole budget, so well-behaved clients get rejected instead."
+  },
+  {
+   "id": "rl-structure",
+   "chapter": "pattern",
+   "title": "Per key",
+   "diagram": "structure",
+   "focus": [],
+   "trace": [
+    "s1",
+    "s2",
+    "s3",
+    "s4",
+    "s5",
+    "s6"
+   ],
+   "engineer": "Rate limiting gives each caller its own budget. A key extractor decides who is asking: an API key, a user, or an IP address when nobody is signed in. A policy says what that key may do, say a hundred requests a minute. A counter store keeps the count, in memory or in Redis. The decision is made before the API does any work. Under the limit, the request goes through; over it, the client gets a 429 and a hint about when to try again.",
+   "executive": "Each client gets its own budget. Requests over that budget are turned away early, with a note saying when to come back, so others are unaffected."
+  },
+  {
+   "id": "rl-algorithms",
+   "chapter": "pattern",
+   "title": "Algorithms",
+   "diagram": "algorithms",
+   "focus": [],
+   "trace": [
+    "a1",
+    "a2",
+    "a3",
+    "a4",
+    "a5"
+   ],
+   "engineer": "How do you count? A fixed window keeps one counter per minute: cheap, but a client can spend its budget twice across the boundary. A sliding window log stores every timestamp: exact, but memory grows with traffic. A sliding window counter weights the previous minute by its overlap: two numbers, close to exact. A token bucket refills at a steady rate and allows bursts up to its size. A leaky bucket drains at a fixed rate, smoothing the flow.",
+   "executive": "There are a few standard ways to count requests. They trade accuracy, memory and how much bursting they allow."
+  },
+  {
+   "id": "rl-how",
+   "chapter": "how",
+   "title": "Token bucket",
+   "diagram": "flow",
+   "focus": [],
+   "trace": [
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "h7",
+    "h8",
+    "h9",
+    "h10"
+   ],
+   "engineer": "Here is a token bucket at a gateway, with its state in Redis. A request arrives with key k1. The gateway takes one token in a single atomic step, so two gateways cannot both spend the last one. Nine are left, so the request is forwarded, and the response says how much is left. The client then fires a burst. The bucket empties, and the next request gets a 429 with Retry-After: two seconds, when the next token arrives. The numbers here are illustrative.",
+   "executive": "Each request spends a token; tokens refill at a steady rate. When they run out, the client is told exactly how long to wait."
+  },
+  {
+   "id": "rl-distributed",
+   "chapter": "failure",
+   "title": "Many gateways",
+   "diagram": "distributed",
+   "focus": [],
+   "trace": [
+    "d1",
+    "d2",
+    "d3",
+    "d4",
+    "d5",
+    "d6",
+    "d7"
+   ],
+   "engineer": "It gets harder with more than one gateway. If each instance counts locally, a client spread across three gateways gets three times its limit. A shared counter in Redis fixes that, but adds a network hop to every request, and Redis can fail. Then you must choose. Fail open, and you keep serving with no limit. Fail closed, and a cache outage becomes an API outage. Envoy's answer is to combine both: a local token bucket absorbs spikes, and the global service makes the finer decision.",
+   "executive": "With several servers, limits must be counted in one shared place, or each server allows the full amount. If that shared counter fails, you must decide whether to let traffic through or block it."
+  },
+  {
+   "id": "rl-edges",
+   "chapter": "failure",
+   "card": {
+    "heading": "Where it still goes wrong",
+    "points": [
+     "Fixed windows let through double the limit at a boundary",
+     "Many users behind one office IP share a single budget",
+     "Clients that ignore 429 and retry at once make it worse",
+     "Read-then-write counters race; use one atomic operation"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Four more traps. A fixed window can let through twice the limit across a boundary: a full minute's budget at the end of one window and another at the start of the next. Limiting by IP lumps together everyone behind one office or mobile network. Clients that ignore the 429 and retry immediately turn a limit into a storm. And a counter that reads, then writes, races under load; the check and the increment must be one atomic step.",
+   "executive": "Watch for bursts at window edges, many people sharing one address, clients that ignore the signal, and counters that are not updated safely."
+  },
+  {
+   "id": "rl-compare",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "Choosing an algorithm",
+    "kind": "compare",
+    "points": [
+     "Algorithm | Trade-off",
+     "Fixed window | Cheapest; up to double the limit at a boundary",
+     "Sliding window log | Exact; stores a timestamp per request",
+     "Sliding window counter | Two numbers; small error from assuming even traffic",
+     "Token bucket | Average rate plus controlled bursts",
+     "Leaky bucket | Smooth output; queues or drops bursts"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Choosing an algorithm. A fixed window is the cheapest and fine for generous daily quotas. A sliding log is exact but expensive at volume. The sliding window counter is the usual compromise: Cloudflare measured it on four hundred million requests and found only three thousandths of one percent were wrongly allowed or limited. A token bucket suits public APIs, because real clients are bursty. A leaky bucket suits protecting a fragile backend that needs a smooth flow.",
+   "executive": "Each counting method trades cost against accuracy and burst tolerance. Token buckets are the common default for public APIs."
+  },
+  {
+   "id": "rl-whennot",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "Rate limiting is not load shedding",
+    "points": [
+     "Rate limiting: fairness per client, even when the server is idle",
+     "Load shedding: protects the server, judged by its own health",
+     "Limits too low turn away good customers; publish and monitor them",
+     "Concurrency limits suit slow, expensive endpoints better than rates"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Do not confuse it with load shedding. A rate limit is about fairness: it applies per client, even when the server is idle. Load shedding is about survival: it drops low-priority work when the server itself is overloaded, whoever sent it. You usually want both. Limits set too low turn away paying customers, so publish them and watch rejections. And for slow, expensive endpoints, limiting how many requests are in flight at once often works better than a rate.",
+   "executive": "Rate limits keep clients fair; load shedding keeps the server alive. Most systems need both, and limits must be set and watched carefully."
+  },
+  {
+   "id": "rl-wild",
+   "chapter": "wild",
+   "title": "Implementations",
+   "diagram": "wild",
+   "focus": [],
+   "trace": [
+    "w1",
+    "w2",
+    "w3",
+    "w4",
+    "w5",
+    "w6"
+   ],
+   "engineer": "In the wild. Stripe's engineering blog describes four limiters: a request rate limiter and a concurrent requests limiter, plus two load shedders, all built on token buckets in Redis. Envoy offers a local token bucket per proxy and a global rate limit service, with a reference implementation in Go backed by Redis. NGINX's limit_req module uses the leaky bucket method. AWS API Gateway throttles with a token bucket: a rate and a burst. And GitHub publishes its limits as part of its API contract.",
+   "executive": "Payment platforms, proxies, web servers, cloud gateways and public APIs all use it, usually with token or leaky buckets."
+  },
+  {
+   "id": "rl-numbers",
+   "chapter": "wild",
+   "card": {
+    "heading": "Published numbers",
+    "kind": "numbers",
+    "points": [
+     "5,000 / hour | GitHub REST API, authenticated user",
+     "60 / hour | GitHub REST API, unauthenticated, per IP",
+     "10,000 rps | AWS API Gateway default per account and Region",
+     "5,000 | AWS API Gateway default burst (bucket size)",
+     "503 | NGINX limit_req default status when rejecting"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Some published numbers. GitHub allows five thousand REST requests an hour for a signed-in user, and sixty for anonymous requests from one IP. AWS API Gateway defaults to ten thousand requests a second per account and Region, with a bucket of five thousand for bursts. NGINX rejects with a 503 by default, though 429 is the code that means too many requests; it was defined in RFC six five eight five. Retry-After tells the client how long to wait.",
+   "executive": "Real limits range from tens of requests an hour to thousands a second. The standard rejection is HTTP 429, with a hint about when to retry."
+  },
+  {
+   "id": "rl-related",
+   "chapter": "related",
+   "card": {
+    "heading": "Neighbours",
+    "kind": "compare",
+    "points": [
+     "Pattern | Relationship",
+     "Client-side throttling | Slow down before the server has to say no",
+     "Retry with backoff | Honour Retry-After; never retry a 429 at once",
+     "Backpressure | The consumer signals the producer to slow down",
+     "Bulkhead | Separate pools so one tenant cannot take all",
+     "Circuit breaker | The client stops calling what keeps failing"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Its neighbours. Client-side throttling is the polite twin: a client keeps its own token bucket and slows down before the server has to refuse. Retries must honour Retry-After and back off with jitter, or they recreate the storm. Backpressure is the same signal inside a pipeline. A bulkhead gives each tenant its own pool, so one cannot take everything. And a circuit breaker is the client deciding to stop calling. The IETF is also drafting standard RateLimit headers, so clients can see their budget.",
+   "executive": "Rate limiting works with polite clients, careful retries, separate resource pools and circuit breakers. Together they keep one caller from hurting the rest."
+  },
+  {
+   "id": "rl-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "Give every caller its own budget, by key, user or IP",
+     "Token bucket for bursty APIs; count in one shared, atomic place",
+     "Reject early with 429 and Retry-After, and let clients slow down"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. Give every caller its own budget, so one noisy client cannot take everyone else's share. Pick the algorithm for the traffic: a token bucket for bursty APIs, and count in one shared, atomic place when you run many instances. And reject early and clearly: a 429 with Retry-After, so well-behaved clients know exactly when to come back.",
+   "executive": "Give every caller a budget. Count it reliably. Say no early and clearly, with a time to come back."
+  }
+ ],
+ "subtitle": "Design pattern",
+ "meta": {
+  "kind": "pattern",
+  "category": "Scaling",
+  "level": "beginner",
+  "uses": [],
+  "related": [
+   "backpressure",
+   "retry",
+   "bulkhead"
+  ],
+  "blurb": "Give every caller its own budget, reject the excess early with 429, and keep one client from taking everyone's share.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ }
+}

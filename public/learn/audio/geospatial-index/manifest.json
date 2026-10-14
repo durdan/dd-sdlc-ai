@@ -1,0 +1,132 @@
+{
+ "gi-problem-engineer": {
+  "file": "/audio/geospatial-index/gi-problem-engineer.mp3",
+  "ms": 26256,
+  "hash": "c2f962fcb98c"
+ },
+ "gi-problem-executive": {
+  "file": "/audio/geospatial-index/gi-problem-executive.mp3",
+  "ms": 8448,
+  "hash": "c8fd3ed4ccd2"
+ },
+ "gi-naive-engineer": {
+  "file": "/audio/geospatial-index/gi-naive-engineer.mp3",
+  "ms": 29376,
+  "hash": "6f514c519140"
+ },
+ "gi-naive-executive": {
+  "file": "/audio/geospatial-index/gi-naive-executive.mp3",
+  "ms": 6864,
+  "hash": "03e2e10267a0"
+ },
+ "gi-cells-engineer": {
+  "file": "/audio/geospatial-index/gi-cells-engineer.mp3",
+  "ms": 29640,
+  "hash": "a318727fd14a"
+ },
+ "gi-cells-executive": {
+  "file": "/audio/geospatial-index/gi-cells-executive.mp3",
+  "ms": 9432,
+  "hash": "0b18050f4721"
+ },
+ "gi-families-engineer": {
+  "file": "/audio/geospatial-index/gi-families-engineer.mp3",
+  "ms": 33144,
+  "hash": "d08ee500abca"
+ },
+ "gi-families-executive": {
+  "file": "/audio/geospatial-index/gi-families-executive.mp3",
+  "ms": 9912,
+  "hash": "f001dadc6066"
+ },
+ "gi-how-engineer": {
+  "file": "/audio/geospatial-index/gi-how-engineer.mp3",
+  "ms": 29520,
+  "hash": "d444fb344c5c"
+ },
+ "gi-how-executive": {
+  "file": "/audio/geospatial-index/gi-how-executive.mp3",
+  "ms": 8352,
+  "hash": "6244fe3bd09a"
+ },
+ "gi-moving-engineer": {
+  "file": "/audio/geospatial-index/gi-moving-engineer.mp3",
+  "ms": 28728,
+  "hash": "483f31c7dfdc"
+ },
+ "gi-moving-executive": {
+  "file": "/audio/geospatial-index/gi-moving-executive.mp3",
+  "ms": 8040,
+  "hash": "74f82b5a512c"
+ },
+ "gi-edge-engineer": {
+  "file": "/audio/geospatial-index/gi-edge-engineer.mp3",
+  "ms": 28920,
+  "hash": "7dec3ec820d8"
+ },
+ "gi-edge-executive": {
+  "file": "/audio/geospatial-index/gi-edge-executive.mp3",
+  "ms": 8208,
+  "hash": "dd580555db12"
+ },
+ "gi-hot-engineer": {
+  "file": "/audio/geospatial-index/gi-hot-engineer.mp3",
+  "ms": 28296,
+  "hash": "302f714fa44a"
+ },
+ "gi-hot-executive": {
+  "file": "/audio/geospatial-index/gi-hot-executive.mp3",
+  "ms": 9288,
+  "hash": "8e0d2f9032ae"
+ },
+ "gi-tradeoffs-engineer": {
+  "file": "/audio/geospatial-index/gi-tradeoffs-engineer.mp3",
+  "ms": 32784,
+  "hash": "9f63a37d8087"
+ },
+ "gi-tradeoffs-executive": {
+  "file": "/audio/geospatial-index/gi-tradeoffs-executive.mp3",
+  "ms": 9216,
+  "hash": "22124897c126"
+ },
+ "gi-resolution-engineer": {
+  "file": "/audio/geospatial-index/gi-resolution-engineer.mp3",
+  "ms": 28008,
+  "hash": "8e8d48e1d130"
+ },
+ "gi-resolution-executive": {
+  "file": "/audio/geospatial-index/gi-resolution-executive.mp3",
+  "ms": 9888,
+  "hash": "9ab2448a7485"
+ },
+ "gi-wild-engineer": {
+  "file": "/audio/geospatial-index/gi-wild-engineer.mp3",
+  "ms": 34416,
+  "hash": "d232c1fef671"
+ },
+ "gi-wild-executive": {
+  "file": "/audio/geospatial-index/gi-wild-executive.mp3",
+  "ms": 11976,
+  "hash": "a9a713055a27"
+ },
+ "gi-related-engineer": {
+  "file": "/audio/geospatial-index/gi-related-engineer.mp3",
+  "ms": 27408,
+  "hash": "cea9092cdfbb"
+ },
+ "gi-related-executive": {
+  "file": "/audio/geospatial-index/gi-related-executive.mp3",
+  "ms": 8688,
+  "hash": "919cff93071f"
+ },
+ "gi-recap-engineer": {
+  "file": "/audio/geospatial-index/gi-recap-engineer.mp3",
+  "ms": 27504,
+  "hash": "fe663b98ba74"
+ },
+ "gi-recap-executive": {
+  "file": "/audio/geospatial-index/gi-recap-executive.mp3",
+  "ms": 8088,
+  "hash": "98897553fec9"
+ }
+}

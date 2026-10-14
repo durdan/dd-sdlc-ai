@@ -1,0 +1,142 @@
+{
+ "bp-problem-engineer": {
+  "file": "/audio/backpressure/bp-problem-engineer.mp3",
+  "ms": 25440,
+  "hash": "cb2f269e9433"
+ },
+ "bp-problem-executive": {
+  "file": "/audio/backpressure/bp-problem-executive.mp3",
+  "ms": 5448,
+  "hash": "ef9f71f387df"
+ },
+ "bp-pileup-engineer": {
+  "file": "/audio/backpressure/bp-pileup-engineer.mp3",
+  "ms": 26064,
+  "hash": "1a40af7b93da"
+ },
+ "bp-pileup-executive": {
+  "file": "/audio/backpressure/bp-pileup-executive.mp3",
+  "ms": 6984,
+  "hash": "f7d8cb7352fb"
+ },
+ "bp-naive-engineer": {
+  "file": "/audio/backpressure/bp-naive-engineer.mp3",
+  "ms": 26736,
+  "hash": "24cca8a8c91e"
+ },
+ "bp-naive-executive": {
+  "file": "/audio/backpressure/bp-naive-executive.mp3",
+  "ms": 8424,
+  "hash": "ec011b3b6a54"
+ },
+ "bp-structure-engineer": {
+  "file": "/audio/backpressure/bp-structure-engineer.mp3",
+  "ms": 28464,
+  "hash": "814eb88b4329"
+ },
+ "bp-structure-executive": {
+  "file": "/audio/backpressure/bp-structure-executive.mp3",
+  "ms": 5880,
+  "hash": "0fc8f8c22cf9"
+ },
+ "bp-full-engineer": {
+  "file": "/audio/backpressure/bp-full-engineer.mp3",
+  "ms": 27816,
+  "hash": "8b3bce2652cd"
+ },
+ "bp-full-executive": {
+  "file": "/audio/backpressure/bp-full-executive.mp3",
+  "ms": 8952,
+  "hash": "9d86baedfd42"
+ },
+ "bp-how-engineer": {
+  "file": "/audio/backpressure/bp-how-engineer.mp3",
+  "ms": 30216,
+  "hash": "c7f4d18b095a"
+ },
+ "bp-how-executive": {
+  "file": "/audio/backpressure/bp-how-executive.mp3",
+  "ms": 6840,
+  "hash": "0ca69316e2ca"
+ },
+ "bp-tcp-engineer": {
+  "file": "/audio/backpressure/bp-tcp-engineer.mp3",
+  "ms": 30456,
+  "hash": "baea437320f1"
+ },
+ "bp-tcp-executive": {
+  "file": "/audio/backpressure/bp-tcp-executive.mp3",
+  "ms": 7752,
+  "hash": "782822d16cce"
+ },
+ "bp-pipeline-engineer": {
+  "file": "/audio/backpressure/bp-pipeline-engineer.mp3",
+  "ms": 33480,
+  "hash": "524a5a2d26ba"
+ },
+ "bp-pipeline-executive": {
+  "file": "/audio/backpressure/bp-pipeline-executive.mp3",
+  "ms": 8352,
+  "hash": "5e3cafd69b9a"
+ },
+ "bp-edges-engineer": {
+  "file": "/audio/backpressure/bp-edges-engineer.mp3",
+  "ms": 27216,
+  "hash": "a8b39a9a3a3a"
+ },
+ "bp-edges-executive": {
+  "file": "/audio/backpressure/bp-edges-executive.mp3",
+  "ms": 7992,
+  "hash": "6f71e6e4acfa"
+ },
+ "bp-strategies-engineer": {
+  "file": "/audio/backpressure/bp-strategies-engineer.mp3",
+  "ms": 32496,
+  "hash": "68edde2c69d0"
+ },
+ "bp-strategies-executive": {
+  "file": "/audio/backpressure/bp-strategies-executive.mp3",
+  "ms": 7584,
+  "hash": "9fc020640676"
+ },
+ "bp-whennot-engineer": {
+  "file": "/audio/backpressure/bp-whennot-engineer.mp3",
+  "ms": 27384,
+  "hash": "9b47aff1b7cf"
+ },
+ "bp-whennot-executive": {
+  "file": "/audio/backpressure/bp-whennot-executive.mp3",
+  "ms": 7608,
+  "hash": "0e3a0ecaaaa2"
+ },
+ "bp-wild-engineer": {
+  "file": "/audio/backpressure/bp-wild-engineer.mp3",
+  "ms": 35376,
+  "hash": "b7d6063cc8f5"
+ },
+ "bp-wild-executive": {
+  "file": "/audio/backpressure/bp-wild-executive.mp3",
+  "ms": 7656,
+  "hash": "bde1f4d23c78"
+ },
+ "bp-related-engineer": {
+  "file": "/audio/backpressure/bp-related-engineer.mp3",
+  "ms": 33096,
+  "hash": "ca9518ee780d"
+ },
+ "bp-related-executive": {
+  "file": "/audio/backpressure/bp-related-executive.mp3",
+  "ms": 7632,
+  "hash": "76b2ba51e9b7"
+ },
+ "bp-recap-engineer": {
+  "file": "/audio/backpressure/bp-recap-engineer.mp3",
+  "ms": 22056,
+  "hash": "051b46d01cea"
+ },
+ "bp-recap-executive": {
+  "file": "/audio/backpressure/bp-recap-executive.mp3",
+  "ms": 8280,
+  "hash": "2507895e6093"
+ }
+}

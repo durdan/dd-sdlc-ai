@@ -139,3 +139,7 @@ temp/
 # Test files
 test-signup.js
 cookies.txt
+
+
+# The vendored design-player library ships its built output (see packages/design-player/README.md)
+!packages/design-player/dist/

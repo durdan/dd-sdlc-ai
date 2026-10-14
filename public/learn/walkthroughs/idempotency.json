@@ -1,0 +1,1026 @@
+{
+ "id": "idempotency",
+ "title": "Idempotency keys",
+ "subtitle": "Design pattern",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "meta": {
+  "kind": "pattern",
+  "category": "Data",
+  "level": "beginner",
+  "uses": [],
+  "related": [
+   "retry",
+   "outbox",
+   "saga"
+  ],
+  "blurb": "Make retries safe: the client labels each operation with a key and the server does it once, replaying the answer.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ },
+ "diagrams": [
+  {
+   "id": "double",
+   "kind": "c4",
+   "title": "A lost response becomes a double charge",
+   "direction": "RIGHT",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "retry or failure"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "read or record"
+    }
+   ],
+   "elements": [
+    {
+     "id": "user",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Customer",
+     "sub": "taps Pay once"
+    },
+    {
+     "id": "app",
+     "kind": "container",
+     "tone": "core",
+     "label": "Shop backend",
+     "sub": "times out after 10 s"
+    },
+    {
+     "id": "api",
+     "kind": "container",
+     "tone": "core",
+     "label": "Payments API",
+     "sub": "POST /charges"
+    },
+    {
+     "id": "bank",
+     "kind": "external",
+     "tone": "external",
+     "label": "Card network",
+     "sub": "moves the money"
+    }
+   ],
+   "edges": [
+    {
+     "id": "d1",
+     "from": "user",
+     "to": "app",
+     "style": "solid",
+     "label": "pay £20"
+    },
+    {
+     "id": "d2",
+     "from": "app",
+     "to": "api",
+     "style": "solid",
+     "label": "POST /charges £20"
+    },
+    {
+     "id": "d3",
+     "from": "api",
+     "to": "bank",
+     "style": "solid",
+     "label": "charge £20 · succeeds"
+    },
+    {
+     "id": "d4",
+     "from": "api",
+     "to": "app",
+     "style": "dashed",
+     "label": "201 Created · lost on the way"
+    },
+    {
+     "id": "d5",
+     "from": "app",
+     "to": "api",
+     "style": "dashed",
+     "label": "timeout → retry POST £20"
+    },
+    {
+     "id": "d6",
+     "from": "api",
+     "to": "bank",
+     "style": "dashed",
+     "label": "charge £20 again"
+    }
+   ]
+  },
+  {
+   "id": "naive",
+   "kind": "c4",
+   "title": "Check, then charge: two retries race",
+   "direction": "RIGHT",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "retry or failure"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "read or record"
+    }
+   ],
+   "elements": [
+    {
+     "id": "a1",
+     "kind": "container",
+     "tone": "core",
+     "label": "Attempt 1",
+     "sub": "still running, slowly"
+    },
+    {
+     "id": "a2",
+     "kind": "container",
+     "tone": "core",
+     "label": "Attempt 2",
+     "sub": "the retry"
+    },
+    {
+     "id": "api",
+     "kind": "container",
+     "tone": "core",
+     "label": "Payments API",
+     "sub": "two instances"
+    },
+    {
+     "id": "db",
+     "kind": "store",
+     "tone": "data",
+     "label": "Charges table",
+     "sub": "no unique rule"
+    },
+    {
+     "id": "bank",
+     "kind": "external",
+     "tone": "external",
+     "label": "Card network",
+     "sub": "moves the money"
+    }
+   ],
+   "edges": [
+    {
+     "id": "n1",
+     "from": "a1",
+     "to": "api",
+     "style": "solid",
+     "label": "POST £20"
+    },
+    {
+     "id": "n2",
+     "from": "a2",
+     "to": "api",
+     "style": "dashed",
+     "label": "retry POST £20"
+    },
+    {
+     "id": "n3",
+     "from": "api",
+     "to": "db",
+     "style": "dotted",
+     "label": "any £20 charge in the last minute? none"
+    },
+    {
+     "id": "n4",
+     "from": "api",
+     "to": "db",
+     "style": "dotted",
+     "label": "same check, same moment: none"
+    },
+    {
+     "id": "n5",
+     "from": "api",
+     "to": "bank",
+     "style": "solid",
+     "label": "charge £20"
+    },
+    {
+     "id": "n6",
+     "from": "api",
+     "to": "bank",
+     "style": "dashed",
+     "label": "charge £20 again"
+    }
+   ]
+  },
+  {
+   "id": "structure",
+   "kind": "c4",
+   "title": "An idempotency layer in front of the handler",
+   "direction": "DOWN",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "retry or failure"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "read or record"
+    }
+   ],
+   "groups": [
+    {
+     "id": "srv",
+     "label": "Payments API",
+     "tone": "core"
+    }
+   ],
+   "elements": [
+    {
+     "id": "client",
+     "kind": "container",
+     "tone": "neutral",
+     "label": "Client",
+     "sub": "makes one key per operation"
+    },
+    {
+     "id": "guard",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Idempotency layer",
+     "sub": "look up, claim, or replay",
+     "group": "srv"
+    },
+    {
+     "id": "store",
+     "kind": "store",
+     "tone": "data",
+     "label": "Key store",
+     "sub": "key · fingerprint · status · response",
+     "group": "srv"
+    },
+    {
+     "id": "handler",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Handler",
+     "sub": "the business logic",
+     "group": "srv"
+    },
+    {
+     "id": "db",
+     "kind": "store",
+     "tone": "data",
+     "label": "Charges table",
+     "sub": "the real side effect",
+     "group": "srv"
+    },
+    {
+     "id": "bank",
+     "kind": "external",
+     "tone": "external",
+     "label": "Card network",
+     "sub": "downstream"
+    }
+   ],
+   "edges": [
+    {
+     "id": "p1",
+     "from": "client",
+     "to": "guard",
+     "style": "solid",
+     "label": "POST + Idempotency-Key"
+    },
+    {
+     "id": "p2",
+     "from": "guard",
+     "to": "store",
+     "style": "dotted",
+     "label": "claim key + fingerprint (unique)"
+    },
+    {
+     "id": "p3",
+     "from": "guard",
+     "to": "handler",
+     "style": "solid",
+     "label": "first time: run it"
+    },
+    {
+     "id": "p4",
+     "from": "handler",
+     "to": "bank",
+     "style": "solid",
+     "label": "charge, passing the key on"
+    },
+    {
+     "id": "p5",
+     "from": "handler",
+     "to": "db",
+     "style": "solid",
+     "label": "write the charge"
+    },
+    {
+     "id": "p6",
+     "from": "handler",
+     "to": "store",
+     "style": "dotted",
+     "label": "save response, same transaction"
+    },
+    {
+     "id": "p7",
+     "from": "guard",
+     "to": "client",
+     "style": "solid",
+     "label": "repeat: replay saved response"
+    }
+   ]
+  },
+  {
+   "id": "how",
+   "kind": "sequence",
+   "title": "First request, then a retry",
+   "participants": [
+    {
+     "id": "client",
+     "label": "Client"
+    },
+    {
+     "id": "layer",
+     "label": "Idempotency layer"
+    },
+    {
+     "id": "store",
+     "label": "Key store"
+    },
+    {
+     "id": "handler",
+     "label": "Handler"
+    }
+   ],
+   "messages": [
+    {
+     "id": "h1",
+     "from": "client",
+     "to": "layer",
+     "style": "solid",
+     "label": "POST /charges · Key: 8e03… · £20"
+    },
+    {
+     "id": "h2",
+     "from": "layer",
+     "to": "store",
+     "style": "solid",
+     "label": "insert key + fingerprint · status started"
+    },
+    {
+     "id": "h3",
+     "from": "layer",
+     "to": "handler",
+     "style": "solid",
+     "label": "run the charge"
+    },
+    {
+     "id": "h4",
+     "from": "handler",
+     "to": "store",
+     "style": "solid",
+     "label": "charge ch_1 + 201 response, one transaction"
+    },
+    {
+     "id": "h5",
+     "from": "layer",
+     "to": "client",
+     "style": "dashed",
+     "label": "201 Created · lost on the way"
+    },
+    {
+     "id": "h6",
+     "from": "client",
+     "to": "layer",
+     "style": "dashed",
+     "label": "retry · same key, same body"
+    },
+    {
+     "id": "h7",
+     "from": "layer",
+     "to": "store",
+     "style": "solid",
+     "label": "look up key: completed, fingerprint matches"
+    },
+    {
+     "id": "h8",
+     "from": "layer",
+     "to": "client",
+     "style": "solid",
+     "label": "201 Created · ch_1 replayed, no new charge"
+    }
+   ]
+  },
+  {
+   "id": "edge",
+   "kind": "sequence",
+   "title": "Concurrent, mismatched and expired keys",
+   "participants": [
+    {
+     "id": "client",
+     "label": "Client"
+    },
+    {
+     "id": "layer",
+     "label": "Idempotency layer"
+    },
+    {
+     "id": "store",
+     "label": "Key store"
+    }
+   ],
+   "messages": [
+    {
+     "id": "f1",
+     "from": "client",
+     "to": "layer",
+     "style": "solid",
+     "label": "POST · key K · £20 (slow)"
+    },
+    {
+     "id": "f2",
+     "from": "layer",
+     "to": "store",
+     "style": "solid",
+     "label": "claim K · status started"
+    },
+    {
+     "id": "f3",
+     "from": "client",
+     "to": "layer",
+     "style": "dashed",
+     "label": "retry · key K, first still running"
+    },
+    {
+     "id": "f4",
+     "from": "layer",
+     "to": "store",
+     "style": "solid",
+     "label": "claim K fails: in progress"
+    },
+    {
+     "id": "f5",
+     "from": "layer",
+     "to": "client",
+     "style": "solid",
+     "label": "409 Conflict · wait, retry same key"
+    },
+    {
+     "id": "f6",
+     "from": "client",
+     "to": "layer",
+     "style": "dashed",
+     "label": "key K · body now £50"
+    },
+    {
+     "id": "f7",
+     "from": "layer",
+     "to": "store",
+     "style": "solid",
+     "label": "fingerprint differs"
+    },
+    {
+     "id": "f8",
+     "from": "layer",
+     "to": "client",
+     "style": "solid",
+     "label": "422 · key reused with a different payload"
+    },
+    {
+     "id": "f9",
+     "from": "client",
+     "to": "layer",
+     "style": "dashed",
+     "label": "key K, days later"
+    },
+    {
+     "id": "f10",
+     "from": "layer",
+     "to": "store",
+     "style": "solid",
+     "label": "K expired and purged → treated as new"
+    }
+   ]
+  },
+  {
+   "id": "messaging",
+   "kind": "c4",
+   "title": "At-least-once delivery needs idempotent consumers",
+   "direction": "DOWN",
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "retry or failure"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "read or record"
+    }
+   ],
+   "elements": [
+    {
+     "id": "orders",
+     "kind": "container",
+     "tone": "core",
+     "label": "Order service",
+     "sub": "writes order + event"
+    },
+    {
+     "id": "outbox",
+     "kind": "store",
+     "tone": "data",
+     "label": "Outbox table",
+     "sub": "events not yet sent"
+    },
+    {
+     "id": "relay",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Message relay",
+     "sub": "publishes, then marks sent"
+    },
+    {
+     "id": "broker",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Message broker",
+     "sub": "delivers at least once"
+    },
+    {
+     "id": "consumer",
+     "kind": "container",
+     "tone": "core",
+     "label": "Payment worker",
+     "sub": "the idempotent consumer"
+    },
+    {
+     "id": "dedupe",
+     "kind": "store",
+     "tone": "data",
+     "label": "Processed messages",
+     "sub": "unique message id"
+    },
+    {
+     "id": "ledger",
+     "kind": "store",
+     "tone": "data",
+     "label": "Payments table",
+     "sub": "the side effect"
+    }
+   ],
+   "edges": [
+    {
+     "id": "m1",
+     "from": "orders",
+     "to": "outbox",
+     "style": "solid",
+     "label": "order + event, one transaction"
+    },
+    {
+     "id": "m2",
+     "from": "outbox",
+     "to": "relay",
+     "style": "dotted",
+     "label": "read unsent events"
+    },
+    {
+     "id": "m3",
+     "from": "relay",
+     "to": "broker",
+     "style": "solid",
+     "label": "publish · id 42"
+    },
+    {
+     "id": "m4",
+     "from": "broker",
+     "to": "consumer",
+     "style": "solid",
+     "label": "deliver id 42"
+    },
+    {
+     "id": "m5",
+     "from": "consumer",
+     "to": "dedupe",
+     "style": "dotted",
+     "label": "insert id 42"
+    },
+    {
+     "id": "m6",
+     "from": "consumer",
+     "to": "ledger",
+     "style": "solid",
+     "label": "take payment, same transaction"
+    },
+    {
+     "id": "m7",
+     "from": "broker",
+     "to": "consumer",
+     "style": "dashed",
+     "label": "redeliver id 42 (ack lost)"
+    },
+    {
+     "id": "m8",
+     "from": "consumer",
+     "to": "dedupe",
+     "style": "dashed",
+     "label": "id 42 exists → skip"
+    }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "rfc",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "RFC 9110",
+     "sub": "HTTP semantics · PUT, DELETE idempotent"
+    },
+    {
+     "id": "draft",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "IETF draft",
+     "sub": "The Idempotency-Key HTTP Header Field"
+    },
+    {
+     "id": "stripe",
+     "kind": "external",
+     "tone": "external",
+     "label": "Stripe API",
+     "sub": "Idempotency-Key on POST"
+    },
+    {
+     "id": "paypal",
+     "kind": "external",
+     "tone": "external",
+     "label": "PayPal API",
+     "sub": "PayPal-Request-Id header"
+    },
+    {
+     "id": "aws",
+     "kind": "external",
+     "tone": "external",
+     "label": "AWS APIs",
+     "sub": "client request token, e.g. EC2 ClientToken"
+    },
+    {
+     "id": "sqs",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Message queues",
+     "sub": "at-least-once, e.g. SQS standard"
+    },
+    {
+     "id": "consumer",
+     "kind": "container",
+     "tone": "core",
+     "label": "Idempotent consumer",
+     "sub": "processed-message table"
+    }
+   ],
+   "edges": [
+    {
+     "id": "w1",
+     "from": "rfc",
+     "to": "draft",
+     "style": "solid",
+     "label": "fixes POST and PATCH"
+    },
+    {
+     "id": "w2",
+     "from": "stripe",
+     "to": "draft",
+     "style": "dotted",
+     "label": "prior art"
+    },
+    {
+     "id": "w3",
+     "from": "paypal",
+     "to": "draft",
+     "style": "dotted",
+     "label": "prior art"
+    },
+    {
+     "id": "w4",
+     "from": "rfc",
+     "to": "aws",
+     "style": "solid",
+     "label": "same idea, own field"
+    },
+    {
+     "id": "w5",
+     "from": "sqs",
+     "to": "consumer",
+     "style": "solid",
+     "label": "duplicates handled here"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "problem",
+   "title": "The problem"
+  },
+  {
+   "id": "naive",
+   "title": "The naive fix"
+  },
+  {
+   "id": "pattern",
+   "title": "The pattern"
+  },
+  {
+   "id": "how",
+   "title": "How it works"
+  },
+  {
+   "id": "failure",
+   "title": "When it goes wrong"
+  },
+  {
+   "id": "tradeoffs",
+   "title": "Trade-offs"
+  },
+  {
+   "id": "wild",
+   "title": "In the wild"
+  },
+  {
+   "id": "related",
+   "title": "Related patterns"
+  },
+  {
+   "id": "recap",
+   "title": "Recap"
+  }
+ ],
+ "shots": [
+  {
+   "id": "idem-problem",
+   "title": "Double charge",
+   "chapter": "problem",
+   "diagram": "double",
+   "focus": [],
+   "trace": [
+    "d1",
+    "d2",
+    "d3",
+    "d4",
+    "d5",
+    "d6"
+   ],
+   "engineer": "A customer taps Pay once. The shop backend sends a charge to the payments API, and the card is charged. But the response is lost on the way back: a dropped connection, or a timeout that fires a moment too early. The backend cannot tell whether the charge happened, so it retries. The payments API sees what looks like a brand new request and charges the card again. One tap, two charges.",
+   "executive": "When a reply goes missing, the sender cannot tell whether the work was done, so it tries again, and the customer is charged twice."
+  },
+  {
+   "id": "idem-methods",
+   "chapter": "problem",
+   "card": {
+    "heading": "Which requests are safe to repeat?",
+    "kind": "compare",
+    "points": [
+     "Method | Sent twice",
+     "GET, HEAD | Safe: nothing changes",
+     "PUT | Idempotent: same final state",
+     "DELETE | Idempotent: gone either way",
+     "POST | Not idempotent: may create a second charge"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Some requests are safe to repeat. HTTP's core specification, RFC 9110, calls a method idempotent when sending it many times has the same intended effect as sending it once. GET and HEAD change nothing. PUT sets a resource to a value, so doing it twice leaves the same state. DELETE leaves it gone either way. POST makes no such promise: each one can create something new. And the RFC says clients should not retry non-idempotent requests automatically.",
+   "executive": "Reading, replacing and deleting are naturally safe to repeat. Creating something, like a payment, is not."
+  },
+  {
+   "id": "idem-naive",
+   "title": "Check, then charge",
+   "chapter": "naive",
+   "diagram": "naive",
+   "focus": [],
+   "trace": [
+    "n1",
+    "n2",
+    "n3",
+    "n4",
+    "n5",
+    "n6"
+   ],
+   "engineer": "The obvious fix is to look before you leap: before charging, check whether a similar charge already exists, say the same amount for the same customer in the last minute. It has two flaws. A slow first attempt and its retry can run at the same moment on two servers, both check, both see nothing, and both charge. And the rule is a guess: a customer who really does buy two twenty-pound items in a minute gets blocked.",
+   "executive": "Guessing at duplicates from the amount and time both misses real duplicates and blocks genuine repeat purchases."
+  },
+  {
+   "id": "idem-structure",
+   "title": "Parts",
+   "chapter": "pattern",
+   "diagram": "structure",
+   "focus": [],
+   "trace": [
+    "p1",
+    "p2",
+    "p3",
+    "p4",
+    "p5",
+    "p6",
+    "p7"
+   ],
+   "engineer": "The pattern makes the client say which requests are the same. It generates a unique key per operation, usually a random UUID, and sends it with every attempt. On the server, an idempotency layer claims that key in a store, with a fingerprint of the request body. First time, the handler runs, passes the key on to anything downstream, and saves its response alongside the side effect, in one transaction. A repeat of the key gets the saved response back.",
+   "executive": "The client labels each operation with a unique key. The server does the work once per key and replays the same answer to any repeat."
+  },
+  {
+   "id": "idem-first",
+   "title": "First request",
+   "chapter": "how",
+   "diagram": "how",
+   "focus": [],
+   "trace": [
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5"
+   ],
+   "engineer": "Step by step. The client sends the charge with its key. The idempotency layer inserts the key and a fingerprint, with status started. A unique constraint means only one request can win that insert. The handler charges the card and, in the same database transaction, records the charge and the response it will send. If the transaction fails, neither is saved, so there is never a recorded key with no charge, or a charge with no key. Then the response is lost.",
+   "executive": "The server records the key, does the work, and saves the answer together, so it can never remember one without the other."
+  },
+  {
+   "id": "idem-replay",
+   "title": "Retry",
+   "chapter": "how",
+   "diagram": "how",
+   "focus": [],
+   "trace": [
+    "h6",
+    "h7",
+    "h8"
+   ],
+   "engineer": "The client retries with the same key and the same body. The layer finds the key, sees it is completed and that the fingerprint matches, and returns the saved response: the same status code and the same charge id. No second charge is made. Stripe marks such replays with an Idempotent-Replayed header. The retry might see newer state elsewhere, but the answer means the same thing, which is what Amazon's Builders' Library calls a semantically equivalent response.",
+   "executive": "The retry gets back exactly the answer the first request produced, and nothing is charged twice."
+  },
+  {
+   "id": "idem-concurrent",
+   "title": "In flight",
+   "chapter": "failure",
+   "diagram": "edge",
+   "focus": [],
+   "trace": [
+    "f1",
+    "f2",
+    "f3",
+    "f4",
+    "f5"
+   ],
+   "engineer": "What if the retry arrives while the first attempt is still running? The key is claimed but there is no response to replay yet. The layer must not run the handler again, so it rejects the retry. The IETF draft suggests 409 Conflict, and Stripe documents a 409 when another request with the same key is still executing. The client waits and retries with the same key; a new key would start a second charge.",
+   "executive": "If the first try is still running, the repeat is told to wait rather than starting the work again."
+  },
+  {
+   "id": "idem-mismatch",
+   "title": "Mismatch and expiry",
+   "chapter": "failure",
+   "diagram": "edge",
+   "focus": [],
+   "trace": [
+    "f6",
+    "f7",
+    "f8",
+    "f9",
+    "f10"
+   ],
+   "engineer": "What if the same key arrives with a different body, fifty pounds instead of twenty? That is a client bug, not a retry, so the fingerprint check rejects it; the draft suggests 422. Keys do not last for ever. Stripe keeps them for at least twenty-four hours and may then remove them; a key reused after that runs as a new request. So retries must stop inside the window, and after that the client reconciles instead.",
+   "executive": "A key reused with different details is rejected. Keys expire, so retries must happen within a set window."
+  },
+  {
+   "id": "idem-edges",
+   "chapter": "failure",
+   "card": {
+    "heading": "Where it still goes wrong",
+    "points": [
+     "The key is saved, but not in the same transaction as the side effect",
+     "The client makes a new key on every retry",
+     "A downstream call is not idempotent, so the key must travel with it",
+     "Keys are global, so one client can collide with another's"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Four things catch teams out. Saving the key and the side effect separately: a crash in between leaves a charge with no key, or a key with no charge. Clients that make a fresh key on every retry, which turns the whole scheme off. Downstream calls that are not idempotent themselves; pass a key along. And keys shared across clients: the IETF draft suggests combining the key with something only the server knows, such as the account.",
+   "executive": "It only works if the key and the work are saved together, the client keeps the same key, and keys are kept separate per customer."
+  },
+  {
+   "id": "idem-tradeoffs",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "The choices",
+    "kind": "compare",
+    "points": [
+     "Choice | Trade-off",
+     "Random or derived key | UUID is simple; a cart id also stops double submits",
+     "Key store | Same database gives atomicity; a cache is faster but can lose keys",
+     "Expiry window | Longer is safer; costs storage",
+     "Replay errors too | Consistent answers; a fixed request needs a new key"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The choices. A random UUID is simplest; Stripe also suggests deriving the key from something like a shopping cart id, which stops double submits from the same page. Keep keys in the same database as the side effect so they commit together; a separate cache is faster but can lose a key. A longer expiry is safer but costs storage. And Stripe replays even 500 errors for the same key, so a corrected request needs a new key.",
+   "executive": "Teams choose how keys are made, where they are kept and for how long. Keeping them alongside the data is the safe default."
+  },
+  {
+   "id": "idem-messaging",
+   "title": "Messages",
+   "chapter": "tradeoffs",
+   "diagram": "messaging",
+   "focus": [],
+   "trace": [
+    "m4",
+    "m5",
+    "m6",
+    "m7",
+    "m8"
+   ],
+   "engineer": "The same idea works for messages. Most brokers deliver at least once: Amazon SQS standard queues, for example, can occasionally deliver a message twice, and its documentation tells you to design consumers to be idempotent. Here the message id is the key. The consumer inserts it into a processed-messages table in the same transaction as the payment. When the message is redelivered, the insert fails on the unique id, and the consumer skips it.",
+   "executive": "Message queues can deliver the same message twice, so the receiver records each message id and ignores repeats."
+  },
+  {
+   "id": "idem-wild",
+   "title": "Where it lives",
+   "chapter": "wild",
+   "diagram": "wild",
+   "focus": [],
+   "trace": [
+    "w1",
+    "w2",
+    "w3",
+    "w4",
+    "w5"
+   ],
+   "engineer": "In the wild. RFC 9110 defines which HTTP methods are idempotent. The IETF draft on the Idempotency-Key header field aims to make POST and PATCH fault-tolerant, citing Stripe and PayPal as prior art; it has expired without becoming a standard. Stripe accepts an Idempotency-Key on every POST, and its libraries can add keys on retry. AWS APIs use a client request token, such as EC2's ClientToken. And queue consumers use processed-message tables.",
+   "executive": "Payment and cloud providers, including Stripe and AWS, build this into their APIs, and an internet standard for the header has been drafted."
+  },
+  {
+   "id": "idem-related",
+   "title": "Neighbours",
+   "chapter": "related",
+   "diagram": "messaging",
+   "focus": [],
+   "trace": [
+    "m1",
+    "m2",
+    "m3",
+    "m4",
+    "m5",
+    "m6"
+   ],
+   "engineer": "Its neighbours. Retry is the reason it exists: retries are only safe when the operation is idempotent. The transactional outbox writes an event in the same transaction as the data, then a relay publishes it; if the relay crashes before marking it sent, it publishes again, so the consumer must be idempotent. And a saga's steps and compensations are retried after failures, so each one needs an idempotency key too.",
+   "executive": "Retries, the outbox and sagas all repeat work on purpose, and idempotency is what makes that repetition harmless."
+  },
+  {
+   "id": "idem-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "A lost response makes retries look like new requests",
+     "The client sends one key per operation, on every attempt",
+     "Save the key, fingerprint and result with the side effect, atomically"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. A lost response leaves the caller unsure, and its retry looks like a brand new request. Give each operation one key, made by the client and sent on every attempt. And on the server, store the key, a fingerprint and the result together with the side effect, in one transaction, then replay that result to every repeat.",
+   "executive": "Retries are inevitable. Label each operation with a key. Do the work once and replay the answer."
+  }
+ ]
+}

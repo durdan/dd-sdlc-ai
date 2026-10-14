@@ -1,0 +1,11 @@
+import type { ComponentProps } from "react";
+import "../player.css";
+import { Library as LibraryInner } from "../Library";
+import { Player as PlayerInner } from "../Player";
+import { LibraryPage as LibraryPageInner, TopicPage as TopicPageInner } from "../views";
+export { useWatchMode } from "../Watch";
+export type { TopicNav } from "../Watch";
+export declare const Player: (p: ComponentProps<typeof PlayerInner>) => import("react").JSX.Element;
+export declare const Library: (p: ComponentProps<typeof LibraryInner>) => import("react").JSX.Element;
+export declare const LibraryPage: (p: ComponentProps<typeof LibraryPageInner>) => import("react").JSX.Element;
+export declare const TopicPage: (p: ComponentProps<typeof TopicPageInner>) => import("react").JSX.Element;

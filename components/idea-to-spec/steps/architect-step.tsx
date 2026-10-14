@@ -19,7 +19,8 @@ export function ArchitectStep() {
   // Get context from previous steps
   const context = [diagrams.mindmap.dsl, diagrams.usecase?.dsl, diagrams.journey.dsl].filter(Boolean).join('\n\n');
 
-  const generateDiagram = useCallback(async (type: DiagramType) => {
+  const generateDiagram = useCallback(async (type: DiagramType, retryCount = 0) => {
+    const MAX_RETRIES = 2;
     const diagramData = diagrams[type];
     if (diagramData.generated || isGenerating) return;
 
@@ -37,7 +38,8 @@ export function ArchitectStep() {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to generate ${type} diagram`);
+        const errorText = await response.text().catch(() => '');
+        throw new Error(`Failed to generate ${type}: ${response.status} ${errorText}`);
       }
 
       const reader = response.body?.getReader();
@@ -72,7 +74,16 @@ export function ArchitectStep() {
         }
       }
     } catch (error) {
-      console.error(`${type} generation error:`, error);
+      console.error(`${type} generation error (attempt ${retryCount + 1}):`, error);
+
+      // Retry on failure
+      if (retryCount < MAX_RETRIES) {
+        console.log(`Retrying ${type} generation... (attempt ${retryCount + 2})`);
+        setGenerating(false, null);
+        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+        return generateDiagram(type, retryCount + 1);
+      }
+
       setDiagramError(type, error instanceof Error ? error.message : `Failed to generate ${type}`);
     } finally {
       setGenerating(false, null);

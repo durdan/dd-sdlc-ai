@@ -3,16 +3,23 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { AuthProvider } from "@/contexts/AuthContext"
 import CookieConsent from "@/components/cookie-consent"
+import { SDLC_PRODUCT } from "@/lib/product"
 
 const inter = Inter({ subsets: ["latin"] })
+
+// While the product is off the site is the design-walkthrough library (see lib/product.ts).
+const SITE_TITLE = SDLC_PRODUCT ? "SDLC.dev - AI-Powered Software Development Lifecycle Automation" : "Design walkthroughs | SDLC.dev"
+const SITE_DESCRIPTION = SDLC_PRODUCT
+  ? "Transform ideas into production-ready specifications with AI. Generate business analysis, technical specs, architecture diagrams, and coding prompts instantly. Explore tech stacks from Netflix, Uber, Stripe, and more."
+  : "Narrated, animated walkthroughs of design patterns and real company architectures, one diagram at a time: resilience, data consistency, scaling, event-driven systems, and how Netflix, Stripe, Uber and others are built."
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://sdlc.dev'),
   title: {
-    default: 'SDLC.dev - AI-Powered Software Development Lifecycle Automation',
+    default: SITE_TITLE,
     template: '%s | SDLC.dev',
   },
-  description: 'Transform ideas into production-ready specifications with AI. Generate business analysis, technical specs, architecture diagrams, and coding prompts instantly. Explore tech stacks from Netflix, Uber, Stripe, and more.',
+  description: SITE_DESCRIPTION,
   keywords: [
     'SDLC automation',
     'AI documentation',
@@ -54,8 +61,8 @@ export const metadata: Metadata = {
     locale: 'en_US',
     url: 'https://sdlc.dev',
     siteName: 'SDLC.dev',
-    title: 'SDLC.dev - AI-Powered Software Development Lifecycle Automation',
-    description: 'Transform ideas into production-ready specifications with AI. Generate technical docs, architecture diagrams, and explore real tech stacks from top companies.',
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
     images: [
       {
         url: '/img/og-image.png',
@@ -67,8 +74,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'SDLC.dev - AI-Powered SDLC Automation',
-    description: 'Transform ideas into production-ready specifications with AI. Explore tech stacks from Netflix, Uber, Stripe, and 16+ top tech companies.',
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
     images: ['/img/og-image.png'],
     creator: '@sdlc_dev',
   },

@@ -1,0 +1,1065 @@
+{
+ "id": "durable-workflows",
+ "title": "Durable workflows",
+ "subtitle": "Design pattern",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "meta": {
+  "kind": "pattern",
+  "category": "Messaging",
+  "level": "advanced",
+  "uses": [
+   "retry",
+   "idempotency",
+   "timeout"
+  ],
+  "related": [
+   "saga",
+   "outbox",
+   "retry"
+  ],
+  "blurb": "Write a long business process as ordinary code; an engine records every step so it resumes where it stopped.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ },
+ "diagrams": [
+  {
+   "id": "problem",
+   "kind": "c4",
+   "title": "End of trip: three steps, one process, days apart",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "rider",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Rider",
+     "sub": "ends the trip"
+    },
+    {
+     "id": "trip",
+     "kind": "container",
+     "tone": "core",
+     "label": "Trip service",
+     "sub": "runs the steps in memory"
+    },
+    {
+     "id": "tdb",
+     "kind": "store",
+     "tone": "data",
+     "label": "Trips DB",
+     "sub": "one status column"
+    },
+    {
+     "id": "payments",
+     "kind": "external",
+     "tone": "external",
+     "label": "Card payments",
+     "sub": "charge the rider"
+    },
+    {
+     "id": "email",
+     "kind": "external",
+     "tone": "external",
+     "label": "Email provider",
+     "sub": "send the receipt"
+    },
+    {
+     "id": "payouts",
+     "kind": "external",
+     "tone": "external",
+     "label": "Driver payouts",
+     "sub": "after a 7-day hold"
+    }
+   ],
+   "edges": [
+    {
+     "id": "p1",
+     "from": "rider",
+     "to": "trip",
+     "style": "solid",
+     "label": "end trip"
+    },
+    {
+     "id": "p2",
+     "from": "trip",
+     "to": "payments",
+     "style": "solid",
+     "label": "1 · charge £18 ✓"
+    },
+    {
+     "id": "p3",
+     "from": "trip",
+     "to": "tdb",
+     "style": "solid",
+     "label": "status = CHARGED"
+    },
+    {
+     "id": "p4",
+     "from": "trip",
+     "to": "email",
+     "style": "dashed",
+     "label": "2 · send receipt · process crashes"
+    },
+    {
+     "id": "p5",
+     "from": "trip",
+     "to": "payouts",
+     "style": "dashed",
+     "label": "3 · pay driver in 7 days · forgotten"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call or write"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or retry"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "event or record"
+    }
+   ]
+  },
+  {
+   "id": "naive",
+   "kind": "c4",
+   "title": "Cron, status columns and a chain of queues",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "cron",
+     "kind": "container",
+     "tone": "neutral",
+     "label": "Cron job",
+     "sub": "every 5 min"
+    },
+    {
+     "id": "tdb",
+     "kind": "store",
+     "tone": "data",
+     "label": "Trips table",
+     "sub": "status, attempts"
+    },
+    {
+     "id": "q1",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Step queues",
+     "sub": "one per step"
+    },
+    {
+     "id": "h1",
+     "kind": "container",
+     "tone": "core",
+     "label": "Receipt handler",
+     "sub": "own retries"
+    },
+    {
+     "id": "h2",
+     "kind": "container",
+     "tone": "core",
+     "label": "Payout handler",
+     "sub": "other retries"
+    },
+    {
+     "id": "dlq",
+     "kind": "store",
+     "tone": "data",
+     "label": "Dead-letter queue",
+     "sub": "checked by hand"
+    }
+   ],
+   "edges": [
+    {
+     "id": "n1",
+     "from": "cron",
+     "to": "tdb",
+     "style": "solid",
+     "label": "scan stuck trips"
+    },
+    {
+     "id": "n2",
+     "from": "cron",
+     "to": "q1",
+     "style": "solid",
+     "label": "re-enqueue step"
+    },
+    {
+     "id": "n3",
+     "from": "q1",
+     "to": "h1",
+     "style": "dotted",
+     "label": "deliver"
+    },
+    {
+     "id": "n4",
+     "from": "h1",
+     "to": "tdb",
+     "style": "solid",
+     "label": "set status"
+    },
+    {
+     "id": "n5",
+     "from": "q1",
+     "to": "h2",
+     "style": "dotted",
+     "label": "7-day hold?"
+    },
+    {
+     "id": "n6",
+     "from": "h2",
+     "to": "dlq",
+     "style": "dashed",
+     "label": "gave up · 5 tries"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call or write"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or retry"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "message"
+    }
+   ]
+  },
+  {
+   "id": "structure",
+   "kind": "c4",
+   "title": "An engine records every step; workers run your code",
+   "direction": "RIGHT",
+   "groups": [
+    {
+     "id": "engine",
+     "label": "Workflow engine [service + database]",
+     "tone": "data"
+    },
+    {
+     "id": "workers",
+     "label": "Workers [your code]",
+     "tone": "core"
+    }
+   ],
+   "elements": [
+    {
+     "id": "trip",
+     "kind": "container",
+     "tone": "neutral",
+     "label": "Trip service",
+     "sub": "starts EndOfTrip(trip 42)"
+    },
+    {
+     "id": "api",
+     "kind": "component",
+     "tone": "data",
+     "label": "Engine API",
+     "sub": "start, signal, query",
+     "group": "engine"
+    },
+    {
+     "id": "history",
+     "kind": "store",
+     "tone": "data",
+     "label": "Event history",
+     "sub": "every step of every run",
+     "group": "engine"
+    },
+    {
+     "id": "queues",
+     "kind": "component",
+     "tone": "data",
+     "label": "Task queues",
+     "sub": "work for workers to poll",
+     "group": "engine"
+    },
+    {
+     "id": "timers",
+     "kind": "component",
+     "tone": "data",
+     "label": "Durable timers",
+     "sub": "fire after seconds or months",
+     "group": "engine"
+    },
+    {
+     "id": "wf",
+     "kind": "component",
+     "tone": "core",
+     "label": "Workflow code",
+     "sub": "deterministic · replayable",
+     "group": "workers"
+    },
+    {
+     "id": "act",
+     "kind": "component",
+     "tone": "core",
+     "label": "Activities",
+     "sub": "charge, receipt, payout",
+     "group": "workers"
+    },
+    {
+     "id": "ext",
+     "kind": "external",
+     "tone": "external",
+     "label": "Payments, email, payouts",
+     "sub": "the real side effects"
+    }
+   ],
+   "edges": [
+    {
+     "id": "s1",
+     "from": "trip",
+     "to": "api",
+     "style": "solid",
+     "label": "start workflow"
+    },
+    {
+     "id": "s2",
+     "from": "api",
+     "to": "history",
+     "style": "dotted",
+     "label": "WorkflowExecutionStarted"
+    },
+    {
+     "id": "s3",
+     "from": "queues",
+     "to": "wf",
+     "style": "solid",
+     "label": "workflow task + history"
+    },
+    {
+     "id": "s4",
+     "from": "wf",
+     "to": "history",
+     "style": "dotted",
+     "label": "commands become events"
+    },
+    {
+     "id": "s5",
+     "from": "queues",
+     "to": "act",
+     "style": "solid",
+     "label": "activity task"
+    },
+    {
+     "id": "s6",
+     "from": "act",
+     "to": "ext",
+     "style": "solid",
+     "label": "side effect, retried"
+    },
+    {
+     "id": "s7",
+     "from": "act",
+     "to": "history",
+     "style": "dotted",
+     "label": "result recorded"
+    },
+    {
+     "id": "s8",
+     "from": "timers",
+     "to": "history",
+     "style": "dotted",
+     "label": "TimerFired"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call or task"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "recorded in history"
+    }
+   ]
+  },
+  {
+   "id": "how",
+   "kind": "sequence",
+   "title": "The happy path, with one retry",
+   "participants": [
+    {
+     "id": "trip",
+     "label": "Trip service"
+    },
+    {
+     "id": "engine",
+     "label": "Workflow engine"
+    },
+    {
+     "id": "worker",
+     "label": "Worker"
+    },
+    {
+     "id": "pay",
+     "label": "Card payments"
+    }
+   ],
+   "messages": [
+    {
+     "id": "h1",
+     "from": "trip",
+     "to": "engine",
+     "style": "solid",
+     "label": "start EndOfTrip(trip 42) · recorded"
+    },
+    {
+     "id": "h2",
+     "from": "engine",
+     "to": "worker",
+     "style": "solid",
+     "label": "workflow task: run the code"
+    },
+    {
+     "id": "h3",
+     "from": "worker",
+     "to": "engine",
+     "style": "solid",
+     "label": "command: schedule ChargeCard"
+    },
+    {
+     "id": "h4",
+     "from": "engine",
+     "to": "worker",
+     "style": "solid",
+     "label": "activity task: ChargeCard"
+    },
+    {
+     "id": "h5",
+     "from": "worker",
+     "to": "pay",
+     "style": "solid",
+     "label": "charge £18 · key trip-42-charge"
+    },
+    {
+     "id": "h6",
+     "from": "pay",
+     "to": "worker",
+     "style": "dashed",
+     "label": "no answer in 10 s · timeout"
+    },
+    {
+     "id": "h7",
+     "from": "worker",
+     "to": "pay",
+     "style": "dashed",
+     "label": "retry after 1 s · same key"
+    },
+    {
+     "id": "h8",
+     "from": "pay",
+     "to": "worker",
+     "style": "solid",
+     "label": "charged"
+    },
+    {
+     "id": "h9",
+     "from": "worker",
+     "to": "engine",
+     "style": "solid",
+     "label": "ActivityTaskCompleted · recorded"
+    },
+    {
+     "id": "h10",
+     "from": "worker",
+     "to": "engine",
+     "style": "solid",
+     "label": "receipt sent · start 7-day timer"
+    },
+    {
+     "id": "h11",
+     "from": "engine",
+     "to": "worker",
+     "style": "dotted",
+     "label": "7 days later: TimerFired → PayDriver"
+    }
+   ]
+  },
+  {
+   "id": "crash",
+   "kind": "sequence",
+   "title": "A worker dies mid-way: replay, then carry on",
+   "participants": [
+    {
+     "id": "engine",
+     "label": "Workflow engine"
+    },
+    {
+     "id": "wa",
+     "label": "Worker A"
+    },
+    {
+     "id": "wb",
+     "label": "Worker B"
+    },
+    {
+     "id": "email",
+     "label": "Email provider"
+    }
+   ],
+   "messages": [
+    {
+     "id": "x1",
+     "from": "wa",
+     "to": "engine",
+     "style": "solid",
+     "label": "ChargeCard completed · recorded"
+    },
+    {
+     "id": "x2",
+     "from": "wa",
+     "to": "engine",
+     "style": "dashed",
+     "label": "Worker A crashes · task times out"
+    },
+    {
+     "id": "x3",
+     "from": "engine",
+     "to": "wb",
+     "style": "solid",
+     "label": "workflow task + full event history"
+    },
+    {
+     "id": "x4",
+     "from": "engine",
+     "to": "wb",
+     "style": "dotted",
+     "label": "replay: charge result read from history, not re-run"
+    },
+    {
+     "id": "x5",
+     "from": "wb",
+     "to": "engine",
+     "style": "solid",
+     "label": "next command: schedule SendReceipt"
+    },
+    {
+     "id": "x6",
+     "from": "wb",
+     "to": "email",
+     "style": "solid",
+     "label": "send receipt for trip 42"
+    },
+    {
+     "id": "x7",
+     "from": "wb",
+     "to": "engine",
+     "style": "solid",
+     "label": "SendReceipt completed · recorded"
+    }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "cadence",
+     "kind": "system",
+     "tone": "core",
+     "label": "Cadence",
+     "sub": "built at Uber · open source 2017"
+    },
+    {
+     "id": "temporal",
+     "kind": "system",
+     "tone": "core",
+     "label": "Temporal",
+     "sub": "fork of Cadence · MIT licence"
+    },
+    {
+     "id": "azure",
+     "kind": "system",
+     "tone": "external",
+     "label": "Azure Durable Functions",
+     "sub": "orchestrators replay from history"
+    },
+    {
+     "id": "stepfn",
+     "kind": "system",
+     "tone": "external",
+     "label": "AWS Step Functions",
+     "sub": "Standard up to 1 year · Express 5 min"
+    },
+    {
+     "id": "conductor",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Netflix Conductor",
+     "sub": "archived by Netflix, Dec 2023"
+    },
+    {
+     "id": "condoss",
+     "kind": "system",
+     "tone": "core",
+     "label": "Conductor OSS",
+     "sub": "Orkes and the community"
+    },
+    {
+     "id": "restate",
+     "kind": "system",
+     "tone": "core",
+     "label": "Restate",
+     "sub": "journal of steps, replayed on failure"
+    }
+   ],
+   "edges": [
+    {
+     "id": "w1",
+     "from": "cadence",
+     "to": "temporal",
+     "style": "solid",
+     "label": "forked"
+    },
+    {
+     "id": "w2",
+     "from": "temporal",
+     "to": "azure",
+     "style": "dotted",
+     "label": "same idea: replay code from history"
+    },
+    {
+     "id": "w3",
+     "from": "conductor",
+     "to": "condoss",
+     "style": "solid",
+     "label": "maintained by the community"
+    },
+    {
+     "id": "w4",
+     "from": "temporal",
+     "to": "restate",
+     "style": "dotted",
+     "label": "same idea: a journal per run"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "lineage"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "same idea"
+    }
+   ]
+  },
+  {
+   "id": "related",
+   "kind": "c4",
+   "title": "Related patterns",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "dw",
+     "kind": "container",
+     "tone": "core",
+     "label": "Durable workflow",
+     "sub": "code that survives crashes and waits"
+    },
+    {
+     "id": "retry",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Retry with backoff",
+     "sub": "built into every activity"
+    },
+    {
+     "id": "timeout",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Timeout",
+     "sub": "turns a hang into a retry"
+    },
+    {
+     "id": "idem",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Idempotency",
+     "sub": "a retry has no second effect"
+    },
+    {
+     "id": "saga",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Saga",
+     "sub": "steps with compensations"
+    },
+    {
+     "id": "es",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Event sourcing",
+     "sub": "state rebuilt from a log"
+    },
+    {
+     "id": "outbox",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Transactional outbox",
+     "sub": "one write plus one message"
+    }
+   ],
+   "edges": [
+    {
+     "id": "r1",
+     "from": "retry",
+     "to": "dw",
+     "style": "solid",
+     "label": "the engine retries activities"
+    },
+    {
+     "id": "r2",
+     "from": "timeout",
+     "to": "dw",
+     "style": "solid",
+     "label": "every activity has one"
+    },
+    {
+     "id": "r3",
+     "from": "idem",
+     "to": "dw",
+     "style": "solid",
+     "label": "makes those retries safe"
+    },
+    {
+     "id": "r4",
+     "from": "dw",
+     "to": "saga",
+     "style": "solid",
+     "label": "a good home for the orchestrator"
+    },
+    {
+     "id": "r5",
+     "from": "es",
+     "to": "dw",
+     "style": "dotted",
+     "label": "the history is an event log"
+    },
+    {
+     "id": "r6",
+     "from": "outbox",
+     "to": "dw",
+     "style": "dotted",
+     "label": "lighter, for one step"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "problem",
+   "title": "The problem"
+  },
+  {
+   "id": "naive",
+   "title": "The naive fix"
+  },
+  {
+   "id": "pattern",
+   "title": "The pattern"
+  },
+  {
+   "id": "how",
+   "title": "How it works"
+  },
+  {
+   "id": "failure",
+   "title": "When it goes wrong"
+  },
+  {
+   "id": "tradeoffs",
+   "title": "Trade-offs"
+  },
+  {
+   "id": "wild",
+   "title": "In the wild"
+  },
+  {
+   "id": "related",
+   "title": "Related patterns"
+  },
+  {
+   "id": "recap",
+   "title": "Recap"
+  }
+ ],
+ "shots": [
+  {
+   "id": "dw-half-done",
+   "chapter": "problem",
+   "title": "Half done",
+   "diagram": "problem",
+   "focus": [],
+   "trace": [
+    "p1",
+    "p2",
+    "p3",
+    "p4",
+    "p5"
+   ],
+   "engineer": "Here is an illustrative end of a taxi trip. Three things must happen: charge the rider, send a receipt, and pay the driver after a seven-day hold for disputes. The trip service does it all in memory. The card is charged and the status set. Then the server restarts for a deploy, halfway through the receipt. The rider has paid, has no receipt, and nothing remembers that the driver is owed money next week.",
+   "executive": "Ending a trip means charging the rider, sending a receipt and paying the driver a week later. If the server restarts halfway, the rest never happens."
+  },
+  {
+   "id": "dw-naive",
+   "chapter": "naive",
+   "title": "Cron and queues",
+   "diagram": "naive",
+   "focus": [],
+   "trace": [
+    "n1",
+    "n2",
+    "n3",
+    "n4",
+    "n5",
+    "n6"
+   ],
+   "engineer": "The usual fix is a cron job and more status columns. Every five minutes it scans for stuck trips and re-queues the next step. Each step gets a queue and a handler, and each handler has its own retry count, its own idea of a timeout, and its own dead-letter queue. The process still exists, but it is now smeared across a table, a scheduler and several handlers. And where does the seven-day wait live? Nobody can read the whole flow in one place.",
+   "executive": "Teams patch it with scheduled jobs, status flags and queues. It works, but the process ends up scattered and nobody can see it whole."
+  },
+  {
+   "id": "dw-structure",
+   "chapter": "pattern",
+   "title": "Engine and workers",
+   "diagram": "structure",
+   "focus": [],
+   "trace": [
+    "s1",
+    "s2",
+    "s3",
+    "s4",
+    "s5",
+    "s6",
+    "s7",
+    "s8"
+   ],
+   "engineer": "A durable workflow moves that bookkeeping into an engine. The trip service starts a workflow, and the engine records the start in an event history. Workers, running your code, poll task queues. Workflow code decides what happens next; each decision becomes an event. Activities do the real work, such as charging a card, and their results are recorded too. Timers live in the engine, not in memory. So the history always says exactly how far each run has got.",
+   "executive": "An engine writes down every step of every process. Your servers do the work, and the engine always knows how far each one got."
+  },
+  {
+   "id": "dw-code",
+   "chapter": "pattern",
+   "card": {
+    "heading": "The workflow reads like a script",
+    "kind": "compare",
+    "points": [
+     "Line of workflow code | What the engine does",
+     "charge = chargeCard(trip) | Runs an activity, retries it, records the result",
+     "sendReceipt(trip, charge) | Another activity, another recorded result",
+     "sleep(7 days) | A durable timer: no process waits",
+     "await signal or timer | A dispute can arrive at any time",
+     "payDriver(trip) | Runs a week later, on any worker"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The appeal is the code itself. The workflow reads like a plain script: charge the card, send the receipt, sleep for seven days, pay the driver. Each call to an activity is retried and its result is saved. The sleep is a durable timer, so no process sits waiting for a week. And the workflow can wait for a signal, say a dispute raised by support, at the same time as the timer. The whole process is one function you can read top to bottom.",
+   "executive": "The process is written as one short, readable script. Waiting a week is one line, and nothing has to stay running for it."
+  },
+  {
+   "id": "dw-how",
+   "chapter": "how",
+   "title": "Happy path",
+   "diagram": "how",
+   "focus": [],
+   "trace": [
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "h7",
+    "h8",
+    "h9",
+    "h10",
+    "h11"
+   ],
+   "engineer": "Step by step. The trip service starts the workflow for trip forty-two. A worker runs the code until it needs an activity, and sends back a command: schedule the charge. The engine hands out the activity task. The payment call hangs, so the ten-second timeout fires and the engine retries after a second, with the same idempotency key. This time it succeeds and the result is recorded. The receipt goes out, a seven-day timer starts, and a week later the timer fires and the driver is paid.",
+   "executive": "Each step is handed out, retried if needed, and recorded when done. A week later the engine wakes the process up to pay the driver."
+  },
+  {
+   "id": "dw-crash",
+   "chapter": "failure",
+   "title": "Replay",
+   "diagram": "crash",
+   "focus": [],
+   "trace": [
+    "x1",
+    "x2",
+    "x3",
+    "x4",
+    "x5",
+    "x6",
+    "x7"
+   ],
+   "engineer": "Now the crash. Worker A charges the card and the result is recorded, then Worker A dies. Its task times out, and the engine gives the workflow to Worker B with the full history. Worker B replays the code from the top. When it reaches the charge, it does not call payments again: the result is read straight from the history. Its local variables now match the moment of the crash, so it carries on and sends the receipt. That is the whole trick: replay, not snapshots.",
+   "executive": "If a server dies, another one re-reads the history, skips what is already done, and carries on from the exact step it stopped at."
+  },
+  {
+   "id": "dw-rules",
+   "chapter": "failure",
+   "card": {
+    "heading": "Replay has rules",
+    "kind": "compare",
+    "points": [
+     "Do not, in workflow code | Do instead",
+     "Read the clock | Use the engine's replay-safe time",
+     "Generate random numbers or IDs | Use the SDK's helper, or an activity",
+     "Call a network or database | Put it in an activity",
+     "Sleep the thread | Use a durable timer",
+     "Change running code freely | Patch, or version the workflow"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Replay only works if the workflow code makes the same decisions every time. So it must not read the clock, roll a random number, or call the network directly: those go in activities, or in the engine's replay-safe helpers. Changing the code breaks this too. A workflow that started last week replays against today's code, and if the steps no longer match its history, the engine raises a non-determinism error. Long-running workflows need patching or versioning, planned from the start.",
+   "executive": "The process code must behave the same every time it is re-read, and changing it while old runs are still waiting needs careful versioning."
+  },
+  {
+   "id": "dw-edges",
+   "chapter": "failure",
+   "card": {
+    "heading": "Where it still goes wrong",
+    "points": [
+     "An activity can run twice: make it idempotent",
+     "No timeout set means a hung call is never retried",
+     "Unlimited retries by default can hide a real bug",
+     "Histories have limits: start a fresh run for endless loops",
+     "The engine is now critical infrastructure"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Some things the engine cannot fix for you. An activity can run more than once, say when a worker dies after charging but before reporting back, so activities must be idempotent; pass an idempotency key to the payment provider. Set a timeout on every activity. Temporal retries activities with no attempt limit by default, which can hide a bug for days. Histories have size limits, so endless loops must restart as a fresh run. And the engine itself becomes critical infrastructure.",
+   "executive": "Steps can still run twice, so they must be safe to repeat. Every step needs a time limit, and the engine itself must be run well."
+  },
+  {
+   "id": "dw-tradeoffs",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "What you gain, what you pay",
+    "kind": "compare",
+    "points": [
+     "You gain | You pay",
+     "The whole process in one readable function | A new platform to run, or a managed service to pay for",
+     "Retries, timeouts and timers built in | Determinism rules your team must learn",
+     "A full history of every run, for debugging | Versioning care for long-running code",
+     "Waits of days or months cost nothing | Extra latency on every step"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "The trade-off is clear. You gain the whole process in one readable function, with retries, timeouts and timers built in, and a full history of every run when something goes wrong. You pay for it with a new piece of infrastructure, or a managed service bill. Your team must learn the determinism rules and version long-running code with care. And every step is a round trip through the engine and its database, which adds latency.",
+   "executive": "You get reliable, readable processes with a full audit trail. You pay with a new platform, new rules for developers, and some extra delay per step."
+  },
+  {
+   "id": "dw-whennot",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "When not to use it",
+    "points": [
+     "One request, one database write: a transaction is enough",
+     "One write plus one message: use an outbox",
+     "Latency-critical paths where each step must take milliseconds",
+     "High-volume streaming: use a stream processor",
+     "A team with no capacity to run another platform"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "When not to use it. If the work fits in one request and one database transaction, a transaction is simpler. If you need to save a row and publish one message, the transactional outbox is lighter. Paths where every millisecond counts suffer from the extra round trips. High-volume event streams belong in a stream processor. And if nobody can own another stateful platform, choose a managed service, or wait.",
+   "executive": "Skip it for simple, quick operations and high-volume streams. Use it when a process has several steps, can take a long time, and must finish."
+  },
+  {
+   "id": "dw-wild",
+   "chapter": "wild",
+   "title": "Lineage",
+   "diagram": "wild",
+   "focus": [],
+   "trace": [
+    "w1",
+    "w2",
+    "w3",
+    "w4"
+   ],
+   "engineer": "In the wild. Uber built Cadence and open-sourced it in twenty seventeen; Temporal began as a fork of Cadence and is MIT licensed. Azure Durable Functions uses the same idea: orchestrator functions replay from their history, so they must be deterministic. Netflix built Conductor; Netflix archived its repository in December twenty twenty-three, and Conductor OSS is now maintained by Orkes and the community. Restate keeps a journal of every step and skips completed steps on retry.",
+   "executive": "Uber, Netflix, Microsoft and Amazon all have versions of this. Temporal, a fork of Uber's Cadence, is the best-known open-source one."
+  },
+  {
+   "id": "dw-stepfn",
+   "chapter": "wild",
+   "card": {
+    "heading": "AWS Step Functions: two types",
+    "kind": "compare",
+    "points": [
+     "Standard | Express",
+     "Up to one year | Up to five minutes",
+     "Exactly-once workflow execution | At-least-once (async) or at-most-once (sync)",
+     "Suits non-idempotent steps, such as payments | Suits idempotent, high-volume steps",
+     "Billed per state transition | Billed per execution, duration and memory"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "AWS Step Functions shows the trade-off in its two workflow types. Standard workflows run for up to a year, follow an exactly-once model, persist state between steps, and are billed per state transition; AWS suggests them for non-idempotent work such as payments. Express workflows run for at most five minutes, are at-least-once when asynchronous, and are billed by executions, duration and memory. Durability costs money, so you choose it per workflow.",
+   "executive": "Amazon offers a durable, year-long version and a cheap, five-minute version. You pay for durability only where you need it."
+  },
+  {
+   "id": "dw-related",
+   "chapter": "related",
+   "title": "Neighbours",
+   "diagram": "related",
+   "focus": [],
+   "trace": [
+    "r1",
+    "r2",
+    "r3",
+    "r4",
+    "r5",
+    "r6"
+   ],
+   "engineer": "Its neighbours. Retry with backoff and timeouts are built into every activity, and idempotency is what makes those retries safe. A saga is a natural fit: the workflow is the orchestrator, and compensations are just more activities. The event history is a form of event sourcing: state rebuilt by replaying a log. And for the simple case, one database write plus one message, the transactional outbox does the job with no engine at all.",
+   "executive": "It combines retries, timeouts and safe-to-repeat steps, and it is a natural home for sagas. For simpler cases, an outbox is enough."
+  },
+  {
+   "id": "dw-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "A process that must finish needs its progress written down",
+     "Record every step; replay the code to resume",
+     "Workflow code deterministic, activities idempotent"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. A process that must finish, across crashes and days of waiting, cannot keep its progress in memory. A durable workflow records every step, and resumes by replaying the code against that history. And it works only if the workflow code is deterministic and the activities are idempotent.",
+   "executive": "Write progress down. Replay to resume. Keep the process code predictable and the steps safe to repeat."
+  }
+ ]
+}

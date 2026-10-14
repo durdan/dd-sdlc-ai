@@ -1,0 +1,1013 @@
+{
+ "id": "backpressure",
+ "title": "Backpressure",
+ "subtitle": "Design pattern",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "meta": {
+  "kind": "pattern",
+  "category": "Scaling",
+  "level": "intermediate",
+  "uses": [
+   "rate-limiting"
+  ],
+  "related": [
+   "rate-limiting",
+   "bulkhead",
+   "timeout"
+  ],
+  "blurb": "Let the slow side set the pace: bound every buffer, signal demand upstream, and decide what happens when it is full.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ },
+ "diagrams": [
+  {
+   "id": "pileup",
+   "kind": "c4",
+   "title": "A fast producer, a slow consumer, an unbounded queue",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "producer",
+     "kind": "container",
+     "tone": "core",
+     "label": "Producer",
+     "sub": "1,000 events/s"
+    },
+    {
+     "id": "queue",
+     "kind": "store",
+     "tone": "data",
+     "label": "Unbounded queue",
+     "sub": "grows 500/s"
+    },
+    {
+     "id": "consumer",
+     "kind": "container",
+     "tone": "core",
+     "label": "Consumer",
+     "sub": "500 events/s"
+    },
+    {
+     "id": "db",
+     "kind": "store",
+     "tone": "data",
+     "label": "Database",
+     "sub": "the real bottleneck"
+    },
+    {
+     "id": "heap",
+     "kind": "store",
+     "tone": "neutral",
+     "label": "Process memory",
+     "sub": "holds every queued event"
+    }
+   ],
+   "edges": [
+    {
+     "id": "p1",
+     "from": "producer",
+     "to": "queue",
+     "style": "solid",
+     "label": "enqueue · 1,000/s"
+    },
+    {
+     "id": "p2",
+     "from": "queue",
+     "to": "consumer",
+     "style": "solid",
+     "label": "dequeue · 500/s"
+    },
+    {
+     "id": "p3",
+     "from": "consumer",
+     "to": "db",
+     "style": "solid",
+     "label": "write each event"
+    },
+    {
+     "id": "p4",
+     "from": "queue",
+     "to": "heap",
+     "style": "dashed",
+     "label": "backlog grows until out of memory"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "data"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "overflow or failure"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "demand signal"
+    }
+   ]
+  },
+  {
+   "id": "naive",
+   "kind": "sequence",
+   "title": "Make the queue bigger",
+   "participants": [
+    {
+     "id": "producer",
+     "label": "Producer"
+    },
+    {
+     "id": "queue",
+     "label": "Queue"
+    },
+    {
+     "id": "consumer",
+     "label": "Consumer"
+    },
+    {
+     "id": "ops",
+     "label": "Operator"
+    }
+   ],
+   "messages": [
+    {
+     "id": "n1",
+     "from": "producer",
+     "to": "queue",
+     "style": "solid",
+     "label": "1,000 events/s"
+    },
+    {
+     "id": "n2",
+     "from": "queue",
+     "to": "consumer",
+     "style": "solid",
+     "label": "500 events/s"
+    },
+    {
+     "id": "n3",
+     "from": "ops",
+     "to": "queue",
+     "style": "solid",
+     "label": "double the memory"
+    },
+    {
+     "id": "n4",
+     "from": "producer",
+     "to": "queue",
+     "style": "solid",
+     "label": "still 1,000 events/s"
+    },
+    {
+     "id": "n5",
+     "from": "queue",
+     "to": "consumer",
+     "style": "solid",
+     "label": "each event waits longer and longer"
+    },
+    {
+     "id": "n6",
+     "from": "queue",
+     "to": "ops",
+     "style": "solid",
+     "label": "out of memory anyway · later, more lost"
+    }
+   ]
+  },
+  {
+   "id": "structure",
+   "kind": "c4",
+   "title": "Bounded buffer plus a demand signal",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "source",
+     "kind": "external",
+     "tone": "external",
+     "label": "Event source",
+     "sub": "cannot always wait"
+    },
+    {
+     "id": "producer",
+     "kind": "container",
+     "tone": "core",
+     "label": "Producer",
+     "sub": "sends only what was asked for"
+    },
+    {
+     "id": "buffer",
+     "kind": "store",
+     "tone": "data",
+     "label": "Bounded buffer",
+     "sub": "capacity 1,000"
+    },
+    {
+     "id": "consumer",
+     "kind": "container",
+     "tone": "core",
+     "label": "Consumer",
+     "sub": "sets the pace"
+    },
+    {
+     "id": "policy",
+     "kind": "component",
+     "tone": "stream",
+     "label": "Overflow policy",
+     "sub": "block · drop · latest · reject"
+    },
+    {
+     "id": "metrics",
+     "kind": "container",
+     "tone": "neutral",
+     "label": "Metrics",
+     "sub": "depth, drops, waits"
+    }
+   ],
+   "edges": [
+    {
+     "id": "s0",
+     "from": "source",
+     "to": "producer",
+     "style": "solid",
+     "label": "events arrive"
+    },
+    {
+     "id": "s1",
+     "from": "producer",
+     "to": "buffer",
+     "style": "solid",
+     "label": "send up to demand"
+    },
+    {
+     "id": "s2",
+     "from": "buffer",
+     "to": "consumer",
+     "style": "solid",
+     "label": "deliver"
+    },
+    {
+     "id": "s3",
+     "from": "consumer",
+     "to": "producer",
+     "style": "dotted",
+     "label": "demand: send me n more"
+    },
+    {
+     "id": "s4",
+     "from": "buffer",
+     "to": "policy",
+     "style": "dashed",
+     "label": "full"
+    },
+    {
+     "id": "s5",
+     "from": "policy",
+     "to": "source",
+     "style": "dashed",
+     "label": "block, reject or drop"
+    },
+    {
+     "id": "s6",
+     "from": "policy",
+     "to": "metrics",
+     "style": "dotted",
+     "label": "record every drop and wait"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "data"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "overflow or failure"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "demand signal"
+    }
+   ]
+  },
+  {
+   "id": "flow",
+   "kind": "sequence",
+   "title": "Demand as credit: request(n)",
+   "participants": [
+    {
+     "id": "source",
+     "label": "Event source"
+    },
+    {
+     "id": "producer",
+     "label": "Publisher"
+    },
+    {
+     "id": "consumer",
+     "label": "Subscriber"
+    }
+   ],
+   "messages": [
+    {
+     "id": "h1",
+     "from": "consumer",
+     "to": "producer",
+     "style": "solid",
+     "label": "subscribe"
+    },
+    {
+     "id": "h2",
+     "from": "producer",
+     "to": "consumer",
+     "style": "solid",
+     "label": "onSubscribe(subscription)"
+    },
+    {
+     "id": "h3",
+     "from": "consumer",
+     "to": "producer",
+     "style": "solid",
+     "label": "request(16)"
+    },
+    {
+     "id": "h4",
+     "from": "producer",
+     "to": "source",
+     "style": "solid",
+     "label": "read up to 16"
+    },
+    {
+     "id": "h5",
+     "from": "producer",
+     "to": "consumer",
+     "style": "solid",
+     "label": "onNext × 16"
+    },
+    {
+     "id": "h6",
+     "from": "consumer",
+     "to": "producer",
+     "style": "solid",
+     "label": "handled 8 · request(8)"
+    },
+    {
+     "id": "h7",
+     "from": "producer",
+     "to": "consumer",
+     "style": "solid",
+     "label": "onNext × 8"
+    },
+    {
+     "id": "h8",
+     "from": "producer",
+     "to": "source",
+     "style": "solid",
+     "label": "demand is 0 · stop reading"
+    },
+    {
+     "id": "h9",
+     "from": "consumer",
+     "to": "producer",
+     "style": "solid",
+     "label": "request(8)"
+    },
+    {
+     "id": "h10",
+     "from": "producer",
+     "to": "source",
+     "style": "solid",
+     "label": "resume reading"
+    }
+   ]
+  },
+  {
+   "id": "tcp",
+   "kind": "sequence",
+   "title": "TCP: the receive window",
+   "participants": [
+    {
+     "id": "sender",
+     "label": "Sender"
+    },
+    {
+     "id": "receiver",
+     "label": "Receiver's TCP buffer"
+    },
+    {
+     "id": "app",
+     "label": "Receiving app"
+    }
+   ],
+   "messages": [
+    {
+     "id": "t1",
+     "from": "sender",
+     "to": "receiver",
+     "style": "solid",
+     "label": "data, up to the window"
+    },
+    {
+     "id": "t2",
+     "from": "receiver",
+     "to": "sender",
+     "style": "solid",
+     "label": "ACK · window 0: buffer full"
+    },
+    {
+     "id": "t3",
+     "from": "sender",
+     "to": "receiver",
+     "style": "solid",
+     "label": "window probe"
+    },
+    {
+     "id": "t4",
+     "from": "receiver",
+     "to": "sender",
+     "style": "solid",
+     "label": "ACK · still 0"
+    },
+    {
+     "id": "t5",
+     "from": "app",
+     "to": "receiver",
+     "style": "solid",
+     "label": "app reads, frees space"
+    },
+    {
+     "id": "t6",
+     "from": "receiver",
+     "to": "sender",
+     "style": "solid",
+     "label": "ACK · window opens"
+    },
+    {
+     "id": "t7",
+     "from": "sender",
+     "to": "receiver",
+     "style": "solid",
+     "label": "sending resumes"
+    }
+   ]
+  },
+  {
+   "id": "pipeline",
+   "kind": "c4",
+   "title": "Backpressure travels end to end",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "client",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Clients"
+    },
+    {
+     "id": "gateway",
+     "kind": "container",
+     "tone": "core",
+     "label": "Gateway",
+     "sub": "the edge: can say no"
+    },
+    {
+     "id": "ingest",
+     "kind": "container",
+     "tone": "core",
+     "label": "Ingest",
+     "sub": "bounded buffer"
+    },
+    {
+     "id": "transform",
+     "kind": "container",
+     "tone": "core",
+     "label": "Transform",
+     "sub": "bounded buffer"
+    },
+    {
+     "id": "writer",
+     "kind": "container",
+     "tone": "core",
+     "label": "Writer",
+     "sub": "bounded buffer"
+    },
+    {
+     "id": "db",
+     "kind": "store",
+     "tone": "data",
+     "label": "Database",
+     "sub": "slow: disk saturated"
+    }
+   ],
+   "edges": [
+    {
+     "id": "f1",
+     "from": "client",
+     "to": "gateway",
+     "style": "solid",
+     "label": "requests"
+    },
+    {
+     "id": "f2",
+     "from": "gateway",
+     "to": "ingest",
+     "style": "solid",
+     "label": "events"
+    },
+    {
+     "id": "f3",
+     "from": "ingest",
+     "to": "transform",
+     "style": "solid",
+     "label": "events"
+    },
+    {
+     "id": "f4",
+     "from": "transform",
+     "to": "writer",
+     "style": "solid",
+     "label": "events"
+    },
+    {
+     "id": "f5",
+     "from": "writer",
+     "to": "db",
+     "style": "dashed",
+     "label": "writes slow down"
+    },
+    {
+     "id": "b1",
+     "from": "writer",
+     "to": "transform",
+     "style": "dotted",
+     "label": "no demand"
+    },
+    {
+     "id": "b2",
+     "from": "transform",
+     "to": "ingest",
+     "style": "dotted",
+     "label": "no demand"
+    },
+    {
+     "id": "b3",
+     "from": "ingest",
+     "to": "gateway",
+     "style": "dotted",
+     "label": "no demand"
+    },
+    {
+     "id": "b4",
+     "from": "gateway",
+     "to": "client",
+     "style": "dashed",
+     "label": "503 · retry later"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "data"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "overflow or failure"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "demand signal"
+    }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "idea",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Demand flows upstream",
+     "sub": "the receiver sets the pace"
+    },
+    {
+     "id": "rs",
+     "kind": "system",
+     "tone": "core",
+     "label": "Reactive Streams",
+     "sub": "request(n) · Java 9 Flow equivalent"
+    },
+    {
+     "id": "tcpw",
+     "kind": "system",
+     "tone": "stream",
+     "label": "TCP",
+     "sub": "receive window"
+    },
+    {
+     "id": "kafka",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Kafka consumers",
+     "sub": "pull at their own pace"
+    },
+    {
+     "id": "node",
+     "kind": "container",
+     "tone": "core",
+     "label": "Node.js streams",
+     "sub": "highWaterMark · drain"
+    },
+    {
+     "id": "pekko",
+     "kind": "container",
+     "tone": "core",
+     "label": "Akka / Pekko Streams",
+     "sub": "bounded buffers"
+    },
+    {
+     "id": "reactor",
+     "kind": "container",
+     "tone": "core",
+     "label": "Project Reactor",
+     "sub": "Flux · overflow strategies"
+    },
+    {
+     "id": "rxjava",
+     "kind": "container",
+     "tone": "core",
+     "label": "RxJava Flowable",
+     "sub": "BUFFER · DROP · LATEST"
+    },
+    {
+     "id": "h2",
+     "kind": "system",
+     "tone": "stream",
+     "label": "HTTP/2",
+     "sub": "per-stream windows"
+    },
+    {
+     "id": "grpc",
+     "kind": "container",
+     "tone": "stream",
+     "label": "gRPC streaming",
+     "sub": "flow control from the transport"
+    }
+   ],
+   "edges": [
+    {
+     "id": "w1",
+     "from": "idea",
+     "to": "rs",
+     "style": "solid",
+     "label": "standardised for the JVM"
+    },
+    {
+     "id": "w2",
+     "from": "rs",
+     "to": "pekko",
+     "style": "solid",
+     "label": "implements"
+    },
+    {
+     "id": "w3",
+     "from": "rs",
+     "to": "reactor",
+     "style": "solid",
+     "label": "implements"
+    },
+    {
+     "id": "w4",
+     "from": "rs",
+     "to": "rxjava",
+     "style": "solid",
+     "label": "implements"
+    },
+    {
+     "id": "w5",
+     "from": "idea",
+     "to": "tcpw",
+     "style": "solid",
+     "label": "in the network"
+    },
+    {
+     "id": "w6",
+     "from": "tcpw",
+     "to": "h2",
+     "style": "solid",
+     "label": "same idea per stream"
+    },
+    {
+     "id": "w7",
+     "from": "h2",
+     "to": "grpc",
+     "style": "solid",
+     "label": "carries"
+    },
+    {
+     "id": "w8",
+     "from": "idea",
+     "to": "kafka",
+     "style": "dotted",
+     "label": "pull, not push"
+    },
+    {
+     "id": "w9",
+     "from": "idea",
+     "to": "node",
+     "style": "dotted",
+     "label": "write() returns false"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "problem",
+   "title": "The problem"
+  },
+  {
+   "id": "naive",
+   "title": "The naive fix"
+  },
+  {
+   "id": "pattern",
+   "title": "The pattern"
+  },
+  {
+   "id": "how",
+   "title": "How it works"
+  },
+  {
+   "id": "failure",
+   "title": "When it goes wrong"
+  },
+  {
+   "id": "tradeoffs",
+   "title": "Trade-offs"
+  },
+  {
+   "id": "wild",
+   "title": "In the wild"
+  },
+  {
+   "id": "related",
+   "title": "Related patterns"
+  },
+  {
+   "id": "recap",
+   "title": "Recap"
+  }
+ ],
+ "shots": [
+  {
+   "id": "bp-problem",
+   "chapter": "problem",
+   "diagram": "pileup",
+   "focus": [],
+   "trace": [],
+   "engineer": "Here is a simple pipeline. A producer receives events, a thousand a second, and puts them on a queue. A consumer takes them off and writes each one to a database. The database is slower than the producer, so the consumer manages only five hundred a second. Nothing has failed, and every part works on its own. The two halves simply run at different speeds, and nobody has told the producer.",
+   "executive": "One part of the system produces work twice as fast as the next part can handle it."
+  },
+  {
+   "id": "bp-pileup",
+   "title": "Pile-up",
+   "chapter": "problem",
+   "diagram": "pileup",
+   "focus": [],
+   "trace": [
+    "p1",
+    "p2",
+    "p3",
+    "p4"
+   ],
+   "engineer": "Follow the arithmetic. A thousand in, five hundred out, so the queue grows by five hundred events every second. After a minute it holds thirty thousand; after an hour, nearly two million, and a new event waits an hour to be handled. Latency climbs without limit. An unbounded queue hides the problem: dashboards look calm until memory runs out and the process dies, taking every queued event with it.",
+   "executive": "The backlog grows every second, so delays get longer and longer until the system runs out of memory and crashes."
+  },
+  {
+   "id": "bp-naive",
+   "title": "Bigger queue",
+   "chapter": "naive",
+   "diagram": "naive",
+   "focus": [],
+   "trace": [
+    "n1",
+    "n2",
+    "n3",
+    "n4",
+    "n5",
+    "n6"
+   ],
+   "engineer": "The obvious fix is a bigger queue, or more memory. It buys time, nothing more. The rates have not changed, so the backlog still grows by five hundred a second. The crash simply arrives later, and more events are lost when it does. Meanwhile every event is older by the time it is handled, so the consumer acts on stale data. A buffer can absorb a burst. It cannot fix a rate that is too high for ever.",
+   "executive": "Adding memory only delays the crash and makes the delays worse. A buffer can soak up a short spike, not a permanent mismatch."
+  },
+  {
+   "id": "bp-structure",
+   "title": "Demand",
+   "chapter": "pattern",
+   "diagram": "structure",
+   "focus": [],
+   "trace": [
+    "s0",
+    "s1",
+    "s2",
+    "s3"
+   ],
+   "engineer": "Backpressure turns this round: the consumer sets the pace. There are three parts. A bounded buffer with a fixed capacity, say a thousand events. A demand signal, where the consumer tells the producer how many more it can take. And a producer that only sends what has been asked for. When the consumer slows, demand dries up and the producer slows with it. The buffer cannot grow without limit, because nothing is sent without permission.",
+   "executive": "The slow part tells the fast part how much it can take, and the fast part sends no more than that."
+  },
+  {
+   "id": "bp-full",
+   "title": "When full",
+   "chapter": "pattern",
+   "diagram": "structure",
+   "focus": [],
+   "trace": [
+    "s4",
+    "s5",
+    "s6"
+   ],
+   "engineer": "Sometimes the source cannot simply wait. Clicks, sensor readings and incoming requests keep arriving whether we like it or not. So when the buffer is full, an overflow policy decides what happens: block the producer, reject the new item, drop the oldest, or keep only the latest value. Whatever the policy, record it. Buffer depth, wait time and drop counts are the metrics that reveal a slow consumer before users notice.",
+   "executive": "When the buffer fills and the source cannot slow down, a deliberate rule decides what waits, what is rejected and what is thrown away, and it is measured."
+  },
+  {
+   "id": "bp-how",
+   "title": "request(n)",
+   "chapter": "how",
+   "diagram": "flow",
+   "focus": [],
+   "trace": [
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "h7",
+    "h8",
+    "h9",
+    "h10"
+   ],
+   "engineer": "This is the Reactive Streams protocol. The subscriber subscribes and gets a subscription back, but nothing flows yet. It calls request sixteen, and the publisher may now send at most sixteen items. As the subscriber works through them, it asks for more, eight at a time. When outstanding demand reaches zero, the publisher stops reading from its source, and a fresh request starts it again. Demand is credit: the publisher spends it, and the subscriber tops it up.",
+   "executive": "The consumer hands out credit, a number of items it can take, and the producer stops when the credit runs out."
+  },
+  {
+   "id": "bp-tcp",
+   "title": "TCP window",
+   "chapter": "how",
+   "diagram": "tcp",
+   "focus": [],
+   "trace": [
+    "t1",
+    "t2",
+    "t3",
+    "t4",
+    "t5",
+    "t6",
+    "t7"
+   ],
+   "engineer": "The oldest example is TCP. Every acknowledgement carries a window: how many more bytes the receiver is prepared to accept, which tracks the buffer space it has free. If the receiving application stops reading, the buffer fills and the window falls to zero. The sender stops, and only sends small probes to see whether the window has reopened. When the application reads again, the window opens and data flows. HTTP 2 applies the same credit idea to each stream.",
+   "executive": "The internet has worked this way for decades: a receiver advertises how much room it has, and senders never send more than that."
+  },
+  {
+   "id": "bp-pipeline",
+   "title": "Propagate",
+   "chapter": "failure",
+   "diagram": "pipeline",
+   "focus": [],
+   "trace": [
+    "f5",
+    "b1",
+    "b2",
+    "b3",
+    "b4"
+   ],
+   "engineer": "What happens when the database slows down in a longer pipeline? Backpressure has to travel end to end. The writer stops asking for work. The transform's buffer fills, so it stops asking too. Then ingest, then the gateway. Each stage holds only its small, bounded buffer. At the edge, something must say no: the gateway rejects new requests with a clear retry-later response instead of queueing them. If any stage in the middle has an unbounded queue, the signal stops there, and that queue grows instead.",
+   "executive": "The slowdown passes back stage by stage until the front door politely turns new work away, rather than letting it pile up somewhere inside."
+  },
+  {
+   "id": "bp-edges",
+   "chapter": "failure",
+   "card": {
+    "heading": "Where it still goes wrong",
+    "points": [
+     "Unbounded buffers hiding in library defaults",
+     "Both sides blocked, waiting on each other",
+     "Drops that nobody counts",
+     "Clients that retry a rejection at once"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Four traps. Unbounded buffers hide in defaults: Reactor's buffer strategy, the default for Flux create, is unbounded, and so is RxJava's plain on-backpressure-buffer. Blocking can deadlock; gRPC's guide warns of it when client and server both read synchronously. Drops that nobody counts lose data silently. And clients that retry a rejection straight away turn shed load into more load, so they need backoff and jitter.",
+   "executive": "Watch for hidden unlimited buffers, two sides waiting on each other, losses nobody counts, and clients that retry too eagerly."
+  },
+  {
+   "id": "bp-strategies",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "When the buffer is full",
+    "kind": "compare",
+    "points": [
+     "Strategy | What it costs",
+     "Block the producer | Nothing lost; the wait spreads upstream",
+     "Bounded buffer | Absorbs bursts; adds delay",
+     "Drop newest or oldest | Stays fast; loses data",
+     "Sample: keep the latest | Current value only; misses the in-between",
+     "Shed load at the edge | Clients see errors and must retry",
+     "Scale out consumers | Fixes the rate, if the bottleneck scales"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Each strategy has a price. Blocking loses nothing, but the wait spreads upstream to whoever is calling. A bounded buffer absorbs bursts at the cost of delay. Dropping, newest or oldest, keeps the system fast but loses data: fine for samples, wrong for orders. Keeping only the latest value suits things like positions on a map, where only now matters. Shedding at the edge hands the problem to clients. And scaling out consumers fixes the rate itself, if the bottleneck can scale.",
+   "executive": "Every option trades something: waiting, delay, lost data, errors for clients, or the cost of more machines."
+  },
+  {
+   "id": "bp-whennot",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "When not to use it",
+    "points": [
+     "Plain request and response: the caller already waits",
+     "Every item must be kept and the source never slows: use a durable log",
+     "Short, predictable bursts: a modest bounded buffer may be enough",
+     "A consumer that is simply too slow: fix or scale it"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "When is it the wrong tool? A plain synchronous call already has backpressure built in, because the caller waits for the answer. If every item must be kept and the source will not slow down, a durable log on disk can be the buffer, with consumers pulling at their own pace. Short, predictable bursts may only need a modest bounded buffer. And if the consumer is simply too slow, fix or scale it; backpressure only stops the damage spreading.",
+   "executive": "Simple request-and-wait calls already have it built in, and sometimes the right answer is a durable log or a faster consumer."
+  },
+  {
+   "id": "bp-wild",
+   "title": "Lineage",
+   "chapter": "wild",
+   "diagram": "wild",
+   "focus": [],
+   "trace": [
+    "w1",
+    "w2",
+    "w3",
+    "w4",
+    "w5",
+    "w6",
+    "w7",
+    "w8",
+    "w9"
+   ],
+   "engineer": "In the wild. The Reactive Streams specification standardises demand on the JVM with request n, and Java 9's Flow interfaces are equivalent. Akka and Pekko Streams, Project Reactor and RxJava's Flowable are built on it. In the network, TCP has its receive window, HTTP 2 has per-stream windows, and gRPC streaming relies on its transport. Kafka consumers pull, so a slow one falls behind and catches up. And in Node.js, write returns false past the high water mark, until a drain event.",
+   "executive": "Every major streaming library and network protocol has a version of this, from TCP to Kafka to Node.js."
+  },
+  {
+   "id": "bp-related",
+   "chapter": "related",
+   "card": {
+    "heading": "Neighbours",
+    "kind": "compare",
+    "points": [
+     "Pattern | How it relates",
+     "Rate limiting | A fixed cap agreed in advance, not the consumer's live pace",
+     "Load shedding | What backpressure becomes at the edge",
+     "Bulkhead | Bounds resources per dependency",
+     "Timeout | Bounds how long a blocked producer waits",
+     "Circuit breaker | Stops calling what fails, rather than slowing",
+     "Autoscaling | Raises the consumer's rate; backpressure holds until it lands"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Its neighbours. Rate limiting caps traffic at a fixed rate agreed in advance; backpressure follows the consumer's real pace from moment to moment. Load shedding is what backpressure becomes at the edge, when there is nowhere left to push back. A bulkhead bounds resources for each dependency. A timeout limits how long a blocked producer waits. A circuit breaker stops calls to something failing, rather than slowing them. And autoscaling raises the consumer's rate, while backpressure holds the line until the new capacity arrives.",
+   "executive": "Rate limits, load shedding, timeouts and autoscaling all work alongside backpressure to keep a busy system stable."
+  },
+  {
+   "id": "bp-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "An unbounded queue hides a rate mismatch until it crashes",
+     "Bound every buffer; let the consumer signal demand, end to end",
+     "When full, choose on purpose: block, drop, sample, shed or scale"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. An unbounded queue does not fix a fast producer; it hides the problem until memory runs out. Bound every buffer, and let the consumer signal how much it can take, all the way back to the edge. And when a buffer fills anyway, decide on purpose: block, drop, sample, shed or scale, and measure what you chose.",
+   "executive": "Unlimited queues hide problems. Let the slow side set the pace. Decide on purpose what happens when it is full."
+  }
+ ]
+}

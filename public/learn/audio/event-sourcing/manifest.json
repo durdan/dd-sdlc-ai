@@ -1,0 +1,142 @@
+{
+ "es-problem-engineer": {
+  "file": "/audio/event-sourcing/es-problem-engineer.mp3",
+  "ms": 26880,
+  "hash": "e6b26c08719e"
+ },
+ "es-problem-executive": {
+  "file": "/audio/event-sourcing/es-problem-executive.mp3",
+  "ms": 8088,
+  "hash": "cc99959f4bd9"
+ },
+ "es-naive-engineer": {
+  "file": "/audio/event-sourcing/es-naive-engineer.mp3",
+  "ms": 27456,
+  "hash": "acccfcaf7440"
+ },
+ "es-naive-executive": {
+  "file": "/audio/event-sourcing/es-naive-executive.mp3",
+  "ms": 5616,
+  "hash": "837206e15cc5"
+ },
+ "es-parts-engineer": {
+  "file": "/audio/event-sourcing/es-parts-engineer.mp3",
+  "ms": 29352,
+  "hash": "435bce7abf62"
+ },
+ "es-parts-executive": {
+  "file": "/audio/event-sourcing/es-parts-executive.mp3",
+  "ms": 7944,
+  "hash": "16d9735ffed2"
+ },
+ "es-replay-engineer": {
+  "file": "/audio/event-sourcing/es-replay-engineer.mp3",
+  "ms": 27456,
+  "hash": "74ecb50648f6"
+ },
+ "es-replay-executive": {
+  "file": "/audio/event-sourcing/es-replay-executive.mp3",
+  "ms": 6048,
+  "hash": "67bae2173d14"
+ },
+ "es-how-engineer": {
+  "file": "/audio/event-sourcing/es-how-engineer.mp3",
+  "ms": 28320,
+  "hash": "cdc07c533aed"
+ },
+ "es-how-executive": {
+  "file": "/audio/event-sourcing/es-how-executive.mp3",
+  "ms": 9552,
+  "hash": "3011872f0acb"
+ },
+ "es-snapshots-engineer": {
+  "file": "/audio/event-sourcing/es-snapshots-engineer.mp3",
+  "ms": 31320,
+  "hash": "f3f4698dbdd0"
+ },
+ "es-snapshots-executive": {
+  "file": "/audio/event-sourcing/es-snapshots-executive.mp3",
+  "ms": 6048,
+  "hash": "1ae86cb2b2ce"
+ },
+ "es-conflict-engineer": {
+  "file": "/audio/event-sourcing/es-conflict-engineer.mp3",
+  "ms": 31536,
+  "hash": "ed4a25a54a55"
+ },
+ "es-conflict-executive": {
+  "file": "/audio/event-sourcing/es-conflict-executive.mp3",
+  "ms": 7392,
+  "hash": "9a8b049294d0"
+ },
+ "es-upcast-engineer": {
+  "file": "/audio/event-sourcing/es-upcast-engineer.mp3",
+  "ms": 29424,
+  "hash": "dbf810f06037"
+ },
+ "es-upcast-executive": {
+  "file": "/audio/event-sourcing/es-upcast-executive.mp3",
+  "ms": 6552,
+  "hash": "3d5e48a1aa78"
+ },
+ "es-forget-engineer": {
+  "file": "/audio/event-sourcing/es-forget-engineer.mp3",
+  "ms": 30312,
+  "hash": "e92dcbf7f4d5"
+ },
+ "es-forget-executive": {
+  "file": "/audio/event-sourcing/es-forget-executive.mp3",
+  "ms": 6912,
+  "hash": "4ffd8bb5020c"
+ },
+ "es-tradeoffs-engineer": {
+  "file": "/audio/event-sourcing/es-tradeoffs-engineer.mp3",
+  "ms": 27456,
+  "hash": "5578f1864f26"
+ },
+ "es-tradeoffs-executive": {
+  "file": "/audio/event-sourcing/es-tradeoffs-executive.mp3",
+  "ms": 8760,
+  "hash": "bfc186fb3329"
+ },
+ "es-whennot-engineer": {
+  "file": "/audio/event-sourcing/es-whennot-engineer.mp3",
+  "ms": 28752,
+  "hash": "bfa9e128b603"
+ },
+ "es-whennot-executive": {
+  "file": "/audio/event-sourcing/es-whennot-executive.mp3",
+  "ms": 8232,
+  "hash": "098a8806084d"
+ },
+ "es-wild-engineer": {
+  "file": "/audio/event-sourcing/es-wild-engineer.mp3",
+  "ms": 35160,
+  "hash": "ad83336c66cc"
+ },
+ "es-wild-executive": {
+  "file": "/audio/event-sourcing/es-wild-executive.mp3",
+  "ms": 9240,
+  "hash": "2f3a9166ade2"
+ },
+ "es-related-engineer": {
+  "file": "/audio/event-sourcing/es-related-engineer.mp3",
+  "ms": 31512,
+  "hash": "1d7a434d1d32"
+ },
+ "es-related-executive": {
+  "file": "/audio/event-sourcing/es-related-executive.mp3",
+  "ms": 7632,
+  "hash": "cf7d1588cb19"
+ },
+ "es-recap-engineer": {
+  "file": "/audio/event-sourcing/es-recap-engineer.mp3",
+  "ms": 25800,
+  "hash": "2d218c0ddbaa"
+ },
+ "es-recap-executive": {
+  "file": "/audio/event-sourcing/es-recap-executive.mp3",
+  "ms": 9216,
+  "hash": "e84221a26158"
+ }
+}

@@ -1,0 +1,142 @@
+{
+ "to-problem-engineer": {
+  "file": "/audio/timeout/to-problem-engineer.mp3",
+  "ms": 24528,
+  "hash": "d3b7eafd6416"
+ },
+ "to-problem-executive": {
+  "file": "/audio/timeout/to-problem-executive.mp3",
+  "ms": 6648,
+  "hash": "f981be21bbf6"
+ },
+ "to-hang-engineer": {
+  "file": "/audio/timeout/to-hang-engineer.mp3",
+  "ms": 26664,
+  "hash": "e6bb16c1645a"
+ },
+ "to-hang-executive": {
+  "file": "/audio/timeout/to-hang-executive.mp3",
+  "ms": 7944,
+  "hash": "c419c267ae9c"
+ },
+ "to-naive-engineer": {
+  "file": "/audio/timeout/to-naive-engineer.mp3",
+  "ms": 27600,
+  "hash": "006d99f2e2c5"
+ },
+ "to-naive-executive": {
+  "file": "/audio/timeout/to-naive-executive.mp3",
+  "ms": 8688,
+  "hash": "85bbfb2806ab"
+ },
+ "to-parts-engineer": {
+  "file": "/audio/timeout/to-parts-engineer.mp3",
+  "ms": 27696,
+  "hash": "d15c8737c268"
+ },
+ "to-parts-executive": {
+  "file": "/audio/timeout/to-parts-executive.mp3",
+  "ms": 7272,
+  "hash": "67954521b464"
+ },
+ "to-kinds-engineer": {
+  "file": "/audio/timeout/to-kinds-engineer.mp3",
+  "ms": 29520,
+  "hash": "c897185addb1"
+ },
+ "to-kinds-executive": {
+  "file": "/audio/timeout/to-kinds-executive.mp3",
+  "ms": 6624,
+  "hash": "8f3c4b17e31b"
+ },
+ "to-choose-engineer": {
+  "file": "/audio/timeout/to-choose-engineer.mp3",
+  "ms": 29616,
+  "hash": "dac51411233c"
+ },
+ "to-choose-executive": {
+  "file": "/audio/timeout/to-choose-executive.mp3",
+  "ms": 6576,
+  "hash": "68befa76808a"
+ },
+ "to-budget-engineer": {
+  "file": "/audio/timeout/to-budget-engineer.mp3",
+  "ms": 26952,
+  "hash": "045f2250eae5"
+ },
+ "to-budget-executive": {
+  "file": "/audio/timeout/to-budget-executive.mp3",
+  "ms": 7536,
+  "hash": "6e70c7739961"
+ },
+ "to-expire-engineer": {
+  "file": "/audio/timeout/to-expire-engineer.mp3",
+  "ms": 28152,
+  "hash": "bde8078c8b33"
+ },
+ "to-expire-executive": {
+  "file": "/audio/timeout/to-expire-executive.mp3",
+  "ms": 7728,
+  "hash": "3bab9b8cb082"
+ },
+ "to-retry-engineer": {
+  "file": "/audio/timeout/to-retry-engineer.mp3",
+  "ms": 28920,
+  "hash": "988f8ab46181"
+ },
+ "to-retry-executive": {
+  "file": "/audio/timeout/to-retry-executive.mp3",
+  "ms": 8520,
+  "hash": "dd2053847bb2"
+ },
+ "to-tradeoffs-engineer": {
+  "file": "/audio/timeout/to-tradeoffs-engineer.mp3",
+  "ms": 26088,
+  "hash": "18084689900a"
+ },
+ "to-tradeoffs-executive": {
+  "file": "/audio/timeout/to-tradeoffs-executive.mp3",
+  "ms": 8616,
+  "hash": "f078e69b545c"
+ },
+ "to-variants-engineer": {
+  "file": "/audio/timeout/to-variants-engineer.mp3",
+  "ms": 28824,
+  "hash": "b0d7e6b9ef67"
+ },
+ "to-variants-executive": {
+  "file": "/audio/timeout/to-variants-executive.mp3",
+  "ms": 6792,
+  "hash": "8a790e345fb7"
+ },
+ "to-wild-engineer": {
+  "file": "/audio/timeout/to-wild-engineer.mp3",
+  "ms": 32040,
+  "hash": "838eeea70f54"
+ },
+ "to-wild-executive": {
+  "file": "/audio/timeout/to-wild-executive.mp3",
+  "ms": 6816,
+  "hash": "6d6760e45b66"
+ },
+ "to-related-engineer": {
+  "file": "/audio/timeout/to-related-engineer.mp3",
+  "ms": 26736,
+  "hash": "94d026d63bc6"
+ },
+ "to-related-executive": {
+  "file": "/audio/timeout/to-related-executive.mp3",
+  "ms": 7824,
+  "hash": "5cd8e4544796"
+ },
+ "to-recap-engineer": {
+  "file": "/audio/timeout/to-recap-engineer.mp3",
+  "ms": 21864,
+  "hash": "629eac2e4dff"
+ },
+ "to-recap-executive": {
+  "file": "/audio/timeout/to-recap-executive.mp3",
+  "ms": 8736,
+  "hash": "cf8d37989f06"
+ }
+}

@@ -1,0 +1,262 @@
+{
+ "w01-engineer": {
+  "file": "/audio/whatsapp/w01-engineer.mp3",
+  "ms": 28704,
+  "hash": "5d43cb6af1e5"
+ },
+ "w01-executive": {
+  "file": "/audio/whatsapp/w01-executive.mp3",
+  "ms": 9288,
+  "hash": "4f1c73c06285"
+ },
+ "w-req-scale-engineer": {
+  "file": "/audio/whatsapp/w-req-scale-engineer.mp3",
+  "ms": 30672,
+  "hash": "29f7a30e5e26"
+ },
+ "w-req-scale-executive": {
+  "file": "/audio/whatsapp/w-req-scale-executive.mp3",
+  "ms": 9240,
+  "hash": "1b05c0b0287e"
+ },
+ "w-req-needs-engineer": {
+  "file": "/audio/whatsapp/w-req-needs-engineer.mp3",
+  "ms": 28992,
+  "hash": "5be1deea6d90"
+ },
+ "w-req-needs-executive": {
+  "file": "/audio/whatsapp/w-req-needs-executive.mp3",
+  "ms": 7080,
+  "hash": "24bc9c020c59"
+ },
+ "w-req-envelope-engineer": {
+  "file": "/audio/whatsapp/w-req-envelope-engineer.mp3",
+  "ms": 30072,
+  "hash": "b43fffd5d979"
+ },
+ "w-req-envelope-executive": {
+  "file": "/audio/whatsapp/w-req-envelope-executive.mp3",
+  "ms": 6840,
+  "hash": "eda30f42e3c8"
+ },
+ "w02-engineer": {
+  "file": "/audio/whatsapp/w02-engineer.mp3",
+  "ms": 26856,
+  "hash": "48308a1ae7ad"
+ },
+ "w02-executive": {
+  "file": "/audio/whatsapp/w02-executive.mp3",
+  "ms": 7584,
+  "hash": "5c78da27f3c1"
+ },
+ "w03-engineer": {
+  "file": "/audio/whatsapp/w03-engineer.mp3",
+  "ms": 26928,
+  "hash": "5da75fb35f2f"
+ },
+ "w03-executive": {
+  "file": "/audio/whatsapp/w03-executive.mp3",
+  "ms": 6120,
+  "hash": "f3b646fd0bdf"
+ },
+ "w04-engineer": {
+  "file": "/audio/whatsapp/w04-engineer.mp3",
+  "ms": 29088,
+  "hash": "5002e978ae76"
+ },
+ "w04-executive": {
+  "file": "/audio/whatsapp/w04-executive.mp3",
+  "ms": 8016,
+  "hash": "0d9891d68922"
+ },
+ "w05-engineer": {
+  "file": "/audio/whatsapp/w05-engineer.mp3",
+  "ms": 30720,
+  "hash": "6084e209d9fe"
+ },
+ "w05-executive": {
+  "file": "/audio/whatsapp/w05-executive.mp3",
+  "ms": 6720,
+  "hash": "1f29924451ad"
+ },
+ "w06-engineer": {
+  "file": "/audio/whatsapp/w06-engineer.mp3",
+  "ms": 27576,
+  "hash": "c40947b8e4b0"
+ },
+ "w06-executive": {
+  "file": "/audio/whatsapp/w06-executive.mp3",
+  "ms": 7608,
+  "hash": "736676b3e405"
+ },
+ "w07-engineer": {
+  "file": "/audio/whatsapp/w07-engineer.mp3",
+  "ms": 26880,
+  "hash": "f07df6079304"
+ },
+ "w07-executive": {
+  "file": "/audio/whatsapp/w07-executive.mp3",
+  "ms": 7440,
+  "hash": "cfe393258e1d"
+ },
+ "w08-engineer": {
+  "file": "/audio/whatsapp/w08-engineer.mp3",
+  "ms": 27600,
+  "hash": "21f97bbc7882"
+ },
+ "w08-executive": {
+  "file": "/audio/whatsapp/w08-executive.mp3",
+  "ms": 9528,
+  "hash": "0fd89cdfce39"
+ },
+ "w09-engineer": {
+  "file": "/audio/whatsapp/w09-engineer.mp3",
+  "ms": 29040,
+  "hash": "e35a7198dfa8"
+ },
+ "w09-executive": {
+  "file": "/audio/whatsapp/w09-executive.mp3",
+  "ms": 8160,
+  "hash": "5b081c88f9b9"
+ },
+ "w10-engineer": {
+  "file": "/audio/whatsapp/w10-engineer.mp3",
+  "ms": 27024,
+  "hash": "2e9cad93be58"
+ },
+ "w10-executive": {
+  "file": "/audio/whatsapp/w10-executive.mp3",
+  "ms": 6864,
+  "hash": "979e83562858"
+ },
+ "w11-engineer": {
+  "file": "/audio/whatsapp/w11-engineer.mp3",
+  "ms": 27048,
+  "hash": "d1e348710b0e"
+ },
+ "w11-executive": {
+  "file": "/audio/whatsapp/w11-executive.mp3",
+  "ms": 5904,
+  "hash": "a348e99959b7"
+ },
+ "w12-engineer": {
+  "file": "/audio/whatsapp/w12-engineer.mp3",
+  "ms": 26784,
+  "hash": "7e457726bf0a"
+ },
+ "w12-executive": {
+  "file": "/audio/whatsapp/w12-executive.mp3",
+  "ms": 6000,
+  "hash": "c3a388294fa2"
+ },
+ "w13-engineer": {
+  "file": "/audio/whatsapp/w13-engineer.mp3",
+  "ms": 29088,
+  "hash": "82c60e4fcfca"
+ },
+ "w13-executive": {
+  "file": "/audio/whatsapp/w13-executive.mp3",
+  "ms": 7272,
+  "hash": "8dc97d5cd32c"
+ },
+ "w14-engineer": {
+  "file": "/audio/whatsapp/w14-engineer.mp3",
+  "ms": 28968,
+  "hash": "7d1269d3f974"
+ },
+ "w14-executive": {
+  "file": "/audio/whatsapp/w14-executive.mp3",
+  "ms": 7104,
+  "hash": "896a09f8b9b3"
+ },
+ "w15-engineer": {
+  "file": "/audio/whatsapp/w15-engineer.mp3",
+  "ms": 29016,
+  "hash": "d004942c6d34"
+ },
+ "w15-executive": {
+  "file": "/audio/whatsapp/w15-executive.mp3",
+  "ms": 8664,
+  "hash": "4c37a75a8188"
+ },
+ "w16-engineer": {
+  "file": "/audio/whatsapp/w16-engineer.mp3",
+  "ms": 31944,
+  "hash": "4a90a1988a16"
+ },
+ "w16-executive": {
+  "file": "/audio/whatsapp/w16-executive.mp3",
+  "ms": 9168,
+  "hash": "97cb76ae02fd"
+ },
+ "w17-engineer": {
+  "file": "/audio/whatsapp/w17-engineer.mp3",
+  "ms": 28848,
+  "hash": "25a077a11b3f"
+ },
+ "w17-executive": {
+  "file": "/audio/whatsapp/w17-executive.mp3",
+  "ms": 7584,
+  "hash": "8c49e29cf95b"
+ },
+ "w-growth-engineer": {
+  "file": "/audio/whatsapp/w-growth-engineer.mp3",
+  "ms": 31344,
+  "hash": "c2c8e42893e5"
+ },
+ "w-growth-executive": {
+  "file": "/audio/whatsapp/w-growth-executive.mp3",
+  "ms": 7680,
+  "hash": "440c70985966"
+ },
+ "w-failures-engineer": {
+  "file": "/audio/whatsapp/w-failures-engineer.mp3",
+  "ms": 30480,
+  "hash": "4001f3dab843"
+ },
+ "w-failures-executive": {
+  "file": "/audio/whatsapp/w-failures-executive.mp3",
+  "ms": 9384,
+  "hash": "012216814c37"
+ },
+ "w-patterns-engineer": {
+  "file": "/audio/whatsapp/w-patterns-engineer.mp3",
+  "ms": 33384,
+  "hash": "bbef64807bf4"
+ },
+ "w-patterns-executive": {
+  "file": "/audio/whatsapp/w-patterns-executive.mp3",
+  "ms": 8736,
+  "hash": "00d9f81a0647"
+ },
+ "w-decisions-engineer": {
+  "file": "/audio/whatsapp/w-decisions-engineer.mp3",
+  "ms": 33600,
+  "hash": "9a97f45a27f7"
+ },
+ "w-decisions-executive": {
+  "file": "/audio/whatsapp/w-decisions-executive.mp3",
+  "ms": 8592,
+  "hash": "04210860f744"
+ },
+ "w-mvp-engineer": {
+  "file": "/audio/whatsapp/w-mvp-engineer.mp3",
+  "ms": 36432,
+  "hash": "e331e1d3b2f1"
+ },
+ "w-mvp-executive": {
+  "file": "/audio/whatsapp/w-mvp-executive.mp3",
+  "ms": 8616,
+  "hash": "01acfd831d3a"
+ },
+ "w18-engineer": {
+  "file": "/audio/whatsapp/w18-engineer.mp3",
+  "ms": 31176,
+  "hash": "cd391dc1938b"
+ },
+ "w18-executive": {
+  "file": "/audio/whatsapp/w18-executive.mp3",
+  "ms": 6792,
+  "hash": "2529471c80ad"
+ }
+}

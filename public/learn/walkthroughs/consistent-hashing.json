@@ -1,0 +1,930 @@
+{
+ "id": "consistent-hashing",
+ "title": "Consistent hashing",
+ "subtitle": "Design pattern",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "diagrams": [
+  {
+   "id": "modn",
+   "kind": "c4",
+   "title": "hash(key) mod N: add one cache, lose most of them",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "app",
+     "kind": "container",
+     "tone": "core",
+     "label": "App servers",
+     "sub": "pick cache: hash(key) mod N"
+    },
+    {
+     "id": "ca",
+     "kind": "container",
+     "tone": "core",
+     "label": "Cache A",
+     "sub": "slot 0"
+    },
+    {
+     "id": "cb",
+     "kind": "container",
+     "tone": "core",
+     "label": "Cache B",
+     "sub": "slot 1"
+    },
+    {
+     "id": "cc",
+     "kind": "container",
+     "tone": "core",
+     "label": "Cache C",
+     "sub": "slot 2"
+    },
+    {
+     "id": "cd",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Cache D (new)",
+     "sub": "slot 3"
+    },
+    {
+     "id": "db",
+     "kind": "store",
+     "tone": "data",
+     "label": "Database",
+     "sub": "takes every miss"
+    }
+   ],
+   "edges": [
+    {
+     "id": "m1",
+     "from": "app",
+     "to": "ca",
+     "style": "solid",
+     "label": "N = 3: 42 mod 3 = 0"
+    },
+    {
+     "id": "m2",
+     "from": "app",
+     "to": "cd",
+     "style": "dotted",
+     "label": "add D: N = 4"
+    },
+    {
+     "id": "m3",
+     "from": "app",
+     "to": "cc",
+     "style": "dashed",
+     "label": "N = 4: 42 mod 4 = 2 · miss"
+    },
+    {
+     "id": "m4",
+     "from": "cc",
+     "to": "db",
+     "style": "dashed",
+     "label": "miss → database"
+    },
+    {
+     "id": "m5",
+     "from": "cb",
+     "to": "db",
+     "style": "dashed",
+     "label": "3 in 4 keys miss"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "miss, failure or move"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "signal or copy"
+    }
+   ]
+  },
+  {
+   "id": "directory",
+   "kind": "c4",
+   "title": "Remember every key in a directory",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "app",
+     "kind": "container",
+     "tone": "core",
+     "label": "App servers",
+     "sub": "every request"
+    },
+    {
+     "id": "dir",
+     "kind": "container",
+     "tone": "core",
+     "label": "Directory service",
+     "sub": "key → server, per key"
+    },
+    {
+     "id": "table",
+     "kind": "store",
+     "tone": "data",
+     "label": "Mapping table",
+     "sub": "a row for every key"
+    },
+    {
+     "id": "caches",
+     "kind": "container",
+     "tone": "core",
+     "label": "Cache servers"
+    },
+    {
+     "id": "op",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Operator",
+     "sub": "adds a server"
+    }
+   ],
+   "edges": [
+    {
+     "id": "d1",
+     "from": "app",
+     "to": "dir",
+     "style": "solid",
+     "label": "where is user:42?"
+    },
+    {
+     "id": "d2",
+     "from": "dir",
+     "to": "table",
+     "style": "solid",
+     "label": "read its row"
+    },
+    {
+     "id": "d3",
+     "from": "app",
+     "to": "caches",
+     "style": "solid",
+     "label": "then fetch"
+    },
+    {
+     "id": "d4",
+     "from": "op",
+     "to": "dir",
+     "style": "dotted",
+     "label": "move keys: rewrite rows"
+    },
+    {
+     "id": "d5",
+     "from": "dir",
+     "to": "app",
+     "style": "dashed",
+     "label": "directory down: nothing found"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "miss, failure or move"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "signal or copy"
+    }
+   ]
+  },
+  {
+   "id": "ring",
+   "kind": "c4",
+   "title": "Servers on a ring of positions 0–99; each arc belongs to the server at its end",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "sA",
+     "kind": "container",
+     "tone": "core",
+     "label": "Server A",
+     "sub": "position 10"
+    },
+    {
+     "id": "sB",
+     "kind": "container",
+     "tone": "core",
+     "label": "Server B",
+     "sub": "position 40"
+    },
+    {
+     "id": "sC",
+     "kind": "container",
+     "tone": "core",
+     "label": "Server C",
+     "sub": "position 75"
+    }
+   ],
+   "edges": [
+    {
+     "id": "r1",
+     "from": "sA",
+     "to": "sB",
+     "style": "solid",
+     "label": "arc 11–40 · user:42 at 25 → B"
+    },
+    {
+     "id": "r2",
+     "from": "sB",
+     "to": "sC",
+     "style": "solid",
+     "label": "arc 41–75 · cart:7 at 60 → C"
+    },
+    {
+     "id": "r3",
+     "from": "sC",
+     "to": "sA",
+     "style": "solid",
+     "label": "arc 76–10, wraps · img:9 at 90 → A"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "clockwise along the ring"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "keys that change owner"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "unchanged"
+    }
+   ]
+  },
+  {
+   "id": "join",
+   "kind": "c4",
+   "title": "Add server D at 30: only one arc changes owner",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "sA",
+     "kind": "container",
+     "tone": "core",
+     "label": "Server A",
+     "sub": "position 10"
+    },
+    {
+     "id": "sD",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Server D (new)",
+     "sub": "position 30"
+    },
+    {
+     "id": "sB",
+     "kind": "container",
+     "tone": "core",
+     "label": "Server B",
+     "sub": "position 40"
+    },
+    {
+     "id": "sC",
+     "kind": "container",
+     "tone": "core",
+     "label": "Server C",
+     "sub": "75 · arc 76–10 unchanged"
+    }
+   ],
+   "edges": [
+    {
+     "id": "j1",
+     "from": "sA",
+     "to": "sD",
+     "style": "dashed",
+     "label": "arc 11–30 · user:42 → D"
+    },
+    {
+     "id": "j2",
+     "from": "sD",
+     "to": "sB",
+     "style": "solid",
+     "label": "arc 31–40 · order:3 stays on B"
+    },
+    {
+     "id": "j3",
+     "from": "sB",
+     "to": "sC",
+     "style": "dotted",
+     "label": "arc 41–75 unchanged"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "clockwise along the ring"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "keys that change owner"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "unchanged"
+    }
+   ]
+  },
+  {
+   "id": "vnodes",
+   "kind": "c4",
+   "title": "Virtual nodes: each server holds several positions",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "a1",
+     "kind": "component",
+     "tone": "core",
+     "label": "A · token 1"
+    },
+    {
+     "id": "b1",
+     "kind": "component",
+     "tone": "stream",
+     "label": "B · token 1"
+    },
+    {
+     "id": "c1",
+     "kind": "component",
+     "tone": "data",
+     "label": "C · token 1"
+    },
+    {
+     "id": "b2",
+     "kind": "component",
+     "tone": "stream",
+     "label": "B · token 2"
+    },
+    {
+     "id": "a2",
+     "kind": "component",
+     "tone": "core",
+     "label": "A · token 2"
+    },
+    {
+     "id": "c2",
+     "kind": "component",
+     "tone": "data",
+     "label": "C · token 2",
+     "sub": "then wraps to A · token 1"
+    }
+   ],
+   "edges": [
+    {
+     "id": "v1",
+     "from": "a1",
+     "to": "b1",
+     "style": "solid"
+    },
+    {
+     "id": "v2",
+     "from": "b1",
+     "to": "c1",
+     "style": "dashed",
+     "label": "B leaves → C"
+    },
+    {
+     "id": "v3",
+     "from": "c1",
+     "to": "b2",
+     "style": "solid"
+    },
+    {
+     "id": "v4",
+     "from": "b2",
+     "to": "a2",
+     "style": "dashed",
+     "label": "B leaves → A"
+    },
+    {
+     "id": "v5",
+     "from": "a2",
+     "to": "c2",
+     "style": "solid"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "clockwise along the ring"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "keys that change owner"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "unchanged"
+    }
+   ]
+  },
+  {
+   "id": "flow",
+   "kind": "sequence",
+   "title": "Find the owner, write, replicate, survive a failure",
+   "participants": [
+    {
+     "id": "client",
+     "label": "Client"
+    },
+    {
+     "id": "ring",
+     "label": "Ring map (sorted tokens)"
+    },
+    {
+     "id": "sB",
+     "label": "Server B"
+    },
+    {
+     "id": "sC",
+     "label": "Server C"
+    }
+   ],
+   "messages": [
+    {
+     "id": "q1",
+     "from": "client",
+     "to": "ring",
+     "style": "solid",
+     "label": "hash(user:42) = 25"
+    },
+    {
+     "id": "q2",
+     "from": "ring",
+     "to": "client",
+     "style": "solid",
+     "label": "first token ≥ 25: Server B"
+    },
+    {
+     "id": "q3",
+     "from": "client",
+     "to": "sB",
+     "style": "solid",
+     "label": "PUT user:42"
+    },
+    {
+     "id": "q4",
+     "from": "sB",
+     "to": "sC",
+     "style": "dotted",
+     "label": "copy to next server clockwise"
+    },
+    {
+     "id": "q5",
+     "from": "sB",
+     "to": "client",
+     "style": "solid",
+     "label": "ack"
+    },
+    {
+     "id": "q6",
+     "from": "client",
+     "to": "sB",
+     "style": "dashed",
+     "label": "GET user:42 · no answer"
+    },
+    {
+     "id": "q7",
+     "from": "client",
+     "to": "ring",
+     "style": "solid",
+     "label": "B is down: skip it"
+    },
+    {
+     "id": "q8",
+     "from": "ring",
+     "to": "client",
+     "style": "solid",
+     "label": "next server clockwise: C"
+    },
+    {
+     "id": "q9",
+     "from": "client",
+     "to": "sC",
+     "style": "solid",
+     "label": "GET user:42"
+    },
+    {
+     "id": "q10",
+     "from": "sC",
+     "to": "client",
+     "style": "solid",
+     "label": "value from the replica"
+    }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "karger",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Karger et al.",
+     "sub": "STOC 1997 · web caching, hot spots"
+    },
+    {
+     "id": "rdv",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Rendezvous hashing",
+     "sub": "Thaler & Ravishankar · 1996"
+    },
+    {
+     "id": "dynamo",
+     "kind": "external",
+     "tone": "external",
+     "label": "Amazon Dynamo",
+     "sub": "SOSP 2007 · ring + virtual nodes"
+    },
+    {
+     "id": "cass",
+     "kind": "container",
+     "tone": "core",
+     "label": "Apache Cassandra",
+     "sub": "token ring · vnodes, 16 by default"
+    },
+    {
+     "id": "ketama",
+     "kind": "container",
+     "tone": "core",
+     "label": "ketama",
+     "sub": "memcached clients · 100–200 points"
+    },
+    {
+     "id": "jump",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Jump consistent hash",
+     "sub": "Google 2014 · no memory"
+    },
+    {
+     "id": "bounded",
+     "kind": "container",
+     "tone": "stream",
+     "label": "Bounded loads",
+     "sub": "Google 2017 · cap per server"
+    },
+    {
+     "id": "haproxy",
+     "kind": "container",
+     "tone": "core",
+     "label": "HAProxy",
+     "sub": "used by Vimeo"
+    }
+   ],
+   "edges": [
+    {
+     "id": "w1",
+     "from": "karger",
+     "to": "dynamo",
+     "style": "solid",
+     "label": "the ring for storage"
+    },
+    {
+     "id": "w2",
+     "from": "dynamo",
+     "to": "cass",
+     "style": "solid",
+     "label": "token ring"
+    },
+    {
+     "id": "w3",
+     "from": "karger",
+     "to": "ketama",
+     "style": "solid",
+     "label": "cache clients"
+    },
+    {
+     "id": "w4",
+     "from": "karger",
+     "to": "jump",
+     "style": "solid",
+     "label": "no ring at all"
+    },
+    {
+     "id": "w5",
+     "from": "karger",
+     "to": "bounded",
+     "style": "solid",
+     "label": "adds a load cap"
+    },
+    {
+     "id": "w6",
+     "from": "bounded",
+     "to": "haproxy",
+     "style": "solid",
+     "label": "implemented in"
+    },
+    {
+     "id": "w7",
+     "from": "rdv",
+     "to": "karger",
+     "style": "dotted",
+     "label": "same goal, no ring"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "problem",
+   "title": "The problem"
+  },
+  {
+   "id": "naive",
+   "title": "The naive fix"
+  },
+  {
+   "id": "pattern",
+   "title": "The pattern"
+  },
+  {
+   "id": "how",
+   "title": "How it works"
+  },
+  {
+   "id": "failure",
+   "title": "When it goes wrong"
+  },
+  {
+   "id": "tradeoffs",
+   "title": "Trade-offs"
+  },
+  {
+   "id": "wild",
+   "title": "In the wild"
+  },
+  {
+   "id": "related",
+   "title": "Related patterns"
+  },
+  {
+   "id": "recap",
+   "title": "Recap"
+  }
+ ],
+ "shots": [
+  {
+   "id": "ch-problem",
+   "chapter": "problem",
+   "title": "Stampede",
+   "diagram": "modn",
+   "focus": [],
+   "trace": [
+    "m1",
+    "m2",
+    "m3",
+    "m4",
+    "m5"
+   ],
+   "engineer": "Three cache servers sit in front of a database. The app picks a cache with hash of the key, mod the number of servers. User forty-two hashes to forty-two; mod three is zero, so it lives on cache A. Now we add cache D. Forty-two mod four is two, so the app asks cache C, which has never seen it. Going from three servers to four moves three keys in every four. Each move is a miss, and the misses hit the database together: a cache stampede.",
+   "executive": "Spreading keys with simple arithmetic means adding one server reshuffles almost everything. The cache goes cold at once and the database takes the full load."
+  },
+  {
+   "id": "ch-naive",
+   "chapter": "naive",
+   "title": "Directory",
+   "diagram": "directory",
+   "focus": [],
+   "trace": [
+    "d1",
+    "d2",
+    "d3",
+    "d4",
+    "d5"
+   ],
+   "engineer": "The obvious fix is to stop calculating and start remembering: a directory service with a table that says which server holds each key. Now an operator can move keys one at a time. But every request needs an extra lookup first, the table needs a row for every key, possibly billions of them, and the directory becomes the one thing that must never go down. Some teams try doubling the server count instead. With mod, that still moves half the keys.",
+   "executive": "Keeping a list of where every key lives avoids the reshuffle, but adds a lookup to every request and a giant table that must never fail."
+  },
+  {
+   "id": "ch-ring",
+   "chapter": "pattern",
+   "title": "Ring",
+   "diagram": "ring",
+   "focus": [],
+   "trace": [
+    "r1",
+    "r2",
+    "r3"
+   ],
+   "engineer": "Consistent hashing stops the answer depending on the server count. Picture the hash range bent into a circle. Hash each server's name onto it, and hash each key onto the same circle. A key belongs to the first server you meet walking clockwise. User forty-two lands at twenty-five, so it goes to server B at forty. Cart seven goes to C. Image nine, at ninety, runs past the top and wraps round to A. Every client with the same server list gets the same answer, with no directory.",
+   "executive": "Servers and keys are placed on the same circle, and each key belongs to the next server clockwise. Anyone can work out where a key lives without asking."
+  },
+  {
+   "id": "ch-join",
+   "chapter": "pattern",
+   "title": "Add a server",
+   "diagram": "join",
+   "focus": [],
+   "trace": [
+    "j1",
+    "j2",
+    "j3"
+   ],
+   "engineer": "Now add server D at position thirty. Only the keys between A and D, the arc from eleven to thirty, change owner: they used to walk on to B, and now they stop at D. User forty-two moves; order three, at thirty-five, stays on B. Nothing else on the ring is touched. Going from N servers to N plus one moves roughly one key in N plus one, instead of nearly all of them. Removing a server is the mirror image: its arc passes to the next server clockwise.",
+   "executive": "A new server only takes keys from its neighbour on the circle. Roughly one key in N moves, not nearly all of them."
+  },
+  {
+   "id": "ch-how",
+   "chapter": "how",
+   "title": "Sequence",
+   "diagram": "flow",
+   "focus": [],
+   "trace": [
+    "q1",
+    "q2",
+    "q3",
+    "q4",
+    "q5"
+   ],
+   "engineer": "Step by step. The client keeps the ring as a sorted list of server positions, called tokens. To write user forty-two, it hashes the key to twenty-five, then binary-searches for the first token at or after twenty-five. That is server B, so the write goes to B. For durability, B copies it to the next server clockwise, C. Amazon's Dynamo paper describes exactly this: each key is stored on its owner and the next N minus one servers round the ring. Then B acknowledges.",
+   "executive": "The client works out the key's position, finds the next server, and writes there. That server copies the data to its neighbour on the circle."
+  },
+  {
+   "id": "ch-failure",
+   "chapter": "failure",
+   "title": "Server down",
+   "diagram": "flow",
+   "focus": [],
+   "trace": [
+    "q6",
+    "q7",
+    "q8",
+    "q9",
+    "q10"
+   ],
+   "engineer": "Now server B stops answering. The client's read times out, B is marked down, and the client walks on round the ring to the next server, C. Because C already holds a replica, the read succeeds. This is the payoff of placing replicas round the ring: the server that inherits B's arc is the one that already has copies of its data. Only B's keys are affected. Every other key keeps its owner.",
+   "executive": "When a server dies, its keys fall to the next server on the circle, which already holds copies, so reads keep working."
+  },
+  {
+   "id": "ch-vnodes",
+   "chapter": "failure",
+   "title": "Virtual nodes",
+   "diagram": "vnodes",
+   "focus": [],
+   "trace": [
+    "v1",
+    "v2",
+    "v3",
+    "v4",
+    "v5"
+   ],
+   "engineer": "One position per server is not enough. Random positions leave uneven arcs, so one server can own far more than its share, and when it fails its whole load lands on a single neighbour. The fix is virtual nodes: give each server many positions, called tokens. Here B has two. If B leaves, one arc passes to C and the other to A, so its load spreads out. Dynamo uses virtual nodes, and gives bigger machines more of them.",
+   "executive": "Giving each server many small slices of the circle evens out the load, and a failed server's work spreads across many machines."
+  },
+  {
+   "id": "ch-edges",
+   "chapter": "failure",
+   "card": {
+    "heading": "What it does not fix",
+    "points": [
+     "One hot key still lives on one server",
+     "It spreads keys, not traffic",
+     "Clients with different server lists disagree",
+     "Moved keys are still cache misses"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Four things it does not fix. A single hot key still lives on one server; for that you need extra replicas or a local cache. Hashing spreads keys, not traffic, so a few popular keys can still overload a server. Clients that disagree about the server list send the same key to different places, so membership changes must reach everyone. And keys that move are still cache misses, so add capacity gradually rather than all at once.",
+   "executive": "It spreads keys, not traffic: a single popular key still lands on one server, and every client must agree on the server list."
+  },
+  {
+   "id": "ch-tradeoffs",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "Variants",
+    "kind": "compare",
+    "points": [
+     "Scheme | Trade-off",
+     "Ring with virtual nodes | Servers join and leave freely; keep a sorted token list",
+     "Rendezvous hashing | No ring; one hash per server on every lookup",
+     "Jump consistent hash | No memory, about five lines; servers numbered in sequence",
+     "Bounded loads | Caps each server near the average; a few extra moves"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "There are several variants. The ring with virtual nodes lets any server join or leave, at the cost of a sorted token list. Rendezvous hashing, from 1996, needs no ring: score the key against every server and pick the highest, which costs one hash per server on every lookup. Google's jump consistent hash needs no memory and fits in about five lines, but the buckets must be numbered in sequence, so it suits storage shards better than web caches.",
+   "executive": "Several variants trade memory, speed and flexibility. Pick by whether servers come and go freely or are simply numbered shards."
+  },
+  {
+   "id": "ch-bounded",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "Consistent hashing with bounded loads",
+    "kind": "numbers",
+    "points": [
+     "1 + ε | most any server may hold, times the average",
+     "O(1/ε²) | expected moves per change, whatever the cluster size",
+     "≈ 8× | less cache bandwidth Google reports for Vimeo"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Bounded loads, described by Google Research in 2017, adds a cap. Each server may hold at most one plus epsilon times the average load. A key walks clockwise as usual, but skips any server that is already full. The paper proves the number of keys moved per change stays bounded, whatever the cluster size. Google Cloud Pub/Sub adopted it, and Vimeo implemented it in the HAProxy load balancer, which Google reports cut Vimeo's cache bandwidth by a factor of almost eight.",
+   "executive": "A newer refinement caps how much any one server can hold, so no machine is overloaded. Vimeo saw a large drop in cache bandwidth."
+  },
+  {
+   "id": "ch-wild",
+   "chapter": "wild",
+   "title": "Lineage",
+   "diagram": "wild",
+   "focus": [],
+   "trace": [
+    "w1",
+    "w2",
+    "w3",
+    "w4",
+    "w5",
+    "w6",
+    "w7"
+   ],
+   "engineer": "In the wild. Karger and colleagues at MIT introduced consistent hashing at STOC in 1997, to spread web caches and relieve hot spots. Amazon's Dynamo paper, in 2007, used the ring and virtual nodes for a key-value store. Apache Cassandra took its token ring from Dynamo and now defaults to sixteen tokens per node. Memcached clients use libraries such as ketama, with a hundred to two hundred points per server. Google added jump hash and bounded loads. Rendezvous hashing solves the same problem without a ring.",
+   "executive": "Invented for web caching in 1997, it now runs inside Amazon's Dynamo, Apache Cassandra, memcached clients and load balancers."
+  },
+  {
+   "id": "ch-related",
+   "chapter": "related",
+   "card": {
+    "heading": "Related patterns",
+    "points": [
+     "Sharding: consistent hashing is one way to pick the shard",
+     "Range partitioning: keeps key order; hot ranges need splitting",
+     "Replication: copies on the next servers clockwise",
+     "Rate limiting: one owner per client's counter",
+     "Membership and leader election: agree who is on the ring"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Its neighbours. Sharding is the broader idea of splitting data across machines; consistent hashing is one way to choose the shard. Range partitioning is the main alternative: it keeps keys in order, so range scans work, but hot ranges must be split. Replication places copies on the next servers clockwise. A distributed rate limiter can hash each client's counter to one owner. And membership, often backed by leader election, decides who is on the ring.",
+   "executive": "It is one way to shard data. It pairs with replication and needs a reliable way to agree which servers are in the cluster."
+  },
+  {
+   "id": "ch-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "hash mod N moves almost every key when N changes",
+     "On a ring, a change moves only about 1/N of keys",
+     "Virtual nodes even the load; replicas go clockwise"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. Hash mod N moves almost every key whenever the number of servers changes, and a cold cache sends everything to the database. Put servers and keys on the same ring, and a change moves only about one key in N. And give each server many virtual nodes for even load, with replicas on the next servers clockwise.",
+   "executive": "Mod N reshuffles everything. A ring moves only a small share. Virtual nodes keep the load even."
+  }
+ ],
+ "meta": {
+  "kind": "pattern",
+  "category": "Scaling",
+  "level": "intermediate",
+  "uses": [
+   "sharding"
+  ],
+  "related": [
+   "sharding",
+   "rate-limiting",
+   "leader-election"
+  ],
+  "blurb": "Put servers and keys on one ring so adding a server moves only a small share of keys.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ }
+}

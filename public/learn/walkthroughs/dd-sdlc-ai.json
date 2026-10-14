@@ -1,0 +1,1327 @@
+{
+  "id": "dd-sdlc-ai",
+  "title": "SDLC.dev: from idea to specification",
+  "subtitle": "How dd-sdlc-ai turns a product idea into documents, from the outside in",
+  "voice": "en-GB-SoniaNeural",
+  "template": "case-study",
+  "diagrams": [
+    {
+      "id": "context",
+      "kind": "c4",
+      "title": "Level 1 · Context",
+      "direction": "DOWN",
+      "elements": [
+        {
+          "id": "owner",
+          "kind": "person",
+          "label": "Product owner",
+          "sub": "types an idea, reads the specs",
+          "tone": "neutral",
+          "rank": 0
+        },
+        {
+          "id": "dev",
+          "kind": "person",
+          "label": "Developer",
+          "sub": "CLI or MCP server (npm packages)",
+          "tone": "neutral",
+          "rank": 0
+        },
+        {
+          "id": "sdlc",
+          "kind": "system",
+          "label": "SDLC.dev",
+          "sub": "dd-sdlc-ai · Next.js on Vercel",
+          "tone": "core",
+          "rank": 1
+        },
+        {
+          "id": "openai",
+          "kind": "external",
+          "label": "OpenAI",
+          "sub": "GPT-4o writes · GPT-4o-mini summarises",
+          "tone": "external",
+          "rank": 2
+        },
+        {
+          "id": "claude",
+          "kind": "external",
+          "label": "Anthropic Claude",
+          "sub": "code tasks · wizard fallback",
+          "tone": "external",
+          "rank": 2
+        },
+        {
+          "id": "supabase",
+          "kind": "store",
+          "label": "Supabase",
+          "sub": "Postgres and sign-in",
+          "tone": "data",
+          "rank": 2
+        },
+        {
+          "id": "github",
+          "kind": "external",
+          "label": "GitHub",
+          "sub": "repos and project boards",
+          "tone": "external",
+          "rank": 2
+        },
+        {
+          "id": "tools",
+          "kind": "external",
+          "label": "Delivery tools",
+          "sub": "Jira, Confluence, ClickUp, Trello, Notion, Slack",
+          "tone": "external",
+          "rank": 2
+        }
+      ],
+      "edges": [
+        {
+          "id": "c-owner",
+          "from": "owner",
+          "to": "sdlc",
+          "label": "idea in, documents out",
+          "style": "solid"
+        },
+        {
+          "id": "c-dev",
+          "from": "dev",
+          "to": "sdlc",
+          "label": "generate from the terminal",
+          "style": "solid"
+        },
+        {
+          "id": "c-openai",
+          "from": "sdlc",
+          "to": "openai",
+          "label": "write and summarise",
+          "style": "dashed"
+        },
+        {
+          "id": "c-claude",
+          "from": "sdlc",
+          "to": "claude",
+          "label": "code work",
+          "style": "dashed"
+        },
+        {
+          "id": "c-supabase",
+          "from": "sdlc",
+          "to": "supabase",
+          "label": "store",
+          "style": "dotted"
+        },
+        {
+          "id": "c-github",
+          "from": "sdlc",
+          "to": "github",
+          "label": "read repos",
+          "style": "solid"
+        },
+        {
+          "id": "c-tools",
+          "from": "sdlc",
+          "to": "tools",
+          "label": "push tasks",
+          "style": "solid"
+        }
+      ],
+      "legend": [
+        {
+          "style": "solid",
+          "tone": "core",
+          "label": "request · call"
+        },
+        {
+          "style": "dashed",
+          "tone": "stream",
+          "label": "AI provider call"
+        },
+        {
+          "style": "dotted",
+          "tone": "data",
+          "label": "storage"
+        }
+      ]
+    },
+    {
+      "id": "containers",
+      "kind": "c4",
+      "title": "Level 2 · Containers",
+      "elements": [
+        {
+          "id": "web",
+          "kind": "container",
+          "label": "Dashboard",
+          "sub": "Next.js pages in the browser",
+          "tone": "core",
+          "group": "app"
+        },
+        {
+          "id": "docapi",
+          "kind": "container",
+          "label": "Document API",
+          "sub": "/api/generate-document",
+          "tone": "core",
+          "group": "app"
+        },
+        {
+          "id": "limits",
+          "kind": "container",
+          "label": "Usage limits",
+          "sub": "rate-limit service",
+          "tone": "core",
+          "group": "app"
+        },
+        {
+          "id": "optimizer",
+          "kind": "container",
+          "label": "Context optimiser",
+          "sub": "summarises earlier documents",
+          "tone": "core",
+          "group": "app"
+        },
+        {
+          "id": "prompts",
+          "kind": "container",
+          "label": "Prompt service",
+          "sub": "templates and A/B tests",
+          "tone": "core",
+          "group": "app"
+        },
+        {
+          "id": "projects",
+          "kind": "container",
+          "label": "Projects API",
+          "sub": "/api/sdlc-documents",
+          "tone": "core",
+          "group": "app"
+        },
+        {
+          "id": "wizard",
+          "kind": "container",
+          "label": "Idea-to-Spec API",
+          "sub": "/api/idea-to-spec/generate",
+          "tone": "core",
+          "group": "app"
+        },
+        {
+          "id": "codeapi",
+          "kind": "container",
+          "label": "Code API",
+          "sub": "/api/claude · free daily limit",
+          "tone": "core",
+          "group": "app"
+        },
+        {
+          "id": "db",
+          "kind": "store",
+          "label": "Supabase",
+          "sub": "projects, documents, prompts, sessions",
+          "tone": "data"
+        },
+        {
+          "id": "gpt",
+          "kind": "external",
+          "label": "OpenAI",
+          "sub": "GPT-4o, GPT-4o-mini",
+          "tone": "external"
+        },
+        {
+          "id": "anthropic",
+          "kind": "external",
+          "label": "Anthropic Claude",
+          "sub": "Claude Sonnet",
+          "tone": "external"
+        }
+      ],
+      "edges": [
+        {
+          "id": "k-web-doc",
+          "from": "web",
+          "to": "docapi",
+          "label": "one call per document",
+          "style": "solid"
+        },
+        {
+          "id": "k-doc-limit",
+          "from": "docapi",
+          "to": "limits",
+          "label": "signed out? check quota",
+          "style": "solid"
+        },
+        {
+          "id": "k-limit-db",
+          "from": "limits",
+          "to": "db",
+          "label": "session counts",
+          "style": "dotted"
+        },
+        {
+          "id": "k-doc-prompt",
+          "from": "docapi",
+          "to": "prompts",
+          "label": "load template",
+          "style": "solid"
+        },
+        {
+          "id": "k-prompt-db",
+          "from": "prompts",
+          "to": "db",
+          "label": "prompt_templates",
+          "style": "dotted"
+        },
+        {
+          "id": "k-doc-opt",
+          "from": "docapi",
+          "to": "optimizer",
+          "label": "summarise context",
+          "style": "solid"
+        },
+        {
+          "id": "k-opt-gpt",
+          "from": "optimizer",
+          "to": "gpt",
+          "label": "summary call",
+          "style": "dashed"
+        },
+        {
+          "id": "k-doc-gpt",
+          "from": "docapi",
+          "to": "gpt",
+          "label": "stream",
+          "style": "dashed"
+        },
+        {
+          "id": "k-web-proj",
+          "from": "web",
+          "to": "projects",
+          "label": "save project",
+          "style": "solid"
+        },
+        {
+          "id": "k-proj-db",
+          "from": "projects",
+          "to": "db",
+          "label": "write",
+          "style": "dotted"
+        },
+        {
+          "id": "k-web-wiz",
+          "from": "web",
+          "to": "wizard",
+          "label": "one call per diagram",
+          "style": "solid"
+        },
+        {
+          "id": "k-wiz-gpt",
+          "from": "wizard",
+          "to": "gpt",
+          "label": "first choice",
+          "style": "dashed"
+        },
+        {
+          "id": "k-wiz-claude",
+          "from": "wizard",
+          "to": "anthropic",
+          "label": "fallback",
+          "style": "dashed"
+        },
+        {
+          "id": "k-web-code",
+          "from": "web",
+          "to": "codeapi",
+          "label": "code tasks",
+          "style": "solid"
+        },
+        {
+          "id": "k-code-claude",
+          "from": "codeapi",
+          "to": "anthropic",
+          "label": "code work",
+          "style": "dashed"
+        }
+      ],
+      "legend": [
+        {
+          "style": "solid",
+          "tone": "core",
+          "label": "request · call"
+        },
+        {
+          "style": "dashed",
+          "tone": "stream",
+          "label": "AI provider call"
+        },
+        {
+          "style": "dotted",
+          "tone": "data",
+          "label": "storage"
+        }
+      ],
+      "groups": [
+        {
+          "id": "app",
+          "label": "SDLC.dev · one Next.js app on Vercel",
+          "tone": "core"
+        }
+      ]
+    },
+    {
+      "id": "docgen",
+      "kind": "c4",
+      "title": "Level 3 · Inside the Document API",
+      "direction": "DOWN",
+      "elements": [
+        {
+          "id": "client",
+          "kind": "external",
+          "label": "Dashboard",
+          "sub": "POST idea, type, earlier docs",
+          "tone": "neutral",
+          "rank": 0
+        },
+        {
+          "id": "validate",
+          "kind": "component",
+          "label": "Validator",
+          "sub": "API key, input, 8 types",
+          "tone": "core",
+          "group": "fn",
+          "rank": 1
+        },
+        {
+          "id": "limiter",
+          "kind": "component",
+          "label": "Anonymous limit",
+          "sub": "10 per session per 24 h",
+          "tone": "core",
+          "group": "fn",
+          "rank": 2
+        },
+        {
+          "id": "sessions",
+          "kind": "store",
+          "label": "Session counts",
+          "sub": "anonymous_project_sessions",
+          "tone": "data",
+          "rank": 3
+        },
+        {
+          "id": "resolver",
+          "kind": "component",
+          "label": "Prompt resolver",
+          "sub": "custom → A/B → personal → system → built-in",
+          "tone": "core",
+          "group": "fn",
+          "rank": 3
+        },
+        {
+          "id": "cache",
+          "kind": "store",
+          "label": "Prompt cache",
+          "sub": "in memory · 5 minutes",
+          "tone": "data",
+          "group": "fn",
+          "rank": 4
+        },
+        {
+          "id": "templates",
+          "kind": "store",
+          "label": "Prompt tables",
+          "sub": "prompt_templates, prompt_experiments",
+          "tone": "data",
+          "rank": 5
+        },
+        {
+          "id": "optimizer",
+          "kind": "component",
+          "label": "Context optimiser",
+          "sub": "trim to 2,500–3,000 chars",
+          "tone": "core",
+          "group": "fn",
+          "rank": 4
+        },
+        {
+          "id": "generator",
+          "kind": "component",
+          "label": "Generator",
+          "sub": "streamText · GPT-4o",
+          "tone": "core",
+          "group": "fn",
+          "rank": 5
+        },
+        {
+          "id": "gpt",
+          "kind": "external",
+          "label": "OpenAI",
+          "sub": "GPT-4o-mini · GPT-4o",
+          "tone": "external",
+          "rank": 6
+        },
+        {
+          "id": "sse",
+          "kind": "component",
+          "label": "Event stream writer",
+          "sub": "chunk · complete · error",
+          "tone": "core",
+          "group": "fn",
+          "rank": 6
+        }
+      ],
+      "edges": [
+        {
+          "id": "d-post",
+          "from": "client",
+          "to": "validate",
+          "label": "POST",
+          "style": "solid"
+        },
+        {
+          "id": "d-limit",
+          "from": "validate",
+          "to": "limiter",
+          "label": "signed out only",
+          "style": "solid"
+        },
+        {
+          "id": "d-count",
+          "from": "limiter",
+          "to": "sessions",
+          "label": "project_count",
+          "style": "dotted"
+        },
+        {
+          "id": "d-429",
+          "from": "limiter",
+          "to": "client",
+          "label": "429 when used up",
+          "style": "dashed"
+        },
+        {
+          "id": "d-resolve",
+          "from": "limiter",
+          "to": "resolver",
+          "label": "allowed",
+          "style": "solid"
+        },
+        {
+          "id": "d-cache",
+          "from": "resolver",
+          "to": "cache",
+          "label": "hit?",
+          "style": "dotted"
+        },
+        {
+          "id": "d-load",
+          "from": "cache",
+          "to": "templates",
+          "label": "miss: load",
+          "style": "dotted"
+        },
+        {
+          "id": "d-opt",
+          "from": "resolver",
+          "to": "optimizer",
+          "label": "template + earlier docs",
+          "style": "solid"
+        },
+        {
+          "id": "d-sum",
+          "from": "optimizer",
+          "to": "gpt",
+          "label": "summary",
+          "style": "dashed"
+        },
+        {
+          "id": "d-gen",
+          "from": "optimizer",
+          "to": "generator",
+          "label": "final prompt",
+          "style": "solid"
+        },
+        {
+          "id": "d-stream",
+          "from": "generator",
+          "to": "gpt",
+          "label": "stream",
+          "style": "dashed"
+        },
+        {
+          "id": "d-sse",
+          "from": "generator",
+          "to": "sse",
+          "label": "text deltas",
+          "style": "solid"
+        },
+        {
+          "id": "d-out",
+          "from": "sse",
+          "to": "client",
+          "label": "event stream",
+          "style": "dashed"
+        }
+      ],
+      "legend": [
+        {
+          "style": "solid",
+          "tone": "core",
+          "label": "request path"
+        },
+        {
+          "style": "dashed",
+          "tone": "stream",
+          "label": "AI call · response"
+        },
+        {
+          "style": "dotted",
+          "tone": "data",
+          "label": "state"
+        }
+      ],
+      "groups": [
+        {
+          "id": "fn",
+          "label": "/api/generate-document · one serverless function",
+          "tone": "core"
+        }
+      ]
+    },
+    {
+      "id": "flow",
+      "kind": "sequence",
+      "title": "One project, step by step",
+      "participants": [
+        {
+          "id": "p-owner",
+          "label": "Product owner"
+        },
+        {
+          "id": "p-web",
+          "label": "Dashboard"
+        },
+        {
+          "id": "p-doc",
+          "label": "Document API"
+        },
+        {
+          "id": "p-prompt",
+          "label": "Prompt service"
+        },
+        {
+          "id": "p-opt",
+          "label": "Context optimiser"
+        },
+        {
+          "id": "p-gpt",
+          "label": "OpenAI"
+        },
+        {
+          "id": "p-proj",
+          "label": "Projects API"
+        },
+        {
+          "id": "p-db",
+          "label": "Supabase"
+        }
+      ],
+      "messages": [
+        {
+          "id": "m1",
+          "from": "p-owner",
+          "to": "p-web",
+          "label": "types the idea, picks documents"
+        },
+        {
+          "id": "m2",
+          "from": "p-web",
+          "to": "p-doc",
+          "label": "POST business document"
+        },
+        {
+          "id": "m3",
+          "from": "p-doc",
+          "to": "p-prompt",
+          "label": "get business template"
+        },
+        {
+          "id": "m4",
+          "from": "p-doc",
+          "to": "p-gpt",
+          "label": "generate, streaming (GPT-4o)"
+        },
+        {
+          "id": "m5",
+          "from": "p-doc",
+          "to": "p-web",
+          "label": "text streams into the page"
+        },
+        {
+          "id": "m6",
+          "from": "p-web",
+          "to": "p-doc",
+          "label": "POST functional, with earlier docs"
+        },
+        {
+          "id": "m7",
+          "from": "p-doc",
+          "to": "p-opt",
+          "label": "summarise earlier documents"
+        },
+        {
+          "id": "m8",
+          "from": "p-opt",
+          "to": "p-gpt",
+          "label": "summary call (GPT-4o-mini)"
+        },
+        {
+          "id": "m9",
+          "from": "p-doc",
+          "to": "p-gpt",
+          "label": "generate, streaming"
+        },
+        {
+          "id": "m10",
+          "from": "p-web",
+          "to": "p-proj",
+          "label": "save project and documents"
+        },
+        {
+          "id": "m11",
+          "from": "p-proj",
+          "to": "p-db",
+          "label": "sdlc_projects, documents"
+        }
+      ]
+    },
+    {
+      "id": "wizard",
+      "kind": "sequence",
+      "title": "Idea-to-Spec wizard: one diagram, with retries",
+      "participants": [
+        {
+          "id": "q-owner",
+          "label": "Product owner"
+        },
+        {
+          "id": "q-wiz",
+          "label": "Wizard page"
+        },
+        {
+          "id": "q-api",
+          "label": "Idea-to-Spec API"
+        },
+        {
+          "id": "q-gpt",
+          "label": "OpenAI GPT-4o"
+        },
+        {
+          "id": "q-claude",
+          "label": "Claude Sonnet 4"
+        }
+      ],
+      "messages": [
+        {
+          "id": "q1",
+          "from": "q-owner",
+          "to": "q-wiz",
+          "label": "Spark: types the idea"
+        },
+        {
+          "id": "q2",
+          "from": "q-wiz",
+          "to": "q-api",
+          "label": "POST idea, diagramType=mindmap"
+        },
+        {
+          "id": "q3",
+          "from": "q-api",
+          "to": "q-wiz",
+          "label": "event: start"
+        },
+        {
+          "id": "q4",
+          "from": "q-api",
+          "to": "q-gpt",
+          "label": "stream request"
+        },
+        {
+          "id": "q5",
+          "from": "q-gpt",
+          "to": "q-api",
+          "label": "429 or 5xx"
+        },
+        {
+          "id": "q6",
+          "from": "q-api",
+          "to": "q-wiz",
+          "label": "event: retry (1 s, then 2 s)"
+        },
+        {
+          "id": "q7",
+          "from": "q-api",
+          "to": "q-gpt",
+          "label": "tries 2 and 3"
+        },
+        {
+          "id": "q8",
+          "from": "q-api",
+          "to": "q-claude",
+          "label": "still failing: same prompt"
+        },
+        {
+          "id": "q9",
+          "from": "q-claude",
+          "to": "q-api",
+          "label": "text deltas"
+        },
+        {
+          "id": "q10",
+          "from": "q-api",
+          "to": "q-wiz",
+          "label": "event: chunk … complete"
+        },
+        {
+          "id": "q11",
+          "from": "q-wiz",
+          "to": "q-owner",
+          "label": "Mermaid mind map; next step"
+        }
+      ]
+    }
+  ],
+  "chapters": [
+    {
+      "id": "overview",
+      "title": "Overview"
+    },
+    {
+      "id": "requirements",
+      "title": "Requirements and scale"
+    },
+    {
+      "id": "context",
+      "title": "Context"
+    },
+    {
+      "id": "containers",
+      "title": "Containers"
+    },
+    {
+      "id": "deep-dive",
+      "title": "Deep dive"
+    },
+    {
+      "id": "flows",
+      "title": "Core flows"
+    },
+    {
+      "id": "data",
+      "title": "Data and caching"
+    },
+    {
+      "id": "growth",
+      "title": "Growth"
+    },
+    {
+      "id": "failures",
+      "title": "Failure modes"
+    },
+    {
+      "id": "patterns",
+      "title": "Patterns used"
+    },
+    {
+      "id": "decisions",
+      "title": "Key decisions"
+    },
+    {
+      "id": "mvp",
+      "title": "What we would build first"
+    }
+  ],
+  "shots": [
+    {
+      "id": "s01",
+      "chapter": "overview",
+      "diagram": "context",
+      "focus": [],
+      "trace": [],
+      "engineer": "This is SDLC.dev, the open-source dd-sdlc-ai project on GitHub, under the MIT licence. You describe a product idea in plain words, and it writes the documents a team needs: a business analysis, functional, technical and UX specifications, and diagrams. The one idea everything depends on is this. Every document is its own streamed AI call, and each later document is given a short summary of the earlier ones, so the set stays consistent without overflowing the prompt.",
+      "executive": "SDLC.dev turns a product idea into the documents a team needs to build it, one AI-written document at a time."
+    },
+    {
+      "id": "s02",
+      "chapter": "requirements",
+      "card": {
+        "heading": "What the code sets (from the repository)",
+        "kind": "numbers",
+        "points": [
+          "5 | documents in the main flow, one after another",
+          "8 | document types the API accepts",
+          "10 a day | documents for a signed-out session",
+          "300 s | longest any API function may run",
+          "3,000 chars | context budget for functional and technical specs",
+          "up to 11 | model calls for one five-document project"
+        ]
+      },
+      "focus": [],
+      "trace": [],
+      "engineer": "First, the numbers, all read from the repository rather than from usage figures. The main flow writes five documents, one after another, and the API accepts eight document types. A signed-out visitor gets ten documents a day. Every API function may run for at most three hundred seconds. And the functional and technical specs each get about three thousand characters of earlier context. Add it up: five writing calls plus up to six summary calls, so up to eleven model calls per project.",
+      "executive": "A project is up to eleven AI calls, a signed-out visitor gets ten documents a day, and no request may run for more than five minutes."
+    },
+    {
+      "id": "s03",
+      "chapter": "requirements",
+      "card": {
+        "heading": "What users need (our list)",
+        "points": [
+          "Type an idea in plain words; get specs back in minutes",
+          "Watch the text appear, rather than wait for a blank page",
+          "Later documents agree with earlier ones",
+          "Try it without signing up, within limits",
+          "Improve prompts without a release",
+          "Send the results to Jira, Confluence, GitHub and the rest"
+        ]
+      },
+      "focus": [],
+      "trace": [],
+      "engineer": "Then the requirements. These are ours, written from the product, not taken from a document in the repository. Someone types an idea in ordinary words and gets specifications back in minutes. They watch the text appear as it is written, instead of staring at a spinner. The later documents must agree with the earlier ones. A visitor can try it without an account, within limits. Prompts can be improved without a new release. And the results can be pushed into the tools a team already uses.",
+      "executive": "Fast, visible progress, consistent documents, a free trial with limits, and easy hand-off to existing tools."
+    },
+    {
+      "id": "s04",
+      "chapter": "context",
+      "diagram": "context",
+      "focus": [
+        "owner",
+        "dev",
+        "sdlc"
+      ],
+      "trace": [
+        "c-owner",
+        "c-dev"
+      ],
+      "engineer": "Who uses it. The main user is a product owner, who types an idea into the web app and reads back the documents. The repository also ships two npm packages for developers: a command-line tool, so you can run a generate command from the terminal, and an MCP server, so an AI assistant such as Claude Desktop can ask for specifications directly. All three are front doors to the same generation idea.",
+      "executive": "Product owners use the website; developers can use a command-line tool or their AI assistant instead."
+    },
+    {
+      "id": "s05",
+      "chapter": "context",
+      "diagram": "context",
+      "focus": [
+        "sdlc",
+        "openai",
+        "claude",
+        "supabase",
+        "github",
+        "tools"
+      ],
+      "trace": [
+        "c-openai",
+        "c-claude",
+        "c-supabase",
+        "c-github",
+        "c-tools"
+      ],
+      "engineer": "What it talks to. OpenAI does most of the writing: GPT-4o for the documents and the smaller GPT-4o-mini for summaries. Anthropic's Claude handles code tasks, and is the fallback when the Idea-to-Spec wizard cannot reach OpenAI. Supabase provides the Postgres database and sign-in. GitHub supplies repositories. And finished work goes out to Jira, Confluence, ClickUp, Trello, Notion and Slack, each through its own integration route.",
+      "executive": "Two AI providers do the writing, one database stores everything, and results flow out to the team's existing tools."
+    },
+    {
+      "id": "s06",
+      "chapter": "containers",
+      "diagram": "containers",
+      "focus": [],
+      "trace": [],
+      "engineer": "Now one level in. SDLC.dev is a single Next.js app, deployed on Vercel. The boxes inside the boundary are API routes and services in one codebase, not separate microservices. Each route runs as a serverless function, and the project's Vercel settings let every one of them run for up to three hundred seconds, which matters because writing a long document can take a while. Let's follow four paths through it.",
+      "executive": "Inside, it is one web application with a handful of internal parts, each allowed up to five minutes per request."
+    },
+    {
+      "id": "s07",
+      "chapter": "containers",
+      "diagram": "containers",
+      "focus": [
+        "web",
+        "docapi",
+        "limits",
+        "prompts",
+        "db"
+      ],
+      "trace": [
+        "k-web-doc",
+        "k-doc-limit",
+        "k-limit-db",
+        "k-doc-prompt",
+        "k-prompt-db"
+      ],
+      "engineer": "Path one: writing a document. The dashboard calls the Document API once per document. If the caller is not signed in, the API first asks the usage limits service whether this session has any documents left today; the counts live in Supabase. Then it loads the prompt template for this document type from the prompt service, which reads the prompt templates table. So prompts are data, and can change without a deployment.",
+      "executive": "Each document request checks the visitor's allowance, then loads its instructions from the database."
+    },
+    {
+      "id": "s08",
+      "chapter": "containers",
+      "diagram": "containers",
+      "focus": [
+        "docapi",
+        "optimizer",
+        "gpt"
+      ],
+      "trace": [
+        "k-doc-opt",
+        "k-opt-gpt",
+        "k-doc-gpt"
+      ],
+      "engineer": "Path two: building on earlier documents. Rather than pasting whole documents into the next prompt, the Document API hands them to the context optimiser. Any earlier document longer than the budget is summarised by a separate GPT-4o-mini call, with instructions tuned to the target. A technical spec wants data models and integrations; a UX spec wants users, goals and workflows. Then the real document is generated by GPT-4o and streamed back.",
+      "executive": "Earlier documents are summarised by a cheaper model before being fed into the next one."
+    },
+    {
+      "id": "s09",
+      "chapter": "containers",
+      "diagram": "containers",
+      "focus": [
+        "web",
+        "projects",
+        "db"
+      ],
+      "trace": [
+        "k-web-proj",
+        "k-proj-db"
+      ],
+      "engineer": "Path three: saving. When the documents are finished, the dashboard saves the project through the Projects API, which writes to two tables: one row in the projects table holding the original idea, and one row per document, with a version number. Notice that generation and saving are separate calls. The server does not save as it writes; the browser decides when the work is done and sends it back.",
+      "executive": "Finished documents are saved in a separate step, driven by the browser."
+    },
+    {
+      "id": "s10",
+      "chapter": "containers",
+      "diagram": "containers",
+      "focus": [
+        "web",
+        "wizard",
+        "codeapi",
+        "gpt",
+        "anthropic"
+      ],
+      "trace": [
+        "k-web-wiz",
+        "k-wiz-gpt",
+        "k-wiz-claude",
+        "k-web-code",
+        "k-code-claude"
+      ],
+      "engineer": "Path four covers the newer parts. The Idea-to-Spec wizard calls its own API once per diagram. It tries OpenAI first and falls back to Claude if OpenAI keeps failing. Separately, the Code API sends code work to Claude. Free accounts get a daily allowance of Claude projects on the shared key; after that, users are asked to bring their own Anthropic key or come back tomorrow.",
+      "executive": "The diagram wizard can switch AI providers when one fails, and code work has its own daily allowance."
+    },
+    {
+      "id": "s11",
+      "chapter": "deep-dive",
+      "diagram": "docgen",
+      "focus": [],
+      "trace": [],
+      "engineer": "The most interesting component is the Document API itself, so let's open it. It is one serverless function with five steps: validate the request, apply the anonymous limit, resolve the prompt, optimise the context, and generate, writing the answer out as a stream of server-sent events. The stores on the right are the session counts and the prompt tables in Supabase, plus a small in-memory prompt cache.",
+      "executive": "Inside the document service: check, limit, choose instructions, trim context, write, and stream."
+    },
+    {
+      "id": "s12",
+      "chapter": "deep-dive",
+      "diagram": "docgen",
+      "focus": [
+        "resolver",
+        "cache",
+        "templates"
+      ],
+      "trace": [
+        "d-resolve",
+        "d-cache",
+        "d-load"
+      ],
+      "engineer": "The prompt resolver has a clear order of preference. A custom prompt in the request wins. Next, if an A/B experiment is running for this document type, a hash of the user's id picks control or variant according to the traffic split. Then the user's own default prompt, then the system default, and finally a prompt built into the code. Database lookups are cached in memory for five minutes.",
+      "executive": "Instructions are chosen in a fixed order, which allows A/B tests and personal prompts, with a built-in fallback."
+    },
+    {
+      "id": "s13",
+      "chapter": "deep-dive",
+      "diagram": "docgen",
+      "focus": [
+        "optimizer",
+        "generator",
+        "gpt",
+        "sse"
+      ],
+      "trace": [
+        "d-opt",
+        "d-sum",
+        "d-gen",
+        "d-stream",
+        "d-sse",
+        "d-out"
+      ],
+      "engineer": "Then the optimiser trims the context. Functional and technical specs get three thousand characters of it, UX specs two and a half thousand. The business analysis and the diagrams skip this step. The generator calls GPT-4o with the AI SDK's streamText, and each piece of text goes out as a chunk event. At the end comes a complete event carrying the cleaned-up document, or an error event if anything broke.",
+      "executive": "Context is trimmed to a budget, then the document is written and streamed back piece by piece."
+    },
+    {
+      "id": "s14",
+      "chapter": "flows",
+      "diagram": "flow",
+      "focus": [
+        "p-owner",
+        "p-web",
+        "p-doc",
+        "p-prompt",
+        "p-gpt"
+      ],
+      "trace": [
+        "m1",
+        "m2",
+        "m3",
+        "m4",
+        "m5"
+      ],
+      "engineer": "Now one project, end to end. The product owner types the idea and picks which documents to generate. Note what happens next: there is no step that asks the owner clarifying questions. The dashboard posts straight to the Document API for the business analysis. The API fetches the business template and asks GPT-4o to write, and the text streams into the page as it arrives, so the owner watches it appear.",
+      "executive": "The idea goes in and the first document, the business analysis, streams onto the screen."
+    },
+    {
+      "id": "s15",
+      "chapter": "flows",
+      "diagram": "flow",
+      "focus": [
+        "p-web",
+        "p-doc",
+        "p-opt",
+        "p-gpt",
+        "p-proj",
+        "p-db"
+      ],
+      "trace": [
+        "m6",
+        "m7",
+        "m8",
+        "m9",
+        "m10",
+        "m11"
+      ],
+      "engineer": "The functional spec repeats the pattern with one extra step. The dashboard sends the business analysis along, the optimiser summarises it with GPT-4o-mini, and the summary goes into the prompt. Technical and UX specs follow the same way, with more earlier documents each. The diagrams come last. Only when all five are done does the dashboard save the project and its documents through the Projects API.",
+      "executive": "Each following document builds on a summary of the ones before it, and the whole project is saved at the end."
+    },
+    {
+      "id": "s16",
+      "chapter": "flows",
+      "diagram": "wizard",
+      "focus": [
+        "q-owner",
+        "q-wiz",
+        "q-api",
+        "q-gpt"
+      ],
+      "trace": [
+        "q1",
+        "q2",
+        "q3",
+        "q4",
+        "q5",
+        "q6",
+        "q7"
+      ],
+      "engineer": "The second flow is the newer Idea-to-Spec wizard, five steps called Spark, Expand, Structure, Architect and Spec. Each step asks for Mermaid diagrams, starting with a mind map. Here OpenAI answers with a rate-limit error. The API tells the page it is retrying, waits one second and tries again, then two seconds, for three attempts in total. Only 429s and server errors are retried; a bad request is not.",
+      "executive": "The diagram wizard retries a busy AI provider a couple of times, telling the user it is doing so."
+    },
+    {
+      "id": "s17",
+      "chapter": "flows",
+      "diagram": "wizard",
+      "focus": [
+        "q-api",
+        "q-claude",
+        "q-wiz",
+        "q-owner"
+      ],
+      "trace": [
+        "q8",
+        "q9",
+        "q10",
+        "q11"
+      ],
+      "engineer": "If OpenAI still fails, the API sends the same prompt to Claude Sonnet 4, with the same retry rule. Its text deltas are relayed to the page as chunk events, then a complete event. The browser renders the Mermaid mind map, and the owner moves to the next step, where use-case and journey diagrams build on the same idea. So the wizard trades a little latency for a much better chance of an answer.",
+      "executive": "If the first provider stays down, a second one writes the diagram instead."
+    },
+    {
+      "id": "s18",
+      "chapter": "data",
+      "card": {
+        "heading": "What is stored where",
+        "kind": "compare",
+        "points": [
+          "Data | Where, and for how long",
+          "Projects and documents | Supabase: sdlc_projects, documents (versioned)",
+          "Prompts and A/B tests | prompt_templates, prompt_experiments",
+          "Prompt runs | prompt_usage_logs: tokens, timing, success",
+          "Anonymous sessions | count, IP and browser; count resets after 24 h",
+          "Prompt cache | each function's memory, five minutes",
+          "Recent results | the browser's localStorage",
+          "Generated text | never cached: every run calls the model again"
+        ]
+      },
+      "focus": [],
+      "trace": [],
+      "engineer": "Where the data lives. Projects and their documents are in Supabase Postgres, and each document row has a version. Prompts and A/B experiments are tables too, and prompt runs can be logged with tokens and timing. Anonymous sessions keep a count, an IP address and the browser string, and the count resets after a day. The only server-side cache is the prompt cache, five minutes in each function's memory. Generated text is never cached, so regenerating always costs a fresh call.",
+      "executive": "Everything durable is in one Postgres database; the only cache is for prompts, so every regeneration is a new AI call."
+    },
+    {
+      "id": "s19",
+      "chapter": "growth",
+      "card": {
+        "heading": "How it grew, from the commit history",
+        "kind": "compare",
+        "points": [
+          "When | Change",
+          "Jul 2025 | Repository created; Jira integration the next day",
+          "Jul 2025 | Code API (12th), Document API (19th), context optimiser (22nd)",
+          "Aug 2025 | Anonymous limits (6th); CLI (17th) and MCP server (18th)",
+          "Dec 2025 | Idea-to-Spec wizard, with retries and provider fallback",
+          "Jan 2026 | Latest commits; about 200 in all"
+        ]
+      },
+      "focus": [],
+      "trace": [],
+      "engineer": "How it grew, read from the commit history. The repository was created in July 2025, and a Jira integration arrived the next day. In the same month came the Claude code API, the Document API and, three days later, the context optimiser. August added limits for anonymous users, then the command-line tool and the MCP server. December brought the Idea-to-Spec wizard, with retries and a second provider. In all, about two hundred commits.",
+      "executive": "Built in about six months: documents first, then limits, developer tools, and finally the diagram wizard."
+    },
+    {
+      "id": "s20",
+      "chapter": "growth",
+      "card": {
+        "heading": "How we would grow it (our design)",
+        "points": [
+          "Run generation as a background job; save each document as it finishes",
+          "Cache summaries by document hash, so re-runs skip them",
+          "Write independent documents in parallel once the analysis exists",
+          "Move the prompt cache to a shared store",
+          "Budget tokens per user, not only documents per day"
+        ]
+      },
+      "focus": [],
+      "trace": [],
+      "engineer": "We have no usage figures for the live site, so this part is our design, not the project's. To grow, we would first run generation as a background job and save each document as soon as it is written, so a closed tab loses nothing. Next, cache summaries by a hash of the source document. Write independent documents in parallel. Share the prompt cache across functions. And budget tokens per user, because a long document costs far more than a short one.",
+      "executive": "Our suggestions: background jobs, smarter caching, parallel writing and token budgets."
+    },
+    {
+      "id": "s21",
+      "chapter": "failures",
+      "card": {
+        "heading": "What fails, and what protects users",
+        "kind": "compare",
+        "points": [
+          "Failure | What the code does",
+          "Provider busy (wizard) | Three tries, 1 s then 2 s back-off; then Claude",
+          "Summary call fails | Cut the text at a sentence break instead",
+          "Prompt lookup fails | System prompt, then a built-in prompt",
+          "Stream breaks mid-document | Error event; the user runs it again",
+          "Function runs too long | Vercel stops it at 300 s"
+        ]
+      },
+      "focus": [],
+      "trace": [],
+      "engineer": "What breaks, and what protects people. When the wizard's provider is busy, it retries with back-off and then switches to Claude. When a summary call fails, the optimiser falls back to cutting the text at a sentence break. When a prompt lookup fails, it drops to the system prompt and then to one built into the code. A stream that breaks sends an error event, and the user runs that document again. And Vercel stops anything still running at three hundred seconds.",
+      "executive": "Most failures have a fallback: retry, switch provider, simpler summary, or a built-in prompt."
+    },
+    {
+      "id": "s22",
+      "chapter": "failures",
+      "diagram": "docgen",
+      "focus": [
+        "limiter",
+        "sessions",
+        "client"
+      ],
+      "trace": [
+        "d-limit",
+        "d-count",
+        "d-429"
+      ],
+      "engineer": "Two weaker spots, from our reading of the code. The anonymous limit fails open: if the session lookup errors, the request is allowed, which favours users over cost. A per-minute burst limit is written but switched off, with a note to fix it. And the session id comes from a request header; if it is missing, a fresh id is made. In the wizard, a retry after part of a stream could repeat text. Each is a small, known trade-off.",
+      "executive": "The free-use limit errs on the side of letting people in, and a burst limit is not yet switched on."
+    },
+    {
+      "id": "s23",
+      "chapter": "patterns",
+      "card": {
+        "heading": "Patterns used",
+        "points": [
+          "Retry with exponential back-off: the wizard, three tries, 1 s then 2 s",
+          "Rate limiting: 10 anonymous documents a day; a daily free Claude allowance",
+          "Timeouts: 300 s for every API function",
+          "Fallback: second provider; truncation when summaries fail",
+          "Cache-aside: prompt templates, five minutes in memory"
+        ]
+      },
+      "focus": [],
+      "trace": [],
+      "engineer": "The named patterns, and where they appear. Retry with exponential back-off, in the wizard: three tries, waiting one second, then two. Rate limiting, for signed-out visitors and for the free Claude allowance. Timeouts, through the three-hundred-second ceiling on every API function. Fallbacks, both to a second provider and from summarising to plain truncation. And cache-aside for prompt templates, held for five minutes. The first three have their own walkthroughs in this library.",
+      "executive": "Retries, usage limits, time limits, fallbacks and a small cache: well-known patterns, used lightly."
+    },
+    {
+      "id": "s24",
+      "chapter": "decisions",
+      "card": {
+        "heading": "Key decisions",
+        "kind": "compare",
+        "points": [
+          "Decision | Trade-off",
+          "One Next.js app on Vercel | Quick to ship; long AI calls live inside function limits",
+          "One request per document, in order | Each streams on its own; total time adds up",
+          "Summarise with a cheaper model | Fewer tokens; extra calls, some detail lost",
+          "Prompts as data, with A/B tests | Change without deploys; prompts can drift from code",
+          "Try without signing up | Less friction; needs abuse limits"
+        ]
+      },
+      "focus": [],
+      "trace": [],
+      "engineer": "The decisions that shaped it. One Next.js app on Vercel, rather than separate services: quick to ship, but every AI call must finish inside a function's time limit. One request per document, in order, rather than one giant prompt: each document streams on its own, but the waits add up. Summarise with a cheaper model: fewer tokens, at the cost of extra calls. Prompts as data, with A/B tests. And a free try without signing up, which needs limits.",
+      "executive": "Simple hosting, one document at a time, cheaper summaries, editable prompts and a free trial, each with a cost."
+    },
+    {
+      "id": "s25",
+      "chapter": "mvp",
+      "card": {
+        "heading": "What we would build first (our recommendations)",
+        "points": [
+          "Idea in, three clarifying questions back, then documents",
+          "Two documents first: functional and technical specs",
+          "One provider with retries and back-off; fallback later",
+          "Prompts in a versioned table from day one",
+          "Save each document on the server as it completes",
+          "A per-user token budget, enforced on the server"
+        ]
+      },
+      "focus": [],
+      "trace": [],
+      "engineer": "If we built this from scratch today, here is where we would start. These are our recommendations, not the project's. Take the idea, ask the owner three clarifying questions, then write; better input beats a longer prompt. Start with two documents, the functional and technical specs. Use one provider with retries and back-off, and add a fallback later. Keep prompts in a versioned table from the first day. Save each document on the server as it completes. And enforce a token budget per user.",
+      "executive": "Start small: ask a few questions, write two documents well, retry sensibly, and save as you go."
+    }
+  ],
+  "meta": {
+    "kind": "company",
+    "category": "Developer tools",
+    "level": "beginner",
+    "uses": [
+      "retry",
+      "rate-limiting",
+      "timeout"
+    ],
+    "related": [],
+    "blurb": "How dd-sdlc-ai turns a product idea into specification documents.",
+    "created": "2026-10-13",
+    "updated": "2026-10-14",
+    "factsChecked": "2026-10-14",
+    "changelog": [
+      {
+        "date": "2026-10-13",
+        "note": "First version: context, containers and one flow."
+      },
+      {
+        "date": "2026-10-14",
+        "note": "Moved onto the case-study template: requirements, deep dive of the Document API, Idea-to-Spec wizard flow, data, growth, failures, patterns, decisions and MVP; facts checked against the repository."
+      }
+    ]
+  }
+}

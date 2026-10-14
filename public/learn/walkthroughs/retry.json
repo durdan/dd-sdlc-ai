@@ -1,0 +1,1128 @@
+{
+ "id": "retry",
+ "title": "Retry with backoff and jitter",
+ "template": "pattern",
+ "voice": "en-GB-SoniaNeural",
+ "diagrams": [
+  {
+   "id": "blip",
+   "kind": "sequence",
+   "title": "A two-second blip, then a stampede",
+   "participants": [
+    {
+     "id": "clients",
+     "label": "1,000 clients"
+    },
+    {
+     "id": "orders",
+     "label": "Order service"
+    },
+    {
+     "id": "db",
+     "label": "Database"
+    }
+   ],
+   "messages": [
+    {
+     "id": "b1",
+     "from": "clients",
+     "to": "orders",
+     "style": "solid",
+     "label": "place order"
+    },
+    {
+     "id": "b2",
+     "from": "orders",
+     "to": "db",
+     "style": "solid",
+     "label": "insert order"
+    },
+    {
+     "id": "b3",
+     "from": "db",
+     "to": "orders",
+     "style": "solid",
+     "label": "connection reset · failover, back in 2 s"
+    },
+    {
+     "id": "b4",
+     "from": "orders",
+     "to": "clients",
+     "style": "solid",
+     "label": "500: something went wrong"
+    },
+    {
+     "id": "b5",
+     "from": "clients",
+     "to": "orders",
+     "style": "solid",
+     "label": "all 1,000 retry at once"
+    },
+    {
+     "id": "b6",
+     "from": "orders",
+     "to": "db",
+     "style": "solid",
+     "label": "1,000 inserts on a cold primary"
+    },
+    {
+     "id": "b7",
+     "from": "db",
+     "to": "orders",
+     "style": "solid",
+     "label": "overloaded · times out"
+    },
+    {
+     "id": "b8",
+     "from": "clients",
+     "to": "orders",
+     "style": "solid",
+     "label": "all retry again, in step"
+    }
+   ]
+  },
+  {
+   "id": "layers",
+   "kind": "c4",
+   "title": "Retries at every layer multiply",
+   "direction": "RIGHT",
+   "groups": [
+    {
+     "id": "every",
+     "label": "Every layer retries",
+     "tone": "stream"
+    },
+    {
+     "id": "one",
+     "label": "One layer retries",
+     "tone": "core"
+    }
+   ],
+   "elements": [
+    {
+     "id": "app",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Client app",
+     "sub": "3 attempts",
+     "group": "every"
+    },
+    {
+     "id": "gw",
+     "kind": "container",
+     "tone": "core",
+     "label": "Gateway",
+     "sub": "3 each",
+     "group": "every"
+    },
+    {
+     "id": "api",
+     "kind": "container",
+     "tone": "core",
+     "label": "Orders API",
+     "sub": "3 each",
+     "group": "every"
+    },
+    {
+     "id": "svc",
+     "kind": "container",
+     "tone": "core",
+     "label": "Stock service",
+     "sub": "3 each",
+     "group": "every"
+    },
+    {
+     "id": "dal",
+     "kind": "container",
+     "tone": "core",
+     "label": "Data layer",
+     "sub": "3 each",
+     "group": "every"
+    },
+    {
+     "id": "db",
+     "kind": "store",
+     "tone": "data",
+     "label": "Database",
+     "sub": "243 calls",
+     "group": "every"
+    },
+    {
+     "id": "app2",
+     "kind": "person",
+     "tone": "neutral",
+     "label": "Client app",
+     "sub": "3 attempts",
+     "group": "one"
+    },
+    {
+     "id": "gw2",
+     "kind": "container",
+     "tone": "core",
+     "label": "Gateway",
+     "sub": "fails fast",
+     "group": "one"
+    },
+    {
+     "id": "api2",
+     "kind": "container",
+     "tone": "core",
+     "label": "Orders API",
+     "sub": "fails fast",
+     "group": "one"
+    },
+    {
+     "id": "svc2",
+     "kind": "container",
+     "tone": "core",
+     "label": "Stock service",
+     "sub": "fails fast",
+     "group": "one"
+    },
+    {
+     "id": "dal2",
+     "kind": "container",
+     "tone": "core",
+     "label": "Data layer",
+     "sub": "fails fast",
+     "group": "one"
+    },
+    {
+     "id": "db2",
+     "kind": "store",
+     "tone": "data",
+     "label": "Database",
+     "sub": "3 calls",
+     "group": "one"
+    }
+   ],
+   "edges": [
+    {
+     "id": "l1",
+     "from": "app",
+     "to": "gw",
+     "style": "dashed",
+     "label": "×3"
+    },
+    {
+     "id": "l2",
+     "from": "gw",
+     "to": "api",
+     "style": "dashed",
+     "label": "×9"
+    },
+    {
+     "id": "l3",
+     "from": "api",
+     "to": "svc",
+     "style": "dashed",
+     "label": "×27"
+    },
+    {
+     "id": "l4",
+     "from": "svc",
+     "to": "dal",
+     "style": "dashed",
+     "label": "×81"
+    },
+    {
+     "id": "l5",
+     "from": "dal",
+     "to": "db",
+     "style": "dashed",
+     "label": "×243"
+    },
+    {
+     "id": "l6",
+     "from": "app2",
+     "to": "gw2",
+     "style": "solid",
+     "label": "×3"
+    },
+    {
+     "id": "l7",
+     "from": "gw2",
+     "to": "api2",
+     "style": "solid",
+     "label": "×3"
+    },
+    {
+     "id": "l8",
+     "from": "api2",
+     "to": "svc2",
+     "style": "solid",
+     "label": "×3"
+    },
+    {
+     "id": "l9",
+     "from": "svc2",
+     "to": "dal2",
+     "style": "solid",
+     "label": "×3"
+    },
+    {
+     "id": "l10",
+     "from": "dal2",
+     "to": "db2",
+     "style": "solid",
+     "label": "×3"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or slow"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "signal"
+    }
+   ]
+  },
+  {
+   "id": "parts",
+   "kind": "c4",
+   "title": "A retry policy wraps one call",
+   "direction": "RIGHT",
+   "elements": [
+    {
+     "id": "caller",
+     "kind": "container",
+     "tone": "neutral",
+     "label": "Order service",
+     "sub": "the caller"
+    },
+    {
+     "id": "classify",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Classifier",
+     "sub": "transient? idempotent?",
+     "group": "rp"
+    },
+    {
+     "id": "limit",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Attempt limit",
+     "sub": "e.g. 3 attempts in total",
+     "group": "rp"
+    },
+    {
+     "id": "budget",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Retry budget",
+     "sub": "token bucket per client",
+     "group": "rp"
+    },
+    {
+     "id": "backoff",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Backoff",
+     "sub": "base × 2ⁿ, capped",
+     "group": "rp"
+    },
+    {
+     "id": "jitter",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Jitter",
+     "sub": "random spread",
+     "group": "rp"
+    },
+    {
+     "id": "timeout",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Timeout",
+     "sub": "per attempt",
+     "group": "rp"
+    },
+    {
+     "id": "dep",
+     "kind": "external",
+     "tone": "external",
+     "label": "Payment service",
+     "sub": "the dependency"
+    }
+   ],
+   "edges": [
+    {
+     "id": "p1",
+     "from": "caller",
+     "to": "timeout",
+     "style": "solid",
+     "label": "call"
+    },
+    {
+     "id": "p2",
+     "from": "timeout",
+     "to": "dep",
+     "style": "solid",
+     "label": "attempt"
+    },
+    {
+     "id": "p3",
+     "from": "dep",
+     "to": "classify",
+     "style": "dashed",
+     "label": "error or timeout"
+    },
+    {
+     "id": "p4",
+     "from": "classify",
+     "to": "limit",
+     "style": "solid",
+     "label": "retryable"
+    },
+    {
+     "id": "p5",
+     "from": "limit",
+     "to": "budget",
+     "style": "solid",
+     "label": "attempts left"
+    },
+    {
+     "id": "p6",
+     "from": "budget",
+     "to": "backoff",
+     "style": "solid",
+     "label": "token taken"
+    },
+    {
+     "id": "p7",
+     "from": "backoff",
+     "to": "jitter",
+     "style": "solid",
+     "label": "ceiling"
+    },
+    {
+     "id": "p8",
+     "from": "jitter",
+     "to": "timeout",
+     "style": "solid",
+     "label": "sleep, then try again"
+    },
+    {
+     "id": "p9",
+     "from": "classify",
+     "to": "caller",
+     "style": "dotted",
+     "label": "not retryable: fail now"
+    }
+   ],
+   "groups": [
+    {
+     "id": "rp",
+     "label": "Retry policy [library or SDK]",
+     "tone": "core"
+    }
+   ],
+   "legend": [
+    {
+     "style": "solid",
+     "tone": "core",
+     "label": "call"
+    },
+    {
+     "style": "dashed",
+     "tone": "stream",
+     "label": "failure or slow"
+    },
+    {
+     "style": "dotted",
+     "tone": "data",
+     "label": "signal"
+    }
+   ]
+  },
+  {
+   "id": "flow",
+   "kind": "sequence",
+   "title": "Backoff, jitter and an idempotency key",
+   "participants": [
+    {
+     "id": "caller",
+     "label": "Order service"
+    },
+    {
+     "id": "rp",
+     "label": "Retry policy"
+    },
+    {
+     "id": "dep",
+     "label": "Payment service"
+    }
+   ],
+   "messages": [
+    {
+     "id": "f1",
+     "from": "caller",
+     "to": "rp",
+     "style": "solid",
+     "label": "charge £20 · key k-42"
+    },
+    {
+     "id": "f2",
+     "from": "rp",
+     "to": "dep",
+     "style": "solid",
+     "label": "attempt 1 · Idempotency-Key: k-42"
+    },
+    {
+     "id": "f3",
+     "from": "dep",
+     "to": "rp",
+     "style": "solid",
+     "label": "charged, but the reply is lost · timeout"
+    },
+    {
+     "id": "f4",
+     "from": "rp",
+     "to": "rp",
+     "style": "solid",
+     "label": "transient + keyed: sleep random(0, 100 ms)"
+    },
+    {
+     "id": "f5",
+     "from": "rp",
+     "to": "dep",
+     "style": "solid",
+     "label": "attempt 2 · same key"
+    },
+    {
+     "id": "f6",
+     "from": "dep",
+     "to": "rp",
+     "style": "solid",
+     "label": "503"
+    },
+    {
+     "id": "f7",
+     "from": "rp",
+     "to": "rp",
+     "style": "solid",
+     "label": "sleep random(0, 200 ms)"
+    },
+    {
+     "id": "f8",
+     "from": "rp",
+     "to": "dep",
+     "style": "solid",
+     "label": "attempt 3 · same key"
+    },
+    {
+     "id": "f9",
+     "from": "dep",
+     "to": "rp",
+     "style": "solid",
+     "label": "saved result: charged once"
+    },
+    {
+     "id": "f10",
+     "from": "rp",
+     "to": "caller",
+     "style": "solid",
+     "label": "200 OK"
+    }
+   ]
+  },
+  {
+   "id": "overload",
+   "kind": "sequence",
+   "title": "When the answer is: stop",
+   "participants": [
+    {
+     "id": "caller",
+     "label": "Order service"
+    },
+    {
+     "id": "rp",
+     "label": "Retry policy"
+    },
+    {
+     "id": "cb",
+     "label": "Circuit breaker"
+    },
+    {
+     "id": "dep",
+     "label": "Payment service"
+    }
+   ],
+   "messages": [
+    {
+     "id": "o1",
+     "from": "rp",
+     "to": "dep",
+     "style": "solid",
+     "label": "attempt 1"
+    },
+    {
+     "id": "o2",
+     "from": "dep",
+     "to": "rp",
+     "style": "solid",
+     "label": "429 · Retry-After: 2"
+    },
+    {
+     "id": "o3",
+     "from": "rp",
+     "to": "rp",
+     "style": "solid",
+     "label": "wait the 2 s the server asked for"
+    },
+    {
+     "id": "o4",
+     "from": "rp",
+     "to": "dep",
+     "style": "solid",
+     "label": "attempt 2 succeeds"
+    },
+    {
+     "id": "o5",
+     "from": "rp",
+     "to": "dep",
+     "style": "solid",
+     "label": "outage: many calls fail"
+    },
+    {
+     "id": "o6",
+     "from": "rp",
+     "to": "rp",
+     "style": "solid",
+     "label": "budget empty: no more retries"
+    },
+    {
+     "id": "o7",
+     "from": "rp",
+     "to": "caller",
+     "style": "solid",
+     "label": "error at once, no retry"
+    },
+    {
+     "id": "o8",
+     "from": "rp",
+     "to": "cb",
+     "style": "solid",
+     "label": "next call: breaker open?"
+    },
+    {
+     "id": "o9",
+     "from": "cb",
+     "to": "caller",
+     "style": "solid",
+     "label": "open: fail fast, nothing sent"
+    }
+   ]
+  },
+  {
+   "id": "wild",
+   "kind": "c4",
+   "title": "In the wild",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "brooker",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Exponential Backoff And Jitter",
+     "sub": "Marc Brooker · AWS blog, 2015"
+    },
+    {
+     "id": "builders",
+     "kind": "system",
+     "tone": "neutral",
+     "label": "Amazon Builders' Library",
+     "sub": "timeouts, retries, backoff with jitter"
+    },
+    {
+     "id": "sdk",
+     "kind": "container",
+     "tone": "core",
+     "label": "AWS SDKs",
+     "sub": "standard and adaptive retry modes"
+    },
+    {
+     "id": "grpc",
+     "kind": "container",
+     "tone": "core",
+     "label": "gRPC retry policy",
+     "sub": "backoff, ±20% jitter, throttling"
+    },
+    {
+     "id": "gcs",
+     "kind": "container",
+     "tone": "core",
+     "label": "Google Cloud Storage",
+     "sub": "backoff + idempotency rules"
+    },
+    {
+     "id": "stripe",
+     "kind": "external",
+     "tone": "external",
+     "label": "Stripe API",
+     "sub": "Idempotency-Key header"
+    }
+   ],
+   "edges": [
+    {
+     "id": "w1",
+     "from": "brooker",
+     "to": "builders",
+     "style": "solid",
+     "label": "expanded"
+    },
+    {
+     "id": "w2",
+     "from": "brooker",
+     "to": "sdk",
+     "style": "solid",
+     "label": "full jitter by default"
+    },
+    {
+     "id": "w3",
+     "from": "builders",
+     "to": "sdk",
+     "style": "solid",
+     "label": "retry token bucket"
+    },
+    {
+     "id": "w4",
+     "from": "brooker",
+     "to": "grpc",
+     "style": "dotted",
+     "label": "same idea"
+    },
+    {
+     "id": "w5",
+     "from": "brooker",
+     "to": "gcs",
+     "style": "dotted",
+     "label": "same idea"
+    },
+    {
+     "id": "w6",
+     "from": "gcs",
+     "to": "stripe",
+     "style": "dotted",
+     "label": "safe to retry writes"
+    }
+   ]
+  },
+  {
+   "id": "related",
+   "kind": "c4",
+   "title": "Related patterns",
+   "direction": "DOWN",
+   "elements": [
+    {
+     "id": "retry",
+     "kind": "container",
+     "tone": "core",
+     "label": "Retry with backoff and jitter",
+     "sub": "for brief faults"
+    },
+    {
+     "id": "timeout",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Timeout",
+     "sub": "decides an attempt has failed"
+    },
+    {
+     "id": "idem",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Idempotency key",
+     "sub": "makes a retry safe"
+    },
+    {
+     "id": "cb",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Circuit breaker",
+     "sub": "for long faults"
+    },
+    {
+     "id": "rl",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Rate limiting · Retry-After",
+     "sub": "the server says when"
+    },
+    {
+     "id": "hedge",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Hedged requests",
+     "sub": "a second try before the first fails"
+    },
+    {
+     "id": "dlq",
+     "kind": "component",
+     "tone": "neutral",
+     "label": "Queue with dead-letter",
+     "sub": "retry later, out of the request path"
+    }
+   ],
+   "edges": [
+    {
+     "id": "r1",
+     "from": "timeout",
+     "to": "retry",
+     "style": "solid",
+     "label": "feeds it failures"
+    },
+    {
+     "id": "r2",
+     "from": "idem",
+     "to": "retry",
+     "style": "solid",
+     "label": "makes writes safe"
+    },
+    {
+     "id": "r3",
+     "from": "retry",
+     "to": "cb",
+     "style": "solid",
+     "label": "stop when open"
+    },
+    {
+     "id": "r4",
+     "from": "rl",
+     "to": "retry",
+     "style": "dotted",
+     "label": "how long to wait"
+    },
+    {
+     "id": "r5",
+     "from": "retry",
+     "to": "hedge",
+     "style": "dotted",
+     "label": "cousin: for latency"
+    },
+    {
+     "id": "r6",
+     "from": "retry",
+     "to": "dlq",
+     "style": "dotted",
+     "label": "for work that can wait"
+    }
+   ]
+  }
+ ],
+ "chapters": [
+  {
+   "id": "problem",
+   "title": "The problem"
+  },
+  {
+   "id": "naive",
+   "title": "The naive fix"
+  },
+  {
+   "id": "pattern",
+   "title": "The pattern"
+  },
+  {
+   "id": "how",
+   "title": "How it works"
+  },
+  {
+   "id": "failure",
+   "title": "When it goes wrong"
+  },
+  {
+   "id": "tradeoffs",
+   "title": "Trade-offs"
+  },
+  {
+   "id": "wild",
+   "title": "In the wild"
+  },
+  {
+   "id": "related",
+   "title": "Related patterns"
+  },
+  {
+   "id": "recap",
+   "title": "Recap"
+  }
+ ],
+ "shots": [
+  {
+   "id": "retry-problem",
+   "title": "Blip",
+   "chapter": "problem",
+   "diagram": "blip",
+   "focus": [],
+   "trace": [
+    "b1",
+    "b2",
+    "b3",
+    "b4"
+   ],
+   "engineer": "Here is an order being saved. The order service writes to the database, and at that moment the database fails over to a standby. The connection is reset, and two seconds later the database is fine again. But the error has already gone all the way back to the user: something went wrong, please try again. A fault that healed itself in two seconds has become a failed order.",
+   "executive": "A brief hiccup in the database, over in two seconds, still turns into an error the customer sees."
+  },
+  {
+   "id": "retry-transient",
+   "chapter": "problem",
+   "card": {
+    "heading": "Transient or persistent?",
+    "kind": "compare",
+    "points": [
+     "Transient | Persistent",
+     "Connection reset, failover | Bad request, wrong password",
+     "Timeout while busy | Record not found",
+     "503 or 429: try later | 400 or 403: same answer every time",
+     "Retry may succeed | Retry only adds load"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "So the first question is always: is this fault transient or persistent? Transient faults fix themselves: a connection reset, a failover, a timeout while a service is busy, a 503 or a 429 asking you to come back later. Persistent faults give the same answer every time: a malformed request, a permissions error, a record that does not exist. Retrying a transient fault often works. Retrying a persistent one only adds load.",
+   "executive": "Some failures fix themselves within seconds and are worth trying again; others will fail every time and should be reported straight away."
+  },
+  {
+   "id": "retry-naive",
+   "title": "Retry storm",
+   "chapter": "naive",
+   "diagram": "blip",
+   "focus": [],
+   "trace": [
+    "b5",
+    "b6",
+    "b7",
+    "b8"
+   ],
+   "engineer": "The obvious fix is to retry straight away. Now picture a thousand clients that all failed in the same instant. They all retry in the same instant too. The database has just come back, cold, and a thousand inserts land on it at once. It slows down, they time out, and they all retry again, still in step. Immediate retries turn a two-second blip into a storm that keeps the database down.",
+   "executive": "If everyone retries immediately, they all come back at the same moment and knock the recovering service over again."
+  },
+  {
+   "id": "retry-layers",
+   "title": "Amplification",
+   "chapter": "naive",
+   "diagram": "layers",
+   "focus": [],
+   "trace": [
+    "l1",
+    "l2",
+    "l3",
+    "l4",
+    "l5",
+    "l6",
+    "l7",
+    "l8",
+    "l9",
+    "l10"
+   ],
+   "engineer": "It gets worse when every layer retries. The app tries three times; the gateway tries each of those three times; so does the orders API, the stock service and the data access layer. Amazon's Builders' Library works this example: five layers retrying three times each multiplies the load on the database two hundred and forty-three times. The advice is to retry at one point in the stack, and let the other layers fail fast.",
+   "executive": "When every layer retries, the extra traffic multiplies. Retry in one place only."
+  },
+  {
+   "id": "retry-pattern",
+   "title": "Policy",
+   "chapter": "pattern",
+   "diagram": "parts",
+   "focus": [],
+   "trace": [
+    "p1",
+    "p2",
+    "p3",
+    "p4",
+    "p5",
+    "p6",
+    "p7",
+    "p8",
+    "p9"
+   ],
+   "engineer": "The pattern is a retry policy around one call. Each attempt has its own timeout. When it fails, a classifier asks two questions: is the error transient, and is the call safe to repeat? If not, fail now. If so, check the attempt limit, then the retry budget, a token bucket that runs dry when too many retries fail. Then back off: the wait doubles each time up to a cap, and jitter picks a random point below it.",
+   "executive": "A retry policy decides whether a failure is worth retrying, how many times, and how long to wait, with some randomness so clients do not all retry together."
+  },
+  {
+   "id": "retry-jitter",
+   "chapter": "pattern",
+   "card": {
+    "heading": "Backoff and jitter",
+    "kind": "compare",
+    "points": [
+     "Strategy | Sleep before the next attempt",
+     "Capped exponential | min(cap, base × 2ⁿ)",
+     "Full jitter | random(0, capped exponential)",
+     "Equal jitter | half of it, plus random(0, the other half)",
+     "Decorrelated jitter | min(cap, random(base, last sleep × 3))"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Backoff alone is not enough. Marc Brooker's 2015 post on the AWS blog showed that clients backing off exponentially still arrive in clusters, just further apart. Jitter fixes it. Full jitter sleeps a random time between zero and the backoff. Equal jitter keeps half and randomises the rest. Decorrelated jitter grows from the last sleep. In his simulation, equal jitter lost; full jitter did the least work, decorrelated finished slightly sooner.",
+   "executive": "Waiting longer each time is not enough on its own; adding randomness spreads clients out so the service sees a steady trickle instead of waves."
+  },
+  {
+   "id": "retry-how",
+   "title": "Sequence",
+   "chapter": "how",
+   "diagram": "flow",
+   "focus": [],
+   "trace": [
+    "f1",
+    "f2",
+    "f3",
+    "f4",
+    "f5",
+    "f6",
+    "f7",
+    "f8",
+    "f9",
+    "f10"
+   ],
+   "engineer": "Step by step. The order service charges twenty pounds with an idempotency key. The payment goes through, but the reply is lost and the attempt times out. The fault looks transient and the call carries a key, so the policy sleeps a random time up to a hundred milliseconds and tries again with the same key. A 503; it sleeps up to two hundred. The third attempt returns the saved result: the customer was charged exactly once.",
+   "executive": "The client waits a little longer and a little randomly before each try, and a unique key on the request means the customer is never charged twice."
+  },
+  {
+   "id": "retry-retry-after",
+   "title": "Retry-After",
+   "chapter": "failure",
+   "diagram": "overload",
+   "focus": [],
+   "trace": [
+    "o1",
+    "o2",
+    "o3",
+    "o4"
+   ],
+   "engineer": "Sometimes the server tells you when to come back. A 429, too many requests, or a 503, service unavailable, can carry a Retry-After header, either a number of seconds or a date. When it does, use it rather than your own guess: here the server asks for two seconds, and the next attempt succeeds. The AWS SDKs do the same with a service-supplied delay, and gRPC calls it server pushback.",
+   "executive": "When the service says how long to wait, wait that long instead of guessing."
+  },
+  {
+   "id": "retry-budget",
+   "title": "Stop",
+   "chapter": "failure",
+   "diagram": "overload",
+   "focus": [],
+   "trace": [
+    "o5",
+    "o6",
+    "o7",
+    "o8",
+    "o9"
+   ],
+   "engineer": "And sometimes the right answer is to stop. In a real outage most calls fail, and every retry is wasted load. A retry budget notices: each retry spends a token, successes earn tokens back, and when the bucket is empty the client fails immediately instead of retrying. If a circuit breaker sits in front and has opened, retries must stop too, or they quietly bypass it. Fail fast, and let the service recover.",
+   "executive": "During a real outage, retries only make it worse, so a budget and a circuit breaker switch them off until the service recovers."
+  },
+  {
+   "id": "retry-knobs",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "The knobs",
+    "kind": "compare",
+    "points": [
+     "Choice | Trade-off",
+     "More attempts | More successes; longer waits and more load",
+     "Base delay and cap | Short recovers fast; long spares the service",
+     "Where to retry | One layer only, or the load multiplies",
+     "Retry budget | Fails fast in outages; fewer rescues in a bad minute"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Every knob is a trade-off. More attempts rescue more requests but make users wait and add load. A short base delay recovers quickly from blips; a long cap spares a struggling service but can outlast the user's patience, so an interactive request should give up sooner than a batch job. Retry in one layer only. And a retry budget fails fast during outages, at the cost of a few requests it might have saved.",
+   "executive": "More retries rescue more requests but cost time and load. Interactive users need quick answers; batch jobs can wait longer."
+  },
+  {
+   "id": "retry-whennot",
+   "chapter": "tradeoffs",
+   "card": {
+    "heading": "When not to retry",
+    "points": [
+     "Persistent errors: bad input, no permission, not found",
+     "Writes that are not idempotent and have no idempotency key",
+     "Long outages: that is the circuit breaker's job",
+     "Constant throttling: scale the service or slow the client"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "When not to retry. Persistent errors, such as bad input, missing permissions or a record that is not there, will fail the same way every time. Never retry a write that is not idempotent unless it carries an idempotency key; a lost reply is not a failed charge. Long outages belong to the circuit breaker. And if a service throttles you all the time, retries are hiding a capacity problem: scale it, or send less.",
+   "executive": "Do not retry errors that will never succeed, payments without a safety key, or a service that is simply too small for the traffic."
+  },
+  {
+   "id": "retry-wild",
+   "title": "Lineage",
+   "chapter": "wild",
+   "diagram": "wild",
+   "focus": [],
+   "trace": [
+    "w1",
+    "w2",
+    "w3",
+    "w4",
+    "w5",
+    "w6"
+   ],
+   "engineer": "In the wild. Brooker's post and the Builders' Library article shaped the AWS SDKs. Their standard mode uses exponential backoff with full jitter and a retry quota, a token bucket; adaptive mode adds a client-side rate limiter for throttling-heavy workloads. gRPC's retry policy sets attempts, backoff and retryable status codes, with twenty percent jitter and retry throttling. Google Cloud Storage documents which calls are safe to retry, and Stripe makes writes safe with an Idempotency-Key header.",
+   "executive": "The big cloud platforms and payment providers all build this in: randomised backoff in their client libraries, and unique request keys so a retried payment is never taken twice."
+  },
+  {
+   "id": "retry-related",
+   "title": "Neighbours",
+   "chapter": "related",
+   "diagram": "related",
+   "focus": [],
+   "trace": [
+    "r1",
+    "r2",
+    "r3",
+    "r4",
+    "r5",
+    "r6"
+   ],
+   "engineer": "Its neighbours. A timeout decides that an attempt has failed, so every retry needs one. An idempotency key makes retrying a write safe. A circuit breaker takes over when the fault is long, and retries must stop when it opens. Rate limiting with Retry-After tells the client how long to wait. Hedged requests send a second copy before the first fails, to cut tail latency. And a queue with a dead-letter retries work that can wait.",
+   "executive": "Retries work alongside timeouts, safety keys and circuit breakers; together they handle brief faults without making long ones worse."
+  },
+  {
+   "id": "retry-recap",
+   "chapter": "recap",
+   "card": {
+    "heading": "Recap",
+    "points": [
+     "Retry only transient faults, and only safe operations",
+     "Back off exponentially, with a cap, and add jitter",
+     "Retry in one layer, within a budget; stop when the breaker opens"
+    ]
+   },
+   "focus": [],
+   "trace": [],
+   "engineer": "Three things to remember. Retry only transient faults, and only operations that are safe to repeat, which for writes means an idempotency key. Back off exponentially, with a cap, and always add jitter, so clients spread out instead of arriving together. And retry in one layer only, within a budget, and stop when the circuit breaker opens or the server tells you to wait.",
+   "executive": "Retry only what can succeed and is safe to repeat. Wait longer each time, with randomness. Retry in one place, and know when to stop."
+  }
+ ],
+ "subtitle": "Design pattern",
+ "meta": {
+  "kind": "pattern",
+  "category": "Resilience",
+  "level": "beginner",
+  "uses": [
+   "timeout"
+  ],
+  "related": [
+   "timeout",
+   "circuit-breaker",
+   "idempotency"
+  ],
+  "blurb": "Retry brief faults, wait longer each time with randomness, and know when to stop.",
+  "created": "2026-10-14",
+  "updated": "2026-10-14",
+  "factsChecked": "2026-10-14"
+ }
+}
