@@ -207,6 +207,8 @@ export async function middleware(request: NextRequest) {
     "style-src 'self' 'unsafe-inline'; " +
     "img-src 'self' data: https: blob:; " +
     "font-src 'self' data:; " +
+    // Private walkthrough narration plays from Supabase Storage signed URLs.
+    "media-src 'self' blob: https://*.supabase.co; " +
     "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.openai.com https://api.anthropic.com https://api.github.com; " +
     "frame-ancestors 'none';"
   );
