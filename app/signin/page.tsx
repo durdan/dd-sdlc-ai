@@ -14,10 +14,19 @@ export default function SignInPage() {
   const router = useRouter();
   const isSimpleTheme = process.env.NEXT_PUBLIC_LANDING_PAGE_STYLE === 'simple';
 
+  // ?next=/path returns there after sign-in. Google sign-in leaves the page,
+  // so it is also remembered for SiteHeader to pick up on return.
+  useEffect(() => {
+    const next = new URLSearchParams(location.search).get('next');
+    if (next && next.startsWith('/') && !next.startsWith('//')) localStorage.setItem('auth.next', next);
+  }, []);
+
   useEffect(() => {
     if (!loading && user) {
+      const next = localStorage.getItem('auth.next');
+      localStorage.removeItem('auth.next');
       // While the product is off there is no dashboard: return to the library.
-      router.push(SDLC_PRODUCT ? '/dashboard' : '/');
+      router.push(next || (SDLC_PRODUCT ? '/dashboard' : '/'));
     }
   }, [user, loading, router]);
 

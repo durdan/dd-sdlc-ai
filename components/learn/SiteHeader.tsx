@@ -1,12 +1,22 @@
 "use client"
 // Site header for the walkthrough library: logo, library links, sign in / out.
+import { useEffect } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/AuthContext"
 import Logo from "./Logo"
 
 export default function SiteHeader() {
   const { user, loading, signOut } = useAuth()
   const name = (user?.user_metadata?.full_name as string | undefined) || user?.email || ""
+  const router = useRouter()
+  // Back from Google sign-in: go where the user was heading (see app/signin).
+  useEffect(() => {
+    const next = user ? localStorage.getItem("auth.next") : null
+    if (!next) return
+    localStorage.removeItem("auth.next")
+    if (next !== location.pathname + location.search) router.replace(next)
+  }, [user, router])
   return (
     <header className="sticky top-0 z-40 w-full border-b border-[#d9dfdc] bg-[#f4f5f2]/95 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-[1200px] items-center justify-between gap-4 px-4 sm:px-5">
@@ -19,6 +29,10 @@ export default function SiteHeader() {
           </Link>
           <Link href="/learn/library/paths" className="hidden rounded-full px-3 py-1.5 hover:bg-[#e6efec] hover:text-[#3d6b63] sm:inline-block">
             Paths
+          </Link>
+          <Link href={user ? "/requests" : "/request"} className="rounded-full px-3 py-1.5 hover:bg-[#e6efec] hover:text-[#3d6b63]">
+            <span className="sm:hidden">{user ? "Requests" : "Explain"}</span>
+            <span className="hidden sm:inline">{user ? "My requests" : "Explain your system"}</span>
           </Link>
           {loading ? null : user ? (
             <>
