@@ -46,7 +46,7 @@ export async function currentUser() {
 }
 
 export function isAdmin(email: string | null | undefined) {
-  const admins = (process.env.WALKTHROUGH_ADMIN_EMAILS ?? "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean)
+  const admins = [process.env.WALKTHROUGH_ADMIN_EMAILS, process.env.NEXT_PUBLIC_ADMIN_EMAIL].join(",").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean)
   return !!email && admins.includes(email.toLowerCase())
 }
 
@@ -128,6 +128,7 @@ export const DiagramOutput = z.object({
       kind: Kind,
       tone: Tone,
       group: z.string(),
+      rank: z.number().int(),
     }),
   ),
   edges: z.array(
@@ -149,7 +150,8 @@ Rules:
 - tone: core for the main request path, stream for queues and async processing, data for stores, external for third parties, neutral for everything else.
 - 0 to 3 groups for boundaries such as "Edge", "Core services", "Data"; set an element's group to a group id, or "" for none.
 - Edges point the way a request or data flows. Labels are 1 to 3 words ("places order", "publishes"). Use dashed for asynchronous flows, solid otherwise. At most 16 edges.
-- direction: DOWN for most systems, RIGHT for pipelines.`
+- rank is the element's row, top to bottom: 0 people and client apps; 1 edge (gateways, load balancers, CDNs); 2 core services; 3 queues, streams and async workers; 4 databases, caches and object stores. Third-party systems take the row of whatever calls them. Every arrow should point down or across a row where it can.
+- direction: DOWN.`
 
 export function diagramRequest(r: WalkthroughRequest, feedback?: string) {
   const content = [brief(r), feedback ? `<feedback>${feedback}</feedback>` : ""].filter(Boolean).join("\n")
@@ -164,15 +166,18 @@ export function toDiagram(o: DiagramOutput) {
     const id = slug(e.id)
     if (seen.has(id)) return []
     seen.add(id)
-    return [{ ...e, id, sub: e.sub || undefined, group: e.group ? slug(e.group) : undefined }]
+    return [{ ...e, id, sub: e.sub || undefined, group: e.group ? slug(e.group) : undefined, rank: Math.min(5, Math.max(0, e.rank)) }]
   })
+  // Close gaps between rows so empty ones take no space.
+  const rows = [...new Set(elements.map((e) => e.rank))].sort((a, b) => a - b)
+  for (const e of elements) e.rank = rows.indexOf(e.rank)
   const groups = o.groups.map((g) => ({ ...g, id: slug(g.id) })).filter((g) => elements.some((e) => e.group === g.id))
   for (const e of elements) if (e.group && !groups.some((g) => g.id === e.group)) e.group = undefined
   const edges = o.edges
     .map((e, i) => ({ id: `e${i + 1}`, from: slug(e.from), to: slug(e.to), label: e.label || undefined, style: e.style }))
     .filter((e) => seen.has(e.from) && seen.has(e.to) && e.from !== e.to)
     .slice(0, 18)
-  return { id: "system", kind: "c4" as const, title: o.title, direction: o.direction, groups, elements, edges }
+  return { id: "system", kind: "c4" as const, title: o.title, direction: "DOWN" as const, groups, elements, edges }
 }
 
 /** Tell the owner a request was approved (Slack/Discord-style incoming webhook, optional). */
