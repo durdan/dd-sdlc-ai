@@ -8,8 +8,8 @@ import ProductHome from "./product-home"
 export const metadata: Metadata = SDLC_PRODUCT
   ? {}
   : {
-      title: { absolute: "Design walkthroughs | SDLC.dev" },
-      description: "Narrated, animated walkthroughs of design patterns and real company architectures, one diagram at a time.",
+      title: { absolute: "Learn software design: patterns and real architectures | SDLC.dev" },
+      description: "Learn how great software is designed: design patterns explained through the problems they solve, and how Uber, Netflix, WhatsApp, Stripe and others built their systems, step by step.",
     }
 
 export default async function Home() {

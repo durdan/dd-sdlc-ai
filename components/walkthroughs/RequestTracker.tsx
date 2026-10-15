@@ -156,7 +156,7 @@ export default function RequestTracker({ id }: { id: string }) {
                   <b className={i <= at ? "" : "text-[#9aa6a3]"}>{STATUS_LABEL[s]}</b>
                   <small className="block text-[#6b7a76]">
                     {times[s] ||
-                      (s === "queued" ? "" : s === "in_production" ? (i <= at ? "We are recording it" : "Usually within a day") : "We email you the link")}
+                      (s === "queued" ? "" : s === "in_production" ? (i <= at ? "Narration and animation underway" : "Usually within a day") : "You get the link by email")}
                   </small>
                 </span>
               </li>

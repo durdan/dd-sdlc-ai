@@ -34,5 +34,7 @@ export interface WatchProps {
     speed: number;
     setSpeed: (s: number) => void;
     explore: ReactNode;
+    /** Clip mode (video export): no controls, overlays or sheets, just the stage, title and captions. */
+    clip?: boolean;
 }
 export declare function Watch(p: WatchProps): import("react").JSX.Element;

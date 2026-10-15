@@ -127,6 +127,11 @@ export interface Walkthrough {
         title: string;
     }[];
     shots: Shot[];
+    /** Optional hand-written lines for the automatic teaser (scripts/teaser.ts); the planner prefers them. */
+    teaser?: {
+        hook?: string;
+        captions?: Record<string, string>;
+    };
 }
 /** Narration clips by "<shot>-<depth>", written by scripts/narrate.py. */
 export type Manifest = Record<string, {
