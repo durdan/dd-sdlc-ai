@@ -1,5 +1,5 @@
 "use client"
-// Explain your system: describe the system, watch the script stream in while
+// Your system, explained: describe the system, watch the script stream in while
 // the system diagram is drawn beside it, ask for changes or approve. Approved
 // requests join the queue and are produced by hand.
 import { useCallback, useEffect, useRef, useState } from "react"
@@ -7,6 +7,7 @@ import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/contexts/AuthContext"
 import SiteHeader from "@/components/learn/SiteHeader"
+import HowItWorks from "./HowItWorks"
 import { button, card, DiagramView, field, ghost, ScriptView } from "./parts"
 
 const MAX_REVISIONS = 3
@@ -287,12 +288,12 @@ export default function RequestStudio() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
             <label className="block flex-1">
               <span className="mb-1 block text-sm font-semibold">
-                Notes for production <span className="font-normal text-[#6b7a76]">(optional)</span>
+                Anything else to include <span className="font-normal text-[#6b7a76]">(optional)</span>
               </span>
               <input
                 className={field}
                 maxLength={2000}
-                placeholder="Anything else we should know"
+                placeholder="e.g. Focus on the payment flow"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
               />
@@ -320,35 +321,12 @@ export default function RequestStudio() {
 function Intro() {
   return (
     <div>
-      <h1 className="text-[28px] font-bold leading-tight">Explain your system</h1>
+      <h1 className="text-[28px] font-bold leading-tight">Your system, explained</h1>
       <p className="mt-2 text-[#4f5d5a]">
-        Tell us about a system you build or run. We turn it into a narrated, animated architecture walkthrough, like the ones in the library, that
-        you can share with your team, new joiners or stakeholders.
+        The library explains how Uber, Netflix and Stripe are built, and which design patterns they use. Get the same for a system you build or
+        run: a step-by-step walkthrough of how it works and why it is designed that way, for your team, new joiners or stakeholders.
       </p>
     </div>
-  )
-}
-
-const STEPS = [
-  ["You describe it", "What the system does, who the walkthrough is for, and anything we should know. No secrets."],
-  ["You get a draft in about a minute", "A narration script in eight chapters and a system diagram. Ask for changes up to three times."],
-  ["You approve, we produce it", "We record the narration, animate the diagram shot by shot and check the details. You'll receive a notification as soon as it's ready."],
-  ["You watch it here", "We email you a private link. Only you can open it, after signing in."],
-] as const
-
-function HowItWorks() {
-  return (
-    <ol className={`${card} grid gap-4 p-5 sm:grid-cols-2`}>
-      {STEPS.map(([title, text], i) => (
-        <li key={title} className="flex gap-3">
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#e6efec] text-sm font-bold text-[#3d6b63]">{i + 1}</span>
-          <span>
-            <b className="block text-[15px]">{title}</b>
-            <span className="text-sm text-[#4f5d5a]">{text}</span>
-          </span>
-        </li>
-      ))}
-    </ol>
   )
 }
 

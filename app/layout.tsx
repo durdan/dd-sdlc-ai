@@ -8,10 +8,10 @@ import { SDLC_PRODUCT } from "@/lib/product"
 const inter = Inter({ subsets: ["latin"] })
 
 // While the product is off the site is the design-walkthrough library (see lib/product.ts).
-const SITE_TITLE = SDLC_PRODUCT ? "SDLC.dev - AI-Powered Software Development Lifecycle Automation" : "Design walkthroughs | SDLC.dev"
+const SITE_TITLE = SDLC_PRODUCT ? "SDLC.dev - AI-Powered Software Development Lifecycle Automation" : "Learn software design: patterns and real architectures | SDLC.dev"
 const SITE_DESCRIPTION = SDLC_PRODUCT
   ? "Transform ideas into production-ready specifications with AI. Generate business analysis, technical specs, architecture diagrams, and coding prompts instantly. Explore tech stacks from Netflix, Uber, Stripe, and more."
-  : "Narrated, animated walkthroughs of design patterns and real company architectures, one diagram at a time: resilience, data consistency, scaling, event-driven systems, and how Netflix, Stripe, Uber and others are built."
+  : "Learn how great software is designed and built: design patterns explained through the problems they solve (resilience, data consistency, scaling, event-driven systems) and how Netflix, Stripe, Uber and other digital companies built their systems, step by step."
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://sdlc.dev'),

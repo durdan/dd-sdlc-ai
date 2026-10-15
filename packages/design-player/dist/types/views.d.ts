@@ -1,10 +1,12 @@
 import type { Catalog } from "./catalog";
 import type { DiagramLayout } from "./diagram/layout";
 import type { Manifest, Walkthrough } from "./types";
-export declare function LibraryPage({ catalog, open, initialTab }: {
+export declare function LibraryPage({ catalog, open, initialTab, heading, intro, }: {
     catalog: Catalog;
     open?: (url: string) => void;
     initialTab?: string;
+    heading?: string;
+    intro?: string;
 }): import("react").JSX.Element;
 export declare function TopicPage({ catalog, walkthrough, layouts, manifest, chapter, open, library, autoplay, }: {
     catalog: Catalog;
