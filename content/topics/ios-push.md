@@ -4,7 +4,7 @@ title: Push notifications via APNs
 summary: Device token, provider, payload, silent pushes
 why: "Push is the only reliable way for your server to reach a phone that is not running your app, and it has rules about tokens, size and frequency."
 requires: [ios-background]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - { title: Token is an address, text: "APNs gives each app on each device a token; your app sends it to your server, which sends it with every push." }
   - { title: Your server is the provider, text: "The provider sends an HTTP/2 POST to APNs, signed with a token key or a certificate." }
@@ -86,3 +86,44 @@ Your own keys go next to `aps`, never inside it. The whole payload is limited to
 - **Background pushes** have only `"content-available": 1` in `aps`, with push type `background` and priority 5. They wake the app in the background with about 30 seconds of runtime, but are low priority, may be delayed or coalesced, and are throttled if you send more than a few an hour.
 
 On the server side, one domain event ("order shipped") usually fans out to many devices and channels; that is a publish/subscribe problem you solve before you ever call APNs.
+
+```trace diagram
+id: apns-delivery
+title: From your server to the lock screen
+subtitle: Register, send, deliver
+kind: sequence
+elements:
+  - { id: app, label: App }
+  - { id: ios, label: iOS }
+  - { id: apns, label: APNs }
+  - { id: provider, label: Server }
+edges:
+  - { id: register, from: app, to: ios, label: "registerForRemoteNotifications()" }
+  - { id: ask, from: ios, to: apns, label: register this app }
+  - { id: token, from: apns, to: app, label: device token, style: dashed }
+  - { id: upload, from: app, to: provider, label: store the token }
+  - { id: alert, from: provider, to: apns, label: "POST /3/device/<token>, JWT" }
+  - { id: deliver, from: apns, to: ios, label: "alert, priority 10" }
+  - { id: show, from: ios, to: ios, label: shows the banner }
+  - { id: silent, from: provider, to: apns, label: "background push, priority 5" }
+  - { id: hold, from: apns, to: ios, label: "content-available: 1" }
+  - { id: wake, from: ios, to: app, label: wakes the app for 30 s, style: dashed }
+  - { id: gone, from: apns, to: provider, label: 410 Unregistered, style: dashed }
+steps:
+  - caption: A push involves three parties. Your app gets an address, your server (the provider) decides what to send, and APNs holds a persistent connection to every device.
+  - caption: On every launch the app calls registerForRemoteNotifications(). Getting a token needs no permission prompt; only showing alerts does.
+    trace: [register, ask]
+  - caption: APNs issues a device token for this app on this device, and the app sends it to your server. Tokens change on reinstall, restore or a new phone, so ask for one on each launch.
+    trace: [token, upload]
+  - caption: To push, your server POSTs JSON over HTTP/2 to /3/device/<token>. It signs a JWT with your .p8 key and renews it at least once an hour. The payload is at most 4 KB.
+    trace: [alert]
+  - caption: An alert push at priority 10 goes out right away. iOS shows it even when your app isn't running, as long as the person allowed alerts.
+    trace: [deliver, show]
+  - caption: A background push carries only content-available in aps, with push type background and priority 5.
+    trace: [silent, hold]
+  - caption: iOS treats it as low priority. It may hold it, keep only the newest one, and throttle beyond two or three an hour. When it is delivered, the app gets 30 seconds of runtime.
+    trace: [wake]
+  - caption: If the token is dead, for example because the app was deleted, APNs answers 410 Unregistered. Stop sending to it. Retry with backoff only on 5xx.
+    trace: [gone]
+note: For an offline device APNs keeps one notification per app, usually the latest, for up to 30 days depending on apns-expiration.
+```

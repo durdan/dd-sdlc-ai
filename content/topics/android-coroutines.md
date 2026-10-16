@@ -4,7 +4,7 @@ title: Coroutines and Flow on Android
 summary: Suspend instead of block, scoped to a lifecycle
 why: "Coroutines let you write sequential code that leaves the main thread free while it waits. Scopes make sure that work stops when the screen or ViewModel it belongs to goes away."
 requires: [android-main-thread]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - { title: "Suspending frees the thread", text: "A coroutine waiting on the network gives its thread back; withContext moves blocking work to another dispatcher and returns." }
   - { title: "Structured concurrency", text: "Every coroutine lives in a scope. Cancel the scope (a cleared ViewModel, a destroyed screen) and all its children are cancelled." }
@@ -111,3 +111,43 @@ lifecycleScope.launch {
 ```
 
 Both stop collecting below STARTED and resume above it, so a backgrounded app isn't doing UI work for nobody.
+
+```trace diagram
+id: launch-withcontext
+title: A coroutine loads an article
+subtitle: Launch on Main, block on IO, resume on Main
+kind: sequence
+elements:
+  - { id: ui, label: UI }
+  - { id: main, label: Main thread }
+  - { id: io, label: Dispatchers.IO }
+  - { id: api, label: Server }
+edges:
+  - { id: open, from: ui, to: main, label: "open(id): launch { }" }
+  - { id: ctx, from: main, to: io, label: "repo.load: withContext(IO)" }
+  - { id: suspend, from: main, to: main, label: "suspended: Looper keeps going" }
+  - { id: call, from: io, to: api, label: blocking fetch }
+  - { id: resp, from: api, to: io, label: response, style: dashed }
+  - { id: resume, from: io, to: main, label: "result: resume on Main", style: dashed }
+  - { id: state, from: main, to: ui, label: "_state.value = Loaded" }
+  - { id: leave, from: ui, to: main, label: "screen finished: onCleared" }
+  - { id: cancel, from: main, to: io, label: "scope cancelled: children too", style: dashed }
+steps:
+  - caption: "A tap calls open(id) on the ViewModel, which launches a coroutine in viewModelScope. With no dispatcher given, it runs on the main thread."
+    trace: [open]
+  - caption: "The repository's suspend function wraps its blocking work in withContext(Dispatchers.IO). That moves the work to an I/O thread, which is what makes the function main-safe."
+    trace: [ctx]
+  - caption: "Meanwhile the coroutine on Main is suspended until the block finishes. It doesn't block the thread, so the main Looper keeps drawing frames and handling touches."
+    trace: [suspend]
+  - caption: "On the IO thread the blocking call is fine. It waits for the server's response there."
+    trace: [call, resp]
+  - caption: "When the withContext block returns, the coroutine resumes on the main thread with the result."
+    trace: [resume]
+  - caption: "Back on Main, it sets the StateFlow's value, and the UI collecting it redraws."
+    trace: [state]
+  - caption: "A rotation would not stop any of this: the ViewModel and its scope survive configuration changes. But when the screen is finished for good, the ViewModel is cleared."
+    trace: [leave]
+  - caption: "Clearing it cancels viewModelScope, and cancellation flows down to every coroutine in it, including the work inside withContext. Suspending calls notice and stop."
+    trace: [cancel]
+note: "Cancellation is cooperative: a tight CPU loop must call ensureActive(), and catching CancellationException must rethrow it."
+```

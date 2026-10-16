@@ -4,7 +4,7 @@ title: "Core Web Vitals: LCP, INP and CLS"
 summary: Loading, responding, staying still
 why: "These three numbers are how Google, and most teams, judge whether a page feels fast. Each one has a short list of causes you can actually fix."
 requires: [web-rendering-path, web-http-caching]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: LCP, loading
     text: "When the largest image or text block in the viewport has rendered. Good is 2.5 seconds or less; poor is over 4."
@@ -93,3 +93,56 @@ console.log("CLS:", cls(shifts).toFixed(2))
 The usual causes are images and embeds without dimensions, content injected above what is already shown, and web fonts that swap in with different metrics. Give media `width` and `height` (or `aspect-ratio`), reserve space for late content, and animate with `transform` rather than properties that move other boxes.
 
 Measure in the field (the Chrome UX Report, or the `web-vitals` library sending data to your analytics) and debug in the lab (Lighthouse, the DevTools Performance panel). INP is the hardest to reproduce in the lab: a page-load test only measures it if you script the interactions yourself, so start from field data to learn which interactions are slow.
+
+```trace diagram
+id: three-vitals
+title: What moves each Core Web Vital
+subtitle: A product page loads, a visitor taps, an ad arrives
+groups:
+  - { id: lcp, label: "Loading: LCP" }
+  - { id: inp, label: "Responding: INP" }
+  - { id: cls, label: "Staying still: CLS" }
+elements:
+  - { id: ttfb, label: HTML arrives, sub: time to first byte, group: lcp }
+  - { id: request, label: LCP image requested, sub: resource load delay, group: lcp }
+  - { id: download, label: Image downloaded, sub: resource load duration, group: lcp }
+  - { id: lcp-paint, label: Largest element painted, sub: "good: 2.5 s or less", group: lcp, kind: system }
+  - { id: tap, label: "Tap: Add to cart", sub: waits while the main thread is busy, group: inp, kind: person }
+  - { id: handlers, label: Handlers run, sub: processing time, group: inp }
+  - { id: frame, label: Next frame painted, sub: "good: 200 ms or less", group: inp, kind: system }
+  - { id: ad, label: Ad slot fills, sub: no space reserved, group: cls, kind: external }
+  - { id: shift, label: Article jumps down, sub: "good CLS: 0.1 or less", group: cls, kind: system }
+edges:
+  - { id: e-request, from: ttfb, to: request }
+  - { id: e-download, from: request, to: download }
+  - { id: e-lcp, from: download, to: lcp-paint }
+  - { id: e-handlers, from: tap, to: handlers }
+  - { id: e-frame, from: handlers, to: frame }
+  - { id: e-shift, from: ad, to: shift }
+steps:
+  - caption: "Three numbers from real visits: how soon the main content appears, how fast the page answers input, and how much it jumps. A page passes when 75% of visits are good on all three."
+  - caption: "LCP starts with the HTML itself. A slow server or a chain of redirects delays everything after it, so cache HTML at a CDN where you can."
+    focus: [ttfb]
+  - caption: "Next, the wait before the browser even asks for the hero image. An <img> in the HTML with fetchpriority=\"high\" is found at once; a CSS background or a lazy-loaded image is found late."
+    focus: [ttfb, request]
+    trace: [e-request]
+  - caption: "Then the download itself. A compressed, correctly sized image from a nearby cache shortens it."
+    focus: [request, download]
+    trace: [e-download]
+  - caption: "Last, the render delay. Render-blocking CSS, a script or a client-side render can hold the paint after the file is here. LCP is when the largest element is painted."
+    focus: [download, lcp-paint]
+    trace: [e-lcp]
+  - caption: "Now the visitor taps Add to cart. If the main thread is in the middle of a long task, such as hydration or a third-party script, the input waits."
+    focus: [tap]
+  - caption: Then the handlers run. Show the change first and move the heavy work to a later task, so the browser can paint in between.
+    focus: [tap, handlers]
+    trace: [e-handlers]
+  - caption: "The interaction ends when the next frame is painted, after style, layout and paint. INP reports roughly the slowest interaction of the whole visit, not just the first."
+    focus: [handlers, frame]
+    trace: [e-frame]
+  - caption: "An ad loads into a slot with no height and pushes the article down. The shift scores the share of the viewport affected times the distance moved."
+    focus: [ad, shift]
+    trace: [e-shift]
+  - caption: "Shifts within 500 ms of the user's own input don't count, and CLS is the worst burst of the rest. Reserve the slot's space, and give images width and height."
+    focus: [cls]
+```

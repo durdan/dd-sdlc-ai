@@ -3,7 +3,7 @@ id: android-processes
 title: Processes and why your app is killed
 summary: One Linux process, ranked and reclaimed by the system
 why: "Android kills app processes routinely to free memory, without asking. An app that assumes it keeps running loses the user's work; one that expects to die restores it."
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - { title: "The system owns the process", text: "Android starts your process when one of its components is needed and may end it whenever memory is short, with no callback." }
   - { title: "Importance decides who goes first", text: "Foreground beats visible, visible beats a started service, and cached processes are killed first and often." }
@@ -75,3 +75,51 @@ Then reopen it from Recents. Developer options also has "Don't keep activities",
 ## Listening for pressure
 
 `ComponentCallbacks2.onTrimMemory()` tells you when the system is under pressure or your UI has been hidden (`TRIM_MEMORY_UI_HIDDEN`), which is a good moment to drop caches. It is a hint, not a promise: a process can be killed without seeing any level first.
+
+```trace diagram
+id: process-death
+title: Killed in the background, restored on return
+subtitle: The importance ranking and process death
+direction: DOWN
+elements:
+  - { id: fg, label: Your app in use, sub: "foreground: the resumed activity", kind: system, row: 0 }
+  - { id: saved, label: Saved state, sub: "Bundle, SavedStateHandle", kind: store, tone: data, row: 1 }
+  - { id: cached, label: "Your app, cached", sub: only stopped activities, tone: neutral, row: 1 }
+  - { id: pressure, label: Memory needed, sub: lowest importance goes first, kind: system, tone: external, row: 2 }
+  - { id: killed, label: Process killed, sub: "a signal, no callback", kind: external, row: 3 }
+  - { id: service, label: Service process, sub: "startService(), still running", row: 3 }
+  - { id: visible, label: Visible process, sub: "on screen, not in focus", row: 3 }
+  - { id: lost, label: Lost, sub: "statics, singletons, ViewModels", kind: external, row: 4 }
+  - { id: newproc, label: New process, sub: user taps it in Recents, kind: person, row: 4 }
+  - { id: recreate, label: Activity recreated, sub: from the saved Bundle, row: 5 }
+edges:
+  - { id: leave, from: fg, to: cached, label: user leaves }
+  - { id: save, from: fg, to: saved, label: "onStop: save", style: dashed }
+  - { id: rank, from: cached, to: pressure }
+  - { id: kill, from: pressure, to: killed, label: first }
+  - { id: next, from: pressure, to: service, label: next, style: dashed }
+  - { id: rarely, from: pressure, to: visible, label: rarely, style: dotted }
+  - { id: gone, from: killed, to: lost, style: dashed }
+  - { id: back, from: killed, to: newproc, label: user returns }
+  - { id: create, from: newproc, to: recreate }
+  - { id: restore, from: saved, to: recreate, label: restore, style: dotted }
+steps:
+  - caption: "Android starts your app's Linux process when one of its components is needed. While the user is in your app, the process is foreground, and it is killed only as a last resort."
+    focus: [fg]
+  - caption: "The user presses Home. Your activity is stopped and saves its instance state. With nothing else running, your process is now cached."
+    trace: [leave, save]
+  - caption: "Later another app needs memory. The system frees it by killing processes, ranked by how much the user would miss them."
+    trace: [rank]
+  - caption: "Cached processes go first. Service processes come next, though one that has run for 30 minutes or more may be demoted to cached. Visible ones are killed only to keep the foreground running."
+    focus: [pressure, killed, service, visible]
+    trace: [next, rarely]
+  - caption: "So your cached process is killed. It is a plain signal to the process: no onDestroy, no other callback."
+    trace: [kill]
+  - caption: "Everything that lived only in memory goes with it: static fields, singletons, ViewModels, running coroutines."
+    trace: [gone]
+  - caption: "Your app is still in Recents, so the user taps it. Android starts a fresh process and creates your Application again."
+    trace: [back]
+  - caption: "Then it recreates the top activity and hands it the saved Bundle. Done right, the user never notices the process died."
+    trace: [create, restore]
+note: "Simulate it: background the app, run adb shell am kill <package>, then reopen it from Recents."
+```

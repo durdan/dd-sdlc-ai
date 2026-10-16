@@ -4,7 +4,7 @@ title: The activity lifecycle and configuration changes
 summary: Created, started, resumed, and recreated on rotation
 why: "Rotating the phone, changing the language or resizing a window destroys and recreates the activity by default. Anything held only in the activity is lost each time."
 requires: [android-processes]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - { title: "Six callbacks, three states that matter", text: "Created, started (visible) and resumed (in focus). Pair setup and teardown at the same level: start in onStart, stop in onStop." }
   - { title: "A config change is a new activity", text: "By default the old instance is destroyed and a new one is created with the new resources. Your process stays." }
@@ -78,3 +78,48 @@ You can opt out with `android:configChanges` in the manifest, and then receive `
 ## Don't confuse this with process death
 
 A rotation keeps the process; process death doesn't. A screen can pass every rotation test and still lose the user's input after a few minutes in the background. Test both.
+
+```trace diagram
+id: rotate-and-leave
+title: A rotation, then the Home button
+subtitle: Which state survives what
+kind: sequence
+elements:
+  - { id: sys, label: System }
+  - { id: act, label: Activity }
+  - { id: vm, label: ViewModel }
+  - { id: saved, label: Saved state }
+edges:
+  - { id: launch, from: sys, to: act, label: "onCreate, onStart, onResume" }
+  - { id: create, from: act, to: vm, label: "by viewModels(): created" }
+  - { id: rotate, from: sys, to: act, label: "rotation: onPause, onStop" }
+  - { id: save, from: act, to: saved, label: onSaveInstanceState }
+  - { id: destroy, from: sys, to: act, label: "onDestroy, changing configurations" }
+  - { id: recreate, from: sys, to: act, label: "new instance: onCreate(bundle)" }
+  - { id: reuse, from: vm, to: act, label: same ViewModel, style: dashed }
+  - { id: restore, from: saved, to: act, label: state restored, style: dashed }
+  - { id: home, from: sys, to: act, label: "Home: onPause, onStop" }
+  - { id: save2, from: act, to: saved, label: onSaveInstanceState }
+  - { id: kill, from: sys, to: act, label: "process killed: no onDestroy", style: dashed }
+  - { id: back, from: saved, to: act, label: "return: new process, new ViewModel", style: dashed }
+steps:
+  - caption: "The activity is created, started and resumed. The screen asks for its ViewModel, which is created on first use and kept in the activity's ViewModelStore."
+    trace: [launch, create]
+  - caption: "The user rotates the phone. A rotation is a configuration change, so by default this activity instance is paused and stopped."
+    trace: [rotate]
+  - caption: "It saves its instance state into a Bundle: rememberSaveable values, SavedStateHandle entries, view state. On Android 9 and later this happens after onStop."
+    trace: [save]
+  - caption: "Then it is destroyed. isChangingConfigurations is true, so the ViewModel is not cleared. The process doesn't change at all."
+    trace: [destroy]
+  - caption: "The system immediately creates a new activity instance with the new configuration, so it loads the right layouts and resources."
+    trace: [recreate]
+  - caption: "The new instance gets the same ViewModel back, with its coroutines still running, and the saved state is restored. Fields of the old activity and plain remember are gone."
+    trace: [reuse, restore]
+  - caption: "Now the user presses Home. The activity is paused and stopped, not destroyed, and saves its state again. The ViewModel stays in memory."
+    trace: [home, save2]
+  - caption: "In the background the process may be killed. Neither onDestroy nor the ViewModel's onCleared runs; the ViewModel simply dies with the process."
+    trace: [kill]
+  - caption: "When the user returns, a new process builds a new activity and a new ViewModel. Only the saved state, and what is on disk, comes back."
+    trace: [back]
+note: "Rotation keeps the ViewModel; process death keeps only saved state and disk. Test both."
+```

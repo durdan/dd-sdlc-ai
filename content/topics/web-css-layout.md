@@ -4,7 +4,7 @@ title: "CSS layout: flow, flexbox and grid"
 summary: One dimension or two, content or container
 why: "Most layout bugs come from fighting the wrong layout mode. Picking the right one first makes the CSS short and the page robust to content you didn't expect."
 requires: [web-rendering-path]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: Flow comes first
     text: "Without any layout CSS, block boxes stack top to bottom and inline content wraps in lines. A lot of a page needs nothing more."
@@ -65,3 +65,56 @@ Good fits: a page frame (header, sidebar, main, footer), a card gallery, a form 
 - Is it text and stacked blocks? Leave it in flow.
 
 They nest freely: a grid page whose header is a flex row, whose cards use flow inside. For components that move between narrow and wide slots, container queries (`@container`) let a component respond to its own width rather than the viewport's.
+
+```trace diagram
+id: grid-sizing
+title: How a grid sizes its tracks
+subtitle: "grid-template-columns: 200px 1fr 2fr; gap: 20px, in an 840px container"
+groups:
+  - { id: columns, label: Columns first }
+elements:
+  - { id: css, label: The grid container, sub: "840px wide, 5 children", kind: component }
+  - { id: place, label: Place the items, sub: "auto-placement, row by row" }
+  - { id: sizing, label: Size the columns, sub: the container's width is known, group: columns, kind: system }
+  - { id: fixed, label: Fixed track, sub: 200px, group: columns }
+  - { id: gaps, label: Gaps, sub: "2 × 20px = 40px", group: columns }
+  - { id: fr, label: fr tracks, sub: "600px left: 1fr = 200, 2fr = 400", group: columns, tone: stream }
+  - { id: rows, label: Then the rows, sub: "auto: the tallest item in each row" }
+  - { id: items, label: Lay out each item, sub: "stretch fills the cell by default" }
+  - { id: result, label: Aligned grid, sub: every row shares the same columns, kind: person }
+edges:
+  - { id: e-place, from: css, to: place }
+  - { id: e-cols, from: place, to: sizing }
+  - { id: e-fixed, from: sizing, to: fixed }
+  - { id: e-gaps, from: sizing, to: gaps }
+  - { id: e-fr, from: sizing, to: fr }
+  - { id: e-rows, from: fixed, to: rows }
+  - { id: e-rows2, from: gaps, to: rows }
+  - { id: e-rows3, from: fr, to: rows }
+  - { id: e-items, from: rows, to: items }
+  - { id: e-result, from: items, to: result }
+steps:
+  - caption: "A grid container 840px wide defines three columns, 200px, 1fr and 2fr, with a 20px gap, and has five children."
+    focus: [css]
+  - caption: "The items are placed before anything is sized. Auto-placement fills the cells in order, row by row, so with three columns the fourth and fifth items start a second row the grid creates implicitly."
+    focus: [css, place]
+    trace: [e-place]
+  - caption: Then the browser sizes the columns, because the container's width is already known. Fixed tracks simply take their size, here 200px.
+    focus: [place, sizing, fixed]
+    trace: [e-cols, e-fixed]
+  - caption: "Gaps are treated as fixed tracks too: two gaps of 20px take another 40px."
+    focus: [sizing, gaps]
+    trace: [e-gaps]
+  - caption: "The fr tracks share whatever is left. 840 minus 200 minus 40 leaves 600px, split 1 to 2: 200px and 400px."
+    focus: [sizing, fr]
+    trace: [e-fr]
+  - caption: "A plain 1fr means minmax(auto, 1fr), so a track won't shrink below its content's minimum size. One long URL can widen it; minmax(0, 1fr) lets it shrink."
+    focus: [fr]
+  - caption: "With the column widths known, the rows are sized. Each auto row becomes as tall as the tallest item in it, at that item's column width."
+    focus: [fixed, gaps, fr, rows]
+    trace: [e-rows, e-rows2, e-rows3]
+  - caption: "Finally each item is laid out inside its cell. The default stretch fills the cell; align-self and justify-self place it otherwise."
+    focus: [rows, items, result]
+    trace: [e-items, e-result]
+  - caption: "Flexbox works the other way round. Each item's flex-basis comes first and the spare space is shared per line, which is why wrapped flex lines don't form columns."
+```

@@ -4,7 +4,7 @@ title: Background execution limits
 summary: What iOS lets you run when off screen
 why: "There is no way to keep an ordinary app running in the background. Designs that assume one, like polling a server every minute, don't work on iOS."
 requires: [ios-lifecycle, ios-networking]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - { title: The system decides, text: "You request background time; iOS grants it based on battery, network, usage patterns and how you behaved last time." }
   - { title: Pick the right tool, text: "Finish a task, refresh content, do heavy maintenance, transfer files, or get woken by a push: each has its own API." }
@@ -82,3 +82,44 @@ Background time is a budget the system spreads across all apps. Apps the person 
 - Do the essential part first (save, then upload; fetch headlines, then images).
 - When the server knows something changed, send a push instead of polling.
 - Test with Xcode's debugger commands for simulating task launch; on a real device, background tasks almost never run on the schedule you expect.
+
+```trace diagram
+id: app-refresh
+title: Asking iOS for background time
+subtitle: A BGAppRefreshTask from registration to completion
+kind: sequence
+elements:
+  - { id: app, label: App }
+  - { id: scheduler, label: Scheduler }
+  - { id: handler, label: Task handler }
+  - { id: server, label: Server }
+edges:
+  - { id: register, from: app, to: scheduler, label: "register(forTaskWithIdentifier:)" }
+  - { id: submit, from: app, to: scheduler, label: "submit(request): not before +30 min" }
+  - { id: suspend, from: app, to: app, label: "leaves the screen, suspended" }
+  - { id: decide, from: scheduler, to: scheduler, label: "weighs battery, network, usage" }
+  - { id: launch, from: scheduler, to: handler, label: launches app in background }
+  - { id: next, from: handler, to: scheduler, label: submit the next request }
+  - { id: fetch, from: handler, to: server, label: fetch headlines }
+  - { id: expire, from: scheduler, to: handler, label: "expirationHandler: time is up", style: dashed }
+  - { id: complete, from: handler, to: scheduler, label: "setTaskCompleted(success:)", style: dashed }
+steps:
+  - caption: An iOS app can't keep itself running in the background. It can only ask. It registers a handler, submits a request, and iOS picks the moment.
+  - caption: At launch, before launch finishes, the app registers a handler with BGTaskScheduler for each task identifier. Each one must also be listed under BGTaskSchedulerPermittedIdentifiers in Info.plist.
+    trace: [register]
+  - caption: It submits a BGAppRefreshTaskRequest. Its earliestBeginDate is a lower bound, not an appointment.
+    trace: [submit]
+  - caption: The person leaves the app, and iOS suspends it within moments. The scheduler now weighs battery, network and when the person usually opens the app. A force-quit app gets nothing until it is opened again.
+    trace: [suspend, decide]
+  - caption: When iOS decides, it launches or resumes the app in the background and calls the handler. Apple documents up to 30 seconds for a refresh.
+    trace: [launch]
+  - caption: Refresh tasks run once, so the handler books the next one first.
+    trace: [next]
+  - caption: Then it does the essential work first, headlines before images, so being cut off halfway is harmless.
+    trace: [fetch]
+  - caption: If time runs out, the expiration handler fires. Cancel the work and leave it resumable. In SwiftUI's backgroundTask modifier, your closure is cancelled instead.
+    trace: [expire]
+  - caption: Either way, call setTaskCompleted(success:). Apps that finish quickly and report completion are treated better next time; a task that never completes gets the app ended.
+    trace: [complete]
+note: BGProcessingTask follows the same steps but runs only while the device is idle, and can require power or network.
+```

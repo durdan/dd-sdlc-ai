@@ -3,7 +3,7 @@ id: qa-strategy
 title: "What to automate: the pyramid and the trophy"
 summary: Spend test effort where the bugs are
 why: "A suite aimed at the wrong layer ends up slow, brittle and ignored. People stop reading red builds, and real bugs get through."
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: Cost against confidence
     text: "Every test gives you some confidence and costs you something: time to write, time to run, and time to fix when it breaks for no good reason."
@@ -71,3 +71,53 @@ The two shapes agree more than they argue. Both say end-to-end tests should be f
 | Bad config in one region only | Canary and synthetic checks in production |
 
 When a bug escapes, ask which layer should have caught it, and add the test there, not one layer higher just because that is easier to write.
+
+```trace diagram
+id: layers
+title: Which layer catches which bug
+subtitle: One change, on its way to production
+direction: DOWN
+elements:
+  - { id: change, label: A code change, sub: a pull request, kind: person }
+  - { id: static, label: Types and lint, sub: "seconds, no code runs", tone: neutral }
+  - { id: unit, label: Unit tests, sub: "thousands, milliseconds each", tone: core }
+  - { id: integ, label: Integration tests, sub: "real database, real HTTP", tone: core }
+  - { id: contract, label: Contract tests, sub: the API shapes others rely on, tone: stream }
+  - { id: e2e, label: End-to-end tests, sub: "a handful, minutes", tone: stream }
+  - { id: prod, label: Production, sub: "canary, synthetic checks", kind: system, tone: external }
+  - { id: escaped, label: Escaped bug, sub: "add a test at the lowest layer that sees it", kind: external }
+edges:
+  - { id: e1, from: change, to: static }
+  - { id: e2, from: static, to: unit }
+  - { id: e3, from: unit, to: integ }
+  - { id: e4, from: integ, to: contract }
+  - { id: e5, from: contract, to: e2e }
+  - { id: e6, from: e2e, to: prod }
+  - { id: e7, from: prod, to: escaped, style: dashed }
+steps:
+  - caption: A change passes through several layers of checks on its way to users. Each one further along is slower and broader, and when it fails it points less precisely at the cause.
+  - caption: Types and lint come first and run no code at all. A misspelled property or a string passed where a number is expected never reaches a test.
+    focus: [change, static]
+    trace: [e1]
+  - caption: Unit tests run one piece of logic in milliseconds. A rounding error in a price rule belongs here; when the test goes red, its name says which rule broke.
+    focus: [static, unit]
+    trace: [e2]
+  - caption: Some bugs only exist where two parts meet. A wrong column name in a SQL query passes every unit test and fails the first integration test that talks to a real database.
+    focus: [unit, integ]
+    trace: [e3]
+  - caption: If another team renames a JSON field your service depends on, a contract test fails in their build, before the change is deployed anywhere.
+    focus: [integ, contract]
+    trace: [e4]
+  - caption: End-to-end tests drive a real browser through a whole journey. Keep a few, for the paths that matter most. They are the only layer that sees a Checkout button hidden behind a cookie banner.
+    focus: [contract, e2e]
+    trace: [e5]
+  - caption: Some failures only show up in production, like bad configuration in one region. Canary releases and synthetic checks catch those early, on a small share of traffic.
+    focus: [e2e, prod]
+    trace: [e6]
+  - caption: When a bug gets through, ask which layer should have seen it, and add the test there, not one layer higher just because that is easier to write.
+    focus: [prod, escaped]
+    trace: [e7]
+  - caption: The pyramid says most of your tests should be unit tests. The trophy puts static checks at the base and most of the effort into integration tests. Both keep end-to-end tests few.
+    focus: [static, unit, integ, e2e]
+note: Load tests and exploratory testing sit beside this line rather than on it. They find what scripted checks of single changes can't.
+```

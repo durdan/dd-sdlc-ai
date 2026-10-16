@@ -4,7 +4,7 @@ title: "Rendering strategies: CSR, SSR, static and streaming"
 summary: Where and when the HTML is made
 why: "Choosing where HTML is produced decides your first paint, your server bill, how fresh pages are and how much JavaScript every visitor downloads."
 requires: [web-rendering-path, web-http-caching]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: Client-side rendering
     text: "The server sends an almost empty page and a bundle; the browser builds the HTML. Simple to host, slow to first content on weak phones."
@@ -61,3 +61,60 @@ Server-rendered or static HTML is visible but not yet interactive. Hydration run
 - Most real sites mix them: a static marketing page, a server-rendered product page, a client-rendered dashboard.
 
 Whatever you choose, cache what you can (static output and shared SSR responses at a CDN), and measure the result with field data rather than assuming one strategy is fast.
+
+```trace diagram
+id: four-ways
+title: One product page, four ways
+subtitle: Who builds the HTML, and when it reaches the browser
+groups:
+  - { id: build, label: Build time }
+  - { id: server, label: Per request }
+  - { id: browser, label: In the browser }
+elements:
+  - { id: data, label: Data and APIs, sub: "products, prices, the user", kind: store, tone: data }
+  - { id: ssg, label: Static build, sub: renders every page once, group: build }
+  - { id: cdn, label: CDN, sub: serves files from the edge, kind: external }
+  - { id: ssr, label: Server render, sub: whole page per request, group: server }
+  - { id: stream, label: Streaming render, sub: "shell first, sections as ready", group: server, tone: stream }
+  - { id: csr, label: JS bundle runs, sub: "fetches data, builds the DOM", group: browser }
+  - { id: visible, label: Content visible, sub: real HTML from the start, group: browser }
+  - { id: hydrate, label: Hydration, sub: attaches the handlers, group: browser, tone: stream }
+  - { id: ready, label: Interactive page, kind: person }
+edges:
+  - { id: shell, from: cdn, to: csr, label: empty shell + bundle }
+  - { id: csr-data, from: data, to: csr, style: dotted }
+  - { id: csr-ready, from: csr, to: ready }
+  - { id: ssr-data, from: data, to: ssr }
+  - { id: ssr-html, from: ssr, to: visible }
+  - { id: hydrate-in, from: visible, to: hydrate }
+  - { id: hydrated, from: hydrate, to: ready }
+  - { id: build-data, from: data, to: ssg }
+  - { id: files, from: ssg, to: cdn }
+  - { id: static-html, from: cdn, to: visible }
+  - { id: stream-data, from: data, to: stream }
+  - { id: chunks, from: stream, to: visible, style: dashed }
+steps:
+  - caption: The same product page can be made in four ways. The question is always who turns the data into HTML, and when that HTML reaches the browser.
+  - caption: "With client-side rendering, a host sends an almost empty shell and a script bundle. Nothing useful shows until the bundle has downloaded, fetched the data and built the DOM, which is slow on weak phones."
+    focus: [cdn, csr, data]
+    trace: [shell, csr-data]
+  - caption: Once it has rendered, the page is interactive straight away, because the same code built it and attached the handlers.
+    focus: [csr, ready]
+    trace: [csr-ready]
+  - caption: "With server-side rendering, the server fetches the data and renders the whole page for each request. Content arrives in the first response and can be personal, but the first byte waits for the slowest fetch."
+    focus: [data, ssr, visible]
+    trace: [ssr-data, ssr-html]
+  - caption: "Visible is not interactive. Hydration runs the components again in the browser to attach event handlers; until it finishes, taps may do nothing, and the work itself can hurt INP."
+    focus: [visible, hydrate, ready]
+    trace: [hydrate-in, hydrated]
+  - caption: "With static generation, every page is rendered once at build time and served as a file from a CDN. It is the fastest and cheapest, but the same for everyone and only as fresh as the last build."
+    focus: [data, ssg, cdn, visible]
+    trace: [build-data, files, static-html]
+  - caption: Static pages still need hydration to become interactive, just like server-rendered ones.
+    focus: [visible, hydrate]
+  - caption: "With streaming, the server sends the head and the page shell first, then each section as its data arrives. The browser starts on the CSS and the first paint while a slow panel is still rendering."
+    focus: [data, stream, visible]
+    trace: [stream-data, chunks]
+  - caption: "Hydrate less to close the gap: islands hydrate only the interactive parts, and server components send no JavaScript for the rest. Most sites mix these strategies per route."
+    focus: [hydrate]
+```

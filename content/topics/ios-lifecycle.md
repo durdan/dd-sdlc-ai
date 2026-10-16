@@ -3,7 +3,7 @@ id: ios-lifecycle
 title: App and scene lifecycle
 summary: Active, inactive, background, suspended, gone
 why: "iOS freezes and kills apps without asking. If you save state only when the app terminates, users lose their work."
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - { title: Scenes have states, text: "Each window (scene) moves between active, inactive and background on its own; the process launches and dies separately." }
   - { title: Suspended means frozen, text: "A few seconds after going to the background your code stops running, though the app stays in memory." }
@@ -87,3 +87,54 @@ struct NotesView: View {
 ```
 
 If you need a few more seconds to finish something important while moving to the background, ask for them before you get there (see the background execution topic).
+
+```trace diagram
+id: scene-states
+title: A scene leaves the screen
+subtitle: Active, inactive, background, suspended, gone
+direction: DOWN
+elements:
+  - { id: launch, label: Launch, sub: "process starts, scene connects", kind: person, row: 0 }
+  - { id: active, label: Foreground active, sub: "on screen, gets touches", kind: system, row: 1 }
+  - { id: inactive, label: Foreground inactive, sub: "alert, app switcher", row: 2 }
+  - { id: saved, label: Saved state, sub: "your store + @SceneStorage", kind: store, tone: data, row: 2 }
+  - { id: background, label: Background, sub: "off screen, briefly runs code", row: 3 }
+  - { id: snapshot, label: Snapshot, sub: shown in the app switcher, tone: neutral, row: 3 }
+  - { id: suspended, label: Suspended, sub: "in memory, no code runs", tone: neutral, row: 4 }
+  - { id: resumed, label: Back to the app, sub: "same memory, nothing lost", kind: person, row: 5 }
+  - { id: killed, label: Terminated, sub: no callback, kind: external, row: 5 }
+  - { id: relaunch, label: Cold launch, sub: restore what was on screen, kind: person, row: 6 }
+edges:
+  - { id: become, from: launch, to: active }
+  - { id: resign, from: active, to: inactive, label: sceneWillResignActive }
+  - { id: save, from: inactive, to: saved, label: save, style: dashed }
+  - { id: enter, from: inactive, to: background, label: sceneDidEnterBackground }
+  - { id: snap, from: background, to: snapshot, style: dashed }
+  - { id: freeze, from: background, to: suspended }
+  - { id: back, from: suspended, to: resumed, label: user returns }
+  - { id: kill, from: suspended, to: killed, label: memory needed, style: dashed }
+  - { id: cold, from: killed, to: relaunch, label: user returns }
+  - { id: restore, from: saved, to: relaunch, label: restore, style: dotted }
+steps:
+  - caption: "The person taps your icon. The system starts the process, connects a scene, and the scene becomes foreground active: on screen and receiving touches."
+    trace: [become]
+  - caption: "They swipe up to the app switcher. The scene goes inactive first: still on screen, but no events. This is where Apple says to save user data and pause timers."
+    trace: [resign, save]
+    note: Each scene has its own state; on iPad one scene can be active while another is in the background.
+  - caption: "They pick another app, so your scene moves to the background. Release big caches and shared hardware like the camera, and hide anything sensitive."
+    trace: [enter]
+  - caption: "After your background callback returns, the system takes a snapshot of your UI. The app switcher shows it, and so does the moment the app comes back."
+    trace: [snap]
+  - caption: "Normally a few seconds later the app is suspended. It stays in memory, but its threads are frozen and none of your code runs."
+    trace: [freeze]
+  - caption: "If the person comes back soon, the app simply resumes. The scene enters the foreground and becomes active again with all its memory intact."
+    trace: [back]
+    note: "Callbacks on the way back: sceneWillEnterForeground, then sceneDidBecomeActive."
+  - caption: "But if the system needs memory, it ends the suspended app without waking it. applicationWillTerminate only runs if the app was still running in the background, not suspended."
+    trace: [kill]
+  - caption: "The next tap is a cold launch. To make it feel as if nothing happened, restore what was on screen from @SceneStorage and the data from your own store."
+    trace: [cold, restore]
+  - caption: "So your real save points are going inactive and going to the background. After that, expect no more chances."
+    focus: [inactive, background, saved]
+note: "In iOS 13 and later these are scene delegate callbacks; SwiftUI reports them as scenePhase."
+```

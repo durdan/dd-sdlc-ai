@@ -4,7 +4,7 @@ title: Push with Firebase Cloud Messaging
 summary: A token per install, two kinds of message, and limits on waking up
 why: "Push is how a server reaches an app that isn't running. What arrives, whether your code runs, and whether the user sees anything depends on the message type, its priority and the app's state."
 requires: [android-background, android-permissions]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - { title: "Tokens identify an install", text: "Each app install gets a registration token. Send it to your server, update it in onNewToken, and drop tokens that go stale." }
   - { title: "Notification vs data messages", text: "Notification messages are shown by the system when the app is in the background; data messages always go to your onMessageReceived." }
@@ -82,3 +82,46 @@ A force-stopped app (from Settings) receives nothing until the user opens it aga
 ## The user's side
 
 On Android 13+, notifications need the `POST_NOTIFICATIONS` runtime permission; a push that arrives without it is received but not shown. Create notification channels for each kind of message (orders, chat, marketing) so users can mute one without losing the others, and include an idempotency key in the data: messages can be delivered more than once.
+
+```trace diagram
+id: fcm-delivery
+title: From your server to the notification tray
+subtitle: Register, send, deliver
+kind: sequence
+elements:
+  - { id: app, label: App }
+  - { id: android, label: Android }
+  - { id: fcm, label: FCM }
+  - { id: server, label: Server }
+edges:
+  - { id: register, from: app, to: android, label: FCM SDK starts }
+  - { id: ask, from: android, to: fcm, label: register this install }
+  - { id: token, from: fcm, to: app, label: "onNewToken(token)", style: dashed }
+  - { id: upload, from: app, to: server, label: store the token }
+  - { id: send, from: server, to: fcm, label: "POST messages:send (HTTP v1)" }
+  - { id: deliver, from: fcm, to: android, label: "notification, app in background" }
+  - { id: tray, from: android, to: android, label: shown in the system tray }
+  - { id: data, from: server, to: fcm, label: "data message, high priority" }
+  - { id: wake, from: fcm, to: android, label: wakes a dozing device }
+  - { id: receive, from: android, to: app, label: "onMessageReceived()", style: dashed }
+  - { id: gone, from: fcm, to: server, label: 404 UNREGISTERED, style: dashed }
+steps:
+  - caption: The same three parties as on iOS. Your app gets an address, your server decides what to send, and FCM keeps one shared connection per device through Google Play services.
+  - caption: When the app starts, the FCM SDK registers this install with FCM.
+    trace: [register, ask]
+  - caption: FCM issues a registration token and calls onNewToken, and the app sends it to your server. Tokens change on reinstall, cleared data, restore to a new device and sometimes on their own.
+    trace: [token, upload]
+  - caption: To push, your server POSTs to the FCM HTTP v1 API, addressed to that token. The payload is at most 4096 bytes, so send ids rather than documents.
+    trace: [send]
+  - caption: A notification message for an app in the background never reaches your code. The system shows it in the tray, and a tap opens your launcher activity. From Android 13 that needs POST_NOTIFICATIONS.
+    trace: [deliver, tray]
+  - caption: A data message carries only your key-value pairs. At high priority, FCM delivers it right away and can wake a dozing device; at normal priority it may wait for a Doze maintenance window.
+    trace: [data, wake]
+  - caption: Data messages always go to onMessageReceived, and so does everything when the app is in the foreground. The window is short, so hand anything over a few seconds to WorkManager.
+    trace: [receive]
+  - caption: High priority is meant for messages the user sees. Using the last 7 days per app instance, FCM may downgrade high-priority messages that don't lead to a notification.
+    focus: [fcm]
+  - caption: When a token is no longer valid, the send fails with 404 UNREGISTERED. Delete the token on your server rather than retrying.
+    trace: [gone]
+note: A force-stopped app receives nothing until the user opens it again.
+```

@@ -4,7 +4,7 @@ title: Building, signing and shipping
 summary: Certificates, profiles, TestFlight, App Review
 why: "An iOS binary only runs if Apple's chain of trust says it may. Knowing the pieces turns 'signing failed' from a mystery into a checklist."
 requires: [ios-privacy]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - { title: Signed or it doesn't run, text: "A certificate proves who built the app; a provisioning profile says which app, which entitlements and where it may run." }
   - { title: "Archive, upload, test, review", text: "Every release goes through App Store Connect: TestFlight for testers, then App Review for the store." }
@@ -70,3 +70,57 @@ An **archive** is a release build plus its debug symbols. From the Organizer (or
 Submitting a version sends the build, metadata, screenshots, privacy answers and age rating to **App Review**, which checks it against the App Review Guidelines. Apple says it reviews at least half of submissions within 24 hours and 90% within 48. Most rejections come from guideline 2.1 (app completeness): crashes, placeholder content, broken links, or demo accounts that don't work. Privacy issues are close behind: purpose strings that don't explain, data collection that doesn't match the privacy label, or a missing privacy manifest reason.
 
 Apple also raises the floor every year. Since April 28, 2026, uploads must be built with Xcode 26 or later against the iOS 26 SDK, so the newest SDK's behaviour changes reach your app whether or not you planned for them. After approval you choose manual, automatic or phased release; a phased release rolls an update out over seven days to automatic-update users and can be paused if crash reports climb.
+
+```trace diagram
+id: ios-release
+title: From Xcode to the App Store
+subtitle: Archive, sign, upload, test, review, release
+direction: DOWN
+groups:
+  - { id: build, label: Your Mac or CI }
+  - { id: asc, label: App Store Connect }
+elements:
+  - { id: archive, label: Archive, sub: release build + debug symbols, group: build, row: 0 }
+  - { id: cert, label: Distribution certificate, sub: the team's private key, kind: store, group: build, row: 0 }
+  - { id: profile, label: Provisioning profile, sub: "App ID, entitlements", kind: store, group: build, row: 0 }
+  - { id: signed, label: Signed build, sub: ready to upload, group: build, row: 1 }
+  - { id: processing, label: Processing, sub: build number must be new, group: asc, row: 2 }
+  - { id: internal, label: Internal testers, sub: "your team, right away", kind: person, group: asc, row: 3 }
+  - { id: betareview, label: TestFlight review, sub: first build of a group, group: asc, row: 3 }
+  - { id: external, label: External testers, sub: "up to 10,000, 90 days", kind: person, group: asc, row: 4 }
+  - { id: review, label: App Review, sub: most within 24 to 48 h, group: asc, row: 3 }
+  - { id: release, label: Release, sub: "manual, automatic or phased", kind: person, row: 4 }
+edges:
+  - { id: sign, from: archive, to: signed }
+  - { id: who, from: cert, to: signed}
+  - { id: what, from: profile, to: signed}
+  - { id: upload, from: signed, to: processing, label: upload }
+  - { id: team, from: processing, to: internal }
+  - { id: beta, from: processing, to: betareview }
+  - { id: testers, from: betareview, to: external }
+  - { id: submit, from: processing, to: review}
+  - { id: ship, from: review, to: release }
+steps:
+  - caption: An iOS binary runs only if Apple's chain of trust allows it. Every release takes the same route, from a signed archive through App Store Connect, TestFlight and App Review.
+  - caption: Xcode, or xcodebuild on CI, builds an archive, a release build plus its debug symbols. Since April 28, 2026, uploads must be built with Xcode 26 against the iOS 26 SDK.
+    focus: [archive]
+  - caption: Signing joins two pieces. The distribution certificate proves your team built it. The provisioning profile ties the App ID to its entitlements, and an entitlement missing from the profile is a classic signing error.
+    focus: [archive, cert, profile, signed]
+    trace: [sign, who, what]
+  - caption: The signed build is uploaded and App Store Connect processes it into a build of a version. Bump the build number every time, because a duplicate is rejected.
+    focus: [signed, processing]
+    trace: [upload]
+  - caption: Internal testers, people on your App Store Connect team, can install it from TestFlight straight away.
+    focus: [processing, internal]
+    trace: [team]
+  - caption: External testers, up to 10,000 by email or public link, wait until the group's first build passes App Review for TestFlight. Every build stays testable for up to 90 days.
+    focus: [processing, betareview, external]
+    trace: [beta, testers]
+  - caption: Submitting the version sends the build, metadata, screenshots and privacy answers to App Review. Apple reviews at least half of submissions within 24 hours. Crashes, placeholder content and broken demo accounts, guideline 2.1, are the most common rejection.
+    focus: [processing, review]
+    trace: [submit]
+  - caption: After approval you release by hand, automatically, or in phases. A phased release reaches automatic-update users over seven days and can be paused if crash reports climb.
+    focus: [review, release]
+    trace: [ship]
+note: Xcode's automatic signing creates and renews certificates and profiles; CI usually signs in with an App Store Connect API key.
+```

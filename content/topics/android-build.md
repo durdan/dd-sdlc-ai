@@ -3,7 +3,7 @@ id: android-build
 title: The build, from Gradle to Play
 summary: Gradle, App Bundles, R8 and two signing keys
 why: "What you upload is not what users install. Play builds device-specific APKs from your bundle and signs them with a key Google holds, after R8 has rewritten your code."
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - { title: "Gradle with the Android plugin", text: "The Android Gradle Plugin turns sources and resources into DEX, packages them per build type and flavour, and produces APKs or a bundle." }
   - { title: "Bundle in, APKs out", text: "An Android App Bundle (AAB) is a publishing format; Play generates optimised split APKs for each device. New Play apps must use it." }
@@ -89,3 +89,52 @@ Android installs only signed APKs, and updates must be signed with the same key 
 - the **app signing key**, which Google keeps and uses to sign the APKs users install.
 
 If the upload key leaks or is lost, you can ask for it to be reset. Keep keystores and passwords out of the repository: CI reads them from secrets. Debug builds use an auto-generated debug key, which is why a debug build can't update a Play install.
+
+```trace diagram
+id: play-release
+title: From Gradle to a user's phone
+subtitle: Build, shrink, bundle, sign twice
+direction: DOWN
+groups:
+  - { id: build, label: Gradle build (AGP) }
+  - { id: play, label: Google Play }
+elements:
+  - { id: sources, label: Kotlin and resources, sub: "compiled, KSP runs", group: build, row: 0 }
+  - { id: r8, label: R8, sub: "shrink, optimise, obfuscate, DEX", group: build, row: 1 }
+  - { id: aab, label: App Bundle (.aab), sub: "every ABI, density, language", group: build, row: 2 }
+  - { id: uploadkey, label: Upload key, sub: "yours, can be reset", kind: store, group: build, row: 1 }
+  - { id: console, label: Play Console, sub: versionCode must increase, group: play, row: 3 }
+  - { id: appkey, label: App signing key, sub: held by Google, kind: store, group: play, row: 3 }
+  - { id: splits, label: Split APKs, sub: "base + density, ABI, language", group: play, row: 4 }
+  - { id: phone, label: User's phone, sub: installs only its splits, kind: person, row: 5 }
+edges:
+  - { id: compile, from: sources, to: r8}
+  - { id: bundle, from: r8, to: aab }
+  - { id: signup, from: uploadkey, to: aab}
+  - { id: upload, from: aab, to: console, label: upload }
+  - { id: generate, from: console, to: splits}
+  - { id: signapp, from: appkey, to: splits}
+  - { id: install, from: splits, to: phone }
+steps:
+  - caption: What you upload is not what users install. Play builds device-specific APKs from your bundle and signs them with a key Google holds, after R8 has rewritten your code.
+  - caption: The Android Gradle Plugin compiles Kotlin and resources. For a release build with minification on, R8 shrinks, optimises and obfuscates the code and produces DEX; isShrinkResources drops unused resources.
+    focus: [sources, r8]
+    trace: [compile]
+  - caption: R8 keeps only what it can see being used, so code reached by reflection needs keep rules. The mapping file turns obfuscated stack traces back into names. AGP 9.3 replaces the two flags with one optimization block.
+    focus: [r8]
+  - caption: The output is an Android App Bundle, signed with your upload key. A bundle holds everything for every device and can't be installed itself.
+    focus: [r8, aab, uploadkey]
+    trace: [bundle, signup]
+  - caption: You upload it to Play Console. versionCode must go up with every upload, and new apps have had to use bundles since August 2021.
+    focus: [aab, console]
+    trace: [upload]
+  - caption: With Play App Signing, Google keeps the app signing key. Play generates a base APK plus configuration splits from the bundle and signs them with that key.
+    focus: [console, appkey, splits]
+    trace: [generate, signapp]
+  - caption: Each phone downloads only the splits for its screen density, CPU architecture and languages. Updates must carry the same app signing key as the installed app.
+    focus: [splits, phone]
+    trace: [install]
+  - caption: That is why there are two keys. A lost or leaked upload key can be reset in Play Console, while the key users' phones trust never changes. Debug builds use a debug key, so they can't update a Play install.
+    focus: [uploadkey, appkey]
+note: Run bundletool build-apks locally to see the APKs Play will generate from a bundle.
+```

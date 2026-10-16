@@ -4,7 +4,7 @@ title: How SwiftUI updates views
 summary: State, identity and what triggers a redraw
 why: "Most SwiftUI bugs (lost state, views that don't refresh, slow lists) come from misunderstanding identity and dependencies, not from the layout code."
 requires: [ios-main-thread]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - { title: Views are values, text: "A View struct is a cheap description; SwiftUI keeps the real, long-lived state elsewhere and calls body again when it needs a new description." }
   - { title: Identity decides lifetime, text: "State lives as long as the view's identity: its place in the hierarchy, or the id you give it." }
@@ -91,3 +91,47 @@ Two practical consequences:
 - `body` must be fast and free of side effects. It can run often and at times you don't choose; start work in `.task` or in response to events instead.
 
 Both systems work side by side, so existing `ObservableObject` code can migrate one type at a time.
+
+```trace diagram
+id: observation-update
+title: One property changes
+subtitle: "Who reads it, who re-runs body, what is redrawn"
+direction: DOWN
+elements:
+  - { id: tap, label: A filter field, sub: "binding sets library.filter", kind: person, row: 0 }
+  - { id: model, label: Library, sub: "@Observable: books, filter", kind: store, tone: data, row: 1 }
+  - { id: deps, label: Recorded reads, sub: who read what in body, kind: system, row: 2 }
+  - { id: field, label: ResultsTitle, sub: reads filter, row: 3 }
+  - { id: list, label: BookList, sub: "reads books, filter", row: 3 }
+  - { id: header, label: Header, sub: reads books.count, tone: neutral, row: 3 }
+  - { id: rows, label: Rows, sub: "ForEach by book.id", row: 4 }
+  - { id: diff, label: Compare, sub: new result vs the last one, row: 5 }
+  - { id: render, label: Update the screen, sub: only what differs, kind: person, row: 6 }
+edges:
+  - { id: set, from: tap, to: model, label: "filter = \"swift\"" }
+  - { id: notify, from: model, to: deps, label: filter changed }
+  - { id: inv1, from: deps, to: field, label: invalidate }
+  - { id: inv2, from: deps, to: list, label: invalidate }
+  - { id: each, from: list, to: rows }
+  - { id: out1, from: field, to: diff, label: new body }
+  - { id: out2, from: rows, to: diff, label: new body }
+  - { id: apply, from: diff, to: render }
+steps:
+  - caption: "SwiftUI views are cheap structs. The state lasts elsewhere: here, an @Observable Library owned with @State by the screen above, shared by three child views."
+    focus: [model, field, list, header]
+  - caption: "Each time a body ran, SwiftUI recorded which observable properties it read. ResultsTitle read filter, BookList read books and filter, Header only books.count."
+    focus: [deps, field, list, header]
+  - caption: "The person types in a filter field, and its binding sets library.filter."
+    trace: [set]
+  - caption: "Observation tells SwiftUI that filter changed. Only views whose body read filter are invalidated: ResultsTitle and BookList."
+    trace: [notify, inv1, inv2]
+  - caption: "Header never read filter, so its body doesn't run at all. With the older ObservableObject, any @Published change would have invalidated every view holding the object."
+    focus: [header, deps]
+  - caption: "SwiftUI calls body again on the main thread for the two invalid views. BookList's ForEach produces rows identified by book.id."
+    trace: [each]
+  - caption: "Rows whose id was there before keep their identity, and so their @State. New ids get fresh views and state; ids that disappeared are destroyed, and their .task is cancelled."
+    focus: [rows]
+  - caption: "SwiftUI compares the new descriptions with the last ones and updates only what differs on screen."
+    trace: [out1, out2, apply]
+note: "Observation needs iOS 17 or later. Keep body fast and free of side effects; it runs whenever a dependency changes."
+```

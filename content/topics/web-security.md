@@ -4,7 +4,7 @@ title: "Browser security: origins, CORS, CSP, cookies"
 summary: Who may read what, and which scripts may run
 why: "The browser enforces most of a web app's security boundaries for you, but only if you understand them well enough not to switch them off by accident."
 requires: [web-dom-events, web-http-caching]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: The origin is the boundary
     text: "Scheme, host and port together. A page can send requests anywhere, but it can only read responses from its own origin unless the other side allows it."
@@ -92,3 +92,44 @@ console.log("escaped:", `<p>${escapeHtml(comment)}</p>`)
 ## Cookies
 
 Session cookies should be `HttpOnly` (unreadable by scripts, so an XSS can't steal them), `Secure` (HTTPS only) and `SameSite=Lax` or `Strict`. `SameSite` governs cross-*site* requests, where a site is the registrable domain plus the scheme, so `app.shop.example` and `api.shop.example` are the same site but different origins. Some browsers treat a cookie without `SameSite` as `Lax`, others don't, so always set it explicitly. `SameSite=None` is needed for genuinely cross-site uses such as embedded widgets, and must be combined with `Secure`.
+
+```trace diagram
+id: cross-origin
+title: What the browser checks
+subtitle: "Your page on https://shop.example, the API on https://api.shop.example, and an attacker"
+kind: sequence
+elements:
+  - { id: page, label: Your page }
+  - { id: browser, label: Browser }
+  - { id: api, label: API }
+  - { id: evil, label: evil.example }
+edges:
+  - { id: fetch, from: page, to: browser, label: "fetch PUT /me, JSON, credentials" }
+  - { id: preflight, from: browser, to: api, label: "OPTIONS /me: Origin, Request-Method PUT" }
+  - { id: allow, from: api, to: browser, label: "204: Allow-Origin https://shop.example, PUT, credentials", style: dashed }
+  - { id: put, from: browser, to: api, label: PUT /me + session cookie }
+  - { id: put-200, from: api, to: browser, label: "200 + the same Allow-* headers", style: dashed }
+  - { id: readable, from: browser, to: page, label: response readable, style: dashed }
+  - { id: form, from: evil, to: browser, label: hidden form POSTs to /transfer }
+  - { id: no-cookie, from: browser, to: api, label: "POST /transfer, no cookie (SameSite=Lax)" }
+  - { id: csp, from: browser, to: browser, label: "injected <script> without the nonce: blocked by CSP" }
+steps:
+  - caption: "The page and its API share a site, shop.example, but they are different origins, because the host differs. So the same-origin policy applies to the page reading API responses."
+    focus: [page, api]
+  - caption: "The page sends a PUT with a JSON body and cookies. A plain form couldn't send that, so the browser first asks permission with an OPTIONS preflight, which never carries cookies."
+    trace: [fetch, preflight]
+  - caption: "The API names the exact origin, the allowed method and headers, and Allow-Credentials: true. With credentials a * wildcard would not do. Access-Control-Max-Age lets the browser reuse this answer."
+    trace: [allow]
+  - caption: "Only now is the real request sent, with the session cookie. Both hosts are the same site, so a SameSite=Lax cookie goes along."
+    trace: [put]
+  - caption: "The response carries the same headers, so the browser hands it to the script. Without them the request would still have reached the server; only the script's read is blocked."
+    trace: [put-200, readable]
+  - caption: "CORS is enforced by browsers, for browsers. curl ignores it, so the API still has to authenticate every request itself."
+    focus: [api]
+  - caption: "A page on evil.example submits a hidden form to /transfer. Forms may post anywhere, but this is a cross-site POST, so the Lax cookie is left off and the request arrives unauthenticated."
+    trace: [form, no-cookie]
+  - caption: "Suppose a stored comment slips a <script> into your page. Your CSP allows only scripts with this response's random nonce, so the browser refuses to run it and reports the violation."
+    trace: [csp]
+  - caption: "And because the session cookie is HttpOnly, even a script that did run couldn't read it from document.cookie."
+    focus: [page, browser]
+```

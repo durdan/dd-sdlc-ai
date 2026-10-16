@@ -3,7 +3,7 @@ id: web-http-caching
 title: HTTP caching for the web
 summary: Cache-Control, ETags, hashed assets, CDNs
 why: "The fastest request is the one that is never made. Wrong headers either make repeat visits slow or keep users stuck on an old version of your site."
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: Fresh or stale
     text: "max-age says how many seconds a stored response stays fresh. While fresh, a cache answers without asking the server at all."
@@ -100,3 +100,45 @@ This is a simplification of RFC 9111 (it ignores `Expires`, `Vary` and heuristic
 - **Responses that differ by request header** (language, encoding): send `Vary` so a cache doesn't hand one user's variant to another.
 
 A CDN is a shared cache close to the user. It follows the same headers, can be purged when you must, and usually adds its own controls on top. Purging is the escape hatch; hashed URLs are the plan.
+
+```trace diagram
+id: two-visits
+title: Two visits, three caches' worth of answers
+subtitle: "index.html is no-cache with an ETag; app.3f9a1c.js is cached for a year"
+kind: sequence
+elements:
+  - { id: browser, label: Browser cache }
+  - { id: cdn, label: CDN }
+  - { id: origin, label: Origin }
+edges:
+  - { id: get-html, from: browser, to: cdn, label: GET / }
+  - { id: miss, from: cdn, to: origin, label: "GET / (CDN miss)" }
+  - { id: html-200, from: origin, to: cdn, label: "200, no-cache, ETag \"v7\"", style: dashed }
+  - { id: html-down, from: cdn, to: browser, label: "200 + HTML: both store it", style: dashed }
+  - { id: get-js, from: browser, to: cdn, label: GET /app.3f9a1c.js }
+  - { id: js-hit, from: cdn, to: browser, label: "200 from the CDN: max-age=1 year, immutable", style: dashed }
+  - { id: js-fresh, from: browser, to: browser, label: "next visit: app.3f9a1c.js is fresh, no request" }
+  - { id: reval, from: browser, to: cdn, label: "GET /, If-None-Match: \"v7\"" }
+  - { id: reval-origin, from: cdn, to: origin, label: "If-None-Match: \"v7\"" }
+  - { id: not-modified, from: origin, to: cdn, label: "304 Not Modified, no body", style: dashed }
+  - { id: not-modified-down, from: cdn, to: browser, label: "304, body reused", style: dashed }
+steps:
+  - caption: "The browser has its own private cache. The CDN is a shared cache in front of the origin server. Both obey the same Cache-Control headers."
+    focus: [browser, cdn, origin]
+  - caption: On the first visit nothing is cached, so the request for the page goes through the CDN to the origin.
+    trace: [get-html, miss]
+  - caption: "The origin answers with no-cache and an ETag. Both caches store the page, but no-cache means they must check with the server before every reuse."
+    trace: [html-200, html-down]
+  - caption: "The page links to app.3f9a1c.js. Another visitor already pulled it into the CDN, so the CDN answers without asking the origin, with max-age of a year and immutable."
+    trace: [get-js, js-hit]
+  - caption: "On the next visit the script is still fresh, so the browser uses its stored copy without any request. immutable means even a reload won't revalidate it."
+    trace: [js-fresh]
+  - caption: "The page is no-cache, so the browser revalidates. It sends the ETag it holds in If-None-Match."
+    trace: [reval]
+  - caption: The CDN's copy is no-cache too, so it asks the origin the same question before answering.
+    trace: [reval-origin]
+  - caption: "Nothing changed, so the origin sends 304 Not Modified, headers only. Both caches refresh their stored copy and reuse the body: one round trip, no download."
+    trace: [not-modified, not-modified-down]
+  - caption: "After a deploy, the origin's page gets a new ETag and links to a new file name. The next revalidation returns the new page, and the old script simply stops being asked for."
+    focus: [origin, browser]
+```
