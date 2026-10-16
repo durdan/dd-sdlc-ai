@@ -3,12 +3,20 @@ export type Depth = "engineer" | "executive";
 /** Colour by meaning, not decoration: one tone per plane or ownership. */
 export type Tone = "core" | "stream" | "external" | "data" | "neutral";
 export type EdgeStyle = "solid" | "dashed" | "dotted";
+/**
+ * What a box is, shown by its colour and corner icon. Optional: when it is not
+ * given, it is worked out from the tone, the kind and the box's own words.
+ */
+export type Role = "client" | "service" | "data" | "cache" | "queue" | "security" | "edge" | "external";
+/** What an arrow carries, shown by its colour (and, by default, its dash). */
+export type Flow = "main" | "reply" | "async" | "security" | "data";
 export interface DiagramElement {
     id: string;
     kind: ElementKind;
     label: string;
     sub?: string;
     tone?: Tone;
+    role?: Role;
     /** Boundary this element sits inside (a group id). */
     group?: string;
     /** Row (0 = top) when the diagram is laid out in bands; groups then wrap their members. */
@@ -25,6 +33,7 @@ export interface DiagramEdge {
     to: string;
     label?: string;
     style?: EdgeStyle;
+    flow?: Flow;
 }
 export interface DiagramGroup {
     id: string;
@@ -61,6 +70,7 @@ export interface SequenceDiagram {
     participants: {
         id: string;
         label: string;
+        role?: Role;
     }[];
     messages: DiagramEdge[];
 }

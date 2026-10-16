@@ -16,7 +16,7 @@
 // URL hash once the reader starts using the diagram, so a link opens the same view.
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import "@/components/learn/setup"
-import { shotDurations, type Shot } from "design-player/core"
+import { ROLES, legendOf, roleOf, shotDurations, type Shot } from "design-player/core"
 import { DiagramStage } from "design-player/react"
 import type { FlowDiagram } from "@/lib/paths/types"
 import { explore, readLink, writeLink, type FlowLink, type Reach } from "@/lib/paths/reach"
@@ -24,6 +24,22 @@ import { BAND_GAP, LIB_FOLLOW, PAD, READ, bandPx, c4Keys, compactSequence, heade
 import { Ctl } from "./LanesVisualiser"
 
 const SPEEDS = [0.5, 1, 2] as const
+/** Speaking rate for each playback speed. */
+const RATE: Record<(typeof SPEEDS)[number], number> = { 0.5: 0.8, 1: 1, 2: 1.45 }
+
+/** The device's best English voice: a natural or enhanced one when there is one. */
+function pickVoice(): SpeechSynthesisVoice | undefined {
+  const all = speechSynthesis.getVoices().filter((v) => /^en[-_]/i.test(v.lang))
+  const rank = (v: SpeechSynthesisVoice) =>
+    (/natural|neural|enhanced|premium/i.test(v.name) ? 8 : 0) +
+    (/samantha|daniel|serena|google uk english|google us english|aria|jenny|guy|libby|sonia/i.test(v.name) ? 4 : 0) +
+    (v.localService ? 1 : 0) +
+    (/^en[-_](gb|us)/i.test(v.lang) ? 1 : 0)
+  return all.sort((a, b) => rank(b) - rank(a))[0]
+}
+
+/** Captions as they should sound: no Markdown marks. */
+const spoken = (t: string) => t.replace(/[`*_]/g, "").replace(/\s+/g, " ").trim()
 
 /** Width of an edge label (12-unit Inter, as renderSvg draws it), in diagram units. */
 function labelMeasurer() {
@@ -178,15 +194,18 @@ function FlowStage({ flow, shots, at, epoch, ms, still, selected, onSelect }: St
             const b = layout.nodes[p.id]
             if (!b) return null
             const dim = lit.size > 0 && !lit.has(p.id)
+            const r = ROLES[roleOf(p)]
             return (
               <button
                 key={p.id}
                 type="button"
                 onClick={() => onSelect(p.id)}
-                className={`pointer-events-auto absolute flex items-center justify-center overflow-hidden rounded-md border bg-[#fbfbf9] px-0.5 text-center font-semibold leading-[1.1] text-[#1d2826] transition-opacity duration-500 motion-reduce:transition-none ${
-                  selected === p.id ? "border-2 border-[#8a6a2c]" : "border-[#c9d0cd]"
+                className={`pointer-events-auto absolute flex items-center justify-center overflow-hidden rounded-md border-[1.5px] px-0.5 text-center font-semibold leading-[1.1] text-[#1d2826] transition-opacity duration-500 motion-reduce:transition-none ${
+                  selected === p.id ? "!border-2 !border-[#8a6a2c]" : ""
                 }`}
                 style={{
+                  background: r.fill,
+                  borderColor: r.stroke,
                   left: (PAD + b.x - shown.x) * s,
                   top: Math.max(BAND_GAP, natural),
                   width: b.w * s,
@@ -264,7 +283,21 @@ export default function FlowVisualiser({ diagrams, index, onSelect }: Props) {
     setReach(null)
   }
   // Wide diagrams (sequence diagrams, left-to-right flows) take the full width on desktop.
-  const wide = flow.layout.width > flow.layout.height * 1.15
+  // Fullscreen: the whole visualiser covers the page (works on phones too, unlike the Fullscreen API).
+  const [full, setFull] = useState(false)
+  useEffect(() => {
+    if (!full) return
+    const on = (e: KeyboardEvent) => e.key === "Escape" && setFull(false)
+    addEventListener("keydown", on)
+    const was = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      removeEventListener("keydown", on)
+      document.body.style.overflow = was
+    }
+  }, [full])
+  const legend = useMemo(() => legendOf(flow.diagram), [flow.diagram])
+  const wide = full || flow.layout.width > flow.layout.height * 1.15
   const last = shots.length - 1
   const at = Math.min(step, last)
   const nodes = d.kind === "c4" ? d.elements : d.participants
@@ -285,15 +318,77 @@ export default function FlowVisualiser({ diagrams, index, onSelect }: Props) {
     mq.addEventListener("change", on)
     return () => mq.removeEventListener("change", on)
   }, [])
-  // Playing: each step is held for its shot length, then the next one starts; the last one ends play.
+  // Read aloud (the device's own voice): on, playing waits for each caption to be spoken.
+  const [canSpeak, setCanSpeak] = useState(false)
+  const [voice, setVoice] = useState(false)
   useEffect(() => {
-    if (!playing) return
-    const t = setTimeout(() => {
+    if (!("speechSynthesis" in window)) return
+    setCanSpeak(true)
+    setVoice(localStorage.getItem("sdlc-voice") === "on")
+    speechSynthesis.getVoices() // starts loading the list in some browsers
+  }, [])
+  const toggleVoice = () => {
+    setVoice((v) => {
+      localStorage.setItem("sdlc-voice", v ? "off" : "on")
+      if (v) speechSynthesis.cancel()
+      return !v
+    })
+    touched.current = true
+    setEpoch((e) => e + 1)
+  }
+
+  // Playing: each step is held for its shot length (and, reading aloud, until its caption has been
+  // spoken), then the next one starts; the last one ends play. Paused, a step the reader moves to is read once.
+  useEffect(() => {
+    const speak = voice && canSpeak && (playing || touched.current) && !reached
+    if (!playing && !speak) return
+    let alive = true
+    let timeUp = false
+    let said = !speak
+    const next = () => {
+      if (!alive || !playing || !timeUp || !said) return
       if (at >= last) setPlaying(false)
       else setStep(at + 1)
-    }, ms)
-    return () => clearTimeout(t)
-  }, [playing, at, last, ms, epoch])
+    }
+    const t = playing
+      ? setTimeout(() => {
+          timeUp = true
+          next()
+        }, ms)
+      : undefined
+    let watchdog: ReturnType<typeof setTimeout> | undefined
+    if (speak) {
+      speechSynthesis.cancel()
+      const text = spoken(shot.engineer)
+      // Some browsers never fire "end": carry on after a generous reading time.
+      watchdog = setTimeout(() => {
+        said = true
+        next()
+      }, (text.split(" ").length * 520) / RATE[speed] + 3000)
+      const u = new SpeechSynthesisUtterance(text)
+      const v = pickVoice()
+      if (v) u.voice = v
+      u.lang = v?.lang ?? "en-GB"
+      u.rate = RATE[speed]
+      u.onend = u.onerror = () => {
+        clearTimeout(watchdog)
+        said = true
+        // A short pause between steps, as a narrator would leave.
+        setTimeout(next, 350)
+      }
+      speechSynthesis.speak(u)
+    }
+    return () => {
+      alive = false
+      clearTimeout(t)
+      clearTimeout(watchdog)
+      if (speak) speechSynthesis.cancel()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playing, at, last, ms, epoch, voice, canSpeak])
+  useEffect(() => () => {
+    if ("speechSynthesis" in window) speechSynthesis.cancel()
+  }, [])
 
   const jump = useCallback(
     (n: number) => {
@@ -405,7 +500,7 @@ export default function FlowVisualiser({ diagrams, index, onSelect }: Props) {
   }, [index, still])
 
   return (
-    <div>
+    <div className={full ? "fixed inset-0 z-[70] overflow-y-auto bg-[#f4f5f2] p-3 sm:p-5" : undefined} role={full ? "dialog" : undefined} aria-modal={full || undefined} aria-label={full ? flow.title : undefined}>
       {diagrams.length > 1 ? (
         <div ref={tabs} role="tablist" aria-label="Choose a diagram" className="mb-3 flex gap-2 overflow-x-auto pb-1">
           {diagrams.map((f, i) => (
@@ -434,14 +529,70 @@ export default function FlowVisualiser({ diagrams, index, onSelect }: Props) {
         {/* The stage: landscape on desktop (a left-to-right diagram keeps its layout), portrait on phones (it swaps to top-to-bottom).
             A wide diagram gets the full width on desktop, with the controls below; a tall one sits beside them. */}
         <div className={`relative min-w-0 overflow-hidden rounded-2xl border border-[#d9dfdc] bg-[#f4f5f2] ${wide ? "lg:col-span-2" : "lg:col-start-2 lg:row-span-4 lg:row-start-1"}`}>
-          <div className={`aspect-[4/5] max-h-[68vh] w-full ${wide ? "sm:aspect-[16/9] sm:max-h-[58vh]" : "sm:aspect-[4/3]"}`}>
+          <div
+            className={`relative w-full ${full ? "h-[62vh] sm:h-[70vh]" : `aspect-[4/5] max-h-[68vh] ${wide ? "sm:aspect-[16/9] sm:max-h-[58vh]" : "sm:aspect-[4/3]"}`}`}
+            style={{ backgroundImage: "radial-gradient(circle, #d2d9d6 1px, transparent 1.3px)", backgroundSize: "18px 18px" }}
+          >
             <FlowStage key={flow.id} flow={flow} shots={staged} at={at} epoch={epoch} ms={ms} still={still} selected={selected} onSelect={select} />
+            {!playing && !selected ? (
+              <p className="pointer-events-none absolute bottom-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-[#d9dfdc] bg-white/95 px-2.5 py-1 text-[11.5px] text-[#4f5d5a]">
+                Paused · tap a box to explore it
+              </p>
+            ) : null}
+            <div className="absolute right-2 top-2 flex gap-1.5" style={d.kind === "sequence" ? { top: "auto", bottom: 8 } : undefined}>
+              {canSpeak ? (
+                <button
+                  onClick={toggleVoice}
+                  aria-pressed={voice}
+                  aria-label={voice ? "Stop reading aloud" : "Read aloud"}
+                  title={voice ? "Reading aloud: on" : "Read each step aloud"}
+                  className={`flex h-8 items-center gap-1 rounded-full border px-2.5 text-[11.5px] font-semibold ${
+                    voice ? "border-[#3d6b63] bg-[#3d6b63] text-white" : "border-[#d9dfdc] bg-white/95 text-[#1f2a28] hover:border-[#3d6b63] hover:text-[#3d6b63]"
+                  }`}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M4 9v6h4l5 4V5L8 9z" />
+                    {voice ? <path d="M16.5 8.5a5 5 0 0 1 0 7M19.5 5.5a9 9 0 0 1 0 13" /> : <path d="M17 9l5 6M22 9l-5 6" />}
+                  </svg>
+                  <span className="hidden sm:inline">{voice ? "Voice on" : "Voice"}</span>
+                </button>
+              ) : null}
+            <button
+              onClick={() => setFull((f) => !f)}
+              aria-label={full ? "Exit full screen" : "Full screen"}
+              title={full ? "Exit full screen (Esc)" : "Full screen"}
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-[#d9dfdc] bg-white/95 text-[#1f2a28] hover:border-[#3d6b63] hover:text-[#3d6b63]"
+              >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                {full ? <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" /> : <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />}
+              </svg>
+            </button>
+            </div>
           </div>
-          {!playing && !selected ? (
-            <p className="pointer-events-none absolute bottom-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-[#d9dfdc] bg-white/95 px-2.5 py-1 text-[11.5px] text-[#4f5d5a]">
-              Paused · tap a box to explore it
-            </p>
-          ) : null}
+          {/* What the colours mean: only the kinds of box and arrow this diagram uses. */}
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 border-t border-[#e1e6e3] bg-white/80 px-3 py-1.5 text-[11px] text-[#4f5d5a] sm:gap-x-3 sm:py-2 sm:text-[11.5px]">
+            {legend.roles.map((r) => (
+              <span key={r.role} className="inline-flex items-center gap-1.5">
+                <span className="inline-flex h-4 w-5 items-center justify-center rounded-[4px] border-[1.5px]" style={{ background: r.fill, borderColor: r.stroke, borderStyle: r.role === "external" ? "dashed" : "solid" }}>
+                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke={r.stroke} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d={r.icon} />
+                  </svg>
+                </span>
+                {r.label}
+                <span className="hidden rounded-full bg-[#eef1ef] px-1.5 text-[10.5px] tabular-nums text-[#5d6b68] sm:inline">{r.n}</span>
+              </span>
+            ))}
+            <span className="hidden h-3 w-px bg-[#d9dfdc] sm:block" aria-hidden="true" />
+            {legend.flows.map((f) => (
+              <span key={f.flow} className="inline-flex items-center gap-1.5">
+                <svg width="26" height="8" viewBox="0 0 26 8" aria-hidden="true">
+                  <line x1="1" y1="4" x2="20" y2="4" stroke={f.stroke} strokeWidth="1.8" strokeDasharray={f.dash || undefined} />
+                  <path d="M19 1 L25 4 L19 7 z" fill={f.stroke} />
+                </svg>
+                {f.label}
+              </span>
+            ))}
+          </div>
         </div>
 
 
