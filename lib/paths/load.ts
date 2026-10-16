@@ -150,6 +150,10 @@ export async function checkContent(root = process.cwd()): Promise<CheckResult> {
     t.quiz.forEach((q, i) => {
       if (q.answer < 0 || q.answer >= q.options.length) problems.push(`${rel(file)}: quiz ${i + 1}: answer ${q.answer} is out of range (0 to ${q.options.length - 1})`)
       if (new Set(q.options).size !== q.options.length) problems.push(`${rel(file)}: quiz ${i + 1}: options must be different`)
+      // An unquoted comma in a YAML flow list ([A list, sorted by the client, ...]) silently splits one option
+      // into two and shifts the answer: catch the tell-tale fragment ("sorted by…", "with…", "because…").
+      const fragment = q.options.findIndex((o, k) => k > 0 && /^(with|unless|because|or|and|but|so|which|if|when|while|since|without|than|sorted)\b/.test(String(o).trim()))
+      if (fragment > 0) problems.push(`${rel(file)}: quiz ${i + 1}: option ${fragment + 1} ("${q.options[fragment]}") looks like the end of the option before it: quote options that contain commas`)
     })
     const lesson = parseLesson(t.lesson)
     if (lesson.type === "walkthrough" && !library.has(lesson.id)) problems.push(`${rel(file)}: lesson walkthrough "${lesson.id}" is not a library topic`)

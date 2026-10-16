@@ -6,7 +6,7 @@ export const KIND_ORDER: PathKind[] = ["skill", "role", "system-design"]
 export const KIND_LABEL: Record<PathKind, string> = { skill: "Skills", role: "Roles", "system-design": "System design" }
 
 /** Categories on /learn/paths, set with `tags:` in a path's front matter (see content/README.md). */
-export const PATH_TAGS = ["web", "languages", "frameworks", "mobile", "backend", "testing", "ai", "system-design"] as const
+export const PATH_TAGS = ["web", "languages", "frameworks", "mobile", "backend", "devops", "data", "testing", "security", "ai", "cs", "system-design"] as const
 export type PathTag = (typeof PATH_TAGS)[number]
 export const TAG_LABEL: Record<PathTag, string> = {
   web: "Web",
@@ -14,8 +14,12 @@ export const TAG_LABEL: Record<PathTag, string> = {
   frameworks: "Frameworks",
   mobile: "Mobile",
   backend: "Backend",
+  devops: "DevOps & cloud",
+  data: "Data & databases",
   testing: "Testing & QA",
+  security: "Security",
   ai: "AI",
+  cs: "Computer science",
   "system-design": "System design",
 }
 /** Tags for paths that don't set `tags:` yet, by path id. */
