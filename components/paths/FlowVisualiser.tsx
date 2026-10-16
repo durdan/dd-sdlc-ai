@@ -222,8 +222,23 @@ function FlowStage({ flow, shots, at, epoch, ms, still, selected, onSelect }: St
   )
 }
 
+/** A focused group lights the boxes in it as well as its own outline. */
+function withMembers(d: FlowDiagram["diagram"], focus: string[]) {
+  if (d.kind !== "c4") return focus
+  const members = d.elements.filter((e) => e.group && focus.includes(e.group)).map((e) => e.id)
+  return members.length ? [...new Set([...focus, ...members])] : focus
+}
+
 const shotsOf = (d: FlowDiagram): Shot[] =>
-  d.steps.map((s, i) => ({ id: `${d.id}-${i + 1}`, chapter: "flow", diagram: d.id, focus: s.focus, trace: s.trace, engineer: s.caption, executive: s.caption }))
+  d.steps.map((s, i) => ({
+    id: `${d.id}-${i + 1}`,
+    chapter: "flow",
+    diagram: d.id,
+    focus: withMembers(d.diagram, s.focus),
+    trace: s.trace,
+    engineer: s.caption,
+    executive: s.caption,
+  }))
 
 type Props = { diagrams: FlowDiagram[]; index: number; onSelect: (i: number) => void }
 
