@@ -4,7 +4,7 @@ title: The DOM and its events
 summary: Capture, target, bubble, delegate
 why: "Every click handler you write runs inside this model. It explains why a listener on a list fires for its buttons, and why some events never reach the parent."
 requires: [event-loop, web-rendering-path]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: The DOM is a live tree
     text: "Each tag becomes a node object. Changing a node changes the page, and the browser picks the change up at its next rendering step."
@@ -83,3 +83,49 @@ console.log("items left:", list.children.length)
 ## Listeners and the main thread
 
 Listeners run on the main thread as tasks of the event loop, so a slow handler delays the next frame and every other event. For `touchstart`, `touchmove` and `wheel`, pass `{ passive: true }` when you never call `preventDefault()`: the browser can then scroll straight away instead of waiting for your code. Remove listeners you no longer need, or pass an `AbortSignal` with `{ signal }` and abort it to remove a group at once.
+
+```trace diagram
+id: click-route
+title: The route of one click
+subtitle: "A click on a <button> in a list, with one delegated listener on the <ul>"
+kind: sequence
+elements:
+  - { id: window, label: window }
+  - { id: document, label: document }
+  - { id: ul, label: "<ul>" }
+  - { id: li, label: "<li>" }
+  - { id: button, label: "<button>" }
+edges:
+  - { id: cap1, from: window, to: document, label: capture }
+  - { id: cap2, from: document, to: ul, label: capture }
+  - { id: caplistener, from: ul, to: ul, label: "{ capture: true } listeners" }
+  - { id: cap3, from: ul, to: li, label: capture }
+  - { id: cap4, from: li, to: button, label: reaches the target }
+  - { id: target, from: button, to: button, label: the button's own listeners }
+  - { id: bub1, from: button, to: li, label: bubble, style: dashed }
+  - { id: bub2, from: li, to: ul, label: bubble, style: dashed }
+  - { id: delegated, from: ul, to: ul, label: "delegated listener: target.closest(\"button\")" }
+  - { id: bub3, from: ul, to: document, label: bubble, style: dashed }
+  - { id: bub4, from: document, to: window, label: bubble, style: dashed }
+steps:
+  - caption: "The user clicks a button inside a list. Before anything runs, the browser fixes the event's path: the window, the document and every ancestor of the target."
+    focus: [window, document, ul, li, button]
+  - caption: The capture phase goes down that path from the window towards the target. Ordinary listeners don't run on the way down.
+    trace: [cap1, cap2]
+  - caption: "Only listeners added with { capture: true } run here, so a capture listener on the list fires before the button knows anything happened."
+    trace: [caplistener]
+  - caption: Capture carries on through the list item and arrives at the button, the target.
+    trace: [cap3, cap4]
+  - caption: "In the target phase, the button's own listeners run. If one calls preventDefault(), only the browser's default action is cancelled; the event still travels."
+    trace: [target]
+  - caption: "Then the event bubbles back up through every ancestor, and ordinary listeners run on the way."
+    trace: [bub1, bub2]
+  - caption: "The list's one listener handles every button. event.target is the element that was hit, event.currentTarget is the <ul>, and closest() finds the button even if a <span> inside it was hit."
+    trace: [delegated]
+  - caption: The event keeps bubbling to the document and the window, so listeners there see it last.
+    trace: [bub3, bub4]
+  - caption: "Had the button's listener called stopPropagation(), the bubble would have ended at the button, and the list's delegated listener would never have run."
+    focus: [button, ul]
+  - caption: "Not every event bubbles. focus and blur stop at the target, so delegate with focusin and focusout, or listen in the capture phase."
+    focus: [ul, button]
+```

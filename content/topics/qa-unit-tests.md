@@ -4,7 +4,7 @@ title: Good unit tests
 summary: One behaviour, arrange, act, assert
 why: "Unit tests are the fastest feedback you have. When each one checks a single behaviour, a red test tells you what broke without anyone having to debug it."
 requires: [qa-strategy]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: One behaviour per test
     text: "Each test checks one thing the code promises, and its name says what that is: \"applies a percentage discount\", not \"test2\"."
@@ -101,3 +101,52 @@ Anything that changes between runs belongs outside the unit: the clock, random n
 - Keep the arrange step short. If setup takes twenty lines, the code under test probably does too much.
 - Test edge cases on purpose: empty, one, many, the boundary itself, and just past it.
 - Avoid logic in tests (loops, ifs). A test should be simple enough that it obviously can't be wrong.
+
+```trace diagram
+id: aaa
+title: Arrange, act, assert
+subtitle: One behaviour, with stand-ins at the edges
+direction: DOWN
+groups:
+  - { id: test, label: "The test: confirms the order by email" }
+  - { id: edges, label: "Test doubles: where the real world would be" }
+elements:
+  - { id: arrange, label: Arrange, sub: "inputs, a fixed time, seeded data", group: test, row: 0 }
+  - { id: act, label: Act, sub: call the unit once, group: test, row: 0 }
+  - { id: assert, label: Assert, sub: check what came out, group: test, row: 0 }
+  - { id: unit, label: placeOrder(), sub: the unit under test, kind: system, tone: core, row: 1 }
+  - { id: clock, label: Fixed clock, sub: "stub: always 09:00", group: edges, tone: neutral, row: 2 }
+  - { id: orders, label: In-memory orders, sub: fake repository, group: edges, tone: data, row: 2 }
+  - { id: mailer, label: Mailer spy, sub: records what was sent, group: edges, tone: stream, row: 2 }
+  - { id: result, label: Returned order, sub: "status, total, time", tone: neutral, row: 2 }
+edges:
+  - { id: call, from: act, to: unit }
+  - { id: now, from: unit, to: clock }
+  - { id: save, from: unit, to: orders }
+  - { id: send, from: unit, to: mailer }
+  - { id: ret, from: unit, to: result }
+  - { id: check, from: assert, to: result, style: dotted }
+steps:
+  - caption: One test, three short blocks. In the middle is the unit under test, and at its edges, where the real clock, database and email server would be, are stand-ins the test controls.
+  - caption: Arrange sets everything up. The cart, a clock that always says 09:00, and an in-memory repository seeded with what the test needs.
+    focus: [arrange, clock, orders]
+  - caption: Why stand-ins? A real clock, database or mail server is slow, or changes between runs. With these, the same code gives the same result every time, in milliseconds.
+    focus: [edges]
+  - caption: Act is a single call to the unit, through its public interface.
+    focus: [act, unit]
+    trace: [call]
+  - caption: The unit reads the time and saves the order through its dependencies. It doesn't know they are stand-ins; it only sees the same interface as the real ones.
+    focus: [unit, clock, orders]
+    trace: [now, save]
+  - caption: It sends the confirmation through the mailer, and the spy just records the message. It returns the placed order.
+    focus: [unit, mailer, result]
+    trace: [send, ret]
+  - caption: Assert checks the result a caller sees, the status and the total, not which private helpers ran. That way the test still passes after a refactor that changes nothing a caller can see.
+    focus: [assert, result]
+    trace: [check]
+  - caption: Check the spy only when the email is part of the promise. Here it is, because this test's name says the order is confirmed by email.
+    focus: [assert, mailer]
+  - caption: When this test goes red, its name tells you which behaviour broke. Another behaviour, like rejecting an empty cart, gets a test of its own.
+    focus: [test]
+note: The unit here is illustrative. Pass the clock, ids and other outside things in as parameters or small dependencies so a test can replace them.
+```

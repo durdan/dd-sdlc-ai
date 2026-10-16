@@ -4,7 +4,7 @@ title: Networking with URLSession
 summary: Sessions, caching, background transfers
 why: "Phones change networks, lose signal and get suspended mid-request. The session you choose decides what survives that."
 requires: [ios-concurrency]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - { title: Session per purpose, text: "A session's configuration (timeouts, cache, cookies, cellular) applies to every task in it; make one per kind of traffic." }
   - { title: HTTP caching is built in, text: "URLCache follows the server's cache headers by default, in memory and on disk." }
@@ -83,3 +83,57 @@ session.downloadTask(with: exportURL).resume()
 Background sessions only support upload and download tasks, report through a delegate rather than `async` returns, and wake the app when they finish: the app delegate receives `application(_:handleEventsForBackgroundURLSession:completionHandler:)`, you recreate the session with the same identifier, handle the delegate events, then call the completion handler. If the user force-quits the app, its background transfers are cancelled.
 
 For retries, remember the phone's network is the least reliable part of the system: retry idempotent requests with backoff and jitter, and send an idempotency key with the rest.
+
+```trace diagram
+id: urlsession-request
+title: One request through URLSession
+subtitle: An ordinary data task, and a background download
+direction: DOWN
+elements:
+  - { id: code, label: Your code, sub: "try await api.data(from:)", row: 0 }
+  - { id: session, label: URLSession, sub: "config: timeouts, cache, cookies", row: 1 }
+  - { id: task, label: Data task, sub: one per request, row: 2 }
+  - { id: cache, label: URLCache, sub: memory and disk, kind: store, row: 3 }
+  - { id: ats, label: App Transport Security, sub: "HTTPS, strong TLS", kind: component, row: 1 }
+  - { id: server, label: Server, kind: external, row: 4 }
+  - { id: response, label: "(data, response)", sub: check statusCode yourself, kind: person, row: 5 }
+  - { id: background, label: Background session, sub: upload and download tasks only, row: 1 }
+  - { id: daemon, label: System transfer process, sub: runs while your app is suspended, kind: system, row: 2 }
+  - { id: wake, label: App woken, sub: handleEventsForBackgroundURLSession, kind: person, row: 3 }
+edges:
+  - { id: call, from: code, to: session }
+  - { id: create, from: session, to: task }
+  - { id: lookup, from: task, to: cache }
+  - { id: hit, from: cache, to: response, label: fresh hit, style: dashed }
+  - { id: policy, from: ats, to: task, label: HTTPS only, style: dotted }
+  - { id: out, from: task, to: server }
+  - { id: answer, from: server, to: response }
+  - { id: bg, from: code, to: background, style: dashed }
+  - { id: handoff, from: background, to: daemon }
+  - { id: transfer, from: daemon, to: server, style: dotted }
+  - { id: done, from: daemon, to: wake }
+steps:
+  - caption: Every request is a task inside a session, and the session's configuration applies to all its tasks. Apps keep one long-lived session per kind of traffic, which also keeps its connection pool warm.
+  - caption: Your code awaits data(from:) on the api session. The session creates a data task for this one request.
+    focus: [code, session, task]
+    trace: [call, create]
+  - caption: Under the default policy, useProtocolCachePolicy, the task checks URLCache first. A response that Cache-Control still calls fresh answers without touching the network.
+    focus: [task, cache, response]
+    trace: [lookup, hit]
+  - caption: On a miss, or to revalidate with an ETag, the request goes out. App Transport Security lets it through only over HTTPS with strong TLS, unless Info.plist adds an exception.
+    focus: [task, ats, server]
+    trace: [policy, out]
+  - caption: The server answers and the await resumes with data and a response. A 404 or a 500 is still a response, not an error, so check the status code. Cancelling the Swift task cancels the request.
+    focus: [server, response]
+    trace: [answer]
+  - caption: A file that must arrive even if the person leaves the app goes to a background session. It takes only upload and download tasks, reports through a delegate, and hands the transfer to a separate system process.
+    focus: [code, background, daemon]
+    trace: [bg, handoff]
+  - caption: That process does the transfer while your app is suspended. With isDiscretionary set, it can wait for Wi-Fi and power.
+    focus: [daemon, server]
+    trace: [transfer]
+  - caption: When it finishes, iOS resumes or relaunches your app and calls handleEventsForBackgroundURLSession. Recreate the session with the same identifier, handle the delegate events, then call the completion handler.
+    focus: [daemon, wake]
+    trace: [done]
+note: If the person force-quits the app, its background transfers are cancelled and it isn't relaunched for them.
+```

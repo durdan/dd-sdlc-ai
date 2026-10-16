@@ -4,7 +4,7 @@ title: Background work, WorkManager and foreground services
 summary: Deferrable work goes to WorkManager; user-visible work gets a notification
 why: "Android limits what apps may do when the user isn't looking: Doze, App Standby buckets and background-start rules. Work that ignores them simply doesn't run."
 requires: [android-processes, android-coroutines]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - { title: "WorkManager for work that must finish", text: "It persists the request, survives process death and reboots, honours constraints like network and charging, and retries with backoff." }
   - { title: "Foreground services for work the user is watching", text: "Music, navigation, an active call: they show a notification and, from Android 14, must declare a service type." }
@@ -93,3 +93,46 @@ For one-off user-initiated transfers on Android 14+, a user-initiated data trans
 **Doze** (Android 6+) kicks in when the device is unplugged, still and screen-off for a while. Network access is cut and jobs, syncs and normal alarms wait for periodic maintenance windows, which get further apart over time. **App Standby buckets** (Android 9+) rank apps as active, working set, frequent, rare or restricted by how recently and often they are used; lower buckets get fewer job runs, alarms and network. The restricted bucket arrived in Android 12. These limits apply on battery only, and manufacturers can add their own on top.
 
 Ways through, used sparingly: high-priority FCM messages, `setExactAndAllowWhileIdle` alarms (exact alarms need permission and, from Android 14, are denied by default for most new installs), and asking the user to exempt the app from battery optimisation, which Play allows only for specific use cases.
+
+```trace diagram
+id: workmanager-upload
+title: Handing an upload to WorkManager
+subtitle: Enqueue, wait for the system, retry with backoff
+kind: sequence
+elements:
+  - { id: app, label: App }
+  - { id: wm, label: WorkManager }
+  - { id: jobs, label: JobScheduler }
+  - { id: worker, label: Worker }
+edges:
+  - { id: enqueue, from: app, to: wm, label: "enqueueUniqueWork, needs network" }
+  - { id: persist, from: wm, to: wm, label: saves it to its database }
+  - { id: schedule, from: wm, to: jobs, label: schedules a job }
+  - { id: defer, from: jobs, to: jobs, label: "Doze, standby bucket: waits" }
+  - { id: run, from: jobs, to: worker, label: "constraints met: doWork()" }
+  - { id: upload, from: worker, to: worker, label: "upload(uri)" }
+  - { id: fail, from: worker, to: worker, label: IOException, style: dashed }
+  - { id: retry, from: worker, to: wm, label: "Result.retry()", style: dashed }
+  - { id: backoff, from: wm, to: jobs, label: "reschedule after 30 s, then 60 s, ..." }
+  - { id: rerun, from: jobs, to: worker, label: "doWork() again" }
+  - { id: success, from: worker, to: wm, label: "Result.success()", style: dashed }
+steps:
+  - caption: Android rations what a backgrounded app may do. WorkManager is the honest way through. You describe the work and its constraints, and the system runs it when conditions allow.
+  - caption: The app enqueues a unique upload that needs a network. WorkManager writes it to its own database, so it survives the process dying and the phone rebooting. Unique work means a double tap doesn't upload twice.
+    trace: [enqueue, persist]
+  - caption: Underneath, WorkManager schedules a JobScheduler job with the same constraints.
+    trace: [schedule]
+  - caption: The system decides when. In Doze, an idle device on battery defers jobs to maintenance windows. The app's standby bucket, from active down to restricted, sets how often its jobs may run.
+    trace: [defer]
+  - caption: Once the constraints hold, the UploadWorker's doWork() runs and starts uploading the photo to your server.
+    trace: [run, upload]
+  - caption: The network drops and the upload throws. The worker returns Result.retry() instead of giving up.
+    trace: [fail, retry]
+  - caption: WorkManager reschedules with exponential backoff, 30 seconds and then doubling, and the worker runs again. Because it can run more than once, it must be idempotent.
+    trace: [backoff, rerun]
+  - caption: This time it succeeds and the work is done. The UI can follow along with getWorkInfoByIdFlow.
+    trace: [success]
+  - caption: If the user is watching the work, like music, navigation or a call, use a foreground service with a notification instead. From Android 14 it must declare a type. From Android 15, dataSync services get about 6 hours a day in the background.
+    focus: [app]
+note: Periodic work repeats no more often than every 15 minutes, and expedited work starts right away within a quota.
+```

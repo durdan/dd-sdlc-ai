@@ -4,7 +4,7 @@ title: End-to-end tests with Playwright
 summary: A real browser, user-facing locators, no sleeps
 why: "End-to-end tests are the only ones that see what a user sees. Written carelessly, they are also the slowest and flakiest part of a suite."
 requires: [qa-strategy]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: Actions wait for you
     text: "Before a click, Playwright waits until the element is visible, stable, enabled and not covered by anything else."
@@ -107,3 +107,47 @@ Other habits:
 ## When it fails: the trace
 
 With `trace: "on-first-retry"`, a failing test that is retried records a trace: every action with its locator, DOM snapshots before and after, console output and network requests. Open it with `npx playwright show-trace trace.zip`, or drop it on trace.playwright.dev. It usually shows you the cause straight away: the button that was disabled, the request that returned 500, the dialog nobody expected.
+
+```trace diagram
+id: one-test
+title: One Playwright test, step by step
+subtitle: Fresh context, auto-waiting, retrying assertions
+kind: sequence
+elements:
+  - { id: runner, label: Test runner }
+  - { id: test, label: Your test }
+  - { id: page, label: Page }
+  - { id: app, label: Your app }
+edges:
+  - { id: ctx, from: runner, to: page, label: new context and page }
+  - { id: fixture, from: runner, to: test, label: "test({ page })" }
+  - { id: goto, from: test, to: page, label: "goto(\"/cart\")" }
+  - { id: load, from: page, to: app, label: GET /cart }
+  - { id: click, from: test, to: page, label: "click(Check out)" }
+  - { id: checks, from: page, to: page, label: "visible? stable? enabled? receives events?" }
+  - { id: post, from: page, to: app, label: POST /orders }
+  - { id: expect, from: test, to: page, label: "expect(heading).toBeVisible()" }
+  - { id: retry, from: page, to: page, label: "query again until it matches (5 s)" }
+  - { id: pass, from: page, to: test, label: passed, style: dashed }
+  - { id: trace, from: runner, to: runner, label: "on failure: retry, record trace.zip" }
+  - { id: close, from: runner, to: page, label: close the context, style: dashed }
+steps:
+  - caption: Four parties take part in one test. The runner, your test code, a browser page, and the app you deployed or started for the tests.
+  - caption: Before your test starts, the runner creates a new browser context and a page in it. A context is an incognito-like profile, with its own cookies and storage, so tests can't leak state into each other.
+    trace: [ctx, fixture]
+  - caption: goto loads the page and, by default, waits for its load event before your next line runs.
+    trace: [goto, load]
+  - caption: A click doesn't fire at once. Playwright finds the button through its locator and waits until it is visible, stable, enabled and is really the element at the click point.
+    trace: [click, checks]
+    note: If a cookie banner stays on top of the button, Playwright keeps waiting and the test times out, instead of clicking the banner.
+  - caption: Once every check passes, it clicks, and the app gets the request.
+    trace: [post]
+  - caption: 'The assertion is web-first: it keeps querying the page until the heading is visible, 5 seconds by default. That is why the test needs no sleeps.'
+    trace: [expect, retry]
+  - caption: The heading appears, the assertion passes and the test moves on.
+    trace: [pass]
+  - caption: If it had failed, a config with trace on-first-retry runs the test again and records a trace. It holds every action, DOM snapshots, console output and network requests, for npx playwright show-trace.
+    trace: [trace]
+  - caption: The context is thrown away. The next test gets a brand-new one, which is what lets tests run in any order and in parallel.
+    trace: [close]
+```

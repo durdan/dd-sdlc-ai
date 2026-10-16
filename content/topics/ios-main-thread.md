@@ -3,7 +3,7 @@ id: ios-main-thread
 title: The main thread and run loop
 summary: One thread draws the UI; keep it free
 why: "Anything slow on the main thread freezes touches and animations. Past about 100 ms, people notice; long enough, and the system ends the app."
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - { title: One loop, text: "The main thread runs a run loop that sleeps until an event arrives, handles it, then lets the frame be drawn." }
   - { title: UI only there, text: "UIKit and SwiftUI state must be touched on the main thread (the main actor in Swift concurrency)." }
@@ -83,3 +83,46 @@ RunLoop.main.add(timer, forMode: .common)
 ```
 
 You rarely manage run loops yourself (secondary threads only have one if you run it), but knowing the main thread is a loop explains most "why didn't my UI update" and "why did it freeze" questions.
+
+```trace diagram
+id: run-loop-turn
+title: One turn of the main run loop
+subtitle: Events in, your code, a frame out
+direction: DOWN
+elements:
+  - { id: touch, label: Touch, sub: a tap on a button, kind: person, row: 0 }
+  - { id: timer, label: Timer, sub: "or DispatchQueue.main.async", kind: person, row: 0 }
+  - { id: loop, label: Main run loop, sub: sleeps until a source fires, kind: system, row: 1 }
+  - { id: handler, label: Your code, sub: "action, body, main-actor task", row: 2 }
+  - { id: pool, label: Thread pool, sub: "@concurrent work", tone: stream, row: 2 }
+  - { id: commit, label: Layout and commit, sub: Core Animation transaction, row: 3 }
+  - { id: frame, label: Next frame, sub: "8.3 ms at 120 Hz", kind: person, row: 4 }
+  - { id: hang, label: Hang, sub: "no touches, no frames", kind: external, row: 3 }
+edges:
+  - { id: tap, from: touch, to: loop }
+  - { id: fire, from: timer, to: loop }
+  - { id: call, from: loop, to: handler, label: one at a time }
+  - { id: changes, from: handler, to: commit, label: returns }
+  - { id: draw, from: commit, to: frame }
+  - { id: block, from: handler, to: hang, label: "blocks for 300 ms", style: dashed }
+  - { id: offload, from: handler, to: pool, label: await }
+  - { id: result, from: pool, to: loop, label: resume on main actor, style: dashed }
+steps:
+  - caption: "The main thread runs a run loop. With nothing to do it sleeps, until an input source or a timer fires."
+    focus: [loop]
+  - caption: "A touch arrives. The loop wakes and calls your code: here, a button's action. Timers and blocks queued on the main queue come in the same way."
+    trace: [tap, fire, call]
+  - caption: "Your handler changes some UI state and returns. Then layout runs and the changes are committed, so the next frame can show them."
+    trace: [changes, draw]
+  - caption: "Everything here happens on one thread, in order. A 120 Hz display redraws every 8.3 ms, and Apple suggests keeping the main thread's part of a frame under about 5 ms."
+    focus: [handler, commit, frame]
+  - caption: "Now the handler decodes a 20 MB file before it returns. Until it does, the loop can't take another touch and nothing is committed: the app freezes."
+    trace: [block]
+  - caption: "Apple counts a delay over 100 ms after a tap as a hang. People notice, and a long enough hang gets the app ended by the system."
+    focus: [hang, loop]
+  - caption: "The fix is to await the heavy work somewhere else. It runs on the thread pool, and the main thread goes straight back to its loop, free for touches and frames."
+    trace: [offload]
+  - caption: "When the work is done, your code resumes on the main actor as one more turn of the loop, sets the result, and the next frame shows it."
+    trace: [result, call, changes, draw]
+note: "@concurrent is Swift 6.2; in Swift 6.0 and 6.1 a nonisolated async function already ran off the main actor."
+```

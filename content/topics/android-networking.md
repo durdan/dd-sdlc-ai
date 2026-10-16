@@ -4,7 +4,7 @@ title: Networking with Retrofit and OkHttp
 summary: Off the main thread, with timeouts, caching and HTTPS only
 why: "Mobile networks are slow, flaky and metered. The defaults decide whether a dead connection hangs a screen for ten seconds or forever, and whether a repeat request costs a round trip."
 requires: [android-coroutines]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - { title: "Never on the main thread", text: "Android throws NetworkOnMainThreadException by default. Retrofit's suspend functions move the call off it for you." }
   - { title: "One OkHttpClient", text: "Share a single client so connections, the thread pool and the cache are reused." }
@@ -84,3 +84,51 @@ From Android 9 (API 28), cleartext HTTP is disabled by default. The network secu
 - Keep the network out of the UI: a repository fetches, writes to Room, and the UI observes the database.
 
 **Version note:** OkHttp 4 and 5 are both in wide use; the builder APIs shown here exist in both.
+
+```trace diagram
+id: okhttp-call
+title: One call through Retrofit and OkHttp
+subtitle: From the ViewModel to the server and back
+direction: DOWN
+elements:
+  - { id: vm, label: ViewModel, sub: viewModelScope.launch, row: 0 }
+  - { id: api, label: Retrofit interface, sub: "suspend fun product(id)", row: 1 }
+  - { id: client, label: OkHttpClient, sub: "one per app, interceptors", row: 2 }
+  - { id: cache, label: Cache, sub: on disk, kind: store, row: 3 }
+  - { id: pool, label: Connection pool, sub: "5 idle, kept 5 minutes", row: 4 }
+  - { id: nsc, label: Network security config, sub: no cleartext from API 28, kind: component, row: 3 }
+  - { id: server, label: Server, kind: external, row: 5 }
+  - { id: result, label: ProductDto, sub: or HttpException / IOException, kind: person, row: 6 }
+edges:
+  - { id: call, from: vm, to: api }
+  - { id: enqueue, from: api, to: client}
+  - { id: lookup, from: client, to: cache }
+  - { id: hit, from: cache, to: result, label: fresh hit, style: dashed }
+  - { id: connect, from: cache, to: pool}
+  - { id: policy, from: nsc, to: pool, label: HTTPS only, style: dotted }
+  - { id: https, from: pool, to: server }
+  - { id: answer, from: server, to: result }
+steps:
+  - caption: A Retrofit call is a suspend function on top of OkHttp. One shared OkHttpClient owns the threads, the connection pool and the cache, so every call reuses them.
+  - caption: The ViewModel calls a suspend function on the Retrofit interface from viewModelScope. Retrofit turns the annotations into an OkHttp call.
+    focus: [vm, api]
+    trace: [call]
+  - caption: Retrofit runs that call on OkHttp's own threads, so the main thread never blocks. Android would otherwise throw NetworkOnMainThreadException.
+    focus: [api, client]
+    trace: [enqueue]
+  - caption: The client first runs its application interceptors, once per call, even when the answer comes from the cache. That is where the auth token goes; an Authenticator can refresh it after a 401.
+    focus: [client]
+  - caption: With a Cache installed, a fresh response is served from disk. A stale one is revalidated with If-None-Match, and a 304 Not Modified turns a full download into a few headers.
+    focus: [client, cache, result]
+    trace: [lookup, hit]
+  - caption: On a miss OkHttp takes a warm connection from the pool, which by default keeps up to five idle connections for five minutes, or opens a new one.
+    focus: [cache, pool]
+    trace: [connect]
+  - caption: "From Android 9 (API 28), cleartext HTTP is blocked by default, and network_security_config.xml holds any exceptions. Connect, read and write timeouts are 10 seconds each, but the read timeout is the gap between bytes, not a total."
+    focus: [pool, nsc, server]
+    trace: [policy, https]
+  - caption: The converter parses the body and the coroutine resumes with ProductDto. A non-2xx status throws HttpException and a network failure an IOException. Set callTimeout to bound the whole call; it has no limit by default.
+    focus: [server, result, vm]
+    trace: [answer]
+note: Leaving the screen cancels viewModelScope, which cancels the OkHttp call underneath.
+```

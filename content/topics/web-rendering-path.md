@@ -4,7 +4,7 @@ title: From HTML to pixels
 summary: Parse, style, layout, paint, composite
 why: "Every slow first load and every janky animation is one of these steps taking too long, or running more often than it needs to."
 requires: [event-loop]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: Two trees, then one
     text: "HTML becomes the DOM, CSS becomes the CSSOM, and together they give the render tree: only the boxes that will actually be shown, with their computed styles."
@@ -65,3 +65,69 @@ Compositing can happen on a separate thread, which is why a CSS `transform` anim
 ## Forced layout
 
 Style changes are normally batched until the next frame. Reading geometry (`offsetWidth`, `getBoundingClientRect()`, `scrollTop`) right after a change forces the browser to do layout immediately so it can answer. Done once, that is fine; done in a loop that alternates reads and writes, it is layout thrashing. Batch the reads, then the writes, or move the writes into `requestAnimationFrame`.
+
+```trace diagram
+id: bytes-to-pixels
+title: From bytes to a frame
+subtitle: The first render, then what each later change reruns
+groups:
+  - { id: parse, label: Parsing }
+  - { id: main, label: "Rendering step (main thread)" }
+elements:
+  - { id: html, label: HTML bytes, sub: arrive in chunks, kind: external, row: 0 }
+  - { id: css, label: CSS bytes, sub: "<link rel=stylesheet>", kind: external, row: 0 }
+  - { id: dom, label: DOM, sub: built as bytes arrive, group: parse, row: 1 }
+  - { id: cssom, label: CSSOM, sub: render-blocking, group: parse, tone: stream, row: 1 }
+  - { id: style, label: Style → render tree, sub: visible boxes + computed styles, group: main, row: 2 }
+  - { id: layout, label: Layout, sub: sizes and positions, group: main, row: 3 }
+  - { id: paint, label: Paint, sub: pixels into layers, group: main, row: 4 }
+  - { id: composite, label: Composite, sub: can run off the main thread, kind: system, row: 5 }
+  - { id: frame, label: Frame on screen, kind: person, row: 6 }
+  - { id: geometry, label: "width, margin, new nodes", kind: component, tone: neutral, row: 2 }
+  - { id: colour, label: "color, background", kind: component, tone: neutral, row: 3 }
+  - { id: transform, label: "transform, opacity", kind: component, tone: neutral, row: 4 }
+edges:
+  - { id: parse-html, from: html, to: dom }
+  - { id: parse-css, from: css, to: cssom }
+  - { id: dom-in, from: dom, to: style }
+  - { id: cssom-in, from: cssom, to: style }
+  - { id: to-layout, from: style, to: layout }
+  - { id: to-paint, from: layout, to: paint }
+  - { id: to-composite, from: paint, to: composite }
+  - { id: show, from: composite, to: frame }
+  - { id: re-layout, from: geometry, to: layout, style: dashed }
+  - { id: re-paint, from: colour, to: paint, style: dashed }
+  - { id: re-composite, from: transform, to: composite, style: dashed }
+steps:
+  - caption: The HTML parser builds the DOM as the bytes arrive, one node per tag, without waiting for the whole file.
+    focus: [html, dom]
+    trace: [parse-html]
+  - caption: "A stylesheet becomes the CSSOM. Parsing carries on, but nothing is painted until the CSS has arrived: any later rule could restyle anything."
+    focus: [css, cssom]
+    trace: [parse-css]
+  - caption: "A classic script without defer or async stops the parser until it has run, and it also waits for the stylesheets before it. That is why scripts get defer."
+    focus: [dom, cssom]
+  - caption: "DOM and CSSOM combine into the render tree: only the boxes that will be shown, each with its computed styles. Nodes with display: none are left out."
+    focus: [dom, cssom, style]
+    trace: [dom-in, cssom-in]
+  - caption: Layout walks the render tree and works out every box's size and position for the current viewport.
+    focus: [style, layout]
+    trace: [to-layout]
+  - caption: Paint fills in the pixels, text, colours, borders and shadows, into one or more layers.
+    focus: [layout, paint]
+    trace: [to-paint]
+  - caption: Compositing stacks the painted layers into the frame you see. This step can run on its own thread.
+    focus: [paint, composite, frame]
+    trace: [to-composite, show]
+  - caption: "After that, each change reruns only from the stage it touches. Changing geometry, such as a width or a new node, reruns layout, paint and composite."
+    focus: [geometry, layout, paint, composite]
+    trace: [re-layout, to-paint, to-composite]
+  - caption: Changing a colour or a background doesn't move anything, so layout is skipped and only paint and composite run again.
+    focus: [colour, paint, composite]
+    trace: [re-paint, to-composite]
+  - caption: "A transform or an opacity change on its own layer skips layout and paint and only composites, which is why those animations stay smooth while JavaScript is busy."
+    focus: [transform, composite, frame]
+    trace: [re-composite, show]
+  - caption: "Reading offsetWidth or getBoundingClientRect() right after a change forces layout to run at once. Alternate reads and writes in a loop and it runs every time."
+    focus: [layout]
+```

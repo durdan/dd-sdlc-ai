@@ -4,7 +4,7 @@ title: The main thread, Looper and Handler
 summary: One thread runs your UI from a message queue
 why: "Every frame, touch and lifecycle callback runs on one thread. Block it for a few hundred milliseconds and frames drop; block it for five seconds and the system shows an ANR."
 requires: [android-processes]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - { title: "A loop over a queue", text: "The main thread runs a Looper that takes one Message or Runnable at a time from its MessageQueue and runs it to completion." }
   - { title: "Everything shares it", text: "Drawing, input, lifecycle callbacks, Compose recomposition and your click handlers all wait their turn on the same queue." }
@@ -92,4 +92,47 @@ if (BuildConfig.DEBUG) {
         StrictMode.ThreadPolicy.Builder().detectDiskReads().detectDiskWrites().detectNetwork().penaltyLog().build()
     )
 }
+```
+
+```trace diagram
+id: looper-turn
+title: One message at a time on the main Looper
+subtitle: Messages in, your code, a frame out
+direction: DOWN
+elements:
+  - { id: input, label: Touch, sub: an input event, kind: person, row: 0 }
+  - { id: post, label: "Handler.post()", sub: "a Runnable, from any thread", kind: person, row: 0 }
+  - { id: queue, label: MessageQueue, sub: "ordered by time", kind: store, tone: data, row: 1 }
+  - { id: looper, label: Main Looper, sub: takes the next message, kind: system, row: 2 }
+  - { id: handler, label: Your code, sub: "click, callback, recomposition", row: 3 }
+  - { id: worker, label: IO thread, sub: "Dispatchers.IO, an executor", tone: stream, row: 3 }
+  - { id: frame, label: Next frame, sub: "16 ms at 60 Hz", kind: person, row: 4 }
+  - { id: anr, label: ANR, sub: input not handled in 5 s, kind: external, row: 4 }
+edges:
+  - { id: enqueue, from: input, to: queue }
+  - { id: posted, from: post, to: queue }
+  - { id: next, from: queue, to: looper, label: "next()" }
+  - { id: dispatch, from: looper, to: handler, label: runs it to the end }
+  - { id: draw, from: handler, to: frame, label: returns }
+  - { id: block, from: handler, to: anr, label: blocks for seconds, style: dashed }
+  - { id: offload, from: handler, to: worker, label: hand off }
+  - { id: result, from: worker, to: queue, label: post the result, style: dashed }
+steps:
+  - caption: "Android gives your process one main thread and runs a Looper on it. The Looper takes one message at a time from its MessageQueue and runs it to the end."
+    focus: [queue, looper]
+  - caption: "A touch arrives as a message. So does a Runnable that any thread posts with a Handler bound to the main Looper; it waits behind whatever is already queued."
+    trace: [enqueue, posted]
+  - caption: "The Looper takes the next message and runs it: your click listener, a lifecycle callback, a recomposition."
+    trace: [next, dispatch]
+  - caption: "Your code updates the UI and returns, and drawing the next frame is just another piece of work on this thread. At 60 Hz it has about 16 ms, at 120 Hz about 8."
+    trace: [draw]
+  - caption: "Now the click handler reads a large file synchronously. Until it returns, nothing else in the queue runs: no frames, no touches."
+    trace: [block]
+  - caption: "If an input event isn't handled within 5 seconds, the system reports Application Not Responding. In the foreground the user sees a dialog offering to close the app."
+    focus: [anr, queue]
+  - caption: "The fix is to hand the blocking work to another thread, for example with withContext(Dispatchers.IO). The main thread returns to its queue at once."
+    trace: [offload]
+  - caption: "When the work is done, the result comes back as one more message on the main queue, and the UI updates in the next turn."
+    trace: [result, next, dispatch, draw]
+note: "Network on the main thread throws NetworkOnMainThreadException; disk access doesn't, but StrictMode can flag it."
 ```

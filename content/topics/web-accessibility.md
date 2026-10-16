@@ -4,7 +4,7 @@ title: Accessibility essentials
 summary: Semantics, names, focus, contrast, WCAG 2.2
 why: "A page that works with a keyboard and a screen reader works for more people, ranks and tests better, and is a legal requirement in many places."
 requires: [web-dom-events]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: Native elements first
     text: "A <button> is focusable, clickable with Enter and Space, and announced as a button. A <div> with a click handler is none of these until you rebuild them all."
@@ -78,3 +78,59 @@ for (const fg of ["#000000", "#767676", "#777777", "#949494"]) {
 ```
 
 Automated checkers catch only part of the real problems. Also try the page with only a keyboard, at 200% zoom, and with a screen reader (VoiceOver on macOS and iOS, NVDA on Windows, TalkBack on Android).
+
+```trace diagram
+id: tab-through
+title: Tabbing through a checkout form
+subtitle: What a screen reader user gets from four pieces of markup
+groups:
+  - { id: markup, label: Your HTML }
+  - { id: tree, label: Accessibility tree }
+elements:
+  - { id: h1, label: "<h1>Checkout</h1>", group: markup, kind: component, row: 1 }
+  - { id: input, label: "<label> + <input>", sub: "label for=email", group: markup, kind: component, row: 1 }
+  - { id: button, label: "<button>Pay</button>", group: markup, kind: component, row: 1 }
+  - { id: div, label: "<div onclick>Cancel</div>", group: markup, kind: component, tone: neutral, row: 1 }
+  - { id: axh1, label: heading, sub: "level 1, \"Checkout\"", group: tree, tone: data, row: 2 }
+  - { id: axinput, label: textbox, sub: "name \"Email\", required", group: tree, tone: data, row: 2 }
+  - { id: axbutton, label: button, sub: "name \"Pay\"", group: tree, tone: data, row: 2 }
+  - { id: axdiv, label: plain text, sub: "\"Cancel\", no role", group: tree, tone: neutral, row: 2 }
+  - { id: tab, label: Tab key, sub: focusable elements in DOM order, kind: person, row: 0 }
+  - { id: speech, label: Screen reader, sub: "announces name, role, state", kind: person, row: 3 }
+edges:
+  - { id: m-h1, from: h1, to: axh1 }
+  - { id: m-input, from: input, to: axinput }
+  - { id: m-button, from: button, to: axbutton }
+  - { id: m-div, from: div, to: axdiv }
+  - { id: tab1, from: tab, to: axinput, label: Tab }
+  - { id: tab2, from: tab, to: axbutton, label: Tab again }
+  - { id: say-input, from: axinput, to: speech }
+  - { id: say-button, from: axbutton, to: speech }
+steps:
+  - caption: "A screen reader never sees your pixels. It reads the accessibility tree the browser builds from your HTML: a role, a name and a state for each element."
+    focus: [markup, tree]
+  - caption: "An <h1> becomes a heading of level 1. Screen reader users jump from heading to heading, and between landmarks such as <nav> and <main>, to find their way around."
+    focus: [h1, axh1]
+    trace: [m-h1]
+  - caption: "A <label> tied to its input gives the textbox its name, \"Email\". States such as required or invalid come with it."
+    focus: [input, axinput]
+    trace: [m-input]
+  - caption: "A <button> gets the role button, and its text becomes its name. It is focusable and responds to Enter and Space, all for free."
+    focus: [button, axbutton]
+    trace: [m-button]
+  - caption: "A <div> with a click handler gets no role at all. In the tree it is just the text \"Cancel\"."
+    focus: [div, axdiv]
+    trace: [m-div]
+  - caption: "The user presses Tab. Focus moves through the focusable elements in DOM order, so it lands on the email field, and the screen reader announces its name, role and state."
+    focus: [tab, axinput, speech]
+    trace: [tab1, say-input]
+  - caption: "Tab again reaches the Pay button, announced as \"Pay, button\". Enter or Space presses it."
+    focus: [tab, axbutton, speech]
+    trace: [tab2, say-button]
+  - caption: "The next Tab skips Cancel entirely. The div isn't focusable, ignores Enter and Space, and is never announced as a button, so a keyboard user can't cancel."
+    focus: [div, axdiv, tab]
+  - caption: "The fix is a real <button>. role=\"button\" on the div would only change the announcement; you would still need tabindex=\"0\" and your own key handling."
+    focus: [div, button]
+  - caption: "Sighted keyboard users need to see where focus is. Keep a visible focus ring, with :focus-visible if you like, and don't let a sticky header cover it."
+    focus: [tab]
+```

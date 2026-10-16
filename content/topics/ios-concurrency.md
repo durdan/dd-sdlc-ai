@@ -4,7 +4,7 @@ title: "Swift concurrency: tasks, actors, Sendable"
 summary: async/await, structured tasks, isolation
 why: "Swift 6 turns data races into compile errors. Knowing what isolation means is the difference between fixing those errors and fighting them."
 requires: [ios-main-thread, ios-arc]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - { title: await is a pause point, text: "An async function can suspend at each await and free its thread; between awaits it runs without interruption." }
   - { title: Tasks form a tree, text: "Child tasks from async let and task groups are cancelled with their parent and must finish before it does." }
@@ -86,3 +86,43 @@ An actor serialises access to its state, so callers from outside must `await`. A
 A value is `Sendable` when it is safe to share across isolation domains: value types made of `Sendable` parts, immutable final classes, actors, and classes that guard their own state. In the Swift 6 language mode (opt-in per target, introduced with Swift 6 in 2024), passing a non-`Sendable` value between actors is a compile error, where Swift 5 mode only warned, if you turned the checks on.
 
 Swift 6.2 (2025) made this easier to adopt. A target can choose to be **main-actor isolated by default**, which suits app code that is mostly UI, and an upcoming-feature setting makes nonisolated async functions run on the caller's actor instead of always hopping to the thread pool. You then mark code that should run in parallel with `@concurrent`. Check your target's build settings: the same code can be isolated differently depending on these options.
+
+```trace diagram
+id: task-hops
+title: A task loads an image
+subtitle: Suspend, hop to an actor, back to the main actor
+kind: sequence
+elements:
+  - { id: view, label: View }
+  - { id: main, label: Main actor }
+  - { id: cache, label: Cache actor }
+  - { id: net, label: URLSession }
+edges:
+  - { id: start, from: view, to: main, label: ".task: await model.load()" }
+  - { id: fetch, from: main, to: net, label: "await data(from: url)" }
+  - { id: suspend, from: main, to: main, label: "suspended: thread is free" }
+  - { id: data, from: net, to: main, label: "data: resume on main actor", style: dashed }
+  - { id: hop, from: main, to: cache, label: "await cache.insert(image)" }
+  - { id: back, from: cache, to: main, label: returns to the main actor, style: dashed }
+  - { id: ui, from: main, to: view, label: "model.image = image" }
+  - { id: gone, from: view, to: main, label: "view disappears: cancel" }
+  - { id: cancel, from: main, to: net, label: "request cancelled, throws", style: dashed }
+steps:
+  - caption: "A SwiftUI view starts work with .task. The view is @MainActor, so the task starts on the main actor, which runs on the main thread."
+    trace: [start]
+  - caption: "The model awaits URLSession's async data(from:). An await marks a point where the function may suspend."
+    trace: [fetch]
+  - caption: "While the request is in flight, the task is suspended. It holds no thread, so the main thread goes on handling touches and drawing frames."
+    trace: [suspend]
+  - caption: "The data arrives and the task resumes. Because load() is isolated to the main actor, it continues on the main actor, possibly after other work ran there in between."
+    trace: [data]
+  - caption: "It stores the image in a cache actor. Calling into another actor is a hop, so it needs await: the actor runs one piece of its code at a time, and the call may wait its turn."
+    trace: [hop]
+  - caption: "When insert returns, the task hops back to the main actor. Only Sendable values may cross between the two; Swift 6 mode checks this at compile time."
+    trace: [back]
+  - caption: "Back on the main actor it sets the model's image. SwiftUI sees the change and the view's body runs again."
+    trace: [ui]
+  - caption: "If the view goes away first, SwiftUI cancels its .task. Cancellation is cooperative: the task is marked, and URLSession notices, stops the request and throws."
+    trace: [gone, cancel]
+note: "Re-check actor state after every await: actors are re-entrant, so other calls may run while one is suspended."
+```
