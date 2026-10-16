@@ -4,7 +4,7 @@ title: From socket to controller and back
 summary: Tomcat, the DispatcherServlet and the message converters
 why: When a request is slow, rejected with 415 or answered with the wrong JSON, knowing each hop tells you where to look.
 requires: [spring-autoconfig]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: Tomcat owns the thread
     text: The embedded server accepts the connection and runs the whole request on one worker thread from its pool (200 by default).
@@ -91,3 +91,82 @@ For `POST /orders/7` with a JSON body, roughly this happens:
 ## Threads are the budget
 
 One request holds one Tomcat thread from start to finish, including every database call and HTTP call it makes. When the pool is exhausted, new connections queue in the accept backlog (`server.tomcat.accept-count`, 100 by default) and are then refused. Slow downstream calls without timeouts are the usual cause. On Java 21, `spring.threads.virtual.enabled=true` (Boot 3.2+) runs requests on virtual threads instead, so blocking no longer pins a scarce platform thread; but the database still has only as many connections as the pool allows.
+
+```trace diagram
+id: request-journey
+title: A request's journey
+subtitle: POST /orders/7, from the socket to the database and back
+direction: DOWN
+groups:
+  - { id: servlet, label: Servlet container }
+  - { id: mvc, label: Spring MVC }
+  - { id: app, label: Your code }
+elements:
+  - { id: client, label: Client, sub: "POST /orders/7, JSON body", kind: person }
+  - { id: tomcat, label: Tomcat connector, sub: worker threads (max 200), group: servlet }
+  - { id: filters, label: Filter chain, sub: your Filter beans, group: servlet }
+  - { id: security, label: FilterChainProxy, sub: Spring Security, group: servlet }
+  - { id: dispatcher, label: DispatcherServlet, sub: the front controller, group: mvc, kind: system }
+  - { id: mapping, label: HandlerMapping, sub: path + method → handler, group: mvc }
+  - { id: interceptors, label: Interceptors, sub: "preHandle, postHandle", group: mvc }
+  - { id: adapter, label: HandlerAdapter, sub: argument resolvers, group: mvc }
+  - { id: converters, label: HttpMessageConverters, sub: "Jackson: JSON ⇄ objects", group: mvc, tone: stream }
+  - { id: controller, label: OrderController, sub: "@RestController", group: app }
+  - { id: service, label: OrderService, sub: "@Transactional proxy", group: app }
+  - { id: repository, label: OrderRepository, sub: Spring Data JPA, group: app }
+  - { id: hikari, label: HikariCP, sub: pool of 10 connections, tone: data }
+  - { id: db, label: PostgreSQL, kind: store }
+  - { id: response, label: Response, sub: "201 Created, JSON body", kind: person }
+edges:
+  - { id: http, from: client, to: tomcat, label: HTTP request }
+  - { id: run, from: tomcat, to: filters, label: on one worker thread }
+  - { id: secure, from: filters, to: security, label: doFilter }
+  - { id: dispatch, from: filters, to: dispatcher, label: service() }
+  - { id: lookup, from: dispatcher, to: mapping, label: getHandler }
+  - { id: prehandle, from: dispatcher, to: interceptors, label: preHandle }
+  - { id: handle, from: dispatcher, to: adapter, label: handle }
+  - { id: read, from: adapter, to: converters, label: read body }
+  - { id: invoke, from: adapter, to: controller, label: "create(7, body)" }
+  - { id: call, from: controller, to: service, label: create }
+  - { id: borrow, from: service, to: hikari, label: getConnection }
+  - { id: save, from: service, to: repository, label: save }
+  - { id: sql, from: repository, to: db, label: INSERT }
+  - { id: pooled, from: hikari, to: db, label: pooled connection, style: dotted }
+  - { id: write, from: adapter, to: converters, label: write OrderView, style: dashed }
+  - { id: respond, from: converters, to: response, label: back out through Tomcat, style: dashed }
+steps:
+  - caption: A client sends POST /orders/7 with a JSON body. On its way it crosses three layers. The embedded Tomcat server and its filters, then Spring MVC, which calls your code, which calls the database.
+    focus: [client, tomcat]
+    trace: [http]
+  - caption: "Tomcat's connector accepts the connection, parses the HTTP request and hands it to a worker thread from its pool, 200 threads by default. That one thread carries the request the whole way."
+    focus: [tomcat, filters]
+    trace: [run]
+  - caption: The thread runs the servlet filter chain in order. Spring Security is one filter in that chain, FilterChainProxy, which runs its own security filters and can answer 401 or 403 before Spring MVC sees anything.
+    focus: [filters, security]
+    trace: [secure]
+  - caption: At the end of the chain is the DispatcherServlet, the one servlet in front of every controller. It asks its HandlerMappings for a handler, and RequestMappingHandlerMapping matches POST /orders/{customerId} to OrderController.create. No match is a 404.
+    focus: [filters, dispatcher, mapping]
+    trace: [dispatch, lookup]
+  - caption: Interceptors registered for that path run preHandle first. If one returns false, the rest of the chain is skipped and the controller is never called.
+    focus: [dispatcher, interceptors]
+    trace: [prehandle]
+  - caption: "A HandlerAdapter prepares the call. Argument resolvers build each parameter: the path variable from the URL, the body through the message converter that supports the request's Content-Type. Jackson reads the JSON and @Valid checks it. An unsupported Content-Type is a 415, invalid input a 400."
+    focus: [dispatcher, adapter, converters]
+    trace: [handle, read]
+  - caption: Only now does your controller method run, still on the same Tomcat thread.
+    focus: [adapter, controller]
+    trace: [invoke]
+  - caption: The call to OrderService goes through a proxy. Because the method is @Transactional, the proxy begins a transaction first, and that borrows a JDBC connection from the HikariCP pool, ten connections by default.
+    focus: [controller, service, hikari]
+    trace: [call, borrow]
+  - caption: "The repository's save runs its SQL on that same connection. When the service method returns, the proxy commits and the connection goes back to the pool."
+    focus: [service, repository, hikari, db]
+    trace: [save, sql, pooled]
+  - caption: "The controller returns a ResponseEntity. The adapter picks the converter that matches the client's Accept header, and Jackson writes OrderView as JSON. Nothing acceptable is a 406. For a response body this happens inside the adapter, before any postHandle."
+    focus: [adapter, converters]
+    trace: [write]
+  - caption: The bytes go back out through Tomcat, the client gets 201 Created, and the worker thread returns to the pool for the next request.
+    focus: [converters, response, tomcat]
+    trace: [respond]
+note: "If anything throws along the way, HandlerExceptionResolvers, including your @ControllerAdvice, turn the exception into a response."
+```

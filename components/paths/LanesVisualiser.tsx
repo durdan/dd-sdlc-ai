@@ -292,7 +292,7 @@ function LaneBox({ lane, items, wide }: { lane: TraceLane; items: TraceItem[]; w
   )
 }
 
-function Ctl({ label, onClick, disabled, children }: { label: string; onClick: () => void; disabled?: boolean; children: ReactNode }) {
+export function Ctl({ label, onClick, disabled, children }: { label: string; onClick: () => void; disabled?: boolean; children: ReactNode }) {
   return (
     <button
       onClick={onClick}

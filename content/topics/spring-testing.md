@@ -4,7 +4,7 @@ title: Testing with slices, @SpringBootTest and Testcontainers
 summary: Start as little of the application as the test needs
 why: A suite that boots the whole application for every check gets slow enough that people stop running it; one that never touches a real database misses the bugs that matter.
 requires: [spring-request, spring-jpa]
-lesson: none
+lesson: diagram
 points:
   - title: Plain tests first
     text: Constructor injection means most logic can be tested with new and a few fakes, with no Spring at all.
@@ -110,3 +110,60 @@ Without `webEnvironment`, `@SpringBootTest` uses a mock web environment and star
 ## Keep the suite fast
 
 Spring caches application contexts between test classes that use the same configuration. Every distinct combination of `@MockitoBean`s, properties or profiles creates a new context, so a suite with twenty slightly different set-ups starts twenty applications. Share a few base configurations, keep most tests as plain unit tests, and save `@SpringBootTest` for the flows that need everything.
+
+```trace diagram
+id: what-each-test-starts
+title: What each test starts
+subtitle: A web slice, a JPA slice and the whole application
+direction: DOWN
+groups:
+  - { id: tests, label: Test classes }
+  - { id: context, label: Application context }
+  - { id: docker, label: "Docker, via Testcontainers" }
+elements:
+  - { id: webtest, label: OrderControllerTest, sub: "@WebMvcTest", kind: component, group: tests, row: 0 }
+  - { id: e2etest, label: CheckoutFlowTest, sub: "@SpringBootTest, RANDOM_PORT", kind: component, group: tests, row: 0 }
+  - { id: repotest, label: OrderRepositoryTest, sub: "@DataJpaTest", kind: component, group: tests, row: 0 }
+  - { id: mockmvc, label: MockMvc, sub: no socket, group: context, row: 1 }
+  - { id: tomcat, label: Embedded Tomcat, sub: a random port, group: context, row: 1 }
+  - { id: web, label: Web layer, sub: "controllers, advice, filters, converters", group: context, row: 2 }
+  - { id: mock, label: OrderService mock, sub: "@MockitoBean", tone: neutral, group: context, row: 3 }
+  - { id: service, label: Services, sub: "@Service beans", group: context, row: 3 }
+  - { id: repos, label: Repositories, sub: "JPA, TestEntityManager", group: context, row: 4 }
+  - { id: pg, label: PostgreSQL, sub: "postgres:16, @ServiceConnection", kind: store, group: docker, row: 5 }
+edges:
+  - { id: perform, from: webtest, to: mockmvc }
+  - { id: dispatch, from: mockmvc, to: web }
+  - { id: mocked, from: web, to: mock }
+  - { id: query, from: repotest, to: repos }
+  - { id: sql, from: repos, to: pg }
+  - { id: http, from: e2etest, to: tomcat }
+  - { id: serve, from: tomcat, to: web }
+  - { id: call, from: web, to: service }
+  - { id: save, from: service, to: repos }
+steps:
+  - caption: Three test classes, three different amounts of application. Before any of them, most logic needs no Spring at all; with constructor injection, a plain unit test calls new with a few fakes.
+    focus: [webtest, repotest, e2etest]
+  - caption: "@WebMvcTest starts only the web layer: controllers, @ControllerAdvice, filters, converters and the MVC configuration. MockMvc sends the request through the real DispatcherServlet without opening a socket."
+    focus: [webtest, mockmvc, web]
+    trace: [perform, dispatch]
+  - caption: Services and repositories are not scanned, so the controller's OrderService is a @MockitoBean. The test checks binding, validation and the 400 status in a fraction of a second.
+    focus: [web, mock]
+    trace: [mocked]
+  - caption: "@DataJpaTest starts the JPA side instead: entities, repositories and a TestEntityManager. No controllers, no services."
+    focus: [repotest, repos]
+    trace: [query]
+  - caption: Testcontainers starts a real PostgreSQL in Docker. @ServiceConnection hands its host, port and credentials to Boot, and Replace.NONE stops the slice swapping in an embedded database.
+    focus: [repos, pg]
+    trace: [sql]
+  - caption: Each @DataJpaTest test runs in a transaction that is rolled back at the end, so tests stay independent. Nothing is committed, so commit-time behaviour needs another kind of test.
+    focus: [repotest, repos, pg]
+  - caption: "@SpringBootTest with RANDOM_PORT starts the whole context and the real embedded server. The test sends real HTTP, through filters, security and serialisation, exactly as in production."
+    focus: [e2etest, tomcat, web]
+    trace: [http, serve]
+  - caption: This time the real service and repository run, against the same container. The server handles the request on its own thread, so a @Transactional test method cannot roll back what it committed.
+    focus: [web, service, repos, pg]
+    trace: [call, save, sql]
+  - caption: Spring caches each context and reuses it for every test class with the same configuration. Each different set of mocks, properties or profiles starts another one, so share a few set-ups.
+    focus: [webtest, repotest, e2etest]
+```

@@ -4,7 +4,7 @@ title: Filters, interceptors and AOP proxies
 summary: Three ways to run code around your code
 why: Logging, auth, tenancy and timing all need to wrap requests or method calls; choosing the wrong layer means it runs too late, too often or not at all.
 requires: [spring-request, spring-beans]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: Filters wrap everything
     text: Servlet filters see every request, including static files and errors, before Spring MVC has chosen a handler.
@@ -121,3 +121,61 @@ The catch is that only calls through the proxy are intercepted. Inside the bean,
 | Every request, including errors and static files | Filter |
 | Only controller requests, needs the handler | Interceptor |
 | Behaviour around service methods, from any caller | Aspect or a Spring annotation |
+
+```trace diagram
+id: three-layers
+title: Filter, interceptor, proxy
+subtitle: Where each one wraps a call
+groups:
+  - { id: servlet, label: Servlet container }
+  - { id: mvc, label: Spring MVC }
+  - { id: aop, label: "InvoiceService bean, as others see it" }
+  - { id: target, label: "The real InvoiceService" }
+elements:
+  - { id: client, label: HTTP request, sub: "GET /api/invoices/7", kind: person }
+  - { id: filter, label: RequestIdFilter, sub: OncePerRequestFilter, group: servlet }
+  - { id: dispatcher, label: DispatcherServlet, sub: picks the handler, group: mvc, kind: system }
+  - { id: interceptor, label: TimingInterceptor, sub: "preHandle, afterCompletion", group: mvc }
+  - { id: controller, label: InvoiceController, sub: "@RestController", group: mvc }
+  - { id: job, label: Nightly job, sub: "@Scheduled, no request", kind: person }
+  - { id: proxy, label: CGLIB proxy, sub: generated subclass, group: aop, tone: stream }
+  - { id: aspect, label: SlowCallLogger, sub: "@Around advice", group: aop, tone: stream }
+  - { id: total, label: "total()", group: target }
+  - { id: render, label: "render()", group: target }
+edges:
+  - { id: http, from: client, to: filter }
+  - { id: dofilter, from: filter, to: dispatcher, label: chain.doFilter }
+  - { id: prehandle, from: dispatcher, to: interceptor, label: preHandle }
+  - { id: invoke, from: dispatcher, to: controller, label: invoke handler }
+  - { id: calltotal, from: controller, to: proxy, label: "total()" }
+  - { id: scheduled, from: job, to: proxy, label: "total()" }
+  - { id: advice, from: proxy, to: aspect }
+  - { id: proceed, from: aspect, to: total, label: "proceed()" }
+  - { id: callrender, from: proxy, to: render, label: "render(): not advised" }
+  - { id: self, from: render, to: total, label: "this.total()", style: dashed }
+steps:
+  - caption: "A request reaches the servlet filters first, before Spring MVC has decided anything. A filter sees every request, including ones that end in a 404 or an error page."
+    focus: [client, filter]
+    trace: [http]
+  - caption: "RequestIdFilter puts an id in the logging context and on the response, then calls chain.doFilter. Everything else in the request happens inside that one call, and its finally block clears the id on the way out."
+    focus: [filter, dispatcher]
+    trace: [dofilter]
+  - caption: "Inside the DispatcherServlet a handler has been chosen. The interceptor's preHandle runs with that controller method in hand, so it can read its annotations. Returning false would stop the request here."
+    focus: [dispatcher, interceptor]
+    trace: [prehandle]
+  - caption: "The controller method runs. Its InvoiceService field doesn't hold your object: it holds a proxy, a generated subclass that Spring put in the bean's place."
+    focus: [dispatcher, controller, proxy]
+    trace: [invoke]
+  - caption: "The controller calls total() on the proxy. The method matches the aspect's pointcut, so the proxy runs the @Around advice, which starts a timer and calls proceed() into the real total()."
+    focus: [controller, proxy, aspect, total]
+    trace: [calltotal, advice, proceed]
+  - caption: "A scheduled job calls the same bean with no request at all. No filter and no interceptor run, but the advice still does, because the job also calls through the proxy."
+    focus: [job, proxy, aspect, total]
+    trace: [scheduled, advice, proceed]
+  - caption: "Now the controller calls render(), which is not advised, so the proxy passes it straight to the real object. Inside, render calls this.total(). That call never leaves the real object, so the advice is silently skipped."
+    focus: [proxy, render, total]
+    trace: [callrender, self]
+  - caption: "On the way back out, the interceptor's afterCompletion runs once the response is done; postHandle would be too late to change a JSON body. Last of all the filter's finally block runs, so a filter wraps everything."
+    focus: [filter, interceptor]
+note: "Every request: a filter. Only controller requests, with the handler: an interceptor. Around bean methods from any caller: an aspect."
+```

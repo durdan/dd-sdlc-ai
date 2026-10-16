@@ -4,7 +4,7 @@ title: Structured outputs your code can trust
 summary: JSON schemas, validation and retries
 why: As soon as code, not a person, reads the model's answer, "usually the right shape" becomes a production incident. Schemas and validation turn free text into a typed value or a clear error.
 requires: [ai-prompting]
-lesson: none
+lesson: diagram
 points:
   - title: Ask for a schema, not "JSON please"
     text: Describe the exact shape with a JSON Schema. Where the provider supports it, let it enforce the schema while generating.
@@ -120,3 +120,46 @@ A few practical rules:
 - Do not regex JSON out of prose as a long-term solution. It hides problems that schema enforcement or a better prompt would remove.
 - Version your schemas with your prompts. Adding a required field is a breaking change for every stored example and test.
 - Keep schemas small and flat where you can. Deeply nested, many-field schemas are harder for models to fill correctly; split one big extraction into a few focused calls if accuracy suffers.
+
+```trace diagram
+id: validate-retry
+title: From a ticket to a typed value
+subtitle: Schema in, validate, retry with the error, fail closed
+kind: sequence
+elements:
+  - { id: caller, label: Caller }
+  - { id: code, label: classify() }
+  - { id: model, label: Model API }
+  - { id: validator, label: Validator }
+edges:
+  - { id: ask, from: caller, to: code, label: "classify(ticket)" }
+  - { id: prompt, from: code, to: model, label: "prompt + JSON Schema" }
+  - { id: reply1, from: model, to: code, label: reply text, style: dashed }
+  - { id: check1, from: code, to: validator, label: "parse, schema, business rules" }
+  - { id: error1, from: validator, to: code, label: "invalid: category must be one of ...", style: dashed }
+  - { id: retry, from: code, to: model, label: "the same messages + reply + \"Fix this: ...\"" }
+  - { id: reply2, from: model, to: code, label: corrected JSON, style: dashed }
+  - { id: check2, from: code, to: validator, label: "parse, schema, business rules" }
+  - { id: valid, from: validator, to: code, label: "valid: typed value", style: dashed }
+  - { id: ok, from: code, to: caller, label: "{ ok: true, value }", style: dashed }
+  - { id: failed, from: code, to: caller, label: "or, after the last retry: { ok: false, error }", style: dotted }
+steps:
+  - caption: The caller hands over a support ticket and expects a value with a known shape back, not prose.
+    trace: [ask]
+  - caption: "The request carries a JSON Schema: every field, its type, the allowed categories, what is required, no extra properties. The field descriptions are read by the model too."
+    trace: [prompt]
+  - caption: Where the provider supports it, constrained decoding blocks any token that would break the schema. Plain JSON mode only promises parseable JSON. Either way, a refusal or an answer cut off by the token limit is not schema output.
+    trace: [reply1]
+  - caption: So the code always validates. It parses, checks the schema with a real validator, then applies business rules, because a schema guarantees shape, not truth.
+    trace: [check1]
+  - caption: This reply fails with one specific error. The category is not one of the allowed values.
+    trace: [error1]
+  - caption: With retries left, the code sends the conversation back with that exact error and asks for a fix. A vague "try again" gives the model nothing to correct.
+    trace: [retry, reply2]
+  - caption: The corrected reply goes through exactly the same checks. This time it passes and becomes a typed value.
+    trace: [check2, valid]
+  - caption: The caller gets an explicit success with the value. Nothing downstream ever sees a half-parsed guess.
+    trace: [ok]
+  - caption: If the last of one or two retries also fails, the code stops, logs the input and the errors, and returns a typed failure the caller handles. Those logged failures become new evaluation cases.
+    trace: [failed]
+```

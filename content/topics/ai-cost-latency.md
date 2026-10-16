@@ -4,7 +4,7 @@ title: Cost and latency
 summary: Token budgets, caching, batching and smaller models
 why: An LLM feature that works in a demo can be too slow or too expensive at real traffic. Both cost and latency are driven by tokens and model choice, so you can measure them per request and design them down.
 requires: [ai-models]
-lesson: none
+lesson: diagram
 points:
   - title: Measure per request
     text: Log input tokens, output tokens, cache hits, model and latency for every call. You cannot optimise what you do not record.
@@ -105,3 +105,59 @@ for (const [name, s] of Object.entries(scenarios)) {
 ## Watch the totals, not just the averages
 
 Track cost and latency per feature and per tenant, with percentiles (p50, p95, p99), not only averages: long answers, large documents and agent loops create a heavy tail. Alert on sudden changes, which often mean a prompt change made answers longer or a loop stopped terminating.
+
+```trace diagram
+id: request-cost
+title: Where one request's cost and time go
+subtitle: Routing, the cached prefix, streaming, and work that can wait
+direction: DOWN
+groups:
+  - { id: yours, label: Your service }
+  - { id: provider, label: Model provider }
+elements:
+  - { id: user, label: User, kind: person }
+  - { id: prompt, label: Prompt builder, sub: "stable prefix first, question last", group: yours }
+  - { id: router, label: Model router, sub: easy step or hard one?, group: yours }
+  - { id: usage, label: Usage log, sub: "tokens, cache hits, model, ms", kind: store, group: yours, tone: data }
+  - { id: small, label: Small model, sub: "classify, extract, rewrite", group: provider }
+  - { id: large, label: Large model, sub: hard reasoning, group: provider }
+  - { id: cache, label: Prompt cache, sub: matches on the prefix, kind: store, group: provider, tone: stream }
+  - { id: stream, label: Streamed answer, sub: one token at a time, kind: person }
+  - { id: jobs, label: Nightly jobs, sub: nobody is waiting, kind: person, tone: neutral }
+  - { id: batch, label: Batch interface, sub: "discounted, results in hours", group: provider }
+edges:
+  - { id: ask, from: user, to: prompt }
+  - { id: route, from: prompt, to: router }
+  - { id: easy, from: router, to: small }
+  - { id: hard, from: router, to: large }
+  - { id: lookup, from: large, to: cache }
+  - { id: decode, from: large, to: stream }
+  - { id: log, from: router, to: usage, style: dotted }
+  - { id: submit, from: jobs, to: batch }
+steps:
+  - caption: A user asks a question. You pay per token, input and output priced separately, and the model you pick sets the rate. The same things decide how long the user waits.
+    focus: [user, prompt]
+    trace: [ask]
+  - caption: The service builds the prompt in a fixed order. Tools, the system prompt and reference documents go first and stay byte-for-byte identical; the user's question goes last.
+    focus: [prompt]
+  - caption: A router picks the model for this step. Classifying, routing and short extractions often go to a smaller, faster, cheaper model; your evaluation set decides, not a guess.
+    focus: [prompt, router, small]
+    trace: [route, easy]
+  - caption: Hard reasoning or long, nuanced writing goes to the large model.
+    focus: [router, large]
+    trace: [hard]
+  - caption: The provider checks whether the prompt starts exactly like a recent one. A hit bills those cached input tokens at a reduced rate and processes them faster; a miss processes them in full.
+    focus: [large, cache]
+    trace: [lookup]
+  - caption: A timestamp or a user name near the top of the system prompt changes the prefix, so every request misses. Entries also expire after a while without use.
+    focus: [prompt, cache]
+  - caption: Reading the input is parallel and shows up as time to first token. Writing the output is one token after another, so answer length dominates. Stream it, so the user reads while the rest arrives, and cap the output.
+    focus: [large, stream]
+    trace: [decode]
+  - caption: Every call logs its input and output tokens, cache hits, model and latency. Watch p95 and p99 per feature and tenant, not just the average; a sudden jump often means answers got longer or a loop stopped ending.
+    focus: [router, usage]
+    trace: [log]
+  - caption: Work nobody is waiting for, such as nightly summaries, goes through the provider's batch interface. It is typically discounted and finishes within a stated window of hours. Without one, use a queue with a fixed number of workers.
+    focus: [jobs, batch]
+    trace: [submit]
+```

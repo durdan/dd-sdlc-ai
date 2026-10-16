@@ -1,10 +1,13 @@
 // The lesson registry. A topic's front matter names its lesson; this file turns that into UI:
 //   "lanes"            → the topic's ```trace lanes``` blocks, played in the lanes visualiser
 //                        (written entirely in Markdown; see content/README.md)
+//   "diagram"          → the topic's ```trace diagram``` blocks, stepped through on the
+//                        design-player diagram stage (also written in Markdown)
 //   "walkthrough:<id>" → a card linking to the library walkthrough /learn/p|c/<id>
 //   "none"             → no extra lesson: the explanation, its Try it blocks and the quiz
 import type { ReactNode } from "react"
 import type { Topic } from "@/lib/paths/types"
+import { DiagramSections } from "./lessons/Diagram"
 import { LanesSections, lanesSectionCount } from "./lessons/Lanes"
 import Section from "./Section"
 import WalkthroughCard from "./WalkthroughCard"
@@ -19,6 +22,9 @@ export function lessonParts(topic: Topic): LessonParts {
   const l = topic.lesson
   if (l.type === "lanes" && topic.traces.length) {
     return { sections: (start) => <LanesSections traces={topic.traces} start={start} />, count: lanesSectionCount(topic.traces) }
+  }
+  if (l.type === "diagram" && topic.diagrams.length) {
+    return { sections: (start) => <DiagramSections diagrams={topic.diagrams} start={start} />, count: 1 }
   }
   if (l.type === "walkthrough" && topic.walkthrough) {
     const w = topic.walkthrough

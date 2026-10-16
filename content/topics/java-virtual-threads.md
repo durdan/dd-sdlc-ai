@@ -4,7 +4,7 @@ title: Virtual threads (Java 21)
 summary: A million blocking threads, on a handful of OS threads
 why: "Thread-per-request code, simple to write and debug, now scales to as many concurrent requests as reactive code, without callbacks."
 requires: [java-concurrent]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: Threads the JDK schedules
     text: A virtual thread is a java.lang.Thread that runs on a small pool of OS carrier threads and is not tied to any one of them.
@@ -86,3 +86,45 @@ That is why the gain is throughput, not speed. A CPU-bound task on a virtual thr
 - **Avoid pinning in hot paths.** In Java 21 a virtual thread that blocks inside `synchronized`, or in a native method, is pinned: its carrier blocks with it. That is correct but can starve the scheduler. Run with `-Djdk.tracePinnedThreads=full` or watch the JFR `jdk.VirtualThreadPinned` event, and swap `synchronized` for a `ReentrantLock` where blocking happens inside. JEP 491 removed the `synchronized` case in Java 24.
 
 Virtual threads are always daemon threads and ignore priorities. Java 21 also previews structured concurrency (JEP 453), which treats a group of virtual threads started for one request as a single unit of work.
+
+```trace diagram
+id: mount-unmount
+title: Two virtual threads, one carrier
+subtitle: Blocking frees the carrier, unless the thread is pinned
+kind: sequence
+elements:
+  - { id: va, label: Virtual thread A }
+  - { id: carrier, label: Carrier thread }
+  - { id: vb, label: Virtual thread B }
+  - { id: net, label: Socket }
+edges:
+  - { id: mounta, from: carrier, to: va, label: mount A }
+  - { id: read, from: va, to: net, label: "read(): no data yet" }
+  - { id: unmounta, from: va, to: carrier, label: "unmount: frames to the heap", style: dashed }
+  - { id: mountb, from: carrier, to: vb, label: mount B }
+  - { id: ready, from: net, to: va, label: "data arrives: A is runnable", style: dashed }
+  - { id: sleepb, from: vb, to: carrier, label: "sleep(): B unmounts", style: dashed }
+  - { id: mounta2, from: carrier, to: va, label: "mount A again: read() returns" }
+  - { id: sync, from: va, to: net, label: "read() inside synchronized" }
+  - { id: pinned, from: carrier, to: carrier, label: "pinned: blocked along with A" }
+steps:
+  - caption: "Virtual threads run on a few platform threads called carriers, by default one per processor. To keep the picture simple there is one carrier here, and two virtual threads."
+    focus: [carrier]
+  - caption: "The JDK's scheduler mounts virtual thread A on the carrier. A's code now runs on that OS thread, like any other Java code."
+    trace: [mounta]
+  - caption: "A calls read on a socket and no data has arrived yet. Behind the call, the JDK makes a non-blocking OS call instead of parking the OS thread."
+    trace: [read]
+  - caption: "So A unmounts. Its stack frames are saved on the heap as stack chunk objects, and the carrier is free for other work."
+    trace: [unmounta]
+  - caption: "The scheduler mounts virtual thread B on the same carrier. One OS thread now serves both: A waits, saved on the heap, while B runs."
+    trace: [mountb]
+  - caption: "Data arrives on A's socket, so A can continue and is handed back to the scheduler, waiting for a free carrier."
+    trace: [ready]
+  - caption: "B calls Thread.sleep and unmounts in turn. A is mounted again, possibly on a different carrier, and its read returns the data as if it had simply blocked."
+    trace: [sleepb, mounta2]
+  - caption: "Now the catch, on Java 21. If A blocks inside a synchronized block, it can't unmount: it is pinned, and the carrier blocks with it."
+    trace: [sync, pinned]
+  - caption: "The program stays correct, but that carrier serves no one until A wakes up, and the scheduler does not add a carrier to compensate. Use a ReentrantLock around blocking calls in hot paths; Java 24 removed the synchronized case."
+    focus: [carrier, va]
+note: "Find pinning with -Djdk.tracePinnedThreads=full or the JFR event jdk.VirtualThreadPinned."
+```
