@@ -13,6 +13,10 @@ export const DIAGRAM_BLOCK = /^```trace diagram[^\n]*\n([\s\S]*?)\n```[ \t]*$/gm
 const id = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "use lowercase-words-with-dashes")
 const line = z.string().trim().min(1)
 const tone = z.enum(["core", "stream", "external", "data", "neutral"])
+/** What a box is (its colour and icon); worked out from tone, kind and words when left out. */
+const role = z.enum(["client", "service", "data", "cache", "queue", "security", "edge", "external"])
+/** What an arrow carries (its colour); solid reads as main, dashed as reply, dotted as async when left out. */
+const flow = z.enum(["main", "reply", "async", "security", "data"])
 const ids = z.union([id, z.array(id)]).transform((v) => (Array.isArray(v) ? v : [v]))
 
 const element = z
@@ -22,6 +26,7 @@ const element = z
     sub: line.optional(),
     kind: z.enum(["person", "system", "container", "component", "external", "store"]).default("container"),
     tone: tone.optional(),
+    role: role.optional(),
     group: id.optional(),
     /** Row from the top (0, 1, 2, ...): rows are laid out in order and groups wrap their members. */
     row: z.number().int().min(0).optional(),
@@ -29,7 +34,7 @@ const element = z
   .strict()
 
 const edge = z
-  .object({ id: id.optional(), from: id, to: id, label: line.optional(), style: z.enum(["solid", "dashed", "dotted"]).default("solid") })
+  .object({ id: id.optional(), from: id, to: id, label: line.optional(), style: z.enum(["solid", "dashed", "dotted"]).default("solid"), flow: flow.optional() })
   .strict()
 
 const step = z
@@ -106,7 +111,7 @@ function parseDiagram(yaml: string, where: string, problems: string[], warnings:
   if (seq) {
     if (t.groups.length) bad("sequence diagrams have no groups")
     if (t.elements.some((e) => e.sub || e.group || e.tone || e.row !== undefined || e.kind !== "container"))
-      bad("sequence participants take only id and label (no sub, kind, tone, group or row)")
+      bad("sequence participants take only id, label and role (no sub, kind, tone, group or row)")
   } else {
     for (const e of t.elements) if (e.group && !groupIds.includes(e.group)) bad(`element "${e.id}" is in unknown group "${e.group}" (groups: ${groupIds.join(", ") || "none"})`)
     for (const g of groupIds) if (!t.elements.some((e) => e.group === g)) bad(`group "${g}" has no elements`)
@@ -116,7 +121,7 @@ function parseDiagram(yaml: string, where: string, problems: string[], warnings:
   if (t.elements.length > 16) warnings.push(`${where}: ${t.elements.length} elements; more than 16 gets hard to read on phones`)
 
   // Edges: automatic ids e1, e2, ... in order, unless given.
-  const edges: DiagramEdge[] = t.edges.map((e, i) => ({ id: e.id ?? `e${i + 1}`, from: e.from, to: e.to, ...(e.label ? { label: e.label } : {}), ...(e.style !== "solid" ? { style: e.style } : {}) }))
+  const edges: DiagramEdge[] = t.edges.map((e, i) => ({ id: e.id ?? `e${i + 1}`, from: e.from, to: e.to, ...(e.label ? { label: e.label } : {}), ...(e.style !== "solid" ? { style: e.style } : {}), ...(e.flow ? { flow: e.flow } : {}) }))
   const edgeIds = edges.map((e) => e.id)
   for (const d of dupes(edgeIds)) bad(`edge id "${d}" is used twice${/^e\d+$/.test(d) ? " (edges without an id are numbered e1, e2, ...)" : ""}`)
   for (const e of edges) {
@@ -139,7 +144,7 @@ function parseDiagram(yaml: string, where: string, problems: string[], warnings:
   if (problems.length > before) return null
 
   const diagram: Diagram = seq
-    ? ({ id: t.id, kind: "sequence", title: t.title, participants: t.elements.map((e) => ({ id: e.id, label: e.label })), messages: edges } satisfies SequenceDiagram)
+    ? ({ id: t.id, kind: "sequence", title: t.title, participants: t.elements.map((e) => ({ id: e.id, label: e.label, ...(e.role ? { role: e.role } : {}) })), messages: edges } satisfies SequenceDiagram)
     : ({
         id: t.id,
         kind: "c4",
@@ -152,6 +157,7 @@ function parseDiagram(yaml: string, where: string, problems: string[], warnings:
           label: e.label,
           ...(e.sub ? { sub: e.sub } : {}),
           ...(e.tone ? { tone: e.tone } : {}),
+          ...(e.role ? { role: e.role } : {}),
           ...(e.group ? { group: e.group } : {}),
           ...(e.row !== undefined ? { rank: e.row } : {}),
         })),
