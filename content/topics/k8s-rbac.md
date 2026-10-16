@@ -4,7 +4,7 @@ title: "Namespaces, RBAC and network policies"
 summary: Who may do what, and which pods may talk to which
 why: "Out of the box every pod can talk to every other pod, and broad roles are easy to hand out. Namespaces, RBAC and NetworkPolicies are how one team's mistake, or one compromised pod, stays contained."
 requires: [k8s-control-loop, k8s-services]
-lesson: none
+lesson: diagram
 points:
   - title: Namespaces scope names and policy
     text: "A namespace is a scope for names, RBAC, quotas and network policies. It is not by itself a security boundary."
@@ -127,3 +127,82 @@ Enforcement is done by the network plugin (Calico, Cilium and most managed-clust
 ## Beyond these three
 
 Pod Security admission (labels such as `pod-security.kubernetes.io/enforce: restricted` on a namespace) rejects privileged or root pods. Policy engines (Kyverno, Gatekeeper, or the built-in ValidatingAdmissionPolicy) add rules RBAC cannot express. Separate namespaces still share nodes and a kernel; tenants that must not trust each other need separate node pools or clusters.
+
+```trace diagram
+id: api-request
+title: Can the deployer patch this Deployment?
+subtitle: One API request through authentication, RBAC and admission
+elements:
+  - { id: caller, label: ServiceAccount deployer, sub: "namespace shop, bearer token", kind: person, row: 0 }
+  - { id: authn, label: Authentication, sub: fails with 401, row: 1 }
+  - { id: authz, label: "Authorization (RBAC)", sub: fails with 403, kind: system, row: 2 }
+  - { id: binding, label: RoleBinding, sub: deployer-deploy-web, tone: data, row: 2 }
+  - { id: role, label: Role deploy-web, sub: "get, list, watch, patch deployments", tone: data, row: 3 }
+  - { id: admission, label: Admission, sub: "mutating, then validating", row: 3 }
+  - { id: etcd, label: etcd, sub: validated and stored, kind: store, row: 4 }
+edges:
+  - { id: send, from: caller, to: authn, label: PATCH deployment web }
+  - { id: who, from: authn, to: authz }
+  - { id: lookup, from: authz, to: binding }
+  - { id: ref, from: binding, to: role }
+  - { id: allowed, from: authz, to: admission }
+  - { id: persist, from: admission, to: etcd }
+steps:
+  - caption: "Every API call, from kubectl or from a pod, passes the same three gates in kube-apiserver before anything is stored."
+  - caption: "A pod runs as a ServiceAccount, and its token is mounted into the pod. Here the deployer sends it as a bearer token with a PATCH to the Deployment web."
+    focus: [caller, authn]
+    trace: [send]
+  - caption: "Authentication checks the token and turns it into a user, system:serviceaccount:shop:deployer, plus groups. A bad token is rejected with 401."
+    focus: [authn, authz]
+    trace: [who]
+  - caption: "RBAC then looks for bindings to that subject. The RoleBinding in shop grants it the Role deploy-web."
+    focus: [authz, binding, role]
+    trace: [lookup, ref]
+  - caption: "The Role lists verbs on resources. patch on deployments is there, so the request is allowed. get on secrets is not, so that would be a 403."
+    focus: [role, authz]
+  - caption: "RBAC only allows; there are no deny rules. Effective rights are the union of all bindings, so narrow a binding rather than trying to subtract from it."
+    focus: [binding, role]
+  - caption: "Admission comes next. Mutating controllers can fill in defaults, then validating ones such as Pod Security admission can still reject the request."
+    focus: [authz, admission]
+    trace: [allowed]
+  - caption: Only then is the object validated against its schema and written to etcd.
+    focus: [admission, etcd]
+    trace: [persist]
+  - caption: "Give each workload its own ServiceAccount and set automountServiceAccountToken: false if it never calls the API. Creating pods implies reading the namespace's Secrets."
+    focus: [caller]
+```
+
+```trace diagram
+id: network-policy
+title: Which pods may reach the database
+subtitle: "Namespace shop: default deny, then one allowance"
+elements:
+  - { id: web, label: web pod, sub: app=web, row: 0 }
+  - { id: other, label: other pod, sub: app=report, tone: neutral, row: 0 }
+  - { id: dns, label: CoreDNS, sub: kube-system, tone: neutral, row: 0 }
+  - { id: db, label: db pod, sub: "app=db, port 5432", kind: store, row: 1 }
+  - { id: deny, label: default-deny-ingress, sub: "podSelector: {}", tone: external, row: 2 }
+  - { id: allow, label: db-from-web, sub: "from app=web, port 5432", tone: stream, row: 2 }
+edges:
+  - { id: web-db, from: web, to: db, label: allowed }
+  - { id: other-db, from: other, to: db, label: dropped, style: dotted }
+  - { id: lookup, from: web, to: dns, label: "port 53", style: dashed }
+  - { id: isolate, from: deny, to: db, style: dashed }
+  - { id: permit, from: allow, to: db, style: dashed }
+steps:
+  - caption: "Until a NetworkPolicy selects a pod, all traffic to and from it is allowed. Any pod in any namespace can reach the database."
+    focus: [web, other, db]
+    trace: [web-db]
+  - caption: "default-deny-ingress selects every pod in shop with an empty podSelector and has no rules. All inbound traffic to them is now denied."
+    focus: [deny, db]
+    trace: [isolate]
+  - caption: "Policies add up. db-from-web lets pods labelled app=web reach app=db on port 5432, and nothing else."
+    focus: [allow, web, db]
+    trace: [permit, web-db]
+  - caption: "Connections from the report pod are dropped, but only if the network plugin enforces NetworkPolicy, as Calico and Cilium do. Test that blocked really means blocked."
+    focus: [other, db]
+    trace: [other-db]
+  - caption: "If you also restrict egress, allow DNS to the cluster DNS service, or every name lookup fails."
+    focus: [web, dns]
+    trace: [lookup]
+```

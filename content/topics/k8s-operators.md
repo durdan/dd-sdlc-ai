@@ -4,7 +4,7 @@ title: "Operators and custom resources"
 summary: Your own object types, with a controller that runs them
 why: "Databases, certificates, message queues and GitOps tools all arrive in clusters as operators. Knowing they are just CRDs plus a control loop tells you how to use, debug and judge them."
 requires: [k8s-control-loop, k8s-statefulsets]
-lesson: none
+lesson: diagram
 points:
   - title: A CRD adds a new kind
     text: "A CustomResourceDefinition teaches the API server a new type, with a schema; kubectl, RBAC and watches then work on it like any built-in object."
@@ -115,3 +115,47 @@ Good reconcilers are idempotent (running twice changes nothing more), level-trig
 ## Judging an operator
 
 An operator is privileged automation running inside your cluster, often with cluster-wide rights. Before adopting one, check that it is maintained and widely used, what RBAC it requests, how it upgrades its own CRDs, and what happens to your data if you uninstall it. When writing one, keep the scope small: if a Helm chart or a CronJob does the job, you may not need a controller at all.
+
+```trace diagram
+id: backup-operator
+title: A Backup resource and its controller
+subtitle: The API part stores it; the loop part acts on it
+elements:
+  - { id: crd, label: CustomResourceDefinition, sub: backups.example.com, tone: neutral, row: 0 }
+  - { id: you, label: kubectl apply, sub: "Backup shop-nightly, keep: 7", kind: person, row: 0 }
+  - { id: api, label: kube-apiserver, sub: "schema, RBAC, watches", kind: system, row: 1 }
+  - { id: etcd, label: etcd, kind: store, row: 2 }
+  - { id: ctrl, label: Backup controller, sub: runs as a Deployment, tone: stream, row: 2 }
+  - { id: cron, label: CronJob, sub: owned by the Backup, row: 3 }
+  - { id: bucket, label: Backup bucket, sub: outside the cluster, kind: external, row: 3 }
+edges:
+  - { id: teach, from: crd, to: api }
+  - { id: create, from: you, to: api }
+  - { id: store, from: api, to: etcd }
+  - { id: watch, from: api, to: ctrl }
+  - { id: ensure, from: ctrl, to: cron, label: create or update }
+  - { id: prune, from: ctrl, to: bucket, label: delete beyond keep }
+steps:
+  - caption: "Built-in Kubernetes is API types that store desired state plus controllers that reconcile reality. An operator applies the same pattern to your own types."
+  - caption: "A CustomResourceDefinition teaches the API server a new kind, Backup, with a schema. The server now serves /apis/example.com/v1 for it."
+    focus: [crd, api]
+    trace: [teach]
+  - caption: "You apply a Backup like any object. It is validated against the schema, stored in etcd and covered by RBAC, and kubectl get backups lists it."
+    focus: [you, api, etcd]
+    trace: [create, store]
+  - caption: "With only the CRD installed, nothing else happens. A custom resource is just stored data until a controller acts on it."
+    focus: [api, etcd]
+  - caption: "The controller watches Backups. Its reconcile function runs whenever one changes, and periodically too."
+    focus: [api, ctrl]
+    trace: [watch]
+  - caption: "Reconcile compares spec with what exists. If the CronJob is missing or differs, it creates or updates it, with an owner reference so deleting the Backup removes it."
+    focus: [ctrl, cron]
+    trace: [ensure]
+  - caption: "It also deletes backups beyond keep. A finalizer lets it clean up the bucket before a deleted Backup disappears."
+    focus: [ctrl, bucket]
+    trace: [prune]
+  - caption: "Finally it writes status.lastSuccess. Good reconcilers are idempotent and level-triggered, so a missed event or a restart changes nothing."
+    focus: [ctrl, api]
+  - caption: "Real operators encode a whole job. CloudNativePG turns a Cluster object into pods, Services, replication, failover and backups. Check what RBAC an operator asks for before you install it."
+    focus: [crd, ctrl]
+```

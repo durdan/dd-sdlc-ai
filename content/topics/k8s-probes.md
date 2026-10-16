@@ -4,7 +4,7 @@ title: "Probes: liveness, readiness and startup"
 summary: Restart it, route around it, or wait for it
 why: "Probes are how Kubernetes decides to restart a container or stop sending it traffic. Configured badly, they turn a slow database into a cluster-wide restart storm."
 requires: [k8s-deployments, k8s-services]
-lesson: none
+lesson: diagram
 points:
   - title: Liveness restarts
     text: "If the liveness probe fails failureThreshold times in a row, the kubelet kills and restarts the container."
@@ -76,3 +76,45 @@ Probes can be `httpGet` (any 2xx or 3xx status passes), `tcpSocket`, `grpc` or `
 ## Probes and shutdown
 
 When a pod is deleted, it is removed from endpoints and its containers receive SIGTERM at about the same time, and proxies on other nodes may take a moment to notice. Keep serving while you drain: fail readiness, keep handling in-flight and late-arriving requests for a few seconds, then exit. A short `preStop` hook (for example the built-in `sleep` action) is a common way to delay SIGTERM until endpoints have updated.
+
+```trace diagram
+id: probe-timeline
+title: One container's probes, start to finish
+subtitle: "startup /healthz every 5 s, readiness /ready every 5 s, liveness /healthz every 10 s"
+kind: sequence
+elements:
+  - { id: kubelet, label: kubelet }
+  - { id: app, label: Container }
+  - { id: eps, label: Service endpoints }
+edges:
+  - { id: startup, from: kubelet, to: app, label: "startup: GET /healthz" }
+  - { id: starting, from: app, to: kubelet, label: "fails while starting (budget 30 × 5 s)", style: dashed }
+  - { id: started, from: app, to: kubelet, label: "200: started", style: dashed }
+  - { id: ready-check, from: kubelet, to: app, label: "readiness: GET /ready" }
+  - { id: ready-ok, from: app, to: kubelet, label: "200", style: dashed }
+  - { id: add, from: kubelet, to: eps, label: "pod Ready, added" }
+  - { id: traffic, from: eps, to: app, label: requests }
+  - { id: not-ready, from: app, to: kubelet, label: "/ready fails twice: overloaded", style: dashed }
+  - { id: remove, from: kubelet, to: eps, label: "not Ready, removed" }
+  - { id: live-check, from: kubelet, to: app, label: "liveness: GET /healthz" }
+  - { id: hung, from: app, to: kubelet, label: "times out 3 times in a row", style: dashed }
+  - { id: restart, from: kubelet, to: app, label: kill and restart container }
+steps:
+  - caption: "The kubelet probes each container in three ways, and each failure has a different consequence: wait, take it out of traffic, or restart it."
+  - caption: "While the startup probe runs, the other two probes are off. It may fail up to 30 times, 5 seconds apart, so the app has 150 seconds to start."
+    trace: [startup, starting]
+  - caption: "The first success ends the startup probe for good. Liveness can then stay strict without killing a slow starter."
+    trace: [started]
+  - caption: "Readiness now decides traffic. When /ready passes, the pod is marked Ready and the control plane adds it to the Service's endpoints."
+    trace: [ready-check, ready-ok, add]
+  - caption: Requests for the Service start arriving at this pod.
+    trace: [traffic]
+  - caption: "Under overload /ready fails twice. The pod is taken out of the endpoints and gets no new requests, but the container keeps running and comes back when it passes."
+    trace: [not-ready, remove]
+  - caption: "Liveness asks only whether this process can make progress. Never check the database here: when it is slow, every replica would be restarted at once."
+    trace: [live-check]
+  - caption: "If liveness fails three times in a row, the kubelet kills the container and starts it again. The defaults are every 10 s, a 1 s timeout and 3 failures."
+    trace: [hung, restart]
+  - caption: "On shutdown, removal from endpoints and SIGTERM happen at about the same time. Keep serving for a few seconds, for example with a preStop sleep, then exit."
+    focus: [kubelet, eps]
+```

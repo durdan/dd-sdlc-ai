@@ -4,7 +4,7 @@ title: Volumes and bind mounts
 summary: State lives outside the container
 why: "Containers are meant to be thrown away and recreated. Anything that must survive that (databases, uploads, caches) has to live in storage mounted from outside."
 requires: [docker-images]
-lesson: none
+lesson: diagram
 points:
   - title: The writable layer is disposable
     text: "Files a container writes into its own filesystem vanish with docker rm, and writing there is slower than writing to a mount."
@@ -77,3 +77,50 @@ Edits on the host show up in the container immediately, which is what live reloa
 - **Watch permissions.** Pre-create directories with the right owner in the Dockerfile (`RUN mkdir /data && chown node:node /data`) so a non-root user can write to a fresh volume.
 
 In Kubernetes the same idea becomes PersistentVolumes and PersistentVolumeClaims: storage with its own lifecycle, attached to whichever pod needs it.
+
+```trace diagram
+id: where-writes-go
+title: Where a container's writes go
+subtitle: And what survives docker rm
+direction: DOWN
+elements:
+  - { id: image, label: Image layers, sub: read-only, kind: store, tone: neutral, row: 0 }
+  - { id: ctr, label: Container, sub: "alpine:3.22, removed with --rm", kind: system, row: 1 }
+  - { id: next, label: Next container, sub: "cat /data/note.txt", row: 1 }
+  - { id: layer, label: Writable layer, sub: deleted with the container, tone: neutral, row: 2 }
+  - { id: vol, label: "Volume appdata", sub: "/var/lib/docker/volumes/…", kind: store, tone: data, row: 2 }
+  - { id: bind, label: Bind mount, sub: "-v \"$PWD\":/app", tone: external, row: 2 }
+  - { id: tmp, label: tmpfs, sub: memory only, tone: stream, row: 2 }
+  - { id: host, label: Your project folder, sub: on the host, kind: person, row: 3 }
+edges:
+  - { id: below, from: image, to: ctr, style: dotted }
+  - { id: own, from: ctr, to: layer, label: /var/log }
+  - { id: data, from: ctr, to: vol, label: /data }
+  - { id: app, from: ctr, to: bind, label: /app }
+  - { id: scratch, from: ctr, to: tmp, label: /tmp }
+  - { id: again, from: next, to: vol, label: /data }
+  - { id: same, from: bind, to: host, label: same files, style: dashed }
+steps:
+  - caption: One container writes to four paths. Each write lands somewhere different, and that decides what survives.
+  - caption: The container's own filesystem is the read-only image plus a thin writable layer. A log written to /var/log goes into that layer.
+    focus: [image, ctr, layer]
+    trace: [below, own]
+  - caption: docker rm deletes the writable layer and everything in it. That is the point. You can replace a container at any time with a fresh one.
+    focus: [ctr, layer]
+  - caption: "/data is a named volume, storage Docker manages in its own area, outside any container. echo first > /data/note.txt writes there."
+    focus: [ctr, vol]
+    trace: [data]
+  - caption: "Both containers were started with --rm and are gone, yet the next one mounts appdata and reads first. A volume lives until you remove it with docker volume rm, prune or compose down -v."
+    focus: [next, vol]
+    trace: [again]
+  - caption: "A new, empty volume mounted over a path that has files in the image gets a copy of those files first. A volume with content hides what the image had there."
+    focus: [image, vol]
+  - caption: /app is a bind mount of a host folder. Edits on the host show up at once, which is what live reload needs, but the container now depends on the host's layout and file ownership.
+    focus: [ctr, bind, host]
+    trace: [app, same]
+  - caption: /tmp is a tmpfs mount. It never touches disk and is gone when the container stops, which suits scratch files and secrets.
+    focus: [ctr, tmp]
+    trace: [scratch]
+  - caption: "The habit: databases and uploads in volumes, one owner per volume; bind mounts for source code in development; nothing important in the writable layer."
+    focus: [vol, bind, layer]
+```

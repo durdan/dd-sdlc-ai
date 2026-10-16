@@ -4,7 +4,7 @@ title: Dockerfiles that build fast
 summary: Order instructions by how often they change
 why: "A well-ordered Dockerfile rebuilds in a second after a code change; a badly ordered one reinstalls every dependency on every commit, locally and in CI."
 requires: [docker-images]
-lesson: none
+lesson: diagram
 points:
   - title: Each step has a cache key
     text: "A step is reused if its instruction and inputs are unchanged. For COPY the inputs are the files' contents; for RUN it is only the command text."
@@ -100,3 +100,54 @@ Without it, `COPY . .` would copy your local `node_modules` (built for macOS, pe
 - Use the lockfile and the clean-install command (`npm ci`, `pip install -r` with hashes, `go mod download`), so the install step is reproducible.
 - Copy only what a step needs. A tool that only needs `go.mod` should not see the whole tree.
 - In CI, where every runner starts empty, export the cache to the registry or the CI cache (`--cache-to` / `--cache-from`), or every build starts from zero.
+
+```trace diagram
+id: cache-cascade
+title: One edit, two Dockerfiles
+subtitle: "server.js changed: what reruns?"
+direction: DOWN
+groups:
+  - { id: good, label: Manifests first }
+  - { id: bad, label: "COPY . . first" }
+elements:
+  - { id: ctx, label: Build context, sub: "the folder minus .dockerignore", kind: person, row: 0 }
+  - { id: gfrom, label: "FROM node:22-alpine", sub: CACHED, group: good, row: 1 }
+  - { id: gpkg, label: COPY package files, sub: "package.json + lockfile: CACHED", group: good, row: 2 }
+  - { id: gnpm, label: RUN npm ci, sub: CACHED, group: good, row: 3 }
+  - { id: gsrc, label: "COPY . .", sub: reruns in 0.0 s, tone: stream, group: good, row: 4 }
+  - { id: bfrom, label: "FROM node:22-alpine", sub: CACHED, group: bad, row: 1 }
+  - { id: ball, label: "COPY . .", sub: reruns, tone: stream, group: bad, row: 2 }
+  - { id: bnpm, label: RUN npm ci, sub: "reruns: minutes", tone: stream, group: bad, row: 3 }
+edges:
+  - { id: g1, from: gfrom, to: gpkg }
+  - { id: g2, from: gpkg, to: gnpm }
+  - { id: g3, from: gnpm, to: gsrc }
+  - { id: b1, from: bfrom, to: ball }
+  - { id: b2, from: ball, to: bnpm }
+  - { id: cpkg, from: ctx, to: gpkg, style: dotted }
+  - { id: csrc, from: ctx, to: gsrc, label: server.js }
+  - { id: call, from: ctx, to: ball, label: server.js }
+steps:
+  - caption: Two Dockerfiles for the same Node app. The only difference is the order of the COPY lines. You edit one line of server.js and rebuild both.
+  - caption: docker build first sends the build context, the project folder minus what .dockerignore excludes. Anything in it can be copied, and anything copied can change a cache key.
+    focus: [ctx]
+  - caption: "Each step has a key. FROM is keyed by the base image digest, COPY by a checksum of the copied files, RUN by its command text only. Same key on the same parent: the stored layer is reused."
+    focus: [gfrom, gpkg, gnpm]
+    trace: [g1, g2]
+  - caption: "On the left, the first COPY takes only package.json and the lockfile. They did not change, so that step and npm ci are CACHED."
+    focus: [ctx, gpkg, gnpm]
+    trace: [cpkg]
+  - caption: Only the last COPY sees server.js, so only it reruns. The rebuild takes about a second.
+    focus: [ctx, gnpm, gsrc]
+    trace: [csrc, g3]
+  - caption: On the right, COPY . . comes before the install, and server.js is among the files it copies. Its checksum changed, so the step misses.
+    focus: [ctx, bfrom, ball]
+    trace: [b1, call]
+  - caption: "A miss invalidates everything below it. npm ci reruns even though package.json is untouched: minutes in a real project, on every commit."
+    focus: [ball, bnpm]
+    trace: [b2]
+  - caption: "The rule: put what changes least at the top. Base image, system packages, dependency manifests and install, and your source code last."
+    focus: [gfrom, gpkg, gnpm, gsrc]
+  - caption: "Because RUN is keyed by its text, a cached apt-get update keeps its old package lists until the line changes or you build with --no-cache or --pull. In CI, export the cache with --cache-to, or every runner starts cold."
+    focus: [gnpm, bnpm]
+```

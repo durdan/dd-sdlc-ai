@@ -4,7 +4,7 @@ title: The shared responsibility model
 summary: AWS secures the cloud; you secure what you put in it
 why: "Most AWS security incidents are not AWS being breached. They are customers leaving a bucket public, a key in a repository or a port open, which is on the customer's side of the line."
 requires: [aws-regions-azs]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: Of the cloud versus in the cloud
     text: "AWS is responsible for the facilities, hardware, network and virtualisation. You are responsible for your data, identities, configuration and code."
@@ -55,3 +55,51 @@ The more managed the service, the less you have to patch, but one row never disa
 ## Making it concrete
 
 Write down, per service you use, which of the items above your team owns, and check them automatically. AWS Config rules, Security Hub and IAM Access Analyzer can flag public buckets, unused permissions and missing encryption. Treat the findings like failing tests, not like advice. The rest of this path keeps returning to this line: each building block has settings that only you can get right.
+
+```trace diagram
+id: moving-line
+title: Where the line sits
+subtitle: "The same model on EC2, RDS and Lambda"
+groups:
+  - { id: ec2, label: EC2 }
+  - { id: rds, label: RDS }
+  - { id: lambda, label: Lambda }
+elements:
+  - { id: ec2-cfg, label: "Data, IAM, security groups", sub: you, tone: core, group: ec2, row: 0 }
+  - { id: rds-cfg, label: "Data, DB users, exposure", sub: "you, plus encryption and Multi-AZ", tone: core, group: rds, row: 0 }
+  - { id: lam-cfg, label: "Code, role, data", sub: "you, plus dependencies and secrets", tone: core, group: lambda, row: 0 }
+  - { id: ec2-os, label: "Guest OS, patches", sub: "you, and all installed software", tone: core, group: ec2, row: 1 }
+  - { id: rds-os, label: "OS and DB engine", sub: "AWS patches, in your maintenance window", tone: neutral, group: rds, row: 1 }
+  - { id: lam-os, label: "OS and runtime", sub: "AWS patches and scales", tone: neutral, group: lambda, row: 1 }
+  - { id: infra, label: "Facilities, hardware, network", sub: "AWS, up to the virtualisation layer", kind: system, tone: neutral, row: 2 }
+edges:
+  - { id: ec2-up, from: ec2-cfg, to: ec2-os }
+  - { id: rds-up, from: rds-cfg, to: rds-os }
+  - { id: lam-up, from: lam-cfg, to: lam-os }
+  - { id: ec2-base, from: ec2-os, to: infra }
+  - { id: rds-base, from: rds-os, to: infra }
+  - { id: lam-base, from: lam-os, to: infra }
+steps:
+  - caption: "AWS secures the cloud; you secure what you put in it. Here are three services with the line between the two in three different places."
+  - caption: "AWS's part never changes: the buildings, servers, network and virtualisation layer, all audited. Nothing you configure reaches down here."
+    focus: [infra]
+  - caption: "On EC2 you own everything from the guest operating system up: its patches, every package you install, and the security groups in front of it."
+    focus: [ec2-cfg, ec2-os]
+    trace: [ec2-up, ec2-base]
+  - caption: "On RDS, AWS installs and patches the operating system and the database engine. You pick the maintenance window those patches go in."
+    focus: [rds-os]
+    trace: [rds-base]
+  - caption: "But you still decide whether the database is reachable from the internet, which users it has, and whether encryption and Multi-AZ are on."
+    focus: [rds-cfg]
+    trace: [rds-up]
+  - caption: "On Lambda, AWS runs, patches and scales the operating system and the runtime. There is no server for you to log in to."
+    focus: [lam-os]
+    trace: [lam-base]
+  - caption: "You still own the function code and its dependencies, the execution role, any secrets in its environment, and the data it touches."
+    focus: [lam-cfg]
+    trace: [lam-up]
+  - caption: "The top row never disappears: identity, network exposure and data. AWS can't know whether a bucket is meant to be public or a role is meant to be powerful."
+    focus: [ec2-cfg, rds-cfg, lam-cfg]
+  - caption: "A quick test: if you can change the setting, it is your responsibility. Tools such as AWS Config, Security Hub and IAM Access Analyzer check those settings for you."
+note: "S3 and DynamoDB sit even further right than Lambda: AWS runs everything about storage, and you own the bucket and table policies, encryption keys you manage, and retention."
+```

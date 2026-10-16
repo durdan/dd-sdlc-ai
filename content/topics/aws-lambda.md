@@ -4,7 +4,7 @@ title: "Lambda: cold starts and concurrency"
 summary: Functions that scale per request, within limits
 why: "Lambda scales to zero and to thousands without servers, but its concurrency limits and cold starts shape latency, throttling and what it does to your database."
 requires: [aws-compute]
-lesson: none
+lesson: diagram
 points:
   - title: One request per environment
     text: "Each execution environment handles one invocation at a time. Concurrency is how many environments are busy at once."
@@ -62,3 +62,73 @@ A cold start costs the time to create the environment, download the code and run
 - **Poison messages**: with SQS, one bad message can block or retry forever. Configure partial batch responses and a dead-letter queue.
 
 Lambda is excellent for spiky, event-driven work and glue between AWS services. For steady high throughput, long-running jobs or many open connections, containers are often cheaper and simpler.
+
+```trace diagram
+id: lambda-cold-warm
+title: Cold starts, warm starts, concurrency
+subtitle: One request per environment
+kind: sequence
+elements:
+  - { id: caller, label: Caller }
+  - { id: svc, label: Lambda }
+  - { id: env1, label: Env 1 }
+  - { id: env2, label: Env 2 }
+edges:
+  - { id: inv1, from: caller, to: svc, label: Invoke }
+  - { id: create1, from: svc, to: env1, label: "create env, load code" }
+  - { id: init1, from: env1, to: env1, label: "init: SDK clients, DB pool" }
+  - { id: h1, from: env1, to: env1, label: "handler(event)" }
+  - { id: res1, from: env1, to: caller, label: response, style: dashed }
+  - { id: inv2, from: caller, to: svc, label: Invoke again }
+  - { id: warm, from: svc, to: env1, label: reuse the idle env }
+  - { id: h2, from: env1, to: env1, label: handler only }
+  - { id: inv3, from: caller, to: svc, label: two at once }
+  - { id: create2, from: svc, to: env2, label: "Env 1 busy: new env" }
+  - { id: init2, from: env2, to: env2, label: init (cold start) }
+  - { id: throttle, from: svc, to: caller, label: 429 over the limit, style: dashed }
+steps:
+  - caption: "Lambda runs each invocation in an execution environment, a small micro-VM that handles one request at a time. Whether an idle one exists decides between a cold and a warm start."
+  - caption: "The first request finds no environment, so Lambda creates one, with the runtime and your code loaded."
+    trace: [inv1, create1]
+  - caption: "Then your init code runs: everything outside the handler. Creating the environment plus init is the cold start, well under a second for a small Node.js function and seconds for a heavy Java app."
+    trace: [init1]
+  - caption: "Only then does the handler run, and the response goes back to the caller."
+    trace: [h1, res1]
+  - caption: "The next request finds Env 1 idle and reuses it, a warm start. The clients and connections made in init are still there, which is why they belong outside the handler."
+    trace: [inv2, warm, h2]
+  - caption: "Two requests at the same moment need two environments, and the second one pays its own cold start. Concurrency is requests per second times average duration."
+    trace: [inv3, create2, init2]
+  - caption: "Every function in the Region shares a default pool of 1,000 concurrent executions, and each function adds at most 1,000 environments every 10 seconds. Above that, synchronous calls get 429 TooManyRequestsException."
+    trace: [throttle]
+  - caption: "Provisioned concurrency keeps environments initialised in advance, so that much traffic has no cold starts. Reserved concurrency sets aside part of the pool for one function and also caps it there."
+    focus: [svc, env1, env2]
+```
+
+```trace diagram
+id: lambda-async
+title: An asynchronous invoke that keeps failing
+subtitle: Retries, then a destination or nothing
+kind: sequence
+elements:
+  - { id: src, label: Event source }
+  - { id: queue, label: Lambda queue }
+  - { id: fn, label: Function }
+  - { id: dest, label: On-failure }
+edges:
+  - { id: send, from: src, to: queue, label: "async invoke: 202" }
+  - { id: run1, from: queue, to: fn, label: attempt 1 }
+  - { id: err1, from: fn, to: queue, label: error or timeout, style: dashed }
+  - { id: run2, from: queue, to: fn, label: retry after 1 min }
+  - { id: run3, from: queue, to: fn, label: retry after 2 more min }
+  - { id: fail, from: queue, to: dest, label: event and error }
+steps:
+  - caption: "An asynchronous invoke, such as one from S3 or SNS, returns 202 straight away. Lambda puts the event on its own internal queue, and the sender stops waiting."
+    trace: [send]
+  - caption: "Lambda passes the event to the function. If the handler throws or times out, that counts as a function error."
+    trace: [run1, err1]
+  - caption: "By default Lambda tries twice more, one minute and then two minutes later. Throttles and system errors are different: those events go back on the queue and are retried for up to 6 hours."
+    trace: [run2, run3]
+  - caption: "When the last attempt fails, or the event gets too old, Lambda discards it. An on-failure destination or a dead-letter queue keeps a copy for you."
+    trace: [fail]
+    note: "The same event can arrive twice even without errors, so handlers must be idempotent."
+```

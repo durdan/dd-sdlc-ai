@@ -4,7 +4,7 @@ title: StatefulSets and persistent volumes
 summary: Stable names and their own disk for each replica
 why: "Databases, queues and anything clustered need replicas that keep their identity and data across restarts. That is what StatefulSets add over Deployments, and also where the sharp edges are."
 requires: [k8s-deployments, docker-volumes]
-lesson: none
+lesson: diagram
 points:
   - title: Storage has its own lifecycle
     text: "A PersistentVolumeClaim asks for storage; a StorageClass provisions a PersistentVolume for it. Pods come and go; claims stay."
@@ -106,3 +106,55 @@ A StatefulSet gives identity and storage, not database expertise. It does not kn
 - **Volumes live in one zone.** A pod bound to a zonal disk can only be rescheduled in that zone; use `volumeBindingMode: WaitForFirstConsumer` in the StorageClass so the disk is created where the pod is scheduled.
 - **Stuck rollouts.** With the default `OrderedReady` policy, a broken pod blocks the update; after fixing the template you may have to delete that pod by hand.
 - **Graceful shutdown matters more.** Give databases a `terminationGracePeriodSeconds` long enough to checkpoint, and PodDisruptionBudgets so node drains never take a quorum away.
+
+```trace diagram
+id: sticky-identity
+title: "StatefulSet db: names, DNS and a disk each"
+subtitle: "replicas: 3, volumeClaimTemplates: data"
+elements:
+  - { id: sts, label: StatefulSet db, sub: "replicas: 3", kind: system, row: 0 }
+  - { id: hsvc, label: Service db, sub: "headless: clusterIP None", tone: neutral, row: 0 }
+  - { id: p0, label: db-0, sub: db-0.db.shop.svc, row: 1 }
+  - { id: p1, label: db-1, sub: db-1.db.shop.svc, row: 1 }
+  - { id: p2, label: db-2, sub: db-2.db.shop.svc, row: 1 }
+  - { id: c0, label: PVC data-db-0, sub: 20Gi, kind: store, row: 2 }
+  - { id: c1, label: PVC data-db-1, sub: 20Gi, kind: store, row: 2 }
+  - { id: c2, label: PVC data-db-2, sub: 20Gi, kind: store, row: 2 }
+  - { id: sc, label: StorageClass fast-ssd, sub: provisions a disk per claim, tone: data, row: 3 }
+edges:
+  - { id: make0, from: sts, to: p0, label: "1st" }
+  - { id: make1, from: sts, to: p1, label: "2nd" }
+  - { id: make2, from: sts, to: p2, label: "3rd" }
+  - { id: dns0, from: hsvc, to: p0, style: dotted }
+  - { id: dns1, from: hsvc, to: p1, style: dotted }
+  - { id: dns2, from: hsvc, to: p2, style: dotted }
+  - { id: mount0, from: p0, to: c0 }
+  - { id: mount1, from: p1, to: c1 }
+  - { id: mount2, from: p2, to: c2 }
+  - { id: pv0, from: c0, to: sc, style: dashed }
+  - { id: pv1, from: c1, to: sc, style: dashed }
+  - { id: pv2, from: c2, to: sc, style: dashed }
+steps:
+  - caption: "Deployment pods are interchangeable. A StatefulSet gives each replica a stable name, a stable DNS name and its own disk, which outlive any one pod."
+  - caption: "Pods are created in order. db-0 must be running and ready before db-1 starts, and db-1 before db-2."
+    focus: [sts, p0, p1, p2]
+    trace: [make0, make1, make2]
+  - caption: "volumeClaimTemplates give each pod its own PersistentVolumeClaim, named after it: data-db-0 for db-0."
+    focus: [p0, p1, p2, c0, c1, c2]
+    trace: [mount0, mount1, mount2]
+  - caption: "The StorageClass provisions a PersistentVolume for each claim. With WaitForFirstConsumer, the disk is created in the zone where the pod was scheduled."
+    focus: [c0, c1, c2, sc]
+    trace: [pv0, pv1, pv2]
+  - caption: "The headless Service, which you create yourself, has no virtual IP. It publishes one DNS name per pod, so a member can reach a specific peer such as db-0."
+    focus: [hsvc, p0, p1, p2]
+    trace: [dns0, dns1, dns2]
+  - caption: "Delete db-1 and the controller recreates a pod with the same name. It mounts the same claim, data-db-1, and finds its old data."
+    focus: [sts, p1, c1]
+    trace: [make1, mount1]
+  - caption: "Scale to 2 and db-2 goes first, in reverse order. By default its claim data-db-2 is retained, so scaling back up gets the data back, and you keep paying for the disk."
+    focus: [p2, c2]
+  - caption: "Rolling updates also go from the highest ordinal down. With the default OrderedReady policy, one broken pod blocks the rest."
+    focus: [p2, p1, p0]
+  - caption: "A StatefulSet gives identity and storage, not replication or failover. Three Postgres pods are three separate databases unless the software or an operator joins them."
+    focus: [p0, p1, p2]
+```

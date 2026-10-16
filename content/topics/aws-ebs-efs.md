@@ -4,7 +4,7 @@ title: "Block and file storage: EBS and EFS"
 summary: Disks for one instance versus a shared file system
 why: "Databases, build caches and shared uploads need a file system, not an object store. Choosing a disk that lives in one zone or a file system that spans several decides what survives a zone failure."
 requires: [aws-compute]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: EBS is a network disk in one zone
     text: "An EBS volume attaches to an instance in the same Availability Zone and behaves like a local block device."
@@ -63,3 +63,73 @@ The costs of sharing: every operation is a network round trip, so workloads with
 - **Scratch space and caches that may vanish**: instance store.
 
 Whatever you choose, the safest design keeps durable state in a managed service (S3, RDS, DynamoDB) and treats instances and their disks as replaceable.
+
+```trace diagram
+id: ebs-snapshots
+title: An EBS volume and its snapshots
+subtitle: "A disk lives in one zone; snapshots are the way out"
+groups:
+  - { id: az-a, label: Zone a }
+  - { id: az-b, label: Zone b }
+elements:
+  - { id: inst-a, label: Instance, group: az-a, row: 0 }
+  - { id: vol-a, label: EBS volume, sub: "gp3, zone a only", kind: store, group: az-a, row: 1 }
+  - { id: snap, label: Snapshots, sub: "incremental, kept at Region level", kind: store, tone: data, row: 2 }
+  - { id: inst-b, label: Replacement instance, group: az-b, row: 3 }
+  - { id: vol-b, label: Restored volume, kind: store, group: az-b, row: 4 }
+edges:
+  - { id: attach, from: inst-a, to: vol-a, label: attached }
+  - { id: snapshot, from: vol-a, to: snap }
+  - { id: restore, from: snap, to: vol-b, label: restore, style: dashed }
+  - { id: attach-b, from: inst-b, to: vol-b }
+steps:
+  - caption: "A database wants a block device it can fsync. EBS gives an instance a network-attached disk that behaves like a local one."
+  - caption: "An EBS volume is created in one zone and replicated across several servers inside it. It attaches to an instance in the same zone, one at a time."
+    focus: [inst-a, vol-a]
+    trace: [attach]
+  - caption: "If zone a fails, the volume is unavailable until the zone recovers. A replacement instance in zone b can't attach it."
+    focus: [az-a, inst-b]
+  - caption: "Snapshots are the way out: incremental, point-in-time copies stored at Region level. Of a running database they are crash-consistent at best, so flush first or use its own backup."
+    focus: [vol-a, snap]
+    trace: [snapshot]
+  - caption: "A snapshot restores into any zone, and can be copied to another Region or account. The replacement instance attaches the restored volume."
+    focus: [snap, vol-b, inst-b]
+    trace: [restore, attach-b]
+  - caption: "Schedule snapshots with Data Lifecycle Manager or AWS Backup, make encryption the default per Region, and remember that the volume and the instance type each have their own throughput limit."
+note: "Instance store, the fast local disk on the host, isn't drawn: its data is lost when the instance stops or the host fails."
+```
+
+```trace diagram
+id: efs-shared
+title: A file system shared across zones
+subtitle: "EFS for files, S3 for whole objects"
+groups:
+  - { id: za, label: Zone a }
+  - { id: zb, label: Zone b }
+elements:
+  - { id: client-a, label: Instance, group: za, row: 0 }
+  - { id: client-b, label: ECS task, group: zb, row: 0 }
+  - { id: mt-a, label: Mount target, group: za, row: 1 }
+  - { id: mt-b, label: Mount target, group: zb, row: 1 }
+  - { id: efs, label: EFS file system, sub: "Regional, NFSv4.1", kind: store, tone: data, row: 2 }
+  - { id: s3, label: S3 bucket, sub: whole objects over HTTP, kind: store, tone: data, row: 2 }
+edges:
+  - { id: mount-a, from: client-a, to: mt-a }
+  - { id: mount-b, from: client-b, to: mt-b }
+  - { id: nfs-a, from: mt-a, to: efs }
+  - { id: nfs-b, from: mt-b, to: efs }
+  - { id: obj, from: client-b, to: s3, style: dotted }
+steps:
+  - caption: "When many machines need the same files, a disk attached to one of them won't do. EFS is a shared NFS file system that spans zones."
+  - caption: "A Regional file system stores data redundantly across zones and has a mount target in each zone. A One Zone file system is cheaper and lives in just one."
+    focus: [efs, mt-a, mt-b]
+    trace: [nfs-a, nfs-b]
+  - caption: "Instances, ECS and EKS tasks and Lambda functions in every zone mount it at once and see the same files. There is nothing to size; it grows as you add files."
+    trace: [mount-a, mount-b, nfs-a, nfs-b]
+  - caption: "Every file operation is a network round trip, so many small files, as in npm install or a Git checkout, are much slower than on a local disk. NFS locking is weaker too."
+    focus: [mt-a, mt-b, efs]
+  - caption: "For whole objects read and written over HTTP, S3 is the cheapest per gigabyte and has no size to manage."
+    focus: [client-b, s3]
+    trace: [obj]
+  - caption: "So: one writer needing low latency gets EBS, many clients sharing files get EFS, and whole objects go to S3. Keep durable state in managed services and treat instances as replaceable."
+```

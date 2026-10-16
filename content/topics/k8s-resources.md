@@ -4,7 +4,7 @@ title: "Requests, limits, QoS, throttling and OOMKills"
 summary: What you reserve, what you may use, what happens over it
 why: "Requests decide where pods fit and limits decide how they fail. Most latency spikes and surprise restarts in Kubernetes trace back to these four numbers."
 requires: [k8s-scheduler, docker-containers]
-lesson: none
+lesson: diagram
 points:
   - title: Requests reserve
     text: "The scheduler places pods by their requests, and under contention CPU is shared in proportion to them."
@@ -88,3 +88,53 @@ Production workloads should never be BestEffort: they are scheduled without any 
 Start from measured usage (for example the p95 of memory and CPU over a week, plus headroom), not guesses; Vertical Pod Autoscaler in recommendation mode can suggest values. Namespace `ResourceQuota` and `LimitRange` objects enforce totals and defaults per team.
 
 Changing resources used to mean replacing pods. **In-place pod resize** is stable since Kubernetes 1.35: you patch a running pod's `resize` subresource and the kubelet adjusts the cgroups, with a per-resource `resizePolicy` saying whether that resource can change without restarting the container. Controllers such as VPA can use it to right-size workloads with less disruption.
+
+```trace diagram
+id: requests-and-limits
+title: Where requests and limits act
+subtitle: "requests cpu 250m, memory 256Mi; limits memory 256Mi"
+elements:
+  - { id: spec, label: Container resources, sub: requests and limits, kind: system, row: 0 }
+  - { id: resize, label: In-place resize, sub: "stable since 1.35", tone: neutral, row: 0 }
+  - { id: sched, label: kube-scheduler, sub: adds up requests, row: 1 }
+  - { id: cgroup, label: kubelet + cgroups, sub: enforces limits, row: 1 }
+  - { id: qos, label: QoS class, sub: "Guaranteed, Burstable, BestEffort", tone: data, row: 1 }
+  - { id: node, label: Node, sub: allocatable capacity, kind: store, row: 2 }
+  - { id: cpu, label: CPU over limit, sub: throttled, tone: stream, row: 2 }
+  - { id: mem, label: Memory over limit, sub: "OOMKilled, exit 137", tone: external, row: 2 }
+  - { id: evict, label: Node pressure, sub: eviction order, tone: external, row: 2 }
+edges:
+  - { id: requests, from: spec, to: sched, label: requests }
+  - { id: fits, from: sched, to: node }
+  - { id: limits, from: spec, to: cgroup, label: limits }
+  - { id: throttle, from: cgroup, to: cpu }
+  - { id: kill, from: cgroup, to: mem }
+  - { id: classify, from: spec, to: qos }
+  - { id: order, from: qos, to: evict }
+  - { id: patch, from: resize, to: cgroup, style: dashed }
+steps:
+  - caption: "Each container declares requests, what it needs reserved, and limits, the most it may use. They act in different places."
+  - caption: "Requests drive scheduling. A pod lands only on a node whose unrequested capacity fits its requests. The scheduler never looks at live usage."
+    focus: [spec, sched, node]
+    trace: [requests, fits]
+  - caption: "When the node's CPU is busy, CPU time is shared in proportion to requests. So requests also buy a fair share at run time."
+    focus: [spec, node]
+  - caption: "Limits are enforced by the kernel through cgroups, which the kubelet sets up. These are the same controls as docker run --memory --cpus."
+    focus: [spec, cgroup]
+    trace: [limits]
+  - caption: "A CPU limit of 500m allows 50 ms of CPU per 100 ms period. A burst that needs 80 ms is paused for the rest of the period, so p99 latency suffers even at low average use."
+    focus: [cgroup, cpu]
+    trace: [throttle]
+  - caption: "Memory cannot be slowed down. Over the limit, the kernel's OOM killer ends a process and the container restarts with reason OOMKilled, exit code 137."
+    focus: [cgroup, mem]
+    trace: [kill]
+  - caption: "The settings also give the pod a QoS class. Requests equal to limits for CPU and memory on every container is Guaranteed; none at all is BestEffort; anything else is Burstable."
+    focus: [spec, qos]
+    trace: [classify]
+  - caption: "When a node runs short, the kubelet evicts pods: BestEffort first, then Burstable pods furthest over their requests, Guaranteed last."
+    focus: [qos, evict]
+    trace: [order]
+  - caption: "Since Kubernetes 1.35, in-place resize changes a running container's CPU and memory through the pod's resize subresource, without recreating the pod."
+    focus: [resize, cgroup]
+    trace: [patch]
+```

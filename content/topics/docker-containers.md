@@ -3,7 +3,7 @@ id: docker-containers
 title: "Containers vs VMs: namespaces, cgroups, one kernel"
 summary: A container is a process with a fenced-in view
 why: "Almost every surprise with containers (slow stops, odd PIDs, memory kills, security limits) makes sense once you see that a container is an ordinary Linux process, not a small computer."
-lesson: none
+lesson: diagram
 points:
   - title: Namespaces limit what it sees
     text: The process gets its own view of process IDs, network interfaces, mounts, hostname and IPC, so it looks alone on the machine.
@@ -77,3 +77,57 @@ Many platforms combine the two: containers for packaging and density, inside VMs
 ## Where Docker fits
 
 `docker run` asks the Docker daemon (`dockerd`) to create a container. The daemon prepares the image, network and mounts, then hands off to containerd, which uses runc to create the namespaces and cgroups and start your process. runc implements the OCI runtime specification, an open standard, which is why images built with Docker run unchanged under containerd, CRI-O or Podman.
+
+```trace diagram
+id: run-a-container
+title: What docker run starts
+subtitle: From the CLI to one fenced-in process on the host kernel
+direction: DOWN
+elements:
+  - { id: cli, label: docker CLI, sub: "docker run --memory 64m alpine:3.22 ps", kind: person, row: 0 }
+  - { id: dockerd, label: dockerd, sub: the Docker daemon, kind: system, row: 1 }
+  - { id: rootfs, label: Image files, sub: "alpine:3.22 as the root filesystem", kind: store, tone: data, row: 2 }
+  - { id: containerd, label: containerd, sub: container lifecycle, row: 2 }
+  - { id: runc, label: runc, sub: OCI runtime, row: 3 }
+  - { id: ns, label: Namespaces, sub: "PID, network, mount, UTS, IPC", tone: stream, row: 4 }
+  - { id: proc, label: ps, sub: PID 1 in its own namespace, kind: component, row: 4 }
+  - { id: cg, label: cgroup, sub: "memory.max 64 MiB", tone: stream, row: 4 }
+  - { id: kernel, label: Host Linux kernel, sub: shared by every container, kind: system, tone: neutral, row: 5 }
+edges:
+  - { id: api, from: cli, to: dockerd, label: API call }
+  - { id: prep, from: dockerd, to: rootfs, style: dashed }
+  - { id: hand, from: dockerd, to: containerd }
+  - { id: create, from: containerd, to: runc }
+  - { id: mkns, from: runc, to: ns }
+  - { id: start, from: runc, to: proc, label: starts }
+  - { id: mkcg, from: runc, to: cg }
+  - { id: sys, from: proc, to: kernel, label: ordinary syscalls }
+  - { id: nsk, from: ns, to: kernel, style: dotted }
+  - { id: cgk, from: cg, to: kernel, style: dotted }
+steps:
+  - caption: "docker run looks like it boots a small computer. It doesn't: it starts one ordinary Linux process and fences it in. Follow the request down."
+  - caption: The docker command is only a client. It sends an API call to the Docker daemon, dockerd, over a Unix socket.
+    focus: [cli, dockerd]
+    trace: [api]
+  - caption: The daemon prepares what the container needs. It unpacks the image as a root filesystem and sets up the network and mounts.
+    focus: [dockerd, rootfs]
+    trace: [prep]
+  - caption: Then it hands off. containerd manages the container's lifecycle and asks runc, an implementation of the OCI runtime specification, to create it.
+    focus: [dockerd, containerd, runc]
+    trace: [hand, create]
+  - caption: runc creates new namespaces. They decide what the process can see, so it gets its own process IDs, network interfaces, mounts and hostname.
+    focus: [runc, ns]
+    trace: [mkns]
+  - caption: "It also puts the process in a cgroup. That decides how much it can use: --memory 64m becomes memory.max of 67,108,864 bytes."
+    focus: [runc, cg]
+    trace: [mkcg]
+  - caption: Now runc starts the command. Inside its PID namespace, ps is PID 1 and sees only itself. The host sees it under an ordinary, larger PID.
+    focus: [runc, proc, ns]
+    trace: [start]
+  - caption: "There is no second kernel. ps makes ordinary system calls to the host's kernel, and that same kernel enforces the namespaces and the cgroup."
+    focus: [proc, kernel, ns, cg]
+    trace: [sys, nsk, cgk]
+  - caption: That is the trade against a VM. Starting costs about as much as starting the process, but every container shares one kernel, so the kernel is the security boundary.
+    focus: [kernel]
+note: "runc implements the OCI runtime specification, which is why the same images also run under containerd, CRI-O or Podman."
+```

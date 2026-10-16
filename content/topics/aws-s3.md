@@ -4,7 +4,7 @@ title: "S3: objects, consistency and storage classes"
 summary: Durable key-value storage for files of any size
 why: "S3 holds backups, data lakes, uploads, static sites and Terraform state. Its consistency model, cost model and access controls decide how safely you can build on it."
 requires: [aws-iam]
-lesson: none
+lesson: diagram
 points:
   - title: Buckets hold objects by key
     text: "An object is bytes plus metadata under a key such as invoices/2026/03.pdf. The slashes are just characters; there are no real folders."
@@ -65,3 +65,55 @@ New buckets have **Block Public Access** on and **object ownership** set so ACLs
 - Turning off Block Public Access for one public file and exposing the whole bucket. Serve public content through CloudFront with origin access control instead.
 - Treating S3 as a file system: renames are copy plus delete, and there are no appends.
 - Hot prefixes: S3 scales per prefix (at least 3,500 writes and 5,500 reads per second each), so spread very high request rates over several prefixes.
+
+```trace diagram
+id: s3-upload
+title: A browser upload, stored and aged
+subtitle: Presigned PUT, three zones, lifecycle
+groups:
+  - { id: region, label: "S3 in one Region" }
+elements:
+  - { id: browser, label: Browser, kind: person, row: 0 }
+  - { id: app, label: Your backend, sub: holds IAM credentials, row: 1 }
+  - { id: url, label: Presigned URL, sub: "PUT, expires in 15 min", kind: component, row: 2 }
+  - { id: reader, label: Any reader, sub: GET or LIST, row: 2 }
+  - { id: bpa, label: Block Public Access, sub: on for new buckets, kind: component, tone: neutral, row: 2 }
+  - { id: s3, label: Bucket, sub: "key → object", kind: system, group: region, row: 3 }
+  - { id: az1, label: Zone a, kind: store, group: region, row: 4 }
+  - { id: az2, label: Zone b, kind: store, group: region, row: 4 }
+  - { id: az3, label: Zone c, kind: store, group: region, row: 4 }
+  - { id: ia, label: Standard-IA, sub: after 30 days, kind: store, tone: data, row: 4 }
+  - { id: deep, label: Deep Archive, sub: after a year, kind: store, tone: data, row: 5 }
+edges:
+  - { id: ask, from: browser, to: app }
+  - { id: sign, from: app, to: url }
+  - { id: put, from: url, to: s3, label: PUT }
+  - { id: read, from: reader, to: s3 }
+  - { id: guard, from: bpa, to: s3, style: dashed }
+  - { id: z1, from: s3, to: az1 }
+  - { id: z2, from: s3, to: az2 }
+  - { id: z3, from: s3, to: az3 }
+  - { id: to-ia, from: s3, to: ia, style: dashed }
+  - { id: to-deep, from: ia, to: deep, style: dashed }
+steps:
+  - caption: "A browser uploads a file straight to S3, so your servers never carry the bytes. Then lifecycle rules make the stored file cheaper as it ages."
+  - caption: "The browser asks your backend if it may upload invoices/2026/03.pdf. That key is just a string. The slashes are characters, not folders."
+    focus: [browser, app]
+    trace: [ask]
+  - caption: "The backend signs a URL with its own IAM credentials. The URL fixes the bucket, the key, the PUT method and an expiry time. Anyone holding it can use it until then, so keep it short."
+    trace: [sign]
+    note: "With an IAM user and SigV4 the limit is 7 days. A URL signed with role credentials expires when the session does."
+  - caption: "The browser PUTs the bytes to S3 with that URL. S3 checks the signature and whether the signer may write the object. It needs no AWS credentials of its own."
+    trace: [put]
+  - caption: "In most storage classes, S3 stores the object redundantly across several Availability Zones before the PUT returns. That is how it is designed for eleven nines of durability."
+    trace: [z1, z2, z3]
+  - caption: "Every GET or LIST after a successful PUT sees the new object. S3 has been strongly consistent since 2020. But writers are not coordinated: when two write the same key, the last one S3 processes wins."
+    trace: [read]
+  - caption: "Block Public Access is on for new buckets and ACLs are disabled. The presigned URL works without making anything public, so leave it on."
+    focus: [bpa, s3]
+    trace: [guard]
+  - caption: "A lifecycle rule moves objects to Standard-IA once they are 30 days old. Storage is cheaper there, but each read pays a retrieval fee, and small objects are billed as 128 KB."
+    trace: [to-ia]
+  - caption: "A second rule archives them to S3 Glacier Deep Archive after a year. Reading one back first needs a restore that takes hours, so use it for data you hope never to read."
+    trace: [to-deep]
+```

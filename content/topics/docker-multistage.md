@@ -4,7 +4,7 @@ title: Multi-stage builds and small images
 summary: Build with a toolchain, ship without it
 why: "Every compiler, package manager and shell you ship is more to download, more to scan and more for an attacker to use. Multi-stage builds leave them behind."
 requires: [docker-dockerfile]
-lesson: none
+lesson: diagram
 points:
   - title: Several FROMs, one image
     text: "Each FROM starts a new stage. Only the last stage (or the one you --target) becomes the image; earlier stages are scaffolding."
@@ -92,3 +92,47 @@ There is no single right answer. Alpine is small but its musl libc is a differen
 - `docker image inspect hello-go:1 --format '{{.Config.User}}'` prints `65532`: the `:nonroot` base already sets a non-root user.
 - Dev dependencies stay out: for Node, run `npm ci --omit=dev` (or prune) in the stage you copy `node_modules` from.
 - Keep the build stage's base pinned too; a new compiler version is a change like any other.
+
+```trace diagram
+id: two-stages
+title: Build with a toolchain, ship without it
+subtitle: A Go service in two stages
+direction: DOWN
+groups:
+  - { id: buildg, label: "Stage 1: build" }
+  - { id: rung, label: "Stage 2: runtime" }
+elements:
+  - { id: src, label: Source code, sub: "go.mod and *.go", kind: person, row: 0 }
+  - { id: tool, label: "golang:1.27-alpine", sub: "compiler, shell, apk", group: buildg, row: 1 }
+  - { id: base, label: distroless static, sub: "static-debian13:nonroot", group: rung, tone: neutral, row: 1 }
+  - { id: bin, label: /out/hello, sub: one static binary, group: buildg, tone: stream, row: 2 }
+  - { id: final, label: "hello-go:1", sub: "3.15 MB to download", kind: system, group: rung, row: 3 }
+  - { id: whole, label: "hello-go:build", sub: "--target build: 74.4 MB", tone: neutral, row: 3 }
+edges:
+  - { id: copy, from: src, to: tool, label: "COPY . ." }
+  - { id: compile, from: tool, to: bin, label: go build }
+  - { id: from, from: base, to: final, label: FROM }
+  - { id: take, from: bin, to: final, label: "COPY --from=build" }
+  - { id: target, from: bin, to: whole, style: dashed }
+steps:
+  - caption: Building needs a compiler, a package manager and caches. Running needs only the result. A multi-stage Dockerfile keeps the two apart.
+  - caption: The first FROM starts the build stage, with the full Go toolchain. The source code is copied in as usual.
+    focus: [src, tool]
+    trace: [copy]
+  - caption: go build with CGO_ENABLED=0 produces a single static binary at /out/hello. So far this is an ordinary Dockerfile.
+    focus: [tool, bin]
+    trace: [compile]
+  - caption: "The second FROM starts again from nothing: distroless static, which holds CA certificates, timezone data and a nonroot user, but no shell and no package manager."
+    focus: [base, final]
+    trace: [from]
+  - caption: "COPY --from=build reaches into the first stage and takes exactly one file. Nothing else from the toolchain comes along."
+    focus: [bin, final]
+    trace: [take]
+  - caption: "Only the last stage becomes the image. hello-go:1 is about 3 MB to download. Built with --target build, the toolchain image is 74 MB."
+    focus: [final, whole]
+    trace: [target]
+  - caption: "Less in the image is less to scan and less for an intruder to use. The price: docker exec sh fails, so you debug with a :debug tag, docker debug or an ephemeral container."
+    focus: [final]
+  - caption: "The pattern fits any language. Bundle a frontend with Node and copy dist/ into nginx, or build a jar with a JDK and copy it into a JRE-only stage."
+note: "Alpine, slim Debian, distroless and scratch trade size against libc compatibility and debuggability; see the table above."
+```

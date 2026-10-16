@@ -4,7 +4,7 @@ title: "Services, kube-proxy and DNS"
 summary: A stable name and IP in front of changing pods
 why: "Pods come and go with new IPs on every restart. Services are how anything finds them, and most 'it cannot connect' incidents are a selector, a port or readiness."
 requires: [k8s-deployments, docker-networking]
-lesson: none
+lesson: diagram
 points:
   - title: A Service selects pods by label
     text: "Its selector picks the pods; the control plane keeps the list of ready pod IPs in EndpointSlices."
@@ -88,3 +88,53 @@ Check in this order:
 - **NetworkPolicy?** A default-deny policy drops traffic that is not explicitly allowed.
 
 Because only ready pods are endpoints, readiness probes are also how a pod takes itself out of traffic during start-up, overload or shutdown.
+
+```trace diagram
+id: service-path
+title: How http://web reaches a pod
+subtitle: "Service web: port 80 → targetPort 3000"
+elements:
+  - { id: client, label: Client pod, sub: "namespace shop", kind: person, row: 0 }
+  - { id: svc, label: Service web, sub: "ClusterIP 10.96.41.120, selector app=web", kind: system, row: 0 }
+  - { id: lb, label: Cloud load balancer, sub: type LoadBalancer, kind: external, row: 0 }
+  - { id: dns, label: CoreDNS, sub: web.shop.svc.cluster.local, tone: neutral, row: 1 }
+  - { id: slice, label: EndpointSlice, sub: "pod IPs:3000 + ready flag", tone: data, row: 1 }
+  - { id: proxy, label: kube-proxy rules, sub: "iptables, on every node", tone: stream, row: 2 }
+  - { id: p1, label: web pod 1, sub: "10.244.2.17, ready", row: 3 }
+  - { id: p2, label: web pod 2, sub: ready, row: 3 }
+  - { id: p3, label: web pod 3, sub: not ready, tone: neutral, row: 3 }
+edges:
+  - { id: lookup, from: client, to: dns, label: resolve web }
+  - { id: connect, from: client, to: proxy, label: "10.96.41.120:80" }
+  - { id: select, from: svc, to: slice, label: selector }
+  - { id: watch, from: slice, to: proxy, label: watched }
+  - { id: to-p1, from: proxy, to: p1 }
+  - { id: to-p2, from: proxy, to: p2 }
+  - { id: to-p3, from: proxy, to: p3, style: dotted }
+  - { id: external, from: lb, to: proxy, label: NodePort on each node }
+steps:
+  - caption: "Pods are replaced all the time, each time with a new IP. A Service gives them one stable name and one virtual IP that never changes."
+  - caption: "The Service selects pods by label. The EndpointSlice controller keeps their IPs in EndpointSlices, each marked ready or not."
+    focus: [svc, slice, p1, p2, p3]
+    trace: [select]
+  - caption: "The client asks for http://web. Its DNS search path expands web to web.shop.svc.cluster.local, and CoreDNS answers with the ClusterIP."
+    focus: [client, dns]
+    trace: [lookup]
+  - caption: "The client connects to 10.96.41.120:80. No process listens there. Rules on the client's own node catch the packet."
+    focus: [client, proxy]
+    trace: [connect]
+  - caption: kube-proxy watches Services and EndpointSlices and rewrites those rules on every node whenever pods come, go or change readiness.
+    focus: [slice, proxy]
+    trace: [watch]
+  - caption: "The rules pick one ready endpoint and rewrite the destination to its pod IP and targetPort 3000. The choice is per connection, so a long gRPC connection sticks to one pod."
+    focus: [proxy, p1]
+    trace: [to-p1]
+  - caption: "Pod 3 fails its readiness probe. It is marked not ready, so the rules skip it, but it keeps running and comes back when the probe passes."
+    focus: [proxy, p3, slice]
+    trace: [to-p3]
+  - caption: "NodePort opens a port, 30000 to 32767 by default, on every node, and LoadBalancer adds a cloud load balancer in front. Both end in the same rules."
+    focus: [lb, proxy, p2]
+    trace: [external, to-p2]
+  - caption: "When nothing connects, check the endpoints first. Empty means the selector does not match the pod labels, or no pod is ready."
+    focus: [svc, slice]
+```

@@ -4,7 +4,7 @@ title: Deployments, rolling updates and rollbacks
 summary: New ReplicaSet up, old one down, a few pods at a time
 why: "Most production changes in Kubernetes are a Deployment rollout. Knowing how it swaps pods tells you why a bad readiness probe stalls it and how to get back fast."
 requires: [k8s-pods]
-lesson: none
+lesson: diagram
 points:
   - title: Deployment, ReplicaSet, Pods
     text: "A Deployment manages ReplicaSets; a ReplicaSet keeps N identical pods running. Each change to the pod template creates a new ReplicaSet."
@@ -98,3 +98,46 @@ Undo copies an old ReplicaSet's template back into the Deployment, and the same 
 - Canary and blue-green releases need traffic splitting (Gateway API weights, a service mesh, or tools such as Argo Rollouts).
 - A **PodDisruptionBudget** limits how many pods voluntary disruptions, such as node drains, may take at once. Rollouts are governed by the strategy instead.
 - Version tags are mutable; deploy by digest (or at least unique tags) so a rollback really returns to the old bits.
+
+```trace diagram
+id: rolling-update
+title: A rolling update from 1.4.2 to 1.5.0
+subtitle: "replicas: 4, maxSurge 25%, maxUnavailable 25%"
+elements:
+  - { id: you, label: kubectl set image, sub: "app=web:1.5.0", kind: person, row: 0 }
+  - { id: deploy, label: Deployment web, sub: "replicas: 4", kind: system, row: 1 }
+  - { id: rsold, label: ReplicaSet 1.4.2, sub: "4 → 3 → ... → 0", row: 2 }
+  - { id: rsnew, label: ReplicaSet 1.5.0, sub: "0 → 1 → ... → 4", tone: stream, row: 2 }
+  - { id: oldpods, label: Pods 1.4.2, sub: serving traffic, tone: neutral, row: 3 }
+  - { id: newpods, label: Pods 1.5.0, sub: count once ready, tone: stream, row: 3 }
+edges:
+  - { id: change, from: you, to: deploy, label: new pod template }
+  - { id: own-old, from: deploy, to: rsold }
+  - { id: own-new, from: deploy, to: rsnew }
+  - { id: run-old, from: rsold, to: oldpods }
+  - { id: run-new, from: rsnew, to: newpods }
+steps:
+  - caption: "A Deployment does not manage pods itself. It owns ReplicaSets, and each ReplicaSet keeps a number of identical pods running."
+    focus: [deploy, rsold, oldpods]
+    trace: [own-old, run-old]
+  - caption: "Changing the pod template, here the image, creates a new ReplicaSet and a new revision. Changing only the replica count would just scale the current one."
+    focus: [you, deploy, rsnew]
+    trace: [change, own-new]
+  - caption: "25% of 4 rounds to one pod each way: at most 5 pods in total, at least 3 available. So the new ReplicaSet is scaled to 1 first."
+    focus: [rsnew, newpods]
+    trace: [run-new]
+  - caption: When the new pod passes its readiness probe, the old ReplicaSet is scaled down to 3. Both versions serve traffic for a while.
+    focus: [rsold, oldpods, newpods]
+    trace: [run-old]
+  - caption: "The controller repeats: start a new pod, wait until it is ready, remove an old one. It ends with 4 new pods and the old ReplicaSet at zero."
+    focus: [rsold, rsnew, oldpods, newpods]
+  - caption: "The old ReplicaSet is kept, scaled to zero, as the record to roll back to. revisionHistoryLimit keeps 10 by default."
+    focus: [deploy, rsold]
+  - caption: "If the new pods never become ready, the rollout stops and the old pods keep serving. After progressDeadlineSeconds, 600 by default, it is reported as stalled, but not undone."
+    focus: [newpods, oldpods]
+  - caption: "kubectl rollout undo copies the old template back into the Deployment, and the same rolling process runs in reverse. The old images are usually still cached on the nodes."
+    focus: [deploy, rsold, oldpods]
+    trace: [own-old, run-old]
+  - caption: "If a GitOps tool applies your manifests, revert the commit too, or the next sync rolls forward again."
+    focus: [you, deploy]
+```

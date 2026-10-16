@@ -4,7 +4,7 @@ title: "DynamoDB: partition keys and capacity"
 summary: A key-value store that scales if your keys do
 why: "DynamoDB delivers single-digit millisecond reads at any scale, but only if the partition key spreads traffic. A bad key gives you throttling on a table that is mostly idle."
 requires: [aws-iam]
-lesson: none
+lesson: diagram
 points:
   - title: Design for the queries
     text: "You can only query efficiently by the primary key and secondary indexes, so list the access patterns first and design keys to serve them."
@@ -59,3 +59,46 @@ Each partition can serve up to **3,000 read units and 1,000 write units per seco
 Reads are **eventually consistent** by default, and usually current within a second. A **strongly consistent** read (`ConsistentRead: true`) returns the latest committed write, costs twice the read capacity, and is not available on global secondary indexes. Conditional writes (`ConditionExpression`) give optimistic locking and create-if-absent; transactions group up to 100 actions atomically. **Streams** publish every change for triggers and replication, **TTL** deletes expired items for free, and **global tables** replicate a table to other Regions.
 
 The common failures are a hot key, a design that needs scans, forgetting that GSIs lag, and very large items that make every read expensive.
+
+```trace diagram
+id: dynamo-partitions
+title: Where a request lands
+subtitle: Query, Scan, a hot key and a GSI
+groups:
+  - { id: calls, label: Your service }
+  - { id: table, label: Table }
+elements:
+  - { id: query, label: Query, sub: "PK = CUSTOMER#81", kind: component, group: calls, row: 0 }
+  - { id: scan, label: Scan, sub: "every item, 1 MB pages", kind: component, group: calls, row: 0 }
+  - { id: put, label: PutItem, sub: "PK = 2026-10-16", kind: component, group: calls, row: 0 }
+  - { id: router, label: DynamoDB, sub: hashes the partition key, kind: system, row: 1 }
+  - { id: p1, label: Partition 1, sub: "CUSTOMER#81, sorted by SK", kind: store, group: table, row: 2 }
+  - { id: p2, label: Partition 2, sub: other customers, kind: store, group: table, row: 2 }
+  - { id: p3, label: Partition 3, sub: "hot: 1,000 writes/s max", kind: store, tone: stream, group: table, row: 2 }
+  - { id: gsi, label: GSI by status, sub: "async copy, own partitions", kind: store, tone: data, row: 3 }
+edges:
+  - { id: q-in, from: query, to: router }
+  - { id: s-in, from: scan, to: router }
+  - { id: p-in, from: put, to: router }
+  - { id: to-p1, from: router, to: p1 }
+  - { id: to-p2, from: router, to: p2 }
+  - { id: to-p3, from: router, to: p3 }
+  - { id: to-gsi, from: router, to: gsi, label: async, style: dashed }
+steps:
+  - caption: "A table is split into partitions. DynamoDB routes every request by a hash of its partition key, so the key decides which partition does the work."
+  - caption: "Items with the same partition key are stored together on one partition, ordered by sort key. DynamoDB replicates every partition across three zones."
+    focus: [router, p1, p2, p3]
+  - caption: "A Query names one partition key and a condition on the sort key, such as customer 81's orders from 2026. It goes to one partition and reads only that range, in either order."
+    trace: [q-in, to-p1]
+  - caption: "A Scan reads every item in every partition, 1 MB per page. A filter runs after the read, so you pay for everything scanned, not just what comes back."
+    trace: [s-in, to-p1, to-p2, to-p3]
+  - caption: "This table uses the date as its partition key, so all of today's writes go to one partition. A partition serves at most 1,000 writes per second, so those writes are throttled while the others sit idle."
+    focus: [p3]
+    trace: [p-in, to-p3]
+  - caption: "Adaptive capacity can't split one key value's traffic. Use a key with many values, such as a device ID, or add a suffix that spreads one logical key over several partitions."
+    focus: [put, p3]
+  - caption: "A global secondary index serves another access pattern, such as orders by status. It is a second copy of the data, keyed differently, that DynamoDB updates asynchronously."
+    trace: [to-gsi]
+  - caption: "So reads from a GSI are always eventually consistent. To read your own write, read the base table with ConsistentRead, which costs twice as much."
+    focus: [gsi, router]
+```

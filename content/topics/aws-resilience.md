@@ -4,7 +4,7 @@ title: "Resilience: multi-AZ, multi-Region and Well-Architected"
 summary: Deciding which failures you survive, and paying for it
 why: "Availability is a design choice with a price. Multi-AZ covers the common failures cheaply; multi-Region covers rare ones at a high cost. Knowing which you need, and testing it, is the job."
 requires: [aws-regions-azs, aws-load-balancing, aws-rds-aurora]
-lesson: none
+lesson: diagram
 points:
   - title: Multi-AZ is the baseline
     text: "Spread every tier over at least two zones (three is better) with load balancers, Auto Scaling and Multi-AZ databases. It handles most real failures."
@@ -74,3 +74,54 @@ Not every outage is infrastructure. A bad deploy, a configuration push or a runa
 ## Prove it
 
 Rehearse: fail over the database in staging, block a zone's subnets, kill instances. AWS Fault Injection Service runs such experiments in a controlled way, including simulated zone power interruptions. A recovery plan that has never been run is a hope, not a plan.
+
+```trace diagram
+id: resilient-service
+title: Which failures does this survive?
+subtitle: Zones, retries, backups and a second Region
+groups:
+  - { id: primary, label: "Region A, three zones" }
+elements:
+  - { id: users, label: Users, kind: person, row: 0 }
+  - { id: dns, label: Route 53, sub: "health checks, failover", kind: system, row: 1 }
+  - { id: lb, label: Load balancer, group: primary, row: 2 }
+  - { id: region-b, label: Region B, sub: "warm standby: smaller copy", kind: system, tone: neutral, row: 2 }
+  - { id: app-a, label: App, sub: zone a, group: primary, row: 3 }
+  - { id: app-b, label: App, sub: zone b, group: primary, row: 3 }
+  - { id: app-c, label: App, sub: zone c, group: primary, row: 3 }
+  - { id: dep, label: Payment API, sub: a dependency, kind: external, row: 4 }
+  - { id: db, label: Aurora, sub: Multi-AZ, kind: store, group: primary, row: 4 }
+  - { id: backup, label: Backups, sub: restores rehearsed, kind: store, tone: neutral, row: 5 }
+edges:
+  - { id: entry, from: users, to: dns }
+  - { id: to-lb, from: dns, to: lb }
+  - { id: lb-a, from: lb, to: app-a }
+  - { id: lb-b, from: lb, to: app-b }
+  - { id: lb-c, from: lb, to: app-c }
+  - { id: db-a, from: app-a, to: db }
+  - { id: db-b, from: app-b, to: db }
+  - { id: db-c, from: app-c, to: db }
+  - { id: call, from: app-a, to: dep, label: "timeout, backoff + jitter" }
+  - { id: snap, from: db, to: backup, style: dotted }
+  - { id: repl, from: db, to: region-b, label: async replication, style: dashed }
+  - { id: failover, from: dns, to: region-b, label: if A fails, style: dashed }
+steps:
+  - caption: "One service, designed for the failures it has to survive. Start from two numbers: RTO, how long it may be down, and RPO, how much recent data it may lose."
+  - caption: "Inside one Region, the load balancer spreads traffic over instances in three zones. Multi-AZ is the baseline, and it handles most real failures."
+    trace: [entry, to-lb, lb-a, lb-b, lb-c]
+  - caption: "Static stability means running enough capacity that losing a zone leaves the other two below their limits. Then recovery doesn't depend on launching anything during the failure."
+    focus: [app-a, app-b, app-c]
+  - caption: "The database is Multi-AZ too, so a zone failure means a failover that typically takes under a minute, with no committed data lost. The app has to reconnect and retry."
+    trace: [db-a, db-b, db-c]
+  - caption: "Every call to a dependency gets a timeout. Failed calls are retried with exponential backoff and jitter, a limited number of times and at one layer only, so retries can't snowball into a storm."
+    trace: [call]
+  - caption: "Retrying is only safe when the operation is idempotent. Send an idempotency key, so a payment that is retried is charged once."
+    focus: [app-a, dep]
+  - caption: "Replication copies a bad write or a deletion straight away, so you still need backups. A backup only counts once you have restored it and timed the restore."
+    trace: [snap]
+  - caption: "Surviving the loss of a whole Region needs data and infrastructure in a second one. A warm standby runs a scaled-down copy, fed by asynchronous replication, so a little recent data can be lost."
+    trace: [repl]
+  - caption: "Route 53 health checks send users to Region B when A fails. Backup and restore costs less but takes hours. Active/active costs the most and recovers almost at once."
+    trace: [entry, failover]
+  - caption: "Rehearse all of it: fail the database over, block a zone, or inject faults with AWS Fault Injection Service. A recovery plan that has never been run is a hope, not a plan."
+```

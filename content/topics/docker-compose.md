@@ -4,7 +4,7 @@ title: docker compose for local stacks
 summary: One file for the whole local stack
 why: "A new teammate should get the app, its database and its cache running with one command, the same way every time, and Compose is the standard way to write that down."
 requires: [docker-networking, docker-volumes]
-lesson: none
+lesson: diagram
 points:
   - title: Services, networks, volumes
     text: "compose.yaml declares containers as services; Compose creates a network for the project and the named volumes for you."
@@ -91,3 +91,52 @@ What happened: Compose built `web` from `./node`, created the network `demo_defa
 ## Where Compose stops
 
 Compose runs containers on one Docker engine. It restarts a crashed container if you set `restart:`, but it does not move work to another machine, roll out new versions gradually, or scale on load. Those are the jobs of an orchestrator, which is where Kubernetes takes over, built on the same images, networking and volume ideas.
+
+```trace diagram
+id: compose-up
+title: What docker compose up does
+subtitle: "The web + cache stack from compose.yaml, project demo"
+direction: DOWN
+groups:
+  - { id: net, label: "demo_default network" }
+elements:
+  - { id: file, label: compose.yaml, sub: "services, volumes", kind: person, row: 0 }
+  - { id: dev, label: You, sub: "curl localhost:8765", kind: person, row: 0 }
+  - { id: port, label: Published port, sub: "127.0.0.1:8765 → 3000", tone: external, row: 1 }
+  - { id: web, label: web, sub: "image built from ./node", kind: system, group: net, row: 2 }
+  - { id: health, label: Healthcheck, sub: "redis-cli ping, every 5 s", tone: stream, group: net, row: 4 }
+  - { id: cache, label: cache, sub: "redis:7-alpine", group: net, row: 3 }
+  - { id: vol, label: cache-data, sub: named volume, kind: store, tone: data, row: 4 }
+edges:
+  - { id: create, from: file, to: web, label: up }
+  - { id: wait, from: web, to: health, label: service_healthy, style: dashed }
+  - { id: probe, from: cache, to: health, style: dotted }
+  - { id: call, from: web, to: cache, label: "redis://cache:6379" }
+  - { id: mount, from: cache, to: vol, label: /data }
+  - { id: open, from: dev, to: port }
+  - { id: fwd, from: port, to: web }
+steps:
+  - caption: One file declares the whole local stack. docker compose up -d --wait turns it into a network, a volume and two running containers.
+    focus: [file]
+  - caption: Compose first creates the project network, demo_default, named after the directory, and the named volume cache-data.
+    focus: [file, net, vol]
+  - caption: "web declares depends_on cache with condition: service_healthy, so Compose starts cache first, with its volume mounted at /data."
+    focus: [file, cache, vol]
+    trace: [mount]
+  - caption: "Started is not ready. Docker runs cache's healthcheck, redis-cli ping, every 5 seconds until it passes."
+    focus: [health, cache]
+    trace: [probe]
+  - caption: Only when cache reports healthy does Compose start web, from the image it built from ./node. The short form of depends_on would only have waited for the container to start.
+    focus: [file, web, health]
+    trace: [create, wait]
+  - caption: "web reaches Redis at redis://cache:6379. The service name is a hostname on the project network, and the port is the container's own."
+    focus: [web, cache]
+    trace: [call]
+  - caption: "Only web publishes a port, bound to 127.0.0.1, because only you need to open it. --wait returns once both are running or healthy, handy before tests in CI."
+    focus: [dev, port, web]
+    trace: [open, fwd]
+  - caption: docker compose down removes the containers and the network but keeps cache-data. down -v deletes the volume too, which resets the data, or loses it by accident.
+    focus: [vol, web, cache]
+  - caption: Compose runs everything on one Docker engine. Moving work between machines, rolling updates and scaling on load are jobs for an orchestrator such as Kubernetes.
+note: Your app should still retry its connections. Dependencies restart in real life too.
+```

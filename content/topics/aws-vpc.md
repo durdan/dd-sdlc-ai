@@ -4,7 +4,7 @@ title: "VPC networking: subnets, routes and NAT"
 summary: Your private network inside a Region
 why: "Whether a database is reachable from the internet, whether a task can pull its image, and a surprising share of the bill are all decided by subnets and route tables."
 requires: [aws-regions-azs]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: A VPC spans a Region, a subnet one zone
     text: "You give the VPC an address range and carve it into subnets, each in a single Availability Zone."
@@ -64,3 +64,52 @@ Instances in private subnets still need to call out: to download packages, pull 
 ## Plan addresses once
 
 You cannot easily renumber a VPC later, and peering or Transit Gateway connections fail when ranges overlap. Pick non-overlapping ranges per VPC and environment from the start, leave room for more zones and subnets, and remember that AWS reserves five addresses in every subnet.
+
+```trace diagram
+id: two-zone-vpc
+title: A VPC across two zones
+subtitle: "10.20.0.0/16 in eu-west-1: public and private subnets, NAT and an S3 endpoint"
+groups:
+  - { id: pub-a, label: "Public subnet, zone a" }
+  - { id: pub-b, label: "Public subnet, zone b" }
+  - { id: priv-a, label: "Private subnet, zone a" }
+  - { id: priv-b, label: "Private subnet, zone b" }
+elements:
+  - { id: s3ep, label: S3 gateway endpoint, sub: "a route table entry, no charge", tone: stream, row: 2 }
+  - { id: s3, label: S3, kind: store, row: 3 }
+  - { id: app-a, label: App task, sub: private IP only, group: priv-a, row: 0 }
+  - { id: app-b, label: App task, sub: private IP only, group: priv-b, row: 0 }
+  - { id: nat-a, label: NAT gateway, sub: zonal, group: pub-a, row: 1 }
+  - { id: nat-b, label: NAT gateway, sub: zonal, group: pub-b, row: 1 }
+  - { id: igw, label: Internet gateway, sub: one per VPC, kind: system, row: 2 }
+  - { id: internet, label: Internet, kind: external, row: 3 }
+edges:
+  - { id: a-nat, from: app-a, to: nat-a, label: "0.0.0.0/0" }
+  - { id: b-nat, from: app-b, to: nat-b, label: "0.0.0.0/0" }
+  - { id: nat-a-igw, from: nat-a, to: igw }
+  - { id: nat-b-igw, from: nat-b, to: igw }
+  - { id: out, from: igw, to: internet }
+  - { id: a-ep, from: app-a, to: s3ep }
+  - { id: b-ep, from: app-b, to: s3ep }
+  - { id: ep-s3, from: s3ep, to: s3 }
+steps:
+  - caption: "A VPC is a private network in one Region with an address range you choose. You carve it into subnets, and each subnet lives in exactly one zone."
+  - caption: "A subnet is public only because its route table sends 0.0.0.0/0 to the internet gateway. Load balancers and NAT gateways go here; an instance also needs a public IP to be reachable."
+    focus: [pub-a, pub-b, igw]
+  - caption: "The private subnets' route tables have no route to the internet gateway, so nothing outside can start a connection to the app tasks."
+    focus: [priv-a, priv-b]
+  - caption: "Every route table also has a local route for the VPC's own range, so the subnets can reach each other unless security groups or network ACLs say no."
+    focus: [app-a, app-b]
+  - caption: "To call out, the task in zone a follows its default route to the NAT gateway, which swaps the private address for its own public one. Replies come back; new inbound connections can't."
+    trace: [a-nat, nat-a-igw, out]
+  - caption: "A standard NAT gateway lives in one zone, so zone b gets its own, with its own route table. If both zones used zone a's, losing zone a would cut outbound access everywhere."
+    trace: [b-nat, nat-b-igw, out]
+  - caption: "NAT is billed for every hour it exists and every gigabyte it processes. A regional NAT gateway is the other option: it expands across zones and uses one ID in all routes."
+    focus: [nat-a, nat-b]
+  - caption: "S3 traffic doesn't need NAT at all. A gateway endpoint adds an S3 route to the private route tables, free of charge, so that traffic stays inside AWS."
+    trace: [a-ep, b-ep, ep-s3]
+  - caption: "Other services, such as ECR, SQS or Secrets Manager, need interface endpoints instead. They are billed per hour and per gigabyte, but often cost less than NAT for heavy traffic."
+    focus: [s3ep, nat-a, nat-b]
+  - caption: "Plan the address ranges once. A VPC is hard to renumber, connected VPCs must not overlap, and AWS reserves five addresses in every subnet."
+note: A data subnet for databases would look like the private ones, but with no default route at all.
+```

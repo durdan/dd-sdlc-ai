@@ -4,7 +4,7 @@ title: "Networking: bridges, ports and DNS"
 summary: Each container gets its own network stack
 why: "'Connection refused', 'bad address' and ports that are open to the whole internet all come from the same few rules about bridges, publishing and Docker's DNS."
 requires: [docker-containers]
-lesson: none
+lesson: diagram
 points:
   - title: Its own network namespace
     text: Each container has its own interfaces, IP address, routing table and localhost, connected to a virtual bridge on the host.
@@ -77,3 +77,49 @@ A related hardening arrived in Engine 28.0: older releases let hosts on the same
 - `overlay`: spans several hosts (Swarm); Kubernetes uses its own CNI plugins instead.
 
 When something cannot connect, check in order: is it on the same network, does the name resolve (`getent hosts api`), is the app listening on `0.0.0.0` rather than `127.0.0.1` inside its container, and, from the host, is the port published on the address you are using.
+
+```trace diagram
+id: bridges-and-ports
+title: Who can reach the api container
+subtitle: "docker run -d --name api --network appnet -p 8080:3000 hello:1"
+direction: DOWN
+groups:
+  - { id: appnet, label: "appnet (user-defined bridge)" }
+  - { id: dflt, label: default bridge }
+elements:
+  - { id: outside, label: Browser or LAN host, sub: "anything that reaches the host", kind: person, row: 0 }
+  - { id: port, label: Published port, sub: "host :8080 → container :3000", tone: external, row: 1 }
+  - { id: peer, label: alpine, sub: "wget http://api:3000/", group: appnet, row: 1 }
+  - { id: lone, label: alpine, sub: "wget http://api:3000/", group: dflt, row: 1 }
+  - { id: dns, label: Embedded DNS, sub: "127.0.0.11", tone: stream, group: appnet, row: 2 }
+  - { id: api, label: api, sub: "hello:1 listening on :3000", kind: system, group: appnet, row: 3 }
+edges:
+  - { id: in, from: outside, to: port, label: ":8080" }
+  - { id: fwd, from: port, to: api }
+  - { id: ask, from: peer, to: dns, label: api? }
+  - { id: call, from: peer, to: api, label: "api:3000" }
+  - { id: fail, from: lone, to: api, label: bad address, style: dotted }
+steps:
+  - caption: Every container has its own network namespace, with its own interfaces, IP address and its own localhost. Docker connects it to a virtual bridge on the host.
+    focus: [api]
+  - caption: api runs on appnet, a network created with docker network create. A second container on appnet calls http://api:3000/.
+    focus: [peer, api]
+  - caption: "On a user-defined bridge, Docker runs an embedded DNS server at 127.0.0.11. It answers with the IP of the container named api on the same network."
+    focus: [peer, dns]
+    trace: [ask]
+  - caption: "The call goes straight to port 3000, where the app listens inside its own namespace. Container-to-container traffic needs no publishing."
+    focus: [peer, api]
+    trace: [call]
+  - caption: The same wget from a container on the default bridge fails with bad address. The default bridge has no name-based DNS, so it could only use an IP.
+    focus: [lone, api]
+    trace: [fail]
+  - caption: "From outside, only a published port gets in. -p 8080:3000 forwards host port 8080 to the container's port 3000."
+    focus: [outside, port, api]
+    trace: [in, fwd]
+  - caption: "Without an address, a published port listens on every host interface, so on a cloud VM it is open to anyone who can reach it, and on Linux it can bypass ufw. -p 127.0.0.1:8080:3000 keeps it to the host."
+    focus: [outside, port]
+  - caption: "EXPOSE 3000 in the Dockerfile publishes nothing; it is only metadata. --network host skips all of this and shares the host's stack, with no isolation and no mapping."
+    focus: [port, api]
+  - caption: "When something cannot connect, check in order: same network, does the name resolve, is the app listening on 0.0.0.0, and is the port published on the address you use."
+note: "Compose creates a network per project, which is why Compose services can call each other by name."
+```

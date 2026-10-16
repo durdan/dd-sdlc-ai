@@ -4,7 +4,7 @@ title: Registries, tags and digests
 summary: Tags move; digests never do
 why: "If you deploy by tag, the same YAML can run different code tomorrow. Pinning by digest is how a build or a rollback stays exactly reproducible."
 requires: [docker-images]
-lesson: none
+lesson: diagram
 points:
   - title: A registry stores content by digest
     text: "Registries implement the OCI distribution spec: blobs and manifests are stored by their SHA-256 digest, and tags are names that point to a manifest."
@@ -86,3 +86,46 @@ Pinning only helps if the pins are updated: a base pinned for a year collects a 
 - **Pull limits.** Docker Hub limits anonymous and free pulls; CI that pulls a lot should authenticate or use a mirror or pull-through cache.
 - **Attestations and signatures.** BuildKit can attach provenance and SBOM attestations to an image, and tools such as cosign sign a digest. Both refer to the digest, which is another reason to deploy by digest.
 - **Garbage.** Untagged manifests are kept until the registry's retention or garbage collection removes them, so set lifecycle rules on private registries.
+
+```trace diagram
+id: push-and-pull
+title: Push once, pull by tag or by digest
+subtitle: "ghcr.io/acme/payments:1.4.2, built for amd64 and arm64"
+kind: sequence
+elements:
+  - { id: ci, label: CI }
+  - { id: reg, label: Registry }
+  - { id: mac, label: arm64 Mac }
+  - { id: srv, label: amd64 server }
+edges:
+  - { id: blobs, from: ci, to: reg, label: "PUT blobs: layers + configs, by digest" }
+  - { id: mans, from: ci, to: reg, label: "PUT manifests: amd64, arm64" }
+  - { id: idx, from: ci, to: reg, label: "PUT index as tag 1.4.2" }
+  - { id: digest, from: reg, to: ci, label: "index digest sha256:ab12…", style: dashed }
+  - { id: bytag, from: mac, to: reg, label: "GET payments:1.4.2" }
+  - { id: list, from: reg, to: mac, label: "index: one manifest per platform", style: dashed }
+  - { id: arm, from: mac, to: reg, label: "GET arm64 manifest, missing layers" }
+  - { id: bydig, from: srv, to: reg, label: "GET payments@sha256:ab12…" }
+  - { id: same, from: reg, to: srv, label: "the same index, the same bytes", style: dashed }
+  - { id: amd, from: srv, to: reg, label: "GET amd64 manifest, missing layers" }
+  - { id: moved, from: ci, to: reg, label: "a rebuild PUTs a new index as 1.4.2" }
+  - { id: newtag, from: mac, to: reg, label: "GET payments:1.4.2 → the new index" }
+steps:
+  - caption: A registry is a content store with names on top. Everything in it is stored by SHA-256 digest. A tag is just a name pointing at one manifest.
+    focus: [ci, reg]
+  - caption: "A push uploads the content first: every layer and config as a blob named by its digest. Blobs the registry already has are skipped."
+    trace: [blobs]
+  - caption: "Then the manifests, one per platform, and last the image index that lists them, under the tag 1.4.2. CI records the index digest it gets back."
+    trace: [mans, idx, digest]
+  - caption: The Mac pulls by tag. The registry resolves 1.4.2 to the index, and the client picks the entry that matches its own OS and CPU.
+    trace: [bytag, list]
+  - caption: It fetches the arm64 manifest, then only the layers it does not already have. Shared base layers are downloaded once.
+    trace: [arm]
+  - caption: "The server deploys by digest. name@sha256:… always means exactly the same bytes, or the pull fails. Pinning the index digest keeps both platforms."
+    trace: [bydig, same, amd]
+  - caption: "Now someone pushes a rebuild under the same tag. Nothing in the registry stops it: tags are mutable pointers."
+    trace: [moved]
+  - caption: "The next pull of 1.4.2 gets different code, while the digest still names the old index. Never reuse a version tag, and deploy what you tested by digest."
+    trace: [newtag]
+note: "When a name has both a tag and a digest, the digest wins. Renovate and Dependabot can keep tag@sha256 pins up to date."
+```

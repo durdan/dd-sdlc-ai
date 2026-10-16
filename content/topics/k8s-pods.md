@@ -4,7 +4,7 @@ title: "Pods: why not just containers"
 summary: The smallest unit Kubernetes schedules
 why: "Pods explain why sidecars can talk over localhost, why containers in a pod live and die together, and why you almost never create a pod by hand."
 requires: [k8s-control-loop, docker-networking]
-lesson: none
+lesson: diagram
 points:
   - title: A pod is a shared context
     text: "One or more containers that always run on the same node and share a network namespace (one IP, one localhost) and volumes."
@@ -83,3 +83,51 @@ What a pod never does is move. If its node dies, is drained or runs out of memor
 ## Stopping a pod
 
 Deleting a pod starts graceful termination: the pod is marked terminating, removed from Service endpoints, any `preStop` hook runs, and the kubelet asks the runtime to send each container SIGTERM. After `terminationGracePeriodSeconds` (30 by default), anything still running gets SIGKILL. This is the same PID 1 and signal handling as with `docker stop`, so the same rules apply: exec-form entrypoints, a SIGTERM handler, and shutdown work that finishes inside the grace period.
+
+```trace diagram
+id: one-pod
+title: Inside one pod
+subtitle: Three kinds of container, one network, one shared volume
+groups:
+  - { id: pod, label: "Pod web: one IP, one localhost" }
+elements:
+  - { id: kubelet, label: kubelet, sub: on the pod's node, kind: system, row: 0 }
+  - { id: owner, label: ReplicaSet, sub: the pod's owner, kind: external, row: 0 }
+  - { id: migrate, label: migrate, sub: init container, group: pod, tone: neutral, row: 1 }
+  - { id: shipper, label: log-shipper, sub: "sidecar: restartPolicy Always", group: pod, tone: stream, row: 2 }
+  - { id: app, label: app, sub: listens on 3000, group: pod, row: 2 }
+  - { id: logs, label: emptyDir logs, sub: lives as long as the pod, kind: store, group: pod, row: 3 }
+  - { id: replacement, label: New pod, sub: "new name, new IP", kind: external, row: 1 }
+edges:
+  - { id: run-init, from: kubelet, to: migrate }
+  - { id: run-sidecar, from: kubelet, to: shipper }
+  - { id: run-app, from: kubelet, to: app }
+  - { id: localhost, from: shipper, to: app, label: "localhost:3000", style: dashed }
+  - { id: write, from: app, to: logs }
+  - { id: read, from: shipper, to: logs }
+  - { id: replace, from: owner, to: replacement, style: dashed }
+steps:
+  - caption: "A pod is one or more containers that always run on the same node and share a network namespace and volumes. Kubernetes schedules pods, not containers."
+  - caption: "The kubelet runs init containers first, one after another, each to completion. The pod's phase is Pending while it waits for a node, pulls images and runs these."
+    focus: [kubelet, migrate]
+    trace: [run-init]
+  - caption: "A native sidecar is an init container with restartPolicy: Always. It starts in order with the init containers but keeps running, and is ready before the app starts."
+    focus: [kubelet, shipper]
+    trace: [run-sidecar]
+  - caption: Then the app container starts and the pod is Running. Most pods have only this one container.
+    focus: [kubelet, app]
+    trace: [run-app]
+  - caption: "All containers in the pod share one IP and one port space, so the sidecar reaches the app on localhost:3000. Two containers in one pod cannot both listen on the same port."
+    focus: [shipper, app]
+    trace: [localhost]
+  - caption: "The emptyDir volume is mounted in both containers. The app writes log files and the shipper reads them. It lives exactly as long as the pod."
+    focus: [app, shipper, logs]
+    trace: [write, read]
+  - caption: "If the app crashes, the kubelet restarts that container in the same pod, with growing back-off delays. That is what CrashLoopBackOff means."
+    focus: [kubelet, app]
+  - caption: "On deletion each container gets SIGTERM, then SIGKILL after the grace period, 30 seconds by default. The sidecar is stopped after the app, so it sees the last log lines."
+    focus: [app, shipper]
+  - caption: "A pod never moves. If its node dies the pod is gone, and its owner creates a new pod with a new name and IP. That is why you use Deployments and Services."
+    focus: [owner, replacement]
+    trace: [replace]
+```

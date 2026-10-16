@@ -4,7 +4,7 @@ title: Ingress and the Gateway API
 summary: HTTP routing from the outside world to Services
 why: "Ingress is frozen, and the most widely used Ingress controller has been retired. New clusters should route traffic with the Gateway API, and existing ones need a migration plan."
 requires: [k8s-services]
-lesson: none
+lesson: diagram
 points:
   - title: An API needs a controller
     text: "Ingress and Gateway objects are only configuration. A controller (a cloud load balancer, Envoy Gateway, NGINX Gateway Fabric, Istio, Cilium and others) does the routing."
@@ -123,3 +123,56 @@ The split lets a platform team control TLS and exposure while app teams change t
 - New clusters: pick a conformant Gateway API implementation (check the project's implementations page) and use HTTPRoute.
 - Existing Ingress: inventory annotations, which are the hard part to translate; the `ingress2gateway` tool converts the common cases.
 - Either way, the controller is critical production software: run several replicas, give it resource requests, and watch its error and latency metrics.
+
+```trace diagram
+id: gateway-route
+title: From the internet to a pod with the Gateway API
+subtitle: Objects configure the controller; the proxy carries the traffic
+elements:
+  - { id: class, label: GatewayClass, sub: which implementation, tone: neutral, row: 0 }
+  - { id: gw, label: Gateway public, sub: "443, *.example.com, TLS; platform team", row: 0 }
+  - { id: route, label: HTTPRoute web, sub: "shop.example.com /; app team", row: 0 }
+  - { id: ingress, label: Ingress, sub: "frozen: hosts, paths, TLS", tone: neutral, row: 0 }
+  - { id: user, label: Browser, sub: "https://shop.example.com", kind: person, row: 1 }
+  - { id: ctrl, label: Gateway controller, sub: "e.g. Envoy Gateway", kind: system, row: 1 }
+  - { id: lb, label: Cloud load balancer, kind: external, row: 2 }
+  - { id: proxy, label: Gateway proxy, sub: terminates TLS, tone: stream, row: 3 }
+  - { id: web, label: Service web, sub: weight 90, row: 4 }
+  - { id: canary, label: Service web-canary, sub: weight 10, row: 4 }
+edges:
+  - { id: names, from: class, to: ctrl, style: dashed }
+  - { id: listens, from: gw, to: ctrl, style: dashed }
+  - { id: routes, from: route, to: ctrl, style: dashed }
+  - { id: legacy, from: ingress, to: ctrl, style: dotted }
+  - { id: programs, from: ctrl, to: proxy, label: programs }
+  - { id: provisions, from: ctrl, to: lb, style: dashed }
+  - { id: request, from: user, to: lb }
+  - { id: forward, from: lb, to: proxy }
+  - { id: main, from: proxy, to: web, label: 90% }
+  - { id: split, from: proxy, to: canary, label: 10% }
+steps:
+  - caption: "Ingress and Gateway objects are only configuration. Kubernetes ships no implementation: a controller you install, or your cloud's, watches them and runs the traffic."
+  - caption: "The GatewayClass names the implementation, like ingressClassName does for Ingress. It is defined by whoever provides the controller."
+    focus: [class, ctrl]
+    trace: [names]
+  - caption: "The platform team owns the Gateway: port 443, hostnames under example.com, the wildcard certificate, and which namespaces may attach routes."
+    focus: [gw, ctrl]
+    trace: [listens]
+  - caption: "An app team attaches an HTTPRoute from its own namespace, shop. It matches shop.example.com and path /, and lists the backend Services with weights."
+    focus: [route, ctrl]
+    trace: [routes]
+  - caption: "The controller turns these objects into proxy configuration, and often provisions the cloud load balancer in front of it."
+    focus: [ctrl, proxy, lb]
+    trace: [programs, provisions]
+  - caption: "A browser request reaches the load balancer and then the Gateway proxy, which terminates TLS with the Gateway's certificate."
+    focus: [user, lb, proxy]
+    trace: [request, forward]
+  - caption: "The proxy matches the host and path and splits traffic 90 to 10 between the two Services. Their endpoints lead to the pods."
+    focus: [proxy, web, canary]
+    trace: [main, split]
+  - caption: "Ingress feeds a controller the same way, but has only hosts, paths and TLS. Anything more needs controller-specific annotations, and the API gets no new features."
+    focus: [ingress, ctrl]
+    trace: [legacy]
+  - caption: "The community ingress-nginx controller is retired: no fixes after March 2026, not even for security. Move to a maintained Gateway API implementation. ingress2gateway converts the common cases."
+    focus: [ingress, route]
+```

@@ -4,7 +4,7 @@ title: "IAM: principals, policies and roles"
 summary: Who may do what to which resource
 why: "Every AWS API call is checked by IAM. Getting it right is most of AWS security; getting it wrong is how keys leak and buckets go public."
 requires: [aws-shared-responsibility]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: A principal makes the call
     text: "A principal is whoever signs the request: a user, a role session or an AWS service acting for you."
@@ -76,3 +76,46 @@ A role carries a **trust policy** (who may assume it) and **permissions policies
 - Put guard rails above accounts with AWS Organizations: service control policies (SCPs) cap what any principal in an account can do, even an administrator.
 
 How several policies combine for one request, and why a single Deny beats any number of Allows, is the next topic.
+
+```trace diagram
+id: role-call
+title: A workload calls S3 with a role
+subtitle: "Trust policy, temporary credentials, a signed request, a policy check"
+kind: sequence
+elements:
+  - { id: app, label: App }
+  - { id: sts, label: STS }
+  - { id: s3, label: S3 }
+  - { id: iam, label: IAM check }
+edges:
+  - { id: assume, from: app, to: sts, label: "AssumeRole(orders-reader)" }
+  - { id: trust, from: sts, to: sts, label: "trust policy: may this caller assume it?" }
+  - { id: creds, from: sts, to: app, label: "key ID, secret, session token (1 h)", style: dashed }
+  - { id: sign, from: app, to: app, label: "sign the request with the secret" }
+  - { id: get, from: app, to: s3, label: "GetObject + signature + token" }
+  - { id: check, from: s3, to: iam, label: "who signed it, and is it allowed?" }
+  - { id: eval, from: iam, to: iam, label: "role policies + bucket policy" }
+  - { id: allow, from: iam, to: s3, label: Allow, style: dashed }
+  - { id: object, from: s3, to: app, label: "200 + the object", style: dashed }
+  - { id: refresh, from: app, to: sts, label: "new credentials before expiry" }
+steps:
+  - caption: "Every AWS API call is checked by IAM: may this principal do this action on this resource? Here an application reads a file from S3 using a role, not a stored key."
+    focus: [app, sts, s3, iam]
+  - caption: "The application asks AWS STS to assume the orders-reader role. A role has permissions but no password or long-lived key of its own."
+    trace: [assume]
+  - caption: "STS checks the role's trust policy, which names who may assume it. An ECS task role trusts ecs-tasks.amazonaws.com; a CI role might trust your CI provider through OpenID Connect."
+    trace: [trust]
+  - caption: "STS returns temporary credentials: an access key ID, a secret access key and a session token. By default they last an hour."
+    trace: [creds]
+  - caption: "The SDK signs the request with the secret key. The secret itself never travels; S3 receives the signature, the key ID and the token."
+    trace: [sign, get]
+  - caption: "S3 hands the request to IAM's check. The principal is the role session, and the action is s3:GetObject on one object's ARN."
+    trace: [check]
+  - caption: "IAM evaluates the role's permissions policies together with the bucket's policy. Nothing is allowed unless a policy allows it."
+    trace: [eval]
+  - caption: "The role's policy allows s3:GetObject on that bucket, so the answer is Allow and S3 returns the object."
+    trace: [allow, object]
+  - caption: "Before the credentials expire, the SDK fetches new ones. On EC2, ECS and Lambda this happens for you, so nothing long-lived is ever stored on the machine."
+    trace: [refresh]
+note: "The permissions policy decides what the role can do; the trust policy decides who may become it. How several policies combine is the next topic."
+```
