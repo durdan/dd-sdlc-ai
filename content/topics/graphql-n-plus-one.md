@@ -4,7 +4,7 @@ title: "The N+1 problem and DataLoader"
 summary: One query for the list, one more per item, unless you batch
 why: "Field-by-field execution makes every relationship a loop of single lookups. A page of 50 posts with authors is 51 database queries until you add batching, and it is the first thing to check when a GraphQL API is slow."
 requires: [graphql-execution, microtasks]
-lesson: none
+lesson: diagram
 points:
   - title: Where N+1 comes from
     text: "One resolver loads a list (1 query). A child field's resolver then runs once per item, each doing its own lookup (N queries)."
@@ -108,3 +108,37 @@ const resolvers = {
 ```
 
 Three rules matter. The batch function returns an array of the same length as the keys, in the same order. Loaders are created per request, because their cache is request-scoped memoisation: share one across requests and users see each other's data, or stale data forever. And batching reduces round trips, not work: a query that asks for ten thousand comments still loads ten thousand comments, which is why pagination and cost limits come next.
+
+```trace diagram
+id: n-plus-one-timing
+title: Four posts and their authors
+subtitle: The same query without and with a DataLoader
+kind: waterfall
+unit: ms
+lanes:
+  - { id: server, label: GraphQL server, role: service }
+  - { id: db, label: Database, role: data }
+rows:
+  - { id: naive, label: Without DataLoader, start: 0, end: 25, lane: server }
+  - { id: posts-a, label: SELECT posts, start: 0, end: 12, lane: db, parent: naive }
+  - { id: u1, label: SELECT user u1, start: 12, end: 23, lane: db, parent: naive }
+  - { id: u2, label: SELECT user u2, start: 12, end: 24, lane: db, parent: naive }
+  - { id: u1b, label: SELECT user u1 again, start: 12, end: 22, lane: db, parent: naive }
+  - { id: u3, label: SELECT user u3, start: 12, end: 25, lane: db, parent: naive }
+  - { id: batched, label: With DataLoader, start: 0, end: 26, lane: server }
+  - { id: posts-b, label: SELECT posts, start: 0, end: 12, lane: db, parent: batched }
+  - { id: collect, label: "collect keys (one turn)", start: 12, end: 13, lane: server, parent: batched }
+  - { id: in, label: "SELECT users IN (u1, u2, u3)", start: 13, end: 26, lane: db, parent: batched }
+steps:
+  - caption: The same query, resolved two ways, for a list of four posts with their authors. The timings are illustrative.
+  - caption: The posts resolver runs one query and returns four posts.
+    focus: [naive, posts-a]
+  - caption: Then the author field resolves once per post, and each call runs its own query. That is four more queries, one of them for an author already loaded. One plus N.
+    focus: [u1, u2, u1b, u3]
+  - caption: With a DataLoader, each author resolver calls load(id) instead. The loader waits until the current turn of the event loop ends, collecting the keys.
+    focus: [batched, posts-b, collect]
+  - caption: Then it runs one query for the three distinct ids and hands each resolver its user. Two queries in total, however long the list is.
+    focus: [in]
+  - caption: The time saved here is small. The query count is the point. N+1 grows with the list, and the database pays for every extra round trip.
+    focus: [naive, batched]
+```

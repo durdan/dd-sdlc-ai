@@ -115,7 +115,7 @@ elements:
   - { id: js, label: slugify/index.js, sub: the code that runs, kind: store, tone: data, row: 2, role: service }
   - { id: pkg, label: The package's own .d.ts, sub: "\"types\" in package.json", row: 2 }
   - { id: dt, label: "@types/slugify", sub: from DefinitelyTyped, tone: stream, row: 2, role: external }
-  - { id: err, label: No declaration file, sub: "error: module is implicitly any", kind: external, row: 2, role: security }
+  - { id: err, label: No declaration file, sub: "error: module is implicitly any", kind: external, row: 2, role: error }
   - { id: own, label: "declare module \"slugify\"", sub: your own .d.ts, row: 3 }
   - { id: jsdoc, label: JSDoc in .js files, sub: tsc --declaration, kind: component, tone: neutral, row: 1, role: service }
 edges:

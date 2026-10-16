@@ -98,7 +98,7 @@ edges:
   - { id: fwd, from: port, to: api }
   - { id: ask, from: peer, to: dns, label: api? }
   - { id: call, from: peer, to: api, label: "api:3000" }
-  - { id: fail, from: lone, to: api, label: bad address, style: dotted, flow: main }
+  - { id: fail, from: lone, to: api, label: bad address, style: dotted, flow: blocked }
 steps:
   - caption: Every container has its own network namespace, with its own interfaces, IP address and its own localhost. Docker connects it to a virtual bridge on the host.
     focus: [api]

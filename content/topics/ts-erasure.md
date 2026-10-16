@@ -97,7 +97,7 @@ elements:
   - { id: checker, label: Type checker, sub: reads the whole program, kind: system, row: 1 }
   - { id: emitter, label: Emitter, sub: deletes the type syntax, row: 1 }
   - { id: strip, label: node app.ts, sub: "Node 22.18+: types become spaces", row: 1 }
-  - { id: errors, label: Type errors, sub: editor and CI, kind: external, row: 2, role: security }
+  - { id: errors, label: Type errors, sub: editor and CI, kind: external, row: 2, role: error }
   - { id: js, label: app.js, sub: no types left, kind: store, tone: data, row: 2 }
   - { id: run, label: Runtime, sub: Node or the browser, kind: system, row: 3 }
 edges:
@@ -109,7 +109,7 @@ edges:
   - { id: enum-out, from: enum, to: emitter, label: real object, style: dashed, flow: main }
   - { id: strip-in, from: src, to: strip }
   - { id: strip-run, from: strip, to: run }
-  - { id: enum-refused, from: enum, to: strip, label: refused, style: dotted, flow: security }
+  - { id: enum-refused, from: enum, to: strip, label: refused, style: dotted, flow: blocked }
 steps:
   - caption: A TypeScript file goes down two separate paths. One checks the types, the other produces the JavaScript that actually runs.
   - caption: The type checker reads the whole program and compares every value with the type it was given. Its only output is a list of errors, shown in your editor and in CI.

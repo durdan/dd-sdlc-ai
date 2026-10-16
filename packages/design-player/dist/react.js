@@ -1,4 +1,4 @@
-import { C as e, D as t, E as n, M as r, N as i, O as a, P as o, S as s, T as c, _ as l, c as u, d, g as f, h as p, j as m, k as h, m as g, p as _, t as v, u as y, v as b, x, y as S } from "./svg-C2aslVBU.js";
+import { A as e, C as t, D as n, F as r, I as i, N as a, O as o, P as s, T as c, _ as l, b as u, f as d, g as f, h as p, j as m, k as h, n as g, p as _, u as v, v as y, w as b, x, y as S } from "./svg-0-2cLGdh.js";
 import { t as C } from "./keys-BT7tChre.js";
 import { useCallback as ee, useEffect as w, useLayoutEffect as T, useMemo as E, useRef as D, useState as O } from "react";
 import { Fragment as k, jsx as A, jsxs as j } from "react/jsx-runtime";
@@ -10,39 +10,39 @@ var P = {
 	patterns: "pattern",
 	companies: "company"
 };
-function F({ catalog: e, progress: t, open: n, initialTab: r, heading: i = "The library", intro: o = "Design patterns explained through the problems they solve, and how leading digital companies built their systems." }) {
-	let c = [
+function F({ catalog: t, progress: n, open: r, initialTab: i, heading: a = "The library", intro: o = "Design patterns explained through the problems they solve, and how leading digital companies built their systems." }) {
+	let s = [
 		{
 			id: "patterns",
 			label: "Patterns",
-			count: e.topics.filter((e) => e.meta?.kind === "pattern").length
+			count: t.topics.filter((e) => e.meta?.kind === "pattern").length
 		},
 		{
 			id: "companies",
 			label: "Companies",
-			count: e.topics.filter((e) => e.meta?.kind === "company").length
+			count: t.topics.filter((e) => e.meta?.kind === "company").length
 		},
 		{
 			id: "paths",
 			label: "Paths",
-			count: e.paths.length
+			count: t.paths.length
 		}
-	].filter((e) => e.count > 0 || e.id === "patterns"), [u, d] = O(() => c.some((e) => e.id === r) ? r : "patterns"), [f, p] = O("All"), [m, h] = O(""), v = (e) => {
-		d(e), p("All"), history.replaceState(null, "", l(e));
-	}, y = E(() => u === "paths" ? [] : e.topics.filter((e) => (e.meta?.kind ?? "pattern") === P[u]), [e, u]), b = ["All", ...new Set(y.map((e) => e.meta?.category ?? "Other"))], x = m.trim().toLowerCase(), S = x ? e.topics.filter((e) => !x || [
+	].filter((e) => e.count > 0 || e.id === "patterns"), [c, l] = O(() => s.some((e) => e.id === i) ? i : "patterns"), [u, d] = O("All"), [m, h] = O(""), g = (e) => {
+		l(e), d("All"), history.replaceState(null, "", S(e));
+	}, _ = E(() => c === "paths" ? [] : t.topics.filter((e) => (e.meta?.kind ?? "pattern") === P[c]), [t, c]), v = ["All", ...new Set(_.map((e) => e.meta?.category ?? "Other"))], y = m.trim().toLowerCase(), x = y ? t.topics.filter((e) => !y || [
 		e.title,
 		e.subtitle,
 		e.meta?.blurb,
 		e.meta?.category,
 		...e.chapters.map((e) => e.title)
-	].join(" ").toLowerCase().includes(x)) : y.filter((e) => f === "All" || (e.meta?.category ?? "Other") === f), C = e.topics.filter((e) => g(t[e.id]) > .02 && !_(t[e.id])).sort((e, n) => t[n.id].at - t[e.id].at).slice(0, 6);
+	].join(" ").toLowerCase().includes(y)) : _.filter((e) => u === "All" || (e.meta?.category ?? "Other") === u), C = t.topics.filter((e) => f(n[e.id]) > .02 && !p(n[e.id])).sort((e, t) => n[t.id].at - n[e.id].at).slice(0, 6);
 	return /* @__PURE__ */ j("div", {
 		className: "library",
 		children: [
 			/* @__PURE__ */ j("header", {
 				className: "lib-head",
 				children: [
-					/* @__PURE__ */ A("h1", { children: i }),
+					/* @__PURE__ */ A("h1", { children: a }),
 					/* @__PURE__ */ A("p", { children: o }),
 					/* @__PURE__ */ j("label", {
 						className: "lib-search",
@@ -63,24 +63,24 @@ function F({ catalog: e, progress: t, open: n, initialTab: r, heading: i = "The 
 					})
 				]
 			}),
-			!x && C.length ? /* @__PURE__ */ j("section", {
+			!y && C.length ? /* @__PURE__ */ j("section", {
 				className: "lib-row",
 				children: [/* @__PURE__ */ A("h2", { children: "Continue watching" }), /* @__PURE__ */ A("div", {
 					className: "lib-rail",
 					children: C.map((e) => /* @__PURE__ */ A(L, {
 						t: e,
-						p: t[e.id],
-						open: n,
+						p: n[e.id],
+						open: r,
 						compact: !0
 					}, e.id))
 				})]
 			}) : null,
-			x ? /* @__PURE__ */ j("p", {
+			y ? /* @__PURE__ */ j("p", {
 				className: "lib-results",
 				children: [
-					S.length,
+					x.length,
 					" result",
-					S.length === 1 ? "" : "s",
+					x.length === 1 ? "" : "s",
 					" for “",
 					m.trim(),
 					"”"
@@ -88,11 +88,11 @@ function F({ catalog: e, progress: t, open: n, initialTab: r, heading: i = "The 
 			}) : /* @__PURE__ */ A("nav", {
 				className: "lib-tabs",
 				role: "tablist",
-				children: c.map((e) => /* @__PURE__ */ j("button", {
+				children: s.map((e) => /* @__PURE__ */ j("button", {
 					role: "tab",
-					"aria-selected": u === e.id,
-					className: u === e.id ? "on" : "",
-					onClick: () => v(e.id),
+					"aria-selected": c === e.id,
+					className: c === e.id ? "on" : "",
+					onClick: () => g(e.id),
 					children: [
 						e.label,
 						" ",
@@ -100,56 +100,56 @@ function F({ catalog: e, progress: t, open: n, initialTab: r, heading: i = "The 
 					]
 				}, e.id))
 			}),
-			!x && u !== "paths" && b.length > 2 ? /* @__PURE__ */ A("div", {
+			!y && c !== "paths" && v.length > 2 ? /* @__PURE__ */ A("div", {
 				className: "lib-chips",
-				children: b.map((e) => /* @__PURE__ */ A("button", {
-					className: e === f ? "on" : "",
-					onClick: () => p(e),
+				children: v.map((e) => /* @__PURE__ */ A("button", {
+					className: e === u ? "on" : "",
+					onClick: () => d(e),
 					children: e
 				}, e))
 			}) : null,
-			!x && u === "paths" ? /* @__PURE__ */ A("div", {
+			!y && c === "paths" ? /* @__PURE__ */ A("div", {
 				className: "lib-paths",
-				children: e.paths.map((r) => {
-					let i = r.steps.filter((e) => _(t[e])).length;
+				children: t.paths.map((i) => {
+					let a = i.steps.filter((e) => p(n[e])).length;
 					return /* @__PURE__ */ j("section", {
 						className: "lib-path",
 						children: [/* @__PURE__ */ j("header", { children: [
-							/* @__PURE__ */ A("h2", { children: r.title }),
-							/* @__PURE__ */ A("p", { children: r.blurb }),
+							/* @__PURE__ */ A("h2", { children: i.title }),
+							/* @__PURE__ */ A("p", { children: i.blurb }),
 							/* @__PURE__ */ j("span", { children: [
-								i,
+								a,
 								" of ",
-								r.steps.length,
+								i.steps.length,
 								" watched"
 							] })
-						] }), /* @__PURE__ */ A("ol", { children: r.steps.map((r, i) => {
-							let o = e.topics.find((e) => e.id === r), c = t[r];
+						] }), /* @__PURE__ */ A("ol", { children: i.steps.map((i, a) => {
+							let o = t.topics.find((e) => e.id === i), s = n[i];
 							return /* @__PURE__ */ j("li", {
-								className: o ? _(c) ? "done" : "" : "soon",
-								children: [/* @__PURE__ */ A("b", { children: _(c) ? "✓" : i + 1 }), o ? /* @__PURE__ */ j("a", {
-									href: s(o),
+								className: o ? p(s) ? "done" : "" : "soon",
+								children: [/* @__PURE__ */ A("b", { children: p(s) ? "✓" : a + 1 }), o ? /* @__PURE__ */ j("a", {
+									href: b(o),
 									onClick: (e) => {
-										e.preventDefault(), n(s(o));
+										e.preventDefault(), r(b(o));
 									},
 									children: [/* @__PURE__ */ A("span", { children: o.title }), /* @__PURE__ */ j("small", { children: [
 										I(o.meta?.level ?? ""),
 										" · ",
-										a(o.ms.engineer),
-										g(c) > .02 && !_(c) ? ` · ${Math.round(g(c) * 100)}% watched` : ""
+										e(o.ms.engineer),
+										f(s) > .02 && !p(s) ? ` · ${Math.round(f(s) * 100)}% watched` : ""
 									] })]
-								}) : /* @__PURE__ */ j("span", { children: [r.replace(/-/g, " "), /* @__PURE__ */ A("small", { children: "coming soon" })] })]
-							}, r);
+								}) : /* @__PURE__ */ j("span", { children: [i.replace(/-/g, " "), /* @__PURE__ */ A("small", { children: "coming soon" })] })]
+							}, i);
 						}) })]
-					}, r.id);
+					}, i.id);
 				})
 			}) : /* @__PURE__ */ j("div", {
 				className: "lib-grid",
-				children: [S.map((e) => /* @__PURE__ */ A(L, {
+				children: [x.map((e) => /* @__PURE__ */ A(L, {
 					t: e,
-					p: t[e.id],
-					open: n
-				}, e.id)), S.length ? null : /* @__PURE__ */ A("p", {
+					p: n[e.id],
+					open: r
+				}, e.id)), x.length ? null : /* @__PURE__ */ A("p", {
 					className: "lib-empty",
 					children: "Nothing here yet."
 				})]
@@ -158,41 +158,41 @@ function F({ catalog: e, progress: t, open: n, initialTab: r, heading: i = "The 
 	});
 }
 var I = (e) => e.charAt(0).toUpperCase() + e.slice(1);
-function L({ t: e, p: t, open: n, compact: r }) {
-	let i = g(t), o = s(e);
+function L({ t, p: n, open: r, compact: i }) {
+	let a = f(n), o = b(t);
 	return /* @__PURE__ */ j("a", {
-		className: `lib-tile${r ? " compact" : ""}`,
+		className: `lib-tile${i ? " compact" : ""}`,
 		href: o,
 		onClick: (e) => {
-			e.preventDefault(), n(o);
+			e.preventDefault(), r(o);
 		},
 		children: [/* @__PURE__ */ j("div", {
 			className: "lib-thumb",
 			children: [
 				/* @__PURE__ */ A("img", {
-					src: d(`/thumbs/${e.id}.svg`),
+					src: _(`/thumbs/${t.id}.svg`),
 					alt: "",
 					loading: "lazy"
 				}),
-				p(e) ? /* @__PURE__ */ A("em", {
+				l(t) ? /* @__PURE__ */ A("em", {
 					className: "new",
 					children: "New"
-				}) : f(e) ? /* @__PURE__ */ A("em", {
+				}) : y(t) ? /* @__PURE__ */ A("em", {
 					className: "upd",
 					children: "Updated"
 				}) : null,
-				e.ms.engineer ? /* @__PURE__ */ A("span", {
+				t.ms.engineer ? /* @__PURE__ */ A("span", {
 					className: "dur",
-					children: a(e.ms.engineer)
+					children: e(t.ms.engineer)
 				}) : null,
-				i > .02 ? /* @__PURE__ */ A("i", { style: { width: `${i * 100}%` } }) : null
+				a > .02 ? /* @__PURE__ */ A("i", { style: { width: `${a * 100}%` } }) : null
 			]
 		}), /* @__PURE__ */ j("div", {
 			className: "lib-meta",
 			children: [
-				/* @__PURE__ */ j("small", { children: [e.meta?.category ?? e.subtitle, e.meta?.level ? ` · ${e.meta.level}` : ""] }),
-				/* @__PURE__ */ A("b", { children: e.title }),
-				!r && e.meta?.blurb ? /* @__PURE__ */ A("p", { children: e.meta.blurb }) : null
+				/* @__PURE__ */ j("small", { children: [t.meta?.category ?? t.subtitle, t.meta?.level ? ` · ${t.meta.level}` : ""] }),
+				/* @__PURE__ */ A("b", { children: t.title }),
+				!i && t.meta?.blurb ? /* @__PURE__ */ A("p", { children: t.meta.blurb }) : null
 			]
 		})]
 	});
@@ -276,10 +276,10 @@ function se(e, t, n) {
 	let p = (o + c) / 2 + R, m = (s + l) / 2 + R, h = Math.min(Math.max(0, p - u / 2), i - u), g = Math.min(Math.max(0, m - d / 2), a - d);
 	return `${h.toFixed(1)} ${g.toFixed(1)} ${u.toFixed(1)} ${d.toFixed(1)}`;
 }
-function ce({ diagram: e, layout: t, portraitLayout: n, epoch: r, shot: i, shotMs: a, offsetMs: o, scrubMs: s, playing: c, onSelect: l, selected: d, view: f, stableSvg: p = !0 }) {
-	let m = D(null), h = D(null), [g, _] = O(null);
+function ce({ diagram: e, layout: t, portraitLayout: n, epoch: r, shot: i, shotMs: a, offsetMs: o, scrubMs: s, playing: c, onSelect: l, selected: u, view: d, stableSvg: f = !0 }) {
+	let p = D(null), m = D(null), [h, _] = O(null);
 	T(() => {
-		let e = m.current;
+		let e = p.current;
 		if (!e) return;
 		let t = () => {
 			let t = e.getBoundingClientRect();
@@ -292,10 +292,10 @@ function ce({ diagram: e, layout: t, portraitLayout: n, epoch: r, shot: i, shotM
 		let n = new ResizeObserver(t);
 		return n.observe(e), () => n.disconnect();
 	}, []);
-	let y = g && n && g.h > g.w * .9 ? n : t, b = E(() => u(e, y, { pad: R }), [e, y]), x = E(() => ({ __html: b }), [b]), S = f !== void 0, C = !S && !!g && Math.min(g.w / (y.width + 32), g.h / (y.height + 32)) < ie;
+	let y = h && n && h.h > h.w * .9 ? n : t, b = E(() => v(e, y, { pad: R }), [e, y]), x = E(() => ({ __html: b }), [b]), S = d !== void 0, C = !S && !!h && Math.min(h.w / (y.width + 32), h.h / (y.height + 32)) < ie;
 	return T(() => {
-		let t = m.current?.querySelector("svg");
-		if (!t || !g) return;
+		let t = p.current?.querySelector("svg");
+		if (!t || !h) return;
 		let n = oe(e, i), r = n.size > 0, s = t.querySelectorAll(".dg-node, .dg-edge, .dg-group, .dg-lifeline"), l = t.querySelectorAll(".dg-edge-label, .dg-edge-pill");
 		t.querySelectorAll(".dg-pulse").forEach((e) => e.remove());
 		{
@@ -321,14 +321,14 @@ function ce({ diagram: e, layout: t, portraitLayout: n, epoch: r, shot: i, shotM
 					y: 0,
 					w: y.width,
 					h: y.height
-				}, u = s ? B(s, y, g) : B(l, y, {
-					w: g.w,
-					h: g.h
-				}), d = Math.max((y.width + 32) / g.w, (y.height + 32) / g.h), f = {
-					x: (y.width + 32 - g.w * d) / 2,
-					y: (y.height + 32 - g.h * d) / 2,
-					w: g.w * d,
-					h: g.h * d
+				}, u = s ? B(s, y, h) : B(l, y, {
+					w: h.w,
+					h: h.h
+				}), d = Math.max((y.width + 32) / h.w, (y.height + 32) / h.h), f = {
+					x: (y.width + 32 - h.w * d) / 2,
+					y: (y.height + 32 - h.h * d) / 2,
+					w: h.w * d,
+					h: h.h * d
 				};
 				e.to(t, {
 					attr: { viewBox: z(s ? u : f) },
@@ -358,31 +358,31 @@ function ce({ diagram: e, layout: t, portraitLayout: n, epoch: r, shot: i, shotM
 				duration: .6,
 				ease: "power1.out"
 			}, 0);
-			let m = i.trace.length ? Math.max(1.1, (a / 1e3 - 1.2) / i.trace.length) : 0;
+			let _ = i.trace.length ? Math.max(1.1, (a / 1e3 - 1.2) / i.trace.length) : 0;
 			i.trace.forEach((n, r) => {
 				let i = t.querySelector(`.dg-edge[data-edge="${CSS.escape(n)}"]`), a = i?.querySelector("path");
 				if (!i || !a) return;
-				let o = .5 + r * m, s = Math.min(.9, m * .7);
+				let o = .5 + r * _, s = Math.min(.9, _ * .7);
 				if (C && r > 0) {
 					let r = c(n);
 					if (r) {
-						let i = y.edges[n].points, a = i[0], c = i[i.length - 1], l = B(r, y, g), u = l.w >= r.w + 60 && l.h >= r.h + 60, d = u ? l : B({
+						let i = y.edges[n].points, a = i[0], c = i[i.length - 1], l = B(r, y, h), u = l.w >= r.w + 60 && l.h >= r.h + 60, d = u ? l : B({
 							x: a.x - 40,
 							y: a.y - 40,
 							w: 80,
 							h: 80
-						}, y, g);
+						}, y, h);
 						e.to(t, {
 							attr: { viewBox: z(d) },
-							duration: Math.min(.7, m * .35),
+							duration: Math.min(.7, _ * .35),
 							ease: "power2.inOut"
-						}, o - Math.min(.7, m * .35)), u || e.to(t, {
+						}, o - Math.min(.7, _ * .35)), u || e.to(t, {
 							attr: { viewBox: z(B({
 								x: c.x - 40,
 								y: c.y - 40,
 								w: 80,
 								h: 80
-							}, y, g)) },
+							}, y, h)) },
 							duration: s,
 							ease: "power1.inOut"
 						}, o);
@@ -390,7 +390,7 @@ function ce({ diagram: e, layout: t, portraitLayout: n, epoch: r, shot: i, shotM
 				} else if (C && r === 0) {
 					let r = y.edges[n]?.points ?? [], i = c(n);
 					if (i && r.length) {
-						let n = B(i, y, g);
+						let n = B(i, y, h);
 						if (!(n.w >= i.w + 60 && n.h >= i.h + 60)) {
 							let n = r[0], i = r[r.length - 1];
 							e.to(t, {
@@ -399,7 +399,7 @@ function ce({ diagram: e, layout: t, portraitLayout: n, epoch: r, shot: i, shotM
 									y: n.y - 40,
 									w: 80,
 									h: 80
-								}, y, g)) },
+								}, y, h)) },
 								duration: .5,
 								ease: "power2.inOut"
 							}, Math.max(0, o - .5)), e.to(t, {
@@ -408,7 +408,7 @@ function ce({ diagram: e, layout: t, portraitLayout: n, epoch: r, shot: i, shotM
 									y: i.y - 40,
 									w: 80,
 									h: 80
-								}, y, g)) },
+								}, y, h)) },
 								duration: s,
 								ease: "power1.inOut"
 							}, o);
@@ -427,7 +427,7 @@ function ce({ diagram: e, layout: t, portraitLayout: n, epoch: r, shot: i, shotM
 					duration: .35
 				}, o + s * .6);
 				let u = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-				u.setAttribute("r", "4.5"), u.setAttribute("class", "dg-pulse"), u.setAttribute("fill", a.getAttribute("stroke") ?? v.solid.stroke), u.setAttribute("opacity", "0"), i.appendChild(u), e.set(u, { opacity: 1 }, o).to(u, {
+				u.setAttribute("r", "4.5"), u.setAttribute("class", "dg-pulse"), u.setAttribute("fill", a.getAttribute("stroke") ?? g.solid.stroke), u.setAttribute("opacity", "0"), i.appendChild(u), e.set(u, { opacity: 1 }, o).to(u, {
 					duration: s,
 					ease: "power1.inOut",
 					motionPath: {
@@ -439,10 +439,10 @@ function ce({ diagram: e, layout: t, portraitLayout: n, epoch: r, shot: i, shotM
 					opacity: 0,
 					duration: .25
 				}, o + s);
-			}), e.set({}, {}, Math.max(a / 1e3, e.duration())), h.current = e;
+			}), e.set({}, {}, Math.max(a / 1e3, e.duration())), m.current = e;
 		}
-		return h.current?.time(Math.max(0, o) / 1e3), c && h.current?.play(), () => {
-			h.current?.kill(), h.current = null;
+		return m.current?.time(Math.max(0, o) / 1e3), c && m.current?.play(), () => {
+			m.current?.kill(), m.current = null;
 		};
 	}, [
 		b,
@@ -450,30 +450,30 @@ function ce({ diagram: e, layout: t, portraitLayout: n, epoch: r, shot: i, shotM
 		a,
 		o,
 		r,
-		g,
+		h,
 		C,
 		S
 	]), T(() => {
-		f && m.current?.querySelector("svg")?.setAttribute("viewBox", f);
+		d && p.current?.querySelector("svg")?.setAttribute("viewBox", d);
 	}, [
-		f,
+		d,
 		b,
-		g
+		h
 	]), T(() => {
-		h.current && (c ? h.current.play() : h.current.pause());
+		m.current && (c ? m.current.play() : m.current.pause());
 	}, [c]), T(() => {
-		s !== void 0 && h.current?.time(s / 1e3);
+		s !== void 0 && m.current?.time(s / 1e3);
 	}, [s]), T(() => {
-		let e = m.current?.querySelector("svg");
-		e?.querySelectorAll(".dg-node.is-selected").forEach((e) => e.classList.remove("is-selected")), d && e?.querySelector(`.dg-node[data-node="${CSS.escape(d)}"]`)?.classList.add("is-selected");
-	}, [d, b]), /* @__PURE__ */ A("div", {
-		ref: m,
+		let e = p.current?.querySelector("svg");
+		e?.querySelectorAll(".dg-node.is-selected").forEach((e) => e.classList.remove("is-selected")), u && e?.querySelector(`.dg-node[data-node="${CSS.escape(u)}"]`)?.classList.add("is-selected");
+	}, [u, b]), /* @__PURE__ */ A("div", {
+		ref: p,
 		className: "stage-svg",
 		onClick: (e) => {
 			let t = e.target.closest(".dg-node");
 			t?.dataset.node && l(t.dataset.node);
 		},
-		dangerouslySetInnerHTML: p ? x : { __html: b }
+		dangerouslySetInnerHTML: f ? x : { __html: b }
 	});
 }
 //#endregion
@@ -495,74 +495,74 @@ function ue() {
 		return n.addEventListener("change", i), () => n.removeEventListener("change", i);
 	}, [t, e]), n;
 }
-function de(e) {
-	let { w: t, chapters: n, time: i, total: c } = e, [l, u] = O(null), f = D(null), p = Math.max(0, n.findLastIndex((e) => e.start <= i)), m = n[p], h = e.nav?.next, g = (t) => e.nav?.open(s(t)), _ = i > 0 || e.playing || !!e.clip, v = !e.playing && !e.clip && i >= c - 2;
+function de(t) {
+	let { w: n, chapters: r, time: a, total: o } = t, [c, l] = O(null), u = D(null), f = Math.max(0, r.findLastIndex((e) => e.start <= a)), p = r[f], m = t.nav?.next, h = (e) => t.nav?.open(b(e)), g = a > 0 || t.playing || !!t.clip, v = !t.playing && !t.clip && a >= o - 2;
 	w(() => {
-		let e = f.current, t = e?.querySelector(".on");
+		let e = u.current, t = e?.querySelector(".on");
 		e && t && e.scrollTo({
 			left: t.offsetLeft - e.clientWidth / 2 + t.clientWidth / 2,
 			behavior: "smooth"
 		});
-	}, [p]);
-	let b = (r) => {
-		r >= n.length ? h && h.id !== t.id && g(h) : e.seek(n[Math.max(0, r)].start + 1);
+	}, [f]);
+	let y = (e) => {
+		e >= r.length ? m && m.id !== n.id && h(m) : t.seek(r[Math.max(0, e)].start + 1);
 	}, x = D(null), S = (e) => {
 		x.current = {
 			x: e.clientX,
 			y: e.clientY,
 			t: performance.now()
 		};
-	}, C = (t) => {
+	}, C = (e) => {
 		let n = x.current;
 		if (x.current = null, !n) return;
-		let r = t.clientX - n.x, i = t.clientY - n.y;
-		Math.abs(i) > 60 && Math.abs(i) > Math.abs(r) * 1.3 ? b(i < 0 ? p + 1 : p - 1) : Math.hypot(r, i) < 10 && performance.now() - n.t < 400 && (e.playing || !t.target.closest(".dg-node")) && e.toggle();
-	}, { words: ee, said: T } = r(o(e.text), e.spoken), E = m ? `${p + 1} · ${m.title}` : t.subtitle ?? "";
+		let r = e.clientX - n.x, i = e.clientY - n.y;
+		Math.abs(i) > 60 && Math.abs(i) > Math.abs(r) * 1.3 ? y(i < 0 ? f + 1 : f - 1) : Math.hypot(r, i) < 10 && performance.now() - n.t < 400 && (t.playing || !e.target.closest(".dg-node")) && t.toggle();
+	}, { words: ee, said: T } = s(i(t.text), t.spoken), E = p ? `${f + 1} · ${p.title}` : n.subtitle ?? "";
 	return /* @__PURE__ */ j("div", {
-		className: `watch${e.clip ? " is-clip" : ""}`,
+		className: `watch${t.clip ? " is-clip" : ""}`,
 		children: [
 			/* @__PURE__ */ A("div", {
 				className: "w-stage",
 				onPointerDown: S,
 				onPointerUp: C,
 				children: /* @__PURE__ */ A("div", {
-					className: `w-canvas${_ ? "" : " dim"}`,
-					children: e.stage
+					className: `w-canvas${g ? "" : " dim"}`,
+					children: t.stage
 				})
 			}),
 			/* @__PURE__ */ j("header", {
 				className: "w-top",
 				children: [/* @__PURE__ */ j("button", {
 					className: "w-title",
-					onClick: () => u("next"),
+					onClick: () => l("next"),
 					"aria-label": "What next",
-					children: [/* @__PURE__ */ j("b", { children: [/* @__PURE__ */ A("em", { children: t.title }), /* @__PURE__ */ A("svg", {
+					children: [/* @__PURE__ */ j("b", { children: [/* @__PURE__ */ A("em", { children: n.title }), /* @__PURE__ */ A("svg", {
 						viewBox: "0 0 24 24",
 						"aria-hidden": "true",
 						children: /* @__PURE__ */ A("path", { d: "M6 9l6 6 6-6" })
-					})] }), /* @__PURE__ */ A("span", { children: _ ? E : t.subtitle })]
-				}), e.clip ? null : /* @__PURE__ */ j("button", {
+					})] }), /* @__PURE__ */ A("span", { children: g ? E : n.subtitle })]
+				}), t.clip ? null : /* @__PURE__ */ j("button", {
 					className: "w-pill",
-					onClick: () => e.onDepth(e.depth === "engineer" ? "executive" : "engineer"),
+					onClick: () => t.onDepth(t.depth === "engineer" ? "executive" : "engineer"),
 					"aria-label": "Switch depth",
 					children: [
-						e.depth === "engineer" ? "Engineer" : "Executive",
+						t.depth === "engineer" ? "Engineer" : "Executive",
 						" ",
 						/* @__PURE__ */ A("span", { children: "⇄" })
 					]
 				})]
 			}),
-			_ ? v ? /* @__PURE__ */ j("div", {
+			g ? v ? /* @__PURE__ */ j("div", {
 				className: "w-intro",
 				children: [
 					/* @__PURE__ */ A("span", {
 						className: "w-eyebrow",
 						children: "Up next"
 					}),
-					/* @__PURE__ */ A("h1", { children: h?.title }),
+					/* @__PURE__ */ A("h1", { children: m?.title }),
 					/* @__PURE__ */ A("button", {
 						className: "w-play",
-						onClick: () => h && g(h),
+						onClick: () => m && h(m),
 						"aria-label": "Play next topic",
 						children: /* @__PURE__ */ A("svg", {
 							viewBox: "0 0 24 24",
@@ -572,16 +572,16 @@ function de(e) {
 					}),
 					/* @__PURE__ */ A("button", {
 						className: "w-link",
-						onClick: () => e.seek(0),
+						onClick: () => t.seek(0),
 						children: "Watch again"
 					})
 				]
-			}) : !e.playing && !e.clip ? /* @__PURE__ */ j("div", {
+			}) : !t.playing && !t.clip ? /* @__PURE__ */ j("div", {
 				className: "w-paused",
 				children: [
 					/* @__PURE__ */ A("button", {
 						className: "w-icon",
-						onClick: () => b(p - 1),
+						onClick: () => y(f - 1),
 						"aria-label": "Previous chapter",
 						children: /* @__PURE__ */ A("svg", {
 							viewBox: "0 0 24 24",
@@ -591,13 +591,13 @@ function de(e) {
 					}),
 					/* @__PURE__ */ A("button", {
 						className: "w-icon",
-						onClick: () => e.seek(i - 1e4),
+						onClick: () => t.seek(a - 1e4),
 						"aria-label": "Back 10 seconds",
 						children: "−10"
 					}),
 					/* @__PURE__ */ A("button", {
 						className: "w-play",
-						onClick: e.toggle,
+						onClick: t.toggle,
 						"aria-label": "Resume",
 						children: /* @__PURE__ */ A("svg", {
 							viewBox: "0 0 24 24",
@@ -607,13 +607,13 @@ function de(e) {
 					}),
 					/* @__PURE__ */ A("button", {
 						className: "w-icon",
-						onClick: () => e.seek(i + 1e4),
+						onClick: () => t.seek(a + 1e4),
 						"aria-label": "Forward 10 seconds",
 						children: "+10"
 					}),
 					/* @__PURE__ */ A("button", {
 						className: "w-icon",
-						onClick: () => b(p + 1),
+						onClick: () => y(f + 1),
 						"aria-label": "Next chapter",
 						children: /* @__PURE__ */ A("svg", {
 							viewBox: "0 0 24 24",
@@ -627,17 +627,17 @@ function de(e) {
 				children: [
 					/* @__PURE__ */ A("span", {
 						className: "w-eyebrow",
-						children: t.subtitle ?? "Walkthrough"
+						children: n.subtitle ?? "Walkthrough"
 					}),
-					/* @__PURE__ */ A("h1", { children: t.title }),
+					/* @__PURE__ */ A("h1", { children: n.title }),
 					/* @__PURE__ */ j("p", { children: [
-						n.length,
+						r.length,
 						" chapters · ",
-						a(c)
+						e(o)
 					] }),
 					/* @__PURE__ */ A("button", {
 						className: "w-play",
-						onClick: e.toggle,
+						onClick: t.toggle,
 						"aria-label": "Play",
 						children: /* @__PURE__ */ A("svg", {
 							viewBox: "0 0 24 24",
@@ -651,14 +651,14 @@ function de(e) {
 			/* @__PURE__ */ j("div", {
 				className: "w-bottom",
 				children: [
-					_ && !v && !e.clip && m && y.has(m.id) && e.nav?.links.length ? /* @__PURE__ */ A("div", {
+					g && !v && !t.clip && p && d.has(p.id) && t.nav?.links.length ? /* @__PURE__ */ A("div", {
 						className: "w-chips",
-						children: e.nav.links.map((e) => /* @__PURE__ */ j("button", {
-							onClick: () => g(e),
+						children: t.nav.links.map((e) => /* @__PURE__ */ j("button", {
+							onClick: () => h(e),
 							children: [e.title, " ›"]
 						}, e.id))
 					}) : null,
-					_ && e.captions && !v ? /* @__PURE__ */ j("div", {
+					g && t.captions && !v ? /* @__PURE__ */ j("div", {
 						className: "w-caption",
 						"aria-live": "off",
 						children: [/* @__PURE__ */ A("span", {
@@ -671,39 +671,39 @@ function de(e) {
 					}) : null,
 					/* @__PURE__ */ A("div", {
 						className: "w-strip",
-						ref: f,
-						children: n.map((t, n) => /* @__PURE__ */ j("button", {
-							className: n === p ? "on" : n < p ? "done" : "",
-							onClick: () => e.seek(t.start + 1),
-							children: [/* @__PURE__ */ A("b", { children: n + 1 }), /* @__PURE__ */ A("span", { children: t.title })]
-						}, t.id))
+						ref: u,
+						children: r.map((e, n) => /* @__PURE__ */ j("button", {
+							className: n === f ? "on" : n < f ? "done" : "",
+							onClick: () => t.seek(e.start + 1),
+							children: [/* @__PURE__ */ A("b", { children: n + 1 }), /* @__PURE__ */ A("span", { children: e.title })]
+						}, e.id))
 					}),
 					/* @__PURE__ */ j("div", {
 						className: "w-progress",
-						children: [n.map((e, t) => {
-							let r = n[t + 1]?.start ?? c, a = Math.min(1, Math.max(0, (i - e.start) / (r - e.start)));
+						children: [r.map((e, t) => {
+							let n = r[t + 1]?.start ?? o, i = Math.min(1, Math.max(0, (a - e.start) / (n - e.start)));
 							return /* @__PURE__ */ A("span", {
-								style: { flexGrow: r - e.start },
-								children: /* @__PURE__ */ A("i", { style: { width: `${a * 100}%` } })
+								style: { flexGrow: n - e.start },
+								children: /* @__PURE__ */ A("i", { style: { width: `${i * 100}%` } })
 							}, e.id);
 						}), /* @__PURE__ */ A("input", {
 							type: "range",
 							min: 0,
-							max: c,
+							max: o,
 							step: 100,
-							value: i,
-							onChange: (t) => e.seek(Number(t.target.value)),
+							value: a,
+							onChange: (e) => t.seek(Number(e.target.value)),
 							"aria-label": "Position"
 						})]
 					}),
-					e.clip ? null : /* @__PURE__ */ j("div", {
+					t.clip ? null : /* @__PURE__ */ j("div", {
 						className: "w-bar",
 						children: [
 							/* @__PURE__ */ A("button", {
 								className: "w-icon",
-								onClick: e.toggle,
-								"aria-label": e.playing ? "Pause" : "Play",
-								children: e.playing ? /* @__PURE__ */ A("svg", {
+								onClick: t.toggle,
+								"aria-label": t.playing ? "Pause" : "Play",
+								children: t.playing ? /* @__PURE__ */ A("svg", {
 									viewBox: "0 0 24 24",
 									"aria-hidden": "true",
 									children: /* @__PURE__ */ A("path", { d: "M8 5v14M16 5v14" })
@@ -717,14 +717,14 @@ function de(e) {
 							/* @__PURE__ */ j("span", {
 								className: "w-time",
 								children: [
-									a(i),
+									e(a),
 									" / ",
-									a(c)
+									e(o)
 								]
 							}),
 							/* @__PURE__ */ A("button", {
 								className: "w-icon",
-								onClick: () => u("chapters"),
+								onClick: () => l("chapters"),
 								"aria-label": "Chapters",
 								children: /* @__PURE__ */ A("svg", {
 									viewBox: "0 0 24 24",
@@ -733,50 +733,50 @@ function de(e) {
 								})
 							}),
 							/* @__PURE__ */ A("button", {
-								className: `w-icon w-cc${e.captions ? " on" : ""}`,
-								onClick: () => e.setCaptions((e) => !e),
+								className: `w-icon w-cc${t.captions ? " on" : ""}`,
+								onClick: () => t.setCaptions((e) => !e),
 								"aria-label": "Subtitles",
 								children: "CC"
 							}),
 							/* @__PURE__ */ j("button", {
 								className: "w-icon w-speed",
-								onClick: () => e.setSpeed(le[(le.indexOf(e.speed) + 1) % le.length]),
+								onClick: () => t.setSpeed(le[(le.indexOf(t.speed) + 1) % le.length]),
 								"aria-label": "Speed",
-								children: [e.speed, "×"]
+								children: [t.speed, "×"]
 							})
 						]
 					})
 				]
 			}),
-			e.explore,
-			l ? /* @__PURE__ */ A("div", {
+			t.explore,
+			c ? /* @__PURE__ */ A("div", {
 				className: "w-sheet-back",
-				onClick: () => u(null),
+				onClick: () => l(null),
 				children: /* @__PURE__ */ j("div", {
 					className: "w-sheet",
 					onClick: (e) => e.stopPropagation(),
-					children: [/* @__PURE__ */ A("div", { className: "w-grip" }), l === "chapters" ? /* @__PURE__ */ j(k, { children: [/* @__PURE__ */ A("h2", { children: "Chapters" }), n.map((t, n) => /* @__PURE__ */ j("button", {
-						className: n === p ? "on" : "",
+					children: [/* @__PURE__ */ A("div", { className: "w-grip" }), c === "chapters" ? /* @__PURE__ */ j(k, { children: [/* @__PURE__ */ A("h2", { children: "Chapters" }), r.map((n, r) => /* @__PURE__ */ j("button", {
+						className: r === f ? "on" : "",
 						onClick: () => {
-							e.seek(t.start + 1), u(null);
+							t.seek(n.start + 1), l(null);
 						},
 						children: [
-							/* @__PURE__ */ A("b", { children: n + 1 }),
-							/* @__PURE__ */ A("span", { children: t.title }),
-							/* @__PURE__ */ A("small", { children: a(t.start) })
+							/* @__PURE__ */ A("b", { children: r + 1 }),
+							/* @__PURE__ */ A("span", { children: n.title }),
+							/* @__PURE__ */ A("small", { children: e(n.start) })
 						]
-					}, t.id))] }) : /* @__PURE__ */ j(k, { children: [(e.nav?.groups ?? []).map((e) => /* @__PURE__ */ j("section", { children: [/* @__PURE__ */ A("h2", { children: e.title }), e.items.map(({ topic: e, note: t }) => /* @__PURE__ */ j("button", {
+					}, n.id))] }) : /* @__PURE__ */ j(k, { children: [(t.nav?.groups ?? []).map((t) => /* @__PURE__ */ j("section", { children: [/* @__PURE__ */ A("h2", { children: t.title }), t.items.map(({ topic: t, note: n }) => /* @__PURE__ */ j("button", {
 						onClick: () => {
-							u(null), g(e);
+							l(null), h(t);
 						},
 						children: [/* @__PURE__ */ A("img", {
-							src: d(`/thumbs/${e.id}.svg`),
+							src: _(`/thumbs/${t.id}.svg`),
 							alt: "",
 							loading: "lazy"
-						}), /* @__PURE__ */ j("span", { children: [e.title, /* @__PURE__ */ A("small", { children: t ?? [e.meta?.category, a(e.ms.engineer)].filter(Boolean).join(" · ") })] })]
-					}, e.id))] }, e.title)), /* @__PURE__ */ A("button", {
+						}), /* @__PURE__ */ j("span", { children: [t.title, /* @__PURE__ */ A("small", { children: n ?? [t.meta?.category, e(t.ms.engineer)].filter(Boolean).join(" · ") })] })]
+					}, t.id))] }, t.title)), /* @__PURE__ */ A("button", {
 						className: "w-browse",
-						onClick: () => e.nav?.library(),
+						onClick: () => t.nav?.library(),
 						children: "Browse the library"
 					})] })]
 				})
@@ -793,19 +793,19 @@ var fe = [
 	1.5,
 	2
 ];
-function pe({ walkthrough: e, manifest: r, layouts: l, nav: u, autoplay: f = !1, startAt: p = 0, startChapter: g, onProgress: _, frame: b, view: x, initialDepth: S = "engineer" }) {
-	let T = ue(), M = b !== void 0, [N, te] = O(S), P = E(() => m(e.shots, N, r), [
-		e.shots,
+function pe({ walkthrough: t, manifest: s, layouts: c, nav: l, autoplay: u = !1, startAt: f = 0, startChapter: p, onProgress: v, frame: y, view: x, initialDepth: S = "engineer" }) {
+	let T = ue(), M = y !== void 0, [N, te] = O(S), P = E(() => a(t.shots, N, s), [
+		t.shots,
 		N,
-		r
-	]), F = E(() => i(P), [P]), I = F[F.length - 1] + P[P.length - 1], L = E(() => c(e, F), [e, F]), [R, re] = O(0), [ie, ae] = O(f), z = M ? Math.max(0, Math.min(I - 1, b)) : R, B = !M && ie, [V, oe] = O(1), [se, le] = O(!0), [H, pe] = O(null), [me, he] = O({
+		s
+	]), F = E(() => r(P), [P]), I = F[F.length - 1] + P[P.length - 1], L = E(() => n(t, F), [t, F]), [R, re] = O(0), [ie, ae] = O(u), z = M ? Math.max(0, Math.min(I - 1, y)) : R, B = !M && ie, [V, oe] = O(1), [se, le] = O(!0), [H, pe] = O(null), [me, he] = O({
 		index: 0,
 		offset: 0,
 		epoch: 0
 	}), U = D(null), ge = D(null), W = D({
 		time: 0,
 		last: 0
-	}), { index: G, offset: K } = h(z, P), q = D(null);
+	}), { index: G, offset: K } = m(z, P), q = D(null);
 	M && q.current?.index !== G && (q.current = {
 		index: G,
 		offset: q.current ? 0 : K
@@ -813,10 +813,10 @@ function pe({ walkthrough: e, manifest: r, layouts: l, nav: u, autoplay: f = !1,
 	let J = M && q.current ? {
 		...q.current,
 		epoch: 0
-	} : me, Y = e.shots[G], _e = Y.diagram ?? e.shots.slice(0, G).reverse().find((e) => e.diagram)?.diagram ?? e.diagrams[0].id, X = e.diagrams.find((e) => e.id === _e), Z = r[t(Y, N)], Q = ee((e) => {
+	} : me, Y = t.shots[G], _e = Y.diagram ?? t.shots.slice(0, G).reverse().find((e) => e.diagram)?.diagram ?? t.diagrams[0].id, X = t.diagrams.find((e) => e.id === _e), Z = s[h(Y, N)], Q = ee((e) => {
 		let t = Math.max(0, Math.min(I - 1, e));
 		W.current.time = t, re(t);
-		let n = h(t, P);
+		let n = m(t, P);
 		he((e) => ({
 			index: n.index,
 			offset: n.offset,
@@ -824,17 +824,17 @@ function pe({ walkthrough: e, manifest: r, layouts: l, nav: u, autoplay: f = !1,
 		}));
 	}, [P, I]);
 	w(() => {
-		let e = g ? L.find((e) => e.id === g) : void 0, t = e ? e.start + 1 : p > 5e3 && p < I - 5e3 ? p : 0;
+		let e = p ? L.find((e) => e.id === p) : void 0, t = e ? e.start + 1 : f > 5e3 && f < I - 5e3 ? f : 0;
 		t && Q(t);
 	}, []);
 	let ve = D(0);
 	w(() => {
-		_ && (Math.abs(z - ve.current) > 3e3 || !B) && (ve.current = z, _(z, I));
+		v && (Math.abs(z - ve.current) > 3e3 || !B) && (ve.current = z, v(z, I));
 	}, [
 		z,
 		B,
 		I,
-		_
+		v
 	]), w(() => {
 		let e = U.current;
 		if (!e) return;
@@ -842,7 +842,7 @@ function pe({ walkthrough: e, manifest: r, layouts: l, nav: u, autoplay: f = !1,
 			e.removeAttribute("src");
 			return;
 		}
-		e.src.endsWith(Z.file) || (e.src = d(Z.file));
+		e.src.endsWith(Z.file) || (e.src = _(Z.file));
 		let t = J.index === G ? J.offset : 0;
 		t < Z.ms && (e.currentTime = t / 1e3), e.playbackRate = V, B && t < Z.ms && e.play().catch(() => void 0);
 	}, [
@@ -857,21 +857,21 @@ function pe({ walkthrough: e, manifest: r, layouts: l, nav: u, autoplay: f = !1,
 		e && Z && (B && K < Z.ms ? e.play().catch(() => void 0) : e.pause());
 	}, [B]), w(() => {
 		if (!B) return;
-		let n = 0;
+		let e = 0;
 		W.current.last = performance.now();
-		let i = (a) => {
-			let o = a - W.current.last;
-			W.current.last = a;
-			let s = h(W.current.time, P), c = U.current, l = r[t(e.shots[s.index], N)], u;
-			u = c && l && c.src.endsWith(l.file) && !c.paused && !c.ended ? F[s.index] + c.currentTime * 1e3 : W.current.time + o * V;
-			let d = h(u, P);
-			d.index !== s.index && he((e) => ({
-				index: d.index,
+		let n = (r) => {
+			let i = r - W.current.last;
+			W.current.last = r;
+			let a = m(W.current.time, P), o = U.current, c = s[h(t.shots[a.index], N)], l;
+			l = o && c && o.src.endsWith(c.file) && !o.paused && !o.ended ? F[a.index] + o.currentTime * 1e3 : W.current.time + i * V;
+			let u = m(l, P);
+			u.index !== a.index && he((e) => ({
+				index: u.index,
 				offset: 0,
 				epoch: e.epoch
-			})), u >= I ? (W.current.time = I, re(I - 1), ae(!1)) : (W.current.time = u, re(u), n = requestAnimationFrame(i));
+			})), l >= I ? (W.current.time = I, re(I - 1), ae(!1)) : (W.current.time = l, re(l), e = requestAnimationFrame(n));
 		};
-		return n = requestAnimationFrame(i), () => cancelAnimationFrame(n);
+		return e = requestAnimationFrame(n), () => cancelAnimationFrame(e);
 	}, [
 		B,
 		P,
@@ -879,15 +879,15 @@ function pe({ walkthrough: e, manifest: r, layouts: l, nav: u, autoplay: f = !1,
 		I,
 		V,
 		N,
-		r,
-		e.shots
+		s,
+		t.shots
 	]);
-	let ye = (t) => {
-		if (t === N) return;
+	let ye = (e) => {
+		if (e === N) return;
 		let n = G;
-		te(t);
-		let a = i(m(e.shots, t, r));
-		W.current.time = a[n], re(a[n]), he((e) => ({
+		te(e);
+		let i = r(a(t.shots, e, s));
+		W.current.time = i[n], re(i[n]), he((e) => ({
 			index: n,
 			offset: 0,
 			epoch: e.epoch + 1
@@ -901,18 +901,18 @@ function pe({ walkthrough: e, manifest: r, layouts: l, nav: u, autoplay: f = !1,
 		Q
 	]);
 	w(() => {
-		let t = (t) => {
-			t.target.tagName !== "SELECT" && (t.key === " " ? (t.preventDefault(), be()) : t.key === "ArrowRight" ? Q(W.current.time + 1e4) : t.key === "ArrowLeft" ? Q(W.current.time - 1e4) : t.key === "." ? Q(F[Math.min(G + 1, e.shots.length - 1)]) : t.key === "," ? Q(F[Math.max(G - 1, 0)]) : t.key === "c" && le((e) => !e));
+		let e = (e) => {
+			e.target.tagName !== "SELECT" && (e.key === " " ? (e.preventDefault(), be()) : e.key === "ArrowRight" ? Q(W.current.time + 1e4) : e.key === "ArrowLeft" ? Q(W.current.time - 1e4) : e.key === "." ? Q(F[Math.min(G + 1, t.shots.length - 1)]) : e.key === "," ? Q(F[Math.max(G - 1, 0)]) : e.key === "c" && le((e) => !e));
 		};
-		return window.addEventListener("keydown", t), () => window.removeEventListener("keydown", t);
+		return window.addEventListener("keydown", e), () => window.removeEventListener("keydown", e);
 	}, [
 		be,
 		Q,
 		F,
 		G,
-		e.shots.length
+		t.shots.length
 	]);
-	let xe = Y[N], Se = Z ? Math.min(1, K / Z.ms) : Math.min(1, K / P[G]), Ce = n(o(xe), Se), $ = [...L].reverse().find((e) => e.start <= z);
+	let xe = Y[N], Se = Z ? Math.min(1, K / Z.ms) : Math.min(1, K / P[G]), Ce = o(i(xe), Se), $ = [...L].reverse().find((e) => e.start <= z);
 	w(() => {
 		let e = ge.current, t = e?.querySelector("button.on");
 		e && t && e.scrollWidth > e.clientWidth && e.scrollTo({
@@ -920,14 +920,14 @@ function pe({ walkthrough: e, manifest: r, layouts: l, nav: u, autoplay: f = !1,
 			behavior: "smooth"
 		});
 	}, [$?.id]);
-	let we = H ? e.shots.map((e, t) => ({
+	let we = H ? t.shots.map((e, t) => ({
 		s: e,
 		i: t
 	})).filter(({ s: e }) => e.focus.includes(H)) : [], Te = H && (X.kind === "c4" ? X.elements.find((e) => e.id === H)?.label : X.participants.find((e) => e.id === H)?.label), Ee = !Y.card && X.kind === "c4" && X.legend?.length ? /* @__PURE__ */ A("div", {
 		className: "legend",
 		"aria-label": "Legend",
 		children: X.legend.map((e) => /* @__PURE__ */ j("span", {
-			style: { color: v[e.style].stroke },
+			style: { color: g[e.style].stroke },
 			children: [/* @__PURE__ */ A("svg", {
 				viewBox: "0 0 34 8",
 				"aria-hidden": "true",
@@ -936,13 +936,13 @@ function pe({ walkthrough: e, manifest: r, layouts: l, nav: u, autoplay: f = !1,
 					y1: "4",
 					x2: "34",
 					y2: "4",
-					stroke: v[e.style].stroke,
+					stroke: g[e.style].stroke,
 					strokeWidth: "2",
-					strokeDasharray: v[e.style].dash || void 0
+					strokeDasharray: g[e.style].dash || void 0
 				})
 			}), e.label]
 		}, e.label))
-	}) : null, De = u && $ && y.has($.id) ? u.links : [], Oe = Y.card ? /* @__PURE__ */ A(ne, {
+	}) : null, De = l && $ && d.has($.id) ? l.links : [], Oe = Y.card ? /* @__PURE__ */ A(ne, {
 		card: Y.card,
 		shotMs: P[G],
 		offsetMs: M ? K : J.index === G ? J.offset : 0,
@@ -950,8 +950,8 @@ function pe({ walkthrough: e, manifest: r, layouts: l, nav: u, autoplay: f = !1,
 		epoch: J.epoch * 1e3 + G
 	}) : /* @__PURE__ */ A(ce, {
 		diagram: X,
-		layout: l[X.id],
-		portraitLayout: l[`${X.id}${C}`],
+		layout: c[X.id],
+		portraitLayout: c[`${X.id}${C}`],
 		epoch: J.epoch,
 		shot: Y,
 		shotMs: P[G],
@@ -966,22 +966,22 @@ function pe({ walkthrough: e, manifest: r, layouts: l, nav: u, autoplay: f = !1,
 	}, X.id), ke = !B && H ? /* @__PURE__ */ j("aside", {
 		className: "explore",
 		onClick: (e) => e.stopPropagation(),
-		children: [/* @__PURE__ */ A("strong", { children: Te }), we.length ? /* @__PURE__ */ j(k, { children: [/* @__PURE__ */ A("span", { children: "Explained in:" }), we.map(({ s: e, i: t }) => /* @__PURE__ */ j("button", {
-			onClick: () => Q(F[t]),
+		children: [/* @__PURE__ */ A("strong", { children: Te }), we.length ? /* @__PURE__ */ j(k, { children: [/* @__PURE__ */ A("span", { children: "Explained in:" }), we.map(({ s: t, i: n }) => /* @__PURE__ */ j("button", {
+			onClick: () => Q(F[n]),
 			children: [
-				a(F[t]),
+				e(F[n]),
 				" · ",
-				e[N].slice(0, 70),
+				t[N].slice(0, 70),
 				"…"
 			]
-		}, e.id))] }) : /* @__PURE__ */ A("span", { children: "Not the focus of any shot in this walkthrough." })]
+		}, t.id))] }) : /* @__PURE__ */ A("span", { children: "Not the focus of any shot in this walkthrough." })]
 	}) : null, Ae = M ? null : /* @__PURE__ */ A("audio", {
 		ref: U,
 		preload: "auto"
 	});
 	return T ? /* @__PURE__ */ j(k, { children: [/* @__PURE__ */ A(de, {
-		w: e,
-		nav: u,
+		w: t,
+		nav: l,
 		stage: Oe,
 		depth: N,
 		onDepth: ye,
@@ -1004,7 +1004,7 @@ function pe({ walkthrough: e, manifest: r, layouts: l, nav: u, autoplay: f = !1,
 		children: [
 			/* @__PURE__ */ j("header", {
 				className: "player-head",
-				children: [/* @__PURE__ */ j("div", { children: [/* @__PURE__ */ A("h1", { children: e.title }), /* @__PURE__ */ j("p", { children: [
+				children: [/* @__PURE__ */ j("div", { children: [/* @__PURE__ */ A("h1", { children: t.title }), /* @__PURE__ */ j("p", { children: [
 					$?.title,
 					" · ",
 					Y.card ? Y.card.heading : X.title
@@ -1045,9 +1045,9 @@ function pe({ walkthrough: e, manifest: r, layouts: l, nav: u, autoplay: f = !1,
 			De.length && !M ? /* @__PURE__ */ j("div", {
 				className: "topic-chips",
 				children: [/* @__PURE__ */ A("span", { children: $?.id === "patterns" ? "Watch the patterns" : "Watch next" }), De.map((e) => /* @__PURE__ */ j("a", {
-					href: s(e),
+					href: b(e),
 					onClick: (t) => {
-						t.preventDefault(), u?.open(s(e));
+						t.preventDefault(), l?.open(b(e));
 					},
 					children: [e.title, " ›"]
 				}, e.id))]
@@ -1078,7 +1078,7 @@ function pe({ walkthrough: e, manifest: r, layouts: l, nav: u, autoplay: f = !1,
 						children: "+10"
 					}),
 					/* @__PURE__ */ A("button", {
-						onClick: () => Q(F[Math.min(G + 1, e.shots.length - 1)]),
+						onClick: () => Q(F[Math.min(G + 1, t.shots.length - 1)]),
 						"aria-label": "Next shot",
 						children: "⏭"
 					}),
@@ -1102,9 +1102,9 @@ function pe({ walkthrough: e, manifest: r, layouts: l, nav: u, autoplay: f = !1,
 					/* @__PURE__ */ j("span", {
 						className: "time",
 						children: [
-							a(z),
+							e(z),
 							" / ",
-							a(I)
+							e(I)
 						]
 					}),
 					/* @__PURE__ */ A("select", {
@@ -1126,15 +1126,15 @@ function pe({ walkthrough: e, manifest: r, layouts: l, nav: u, autoplay: f = !1,
 			}), /* @__PURE__ */ A("nav", {
 				className: "chapters",
 				ref: ge,
-				children: L.map((e) => /* @__PURE__ */ j("button", {
-					className: $?.id === e.id ? "on" : "",
-					onClick: () => Q(e.start),
+				children: L.map((t) => /* @__PURE__ */ j("button", {
+					className: $?.id === t.id ? "on" : "",
+					onClick: () => Q(t.start),
 					children: [
-						/* @__PURE__ */ A("span", { children: a(e.start) }),
+						/* @__PURE__ */ A("span", { children: e(t.start) }),
 						" ",
-						e.title
+						t.title
 					]
-				}, e.id))
+				}, t.id))
 			})] }),
 			Ae
 		]
@@ -1148,7 +1148,7 @@ function he(e) {
 }
 function U({ catalog: e, open: t = he, initialTab: n, heading: r, intro: i }) {
 	let [a, o] = O({});
-	return w(() => o(S()), []), /* @__PURE__ */ A(F, {
+	return w(() => o(x()), []), /* @__PURE__ */ A(F, {
 		catalog: e,
 		progress: a,
 		open: t,
@@ -1157,31 +1157,31 @@ function U({ catalog: e, open: t = he, initialTab: n, heading: r, intro: i }) {
 		intro: i
 	});
 }
-function ge({ catalog: t, walkthrough: n, layouts: r, manifest: i, chapter: a, open: o = he, library: s = () => o(l()), autoplay: c }) {
-	let u = n.id, d = ue(), [f, p] = O(null), [m, h] = O(!1);
+function ge({ catalog: e, walkthrough: n, layouts: r, manifest: i, chapter: a, open: o = he, library: s = () => o(S()), autoplay: l }) {
+	let d = n.id, f = ue(), [p, m] = O(null), [h, g] = O(!1);
 	w(() => {
-		p(S()), h(sessionStorage.getItem(me) === "1"), sessionStorage.removeItem(me);
-	}, [u]);
-	let g = E(() => {
-		let { groups: n, next: r } = e(t, u, f ?? {});
+		m(x()), g(sessionStorage.getItem(me) === "1"), sessionStorage.removeItem(me);
+	}, [d]);
+	let _ = E(() => {
+		let { groups: t, next: n } = c(e, d, p ?? {});
 		return {
-			groups: n,
-			next: r,
-			links: b(t, u),
+			groups: t,
+			next: n,
+			links: u(e, d),
 			open: o,
 			library: s
 		};
 	}, [
-		t,
-		u,
-		f,
+		e,
+		d,
+		p,
 		o,
 		s
-	]), _ = ee((e, t) => x(u, e, t), [u]);
-	return f ? /* @__PURE__ */ j(k, { children: [d ? null : /* @__PURE__ */ A("nav", {
+	]), v = ee((e, n) => t(d, e, n), [d]);
+	return p ? /* @__PURE__ */ j(k, { children: [f ? null : /* @__PURE__ */ A("nav", {
 		className: "topbar",
 		children: /* @__PURE__ */ A("a", {
-			href: l(),
+			href: S(),
 			onClick: (e) => {
 				e.preventDefault(), s();
 			},
@@ -1191,12 +1191,12 @@ function ge({ catalog: t, walkthrough: n, layouts: r, manifest: i, chapter: a, o
 		walkthrough: n,
 		manifest: i,
 		layouts: r,
-		nav: g,
-		autoplay: c ?? m,
-		startAt: f[u]?.t ?? 0,
+		nav: _,
+		autoplay: l ?? h,
+		startAt: p[d]?.t ?? 0,
 		startChapter: a,
-		onProgress: _
-	}, u)] }) : /* @__PURE__ */ A("div", {
+		onProgress: v
+	}, d)] }) : /* @__PURE__ */ A("div", {
 		className: "loading",
 		children: "Loading…"
 	});

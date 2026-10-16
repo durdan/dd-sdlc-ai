@@ -97,7 +97,7 @@ elements:
   - { id: pool, label: Thread pool, sub: "@concurrent work", tone: stream, row: 2, role: service }
   - { id: commit, label: Layout and commit, sub: Core Animation transaction, row: 3 }
   - { id: frame, label: Next frame, sub: "8.3 ms at 120 Hz", kind: person, row: 4 }
-  - { id: hang, label: Hang, sub: "no touches, no frames", kind: external, row: 3, role: client }
+  - { id: hang, label: Hang, sub: "no touches, no frames", kind: external, row: 3, role: error }
 edges:
   - { id: tap, from: touch, to: loop }
   - { id: fire, from: timer, to: loop }

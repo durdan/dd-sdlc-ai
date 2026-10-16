@@ -106,8 +106,8 @@ elements:
   - { id: runtime, label: containerd, sub: through the CRI, group: nodec, tone: neutral, row: 3 }
 edges:
   - { id: watch, from: pod, to: sched, flow: async }
-  - { id: taint, from: sched, to: na, label: filtered out, style: dotted, flow: main }
-  - { id: memory, from: sched, to: nb, label: filtered out, style: dotted, flow: main }
+  - { id: taint, from: sched, to: na, label: filtered out, style: dotted, flow: blocked }
+  - { id: memory, from: sched, to: nb, label: filtered out, style: dotted, flow: blocked }
   - { id: score-d, from: sched, to: nd, label: score 64, style: dashed, flow: main }
   - { id: bind, from: sched, to: kubelet, label: "score 87: bind" }
   - { id: start, from: kubelet, to: runtime, label: start containers }

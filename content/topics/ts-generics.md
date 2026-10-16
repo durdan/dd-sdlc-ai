@@ -116,7 +116,7 @@ elements:
   - { id: r1, label: number | undefined, kind: store, tone: data, row: 2, role: service }
   - { id: r3, label: boolean | undefined, kind: store, tone: data, row: 2, role: service }
   - { id: prodr, label: Product | undefined, sub: title and price kept, kind: store, tone: data, row: 2, role: service }
-  - { id: numerr, label: Compile error, sub: number has no id, kind: external, row: 2, role: security }
+  - { id: numerr, label: Compile error, sub: number has no id, kind: external, row: 2, role: error }
 edges:
   - { id: call1, from: def, to: c1, style: dotted, flow: main }
   - { id: call3, from: def, to: c3, style: dotted, flow: main }
@@ -125,7 +125,7 @@ edges:
   - { id: callp, from: byid, to: prod, style: dotted, flow: main }
   - { id: calln, from: byid, to: nums, style: dotted, flow: main }
   - { id: retp, from: prod, to: prodr }
-  - { id: retn, from: nums, to: numerr }
+  - { id: retn, from: nums, to: numerr, flow: blocked }
 steps:
   - caption: A generic function has a type parameter, T, that stands for whatever type the caller uses. Its job is to link the type of the input to the type of the output.
     focus: [def]

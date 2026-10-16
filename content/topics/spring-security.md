@@ -125,8 +125,8 @@ elements:
   - { id: etf, label: ExceptionTranslation, sub: catches security exceptions, group: apichain, role: security }
   - { id: authz, label: AuthorizationFilter, sub: authorizeHttpRequests rules, group: apichain }
   - { id: dispatcher, label: DispatcherServlet, sub: your controllers, kind: system, tone: neutral }
-  - { id: r401, label: 401 Unauthorized, sub: AuthenticationEntryPoint, kind: person, role: security }
-  - { id: r403, label: 403 Forbidden, sub: AccessDeniedHandler, kind: person, role: security }
+  - { id: r401, label: 401 Unauthorized, sub: AuthenticationEntryPoint, kind: person, role: error }
+  - { id: r403, label: 403 Forbidden, sub: AccessDeniedHandler, kind: person, role: error }
 edges:
   - { id: http, from: client, to: dfp }
   - { id: delegate, from: dfp, to: fcp, label: delegates to the bean }
@@ -137,8 +137,8 @@ edges:
   - { id: next2, from: etf, to: authz }
   - { id: who, from: authz, to: context, label: reads, style: dotted, flow: data }
   - { id: allowed, from: authz, to: dispatcher, label: allowed }
-  - { id: anon, from: etf, to: r401, label: not authenticated, style: dashed, flow: security }
-  - { id: denied, from: etf, to: r403, label: authenticated, style: dashed, flow: security }
+  - { id: anon, from: etf, to: r401, label: not authenticated, style: dashed, flow: blocked }
+  - { id: denied, from: etf, to: r403, label: authenticated, style: dashed, flow: blocked }
 steps:
   - caption: "The servlet container knows only one Spring Security filter, DelegatingFilterProxy. It hands the request to the FilterChainProxy bean, which holds the real security filters."
     focus: [client, dfp, fcp]

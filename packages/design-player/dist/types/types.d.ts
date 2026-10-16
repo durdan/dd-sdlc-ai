@@ -1,4 +1,4 @@
-export type ElementKind = "person" | "system" | "container" | "component" | "external" | "store";
+export type ElementKind = "person" | "system" | "container" | "component" | "external" | "store" | "start";
 export type Depth = "engineer" | "executive";
 /** Colour by meaning, not decoration: one tone per plane or ownership. */
 export type Tone = "core" | "stream" | "external" | "data" | "neutral";
@@ -7,9 +7,13 @@ export type EdgeStyle = "solid" | "dashed" | "dotted";
  * What a box is, shown by its colour and corner icon. Optional: when it is not
  * given, it is worked out from the tone, the kind and the box's own words.
  */
-export type Role = "client" | "service" | "data" | "cache" | "queue" | "security" | "edge" | "external";
+export type Role = "client" | "service" | "data" | "cache" | "queue" | "security" | "edge" | "external" | "error";
 /** What an arrow carries, shown by its colour (and, by default, its dash). */
-export type Flow = "main" | "reply" | "async" | "security" | "data";
+export type Flow = "main" | "reply" | "async" | "security" | "data" | "blocked";
+/** A state in a lifecycle (state) diagram: its colour and icon. */
+export type Status = "active" | "waiting" | "success" | "failure" | "decision";
+/** In a before/after (delta) diagram: what the change does to a box or arrow. */
+export type Change = "added" | "removed" | "changed";
 export interface DiagramElement {
     id: string;
     kind: ElementKind;
@@ -17,6 +21,11 @@ export interface DiagramElement {
     sub?: string;
     tone?: Tone;
     role?: Role;
+    /** State diagrams: the state's kind, and whether it is a final (terminal) state. */
+    status?: Status;
+    final?: boolean;
+    /** Delta diagrams: added, removed or changed between before and after. */
+    change?: Change;
     /** Boundary this element sits inside (a group id). */
     group?: string;
     /** Row (0 = top) when the diagram is laid out in bands; groups then wrap their members. */
@@ -34,6 +43,7 @@ export interface DiagramEdge {
     label?: string;
     style?: EdgeStyle;
     flow?: Flow;
+    change?: Change;
 }
 export interface DiagramGroup {
     id: string;
@@ -48,6 +58,8 @@ export interface LegendEntry {
 export interface C4Diagram {
     id: string;
     kind: "c4";
+    /** state: a lifecycle (statuses, a start dot, final states); delta: a before/after comparison. */
+    variant?: "state" | "delta";
     title: string;
     /** Layout direction for ELK; DOWN reads top to bottom. */
     direction?: "DOWN" | "RIGHT";
@@ -73,6 +85,12 @@ export interface SequenceDiagram {
         role?: Role;
     }[];
     messages: DiagramEdge[];
+    /** Shaded bands that group messages: from message `from` to message `to`. */
+    phases?: {
+        label: string;
+        from: string;
+        to: string;
+    }[];
 }
 export type Diagram = C4Diagram | SequenceDiagram;
 /**

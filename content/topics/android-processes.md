@@ -86,10 +86,10 @@ elements:
   - { id: saved, label: Saved state, sub: "Bundle, SavedStateHandle", kind: store, tone: data, row: 1 }
   - { id: cached, label: "Your app, cached", sub: only stopped activities, tone: neutral, row: 1 }
   - { id: pressure, label: Memory needed, sub: lowest importance goes first, kind: system, tone: external, row: 2 }
-  - { id: killed, label: Process killed, sub: "a signal, no callback", kind: external, row: 3 }
+  - { id: killed, label: Process killed, sub: "a signal, no callback", kind: external, row: 3, role: error }
   - { id: service, label: Service process, sub: "startService(), still running", row: 3 }
   - { id: visible, label: Visible process, sub: "on screen, not in focus", row: 3 }
-  - { id: lost, label: Lost, sub: "statics, singletons, ViewModels", kind: external, row: 4 }
+  - { id: lost, label: Lost, sub: "statics, singletons, ViewModels", kind: external, row: 4, role: error }
   - { id: newproc, label: New process, sub: user taps it in Recents, kind: person, row: 4 }
   - { id: recreate, label: Activity recreated, sub: from the saved Bundle, row: 5 }
 edges:

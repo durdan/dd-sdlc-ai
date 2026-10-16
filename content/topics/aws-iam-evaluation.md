@@ -115,7 +115,7 @@ elements:
   - { id: pb, label: Permissions boundary, sub: a cap on the principal, tone: neutral, row: 5 }
   - { id: sess, label: Session policy, sub: passed when assuming a role, tone: neutral, row: 6 }
   - { id: allow, label: Allow, tone: data, row: 7, role: security }
-  - { id: deny, label: Deny, kind: external, row: 7, role: security }
+  - { id: deny, label: Deny, kind: external, row: 7, role: error }
 edges:
   - { id: in, from: req, to: any-deny }
   - { id: no-deny, from: any-deny, to: org }
@@ -125,11 +125,11 @@ edges:
   - { id: pb-ok, from: pb, to: sess }
   - { id: sess-ok, from: sess, to: allow }
   - { id: res-allow, from: res, to: allow, style: dashed, flow: security }
-  - { id: explicit, from: any-deny, to: deny, style: dashed, flow: security }
-  - { id: org-deny, from: org, to: deny, style: dashed, flow: security }
-  - { id: id-deny, from: ident, to: deny, style: dashed, flow: security }
-  - { id: pb-deny, from: pb, to: deny, style: dashed, flow: security }
-  - { id: sess-deny, from: sess, to: deny, style: dashed, flow: security }
+  - { id: explicit, from: any-deny, to: deny, style: dashed, flow: blocked }
+  - { id: org-deny, from: org, to: deny, style: dashed, flow: blocked }
+  - { id: id-deny, from: ident, to: deny, style: dashed, flow: blocked }
+  - { id: pb-deny, from: pb, to: deny, style: dashed, flow: blocked }
+  - { id: sess-deny, from: sess, to: deny, style: dashed, flow: blocked }
 steps:
   - caption: "For each request, IAM collects every policy that applies and runs the same decision, top to bottom. The request begins implicitly denied."
   - caption: "The request carries its context: who signed it, the action such as s3:DeleteObject, the resource ARN, and details such as the source IP, tags and whether MFA was used."

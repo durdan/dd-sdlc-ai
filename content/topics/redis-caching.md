@@ -4,7 +4,7 @@ title: "Caching patterns and stampedes"
 summary: Cache-aside, write-through, and the thundering herd
 why: A cache that is wrong or that collapses under a burst of misses can do more harm than no cache at all.
 requires: [redis-expiry]
-lesson: none
+lesson: diagram
 points:
   - title: Cache-aside
     text: The application reads the cache, and on a miss loads from the database and stores the result with a TTL.
@@ -127,3 +127,37 @@ Single flight works within one process. Across many application instances, the u
 ## What to cache
 
 Cache what is read far more often than it changes, and size the TTL by how stale it may be. Track the hit ratio (`keyspace_hits` and `keyspace_misses` in `INFO stats`): a cache with a low hit ratio adds a network hop to every request and saves little.
+
+```trace diagram
+id: add-cache
+title: Adding cache-aside
+subtitle: What changes when Redis goes in front of the database
+kind: delta
+before: Database only
+after: With cache-aside
+elements:
+  - { id: client, label: Client, kind: person }
+  - { id: api, label: Product API, sub: reads the cache first, role: service, change: changed }
+  - { id: redis, label: Redis, sub: "product:7, EX 300", change: added }
+  - { id: db, label: PostgreSQL, kind: store }
+edges:
+  - { id: req, from: client, to: api, label: GET /products/7 }
+  - { id: get, from: api, to: redis, label: GET product:7, change: added }
+  - { id: read, from: api, to: db, label: on a miss, change: changed }
+  - { id: set, from: api, to: redis, label: SET … EX 300, flow: data, change: added }
+steps:
+  - caption: Before, every product page reads PostgreSQL. Simple, and always fresh, but every request pays for the query.
+    view: before
+    trace: [req, read]
+  - caption: The change in one picture. Green is added, amber is changed. Redis is new, and the API's read path is different.
+    view: delta
+  - caption: After, the API asks Redis first. On a hit the answer comes from memory and the database is not touched.
+    view: after
+    trace: [req, get]
+  - caption: On a miss it reads the database, then stores the row with a 300-second TTL, so the readers after it hit.
+    view: after
+    trace: [read, set]
+  - caption: For the database, one read per key every five minutes replaces one per request. The price is that a product can be up to five minutes stale.
+    view: delta
+    focus: [db, redis]
+```

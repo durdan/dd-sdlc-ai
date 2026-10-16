@@ -133,7 +133,7 @@ edges:
   - { id: submit, from: main, to: queue, label: submit }
   - { id: take1, from: queue, to: w1 }
   - { id: take2, from: queue, to: w2 }
-  - { id: full, from: queue, to: policy, label: queue full, style: dashed, flow: main }
+  - { id: full, from: queue, to: policy, label: queue full, style: dashed, flow: blocked }
   - { id: done1, from: w1, to: fa, label: complete(50) }
   - { id: done2, from: w2, to: fb, label: complete(100) }
   - { id: depa, from: fa, to: combined }

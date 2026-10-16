@@ -134,8 +134,8 @@ title: Can the deployer patch this Deployment?
 subtitle: One API request through authentication, RBAC and admission
 elements:
   - { id: caller, label: ServiceAccount deployer, sub: "namespace shop, bearer token", kind: person, row: 0 }
-  - { id: authn, label: Authentication, sub: fails with 401, row: 1 }
-  - { id: authz, label: "Authorization (RBAC)", sub: fails with 403, kind: system, row: 2 }
+  - { id: authn, label: Authentication, sub: fails with 401, row: 1, role: security }
+  - { id: authz, label: "Authorization (RBAC)", sub: fails with 403, kind: system, row: 2, role: security }
   - { id: binding, label: RoleBinding, sub: deployer-deploy-web, tone: data, row: 2 }
   - { id: role, label: Role deploy-web, sub: "get, list, watch, patch deployments", tone: data, row: 3, role: security }
   - { id: admission, label: Admission, sub: "mutating, then validating", row: 3 }
@@ -185,7 +185,7 @@ elements:
   - { id: allow, label: db-from-web, sub: "from app=web, port 5432", tone: stream, row: 2, role: security }
 edges:
   - { id: web-db, from: web, to: db, label: allowed }
-  - { id: other-db, from: other, to: db, label: dropped, style: dotted, flow: main }
+  - { id: other-db, from: other, to: db, label: dropped, style: dotted, flow: blocked }
   - { id: lookup, from: web, to: dns, label: "port 53", style: dashed, flow: main }
   - { id: isolate, from: deny, to: db, style: dashed, flow: security }
   - { id: permit, from: allow, to: db, style: dashed, flow: security }

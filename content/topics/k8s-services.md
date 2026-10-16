@@ -110,7 +110,7 @@ edges:
   - { id: watch, from: slice, to: proxy, label: watched, flow: async }
   - { id: to-p1, from: proxy, to: p1 }
   - { id: to-p2, from: proxy, to: p2 }
-  - { id: to-p3, from: proxy, to: p3, style: dotted, flow: main }
+  - { id: to-p3, from: proxy, to: p3, style: dotted, flow: blocked }
   - { id: external, from: lb, to: proxy, label: NodePort on each node }
 steps:
   - caption: "Pods are replaced all the time, each time with a new IP. A Service gives them one stable name and one virtual IP that never changes."

@@ -103,8 +103,8 @@ elements:
   - { id: any, label: any, sub: checking switched off, tone: external, row: 1, role: service }
   - { id: unknown, label: unknown, sub: check first, kind: system, row: 1 }
   - { id: spread, label: data.user.name.toUpperCase(), sub: "accepted, result is any", row: 2, role: service }
-  - { id: crash, label: TypeError, sub: at runtime, kind: external, row: 3 }
-  - { id: blocked, label: value.trim(), sub: "error: value is unknown", tone: neutral, row: 2, role: security }
+  - { id: crash, label: TypeError, sub: at runtime, kind: external, row: 3, role: error }
+  - { id: blocked, label: value.trim(), sub: "error: value is unknown", tone: neutral, row: 2, role: error }
   - { id: guard, label: "typeof value === \"string\"", sub: a runtime check, kind: component, row: 2 }
   - { id: str, label: string, sub: trim() allowed, kind: store, tone: data, row: 3, role: service }
   - { id: fail, label: "fail(msg): never", sub: always throws, row: 1 }
@@ -114,7 +114,7 @@ edges:
   - { id: as-unknown, from: json, to: unknown, label: ": unknown" }
   - { id: any-use, from: any, to: spread }
   - { id: any-crash, from: spread, to: crash, style: dashed, flow: main }
-  - { id: unk-blocked, from: unknown, to: blocked, style: dotted, flow: security }
+  - { id: unk-blocked, from: unknown, to: blocked, style: dotted, flow: blocked }
   - { id: unk-guard, from: unknown, to: guard }
   - { id: guard-str, from: guard, to: str }
   - { id: fail-never, from: fail, to: nev }

@@ -120,7 +120,7 @@ elements:
   - { id: defs, label: Bean definitions, sub: "recipes: type, scope, dependencies", group: container, kind: store, tone: data }
   - { id: factory, label: Bean factory, sub: creates beans in dependency order, group: container, kind: system }
   - { id: bpp, label: BeanPostProcessors, sub: "@Transactional, AOP, ..." }
-  - { id: fail, label: Start-up fails, sub: "missing, ambiguous or circular", kind: external, role: service }
+  - { id: fail, label: Start-up fails, sub: "missing, ambiguous or circular", kind: external, role: error }
   - { id: clock, label: Clock, sub: "from clock()", group: beans }
   - { id: repo, label: OrderRepository, group: beans }
   - { id: service, label: OrderService, sub: "new OrderService(repo, clock)", group: beans }

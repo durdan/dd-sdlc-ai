@@ -130,9 +130,9 @@ elements:
   - { id: idle, label: "\"idle\"", sub: no other fields, row: 2 }
   - { id: loading, label: "\"loading\"", sub: no other fields, row: 2 }
   - { id: success, label: "\"success\"", sub: "r.data: User", row: 2, role: service }
-  - { id: failure, label: "\"failure\"", sub: "r.error: string", row: 2 }
+  - { id: failure, label: "\"failure\"", sub: "r.error: string", role: service, row: 2 }
   - { id: def, label: default, sub: "const unreachable: never = r", tone: neutral, row: 2 }
-  - { id: err, label: Compile error, sub: not assignable to never, kind: external, row: 3, role: security }
+  - { id: err, label: Compile error, sub: not assignable to never, kind: external, row: 3, role: error }
 edges:
   - { id: tag, from: req, to: sw }
   - { id: to-idle, from: sw, to: idle }
@@ -141,7 +141,7 @@ edges:
   - { id: to-failure, from: sw, to: failure }
   - { id: to-default, from: sw, to: def }
   - { id: new-member, from: retry, to: sw, style: dashed, flow: main }
-  - { id: not-never, from: def, to: err, style: dashed, flow: security }
+  - { id: not-never, from: def, to: err, style: dashed, flow: blocked }
 steps:
   - caption: A Request is one of four shapes, each with a literal status tag. Before any check, only status, which every member has, can be read.
     focus: [req]

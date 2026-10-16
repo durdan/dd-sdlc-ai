@@ -123,7 +123,7 @@ edges:
   - { id: https, from: client, to: alb, label: "443" }
   - { id: fwd, from: alb, to: app, label: "8080" }
   - { id: query, from: app, to: db, label: "5432" }
-  - { id: blocked, from: other, to: db, label: dropped, style: dotted, flow: security }
+  - { id: blocked, from: other, to: db, label: dropped, style: dotted, flow: blocked }
 steps:
   - caption: "Each tier admits only the tier in front of it, and names that tier by its security group instead of by IP range."
   - caption: "Only the load balancer is open to the internet, on 443."

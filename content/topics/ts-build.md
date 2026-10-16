@@ -93,7 +93,7 @@ elements:
   - { id: bundle, label: dist/*.js, sub: the bundle, kind: store, tone: data, group: fast, row: 2 }
   - { id: tsc, label: tsc --noEmit, sub: whole program, kind: system, group: check, row: 1 }
   - { id: editor, label: Editor, sub: language service, group: check, row: 1 }
-  - { id: errors, label: Type errors, sub: fail CI, kind: external, group: check, row: 2, role: security }
+  - { id: errors, label: Type errors, sub: fail CI, kind: external, group: check, row: 2, role: error }
   - { id: run, label: Browser, sub: runs the bundle, kind: system, row: 3 }
   - { id: lib, label: tsc with declaration, sub: for a library, row: 1 }
   - { id: libout, label: index.js + index.d.ts, sub: what npm users get, kind: store, tone: data, row: 2 }

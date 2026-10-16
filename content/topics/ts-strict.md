@@ -100,7 +100,7 @@ groups:
   - { id: family, label: "\"strict\": true" }
 elements:
   - { id: snip, label: orders.ts, sub: "find, total, catch, Cart, scores", kind: system, row: 0 }
-  - { id: crash, label: TypeError at runtime, sub: what ships with strict off, kind: external, row: 1 }
+  - { id: crash, label: TypeError at runtime, sub: what ships with strict off, kind: external, row: 1, role: error }
   - { id: nullc, label: strictNullChecks, sub: "u is possibly undefined", group: family, row: 1, role: security }
   - { id: implicit, label: noImplicitAny, sub: "items is implicitly any", group: family, row: 1, role: security }
   - { id: catchv, label: useUnknownInCatchVariables, sub: "err is unknown", group: family, row: 2, role: security }

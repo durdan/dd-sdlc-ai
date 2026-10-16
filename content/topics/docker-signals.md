@@ -108,7 +108,7 @@ elements:
 edges:
   - { id: stop, from: you, to: dockerd, label: stop s1 }
   - { id: term, from: dockerd, to: node, label: SIGTERM }
-  - { id: ignored, from: node, to: node, label: "no handler: ignored" }
+  - { id: ignored, from: node, to: node, label: "no handler: ignored", flow: blocked }
   - { id: wait, from: dockerd, to: dockerd, label: waits 10 s }
   - { id: kill, from: dockerd, to: node, label: SIGKILL }
   - { id: died, from: node, to: dockerd, label: "killed: exit code 137", style: dashed }

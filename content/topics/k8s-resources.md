@@ -100,9 +100,9 @@ elements:
   - { id: cgroup, label: kubelet + cgroups, sub: enforces limits, row: 1 }
   - { id: qos, label: QoS class, sub: "Guaranteed, Burstable, BestEffort", tone: data, row: 1 }
   - { id: node, label: Node, sub: allocatable capacity, kind: store, row: 2, role: service }
-  - { id: cpu, label: CPU over limit, sub: throttled, tone: stream, row: 2, role: service }
-  - { id: mem, label: Memory over limit, sub: "OOMKilled, exit 137", tone: external, row: 2, role: service }
-  - { id: evict, label: Node pressure, sub: eviction order, tone: external, row: 2, role: service }
+  - { id: cpu, label: CPU over limit, sub: throttled, tone: stream, row: 2, role: error }
+  - { id: mem, label: Memory over limit, sub: "OOMKilled, exit 137", tone: external, row: 2, role: error }
+  - { id: evict, label: Node pressure, sub: eviction order, tone: external, row: 2, role: error }
 edges:
   - { id: requests, from: spec, to: sched, label: requests }
   - { id: fits, from: sched, to: node }
