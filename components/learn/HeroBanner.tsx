@@ -75,6 +75,13 @@ export default function HeroBanner() {
               Map your architecture
             </Link>
           </div>
+          <Link
+            href="/learn/paths/javascript"
+            className="mt-4 inline-flex max-w-full items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] py-1 pl-1 pr-3 text-[13px] text-[#c9d6d2] hover:border-[#8fc2b6]/60 hover:text-white"
+          >
+            <span className="shrink-0 rounded-full bg-[#8fc2b6] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#12201d]">New</span>
+            <span className="truncate">JavaScript, how it really runs →</span>
+          </Link>
         </div>
 
         <div className="relative order-1 mx-auto w-[min(100%,34vh)] overflow-hidden rounded-2xl border border-white/10 shadow-2xl sm:w-full lg:order-2">

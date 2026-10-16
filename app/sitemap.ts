@@ -1,6 +1,7 @@
 import { MetadataRoute } from 'next';
 import { companies } from '@/data/tech-stacks';
 import { getCatalog, KIND_PREFIX } from '@/lib/learn/content';
+import { getPathsData } from '@/lib/paths/load';
 import { SDLC_PRODUCT } from '@/lib/product';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -8,9 +9,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // The learning library: home, tabs and every topic.
   const catalog = await getCatalog();
+  // Learning paths: the index, every path, and each written topic once (at its first path, the canonical URL).
+  const paths = await getPathsData();
+  const pathPages = [
+    '/learn/paths',
+    ...paths.paths.map((p) => `/learn/paths/${p.id}`),
+    ...Object.values(paths.topics)
+      .filter((t) => t.source === 'content' && paths.pathsByTopic[t.id])
+      .map((t) => `/learn/paths/${paths.pathsByTopic[t.id][0]}/${t.id}`),
+  ];
   const learnPages = [
     { url: `${baseUrl}/learn`, lastModified: new Date(), changeFrequency: 'weekly' as const, priority: 0.9 },
     ...['companies', 'paths'].map((tab) => ({ url: `${baseUrl}/learn/library/${tab}`, lastModified: new Date(), changeFrequency: 'weekly' as const, priority: 0.7 })),
+    ...pathPages.map((path) => ({ url: `${baseUrl}${path}`, lastModified: new Date(), changeFrequency: 'monthly' as const, priority: 0.8 })),
     ...catalog.topics.map((t) => ({
       url: `${baseUrl}/learn/${KIND_PREFIX[t.meta?.kind ?? 'pattern']}/${t.id}`,
       lastModified: new Date(t.meta?.updated ?? Date.now()),
