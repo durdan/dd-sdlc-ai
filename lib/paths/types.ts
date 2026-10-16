@@ -5,6 +5,33 @@ export type PathKind = "skill" | "role" | "system-design"
 export const KIND_ORDER: PathKind[] = ["skill", "role", "system-design"]
 export const KIND_LABEL: Record<PathKind, string> = { skill: "Skills", role: "Roles", "system-design": "System design" }
 
+/** Categories on /learn/paths, set with `tags:` in a path's front matter (see content/README.md). */
+export const PATH_TAGS = ["web", "languages", "frameworks", "mobile", "backend", "testing", "ai", "system-design"] as const
+export type PathTag = (typeof PATH_TAGS)[number]
+export const TAG_LABEL: Record<PathTag, string> = {
+  web: "Web",
+  languages: "Languages & runtimes",
+  frameworks: "Frameworks",
+  mobile: "Mobile",
+  backend: "Backend",
+  testing: "Testing & QA",
+  ai: "AI",
+  "system-design": "System design",
+}
+/** Tags for paths that don't set `tags:` yet, by path id. */
+const FALLBACK_TAGS: Record<string, PathTag[]> = {
+  javascript: ["web", "languages"],
+  node: ["backend", "languages"],
+  java: ["languages", "backend"],
+  "spring-boot": ["frameworks", "backend"],
+  ios: ["mobile"],
+  android: ["mobile"],
+  "qa-automation": ["testing"],
+  "ai-engineering": ["ai"],
+}
+export const defaultTags = (pathId: string, kind: PathKind): PathTag[] =>
+  kind === "system-design" ? ["system-design"] : (FALLBACK_TAGS[pathId] ?? [])
+
 /** "lanes": the topic's ```trace lanes``` blocks are the lesson (see traces.ts). */
 export type Lesson = { type: "none" } | { type: "lanes" } | { type: "walkthrough"; id: string }
 
@@ -79,6 +106,8 @@ export type Path = {
   promise: string
   kind: PathKind
   level?: string
+  /** Categories on /learn/paths: from `tags:`, or defaultTags() when it is not set. */
+  tags: PathTag[]
   stages: Stage[]
   bridges: Bridge[]
   next: string[]

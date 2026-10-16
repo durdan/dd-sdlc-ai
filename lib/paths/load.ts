@@ -8,7 +8,7 @@ import { join, relative } from "node:path"
 import { CORE_SCHEMA, load as loadYaml } from "js-yaml"
 import { z } from "zod"
 import { parseTraces } from "./traces"
-import { type Bridge, type Lesson, type Path, type PathsData, type Stage, type Topic, type WalkthroughRef } from "./types"
+import { type Bridge, defaultTags, type Lesson, PATH_TAGS, type Path, type PathTag, type PathsData, type Stage, type Topic, type WalkthroughRef } from "./types"
 
 // ---------- Front matter schemas ----------
 
@@ -51,6 +51,7 @@ const pathSchema = z
     promise: line,
     kind: z.enum(["skill", "role", "system-design"]),
     level: z.enum(["beginner", "intermediate", "advanced"]).optional(),
+    tags: z.array(z.string()).min(1, "list at least one tag, or leave tags out").optional(),
     stages: z.array(z.object({ title: line, blurb: line, topics: z.array(id).min(1, "a stage needs at least one topic") }).strict()).min(1),
     bridges: z.array(z.union([id, z.object({ id, why: line }).strict()])).default([]),
     next: z.array(id).default([]),
@@ -279,12 +280,18 @@ export async function checkContent(root = process.cwd()): Promise<CheckResult> {
       }
     }
     for (const n of p.next) if (n === p.id) problems.push(`${where}: next lists the path itself`)
+    const isTag = (t: string): t is PathTag => (PATH_TAGS as readonly string[]).includes(t)
+    for (const t of p.tags ?? []) if (!isTag(t)) problems.push(`${where}: unknown tag "${t}"; use ${PATH_TAGS.join(", ")}`)
+    if (p.tags && new Set(p.tags).size !== p.tags.length) problems.push(`${where}: tags must be different`)
+    const tags = p.tags ? p.tags.filter(isTag) : defaultTags(p.id, p.kind)
+    if (!p.tags && !tags.length) warnings.push(`${where}: no tags, so it is only listed under "All paths"; add tags: [...]`)
     paths.push({
       id: p.id,
       title: p.title,
       promise: p.promise,
       kind: p.kind,
       level: p.level,
+      tags,
       stages: p.stages,
       bridges: p.bridges.map((b) => bridge(b, where)).filter((b): b is Bridge => b !== null),
       next: p.next,
@@ -320,7 +327,7 @@ export async function checkContent(root = process.cwd()): Promise<CheckResult> {
       blurb: levels === 1 ? "Each one stands on its own" : d === 0 ? "Needs nothing else first" : `Uses ideas from stage ${d}`,
       topics: steps.filter((s) => depth.get(s) === d),
     }))
-    paths.push({ id: cp.id, title: cp.title, promise: cp.blurb, kind: "system-design", stages, bridges: [], next: [], intro: "", source: "catalog" })
+    paths.push({ id: cp.id, title: cp.title, promise: cp.blurb, kind: "system-design", tags: defaultTags(cp.id, "system-design"), stages, bridges: [], next: [], intro: "", source: "catalog" })
   }
 
   // Links between paths.

@@ -94,7 +94,7 @@ async function main() {
       const n = p.stages.reduce((s, st) => s + st.topics.length, 0)
       const arrows = layout.edges.filter((e) => e.kind !== "flow").length
       console.log(
-        `    ${p.id.padEnd(18)} ${String(n).padStart(2)} topics, ${p.stages.length} stages, ${p.bridges.length} bridges, ${arrows} arrows, map ${layout.width}×${layout.height}${p.next.length ? `, next → ${p.next.join(", ")}` : ""}`,
+        `    ${p.id.padEnd(18)} ${String(n).padStart(2)} topics, ${p.stages.length} stages, ${p.bridges.length} bridges, ${arrows} arrows, map ${layout.width}×${layout.height}, tags ${p.tags.join("/") || "none"}${p.next.length ? `, next → ${p.next.join(", ")}` : ""}`,
       )
     }
   }

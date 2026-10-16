@@ -56,6 +56,7 @@ title: "Node.js: how the server side runs"   # text after ": " is highlighted
 promise: One sentence on what you will understand.
 kind: skill                    # skill | role | system-design
 level: intermediate            # optional: beginner | intermediate | advanced
+tags: [backend, languages]     # optional: categories on /learn/paths (see below)
 stages:                        # columns on the map, left to right
   - title: Node's loop
     blurb: Phases, queues, the pool
@@ -67,6 +68,8 @@ next: [scaling-out]            # optional: path ids (drawn on the map of paths)
 ---
 Optional Markdown shown under the map.
 ```
+
+`tags` puts the path in the categories of the sidebar on `/learn/paths` (a path can be in several). Allowed: `web` (Web), `languages` (Languages & runtimes), `frameworks` (Frameworks), `mobile` (Mobile), `backend` (Backend), `testing` (Testing & QA), `ai` (AI), `system-design` (System design). Any other value fails the check. Without `tags`, system design paths get `[system-design]`, and a few known path ids get defaults from `defaultTags()` in `lib/paths/types.ts` (for example `ios` → `[mobile]`); any other path without tags is listed only under "All paths" and the check warns. The group a path is listed in (Role, Skill or System design paths) comes from `kind`, not from tags.
 
 A topic can be on several paths; its progress is shared between them. The path is then live at `/learn/paths/<id>`, and each topic at `/learn/paths/<id>/<topic>`.
 
