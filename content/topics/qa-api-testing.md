@@ -4,7 +4,7 @@ title: "API testing: status codes, schemas, idempotency, auth"
 summary: Check what clients actually rely on
 why: "An API is a promise to every client at once. Tests at this layer are fast, independent of the UI, and catch the bugs that leak data or charge twice."
 requires: [qa-integration-tests]
-lesson: none
+lesson: diagram
 points:
   - title: Status and shape
     text: "Check the status code and the body's shape and values. A 200 with the wrong JSON is still a bug."
@@ -114,3 +114,43 @@ test("Alice cannot read Bob's order", async ({ request }) => {
 ```
 
 Create the users and orders these tests need through the API or a factory at the start of the run, not by hand in a shared environment.
+
+```trace diagram
+id: api-checks
+title: One test run against the orders API
+subtitle: Status, shape, a retried POST and someone else's order
+kind: sequence
+elements:
+  - { id: test, label: API test }
+  - { id: api, label: Orders API }
+  - { id: db, label: Database }
+edges:
+  - { id: post, from: test, to: api, label: "POST /orders, Idempotency-Key k1" }
+  - { id: insert, from: api, to: db, label: "insert order 1, remember k1" }
+  - { id: created, from: api, to: test, label: "201, { id: 1, sku, qty }", style: dashed }
+  - { id: check, from: test, to: test, label: "status, schema, values" }
+  - { id: retry, from: test, to: api, label: "the same POST, the same key k1" }
+  - { id: replay, from: api, to: test, label: "201, order 1 again (replayed)", style: dashed }
+  - { id: bad, from: test, to: api, label: "POST qty 0, then no token" }
+  - { id: rejected, from: api, to: test, label: "400, then 401", style: dashed }
+  - { id: steal, from: test, to: api, label: "GET /orders/123 as Alice" }
+  - { id: owner, from: api, to: db, label: "order 123: owner is Bob" }
+  - { id: denied, from: api, to: test, label: "403 or 404", style: dashed }
+steps:
+  - caption: The test calls the API over HTTP, the way a client would, with no browser. It creates an order and sends an idempotency key, a client-chosen id for this one attempt.
+    trace: [post]
+  - caption: The API stores the order and remembers the key with the response it is about to send.
+    trace: [insert]
+  - caption: It answers 201 with the new order. The test checks the status, then validates the body against the schema, then checks the values it sent came back.
+    trace: [created, check]
+  - caption: Now the test plays a client whose response got lost. It sends the same POST again with the same key.
+    trace: [retry]
+  - caption: The API recognises the key and replays the first result instead of acting again. The test checks it got the same order id, and that only one order exists.
+    trace: [replay]
+  - caption: Then the unhappy paths. Invalid input must be a 400, and a request with no credentials a 401, with nothing changed on the server.
+    trace: [bad, rejected]
+  - caption: Last, Alice's valid token asks for order 123. The token proves who she is; it says nothing about whose order this is.
+    trace: [steal]
+  - caption: The API must look up the owner and compare. Order 123 is Bob's, so Alice gets 403, or 404 so she cannot even learn it exists. A 200 here is broken object-level authorisation.
+    trace: [owner, denied]
+```

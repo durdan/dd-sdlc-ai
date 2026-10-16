@@ -4,7 +4,7 @@ title: The Spring Security filter chain
 summary: A row of filters that decides who you are and what you may do
 why: Security problems in Spring apps are usually ordering problems; once you can read the filter list, a 401 or a missing CSRF check stops being a mystery.
 requires: [spring-filters]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: One filter, many inside
     text: DelegatingFilterProxy hands requests to FilterChainProxy, which runs the filters of the first SecurityFilterChain that matches.
@@ -106,4 +106,66 @@ And because the context is held per request, a controller can simply ask for it:
 ```java
 @GetMapping("/me")
 Profile me(@AuthenticationPrincipal Jwt jwt) { return profiles.find(jwt.getSubject()); }
+```
+
+```trace diagram
+id: api-request
+title: One request through the security filters
+subtitle: "GET /api/orders with a bearer token"
+groups:
+  - { id: servlet, label: Servlet filter chain }
+  - { id: apichain, label: "SecurityFilterChain api (/api/**)" }
+elements:
+  - { id: client, label: Client, sub: "Authorization: Bearer <JWT>", kind: person }
+  - { id: dfp, label: DelegatingFilterProxy, sub: a plain servlet filter, group: servlet }
+  - { id: fcp, label: FilterChainProxy, sub: first matching chain wins, group: servlet, kind: system }
+  - { id: webchain, label: web chain, sub: "any request, form login", kind: external }
+  - { id: bearer, label: BearerToken filter, sub: "JWT → Authentication", group: apichain }
+  - { id: context, label: SecurityContextHolder, sub: this request's identity, kind: store, tone: data }
+  - { id: etf, label: ExceptionTranslation, sub: catches security exceptions, group: apichain }
+  - { id: authz, label: AuthorizationFilter, sub: authorizeHttpRequests rules, group: apichain }
+  - { id: dispatcher, label: DispatcherServlet, sub: your controllers, kind: system, tone: neutral }
+  - { id: r401, label: 401 Unauthorized, sub: AuthenticationEntryPoint, kind: person }
+  - { id: r403, label: 403 Forbidden, sub: AccessDeniedHandler, kind: person }
+edges:
+  - { id: http, from: client, to: dfp }
+  - { id: delegate, from: dfp, to: fcp, label: delegates to the bean }
+  - { id: match, from: fcp, to: bearer, label: "/api/** matches" }
+  - { id: other, from: fcp, to: webchain, label: other URLs, style: dashed }
+  - { id: store, from: bearer, to: context, label: store }
+  - { id: next1, from: bearer, to: etf }
+  - { id: next2, from: etf, to: authz }
+  - { id: who, from: authz, to: context, label: reads, style: dotted }
+  - { id: allowed, from: authz, to: dispatcher, label: allowed }
+  - { id: anon, from: etf, to: r401, label: not authenticated, style: dashed }
+  - { id: denied, from: etf, to: r403, label: authenticated, style: dashed }
+steps:
+  - caption: "The servlet container knows only one Spring Security filter, DelegatingFilterProxy. It hands the request to the FilterChainProxy bean, which holds the real security filters."
+    focus: [client, dfp, fcp]
+    trace: [http, delegate]
+  - caption: "FilterChainProxy tries each SecurityFilterChain in order and runs only the first one that matches. /api/orders matches the api chain, so the catch-all web chain is never consulted."
+    focus: [fcp, apichain, webchain]
+    trace: [match]
+  - caption: "Its filters run in a fixed order. Early ones write security headers and load any existing context; this stateless API has none, and CSRF is off because bearer tokens aren't sent automatically by browsers."
+    focus: [apichain]
+  - caption: "The bearer token filter reads the Authorization header and has the AuthenticationManager validate the JWT. On success the resulting Authentication is stored in the SecurityContextHolder for this request."
+    focus: [bearer, context]
+    trace: [store]
+  - caption: "With no token at all, that filter does nothing, and the anonymous filter later in the chain sets an anonymous identity instead. The request carries on either way."
+    focus: [bearer, context]
+  - caption: "ExceptionTranslationFilter calls the rest of the chain inside a try block. On the way in it does nothing; it is there to catch what the next filter throws."
+    focus: [etf, authz]
+    trace: [next1, next2]
+  - caption: "AuthorizationFilter reads the Authentication and checks the authorizeHttpRequests rules, first match wins. Any authenticated caller may read orders, so the request goes on to the DispatcherServlet."
+    focus: [context, authz, dispatcher]
+    trace: [who, allowed]
+  - caption: "Had the caller been anonymous, AuthorizationFilter would throw AccessDeniedException. ExceptionTranslationFilter catches it, clears the context, and starts authentication through the entry point: a 401."
+    focus: [authz, etf, r401]
+    trace: [anon]
+  - caption: "Had the caller been authenticated but without the role, say on /api/admin, the same exception goes to the AccessDeniedHandler instead: a 403."
+    focus: [authz, etf, r403]
+    trace: [denied]
+  - caption: "On success your controller can read the caller from the context, for example with @AuthenticationPrincipal. When the request ends, FilterChainProxy clears the context so it never leaks into the next request on that thread."
+    focus: [context, dispatcher, fcp]
+note: "Set logging for org.springframework.security to DEBUG to see the exact filter list of each chain at start-up."
 ```

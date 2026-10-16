@@ -1,5 +1,6 @@
 // Plain, serialisable shapes for learning paths. The server builds them from content/*.md
 // and public/learn/catalog.json (see load.ts); client components only ever see these.
+import type { Diagram, DiagramLayout } from "design-player/core"
 
 export type PathKind = "skill" | "role" | "system-design"
 export const KIND_ORDER: PathKind[] = ["skill", "role", "system-design"]
@@ -36,8 +37,28 @@ const FALLBACK_TAGS: Record<string, PathTag[]> = {
 export const defaultTags = (pathId: string, kind: PathKind): PathTag[] =>
   kind === "system-design" ? ["system-design"] : (FALLBACK_TAGS[pathId] ?? [])
 
-/** "lanes": the topic's ```trace lanes``` blocks are the lesson (see traces.ts). */
-export type Lesson = { type: "none" } | { type: "lanes" } | { type: "walkthrough"; id: string }
+/**
+ * "lanes": the topic's ```trace lanes``` blocks are the lesson (see traces.ts).
+ * "diagram": its ```trace diagram``` blocks are the lesson (see diagrams.ts).
+ */
+export type Lesson = { type: "none" } | { type: "lanes" } | { type: "diagram" } | { type: "walkthrough"; id: string }
+
+// ---- Flow diagrams: written as ```trace diagram``` blocks in a topic body (parsed by diagrams.ts) ----
+
+/** One step of a flow diagram: what is lit, which arrows draw in, and the sentence that explains it. */
+export type FlowStep = { caption: string; focus: string[]; trace: string[]; note?: string }
+export type FlowDiagram = {
+  id: string
+  title: string
+  subtitle?: string
+  /** The design-player diagram (c4 or sequence), with every edge id filled in. */
+  diagram: Diagram
+  steps: FlowStep[]
+  note?: string
+  /** ELK layouts, computed on the server: as written, and top-to-bottom for portrait stages (phones). */
+  layout: DiagramLayout
+  portrait?: DiagramLayout
+}
 
 // ---- Lanes traces: written as ```trace lanes``` blocks in a topic body (parsed by traces.ts) ----
 
@@ -78,6 +99,8 @@ export type Topic = {
   lesson: Lesson
   /** Lesson "lanes": the traces, in the order they appear in the body. */
   traces: Trace[]
+  /** Lesson "diagram": the flow diagrams, in the order they appear in the body. */
+  diagrams: FlowDiagram[]
   /** Optional numbered key points shown in the page intro. */
   points: { title: string; text: string }[]
   /** Shown after a wrong quiz answer. */
@@ -86,9 +109,9 @@ export type Topic = {
   links: LinkRef[]
   /** The first paragraph of the Markdown body (inline Markdown only). */
   lead: string
-  /** The rest of the body (for lesson "lanes": the part before the first trace block). */
+  /** The rest of the body (for lessons "lanes" and "diagram": the part before the first block). */
   body: string
-  /** Lesson "lanes": the body after the first trace block, shown after the quiz. */
+  /** Lessons "lanes" and "diagram": the body after the first block, shown after the quiz. */
   notes: string
   /** "content": a Markdown topic with its own page. "library": a walkthrough from the library. */
   source: "content" | "library"

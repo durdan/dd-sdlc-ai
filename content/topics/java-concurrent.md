@@ -4,7 +4,7 @@ title: "java.util.concurrent: executors and CompletableFuture"
 summary: Hand tasks to pools, compose the results
 why: "Unbounded queues, pools shared by unrelated work and futures nobody times out are behind many Java outages. The API has an answer for each."
 requires: [java-jmm]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: Submit tasks, not threads
     text: An ExecutorService owns a set of threads and a queue; you hand it Runnables or Callables and get Futures back.
@@ -111,3 +111,58 @@ Methods ending in `Async` without an executor argument run on `ForkJoinPool.comm
 ## Other tools in the box
 
 `ConcurrentHashMap` for shared maps, `BlockingQueue` for producer and consumer hand-offs, `CountDownLatch` and `Semaphore` for coordination, `ReentrantLock` when you need timeouts or try-lock that `synchronized` lacks. Prefer them to hand-written `wait` and `notify`.
+
+```trace diagram
+id: two-prices
+title: Two tasks, one pool, one answer
+subtitle: supplyAsync twice, thenCombine, join
+groups:
+  - { id: pool, label: "ThreadPoolExecutor (2 workers, bounded queue)" }
+  - { id: futures, label: CompletableFutures }
+elements:
+  - { id: main, label: main thread, sub: "supplyAsync(..., pool) twice", kind: person }
+  - { id: queue, label: Work queue, sub: "ArrayBlockingQueue(500)", group: pool, tone: stream }
+  - { id: w1, label: Worker 1, sub: "price(\"north\")", group: pool }
+  - { id: w2, label: Worker 2, sub: "price(\"south-east\")", group: pool }
+  - { id: policy, label: Rejection policy, sub: when the queue is full, group: pool, kind: external }
+  - { id: fa, label: Future a, group: futures, tone: data }
+  - { id: fb, label: Future b, group: futures, tone: data }
+  - { id: combined, label: thenCombine(min), sub: "orTimeout(2 s), exceptionally(-1)", group: futures, tone: data }
+  - { id: result, label: "join(): 50", sub: back on the main thread, kind: person }
+edges:
+  - { id: submit, from: main, to: queue, label: submit }
+  - { id: take1, from: queue, to: w1 }
+  - { id: take2, from: queue, to: w2 }
+  - { id: full, from: queue, to: policy, label: queue full, style: dashed }
+  - { id: done1, from: w1, to: fa, label: complete(50) }
+  - { id: done2, from: w2, to: fb, label: complete(100) }
+  - { id: depa, from: fa, to: combined }
+  - { id: depb, from: fb, to: combined }
+  - { id: join, from: combined, to: result, label: join() }
+steps:
+  - caption: "An executor is a few worker threads plus a queue. You hand it tasks instead of creating threads, and it decides which thread runs what."
+    focus: [pool]
+  - caption: "main calls supplyAsync twice with the pool. Each call hands the task to the executor and returns a CompletableFuture at once, not yet complete. main is not blocked."
+    focus: [main, queue, fa, fb]
+    trace: [submit]
+  - caption: "While fewer than the core number of threads are running, the pool starts a new worker for each task. Once they all exist, new tasks wait in the queue for a worker to take them."
+    focus: [queue, w1, w2]
+    trace: [take1, take2]
+  - caption: "Meanwhile main has already described what should happen next: take the smaller of the two prices, fail after 2 seconds, and fall back to -1 on any error. Nothing runs yet."
+    focus: [main, combined]
+  - caption: "Worker 1 finishes and completes future a with 50. The combined stage needs both results, so it keeps waiting."
+    focus: [w1, fa, combined]
+    trace: [done1]
+  - caption: "Worker 2 completes future b with 100. Now Math.min runs, usually on the thread that completed the last input, here Worker 2."
+    focus: [w2, fb, combined]
+    trace: [done2, depa, depb]
+  - caption: "If either task had thrown, or 2 seconds had passed, the value steps would be skipped and exceptionally would turn the failure into -1."
+    focus: [combined]
+  - caption: "join returns 50 on the main thread. Closing the pool at the end of try-with-resources stops new submissions and waits for the tasks already given."
+    focus: [combined, result]
+    trace: [join]
+  - caption: "Under overload a bounded queue fills up. Then the rejection policy decides: the default throws RejectedExecutionException, and CallerRunsPolicy runs the task on the submitting thread, which slows the producer down."
+    focus: [queue, policy, main]
+    trace: [full]
+note: "Executors.newFixedThreadPool uses an unbounded queue, so it never rejects; under overload tasks pile up in memory instead."
+```

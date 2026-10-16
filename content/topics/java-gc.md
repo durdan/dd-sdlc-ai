@@ -4,7 +4,7 @@ title: "Garbage collection: generations, G1 and ZGC"
 summary: Most objects die young, so collect the young often
 why: "Pause times, heap size and CPU spent collecting are trade-offs you choose with one flag. Choosing well starts with knowing what each collector does."
 requires: [java-memory]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: Reachable means alive
     text: The collector starts from roots (thread stacks, static fields) and keeps everything it can reach. The rest is garbage, however it got there.
@@ -86,3 +86,62 @@ java -XX:+UseZGC -XX:+ZGenerational -Xlog:gc -Xmx8g -jar app.jar
 ```
 
 Look at pause times, how often collections happen, and how full the old generation stays after each one. An old generation that keeps growing after every collection is a leak, not a tuning problem: something reachable, such as a static map used as a cache, is holding on to objects.
+
+```trace diagram
+id: g1-cycle
+title: A G1 heap over time
+subtitle: Allocate, collect the young, promote, then reclaim old regions
+groups:
+  - { id: young, label: Young generation }
+  - { id: old, label: Old generation }
+elements:
+  - { id: app, label: Your threads, sub: allocate new objects, kind: person }
+  - { id: roots, label: GC roots, sub: "thread stacks, static fields", kind: external }
+  - { id: eden, label: Eden regions, sub: new objects, group: young, tone: stream }
+  - { id: survivor, label: Survivor regions, sub: survived a young GC, group: young, tone: stream }
+  - { id: oldr, label: Old regions, sub: promoted objects, group: old, tone: data }
+  - { id: humongous, label: Humongous regions, sub: "objects ≥ half a region", group: old, tone: data }
+  - { id: marking, label: Concurrent marking, sub: while your threads run }
+  - { id: free, label: Free regions, sub: ready for reuse, kind: store, tone: neutral }
+edges:
+  - { id: alloc, from: app, to: eden, label: new (TLAB bump) }
+  - { id: big, from: app, to: humongous, label: huge array, style: dashed }
+  - { id: trace, from: roots, to: eden, label: what is reachable?, style: dotted }
+  - { id: evacuate, from: eden, to: survivor, label: copy live objects }
+  - { id: promote, from: survivor, to: oldr, label: old enough }
+  - { id: emptied, from: eden, to: free, style: dashed }
+  - { id: mark, from: marking, to: oldr, label: find live objects, style: dotted }
+  - { id: mixed, from: oldr, to: free, label: "mixed GC: most garbage first", style: dashed }
+steps:
+  - caption: "G1 splits the heap into equal regions, about 2048 of them, a few megabytes each for a typical heap. At any moment a region is free, eden, survivor or old."
+    focus: [eden, survivor, oldr, free]
+  - caption: "Your threads allocate new objects into eden regions, usually by bumping a pointer in a thread-local buffer. Most of these objects are dead within moments."
+    focus: [app, eden]
+    trace: [alloc]
+  - caption: "When eden fills, G1 stops your threads for a young collection. It starts from the roots and follows references to find which young objects are still reachable."
+    focus: [roots, eden, survivor]
+    trace: [trace]
+  - caption: "Old objects can point at young ones too, and those count as roots. A write barrier on every reference store, plus G1's remembered sets, records them so G1 doesn't have to scan the whole old generation."
+    focus: [oldr, eden]
+  - caption: "The few live objects are copied out into survivor regions. The cost depends on what survives, not on what was allocated, so this pause is usually short."
+    focus: [eden, survivor]
+    trace: [evacuate]
+  - caption: "Everything left in the evacuated eden regions is garbage, so the whole region is simply free again. Nothing is swept object by object."
+    focus: [eden, free]
+    trace: [emptied]
+  - caption: "Each young collection copies young objects into survivor or old regions depending on their age. An object that has survived enough of them is promoted to the old generation."
+    focus: [survivor, oldr]
+    trace: [promote]
+  - caption: "An object of half a region or more skips all this. It is humongous and is placed straight into contiguous old regions, so many big short-lived arrays make G1 work harder."
+    focus: [app, humongous]
+    trace: [big]
+  - caption: "When old-generation occupancy passes a threshold, G1 marks live objects concurrently, while your threads keep running, to learn how much garbage each old region holds."
+    focus: [marking, oldr, humongous]
+    trace: [mark]
+  - caption: "Then come mixed collections: young regions plus the old regions with the most garbage, garbage first. Their live objects are copied to other regions, and the emptied ones join the free list."
+    focus: [oldr, free, eden]
+    trace: [mixed]
+  - caption: "G1 picks how many regions to take in each pause so that it meets the pause-time goal, 200 ms by default. It is a goal, not a guarantee."
+    focus: [young, old]
+note: "Turn on -Xlog:gc before tuning. An old generation that keeps growing after every collection is a leak, not a tuning problem."
+```

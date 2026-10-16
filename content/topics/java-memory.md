@@ -4,7 +4,7 @@ title: Stack, heap and object layout
 summary: Where values live, and what an object really weighs
 why: "A List<Integer> of a million numbers can take several times the memory of an int[]. Knowing the layout explains why."
 requires: [java-bytecode]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: One stack per thread, one shared heap
     text: Local variables live in the current thread's stack frame; every object and array lives on the heap that all threads share.
@@ -110,3 +110,52 @@ To see real layouts instead of estimates, use JOL (Java Object Layout) from Open
 ## Allocation is cheap
 
 HotSpot gives each thread a private chunk of the young generation, a TLAB (thread-local allocation buffer). Allocating an object is usually a pointer bump inside it, with no lock. The real cost of an object comes later, if it survives long enough for the collector to copy it.
+
+```trace diagram
+id: method-call
+title: One method call, in memory
+subtitle: "main calls move(p, n): frames, references and objects"
+groups:
+  - { id: stack, label: "Thread main's stack" }
+  - { id: heap, label: Heap (shared by all threads) }
+elements:
+  - { id: mainframe, label: main() frame, sub: "n = 1, p = a reference", group: stack }
+  - { id: moveframe, label: move() frame, sub: "its own copies of p and n", group: stack }
+  - { id: point, label: Point object, sub: "header 12 B + x, y = 24 B", group: heap, tone: data }
+  - { id: newpoint, label: Second Point, sub: "bumped into this thread's TLAB", group: heap, tone: data }
+  - { id: classdata, label: Method area, sub: "Point's class data and code", kind: store }
+  - { id: console, label: Console, sub: prints 10 1, kind: person }
+edges:
+  - { id: ref, from: mainframe, to: point, label: p }
+  - { id: call, from: mainframe, to: moveframe, label: "move(p, n)" }
+  - { id: copy, from: moveframe, to: point, label: copy of p }
+  - { id: alloc, from: moveframe, to: newpoint, label: p = new Point() }
+  - { id: klass, from: point, to: classdata, label: class pointer, style: dotted }
+  - { id: print, from: mainframe, to: console, label: println, style: dashed }
+steps:
+  - caption: "main starts with a frame on its thread's stack. The int n holds the value 1 right there in the frame; p holds only a reference, and the Point it refers to lives on the heap that every thread shares."
+    focus: [mainframe, point]
+    trace: [ref]
+  - caption: "On 64-bit HotSpot the Point starts with a 12-byte header: an 8-byte mark word for hashing, locking and GC age, and a 4-byte compressed class pointer to its class data. Two ints make 20 bytes, padded to 24."
+    focus: [point, classdata]
+    trace: [klass]
+  - caption: "main calls move(p, n). The JVM pushes a new frame on the same stack and copies both arguments into it. The copied reference points at the very same Point."
+    focus: [mainframe, moveframe, point]
+    trace: [call, copy]
+  - caption: "p.x = 10 follows that copy to the shared object and changes it. main will see the change, because there is only one Point."
+    focus: [moveframe, point]
+    trace: [copy]
+  - caption: "p = new Point() allocates a second object, usually by bumping a pointer in the thread's own TLAB, with no lock. Only move's copy of p now points at it; main's p is untouched."
+    focus: [moveframe, newpoint]
+    trace: [alloc]
+  - caption: "n = 99 changes move's copy of the int, nothing else. Java passes every argument by value, and for objects the value is the reference."
+    focus: [moveframe]
+  - caption: "move returns and its frame is thrown away at once, with no garbage collection involved. Nothing refers to the second Point any more, so it is unreachable, and the collector will reclaim it later."
+    focus: [mainframe, newpoint]
+  - caption: "Back in main, p.x is 10 and n is still 1, so it prints 10 1."
+    focus: [mainframe, point, console]
+    trace: [print]
+  - caption: "Once the JIT compiles move, escape analysis may see that the second Point never leaves the method and skip the heap allocation entirely, keeping its fields in registers. The program can't tell."
+    focus: [moveframe, newpoint]
+note: "Call too deep and the stack runs out (StackOverflowError); fill the heap and allocation fails (OutOfMemoryError). They are separate areas."
+```

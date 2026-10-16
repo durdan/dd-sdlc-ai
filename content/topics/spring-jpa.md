@@ -4,7 +4,7 @@ title: Spring Data JPA, lazy loading and N+1
 summary: Repositories that write the SQL, and the queries you didn't see
 why: A page that runs 1 query in development can run 101 in production; you only notice when the database is the bottleneck.
 requires: [spring-transactions]
-lesson: none
+lesson: diagram
 points:
   - title: Interfaces become beans
     text: Spring Data generates a repository implementation at start-up from method names, @Query annotations and the entity type.
@@ -107,3 +107,49 @@ spring.jpa.properties.hibernate.generate_statistics=true
 ```
 
 Turn these on in a test or locally, call the endpoint once and count the statements. A repeated `select ... from order_item where order_id=?` is N+1, every time.
+
+```trace diagram
+id: n-plus-one
+title: Fifty orders, fifty-one queries
+subtitle: Lazy items, the N+1, and the fetch join that fixes it
+kind: sequence
+elements:
+  - { id: service, label: OrderService }
+  - { id: repo, label: OrderRepository }
+  - { id: ctx, label: Persistence context }
+  - { id: db, label: PostgreSQL }
+edges:
+  - { id: find, from: service, to: repo, label: findByCustomerIdAndPlacedAtAfter }
+  - { id: jpql, from: repo, to: ctx, label: run the derived JPQL }
+  - { id: q1, from: ctx, to: db, label: "select ... from orders: 1 query" }
+  - { id: list, from: ctx, to: service, label: "50 Orders, items not loaded yet", style: dashed }
+  - { id: touch1, from: service, to: ctx, label: "order 1: getItems().size()" }
+  - { id: sel1, from: ctx, to: db, label: "select ... from order_item where order_id=?" }
+  - { id: rest, from: ctx, to: db, label: "orders 2 to 50: the same select, once each", style: dotted }
+  - { id: late, from: service, to: ctx, label: "after commit: getItems()" }
+  - { id: lie, from: ctx, to: service, label: LazyInitializationException, style: dashed }
+  - { id: fix, from: service, to: repo, label: findWithItems(customerId) }
+  - { id: join, from: ctx, to: db, label: "select o, i ... join fetch o.items: 1 query" }
+  - { id: full, from: ctx, to: service, label: "orders with items filled in", style: dashed }
+steps:
+  - caption: The service method is @Transactional, so a persistence context, Hibernate's session, is open for as long as it runs. Every entity loaded inside it is tracked there.
+    focus: [service, ctx]
+  - caption: The service calls a derived query method. Spring Data built its JPQL from the method name at start-up, and the persistence context turns it into one SQL select on the orders table.
+    trace: [find, jpql, q1]
+  - caption: Fifty orders come back. Their items are not loaded; each order holds a lazy wrapper collection that only knows which order it belongs to.
+    trace: [list]
+  - caption: The loop touches the first order's items. The wrapper asks the persistence context, which runs a select on order_item for that one order.
+    trace: [touch1, sel1]
+  - caption: The second order does the same, and so does every order after it. Fifty orders means fifty extra queries, plus the first one. That is the N+1.
+    trace: [rest]
+  - caption: In development, with five rows, nobody notices. In production each query is a round trip, and the page holds a pooled connection for all fifty-one of them.
+    focus: [ctx, db]
+  - caption: Touch the collection after the transaction has ended, with open-in-view off, and there is no open persistence context to load from. The wrapper throws a LazyInitializationException instead.
+    trace: [late, lie]
+  - caption: The fix is to fetch what this use case needs in one statement. findWithItems has a @Query with join fetch o.items.
+    trace: [fix]
+  - caption: One select joins orders to their items, and Hibernate fills every items collection from that one result. Touching them now runs no SQL at all.
+    trace: [join, full]
+  - caption: An @EntityGraph on the method does the same without writing JPQL. Batch fetching with a batch size of fifty cuts the fifty extra queries to one, and a DTO projection skips entities for read-only lists.
+    focus: [repo, ctx]
+```

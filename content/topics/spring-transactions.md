@@ -4,7 +4,7 @@ title: "Transactions: @Transactional and its traps"
 summary: A proxy that begins, commits and rolls back for you
 why: A misplaced @Transactional is silent; the code works in a demo, then half-writes data the first time something fails in production.
 requires: [spring-filters]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: It is a proxy
     text: "@Transactional works because callers hold a proxy that opens a transaction, calls your method, then commits or rolls back."
@@ -120,3 +120,49 @@ One subtlety with `REQUIRED`: if an inner method marks the shared transaction ro
 ## Keep transactions short
 
 A transaction holds a pooled connection from start to finish. Calling a slow HTTP service inside one ties up a connection for the duration; with 10 connections, ten slow calls stall every other request that needs the database. Do the remote call first, then open the transaction to write the result.
+
+```trace diagram
+id: proxy-tx
+title: Begin, suspend, roll back
+subtitle: "createOrder (REQUIRED) calls audit (REQUIRES_NEW), then fails"
+kind: sequence
+elements:
+  - { id: caller, label: Controller }
+  - { id: proxy, label: OrderService proxy }
+  - { id: txm, label: Transaction manager }
+  - { id: svc, label: OrderService }
+  - { id: audit, label: AuditService proxy }
+edges:
+  - { id: call, from: caller, to: proxy, label: "createOrder(o)" }
+  - { id: begin, from: proxy, to: txm, label: "REQUIRED: none yet, begin tx 1" }
+  - { id: run, from: proxy, to: svc, label: "createOrder(o)" }
+  - { id: insert, from: svc, to: svc, label: "INSERT order on connection 1" }
+  - { id: callaudit, from: svc, to: audit, label: "audit(o)" }
+  - { id: suspend, from: audit, to: txm, label: "REQUIRES_NEW: suspend tx 1, begin tx 2" }
+  - { id: auditrow, from: audit, to: audit, label: "INSERT audit row on connection 2" }
+  - { id: commit2, from: audit, to: txm, label: "commit tx 2, resume tx 1" }
+  - { id: boom, from: svc, to: proxy, label: throws IllegalStateException, style: dashed }
+  - { id: rollback, from: proxy, to: txm, label: rollback tx 1 }
+  - { id: rethrow, from: proxy, to: caller, label: rethrows, style: dashed }
+  - { id: callimport, from: caller, to: proxy, label: "importAll(rows)" }
+  - { id: passimport, from: proxy, to: svc, label: "importAll: not transactional" }
+  - { id: selfcall, from: svc, to: svc, label: "this.importOne(r): no proxy, no tx" }
+steps:
+  - caption: "The controller calls createOrder, but it holds a proxy, not your OrderService. The proxy asks the transaction manager for a transaction; with REQUIRED and none running, a new one begins and its connection is bound to the thread."
+    trace: [call, begin]
+  - caption: "Only then does the proxy call your real method. Its repository INSERT runs on that bound connection, inside transaction 1."
+    trace: [run, insert]
+  - caption: "createOrder calls audit on another bean, so the call goes through that bean's proxy. audit is REQUIRES_NEW: the manager suspends transaction 1 and begins a second one, on a second pooled connection."
+    trace: [callaudit, suspend]
+  - caption: "The audit row is written and transaction 2 commits on its own. Transaction 1 is resumed, still uncommitted."
+    trace: [auditrow, commit2]
+  - caption: "Back in createOrder something fails with an unchecked exception. It escapes the method, and the proxy sees it."
+    trace: [boom]
+  - caption: "RuntimeException and Error mean rollback, so the order INSERT is undone, then the exception is rethrown. The audit row stays: it was committed independently. A checked exception would have committed, unless rollbackFor says otherwise."
+    trace: [rollback, rethrow]
+  - caption: "Now the trap. The controller calls importAll, which has no @Transactional, so the proxy just passes the call through."
+    trace: [callimport, passimport]
+  - caption: "importAll calls this.importOne for each row. this is the real object, not the proxy, so importOne's @Transactional is never seen and no transaction starts. Annotate importAll, or move importOne to another bean."
+    trace: [selfcall]
+note: "REQUIRES_NEW holds two connections at once; with every thread doing it, a small pool can lock up."
+```

@@ -7,6 +7,7 @@ import { readdir, readFile } from "node:fs/promises"
 import { join, relative } from "node:path"
 import { CORE_SCHEMA, load as loadYaml } from "js-yaml"
 import { z } from "zod"
+import { layoutFlows, parseDiagrams } from "./diagrams"
 import { parseTraces } from "./traces"
 import { type Bridge, defaultTags, type Lesson, PATH_TAGS, type Path, type PathTag, type PathsData, type Stage, type Topic, type WalkthroughRef } from "./types"
 
@@ -17,7 +18,7 @@ const line = z.string().trim().min(1)
 
 const lessonString = z
   .string()
-  .regex(/^(none|lanes|walkthrough:[a-z0-9-]+)$/, 'use "none", "lanes" or "walkthrough:<library id>"')
+  .regex(/^(none|lanes|diagram|walkthrough:[a-z0-9-]+)$/, 'use "none", "lanes", "diagram" or "walkthrough:<library id>"')
 
 const quizItem = z
   .object({
@@ -89,6 +90,7 @@ function splitLead(body: string): { lead: string; rest: string } {
 function parseLesson(s: string): Lesson {
   if (s === "none") return { type: "none" }
   if (s === "lanes") return { type: "lanes" }
+  if (s === "diagram") return { type: "diagram" }
   return { type: "walkthrough", id: s.split(":")[1] }
 }
 
@@ -161,7 +163,13 @@ export async function checkContent(root = process.cwd()): Promise<CheckResult> {
     const traced = parseTraces(split.body, rel(file), problems, warnings)
     if (traced.count && lesson.type !== "lanes") problems.push(`${rel(file)}: has \`trace lanes\` blocks but lesson is "${t.lesson}"; use lesson: lanes`)
     if (lesson.type === "lanes" && !traced.count) problems.push(`${rel(file)}: lesson "lanes" needs at least one \`trace lanes\` block in the body`)
-    const { lead, rest } = splitLead(traced.before)
+    // ```trace diagram``` blocks: the lesson for "diagram", and nowhere else.
+    const flows = parseDiagrams(split.body, rel(file), problems, warnings)
+    if (flows.count && lesson.type !== "diagram") problems.push(`${rel(file)}: has \`trace diagram\` blocks but lesson is "${t.lesson}"; use lesson: diagram`)
+    if (lesson.type === "diagram" && !flows.count) problems.push(`${rel(file)}: lesson "diagram" needs at least one \`trace diagram\` block in the body`)
+    const diagrams = flows.count ? await layoutFlows(flows.diagrams, rel(file), problems) : []
+    const parts = flows.count ? flows : traced
+    const { lead, rest } = splitLead(parts.before)
     if (!lead) warnings.push(`${rel(file)}: the body has no opening paragraph; the panel will show the summary instead`)
     if (lesson.type === "none" && !rest && t.quiz.length === 0) warnings.push(`${rel(file)}: lesson "none" with no explanation or quiz`)
     topics[t.id] = {
@@ -172,13 +180,14 @@ export async function checkContent(root = process.cwd()): Promise<CheckResult> {
       requires: t.requires,
       lesson,
       traces: traced.traces,
+      diagrams,
       points: t.points,
       quizHint: t.quiz_hint,
       quiz: t.quiz,
       links: t.links,
       lead: lead || t.summary,
       body: rest,
-      notes: traced.after.trim(),
+      notes: parts.after.trim(),
       source: "content",
       walkthrough: lesson.type === "walkthrough" ? walkthroughRef(lesson.id) : undefined,
     }
@@ -215,6 +224,7 @@ export async function checkContent(root = process.cwd()): Promise<CheckResult> {
       requires: (t.meta?.uses ?? []).filter((u) => library.has(u) && u !== t.id),
       lesson: { type: "walkthrough", id: t.id },
       traces: [],
+      diagrams: [],
       points: [],
       quiz: [],
       links: [],

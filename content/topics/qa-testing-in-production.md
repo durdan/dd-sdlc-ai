@@ -4,7 +4,7 @@ title: Testing in production, safely
 summary: Flags, canaries and synthetic checks
 why: "Production has traffic, data and configuration that no test environment copies exactly. Some bugs only show up there, so limit how many users they can reach and find them before users report them."
 requires: [qa-tests-in-ci]
-lesson: none
+lesson: diagram
 points:
   - title: Not instead of, as well as
     text: "Tests only cover scenarios someone thought of. Production checks catch the rest, but they don't replace the suite."
@@ -97,3 +97,58 @@ test("search to product page works in production", async ({ page }) => {
 - Never move real money. Use the payment provider's test mode for those accounts, or stop the journey before payment.
 - Make checks read-only where you can. Where they write, clean up, and make it obvious which data is test data.
 - Keep a kill switch for every risky change, and practise using it.
+
+```trace diagram
+id: canary-rollout
+title: A canary with a flag inside
+subtitle: Reach a few users, compare, then promote or roll back
+direction: DOWN
+groups:
+  - { id: prod, label: Production }
+elements:
+  - { id: users, label: Users, kind: person }
+  - { id: synthetic, label: Synthetic check, sub: "every few minutes, test account", kind: person, tone: neutral }
+  - { id: router, label: Router, sub: splits traffic, group: prod }
+  - { id: baseline, label: v1 baseline, sub: 90% of traffic, group: prod }
+  - { id: canary, label: v2 canary, sub: 10% of traffic, group: prod, tone: stream }
+  - { id: flags, label: Flag service, sub: "allow-list, then 10%", group: prod }
+  - { id: metrics, label: Metrics, sub: "errors, p95 and p99, checkouts/min", kind: store, tone: data }
+  - { id: controller, label: Rollout controller, sub: compares canary with baseline }
+  - { id: promote, label: Promote, sub: "25%, 50%, 100%", kind: system }
+  - { id: rollback, label: Roll back, sub: canary back to 0%, kind: system }
+edges:
+  - { id: traffic, from: users, to: router }
+  - { id: old, from: router, to: baseline }
+  - { id: new, from: router, to: canary }
+  - { id: ask, from: canary, to: flags }
+  - { id: probe, from: synthetic, to: router }
+  - { id: m1, from: baseline, to: metrics }
+  - { id: m2, from: canary, to: metrics }
+  - { id: compare, from: metrics, to: controller }
+  - { id: up, from: controller, to: promote }
+  - { id: down, from: controller, to: rollback, style: dashed }
+steps:
+  - caption: Version 2 is deployed next to version 1, with no users routed to it yet. Deploying is not releasing.
+    focus: [baseline, canary]
+  - caption: The router starts sending a small slice of real traffic to the canary, here 10%. It could be random users, staff first, or one region.
+    focus: [users, router, canary]
+    trace: [traffic, old, new]
+  - caption: Inside v2, the new checkout is still behind a flag. Staff and the synthetic test account are on its allow-list; everyone else is hashed into a stable bucket, so a user gets the same answer on every page.
+    focus: [canary, flags]
+    trace: [ask]
+  - caption: A synthetic check runs a key journey against production every few minutes, as a dedicated test account. It catches a broken certificate, DNS or config before customers report it.
+    focus: [synthetic, router]
+    trace: [probe]
+  - caption: Both versions report the same signals, error rate, p95 and p99 latency, and business numbers such as checkouts per minute.
+    focus: [baseline, canary, metrics]
+    trace: [m1, m2]
+  - caption: A rollout controller, such as Argo Rollouts or Flagger, compares the canary with the baseline on those signals, so the decision does not wait for a person watching a dashboard.
+    focus: [metrics, controller]
+    trace: [compare]
+  - caption: If the canary is as good as the baseline, it promotes the next step, more traffic each time, until v2 takes it all and v1 can be removed.
+    focus: [controller, promote]
+    trace: [up]
+  - caption: If it is worse, say twice the error rate, traffic goes back to v1. The old version never stopped running, so rolling back is just a routing change. A bad flag is undone the same way, by setting it back to 0%.
+    focus: [controller, rollback]
+    trace: [down]
+```

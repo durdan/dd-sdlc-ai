@@ -1,6 +1,6 @@
 // npm run paths:check — validates content/topics, content/paths and the catalogue's system
 // design paths with the same code the pages use (lib/paths/load.ts), lays every map out with
-// elkjs, runs every lanes trace that has `expect` in a child Node process and compares what it
+// elkjs (flow diagrams too, through design-player's layoutDiagram), runs every lanes trace that has `expect` in a child Node process and compares what it
 // prints, and prints a summary. Exits with code 1 on any problem.
 import { execFile } from "node:child_process"
 import { mkdtemp, rm, writeFile } from "node:fs/promises"
@@ -76,6 +76,17 @@ async function main() {
     for (const p of runProblems) console.error(`  - ${p}`)
     process.exit(1)
   }
+
+  const flowed = content.filter((t) => t.diagrams.length)
+  console.log(`\nFlow diagrams (${flowed.reduce((n, t) => n + t.diagrams.length, 0)} in ${flowed.length} topics): checked and laid out`)
+  for (const t of flowed)
+    for (const d of t.diagrams) {
+      const edges = d.diagram.kind === "c4" ? d.diagram.edges.length : d.diagram.messages.length
+      const boxes = d.diagram.kind === "c4" ? d.diagram.elements.length : d.diagram.participants.length
+      console.log(
+        `  ✓  ${`${t.id}/${d.id}`.padEnd(36)} ${d.diagram.kind}, ${boxes} ${d.diagram.kind === "c4" ? "elements" : "participants"}, ${edges} ${d.diagram.kind === "c4" ? "edges" : "messages"}, ${d.steps.length} steps, layout ${d.layout.width}×${d.layout.height}${d.portrait ? `, portrait ${d.portrait.width}×${d.portrait.height}` : ""}`,
+      )
+    }
 
   const lessons = content.reduce<Record<string, number>>((acc, t) => {
     const k = t.lesson.type

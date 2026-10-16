@@ -4,7 +4,7 @@ title: Actuator and observability
 summary: Health checks, metrics and traces, mostly for free
 why: When something is slow at 3 a.m., the numbers Actuator and Micrometer already collect are what tell you which hop to blame.
 requires: [spring-config]
-lesson: none
+lesson: diagram
 points:
   - title: Endpoints, carefully exposed
     text: Actuator adds /actuator endpoints, but only health is exposed over HTTP by default; expose the rest on purpose.
@@ -107,3 +107,60 @@ Observation.createNotStarted("inventory.reserve", registry)
 ```
 
 Boot propagates the trace context on outgoing calls made with the auto-configured `RestClient.Builder`, `RestTemplateBuilder` or `WebClient.Builder`, and can put the trace id into every log line, so one slow checkout can be followed from the gateway through each service to the query that took the time.
+
+```trace diagram
+id: scrape-and-probe
+title: A scrape and two probes
+subtitle: From a meter in your code to an alert, and how Kubernetes asks after the pod
+direction: DOWN
+groups:
+  - { id: app, label: Spring Boot app (one pod) }
+  - { id: k8s, label: Kubernetes }
+elements:
+  - { id: code, label: Your code, sub: checkout.payments.declined, group: app, row: 0 }
+  - { id: auto, label: Boot instrumentation, sub: "http.server.requests, jvm, hikaricp", group: app, row: 0 }
+  - { id: registry, label: MeterRegistry, sub: "Micrometer, Prometheus registry", group: app, tone: stream, row: 1 }
+  - { id: scrape, label: /actuator/prometheus, sub: on the management port, group: app, row: 2 }
+  - { id: liveness, label: /actuator/health/liveness, sub: LivenessState only, group: app, row: 2 }
+  - { id: readiness, label: /actuator/health/readiness, sub: ReadinessState by default, group: app, row: 2 }
+  - { id: prometheus, label: Prometheus, sub: stores time series, kind: store, tone: data, row: 3 }
+  - { id: alertmanager, label: Alertmanager, sub: notifies on-call, kind: external, row: 4 }
+  - { id: kubelet, label: kubelet, sub: probes each container, group: k8s, row: 3 }
+  - { id: endpoints, label: Service endpoints, sub: pods that get traffic, group: k8s, row: 4 }
+edges:
+  - { id: inc, from: code, to: registry, label: increment() }
+  - { id: time, from: auto, to: registry, label: record timings }
+  - { id: render, from: registry, to: scrape }
+  - { id: pull, from: scrape, to: prometheus, label: "pulled every scrape interval" }
+  - { id: fire, from: prometheus, to: alertmanager, label: alert rule fires }
+  - { id: live, from: liveness, to: kubelet, label: 200 or 503 }
+  - { id: ready, from: readiness, to: kubelet, label: 200 or 503 }
+  - { id: drain, from: kubelet, to: endpoints, label: "not ready: take the pod out", style: dashed }
+steps:
+  - caption: Your code records to Micrometer once. This counter goes up every time a payment is declined, and the code never mentions Prometheus.
+    focus: [code, registry]
+    trace: [inc]
+  - caption: Boot has already instrumented the rest. Every Spring MVC request records into the http.server.requests timer, tagged with method, URI template, status and outcome, next to JVM and connection pool meters.
+    focus: [auto, registry]
+    trace: [time]
+  - caption: With the Prometheus registry on the classpath and the endpoint exposed, /actuator/prometheus renders every meter in the format Prometheus expects, each time it is asked. Only health is exposed by default.
+    focus: [registry, scrape]
+    trace: [render]
+  - caption: Prometheus pulls. On every scrape interval it GETs that endpoint from each instance and stores the numbers as time series. Keep tag values bounded, or every user id becomes a series of its own.
+    focus: [prometheus, scrape]
+    trace: [pull]
+  - caption: An alert rule, say the share of 5xx responses over five minutes, is evaluated in Prometheus. When it fires, Alertmanager groups, silences or routes it and notifies whoever is on call.
+    focus: [prometheus, alertmanager]
+    trace: [fire]
+  - caption: Separately, Kubernetes asks after the pod. The kubelet calls the liveness group over HTTP. It answers 503 only when the application's own state is broken, and after enough failures in a row the container is restarted.
+    focus: [kubelet, liveness]
+    trace: [live]
+  - caption: The readiness group answers whether the pod should get traffic now. During start-up and graceful shutdown it reports REFUSING_TRAFFIC.
+    focus: [kubelet, readiness]
+    trace: [ready]
+  - caption: A failing readiness probe takes the pod out of the Service's endpoints, with no restart. It comes back when the probe passes again.
+    focus: [readiness, endpoints]
+    trace: [drain]
+  - caption: Neither group checks the database by default. If a shared database is down, restarting every pod helps nobody; add it to readiness only if traffic really should drain.
+    focus: [liveness, readiness]
+```
