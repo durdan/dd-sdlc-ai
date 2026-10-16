@@ -11,11 +11,15 @@
 // Where the whole diagram would be too small to read, and for every sequence diagram, the camera is
 // this file's own (flowCamera.ts): DiagramStage gets a fixed view per moment, and a sequence
 // diagram's participant row is an HTML header that stays on screen as the view moves down.
+// A tapped box can also be explored (reach.ts): what it leads to, what leads to it, or the route to
+// another box, drawn as a one-off shot. The view (diagram, step, box, exploration) is kept in the
+// URL hash once the reader starts using the diagram, so a link opens the same view.
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import "@/components/learn/setup"
 import { shotDurations, type Shot } from "design-player/core"
 import { DiagramStage } from "design-player/react"
 import type { FlowDiagram } from "@/lib/paths/types"
+import { explore, readLink, writeLink, type FlowLink, type Reach } from "@/lib/paths/reach"
 import { BAND_GAP, LIB_FOLLOW, PAD, READ, bandPx, c4Keys, compactSequence, headerRow, layoutFor, sequenceKeys, vb, wholeScale, type Key, type Rect, type Stage } from "./flowCamera"
 import { Ctl } from "./LanesVisualiser"
 
@@ -218,8 +222,23 @@ function FlowStage({ flow, shots, at, epoch, ms, still, selected, onSelect }: St
   )
 }
 
+/** A focused group lights the boxes in it as well as its own outline. */
+function withMembers(d: FlowDiagram["diagram"], focus: string[]) {
+  if (d.kind !== "c4") return focus
+  const members = d.elements.filter((e) => e.group && focus.includes(e.group)).map((e) => e.id)
+  return members.length ? [...new Set([...focus, ...members])] : focus
+}
+
 const shotsOf = (d: FlowDiagram): Shot[] =>
-  d.steps.map((s, i) => ({ id: `${d.id}-${i + 1}`, chapter: "flow", diagram: d.id, focus: s.focus, trace: s.trace, engineer: s.caption, executive: s.caption }))
+  d.steps.map((s, i) => ({
+    id: `${d.id}-${i + 1}`,
+    chapter: "flow",
+    diagram: d.id,
+    focus: withMembers(d.diagram, s.focus),
+    trace: s.trace,
+    engineer: s.caption,
+    executive: s.caption,
+  }))
 
 type Props = { diagrams: FlowDiagram[]; index: number; onSelect: (i: number) => void }
 
@@ -233,6 +252,7 @@ export default function FlowVisualiser({ diagrams, index, onSelect }: Props) {
   const [speed, setSpeed] = useState<(typeof SPEEDS)[number]>(1)
   const [still, setStill] = useState(false)
   const [selected, setSelected] = useState<string | null>(null)
+  const [reach, setReach] = useState<Reach | null>(null)
   /** Bumps on every jump, so re-entering the same step replays it. */
   const [epoch, setEpoch] = useState(0)
   const [shown, setShown] = useState(index)
@@ -241,13 +261,22 @@ export default function FlowVisualiser({ diagrams, index, onSelect }: Props) {
     setStep(0)
     setPlaying(false)
     setSelected(null)
+    setReach(null)
   }
   // Wide diagrams (sequence diagrams, left-to-right flows) take the full width on desktop.
   const wide = flow.layout.width > flow.layout.height * 1.15
   const last = shots.length - 1
   const at = Math.min(step, last)
+  const nodes = d.kind === "c4" ? d.elements : d.participants
+  const edges = d.kind === "c4" ? d.edges : d.messages
+  // Exploring a box replaces the step's shot with one that lights what it reaches.
+  const reached = useMemo(() => (selected && reach ? explore(edges, selected, reach) : null), [edges, selected, reach])
+  const staged = useMemo(
+    () => (reached ? shots.map((s, i) => (i === at ? { ...s, id: `${s.id}-reach`, focus: reached.nodes, trace: reached.edges } : s)) : shots),
+    [shots, at, reached],
+  )
   const shot = shots[at]
-  const ms = durs[at] / speed
+  const ms = reached ? 1200 + 1100 * Math.max(1, reached.edges.length) : durs[at] / speed
 
   useEffect(() => {
     const mq = matchMedia("(prefers-reduced-motion: reduce)")
@@ -270,6 +299,8 @@ export default function FlowVisualiser({ diagrams, index, onSelect }: Props) {
     (n: number) => {
       setPlaying(false)
       setSelected(null)
+      setReach(null)
+      touched.current = true
       setStep(Math.max(0, Math.min(last, n)))
       setEpoch((e) => e + 1)
     },
@@ -277,6 +308,8 @@ export default function FlowVisualiser({ diagrams, index, onSelect }: Props) {
   )
   const play = () => {
     setSelected(null)
+    setReach(null)
+    touched.current = true
     if (playing) return setPlaying(false)
     // Play replays the current step from its start and carries on; after the last step it starts again.
     if (at >= last) setStep(0)
@@ -285,8 +318,6 @@ export default function FlowVisualiser({ diagrams, index, onSelect }: Props) {
   }
 
   // Paused: a box on the stage explains itself and lists the steps that light it.
-  const nodes = d.kind === "c4" ? d.elements : d.participants
-  const edges = d.kind === "c4" ? d.edges : d.messages
   const picked = selected ? nodes.find((n) => n.id === selected) : undefined
   const pickedSub = d.kind === "c4" ? d.elements.find((e) => e.id === selected)?.sub : undefined
   const mentions = selected
@@ -296,7 +327,66 @@ export default function FlowVisualiser({ diagrams, index, onSelect }: Props) {
     : []
   const select = (id: string) => {
     setPlaying(false)
+    setReach(null)
+    touched.current = true
     setSelected((s) => (s === id ? null : id))
+  }
+  const exploreAs = (r: Reach | null) => {
+    setReach((cur) => (r && cur && cur.kind === r.kind && (r.kind !== "path" || (cur.kind === "path" && cur.to === r.to)) ? null : r))
+    setEpoch((e) => e + 1)
+  }
+  const labelOf = (id: string) => nodes.find((n) => n.id === id)?.label ?? id
+
+  // Share links. On arrival, a #flow=… hash picks the diagram, step, box and exploration.
+  const touched = useRef(false)
+  const pending = useRef<FlowLink | null>(null)
+  const linked = useRef(false)
+  // A link to this same page only changes the hash: read it again.
+  const [arrived, setArrived] = useState(0)
+  useEffect(() => {
+    const on = () => {
+      linked.current = false
+      setArrived((n) => n + 1)
+    }
+    addEventListener("hashchange", on)
+    return () => removeEventListener("hashchange", on)
+  }, [])
+  useEffect(() => {
+    if (!linked.current) {
+      linked.current = true
+      const l = readLink(location.hash)
+      const j = l ? diagrams.findIndex((f) => f.id === l.flow) : -1
+      if (l && j >= 0) {
+        pending.current = l
+        document.getElementById("flow")?.scrollIntoView({ block: "start" })
+        if (j !== index) return onSelect(j)
+      }
+    }
+    const l = pending.current
+    if (!l || diagrams[index].id !== l.flow) return
+    pending.current = null
+    touched.current = true
+    const ids = new Set(nodes.map((n) => n.id))
+    const box = l.box && ids.has(l.box) ? l.box : null
+    setStep(Math.min(l.step - 1, last))
+    setSelected(box)
+    setReach(box && l.reach && (l.reach.kind !== "path" || ids.has(l.reach.to)) ? l.reach : null)
+    setEpoch((e) => e + 1)
+  }, [index, diagrams, onSelect, nodes, last, arrived])
+  const link = writeLink({ flow: flow.id, step: at + 1, box: selected ?? undefined, reach: reach ?? undefined })
+  // Once the reader has used the diagram, the address bar follows the paused view.
+  useEffect(() => {
+    if (touched.current && !playing) history.replaceState(history.state, "", `${location.pathname}${location.search}${link}`)
+  }, [link, playing])
+  const [copied, setCopied] = useState(false)
+  const share = async () => {
+    try {
+      await navigator.clipboard.writeText(`${location.origin}${location.pathname}${location.search}${link}`)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      setCopied(false)
+    }
   }
 
   // A tapped box's panel sits below the controls on phones: bring it into view.
@@ -323,7 +413,10 @@ export default function FlowVisualiser({ diagrams, index, onSelect }: Props) {
               key={f.id}
               role="tab"
               aria-selected={i === index}
-              onClick={() => onSelect(i)}
+              onClick={() => {
+                touched.current = true
+                onSelect(i)
+              }}
               className={`shrink-0 rounded-xl border px-3 py-2 text-left transition-colors ${
                 i === index ? "border-[#3d6b63] bg-[#3d6b63] text-white" : "border-[#d9dfdc] bg-white text-[#1f2a28] hover:border-[#3d6b63]"
               }`}
@@ -342,7 +435,7 @@ export default function FlowVisualiser({ diagrams, index, onSelect }: Props) {
             A wide diagram gets the full width on desktop, with the controls below; a tall one sits beside them. */}
         <div className={`relative min-w-0 overflow-hidden rounded-2xl border border-[#d9dfdc] bg-[#f4f5f2] ${wide ? "lg:col-span-2" : "lg:col-start-2 lg:row-span-4 lg:row-start-1"}`}>
           <div className={`aspect-[4/5] max-h-[68vh] w-full ${wide ? "sm:aspect-[16/9] sm:max-h-[58vh]" : "sm:aspect-[4/3]"}`}>
-            <FlowStage key={flow.id} flow={flow} shots={shots} at={at} epoch={epoch} ms={ms} still={still} selected={selected} onSelect={select} />
+            <FlowStage key={flow.id} flow={flow} shots={staged} at={at} epoch={epoch} ms={ms} still={still} selected={selected} onSelect={select} />
           </div>
           {!playing && !selected ? (
             <p className="pointer-events-none absolute bottom-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-[#d9dfdc] bg-white/95 px-2.5 py-1 text-[11.5px] text-[#4f5d5a]">
@@ -393,7 +486,18 @@ export default function FlowVisualiser({ diagrams, index, onSelect }: Props) {
             <Ctl label="Step forward" onClick={() => jump(at + 1)} disabled={at >= last}>
               <path d="M9 5l7 7-7 7" />
             </Ctl>
-            <label className="ml-auto flex items-center gap-1 text-xs font-semibold text-[#4f5d5a]">
+            <button
+              onClick={share}
+              title="Copy a link to this view"
+              aria-label="Copy a link to this view"
+              className="ml-auto flex h-10 min-w-10 shrink-0 items-center justify-center gap-1 rounded-full border border-[#d9dfdc] bg-white px-2.5 text-xs sm:px-3 font-semibold text-[#1f2a28] hover:border-[#3d6b63] hover:text-[#3d6b63]"
+            >
+              <svg className="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1" />
+              </svg>
+              <span aria-live="polite" className={copied ? "" : "hidden sm:inline"}>{copied ? "Copied" : "Link"}</span>
+            </button>
+            <label className="flex items-center gap-1 text-xs font-semibold text-[#4f5d5a]">
               <span className="sr-only sm:not-sr-only">Speed</span>
               <select
                 value={speed}
@@ -424,6 +528,56 @@ export default function FlowVisualiser({ diagrams, index, onSelect }: Props) {
                   ×
                 </button>
               </div>
+              <p className="mt-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[#5d6b68]">Explore</p>
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {(
+                  [
+                    ["down", "What it leads to"],
+                    ["up", "What leads to it"],
+                  ] as const
+                ).map(([k, text]) => (
+                  <button
+                    key={k}
+                    onClick={() => exploreAs({ kind: k })}
+                    aria-pressed={reach?.kind === k}
+                    className={`rounded-full border px-2.5 py-1 text-[12.5px] font-semibold ${
+                      reach?.kind === k ? "border-[#3d6b63] bg-[#3d6b63] text-white" : "border-[#d9dfdc] bg-white text-[#1f2a28] hover:border-[#3d6b63]"
+                    }`}
+                  >
+                    {k === "down" ? "↓" : "↑"} {text}
+                  </button>
+                ))}
+                <select
+                  value={reach?.kind === "path" ? reach.to : ""}
+                  onChange={(e) => exploreAs(e.target.value ? { kind: "path", to: e.target.value } : null)}
+                  aria-label="Show the route to another box"
+                  className={`rounded-full border px-2.5 py-1 text-[12.5px] font-semibold ${
+                    reach?.kind === "path" ? "border-[#3d6b63] bg-[#3d6b63] text-white" : "border-[#d9dfdc] bg-white text-[#1f2a28]"
+                  }`}
+                >
+                  <option value="">Route to…</option>
+                  {nodes
+                    .filter((n) => n.id !== selected)
+                    .map((n) => (
+                      <option key={n.id} value={n.id}>
+                        {n.label}
+                      </option>
+                    ))}
+                </select>
+              </div>
+              {reach ? (
+                <p className="mt-1.5 text-[12.5px] leading-snug text-[#33413e]" aria-live="polite">
+                  {!reached
+                    ? `No arrows connect ${picked.label} and ${labelOf(reach.kind === "path" ? reach.to : "")}.`
+                    : reach.kind === "path"
+                      ? `${reached.nodes.map(labelOf).join(" → ")}${"directed" in reached && !reached.directed ? " (not all arrows point this way)" : ""}`
+                      : reached.nodes.length < 2
+                        ? reach.kind === "down"
+                          ? "Nothing here: no arrow starts at this box."
+                          : "Nothing here: no arrow ends at this box."
+                        : `${reach.kind === "down" ? "Leads to" : "Reached from"} ${reached.nodes.length - 1} ${reached.nodes.length === 2 ? "box" : "boxes"}: ${reached.nodes.slice(1).map(labelOf).join(", ")}.`}
+                </p>
+              ) : null}
               {mentions.length ? (
                 <>
                   <p className="mt-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[#5d6b68]">Explained in</p>
