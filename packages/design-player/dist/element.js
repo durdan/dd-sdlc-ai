@@ -11604,14 +11604,14 @@ function ms(e, t, n) {
 	let p = (o + c) / 2 + os, m = (s + l) / 2 + os, h = Math.min(Math.max(0, p - u / 2), i - u), g = Math.min(Math.max(0, m - d / 2), a - d);
 	return `${h.toFixed(1)} ${g.toFixed(1)} ${u.toFixed(1)} ${d.toFixed(1)}`;
 }
-function hs({ diagram: e, layout: t, portraitLayout: n, epoch: r, shot: i, shotMs: a, offsetMs: o, scrubMs: s, playing: c, onSelect: l, selected: u, view: d }) {
-	let f = (0, x.useRef)(null), p = (0, x.useRef)(null), [m, h] = (0, x.useState)(null);
+function hs({ diagram: e, layout: t, portraitLayout: n, epoch: r, shot: i, shotMs: a, offsetMs: o, scrubMs: s, playing: c, onSelect: l, selected: u, view: d, stableSvg: f = !0 }) {
+	let p = (0, x.useRef)(null), m = (0, x.useRef)(null), [h, g] = (0, x.useState)(null);
 	(0, x.useLayoutEffect)(() => {
-		let e = f.current;
+		let e = p.current;
 		if (!e) return;
 		let t = () => {
 			let t = e.getBoundingClientRect();
-			t.width && t.height && h((e) => e && Math.abs(e.w - t.width) < 2 && Math.abs(e.h - t.height) < 2 ? e : {
+			t.width && t.height && g((e) => e && Math.abs(e.w - t.width) < 2 && Math.abs(e.h - t.height) < 2 ? e : {
 				w: t.width,
 				h: t.height
 			});
@@ -11620,15 +11620,15 @@ function hs({ diagram: e, layout: t, portraitLayout: n, epoch: r, shot: i, shotM
 		let n = new ResizeObserver(t);
 		return n.observe(e), () => n.disconnect();
 	}, []);
-	let g = m && n && m.h > m.w * .9 ? n : t, _ = (0, x.useMemo)(() => as(e, g, { pad: os }), [e, g]), v = d !== void 0, y = !v && !!m && Math.min(m.w / (g.width + 32), m.h / (g.height + 32)) < cs;
+	let _ = h && n && h.h > h.w * .9 ? n : t, v = (0, x.useMemo)(() => as(e, _, { pad: os }), [e, _]), y = (0, x.useMemo)(() => ({ __html: v }), [v]), b = d !== void 0, C = !b && !!h && Math.min(h.w / (_.width + 32), h.h / (_.height + 32)) < cs;
 	return (0, x.useLayoutEffect)(() => {
-		let t = f.current?.querySelector("svg");
-		if (!t || !m) return;
+		let t = p.current?.querySelector("svg");
+		if (!t || !h) return;
 		let n = ps(e, i), r = n.size > 0, s = t.querySelectorAll(".dg-node, .dg-edge, .dg-group, .dg-lifeline"), l = t.querySelectorAll(".dg-edge-label");
 		t.querySelectorAll(".dg-pulse").forEach((e) => e.remove());
 		{
-			let e = Vi.timeline({ paused: !0 }), o = (e) => g.nodes[e], c = (e) => {
-				let t = g.edges[e]?.points ?? [];
+			let e = Vi.timeline({ paused: !0 }), o = (e) => _.nodes[e], c = (e) => {
+				let t = _.edges[e]?.points ?? [];
 				return t.length ? fs(t.map((e) => ({
 					x: e.x,
 					y: e.y,
@@ -11636,9 +11636,9 @@ function hs({ diagram: e, layout: t, portraitLayout: n, epoch: r, shot: i, shotM
 					h: 1
 				}))) : null;
 			};
-			if (v) t.setAttribute("preserveAspectRatio", "xMidYMid meet");
-			else if (!y) e.to(t, {
-				attr: { viewBox: ms(g, n, i.trace) },
+			if (b) t.setAttribute("preserveAspectRatio", "xMidYMid meet");
+			else if (!C) e.to(t, {
+				attr: { viewBox: ms(_, n, i.trace) },
 				duration: 1.3,
 				ease: "power2.inOut"
 			}, 0);
@@ -11647,16 +11647,16 @@ function hs({ diagram: e, layout: t, portraitLayout: n, epoch: r, shot: i, shotM
 				let r = i.trace.length ? c(i.trace[0]) : null, a = [...n].map(o).filter(Boolean), s = r ?? (a.length ? fs(a) : null), l = {
 					x: 0,
 					y: 0,
-					w: g.width,
-					h: g.height
-				}, u = s ? ds(s, g, m) : ds(l, g, {
-					w: m.w,
-					h: m.h
-				}), d = Math.max((g.width + 32) / m.w, (g.height + 32) / m.h), f = {
-					x: (g.width + 32 - m.w * d) / 2,
-					y: (g.height + 32 - m.h * d) / 2,
-					w: m.w * d,
-					h: m.h * d
+					w: _.width,
+					h: _.height
+				}, u = s ? ds(s, _, h) : ds(l, _, {
+					w: h.w,
+					h: h.h
+				}), d = Math.max((_.width + 32) / h.w, (_.height + 32) / h.h), f = {
+					x: (_.width + 32 - h.w * d) / 2,
+					y: (_.height + 32 - h.h * d) / 2,
+					w: h.w * d,
+					h: h.h * d
 				};
 				e.to(t, {
 					attr: { viewBox: us(s ? u : f) },
@@ -11676,49 +11676,49 @@ function hs({ diagram: e, layout: t, portraitLayout: n, epoch: r, shot: i, shotM
 			let f = r ? [...s].filter((e) => {
 				let t = e.dataset.node ?? e.dataset.edge ?? e.dataset.group ?? e.dataset.life ?? "";
 				return e.classList.contains("dg-group") ? !i.focus.includes(t) : e.classList.contains("dg-edge") ? !i.trace.includes(t) : !n.has(t);
-			}) : [], h = [...s].filter((e) => !f.includes(e));
+			}) : [], p = [...s].filter((e) => !f.includes(e));
 			f.length && e.to(f, {
 				opacity: ss,
 				duration: .6,
 				ease: "power1.out"
-			}, 0), h.length && e.to(h, {
+			}, 0), p.length && e.to(p, {
 				opacity: 1,
 				duration: .6,
 				ease: "power1.out"
 			}, 0);
-			let _ = i.trace.length ? Math.max(1.1, (a / 1e3 - 1.2) / i.trace.length) : 0;
+			let g = i.trace.length ? Math.max(1.1, (a / 1e3 - 1.2) / i.trace.length) : 0;
 			i.trace.forEach((n, r) => {
 				let i = t.querySelector(`.dg-edge[data-edge="${CSS.escape(n)}"]`), a = i?.querySelector("path");
 				if (!i || !a) return;
-				let o = .5 + r * _, s = Math.min(.9, _ * .7);
-				if (y && r > 0) {
+				let o = .5 + r * g, s = Math.min(.9, g * .7);
+				if (C && r > 0) {
 					let r = c(n);
 					if (r) {
-						let i = g.edges[n].points, a = i[0], c = i[i.length - 1], l = ds(r, g, m), u = l.w >= r.w + 60 && l.h >= r.h + 60, d = u ? l : ds({
+						let i = _.edges[n].points, a = i[0], c = i[i.length - 1], l = ds(r, _, h), u = l.w >= r.w + 60 && l.h >= r.h + 60, d = u ? l : ds({
 							x: a.x - 40,
 							y: a.y - 40,
 							w: 80,
 							h: 80
-						}, g, m);
+						}, _, h);
 						e.to(t, {
 							attr: { viewBox: us(d) },
-							duration: Math.min(.7, _ * .35),
+							duration: Math.min(.7, g * .35),
 							ease: "power2.inOut"
-						}, o - Math.min(.7, _ * .35)), u || e.to(t, {
+						}, o - Math.min(.7, g * .35)), u || e.to(t, {
 							attr: { viewBox: us(ds({
 								x: c.x - 40,
 								y: c.y - 40,
 								w: 80,
 								h: 80
-							}, g, m)) },
+							}, _, h)) },
 							duration: s,
 							ease: "power1.inOut"
 						}, o);
 					}
-				} else if (y && r === 0) {
-					let r = g.edges[n]?.points ?? [], i = c(n);
+				} else if (C && r === 0) {
+					let r = _.edges[n]?.points ?? [], i = c(n);
 					if (i && r.length) {
-						let n = ds(i, g, m);
+						let n = ds(i, _, h);
 						if (!(n.w >= i.w + 60 && n.h >= i.h + 60)) {
 							let n = r[0], i = r[r.length - 1];
 							e.to(t, {
@@ -11727,7 +11727,7 @@ function hs({ diagram: e, layout: t, portraitLayout: n, epoch: r, shot: i, shotM
 									y: n.y - 40,
 									w: 80,
 									h: 80
-								}, g, m)) },
+								}, _, h)) },
 								duration: .5,
 								ease: "power2.inOut"
 							}, Math.max(0, o - .5)), e.to(t, {
@@ -11736,7 +11736,7 @@ function hs({ diagram: e, layout: t, portraitLayout: n, epoch: r, shot: i, shotM
 									y: i.y - 40,
 									w: 80,
 									h: 80
-								}, g, m)) },
+								}, _, h)) },
 								duration: s,
 								ease: "power1.inOut"
 							}, o);
@@ -11767,41 +11767,41 @@ function hs({ diagram: e, layout: t, portraitLayout: n, epoch: r, shot: i, shotM
 					opacity: 0,
 					duration: .25
 				}, o + s);
-			}), e.set({}, {}, Math.max(a / 1e3, e.duration())), p.current = e;
+			}), e.set({}, {}, Math.max(a / 1e3, e.duration())), m.current = e;
 		}
-		return p.current?.time(Math.max(0, o) / 1e3), c && p.current?.play(), () => {
-			p.current?.kill(), p.current = null;
+		return m.current?.time(Math.max(0, o) / 1e3), c && m.current?.play(), () => {
+			m.current?.kill(), m.current = null;
 		};
 	}, [
-		_,
+		v,
 		i,
 		a,
 		o,
 		r,
-		m,
-		y,
-		v
+		h,
+		C,
+		b
 	]), (0, x.useLayoutEffect)(() => {
-		d && f.current?.querySelector("svg")?.setAttribute("viewBox", d);
+		d && p.current?.querySelector("svg")?.setAttribute("viewBox", d);
 	}, [
 		d,
-		_,
-		m
+		v,
+		h
 	]), (0, x.useLayoutEffect)(() => {
-		p.current && (c ? p.current.play() : p.current.pause());
+		m.current && (c ? m.current.play() : m.current.pause());
 	}, [c]), (0, x.useLayoutEffect)(() => {
-		s !== void 0 && p.current?.time(s / 1e3);
+		s !== void 0 && m.current?.time(s / 1e3);
 	}, [s]), (0, x.useLayoutEffect)(() => {
-		let e = f.current?.querySelector("svg");
+		let e = p.current?.querySelector("svg");
 		e?.querySelectorAll(".dg-node.is-selected").forEach((e) => e.classList.remove("is-selected")), u && e?.querySelector(`.dg-node[data-node="${CSS.escape(u)}"]`)?.classList.add("is-selected");
-	}, [u, _]), /* @__PURE__ */ (0, S.jsx)("div", {
-		ref: f,
+	}, [u, v]), /* @__PURE__ */ (0, S.jsx)("div", {
+		ref: p,
 		className: "stage-svg",
 		onClick: (e) => {
 			let t = e.target.closest(".dg-node");
 			t?.dataset.node && l(t.dataset.node);
 		},
-		dangerouslySetInnerHTML: { __html: _ }
+		dangerouslySetInnerHTML: f ? y : { __html: v }
 	});
 }
 function gs(e) {
