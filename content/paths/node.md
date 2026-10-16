@@ -4,6 +4,7 @@ title: "Node.js: how the server side runs"
 promise: "What happens between your JavaScript and the operating system: the loop's phases, its private queues, the thread pool, streams, and threads of your own."
 kind: skill
 level: intermediate
+tags: [backend, languages]
 stages:
   - title: From JavaScript
     blurb: Rules shared with browsers

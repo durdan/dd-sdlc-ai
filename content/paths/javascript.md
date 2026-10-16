@@ -4,6 +4,7 @@ title: "JavaScript: how it really runs"
 promise: What the engine actually does with your code, from the call stack to the event loop, one picture at a time.
 kind: skill
 level: intermediate
+tags: [web, languages]
 stages:
   - title: Foundations
     blurb: How one piece of code runs
