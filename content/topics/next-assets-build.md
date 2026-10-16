@@ -4,7 +4,7 @@ title: "Images, fonts and the build"
 summary: What `next/image`, `next/font` and `next build` do for you
 why: "The largest image and the web font are often what decides your LCP and CLS. Next.js handles both, but only if you give it the sizes it needs, and the build output is the first place to check what you actually shipped."
 requires: [next-app-router, web-performance]
-lesson: none
+lesson: diagram
 points:
   - title: Images resized on request
     text: "`<Image>` serves resized, modern-format copies from `/_next/image`, lazy by default. Width and height (or `fill`) reserve space so nothing shifts."
@@ -74,3 +74,51 @@ The font files are downloaded during `next build` and served as static assets fr
 `next build` compiles with Turbopack, type-checks, prerenders routes, and prints a table where ○ is static, ◐ is a partial prerender, and ƒ is rendered per request, with the revalidate and expire times of cached routes. Read it after every significant change; a route turning ƒ is a performance regression you can see before shipping. A custom `webpack` function in `next.config` makes the default build fail on purpose; migrate it to `turbopack` options or build with `--webpack`.
 
 Output in `.next/static` has content-hashed names, and Next.js serves it as `public, max-age=31536000, immutable`; a deploy changes the names, so nothing needs purging.
+
+```trace diagram
+id: build-and-assets
+title: What next build makes, and what waits for a request
+subtitle: "Bundles, prerendered routes and fonts at build time; images on demand"
+groups:
+  - { id: build-time, label: next build }
+elements:
+  - { id: code, label: Your code, sub: "app/, components, next.config", kind: person, row: 0 }
+  - { id: google, label: Google Fonts, sub: contacted by the build only, kind: external, row: 0 }
+  - { id: build, label: Compile and prerender, sub: "Turbopack by default, type-check", kind: system, group: build-time, row: 1 }
+  - { id: bundles, label: Client bundles, sub: ".next/static, content-hashed", tone: data, group: build-time, row: 2 }
+  - { id: routes, label: Prerendered routes, sub: "route table: ○ ◐ ƒ", tone: data, group: build-time, row: 2 }
+  - { id: fonts, label: Self-hosted fonts, sub: + a size-adjusted fallback, tone: data, group: build-time, row: 2 }
+  - { id: source, label: Source image, sub: "a static import or an allowed remote host", kind: external, row: 1 }
+  - { id: server, label: Your domain, sub: "max-age=31536000, immutable", kind: system, row: 3 }
+  - { id: optimiser, label: /_next/image, sub: "resizes on request, caches", tone: stream, row: 3 }
+  - { id: browser, label: Browser, sub: picks a size from srcset, kind: person, row: 4 }
+edges:
+  - { id: compile, from: code, to: build }
+  - { id: fetch-fonts, from: google, to: build, style: dashed }
+  - { id: emit-bundles, from: build, to: bundles }
+  - { id: emit-routes, from: build, to: routes }
+  - { id: emit-fonts, from: build, to: fonts }
+  - { id: serve-bundles, from: bundles, to: server }
+  - { id: serve-routes, from: routes, to: server }
+  - { id: serve-fonts, from: fonts, to: server }
+  - { id: to-browser, from: server, to: browser }
+  - { id: resize, from: source, to: optimiser }
+  - { id: image-out, from: optimiser, to: browser }
+steps:
+  - caption: "next build compiles with Turbopack, the default since Next.js 16, and type-checks. A custom webpack function in next.config makes it fail on purpose: migrate it, or build with --webpack."
+    trace: [compile]
+  - caption: "next/font downloads the font files during the build, so a build without internet access fails. The probe app stopped with \"Failed to fetch Geist from Google Fonts\"; next/font/local with a checked-in file avoids that."
+    trace: [fetch-fonts, emit-fonts]
+  - caption: "It prerenders what it can and prints the route table: ○ static, ◐ partial prerender, ƒ per request, with revalidate and expire times. A route turning ƒ is a regression you can see before shipping."
+    trace: [emit-routes]
+  - caption: "Client code lands in .next/static with content-hashed names, served as public, max-age=31536000, immutable. A deploy changes the names, so nothing needs purging."
+    trace: [emit-bundles, serve-bundles]
+  - caption: "Fonts are served from your own domain like any other static asset, so the browser never contacts a font provider, and the fallback is sized so text doesn't jump."
+    trace: [serve-fonts, serve-routes, to-browser]
+  - caption: "Images are not made at build time. <Image> points the browser at /_next/image, which resizes the source on request and caches the result. Remote hosts must be listed in images.remotePatterns."
+    trace: [resize]
+  - caption: "The browser picks a size from the generated srcset; give sizes for responsive images, or it may fetch a bigger file than it shows. Images load lazily, except the LCP image you mark with preload."
+    trace: [image-out]
+  - caption: "Next.js 16 also tightened image defaults: only quality 75 unless you list images.qualities, local IP addresses blocked to avoid SSRF, and at most three redirects followed."
+    focus: [optimiser, source]
+```

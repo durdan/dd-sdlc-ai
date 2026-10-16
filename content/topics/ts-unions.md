@@ -4,7 +4,7 @@ title: Unions, discriminated unions and exhaustiveness
 summary: One of several shapes, told apart by a tag
 why: "Modelling states as a union with a tag field turns \"loading but also has an error\" bugs into compile errors, and makes the checker tell you every place to update when a new case is added."
 requires: [ts-inference]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: A union is one of these
     text: "`A | B` accepts either. Until you narrow it, you can only use what all members have in common."
@@ -118,3 +118,47 @@ function label(r: Request): string {
 With every member handled, the type left in `default` is `never` (no possible value), and the assignment compiles. When someone adds `retrying`, every `switch` that forgot it fails to compile at exactly that line. With `strict` on, the checker also complains when a function with a `string` return type can fall off the end of an incomplete `switch`, but the `never` line names the missing case and works in code that doesn't return.
 
 Prefer literal tags (`"success"`) over booleans for anything with more than two states, and keep the tag name the same across the union so one `switch` covers it.
+
+```trace diagram
+id: switch-on-tag
+title: A switch on the tag
+subtitle: "type Request = idle | loading | success | failure"
+elements:
+  - { id: req, label: "r: Request", sub: "four members, tag: status", kind: system, row: 0 }
+  - { id: retry, label: "{ status: \"retrying\" }", sub: a member added later, tone: stream, row: 0 }
+  - { id: sw, label: switch (r.status), kind: component, row: 1 }
+  - { id: idle, label: "\"idle\"", sub: no other fields, row: 2 }
+  - { id: loading, label: "\"loading\"", sub: no other fields, row: 2 }
+  - { id: success, label: "\"success\"", sub: "r.data: User", row: 2 }
+  - { id: failure, label: "\"failure\"", sub: "r.error: string", row: 2 }
+  - { id: def, label: default, sub: "const unreachable: never = r", tone: neutral, row: 2 }
+  - { id: err, label: Compile error, sub: not assignable to never, kind: external, row: 3 }
+edges:
+  - { id: tag, from: req, to: sw }
+  - { id: to-idle, from: sw, to: idle }
+  - { id: to-loading, from: sw, to: loading }
+  - { id: to-success, from: sw, to: success }
+  - { id: to-failure, from: sw, to: failure }
+  - { id: to-default, from: sw, to: def }
+  - { id: new-member, from: retry, to: sw, style: dashed }
+  - { id: not-never, from: def, to: err, style: dashed }
+steps:
+  - caption: A Request is one of four shapes, each with a literal status tag. Before any check, only status, which every member has, can be read.
+    focus: [req]
+  - caption: switch (r.status) compares the tag. The tag is ordinary data and the switch is ordinary JavaScript, so the check really happens at runtime.
+    trace: [tag]
+  - caption: "In case \"success\", r is narrowed to the success member, so r.data exists. It exists nowhere else."
+    trace: [to-success]
+  - caption: "In case \"failure\", r is the failure member, with its error string. There is no way to build a failure that also has data."
+    trace: [to-failure]
+  - caption: Idle and loading carry no other fields. Each case returns its own label.
+    trace: [to-idle, to-loading]
+  - caption: "After every member has been handled, the type left in default is never: no possible value. So const unreachable: never = r compiles."
+    trace: [to-default]
+  - caption: "Then someone adds { status: \"retrying\" }. No case handles it, so in default r is now that new member instead of never."
+    trace: [new-member, to-default]
+  - caption: Assigning it to never fails to compile, at exactly that line, in every switch that forgot the new case.
+    trace: [not-never]
+  - caption: The compiler only protects the code it checks. A retrying value arriving from a server makes an unprotected switch fall off the end and return undefined, with no error.
+    focus: [retry, sw]
+```

@@ -4,7 +4,7 @@ title: Server and client components in Next.js
 summary: Server by default; what actually reaches the browser
 why: "In the App Router every file is a Server Component until you say otherwise. Where you put `\"use client\"` decides how much JavaScript each visitor downloads and which code can see your secrets."
 requires: [next-app-router, react-server-components]
-lesson: none
+lesson: diagram
 points:
   - title: Server by default
     text: "Pages and layouts are Server Components. They can be `async`, read databases and secrets, and their code never ships to the browser."
@@ -82,3 +82,53 @@ Two patterns keep the boundary low. Pass server-rendered content as `children` i
 ## Keeping server things on the server
 
 Environment variables are read at runtime on the server, but in client code only variables prefixed `NEXT_PUBLIC_` are inlined at build time; any other name is simply missing in the browser. The more realistic leak is a shared helper that reads a secret or a database being imported by a client component. Put `import "server-only"` at the top of such modules and that mistake becomes a build error. The Data Security guide recommends a single data access layer that checks authorisation and returns only the fields the UI needs, so a whole database row never lands in props.
+
+```trace diagram
+id: boundary
+title: Where the "use client" line falls
+subtitle: "A product page with one interactive button: what runs where, and what the browser receives"
+groups:
+  - { id: server, label: On the server }
+  - { id: sent, label: Sent to the browser }
+elements:
+  - { id: data, label: getProduct(id), sub: 'lib/data.ts, import "server-only"', kind: store, group: server, row: 0 }
+  - { id: page, label: Page, sub: "Server Component, awaits the product", group: server, row: 1 }
+  - { id: article, label: "<article>, <h1>, <p>", sub: rendered on the server only, kind: component, group: server, row: 2 }
+  - { id: cart, label: AddToCart, sub: '"use client", useState', kind: component, tone: stream, group: server, row: 2 }
+  - { id: html, label: HTML, sub: visible before any JavaScript, tone: data, group: sent, row: 3 }
+  - { id: payload, label: RSC Payload, sub: "server output, client props, references", tone: data, group: sent, row: 3 }
+  - { id: js, label: Client JavaScript, sub: AddToCart and its imports only, tone: data, group: sent, row: 3 }
+  - { id: browser, label: Browser, sub: shows HTML then hydrates AddToCart, kind: person, row: 4 }
+  - { id: nav, label: A later <Link> click, sub: fetches only the RSC Payload, kind: component, tone: neutral, row: 5 }
+edges:
+  - { id: load, from: data, to: page }
+  - { id: render, from: page, to: article }
+  - { id: props, from: page, to: cart, label: "productId: a string" }
+  - { id: html-server, from: article, to: html }
+  - { id: html-client, from: cart, to: html }
+  - { id: payload-server, from: article, to: payload }
+  - { id: payload-client, from: cart, to: payload, style: dashed }
+  - { id: bundle, from: cart, to: js }
+  - { id: show, from: html, to: browser }
+  - { id: reconcile, from: payload, to: browser }
+  - { id: hydrate, from: js, to: browser }
+  - { id: later, from: browser, to: nav, style: dashed }
+steps:
+  - caption: "In the App Router every page, layout and component is a Server Component unless its module, or a module that imports it, starts with \"use client\"."
+  - caption: "The page awaits its data on the server. The data module imports \"server-only\", so importing it from client code would fail the build instead of leaking the query."
+    trace: [load]
+  - caption: "The article markup is rendered on the server. Its code, and any library it imports, never reaches the browser."
+    trace: [render]
+  - caption: "AddToCart is the boundary. Props that cross it must be serialisable: strings, plain objects, dates, promises, JSX and Server Functions, not ordinary functions or class instances."
+    trace: [props]
+  - caption: "For the first visit, both kinds of component are rendered to HTML on the server, so the page is visible before any JavaScript runs."
+    trace: [html-server, html-client]
+  - caption: "The RSC Payload carries the rendered server tree, the props for AddToCart and a placeholder pointing to its code. It is how React rebuilds and updates the page."
+    trace: [payload-server, payload-client]
+  - caption: "Only AddToCart and its imports join the client bundle. Put \"use client\" on interactive leaves, not whole pages, and pass server content in as children."
+    trace: [bundle]
+  - caption: "The browser shows the HTML, reconciles it with the payload, then hydrates AddToCart so its state and click handler work."
+    trace: [show, reconcile, hydrate]
+  - caption: "On a later <Link> navigation, the router fetches only the RSC Payload for the segments that changed, often already prefetched, and merges it without a reload."
+    trace: [later]
+```

@@ -4,7 +4,7 @@ title: Modules, tsconfig and the build
 summary: "Who strips the types, and who checks them"
 why: "In most projects the tool that turns TypeScript into JavaScript never checks a single type. If nothing else runs the checker, type errors ship."
 requires: [ts-erasure, modules]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: Two jobs, often two tools
     text: "Bundlers and runners (Vite, esbuild, swc, Babel, Node's own type stripping) remove types file by file and never check them. `tsc --noEmit` does the checking."
@@ -79,3 +79,50 @@ Other settings that commonly matter:
 - `noEmit` is for projects where another tool produces the JavaScript.
 
 One `tsconfig.json` describes one environment. A repository with browser code, server code and tests usually needs several, connected with `extends` or project references, so that `window` isn't available in server code and `process` isn't assumed in the browser.
+
+```trace diagram
+id: strip-vs-check
+title: Who strips the types, and who checks them
+subtitle: A Vite app and a published library
+groups:
+  - { id: fast, label: Transpile only }
+  - { id: check, label: Type checking }
+elements:
+  - { id: src, label: src/*.ts, kind: person, row: 0 }
+  - { id: esbuild, label: Vite / esbuild / swc, sub: strips types file by file, group: fast, row: 1 }
+  - { id: bundle, label: dist/*.js, sub: the bundle, kind: store, tone: data, group: fast, row: 2 }
+  - { id: tsc, label: tsc --noEmit, sub: whole program, kind: system, group: check, row: 1 }
+  - { id: editor, label: Editor, sub: language service, group: check, row: 1 }
+  - { id: errors, label: Type errors, sub: fail CI, kind: external, group: check, row: 2 }
+  - { id: run, label: Browser, sub: runs the bundle, kind: system, row: 3 }
+  - { id: lib, label: tsc with declaration, sub: for a library, row: 1 }
+  - { id: libout, label: index.js + index.d.ts, sub: what npm users get, kind: store, tone: data, row: 2 }
+edges:
+  - { id: strip, from: src, to: esbuild }
+  - { id: emit, from: esbuild, to: bundle }
+  - { id: ship, from: bundle, to: run }
+  - { id: check-all, from: src, to: tsc }
+  - { id: report, from: tsc, to: errors }
+  - { id: live, from: src, to: editor, style: dotted }
+  - { id: build-lib, from: src, to: lib }
+  - { id: lib-emit, from: lib, to: libout }
+steps:
+  - caption: "Turning TypeScript into running JavaScript is two jobs. Removing the types is fast and works one file at a time; checking them needs the whole program at once."
+  - caption: Vite, esbuild, swc and Babel do only the first job. They strip the types file by file and produce the bundle, very quickly.
+    trace: [strip, emit]
+  - caption: The bundle runs whether or not the types were right. A red squiggle in the editor doesn't stop npm run build from succeeding.
+    trace: [ship]
+  - caption: "So checking runs as its own step: tsc --noEmit reads the whole program and writes nothing but errors. Run in CI, those errors fail the build."
+    trace: [check-all, report]
+  - caption: The editor does the same checking continuously, through the TypeScript language service, but only for the person looking at the file.
+    trace: [live]
+  - caption: A per-file tool can't tell whether an imported name is a type or a value. isolatedModules and verbatimModuleSyntax report code it would get wrong, and import type marks what can be dropped.
+    focus: [esbuild]
+  - caption: A library is usually built with tsc itself, with declaration on. It emits the JavaScript plus a .d.ts describing it, which is what its users' checkers read.
+    trace: [build-lib, lib-emit]
+  - caption: "module and moduleResolution tell the checker how the real host finds files: nodenext for code Node runs directly, bundler for code a bundler resolves."
+    focus: [tsc, lib]
+  - caption: "The common setup: the bundler produces the JavaScript, and tsc --noEmit guards CI. Builds stay fast, and type errors still fail them."
+    focus: [esbuild, tsc, errors]
+note: "node file.ts (22.18+) is another transpile-only tool: it replaces types with spaces and never checks them."
+```

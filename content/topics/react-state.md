@@ -4,7 +4,7 @@ title: State as a snapshot, updates in a batch
 summary: Setting state asks for a new render; it doesn't change the variable
 why: "\"I called setCount but count is still the old value\" is the most common React question. State is a snapshot per render, and updates are queued and processed together."
 requires: [react-render-commit]
-lesson: none
+lesson: lanes   # the trace lanes block at the end is the lesson
 points:
   - title: Each render has its own state
     text: "`count` is a constant for one render. Calling `setCount` doesn't change it; it schedules a new render in which `useState` returns the new value."
@@ -104,3 +104,79 @@ Only the changed item is a new object; the others keep their identity. That matt
 ## What belongs in state
 
 Keep the minimum. If a value can be computed from props or other state (a filtered list, a full name, a total), compute it during render instead of storing it: a second copy has to be kept in sync, and an effect that syncs it costs an extra render.
+
+```trace lanes
+# A toy model, checked by running it in Node (npm run paths:check).
+id: one-click-queue
+title: One click, three updates
+subtitle: A toy update queue, not React's real code
+code: |
+  // Toy update queue, not React's real code
+  let stored = 0; // what React keeps between renders
+  const queue = [];
+  const setCount = (update) => queue.push(update);
+
+  function nextRenderReadsState() {
+    for (const update of queue.splice(0)) {
+      stored = typeof update === "function" ? update(stored) : update;
+    }
+    return stored;
+  }
+
+  const count = stored; // render 1 reads its snapshot
+  function handleClick() {
+    setCount(count + 1);
+    setCount(count + 1);
+    setCount((c) => c + 1);
+    console.log("handler sees", count);
+  }
+  handleClick(); // one click, three updates
+  console.log("render 2 sees", nextRenderReadsState());
+lanes:
+  - { id: snap, title: "Render 1 (on screen)", hint: This render's constants and closures, tone: teal }
+  - { id: stack, title: Call stack, kind: stack }
+  - { id: queue, title: Update queue, hint: Waiting for the next render, kind: queue, tone: amber }
+  - { id: next, title: Render 2, hint: What useState will return, tone: violet }
+  - { id: out, title: Console, kind: console }
+steps:
+  - line: 2
+    caption: "React keeps the stored value, 0, for this component between renders. In this model it's a plain variable; in React it lives on the component instance."
+  - line: 13
+    caption: "Render 1 reads its snapshot. count is a const set to 0 for the whole of this render, and handleClick, created in the same render, closes over it."
+    state:
+      snap: ["count = 0", "handleClick → count 0"]
+  - line: 15
+    caption: "The user clicks. handleClick runs and calls setCount(count + 1), which is setCount(0 + 1). The update joins the queue; count does not change."
+    state:
+      stack: [handleClick]
+      queue: [{ id: u1, label: "replace with 1" }]
+  - line: 16
+    caption: "The second call reads the same snapshot, so it also queues \"replace with 1\". Nothing has rendered in between."
+    state:
+      queue: [{ id: u1, label: "replace with 1" }, { id: u2, label: "replace with 1" }]
+  - line: 17
+    caption: "The third call passes a function. An updater doesn't use the snapshot; React will call it with whatever the queue has produced so far."
+    state:
+      queue: [{ id: u1, label: "replace with 1" }, { id: u2, label: "replace with 1" }, { id: u3, label: "c => c + 1" }]
+  - line: 18
+    caption: Logging count still prints 0. Setting state never changes the variable you are looking at; it belongs to render 1.
+    log: handler sees 0
+  - line: 20
+    caption: "The handler finishes. Only now does React process the queue, and it renders once for all three updates: that is batching. The user never sees a half-done state."
+    state:
+      stack: []
+      next: [{ id: calc, label: "start from 0" }]
+  - line: 8
+    caption: "The two values replace the state: 1, then 1 again. The updater gets 1 and returns 2."
+    state:
+      queue: []
+      next: [{ id: calc, label: "0 → 1 → 1 → 2" }]
+  - line: 21
+    caption: "In render 2, useState returns 2, and new handlers close over the new count. With three plain count + 1 calls the answer would have been 1."
+    state:
+      snap: []
+      next: [{ id: calc, label: "count = 2" }, "handleClick → count 2"]
+    log: render 2 sees 2
+note: "Since React 18, updates from timers, promises and native events are batched the same way. Separate clicks are separate renders."
+expect: ["handler sees 0", "render 2 sees 2"]
+```

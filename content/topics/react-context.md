@@ -4,7 +4,7 @@ title: Context and what it costs
 summary: Passing a value down without props, and who re-renders when it changes
 why: "Context removes prop drilling, but every component that reads it renders again whenever the value changes, and `memo` doesn't stop that. A new object as the value on each render means all of them, every time."
 requires: [react-memo]
-lesson: none
+lesson: diagram
 points:
   - title: A value for a whole subtree
     text: "A provider makes a value available to every component below it. `useContext` (or `use`) reads the nearest provider's value, however deep."
@@ -80,3 +80,75 @@ Two consequences:
 - Separate the state from the functions that change it (`TasksContext` and `TasksDispatchContext`). Components that only dispatch then never render because of the data.
 - Context is a way to pass values, not a state manager. For large, frequently updated shared state where each component needs only a slice, a store with selectors (for example through `useSyncExternalStore`) re-renders only the components whose slice changed.
 - Before reaching for context, try passing props or composing with `children`. A few levels of props are explicit and easy to follow.
+
+```trace diagram
+id: who-renders
+title: Who renders when the value changes
+subtitle: "ThemeProvider wraps a Layout; two components read ThemeContext"
+elements:
+  - { id: app, label: App, sub: the provider's parent, kind: person, row: 0 }
+  - { id: provider, label: ThemeProvider, sub: "<ThemeContext value={value}>", kind: system, row: 1 }
+  - { id: value, label: value, sub: "compared with Object.is", kind: store, row: 1 }
+  - { id: layout, label: Layout, sub: "children; doesn't read the context", row: 2 }
+  - { id: sidebar, label: Sidebar, sub: "doesn't read it", tone: neutral, row: 3 }
+  - { id: button, label: ThemeButton, sub: "useTheme()", tone: stream, row: 3 }
+  - { id: header, label: "memo(Header)", sub: "reads ThemeContext", tone: stream, row: 3 }
+edges:
+  - { id: renders, from: app, to: provider }
+  - { id: provides, from: provider, to: value }
+  - { id: child, from: provider, to: layout }
+  - { id: to-sidebar, from: layout, to: sidebar }
+  - { id: to-button, from: layout, to: button }
+  - { id: to-header, from: layout, to: header }
+  - { id: notify-button, from: value, to: button, label: changed, style: dashed }
+  - { id: notify-header, from: value, to: header, style: dashed }
+steps:
+  - caption: "ThemeProvider makes its value available to everything below it. ThemeButton and Header read it with useTheme, however deep they are."
+    focus: [provider, value, button, header]
+  - caption: "Clicking toggle changes theme. The provider renders with a new value, and React finds every component below that reads this context."
+    focus: [provider, value, button, header]
+    trace: [provides, notify-button, notify-header]
+  - caption: "Header is wrapped in memo and its props didn't change, but it renders anyway. A context change goes straight to the readers; memo only compares props."
+    focus: [value, header]
+    trace: [notify-header]
+  - caption: "Layout and Sidebar don't read the context, so they don't render because of it. They were created by App as children, not by the provider."
+    focus: [layout, sidebar]
+  - caption: "Now App renders for an unrelated reason. If the value were an object literal, it would be a new object, and every reader would render though theme is the same."
+    focus: [app, provider, value, button, header]
+    trace: [renders, provides, notify-button, notify-header]
+  - caption: "With useMemo keyed on theme, the provider passes the same object as before. Object.is says nothing changed, so no reader renders."
+    focus: [app, provider, value]
+    trace: [renders, provides]
+  - caption: "With no provider above it at all, useContext returns the default given to createContext. A custom hook that throws on null makes that mistake obvious."
+    focus: [button]
+```
+
+```trace diagram
+id: split-contexts
+title: Split by rate of change
+subtitle: A login changes once; the cursor 60 times a second
+elements:
+  - { id: login, label: Login, kind: person, row: 0 }
+  - { id: mouse, label: Mouse moves, kind: person, row: 0 }
+  - { id: user, label: UserContext, sub: changes on login, kind: system, row: 1 }
+  - { id: cursor, label: CursorContext, sub: changes every frame, kind: system, row: 1 }
+  - { id: avatar, label: Avatar, sub: reads user, tone: stream, row: 2 }
+  - { id: menu, label: AccountMenu, sub: reads user, tone: stream, row: 2 }
+  - { id: pointer, label: Pointer, sub: reads cursor, tone: stream, row: 2 }
+edges:
+  - { id: set-user, from: login, to: user }
+  - { id: set-cursor, from: mouse, to: cursor }
+  - { id: to-avatar, from: user, to: avatar, style: dashed }
+  - { id: to-menu, from: user, to: menu, style: dashed }
+  - { id: to-pointer, from: cursor, to: pointer, style: dashed }
+steps:
+  - caption: "Values that change at different rates live in separate contexts here: the user in one, the cursor position in another."
+  - caption: "The mouse moves and CursorContext gets a new value every frame. Only Pointer reads it, so only Pointer renders."
+    focus: [mouse, cursor, pointer]
+    trace: [set-cursor, to-pointer]
+  - caption: "A login changes UserContext once, and its two readers render once."
+    focus: [login, user, avatar, menu]
+    trace: [set-user, to-avatar, to-menu]
+  - caption: "Had both values shared one provider, Avatar and AccountMenu would render 60 times a second. The same idea splits state from its dispatch function, so components that only dispatch never render for data."
+    focus: [avatar, menu, pointer]
+```

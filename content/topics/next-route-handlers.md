@@ -4,7 +4,7 @@ title: "Route Handlers: HTTP endpoints in the app folder"
 summary: A `route.ts` per URL, one function per HTTP method
 why: "Webhooks, feeds, files, and APIs for mobile apps or other services don't want a React page. Route Handlers are where Next.js stops being a UI framework and becomes a small backend, with the caching rules of one."
 requires: [next-rendering]
-lesson: none
+lesson: diagram
 points:
   - title: Web Request in, Response out
     text: "Export `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD` or `OPTIONS` from `route.ts`. Each receives a standard `Request` and returns a `Response`; other methods get 405."
@@ -72,3 +72,48 @@ In apps on the previous model, handlers are not cached by default and a `GET` op
 ## Handler or Server Action?
 
 Both run on the server and both are public. For mutations triggered by your own React UI, Server Actions are usually simpler: they are called like functions, type-checked, and return a refreshed UI in the same response. Reach for a Route Handler when the caller is not your UI (a payment provider's webhook, a mobile app, a partner), when you need a specific URL, method, status code or content type, or when other services rely on an HTTP contract that must stay stable. Route Handlers can call `revalidateTag` and `revalidatePath`, which makes them the usual receiver for "content changed" webhooks.
+
+```trace diagram
+id: handler-paths
+title: A request to route.ts
+subtitle: Which handlers can be prerendered, and which always run per request
+elements:
+  - { id: caller, label: Callers that aren't your UI, sub: "mobile app, webhook, partner", kind: person, row: 0 }
+  - { id: route, label: app/api/…/route.ts, sub: one export per HTTP method, kind: system, row: 1 }
+  - { id: get, label: GET, sub: "can be prerendered", row: 2 }
+  - { id: other, label: "POST, PUT, DELETE", sub: never cached, row: 2 }
+  - { id: helper, label: '"use cache" helper', sub: "shared data, cacheLife", kind: component, tone: stream, row: 2 }
+  - { id: static, label: Prerendered at build, sub: "no request access, no uncached I/O", kind: store, tone: data, row: 3 }
+  - { id: dynamic, label: Runs per request, sub: "reads the request, cookies(), a DB", row: 3 }
+  - { id: reval, label: "revalidateTag, revalidatePath", sub: "the \"content changed\" webhook", kind: component, tone: neutral, row: 3 }
+  - { id: response, label: Response, sub: "status, headers, JSON or any body", kind: person, row: 4 }
+edges:
+  - { id: request, from: caller, to: route }
+  - { id: to-get, from: route, to: get }
+  - { id: to-other, from: route, to: other }
+  - { id: always, from: other, to: dynamic }
+  - { id: build, from: get, to: static }
+  - { id: runtime, from: get, to: dynamic, style: dashed }
+  - { id: cached, from: helper, to: static, style: dashed }
+  - { id: invalidate, from: other, to: reval, style: dotted }
+  - { id: from-static, from: static, to: response }
+  - { id: from-dynamic, from: dynamic, to: response }
+steps:
+  - caption: "A Route Handler answers HTTP for its URL directly, with no React rendering. It suits callers that are not your own pages: webhooks, OAuth callbacks, mobile apps, partners."
+    trace: [request]
+  - caption: "You export one async function per method. Each gets a Web Request, with params as a promise, and returns a Web Response. A folder can hold a page or a route, not both."
+    trace: [to-get, to-other]
+  - caption: "Only GET can be prerendered or cached. Every other method runs for each request."
+    trace: [always]
+  - caption: "With Cache Components, a GET that reads nothing from the request and does no uncached I/O is prerendered at build time and served as a static file."
+    trace: [build]
+  - caption: "Reading request.url, headers, cookies or the body, calling cookies() or connection(), querying a database or calling Math.random() stops prerendering there, and the handler runs per request."
+    trace: [runtime]
+  - caption: "Uncached data you are happy to share can move into a \"use cache\" helper. Its result becomes part of the static response and refreshes by its cacheLife."
+    trace: [cached]
+  - caption: "A handler is a public endpoint. Check the session and ownership inside it, return a precise status code, and send only the fields the caller needs."
+    trace: [from-static, from-dynamic]
+  - caption: "Route Handlers can call revalidateTag and revalidatePath, which makes them the usual receiver for \"content changed\" webhooks."
+    trace: [invalidate]
+  - caption: "For mutations from your own React UI, a Server Action is usually simpler. Reach for a handler when you need a fixed URL, method, status code or content type that others rely on."
+```

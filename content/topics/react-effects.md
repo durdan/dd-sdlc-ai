@@ -4,7 +4,7 @@ title: Effects and their dependencies
 summary: Keeping a component in sync with something outside React
 why: "Effects are the most misused part of React. Used for what they're for, they keep subscriptions and connections correct; used to move data around, they cause extra renders, loops and race conditions."
 requires: [react-hooks-rules]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: For syncing with the outside
     text: "An effect connects a component to a system React doesn't control: a socket, a browser API, a third-party widget, a subscription. It runs after the commit."
@@ -110,3 +110,46 @@ export function Profile({ userId }: { userId: string }) {
 ```
 
 Without the flag, a slow response for an old `userId` can overwrite a newer one. Frameworks and data libraries handle caching, deduplication and this race for you, which is why they are usually a better choice for data fetching than hand-written effects.
+
+```trace diagram
+id: effect-lifecycle
+title: An effect's life
+subtitle: "ChatRoom with useEffect(..., [roomId])"
+kind: sequence
+elements:
+  - { id: react, label: React }
+  - { id: room, label: ChatRoom }
+  - { id: browser, label: Browser }
+  - { id: server, label: Chat server }
+edges:
+  - { id: render1, from: react, to: room, label: "render, roomId: general" }
+  - { id: commit1, from: react, to: browser, label: commit DOM }
+  - { id: paint1, from: browser, to: browser, label: paint }
+  - { id: setup1, from: room, to: server, label: "setup: connect(general)" }
+  - { id: devclean, from: room, to: server, label: "cleanup: disconnect (dev only)", style: dashed }
+  - { id: devsetup, from: room, to: server, label: "setup again (dev only)", style: dashed }
+  - { id: render2, from: react, to: room, label: "render, roomId: travel" }
+  - { id: commit2, from: react, to: browser, label: commit DOM }
+  - { id: clean2, from: room, to: server, label: "cleanup: disconnect(general)" }
+  - { id: setup2, from: room, to: server, label: "setup: connect(travel)" }
+  - { id: render3, from: react, to: room, label: "render, roomId still travel" }
+  - { id: unmount, from: room, to: server, label: "unmount: disconnect(travel)" }
+steps:
+  - caption: React renders ChatRoom for the general room. Rendering only computes the JSX; the effect is registered, not run.
+    trace: [render1]
+  - caption: "React commits the list to the DOM, and the browser paints. On a first mount, React generally lets the paint happen before running the effect."
+    trace: [commit1, paint1]
+  - caption: "Now the effect's setup runs and connects to the general room. Its job is to keep something outside React in sync with roomId."
+    trace: [setup1]
+  - caption: "In development, Strict Mode then runs one extra cleanup and setup. If the app still works, the cleanup really undoes the setup. Production skips this."
+    trace: [devclean, devsetup]
+  - caption: "The roomId prop changes to travel. React renders and commits, then compares each dependency with Object.is: roomId differs, so the effect must re-sync."
+    trace: [render2, commit2]
+  - caption: "First the cleanup runs with the old values and disconnects from general. Then the setup runs with the new values and connects to travel."
+    trace: [clean2, setup2]
+  - caption: "A re-render where roomId is still travel compares equal, so React runs neither cleanup nor setup. The connection stays as it is."
+    trace: [render3]
+  - caption: "When ChatRoom is removed from the page, the cleanup runs one last time and the connection is closed. Every setup has been matched by a cleanup."
+    trace: [unmount]
+note: "After a click or keypress, React may run the effect before the paint. Use useLayoutEffect only when the effect must block painting."
+```

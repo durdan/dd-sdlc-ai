@@ -4,7 +4,7 @@ title: "`any`, `unknown` and `never`"
 summary: "Switch checking off, demand a check, or rule out every value"
 why: "One stray `any` silently disables checking for everything it touches. Knowing when to reach for `unknown` or `never` instead is most of what keeps a codebase honest."
 requires: [ts-unions]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: any turns the checker off
     text: "Every operation on an `any` is allowed, and the result is `any` too, so it spreads to whatever it flows into without a single error."
@@ -93,3 +93,47 @@ function port(raw: string | undefined): number {
 ## A rule of thumb
 
 If you don't know the type yet, use `unknown` and narrow it. If you know it but can't express it, write the type, or a cast at one well-commented spot. Keep `any` for migrating old code, and find the remaining uses with the `@typescript-eslint/no-explicit-any` lint rule or a search for `: any`.
+
+```trace diagram
+id: at-the-boundary
+title: What each type lets through
+subtitle: "const data = JSON.parse(text)"
+elements:
+  - { id: json, label: JSON.parse(text), sub: returns any, kind: external, row: 0 }
+  - { id: any, label: any, sub: checking switched off, tone: external, row: 1 }
+  - { id: unknown, label: unknown, sub: check first, kind: system, row: 1 }
+  - { id: spread, label: data.user.name.toUpperCase(), sub: "accepted, result is any", row: 2 }
+  - { id: crash, label: TypeError, sub: at runtime, kind: external, row: 3 }
+  - { id: blocked, label: value.trim(), sub: "error: value is unknown", tone: neutral, row: 2 }
+  - { id: guard, label: "typeof value === \"string\"", sub: a runtime check, kind: component, row: 2 }
+  - { id: str, label: string, sub: trim() allowed, kind: store, tone: data, row: 3 }
+  - { id: fail, label: "fail(msg): never", sub: always throws, row: 1 }
+  - { id: nev, label: never, sub: no value at all, kind: system, tone: neutral, row: 2 }
+edges:
+  - { id: as-any, from: json, to: any }
+  - { id: as-unknown, from: json, to: unknown, label: ": unknown" }
+  - { id: any-use, from: any, to: spread }
+  - { id: any-crash, from: spread, to: crash, style: dashed }
+  - { id: unk-blocked, from: unknown, to: blocked, style: dotted }
+  - { id: unk-guard, from: unknown, to: guard }
+  - { id: guard-str, from: guard, to: str }
+  - { id: fail-never, from: fail, to: nev }
+steps:
+  - caption: "Three types at the edges. unknown accepts every value, never accepts none, and any isn't on that scale at all: it switches checking off."
+  - caption: JSON.parse returns any. Whatever the text contained, the checker now knows nothing about it, and won't say so.
+    trace: [as-any]
+  - caption: Every property access and call on an any is accepted, and each result is another any. It travels into everything it touches without a single error.
+    trace: [any-use]
+  - caption: If the JSON had no user, that line throws at runtime. The checker promised nothing and said nothing.
+    trace: [any-crash]
+  - caption: Annotate the same value as unknown instead. Any value fits in it, but nothing can be done with it yet.
+    trace: [as-unknown]
+  - caption: "value.trim() is an error: value is of type unknown. The checker wants proof first."
+    trace: [unk-blocked]
+  - caption: A typeof check is that proof. Inside the if, value is a string and trim() compiles, which is why unknown is the honest type for data from outside.
+    trace: [unk-guard, guard-str]
+  - caption: never is the bottom type. A function that always throws can return never, so code after a call to it is unreachable and narrows like a throw.
+    trace: [fail-never]
+  - caption: never is also what is left after every member of a union is handled, and the result of contradictions like string & number. An unexpected never usually means two constraints conflict.
+    focus: [nev]
+```

@@ -4,7 +4,7 @@ title: Inference, widening and narrowing
 summary: How a value's type is worked out, and refined
 why: "Most types in good TypeScript are never written down. Knowing how the checker infers and narrows them tells you where an annotation helps and where it only gets in the way."
 requires: [ts-structural]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: Inference
     text: "The checker works out types from initial values, return statements and the context a function is passed into, so most local variables need no annotation."
@@ -100,3 +100,48 @@ annotated.port // type is string | number, and the key may not exist at all
 ```
 
 An annotation replaces the inferred type; `satisfies` only checks against it. Use it for configuration objects and lookup tables, where you want both the check and the precise keys and values.
+
+```trace diagram
+id: infer-narrow
+title: Where a type comes from
+subtitle: Inferred, widened, contextual, then narrowed
+groups:
+  - { id: infer, label: Inference }
+  - { id: narrow, label: "Narrowing: function f(input: string | number | null)" }
+elements:
+  - { id: lit, label: "\"draft\"", sub: a string literal, group: infer, row: 0 }
+  - { id: wide, label: let or object property, sub: "type: string", group: infer, row: 1 }
+  - { id: fixed, label: const or as const, sub: "type: \"draft\"", group: infer, row: 1 }
+  - { id: arr, label: "[1, 2, 3]", sub: "number[]", group: infer, row: 0 }
+  - { id: ctx, label: "map((n) => n * 2)", sub: "n: number, from map", group: infer, row: 1 }
+  - { id: union, label: "string | number | null", kind: system, group: narrow, row: 2 }
+  - { id: nul, label: "null", sub: inside the if, group: narrow, row: 3 }
+  - { id: str, label: string, sub: toUpperCase() allowed, group: narrow, row: 3 }
+  - { id: num, label: number, sub: all that is left, group: narrow, row: 3 }
+edges:
+  - { id: widen, from: lit, to: wide, label: widened }
+  - { id: keep, from: lit, to: fixed, label: kept }
+  - { id: context, from: arr, to: ctx, label: contextual }
+  - { id: is-null, from: union, to: nul, label: "=== null" }
+  - { id: is-string, from: union, to: str, label: typeof }
+  - { id: rest, from: union, to: num, label: both returned }
+steps:
+  - caption: Most types are never written down. The checker infers them from values and context, then refines them as your code tests values.
+  - caption: "A let can be reassigned and an object property overwritten, so the literal \"draft\" is widened to string: the type the value could later hold."
+    trace: [widen]
+  - caption: "A const binding can't change, so it keeps the literal type \"draft\". as const says the same of a whole object: its properties become readonly literals."
+    trace: [keep]
+  - caption: Contextual typing works the other way round. Nobody wrote that n is a number; the checker knows what map passes to its callback, from the array's type.
+    trace: [context]
+  - caption: A union says a value may be one of several things. Until a check proves which one, only what all the members share is allowed.
+    focus: [union]
+  - caption: input === null is ordinary JavaScript. Inside that if, the checker knows input is null, and after its early return null is gone from the union.
+    trace: [is-null]
+  - caption: "A typeof input === \"string\" check narrows the same way, so toUpperCase() compiles inside it."
+    trace: [is-string]
+  - caption: After both checks have returned, only number is left, so toFixed() compiles with no check at all. The checker followed the control flow to get there.
+    trace: [rest]
+  - caption: "Narrowing can only use what exists at runtime: typeof, in, instanceof, equality and truthiness. A type name can't be tested, because it has been erased."
+    focus: [nul, str, num]
+note: "satisfies is the third tool: it checks a value against a type but keeps the precise inferred type."
+```

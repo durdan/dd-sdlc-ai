@@ -4,7 +4,7 @@ title: Hooks, call order and closures
 summary: Why hooks can't go in an if, and why handlers see old values
 why: "The rules of hooks look arbitrary until you see how React stores hook state: by the order of the calls. And stale values in callbacks are ordinary JavaScript closures, one set per render."
 requires: [closures, react-state]
-lesson: none
+lesson: lanes   # the trace lanes block at the end is the lesson
 points:
   - title: State is stored by call order
     text: "React keeps a list of hook slots for each component instance and hands them out in the order the hooks are called. There are no names, only positions."
@@ -118,3 +118,87 @@ The counter goes to 1 and stays there. Fixes, from simplest: use an updater (`se
 ## Custom hooks
 
 A function whose name starts with `use` and that calls other hooks is a custom hook. It is not a new mechanism: its hook calls simply take their slots in the calling component's list, in order. Two components using the same custom hook get independent state.
+
+```trace lanes
+# A toy model, checked by running it in Node (npm run paths:check).
+id: hook-slots
+title: Hook slots in call order
+subtitle: A toy useState, not React's real code
+code: |
+  // Toy useState, not React's real code
+  let slots = [];
+  let cursor = 0;
+  function useState(initial) {
+    const i = cursor++;
+    if (!(i in slots)) slots[i] = initial;
+    return [slots[i], (value) => { slots[i] = value; }];
+  }
+  function render(component, props) {
+    cursor = 0; // each render starts at slot 0
+    return component(props);
+  }
+
+  function Profile({ showAge }) {
+    const [name] = useState("Ada");
+    if (showAge) {
+      const [age] = useState(36); // a hook inside a condition: against the rules
+    }
+    const [theme] = useState("dark");
+    return { name, theme };
+  }
+
+  console.log(JSON.stringify(render(Profile, { showAge: true })));
+  console.log(JSON.stringify(render(Profile, { showAge: false })));
+lanes:
+  - { id: stack, title: Call stack, kind: stack }
+  - { id: slots, title: "Profile's slots", hint: "Stored by position, no names", tone: violet }
+  - { id: vars, title: This render's variables, tone: teal }
+  - { id: out, title: Console, kind: console }
+steps:
+  - line: 2
+    caption: "React keeps a list of slots per component instance and a cursor that says which slot the next hook call gets. Both start empty."
+  - line: 10
+    caption: "The first render resets the cursor to 0 and calls Profile with showAge: true."
+    state:
+      stack: [render, "Profile({ showAge: true })"]
+  - line: 15
+    caption: "The first useState call takes slot 0. It is empty, so it stores \"Ada\" there, and name gets \"Ada\"."
+    state:
+      slots: [{ id: s0, label: "0: \"Ada\"" }]
+      vars: [{ id: v-name, label: "name = \"Ada\"" }]
+  - line: 17
+    caption: "showAge is true, so the hook inside the if runs and takes slot 1, which stores 36."
+    state:
+      slots: [{ id: s0, label: "0: \"Ada\"" }, { id: s1, label: "1: 36" }]
+      vars: [{ id: v-name, label: "name = \"Ada\"" }, { id: v-age, label: "age = 36" }]
+  - line: 19
+    caption: "The third call takes slot 2 and stores \"dark\". Three calls, three slots, all where we expect."
+    state:
+      slots: [{ id: s0, label: "0: \"Ada\"" }, { id: s1, label: "1: 36" }, { id: s2, label: "2: \"dark\"" }]
+      vars: [{ id: v-name, label: "name = \"Ada\"" }, { id: v-age, label: "age = 36" }, { id: v-theme, label: "theme = \"dark\"" }]
+  - line: 23
+    caption: The first render returns name and theme correctly.
+    state:
+      stack: []
+    log: '{"name":"Ada","theme":"dark"}'
+  - line: 24
+    caption: "The second render calls Profile with showAge: false. Its local variables are gone; only the slots survive between renders."
+    state:
+      stack: [render, "Profile({ showAge: false })"]
+      vars: []
+  - line: 15
+    caption: "The first call gets slot 0 again. It is already filled, so the initial value is ignored and name is \"Ada\"."
+    state:
+      vars: [{ id: v-name, label: "name = \"Ada\"" }]
+  - line: 19
+    caption: "The if is skipped, so the theme call is now the second call. It gets slot 1, which holds 36. Nothing tells it this slot belonged to age."
+    state:
+      slots: [{ id: s0, label: "0: \"Ada\"" }, { id: s1, label: "1: 36", tone: rose }, { id: s2, label: "2: \"dark\"", tone: muted }]
+      vars: [{ id: v-name, label: "name = \"Ada\"" }, { id: v-theme, label: "theme = 36", tone: rose }]
+  - line: 24
+    caption: "theme comes out as 36. Real React matches hooks by order the same way, so hooks must run at the top level, in the same order every render. In development React warns when the order changes."
+    state:
+      stack: []
+    log: '{"name":"Ada","theme":36}'
+expect: ['{"name":"Ada","theme":"dark"}', '{"name":"Ada","theme":36}']
+```

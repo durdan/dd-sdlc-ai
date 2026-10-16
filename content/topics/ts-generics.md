@@ -4,7 +4,7 @@ title: Generics and constraints
 summary: Types as parameters, linking input to output
 why: "Without generics, a helper that works for any type has to return `any` or `unknown` and lose what the caller knew. With them, the type flows through."
 requires: [ts-inference]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: A type parameter links things
     text: "`first<T>(xs: T[]): T | undefined` says the result has the same type as the array's items. The caller rarely writes `T`: it is inferred from the arguments."
@@ -101,3 +101,48 @@ function parsePort(raw: string): Result<number, string> {
 ## Restraint
 
 The handbook gives three rules worth keeping: use the type parameter itself rather than constraining it more than needed, use as few type parameters as possible, and if a type parameter appears in only one place, you probably don't need it. `function log<T>(value: T): void` relates nothing: `value: unknown` says the same. Generics are for connecting types; when nothing needs connecting, a plain type gives simpler signatures and clearer error messages.
+
+```trace diagram
+id: t-per-call
+title: One T per call
+subtitle: Inferred from the arguments, checked against the constraint
+elements:
+  - { id: def, label: first<T>, sub: "(xs: T[]): T | undefined", kind: system, row: 0 }
+  - { id: byid, label: "byId<T extends { id: string }>", sub: "(items: T[], id: string): T | undefined", kind: system, row: 0 }
+  - { id: c1, label: "first([1, 2, 3])", sub: T inferred as number, row: 1 }
+  - { id: c3, label: "first<boolean>([])", sub: T written out, row: 1 }
+  - { id: prod, label: "byId(products, \"p1\")", sub: "T inferred as Product", row: 1 }
+  - { id: nums, label: "byId([1, 2, 3], \"1\")", sub: T would be number, row: 1 }
+  - { id: r1, label: number | undefined, kind: store, tone: data, row: 2 }
+  - { id: r3, label: boolean | undefined, kind: store, tone: data, row: 2 }
+  - { id: prodr, label: Product | undefined, sub: title and price kept, kind: store, tone: data, row: 2 }
+  - { id: numerr, label: Compile error, sub: number has no id, kind: external, row: 2 }
+edges:
+  - { id: call1, from: def, to: c1, style: dotted }
+  - { id: call3, from: def, to: c3, style: dotted }
+  - { id: ret1, from: c1, to: r1 }
+  - { id: ret3, from: c3, to: r3 }
+  - { id: callp, from: byid, to: prod, style: dotted }
+  - { id: calln, from: byid, to: nums, style: dotted }
+  - { id: retp, from: prod, to: prodr }
+  - { id: retn, from: nums, to: numerr }
+steps:
+  - caption: A generic function has a type parameter, T, that stands for whatever type the caller uses. Its job is to link the type of the input to the type of the output.
+    focus: [def]
+  - caption: "first([1, 2, 3]) is called. Nobody writes T: the checker infers it from the argument, an array of numbers, so T is number for this call."
+    trace: [call1]
+  - caption: The return type follows. T | undefined becomes number | undefined, the undefined because the array might be empty.
+    trace: [ret1]
+  - caption: With an empty array there is nothing to infer from, so the caller writes the type argument, and first<boolean>([]) returns boolean | undefined.
+    trace: [call3, ret3]
+  - caption: Each call gets its own T, but only in the checker. Types are erased, so every call runs the same JavaScript function, and generics cost nothing at runtime.
+    focus: [def, c1, c3]
+  - caption: "Inside a plain generic, T could be anything, so the body can't read its members. The constraint T extends { id: string } is what lets byId read item.id."
+    focus: [byid]
+  - caption: "Called with Product[], T is Product, so the result is Product | undefined with title and price still there, not just { id: string }."
+    trace: [callp, retp]
+  - caption: Called with numbers, T would be number, which doesn't satisfy the constraint. The call is rejected where it is written.
+    trace: [calln, retn]
+  - caption: "A type parameter earns its place by connecting two positions. If T appears only once, as in log<T>(value: T), value: unknown says the same thing more simply."
+    focus: [def, byid]
+```

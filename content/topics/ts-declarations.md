@@ -4,7 +4,7 @@ title: Declaration files and typing JavaScript
 summary: "Types for code the checker can't see, in `.d.ts` files"
 why: "Every library you import is typed by a declaration file someone wrote by hand or generated. When those types are wrong, missing or out of date, you need to know where they come from and how to fix them."
 requires: [ts-erasure, modules]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: A .d.ts file is types only
     text: "It describes the shape of JavaScript that exists somewhere else, with `declare` and no implementations. It produces no output."
@@ -103,3 +103,47 @@ export function total(prices) {
 ## When library types are wrong
 
 `skipLibCheck: true` is common because checking every `.d.ts` in `node_modules` is slow, but it also hides conflicts between them. When a declaration is wrong, fix it locally with module augmentation or a narrow cast at the call site, and send the fix upstream; casting the whole module to `any` throws away all its other types.
+
+```trace diagram
+id: where-types-come-from
+title: "import { slugify } from \"slugify\""
+subtitle: The runtime reads JavaScript; the checker reads declarations
+elements:
+  - { id: app, label: app.ts, sub: "import { slugify } from \"slugify\"", row: 0 }
+  - { id: runtime, label: Node or bundler, sub: resolves the JavaScript, kind: system, row: 1 }
+  - { id: checker, label: Type checker, sub: looks for a .d.ts, kind: system, row: 1 }
+  - { id: js, label: slugify/index.js, sub: the code that runs, kind: store, tone: data, row: 2 }
+  - { id: pkg, label: The package's own .d.ts, sub: "\"types\" in package.json", row: 2 }
+  - { id: dt, label: "@types/slugify", sub: from DefinitelyTyped, tone: stream, row: 2 }
+  - { id: err, label: No declaration file, sub: "error: module is implicitly any", kind: external, row: 2 }
+  - { id: own, label: "declare module \"slugify\"", sub: your own .d.ts, row: 3 }
+  - { id: jsdoc, label: JSDoc in .js files, sub: tsc --declaration, kind: component, tone: neutral, row: 1 }
+edges:
+  - { id: import-run, from: app, to: runtime }
+  - { id: load-js, from: runtime, to: js }
+  - { id: import-check, from: app, to: checker }
+  - { id: bundled, from: checker, to: pkg, label: 1st }
+  - { id: types, from: checker, to: dt, label: else }
+  - { id: none, from: checker, to: err, label: neither }
+  - { id: fix, from: err, to: own, label: fix, style: dashed }
+  - { id: gen, from: jsdoc, to: pkg, label: generates, style: dashed }
+steps:
+  - caption: One import, two readers. The runtime needs slugify's JavaScript and the checker needs its types, and they find them in different files.
+  - caption: At runtime, Node or the bundler resolves the name to the package's JavaScript and runs it. No types are involved.
+    trace: [import-run, load-js]
+  - caption: The checker can't read types out of plain JavaScript, so it looks for a declaration file instead. A .d.ts holds only types, written with declare, and no function bodies.
+    trace: [import-check]
+  - caption: The best case is a package that ships its own .d.ts, named by "types" in its package.json or in its "exports". The types are released together with the code.
+    trace: [bundled]
+  - caption: Otherwise it looks in node_modules/@types. DefinitelyTyped publishes community declarations there, so install @types/slugify as a dev dependency, with a major version that matches the library's.
+    trace: [types]
+  - caption: With no types anywhere, strict mode reports the import, because the whole module would silently be any.
+    trace: [none]
+  - caption: The fix is a small declare module "slugify" in a .d.ts of your own, covering only the functions you use.
+    trace: [fix]
+  - caption: Nothing verifies that a declaration matches its JavaScript. If slugify really returns null for empty input, every caller trusts the wrong type anyway.
+    focus: [pkg, dt, js]
+  - caption: A library can stay in JavaScript and still ship accurate types. tsc reads JSDoc comments, checks them with checkJs, and generates the .d.ts with declaration and emitDeclarationOnly.
+    trace: [gen]
+note: "skipLibCheck: true skips checking the .d.ts files themselves; they are still used to check your code."
+```

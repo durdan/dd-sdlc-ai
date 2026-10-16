@@ -4,7 +4,7 @@ title: Common Next.js performance pitfalls
 summary: Waterfalls, fat boundaries, request data too high, caches that never hit
 why: "Most slow Next.js apps are not slow because of React. They wait for data one call after another, ship components that didn't need to be client-side, or turn a whole route dynamic because a layout read a cookie."
 requires: [next-cache-components, next-assets-build]
-lesson: none
+lesson: diagram
 points:
   - title: Start work in parallel
     text: "Sequential `await`s in Server Components form a waterfall. Start independent requests together, or pass promises down and let Suspense boundaries wait separately."
@@ -90,3 +90,49 @@ A `"use client"` page imports its whole subtree into the bundle. Put the directi
 ## Elsewhere
 
 Keep Proxy fast and narrowly matched, because it runs before every matched request. Don't use Server Actions to read data; they run one at a time. Give the LCP image `preload` and correct `sizes`, and let `next/font` handle web fonts.
+
+```trace diagram
+id: waterfall
+title: The same page, three ways
+subtitle: "Three independent calls of about 200 ms each"
+kind: sequence
+elements:
+  - { id: browser, label: Browser }
+  - { id: page, label: Page }
+  - { id: data, label: Data }
+edges:
+  - { id: get, from: browser, to: page, label: GET /account }
+  - { id: user, from: page, to: data, label: await getUser() }
+  - { id: user-back, from: data, to: page, label: user at 200 ms, style: dashed }
+  - { id: orders, from: page, to: data, label: then await getOrders() }
+  - { id: orders-back, from: data, to: page, label: orders at 400 ms, style: dashed }
+  - { id: recs, from: page, to: data, label: then await getRecommendations() }
+  - { id: recs-back, from: data, to: page, label: recs at 600 ms, style: dashed }
+  - { id: slow-html, from: page, to: browser, label: HTML after ~600 ms, style: dashed }
+  - { id: all, from: page, to: data, label: "Promise.all: all three at once" }
+  - { id: all-back, from: data, to: page, label: all three at 200 ms, style: dashed }
+  - { id: fast-html, from: page, to: browser, label: HTML after ~200 ms, style: dashed }
+  - { id: shell, from: page, to: browser, label: "shell + fallbacks, straight away", style: dashed }
+  - { id: part, from: data, to: page, label: recommendations ready }
+  - { id: streamed, from: page, to: browser, label: that section streamed in, style: dashed }
+  - { id: prefetch, from: browser, to: page, label: "<Link> in view: prefetch" }
+steps:
+  - caption: "A Server Component needs a user, their orders and some recommendations. None depends on another, and each takes about 200 ms."
+    trace: [get]
+  - caption: "Awaited one after another, each call starts only when the previous one has finished. That is a waterfall."
+    trace: [user, user-back, orders, orders-back, recs, recs-back]
+  - caption: "So the first byte of HTML waits about 600 ms, the sum of all three."
+    trace: [slow-html]
+  - caption: "Start independent work before awaiting it. With Promise.all the three calls overlap, and the page waits only for the slowest, about 200 ms."
+    trace: [all, all-back, fast-html]
+  - caption: "Better still, give each slow part its own component and Suspense boundary. The shell and the fallbacks go out at once, and nothing waits for the slowest call."
+    trace: [shell]
+  - caption: "Each section is streamed into the same response as its data arrives."
+    trace: [part, streamed]
+  - caption: "The same goes for request data. A layout that awaits cookies() at the top keeps everything below it out of the static shell; read it in a small component inside a boundary instead."
+    focus: [page]
+  - caption: "When several components need the same data, wrap the loader in React's cache for one call per request, or \"use cache\" to share it across requests, instead of threading props down."
+    focus: [page, data]
+  - caption: "Links are prefetched as they scroll into view, and how much comes ahead of the click depends on what the route can prerender. A route that turns ƒ loses most of that head start."
+    trace: [prefetch]
+```
