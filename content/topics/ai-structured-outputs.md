@@ -142,7 +142,7 @@ edges:
   - { id: check2, from: code, to: validator, label: "parse, schema, business rules" }
   - { id: valid, from: validator, to: code, label: "valid: typed value", style: dashed }
   - { id: ok, from: code, to: caller, label: "{ ok: true, value }", style: dashed }
-  - { id: failed, from: code, to: caller, label: "or, after the last retry: { ok: false, error }", style: dotted }
+  - { id: failed, from: code, to: caller, label: "or, after the last retry: { ok: false, error }", style: dotted, flow: reply }
 steps:
   - caption: The caller hands over a support ticket and expects a value with a known shape back, not prose.
     trace: [ask]

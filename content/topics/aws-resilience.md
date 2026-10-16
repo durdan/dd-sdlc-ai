@@ -103,8 +103,8 @@ edges:
   - { id: db-c, from: app-c, to: db }
   - { id: call, from: app-a, to: dep, label: "timeout, backoff + jitter" }
   - { id: snap, from: db, to: backup, style: dotted }
-  - { id: repl, from: db, to: region-b, label: async replication, style: dashed }
-  - { id: failover, from: dns, to: region-b, label: if A fails, style: dashed }
+  - { id: repl, from: db, to: region-b, label: async replication, style: dashed, flow: async }
+  - { id: failover, from: dns, to: region-b, label: if A fails, style: dashed, flow: main }
 steps:
   - caption: "One service, designed for the failures it has to survive. Start from two numbers: RTO, how long it may be down, and RPO, how much recent data it may lose."
   - caption: "Inside one Region, the load balancer spreads traffic over instances in three zones. Multi-AZ is the baseline, and it handles most real failures."

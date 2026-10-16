@@ -80,10 +80,10 @@ groups:
 elements:
   - { id: client, label: Client, kind: person, row: 0 }
   - { id: listener, label: "HTTPS listener :443", sub: "ALB, a node in each zone; TLS ends here", kind: system, row: 1 }
-  - { id: r-api, label: "Rule: /api/*", sub: priority 10, kind: component, row: 2 }
-  - { id: r-def, label: Default rule, sub: always checked last, kind: component, row: 2 }
-  - { id: tg-api, label: "Target group: api", sub: "health check /healthz", row: 3 }
-  - { id: tg-web, label: "Target group: web", row: 3 }
+  - { id: r-api, label: "Rule: /api/*", sub: priority 10, kind: component, row: 2, role: edge }
+  - { id: r-def, label: Default rule, sub: always checked last, kind: component, row: 2, role: edge }
+  - { id: tg-api, label: "Target group: api", sub: "health check /healthz", row: 3, role: edge }
+  - { id: tg-web, label: "Target group: web", row: 3, role: edge }
   - { id: api-a, label: api task, group: az-a, row: 4 }
   - { id: api-b, label: api task, group: az-b, row: 4 }
   - { id: web, label: web tasks, sub: in both zones, row: 4 }

@@ -85,7 +85,7 @@ kind: sequence
 elements:
   - { id: kubelet, label: kubelet }
   - { id: app, label: Container }
-  - { id: eps, label: Service endpoints }
+  - { id: eps, label: Service endpoints, role: data }
 edges:
   - { id: startup, from: kubelet, to: app, label: "startup: GET /healthz" }
   - { id: starting, from: app, to: kubelet, label: "fails while starting (budget 30 × 5 s)", style: dashed }

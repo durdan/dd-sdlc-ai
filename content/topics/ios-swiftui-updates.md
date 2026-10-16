@@ -100,7 +100,7 @@ direction: DOWN
 elements:
   - { id: tap, label: A filter field, sub: "binding sets library.filter", kind: person, row: 0 }
   - { id: model, label: Library, sub: "@Observable: books, filter", kind: store, tone: data, row: 1 }
-  - { id: deps, label: Recorded reads, sub: who read what in body, kind: system, row: 2 }
+  - { id: deps, label: Recorded reads, sub: who read what in body, kind: system, row: 2, role: data }
   - { id: field, label: ResultsTitle, sub: reads filter, row: 3 }
   - { id: list, label: BookList, sub: "reads books, filter", row: 3 }
   - { id: header, label: Header, sub: reads books.count, tone: neutral, row: 3 }
@@ -109,7 +109,7 @@ elements:
   - { id: render, label: Update the screen, sub: only what differs, kind: person, row: 6 }
 edges:
   - { id: set, from: tap, to: model, label: "filter = \"swift\"" }
-  - { id: notify, from: model, to: deps, label: filter changed }
+  - { id: notify, from: model, to: deps, label: filter changed, flow: async }
   - { id: inv1, from: deps, to: field, label: invalidate }
   - { id: inv2, from: deps, to: list, label: invalidate }
   - { id: each, from: list, to: rows }

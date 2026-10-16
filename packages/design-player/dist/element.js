@@ -11511,15 +11511,77 @@ var Qo = {
 		stroke: "#9aa5a2",
 		label: "External",
 		icon: "M5 2.5H2.5v7h7V7 M7 2h3v3 M10 2 5.5 6.5"
+	},
+	error: {
+		fill: "#fbe9e6",
+		stroke: "#a8382c",
+		label: "Error / failure",
+		icon: "M6 1.5 10.8 10H1.2z M6 4.8v2.4 M6 8.6v.1"
 	}
 }, $o = "M6 6a2.2 2.2 0 1 0 0-4.4A2.2 2.2 0 0 0 6 6z M2 11c.6-2.3 2.2-3.4 4-3.4s3.4 1.1 4 3.4", es = {
+	active: {
+		fill: "#e5f1f4",
+		stroke: "#2f7f93",
+		label: "Active",
+		icon: "M4 2.5v7l5.5-3.5z"
+	},
+	waiting: {
+		fill: "#f6efdc",
+		stroke: "#8a6a2c",
+		label: "Waiting",
+		icon: "M3 1.5h6 M3 10.5h6 M3.5 1.5c0 3 5 3 5 4.5s-5 1.5-5 4.5 M8.5 1.5c0 3-5 3-5 4.5s5 1.5 5 4.5"
+	},
+	success: {
+		fill: "#e6f2ea",
+		stroke: "#3a7d52",
+		label: "Success",
+		icon: "M2 6.5l2.6 2.6L10 3.5"
+	},
+	failure: {
+		fill: "#f9eaed",
+		stroke: "#b5475c",
+		label: "Failure / exit",
+		icon: "M3 3l6 6M9 3l-6 6"
+	},
+	decision: {
+		fill: "#efedf8",
+		stroke: "#6b5ca5",
+		label: "Decision",
+		icon: "M6 1.5 10.5 6 6 10.5 1.5 6z"
+	}
+}, ts = {
+	added: {
+		stroke: "#2f8f5b",
+		dash: "",
+		label: "Added",
+		mark: "+"
+	},
+	removed: {
+		stroke: "#c0455b",
+		dash: "5 4",
+		label: "Removed",
+		mark: "−"
+	},
+	changed: {
+		stroke: "#b07a1e",
+		dash: "2 3",
+		label: "Changed",
+		mark: "~"
+	}
+}, ns = [
+	".dg[data-view=\"before\"] [data-change=\"added\"], .dg[data-view=\"after\"] [data-change=\"removed\"] { display: none }",
+	".dg[data-view=\"before\"] .dg-badge, .dg[data-view=\"after\"] .dg-badge { display: none }",
+	".dg[data-view=\"before\"] [data-change] .dg-box, .dg[data-view=\"after\"] [data-change] .dg-box { stroke: var(--bs); stroke-dasharray: none; stroke-width: 1.5 }",
+	".dg[data-view=\"before\"] .dg-edge[data-change] path, .dg[data-view=\"after\"] .dg-edge[data-change] path { stroke: var(--bs); stroke-dasharray: var(--bd) }"
+].join("\n"), rs = {
 	core: "service",
 	stream: "queue",
 	data: "data",
 	external: "external"
 };
 Qo.service, Qo.queue, Qo.data, Qo.external;
-var ts = [
+var is = [
+	["error", /\b(errors?|exceptions?|crash(es|ed)?|fail(s|ed|ure)?|oomkilled|panics?|timeouts?|rejected|hang|deadlock|throttled)\b/],
 	["security", /\b(auth\w*|oauth|n?acls?|network acl|mtls|certificates?|iam|jwt|tokens?|polic(y|ies)|rbac|firewall|waf|guard|secrets?|security groups?|scps?|rcps?|permissions?|role ?bindings?|csrf|cors|kms|sts|admission|sandbox|seccomp|capabilities)\b/],
 	["queue", /\b(queues?|kafka|sqs|sns|topics?|streams?|eventbridge|event bus|bus|pub\/?sub|broker|rabbitmq|nats|outbox|dlq|webhooks?|partitions? log)\b/],
 	["cache", /\b(cache[sd]?|caching|redis|memcached|valkey|lru)\b/],
@@ -11527,14 +11589,14 @@ var ts = [
 	["data", /\b(db|database|postgres(ql)?|mysql|sqlite|sql|dynamodb|mongo(db)?|tables?|indexe?s?|etcd|s3|buckets?|storage|volumes?|disks?|ebs|efs|warehouse|replicas?|wal|snapshots?|pvcs?|files?|blobs?|registry)\b/],
 	["client", /\b(browsers?|users?|clients?|mobile|ios|android|web app|ui|frontend|callers?|visitors?|customers?|tabs?|screens?|phones?)\b/]
 ];
-function ns(e) {
+function as(e) {
 	if (e.role) return e.role;
 	if (e.kind === "person") return "client";
 	if (e.kind === "external") return "external";
-	let t = `${e.label} ${e.sub ?? ""}`.toLowerCase(), n = ts.find(([, e]) => e.test(t))?.[0];
-	return e.kind === "store" ? n === "cache" || n === "queue" ? n : "data" : n || e.tone && es[e.tone] || "service";
+	let t = `${e.label} ${e.sub ?? ""}`.toLowerCase(), n = is.find(([, e]) => e.test(t))?.[0];
+	return e.kind === "store" ? n === "cache" || n === "queue" ? n : "data" : n || e.tone && rs[e.tone] || "service";
 }
-var rs = {
+var os = {
 	main: {
 		stroke: "#3d6b63",
 		dash: "",
@@ -11546,7 +11608,7 @@ var rs = {
 		label: "Reply / return"
 	},
 	async: {
-		stroke: "#7a5fb0",
+		stroke: "#4a72b0",
 		dash: "2 3",
 		label: "Async / background"
 	},
@@ -11559,17 +11621,22 @@ var rs = {
 		stroke: "#6b5ca5",
 		dash: "",
 		label: "Data read / write"
+	},
+	blocked: {
+		stroke: "#a8382c",
+		dash: "1.5 3.5",
+		label: "Blocked / rejected"
 	}
-}, is = {
+}, ss = {
 	solid: "main",
 	dashed: "reply",
 	dotted: "async"
-}, as = {
-	solid: rs.main,
-	dashed: rs.reply,
-	dotted: rs.async
-}, os = (e) => e.flow ?? is[e.style ?? "solid"], ss = "#1d2826", cs = "#4f5d5a", ls = "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace", us = (e) => e.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-function ds(e, t = 5) {
+}, cs = {
+	solid: os.main,
+	dashed: os.reply,
+	dotted: os.async
+}, ls = (e) => e.flow ?? ss[e.style ?? "solid"], us = "#1d2826", ds = "#4f5d5a", fs = "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace", ps = (e) => e.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+function ms(e, t = 5) {
 	if (e.length < 2) return "";
 	let n = `M ${e[0].x} ${e[0].y}`;
 	for (let r = 1; r < e.length - 1; r += 1) {
@@ -11585,25 +11652,57 @@ function ds(e, t = 5) {
 	let r = e[e.length - 1];
 	return `${n} L ${r.x} ${r.y}`;
 }
-var fs = (e, t, n, r) => `<path class="dg-icon" d="${e}" transform="translate(${t} ${n}) scale(0.92)" fill="none" stroke="${r}" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>`;
-function ps(e, t, n = {}) {
-	let r = n.pad ?? 16, i = t.width + r * 2, a = t.height + r * 2, o = Object.keys(rs).map((e) => `<marker id="arr-${e}" viewBox="0 0 8 8" refX="7.2" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0.6 L7.4 4 L0 7.4 z" fill="${rs[e].stroke}"/></marker>`).join(""), s = [`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${i} ${a}" class="dg" data-diagram="${us(e.id)}" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="${us(e.title)}">`, `<defs>${o}</defs><g transform="translate(${r} ${r})">`];
+var hs = (e, t, n, r) => `<path class="dg-icon" d="${e}" transform="translate(${t} ${n}) scale(0.92)" fill="none" stroke="${r}" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>`;
+function gs(e, t, n = {}) {
+	let r = n.pad ?? 16, i = t.width + r * 2, a = t.height + r * 2, o = (e, t) => `<marker id="arr-${e}" viewBox="0 0 8 8" refX="7.2" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0.6 L7.4 4 L0 7.4 z" fill="${t}"/></marker>`, s = e.kind === "c4" && e.variant === "delta", c = e.kind === "c4" && e.variant === "state", l = Object.keys(os).map((e) => o(e, os[e].stroke)).join("") + (s ? Object.keys(ts).map((e) => o(e, ts[e].stroke)).join("") + `<style>${ns}</style>` : ""), u = [`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${i} ${a}" class="dg" data-diagram="${ps(e.id)}"${s ? " data-view=\"delta\"" : ""} font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="${ps(e.title)}">`, `<defs>${l}</defs><g transform="translate(${r} ${r})">`];
 	if (e.kind === "c4") for (let n of e.groups ?? []) {
 		let e = t.groups[n.id];
 		if (!e) continue;
-		let r = n.tone ? es[n.tone] : void 0, i = r ? Qo[r].stroke : "#8f9b98", a = n.label.toUpperCase(), o = a.length * 6.9 + 16;
-		s.push(`<g class="dg-group" data-group="${us(n.id)}"><rect x="${e.x}" y="${e.y}" width="${e.w}" height="${e.h}" rx="12" fill="${r ? Qo[r].fill : "#ffffff"}" fill-opacity="0.45" stroke="${i}" stroke-opacity="0.75" stroke-dasharray="6 5"/><rect x="${e.x + 12}" y="${e.y - 9}" width="${o}" height="18" rx="9" fill="#ffffff" stroke="${i}" stroke-opacity="0.75"/><text x="${e.x + 12 + o / 2}" y="${e.y + 4}" text-anchor="middle" class="dg-group-label" fill="${i}" font-family="${ls}" font-size="10.5" font-weight="700" letter-spacing="0.6">${us(a)}</text></g>`);
+		let r = n.tone ? rs[n.tone] : void 0, i = r ? Qo[r].stroke : "#8f9b98", a = n.label.toUpperCase(), o = a.length * 6.9 + 16;
+		u.push(`<g class="dg-group" data-group="${ps(n.id)}"><rect x="${e.x}" y="${e.y}" width="${e.w}" height="${e.h}" rx="12" fill="${r ? Qo[r].fill : "#ffffff"}" fill-opacity="0.45" stroke="${i}" stroke-opacity="0.75" stroke-dasharray="6 5"/><rect x="${e.x + 12}" y="${e.y - 9}" width="${o}" height="18" rx="9" fill="#ffffff" stroke="${i}" stroke-opacity="0.75"/><text x="${e.x + 12 + o / 2}" y="${e.y + 4}" text-anchor="middle" class="dg-group-label" fill="${i}" font-family="${fs}" font-size="10.5" font-weight="700" letter-spacing="0.6">${ps(a)}</text></g>`);
 	}
-	else for (let n of e.participants) {
-		let e = t.nodes[n.id];
-		s.push(`<line class="dg-lifeline" data-life="${us(n.id)}" x1="${e.x + e.w / 2}" y1="${e.y + e.h}" x2="${e.x + e.w / 2}" y2="${t.height}" stroke="#d3d9d6" stroke-dasharray="3 4"/>`);
+	else {
+		let n = (e) => t.edges[e]?.points[0].y;
+		for (let r of e.phases ?? []) {
+			let e = n(r.from), i = n(r.to);
+			if (e === void 0 || i === void 0) continue;
+			let a = e - 30;
+			u.push(`<g class="dg-phase"><rect x="2" y="${a}" width="${t.width - 4}" height="${i - a + 18}" rx="10" fill="#eef1ef" fill-opacity="0.55" stroke="#c9d1ce" stroke-dasharray="5 4"/><text x="12" y="${a + 14}" font-family="${fs}" font-size="10.5" font-weight="700" letter-spacing="0.6" fill="#6b7875">${ps(r.label.toUpperCase())}</text></g>`);
+		}
+		for (let n of e.participants) {
+			let e = t.nodes[n.id];
+			u.push(`<line class="dg-lifeline" data-life="${ps(n.id)}" x1="${e.x + e.w / 2}" y1="${e.y + e.h}" x2="${e.x + e.w / 2}" y2="${t.height}" stroke="#d3d9d6" stroke-dasharray="3 4"/>`);
+		}
+		let r = e.messages.filter((e) => t.edges[e.id]);
+		for (let i of e.participants) {
+			let e = t.nodes[i.id], a = e.x + e.w / 2, o = [], s = [], c = (e) => e.from === i.id || e.to === i.id;
+			r.forEach((e, t) => {
+				if (e.to === i.id && e.from !== i.id && ls(e) !== "reply") o.push(t);
+				else if (e.from === i.id && e.to !== i.id && ls(e) === "reply" && o.length) {
+					let t = o.pop();
+					s.push([n(r[t].id), n(e.id)]);
+				}
+			});
+			for (let e of o) {
+				let t = r.slice(e + 1).find(c), i = n(r[e].id);
+				s.push([i, t ? n(t.id) : i + 18]);
+			}
+			s.sort((e, t) => e[0] - t[0]);
+			let l = [];
+			for (let e of s) {
+				let t = l[l.length - 1];
+				t && e[0] <= t[1] + 2 ? t[1] = Math.max(t[1], e[1]) : l.push([e[0], e[1]]);
+			}
+			let d = Qo[as(i)];
+			for (let [e, t] of l) u.push(`<rect class="dg-lifeline dg-activation" data-life="${ps(i.id)}" x="${a - 5}" y="${e - 4}" width="10" height="${t - e + 8}" rx="3" fill="${d.fill}" stroke="${d.stroke}" stroke-width="1.2"/>`);
+		}
 	}
-	let c = e.kind === "c4" ? e.edges : e.messages;
-	for (let n of c) {
+	let d = e.kind === "c4" ? e.edges : e.messages;
+	for (let n of d) {
 		let r = t.edges[n.id];
 		if (!r) continue;
-		let i = os(n), { stroke: a } = rs[i], o = n.style ? as[n.style].dash : rs[i].dash;
-		if (s.push(`<g class="dg-edge" data-edge="${us(n.id)}" data-from="${us(n.from)}" data-to="${us(n.to)}" data-flow="${i}"><path d="${ds(r.points)}" fill="none" stroke="${a}" stroke-width="1.6"${o ? ` stroke-dasharray="${o}"` : ""} marker-end="url(#arr-${i})"/>`), n.label) {
+		let i = ls(n), a = n.style ? cs[n.style].dash : os[i].dash, o = s && "change" in n && n.change ? ts[n.change] : void 0, c = o ? o.stroke : os[i].stroke, l = o ? o.dash : a;
+		if (u.push(`<g class="dg-edge" data-edge="${ps(n.id)}" data-from="${ps(n.from)}" data-to="${ps(n.to)}" data-flow="${i}"${o ? ` data-change="${n.change}" style="--bs:${os[i].stroke};--bd:${a || "none"}"` : ""}><path d="${ms(r.points)}" fill="none" stroke="${c}" stroke-width="${o ? 2 : 1.6}"${l ? ` stroke-dasharray="${l}"` : ""} marker-end="url(#arr-${o ? n.change : i})"/>`), n.label) {
 			let t = r.label ? {
 				x: r.label.x + r.label.w / 2,
 				y: r.label.y + r.label.h / 2 + 4
@@ -11614,32 +11713,36 @@ function ps(e, t, n = {}) {
 				x: (r.points[0].x + r.points[r.points.length - 1].x) / 2,
 				y: (r.points[0].y + r.points[r.points.length - 1].y) / 2
 			}, i = n.label.length * 6.75 + 14;
-			s.push(`<rect class="dg-edge-pill" x="${t.x - i / 2}" y="${t.y - 12}" width="${i}" height="17" rx="8.5" fill="#ffffff" stroke="${a}" stroke-opacity="0.45"/><text class="dg-edge-label" x="${t.x}" y="${t.y}" text-anchor="middle" font-family="${ls}" font-size="11" fill="${a}">${us(n.label)}</text>`);
+			u.push(`<rect class="dg-edge-pill" x="${t.x - i / 2}" y="${t.y - 12}" width="${i}" height="17" rx="8.5" fill="#ffffff" stroke="${c}" stroke-opacity="0.45"/><text class="dg-edge-label" x="${t.x}" y="${t.y}" text-anchor="middle" font-family="${fs}" font-size="11" fill="${c}">${ps(n.label)}</text>`);
 		}
-		s.push("</g>");
+		u.push("</g>");
 	}
-	let l = e.kind === "c4" ? e.elements : e.participants.map((e) => ({
+	let f = e.kind === "c4" ? e.elements : e.participants.map((e) => ({
 		id: e.id,
 		kind: "container",
 		label: e.label,
 		role: e.role
 	}));
-	for (let e of l) {
+	for (let e of f) {
 		let n = t.nodes[e.id];
 		if (!n) continue;
-		let r = ns(e), i = Qo[r], a = e.kind === "system", o = n.w >= 70 && n.h >= 34;
-		s.push(`<g class="dg-node" data-node="${us(e.id)}" data-role="${r}"><rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="${e.kind === "person" ? 22 : 7}" fill="${i.fill}" stroke="${a ? ss : i.stroke}" stroke-width="${a ? 2 : 1.5}"${r === "external" ? " stroke-dasharray=\"4 3\"" : ""}/>` + (o ? fs(e.kind === "person" ? $o : i.icon, n.x + (e.kind === "person" ? 14 : 7), n.y + 6, i.stroke) : "") + `<text x="${n.x + n.w / 2}" y="${n.y + (e.sub ? n.h / 2 - 3 : n.h / 2 + 5)}" text-anchor="middle" font-size="14.5" font-weight="600" fill="${ss}">${us(e.label)}</text>` + (e.sub ? `<text x="${n.x + n.w / 2}" y="${n.y + n.h / 2 + 15}" text-anchor="middle" font-size="12" fill="${cs}">${us(e.sub)}</text>` : "") + "</g>");
+		if (e.kind === "start") {
+			u.push(`<g class="dg-node" data-node="${ps(e.id)}" data-role="start"><circle cx="${n.x + n.w / 2}" cy="${n.y + n.h / 2}" r="7" fill="${us}"/></g>`);
+			continue;
+		}
+		let r = as(e), i = c ? es[e.status ?? "active"] : void 0, a = i ?? Qo[r], o = s && e.change ? ts[e.change] : void 0, l = e.kind === "system", d = n.w >= 70 && n.h >= 34, f = c ? 14 : e.kind === "person" ? 22 : 7, p = o ? o.dash : r === "external" && !i ? "4 3" : "";
+		u.push(`<g class="dg-node" data-node="${ps(e.id)}" data-role="${i ? `status-${e.status ?? "active"}` : r}"${o ? ` data-change="${e.change}" style="--bs:${l ? us : a.stroke}"` : ""}><rect class="dg-box" x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="${f}" fill="${a.fill}"${e.change === "removed" && s ? " fill-opacity=\"0.55\"" : ""} stroke="${o ? o.stroke : l ? us : a.stroke}" stroke-width="${o ? 2.2 : l ? 2 : 1.5}"${p ? ` stroke-dasharray="${p}"` : ""}/>` + (c && e.final ? `<rect x="${n.x + 3.5}" y="${n.y + 3.5}" width="${n.w - 7}" height="${n.h - 7}" rx="${f - 3}" fill="none" stroke="${a.stroke}" stroke-width="1.2"/>` : "") + (o ? `<g class="dg-badge"><circle cx="${n.x + n.w - 2}" cy="${n.y + 2}" r="9" fill="#ffffff" stroke="${o.stroke}" stroke-width="1.6"/><text x="${n.x + n.w - 2}" y="${n.y + 6.5}" text-anchor="middle" font-family="${fs}" font-size="13" font-weight="700" fill="${o.stroke}">${o.mark}</text></g>` : "") + (d ? hs(i ? i.icon : e.kind === "person" ? $o : a.icon, n.x + (e.kind === "person" && !i ? 14 : 8), n.y + 6, a.stroke) : "") + `<text x="${n.x + n.w / 2}" y="${n.y + (e.sub ? n.h / 2 - 3 : n.h / 2 + 5)}" text-anchor="middle" font-size="14.5" font-weight="600" fill="${us}">${ps(e.label)}</text>` + (e.sub ? `<text x="${n.x + n.w / 2}" y="${n.y + n.h / 2 + 15}" text-anchor="middle" font-size="12" fill="${ds}">${ps(e.sub)}</text>` : "") + "</g>");
 	}
-	return s.push("</g></svg>"), s.join("");
+	return u.push("</g></svg>"), u.join("");
 }
 //#endregion
 //#region src/DiagramStage.tsx
 Vi.registerPlugin(fa, Zo);
-var ms = 16, hs = .2, gs = .72, _s = .9, vs = (e) => `${e.x.toFixed(1)} ${e.y.toFixed(1)} ${e.w.toFixed(1)} ${e.h.toFixed(1)}`;
-function ys(e, t, n) {
+var _s = 16, vs = .2, ys = .72, bs = .9, xs = (e) => `${e.x.toFixed(1)} ${e.y.toFixed(1)} ${e.w.toFixed(1)} ${e.h.toFixed(1)}`;
+function Ss(e, t, n) {
 	let r = t.width + 32, i = t.height + 32, a = n.w / n.h, o = Math.max(e.w + 120, (e.h + 100) * a);
-	o = Math.min(o, n.w / gs), o = Math.max(o, n.w / _s);
-	let s = o / a, c = e.x + e.w / 2 + ms, l = e.y + e.h / 2 + ms;
+	o = Math.min(o, n.w / ys), o = Math.max(o, n.w / bs);
+	let s = o / a, c = e.x + e.w / 2 + _s, l = e.y + e.h / 2 + _s;
 	return {
 		x: o >= r ? (r - o) / 2 : Math.min(Math.max(0, c - o / 2), r - o),
 		y: s >= i ? (i - s) / 2 : Math.min(Math.max(0, l - s / 2), i - s),
@@ -11647,7 +11750,7 @@ function ys(e, t, n) {
 		h: s
 	};
 }
-function bs(e) {
+function Cs(e) {
 	let t = Math.min(...e.map((e) => e.x)), n = Math.min(...e.map((e) => e.y)), r = Math.max(...e.map((e) => e.x + e.w)), i = Math.max(...e.map((e) => e.y + e.h));
 	return {
 		x: t,
@@ -11656,11 +11759,11 @@ function bs(e) {
 		h: i - n
 	};
 }
-function xs(e, t) {
+function ws(e, t) {
 	let n = (e.kind === "c4" ? e.edges : e.messages).filter((e) => t.trace.includes(e.id));
 	return /* @__PURE__ */ new Set([...t.focus, ...n.flatMap((e) => [e.from, e.to])]);
 }
-function Ss(e, t, n) {
+function Ts(e, t, n) {
 	let r = [...t].map((t) => e.nodes[t]).filter(Boolean);
 	for (let t of n) for (let n of e.edges[t]?.points ?? []) r.push({
 		x: n.x,
@@ -11672,10 +11775,10 @@ function Ss(e, t, n) {
 	if (r.length === 0) return `0 0 ${i} ${a}`;
 	let o = Math.min(...r.map((e) => e.x)), s = Math.min(...r.map((e) => e.y)), c = Math.max(...r.map((e) => e.x + e.w)), l = Math.max(...r.map((e) => e.y + e.h)), u = Math.max(c - o + 160, i / 1.6), d = Math.max(l - s + 140, a / 1.6), f = i / a;
 	if (u / d > f ? d = u / f : u = d * f, u >= i * .85) return `0 0 ${i} ${a}`;
-	let p = (o + c) / 2 + ms, m = (s + l) / 2 + ms, h = Math.min(Math.max(0, p - u / 2), i - u), g = Math.min(Math.max(0, m - d / 2), a - d);
+	let p = (o + c) / 2 + _s, m = (s + l) / 2 + _s, h = Math.min(Math.max(0, p - u / 2), i - u), g = Math.min(Math.max(0, m - d / 2), a - d);
 	return `${h.toFixed(1)} ${g.toFixed(1)} ${u.toFixed(1)} ${d.toFixed(1)}`;
 }
-function Cs({ diagram: e, layout: t, portraitLayout: n, epoch: r, shot: i, shotMs: a, offsetMs: o, scrubMs: s, playing: c, onSelect: l, selected: u, view: d, stableSvg: f = !0 }) {
+function Es({ diagram: e, layout: t, portraitLayout: n, epoch: r, shot: i, shotMs: a, offsetMs: o, scrubMs: s, playing: c, onSelect: l, selected: u, view: d, stableSvg: f = !0 }) {
 	let p = (0, x.useRef)(null), m = (0, x.useRef)(null), [h, g] = (0, x.useState)(null);
 	(0, x.useLayoutEffect)(() => {
 		let e = p.current;
@@ -11691,16 +11794,16 @@ function Cs({ diagram: e, layout: t, portraitLayout: n, epoch: r, shot: i, shotM
 		let n = new ResizeObserver(t);
 		return n.observe(e), () => n.disconnect();
 	}, []);
-	let _ = h && n && h.h > h.w * .9 ? n : t, v = (0, x.useMemo)(() => ps(e, _, { pad: ms }), [e, _]), y = (0, x.useMemo)(() => ({ __html: v }), [v]), b = d !== void 0, C = !b && !!h && Math.min(h.w / (_.width + 32), h.h / (_.height + 32)) < gs;
+	let _ = h && n && h.h > h.w * .9 ? n : t, v = (0, x.useMemo)(() => gs(e, _, { pad: _s }), [e, _]), y = (0, x.useMemo)(() => ({ __html: v }), [v]), b = d !== void 0, C = !b && !!h && Math.min(h.w / (_.width + 32), h.h / (_.height + 32)) < ys;
 	return (0, x.useLayoutEffect)(() => {
 		let t = p.current?.querySelector("svg");
 		if (!t || !h) return;
-		let n = xs(e, i), r = n.size > 0, s = t.querySelectorAll(".dg-node, .dg-edge, .dg-group, .dg-lifeline"), l = t.querySelectorAll(".dg-edge-label, .dg-edge-pill");
+		let n = ws(e, i), r = n.size > 0, s = t.querySelectorAll(".dg-node, .dg-edge, .dg-group, .dg-lifeline"), l = t.querySelectorAll(".dg-edge-label, .dg-edge-pill");
 		t.querySelectorAll(".dg-pulse").forEach((e) => e.remove());
 		{
 			let e = Vi.timeline({ paused: !0 }), o = (e) => _.nodes[e], c = (e) => {
 				let t = _.edges[e]?.points ?? [];
-				return t.length ? bs(t.map((e) => ({
+				return t.length ? Cs(t.map((e) => ({
 					x: e.x,
 					y: e.y,
 					w: 1,
@@ -11709,18 +11812,18 @@ function Cs({ diagram: e, layout: t, portraitLayout: n, epoch: r, shot: i, shotM
 			};
 			if (b) t.setAttribute("preserveAspectRatio", "xMidYMid meet");
 			else if (!C) e.to(t, {
-				attr: { viewBox: Ss(_, n, i.trace) },
+				attr: { viewBox: Ts(_, n, i.trace) },
 				duration: 1.3,
 				ease: "power2.inOut"
 			}, 0);
 			else {
 				t.setAttribute("preserveAspectRatio", "xMidYMid meet");
-				let r = i.trace.length ? c(i.trace[0]) : null, a = [...n].map(o).filter(Boolean), s = r ?? (a.length ? bs(a) : null), l = {
+				let r = i.trace.length ? c(i.trace[0]) : null, a = [...n].map(o).filter(Boolean), s = r ?? (a.length ? Cs(a) : null), l = {
 					x: 0,
 					y: 0,
 					w: _.width,
 					h: _.height
-				}, u = s ? ys(s, _, h) : ys(l, _, {
+				}, u = s ? Ss(s, _, h) : Ss(l, _, {
 					w: h.w,
 					h: h.h
 				}), d = Math.max((_.width + 32) / h.w, (_.height + 32) / h.h), f = {
@@ -11730,7 +11833,7 @@ function Cs({ diagram: e, layout: t, portraitLayout: n, epoch: r, shot: i, shotM
 					h: h.h * d
 				};
 				e.to(t, {
-					attr: { viewBox: vs(s ? u : f) },
+					attr: { viewBox: xs(s ? u : f) },
 					duration: 1.1,
 					ease: "power2.inOut"
 				}, 0);
@@ -11749,7 +11852,7 @@ function Cs({ diagram: e, layout: t, portraitLayout: n, epoch: r, shot: i, shotM
 				return e.classList.contains("dg-group") ? !i.focus.includes(t) : e.classList.contains("dg-edge") ? !i.trace.includes(t) : !n.has(t);
 			}) : [], p = [...s].filter((e) => !f.includes(e));
 			f.length && e.to(f, {
-				opacity: hs,
+				opacity: vs,
 				duration: .6,
 				ease: "power1.out"
 			}, 0), p.length && e.to(p, {
@@ -11765,18 +11868,18 @@ function Cs({ diagram: e, layout: t, portraitLayout: n, epoch: r, shot: i, shotM
 				if (C && r > 0) {
 					let r = c(n);
 					if (r) {
-						let i = _.edges[n].points, a = i[0], c = i[i.length - 1], l = ys(r, _, h), u = l.w >= r.w + 60 && l.h >= r.h + 60, d = u ? l : ys({
+						let i = _.edges[n].points, a = i[0], c = i[i.length - 1], l = Ss(r, _, h), u = l.w >= r.w + 60 && l.h >= r.h + 60, d = u ? l : Ss({
 							x: a.x - 40,
 							y: a.y - 40,
 							w: 80,
 							h: 80
 						}, _, h);
 						e.to(t, {
-							attr: { viewBox: vs(d) },
+							attr: { viewBox: xs(d) },
 							duration: Math.min(.7, g * .35),
 							ease: "power2.inOut"
 						}, o - Math.min(.7, g * .35)), u || e.to(t, {
-							attr: { viewBox: vs(ys({
+							attr: { viewBox: xs(Ss({
 								x: c.x - 40,
 								y: c.y - 40,
 								w: 80,
@@ -11789,11 +11892,11 @@ function Cs({ diagram: e, layout: t, portraitLayout: n, epoch: r, shot: i, shotM
 				} else if (C && r === 0) {
 					let r = _.edges[n]?.points ?? [], i = c(n);
 					if (i && r.length) {
-						let n = ys(i, _, h);
+						let n = Ss(i, _, h);
 						if (!(n.w >= i.w + 60 && n.h >= i.h + 60)) {
 							let n = r[0], i = r[r.length - 1];
 							e.to(t, {
-								attr: { viewBox: vs(ys({
+								attr: { viewBox: xs(Ss({
 									x: n.x - 40,
 									y: n.y - 40,
 									w: 80,
@@ -11802,7 +11905,7 @@ function Cs({ diagram: e, layout: t, portraitLayout: n, epoch: r, shot: i, shotM
 								duration: .5,
 								ease: "power2.inOut"
 							}, Math.max(0, o - .5)), e.to(t, {
-								attr: { viewBox: vs(ys({
+								attr: { viewBox: xs(Ss({
 									x: i.x - 40,
 									y: i.y - 40,
 									w: 80,
@@ -11826,7 +11929,7 @@ function Cs({ diagram: e, layout: t, portraitLayout: n, epoch: r, shot: i, shotM
 					duration: .35
 				}, o + s * .6);
 				let u = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-				u.setAttribute("r", "4.5"), u.setAttribute("class", "dg-pulse"), u.setAttribute("fill", a.getAttribute("stroke") ?? as.solid.stroke), u.setAttribute("opacity", "0"), i.appendChild(u), e.set(u, { opacity: 1 }, o).to(u, {
+				u.setAttribute("r", "4.5"), u.setAttribute("class", "dg-pulse"), u.setAttribute("fill", a.getAttribute("stroke") ?? cs.solid.stroke), u.setAttribute("opacity", "0"), i.appendChild(u), e.set(u, { opacity: 1 }, o).to(u, {
 					duration: s,
 					ease: "power1.inOut",
 					motionPath: {
@@ -11875,22 +11978,22 @@ function Cs({ diagram: e, layout: t, portraitLayout: n, epoch: r, shot: i, shotM
 		dangerouslySetInnerHTML: f ? y : { __html: v }
 	});
 }
-function ws(e) {
+function Ds(e) {
 	let t = e.split(/\s+/).filter(Boolean).length;
 	return Math.max(2600, t * 380);
 }
-function Ts(e, t) {
+function Os(e, t) {
 	return `${e.id}-${t}`;
 }
-function Es(e, t, n) {
-	return e.map((e) => (n[Ts(e, t)]?.ms ?? ws(e[t])) + 600);
+function ks(e, t, n) {
+	return e.map((e) => (n[Os(e, t)]?.ms ?? Ds(e[t])) + 600);
 }
-function Ds(e) {
+function As(e) {
 	let t = [], n = 0;
 	for (let r of e) t.push(n), n += r;
 	return t;
 }
-function Os(e, t) {
+function js(e, t) {
 	let n = 0;
 	for (let r = 0; r < t.length; r += 1) {
 		if (e < n + t[r]) return {
@@ -11905,7 +12008,7 @@ function Os(e, t) {
 		offset: t[r]
 	};
 }
-function ks(e, t) {
+function Ms(e, t) {
 	return e.chapters.map((n) => {
 		let r = e.shots.findIndex((e) => e.chapter === n.id);
 		return r === -1 ? null : {
@@ -11915,7 +12018,7 @@ function ks(e, t) {
 		};
 	}).filter((e) => e !== null);
 }
-function As(e) {
+function Ns(e) {
 	let t = e.match(/[^.!?]+[.!?]*/g)?.map((e) => e.trim()).filter(Boolean) ?? [e], n = [];
 	for (let e of t) {
 		let t = e.split(/\s+/);
@@ -11923,16 +12026,16 @@ function As(e) {
 	}
 	return n;
 }
-function js(e, t) {
+function Ps(e, t) {
 	let n = e.reduce((e, t) => e + t.split(/\s+/).length, 0), r = 0;
 	for (let i of e) if (r += i.split(/\s+/).length, t * n < r) return i;
 	return e[e.length - 1] ?? "";
 }
-function Ms(e) {
+function Fs(e) {
 	let t = Math.max(0, Math.floor(e / 1e3));
 	return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`;
 }
-function Ns(e, t) {
+function Is(e, t) {
 	let n = t * e.reduce((e, t) => e + t.split(/\s+/).length, 0), r = 0;
 	for (let t of e) {
 		let e = t.split(/\s+/);
@@ -11950,24 +12053,24 @@ function Ns(e, t) {
 }
 //#endregion
 //#region src/Watch.tsx
-var Ps = [
+var Ls = [
 	1,
 	1.25,
 	1.5,
 	2,
 	.75
-], Fs = "(max-width: 700px), (max-height: 500px) and (orientation: landscape)";
-function Is() {
-	let e = typeof window < "u", t = e && new URLSearchParams(location.search).get("watch") === "1", [n, r] = (0, x.useState)(() => e && (t || matchMedia(Fs).matches));
+], Rs = "(max-width: 700px), (max-height: 500px) and (orientation: landscape)";
+function zs() {
+	let e = typeof window < "u", t = e && new URLSearchParams(location.search).get("watch") === "1", [n, r] = (0, x.useState)(() => e && (t || matchMedia(Rs).matches));
 	return (0, x.useEffect)(() => {
 		if (t || !e) return;
-		let n = matchMedia(Fs);
+		let n = matchMedia(Rs);
 		r(n.matches);
 		let i = () => r(n.matches);
 		return n.addEventListener("change", i), () => n.removeEventListener("change", i);
 	}, [t, e]), n;
 }
-function Ls(e) {
+function Bs(e) {
 	let { w: t, chapters: n, time: r, total: i } = e, [a, o] = (0, x.useState)(null), s = (0, x.useRef)(null), c = Math.max(0, n.findLastIndex((e) => e.start <= r)), l = n[c], u = e.nav?.next, d = (t) => e.nav?.open(_(t)), f = r > 0 || e.playing || !!e.clip, p = !e.playing && !e.clip && r >= i - 2;
 	(0, x.useEffect)(() => {
 		let e = s.current, t = e?.querySelector(".on");
@@ -11989,7 +12092,7 @@ function Ls(e) {
 		if (g.current = null, !n) return;
 		let r = t.clientX - n.x, i = t.clientY - n.y;
 		Math.abs(i) > 60 && Math.abs(i) > Math.abs(r) * 1.3 ? m(i < 0 ? c + 1 : c - 1) : Math.hypot(r, i) < 10 && performance.now() - n.t < 400 && (e.playing || !t.target.closest(".dg-node")) && e.toggle();
-	}, { words: C, said: w } = Ns(As(e.text), e.spoken), T = l ? `${c + 1} · ${l.title}` : t.subtitle ?? "";
+	}, { words: C, said: w } = Is(Ns(e.text), e.spoken), T = l ? `${c + 1} · ${l.title}` : t.subtitle ?? "";
 	return /* @__PURE__ */ (0, S.jsxs)("div", {
 		className: `watch${e.clip ? " is-clip" : ""}`,
 		children: [
@@ -12105,7 +12208,7 @@ function Ls(e) {
 					/* @__PURE__ */ (0, S.jsxs)("p", { children: [
 						n.length,
 						" chapters · ",
-						Ms(i)
+						Fs(i)
 					] }),
 					/* @__PURE__ */ (0, S.jsx)("button", {
 						className: "w-play",
@@ -12189,9 +12292,9 @@ function Ls(e) {
 							/* @__PURE__ */ (0, S.jsxs)("span", {
 								className: "w-time",
 								children: [
-									Ms(r),
+									Fs(r),
 									" / ",
-									Ms(i)
+									Fs(i)
 								]
 							}),
 							/* @__PURE__ */ (0, S.jsx)("button", {
@@ -12212,7 +12315,7 @@ function Ls(e) {
 							}),
 							/* @__PURE__ */ (0, S.jsxs)("button", {
 								className: "w-icon w-speed",
-								onClick: () => e.setSpeed(Ps[(Ps.indexOf(e.speed) + 1) % Ps.length]),
+								onClick: () => e.setSpeed(Ls[(Ls.indexOf(e.speed) + 1) % Ls.length]),
 								"aria-label": "Speed",
 								children: [e.speed, "×"]
 							})
@@ -12235,7 +12338,7 @@ function Ls(e) {
 						children: [
 							/* @__PURE__ */ (0, S.jsx)("b", { children: n + 1 }),
 							/* @__PURE__ */ (0, S.jsx)("span", { children: t.title }),
-							/* @__PURE__ */ (0, S.jsx)("small", { children: Ms(t.start) })
+							/* @__PURE__ */ (0, S.jsx)("small", { children: Fs(t.start) })
 						]
 					}, t.id))] }) : /* @__PURE__ */ (0, S.jsxs)(S.Fragment, { children: [(e.nav?.groups ?? []).map((e) => /* @__PURE__ */ (0, S.jsxs)("section", { children: [/* @__PURE__ */ (0, S.jsx)("h2", { children: e.title }), e.items.map(({ topic: e, note: t }) => /* @__PURE__ */ (0, S.jsxs)("button", {
 						onClick: () => {
@@ -12245,7 +12348,7 @@ function Ls(e) {
 							src: h(`/thumbs/${e.id}.svg`),
 							alt: "",
 							loading: "lazy"
-						}), /* @__PURE__ */ (0, S.jsxs)("span", { children: [e.title, /* @__PURE__ */ (0, S.jsx)("small", { children: t ?? [e.meta?.category, Ms(e.ms.engineer)].filter(Boolean).join(" · ") })] })]
+						}), /* @__PURE__ */ (0, S.jsxs)("span", { children: [e.title, /* @__PURE__ */ (0, S.jsx)("small", { children: t ?? [e.meta?.category, Fs(e.ms.engineer)].filter(Boolean).join(" · ") })] })]
 					}, e.id))] }, e.title)), /* @__PURE__ */ (0, S.jsx)("button", {
 						className: "w-browse",
 						onClick: () => e.nav?.library(),
@@ -12258,26 +12361,26 @@ function Ls(e) {
 }
 //#endregion
 //#region src/Player.tsx
-var Rs = [
+var Vs = [
 	.75,
 	1,
 	1.25,
 	1.5,
 	2
 ];
-function zs({ walkthrough: e, manifest: n, layouts: r, nav: i, autoplay: a = !1, startAt: o = 0, startChapter: s, onProgress: c, frame: l, view: u, initialDepth: d = "engineer" }) {
-	let f = Is(), p = l !== void 0, [m, g] = (0, x.useState)(d), y = (0, x.useMemo)(() => Es(e.shots, m, n), [
+function Hs({ walkthrough: e, manifest: n, layouts: r, nav: i, autoplay: a = !1, startAt: o = 0, startChapter: s, onProgress: c, frame: l, view: u, initialDepth: d = "engineer" }) {
+	let f = zs(), p = l !== void 0, [m, g] = (0, x.useState)(d), y = (0, x.useMemo)(() => ks(e.shots, m, n), [
 		e.shots,
 		m,
 		n
-	]), b = (0, x.useMemo)(() => Ds(y), [y]), w = b[b.length - 1] + y[y.length - 1], T = (0, x.useMemo)(() => ks(e, b), [e, b]), [E, D] = (0, x.useState)(0), [O, k] = (0, x.useState)(a), A = p ? Math.max(0, Math.min(w - 1, l)) : E, j = !p && O, [M, N] = (0, x.useState)(1), [P, F] = (0, x.useState)(!0), [ee, te] = (0, x.useState)(null), [ne, I] = (0, x.useState)({
+	]), b = (0, x.useMemo)(() => As(y), [y]), w = b[b.length - 1] + y[y.length - 1], T = (0, x.useMemo)(() => Ms(e, b), [e, b]), [E, D] = (0, x.useState)(0), [O, k] = (0, x.useState)(a), A = p ? Math.max(0, Math.min(w - 1, l)) : E, j = !p && O, [M, N] = (0, x.useState)(1), [P, F] = (0, x.useState)(!0), [ee, te] = (0, x.useState)(null), [ne, I] = (0, x.useState)({
 		index: 0,
 		offset: 0,
 		epoch: 0
 	}), L = (0, x.useRef)(null), re = (0, x.useRef)(null), ie = (0, x.useRef)({
 		time: 0,
 		last: 0
-	}), { index: R, offset: ae } = Os(A, y), oe = (0, x.useRef)(null);
+	}), { index: R, offset: ae } = js(A, y), oe = (0, x.useRef)(null);
 	p && oe.current?.index !== R && (oe.current = {
 		index: R,
 		offset: oe.current ? 0 : ae
@@ -12285,10 +12388,10 @@ function zs({ walkthrough: e, manifest: n, layouts: r, nav: i, autoplay: a = !1,
 	let se = p && oe.current ? {
 		...oe.current,
 		epoch: 0
-	} : ne, ce = e.shots[R], le = ce.diagram ?? e.shots.slice(0, R).reverse().find((e) => e.diagram)?.diagram ?? e.diagrams[0].id, ue = e.diagrams.find((e) => e.id === le), de = n[Ts(ce, m)], z = (0, x.useCallback)((e) => {
+	} : ne, ce = e.shots[R], le = ce.diagram ?? e.shots.slice(0, R).reverse().find((e) => e.diagram)?.diagram ?? e.diagrams[0].id, ue = e.diagrams.find((e) => e.id === le), de = n[Os(ce, m)], z = (0, x.useCallback)((e) => {
 		let t = Math.max(0, Math.min(w - 1, e));
 		ie.current.time = t, D(t);
-		let n = Os(t, y);
+		let n = js(t, y);
 		I((e) => ({
 			index: n.index,
 			offset: n.offset,
@@ -12334,9 +12437,9 @@ function zs({ walkthrough: e, manifest: n, layouts: r, nav: i, autoplay: a = !1,
 		let r = (i) => {
 			let a = i - ie.current.last;
 			ie.current.last = i;
-			let o = Os(ie.current.time, y), s = L.current, c = n[Ts(e.shots[o.index], m)], l;
+			let o = js(ie.current.time, y), s = L.current, c = n[Os(e.shots[o.index], m)], l;
 			l = s && c && s.src.endsWith(c.file) && !s.paused && !s.ended ? b[o.index] + s.currentTime * 1e3 : ie.current.time + a * M;
-			let u = Os(l, y);
+			let u = js(l, y);
 			u.index !== o.index && I((e) => ({
 				index: u.index,
 				offset: 0,
@@ -12358,7 +12461,7 @@ function zs({ walkthrough: e, manifest: n, layouts: r, nav: i, autoplay: a = !1,
 		if (t === m) return;
 		let r = R;
 		g(t);
-		let i = Ds(Es(e.shots, t, n));
+		let i = As(ks(e.shots, t, n));
 		ie.current.time = i[r], D(i[r]), I((e) => ({
 			index: r,
 			offset: 0,
@@ -12384,7 +12487,7 @@ function zs({ walkthrough: e, manifest: n, layouts: r, nav: i, autoplay: a = !1,
 		R,
 		e.shots.length
 	]);
-	let me = ce[m], he = de ? Math.min(1, ae / de.ms) : Math.min(1, ae / y[R]), ge = js(As(me), he), V = [...T].reverse().find((e) => e.start <= A);
+	let me = ce[m], he = de ? Math.min(1, ae / de.ms) : Math.min(1, ae / y[R]), ge = Ps(Ns(me), he), V = [...T].reverse().find((e) => e.start <= A);
 	(0, x.useEffect)(() => {
 		let e = re.current, t = e?.querySelector("button.on");
 		e && t && e.scrollWidth > e.clientWidth && e.scrollTo({
@@ -12399,7 +12502,7 @@ function zs({ walkthrough: e, manifest: n, layouts: r, nav: i, autoplay: a = !1,
 		className: "legend",
 		"aria-label": "Legend",
 		children: ue.legend.map((e) => /* @__PURE__ */ (0, S.jsxs)("span", {
-			style: { color: as[e.style].stroke },
+			style: { color: cs[e.style].stroke },
 			children: [/* @__PURE__ */ (0, S.jsx)("svg", {
 				viewBox: "0 0 34 8",
 				"aria-hidden": "true",
@@ -12408,9 +12511,9 @@ function zs({ walkthrough: e, manifest: n, layouts: r, nav: i, autoplay: a = !1,
 					y1: "4",
 					x2: "34",
 					y2: "4",
-					stroke: as[e.style].stroke,
+					stroke: cs[e.style].stroke,
 					strokeWidth: "2",
-					strokeDasharray: as[e.style].dash || void 0
+					strokeDasharray: cs[e.style].dash || void 0
 				})
 			}), e.label]
 		}, e.label))
@@ -12420,7 +12523,7 @@ function zs({ walkthrough: e, manifest: n, layouts: r, nav: i, autoplay: a = !1,
 		offsetMs: p ? ae : se.index === R ? se.offset : 0,
 		playing: j,
 		epoch: se.epoch * 1e3 + R
-	}) : /* @__PURE__ */ (0, S.jsx)(Cs, {
+	}) : /* @__PURE__ */ (0, S.jsx)(Es, {
 		diagram: ue,
 		layout: r[ue.id],
 		portraitLayout: r[`${ue.id}${t}`],
@@ -12441,7 +12544,7 @@ function zs({ walkthrough: e, manifest: n, layouts: r, nav: i, autoplay: a = !1,
 		children: [/* @__PURE__ */ (0, S.jsx)("strong", { children: ve }), _e.length ? /* @__PURE__ */ (0, S.jsxs)(S.Fragment, { children: [/* @__PURE__ */ (0, S.jsx)("span", { children: "Explained in:" }), _e.map(({ s: e, i: t }) => /* @__PURE__ */ (0, S.jsxs)("button", {
 			onClick: () => z(b[t]),
 			children: [
-				Ms(b[t]),
+				Fs(b[t]),
 				" · ",
 				e[m].slice(0, 70),
 				"…"
@@ -12451,7 +12554,7 @@ function zs({ walkthrough: e, manifest: n, layouts: r, nav: i, autoplay: a = !1,
 		ref: L,
 		preload: "auto"
 	});
-	return f ? /* @__PURE__ */ (0, S.jsxs)(S.Fragment, { children: [/* @__PURE__ */ (0, S.jsx)(Ls, {
+	return f ? /* @__PURE__ */ (0, S.jsxs)(S.Fragment, { children: [/* @__PURE__ */ (0, S.jsx)(Bs, {
 		w: e,
 		nav: i,
 		stage: xe,
@@ -12574,16 +12677,16 @@ function zs({ walkthrough: e, manifest: n, layouts: r, nav: i, autoplay: a = !1,
 					/* @__PURE__ */ (0, S.jsxs)("span", {
 						className: "time",
 						children: [
-							Ms(A),
+							Fs(A),
 							" / ",
-							Ms(w)
+							Fs(w)
 						]
 					}),
 					/* @__PURE__ */ (0, S.jsx)("select", {
 						value: M,
 						onChange: (e) => N(Number(e.target.value)),
 						"aria-label": "Speed",
-						children: Rs.map((e) => /* @__PURE__ */ (0, S.jsxs)("option", {
+						children: Vs.map((e) => /* @__PURE__ */ (0, S.jsxs)("option", {
 							value: e,
 							children: [e, "×"]
 						}, e))
@@ -12602,7 +12705,7 @@ function zs({ walkthrough: e, manifest: n, layouts: r, nav: i, autoplay: a = !1,
 					className: V?.id === e.id ? "on" : "",
 					onClick: () => z(e.start),
 					children: [
-						/* @__PURE__ */ (0, S.jsx)("span", { children: Ms(e.start) }),
+						/* @__PURE__ */ (0, S.jsx)("span", { children: Fs(e.start) }),
 						" ",
 						e.title
 					]
@@ -12614,14 +12717,14 @@ function zs({ walkthrough: e, manifest: n, layouts: r, nav: i, autoplay: a = !1,
 }
 //#endregion
 //#region src/lib/element.tsx
-var Bs = async (e, t) => {
+var Us = async (e, t) => {
 	try {
 		let n = await fetch(e);
 		return n.ok ? await n.json() : t;
 	} catch {
 		return t;
 	}
-}, Vs = class extends HTMLElement {
+}, Ws = class extends HTMLElement {
 	static observedAttributes = [
 		"src",
 		"layouts",
@@ -12649,16 +12752,16 @@ var Bs = async (e, t) => {
 		if (!e || !this.root) return;
 		let t = this.getAttribute("assets") ?? "";
 		m({ assets: t });
-		let n = await Bs(e, null);
+		let n = await Us(e, null);
 		if (!n) return;
-		let r = this.getAttribute("layouts"), i = r ? await Bs(r, {}) : await (await import("./layout-Cr5qKKGn.js")).layoutWalkthrough(n), a = await Bs(this.getAttribute("manifest") ?? `${t}/audio/${n.id}/manifest.json`, {});
-		this.root.render(/* @__PURE__ */ (0, S.jsx)(zs, {
+		let r = this.getAttribute("layouts"), i = r ? await Us(r, {}) : await (await import("./layout-BFrfrEox.js")).layoutWalkthrough(n), a = await Us(this.getAttribute("manifest") ?? `${t}/audio/${n.id}/manifest.json`, {});
+		this.root.render(/* @__PURE__ */ (0, S.jsx)(Hs, {
 			walkthrough: n,
 			layouts: i,
 			manifest: a
 		}, n.id));
 	}
 };
-customElements.get("design-player") || customElements.define("design-player", Vs);
+customElements.get("design-player") || customElements.define("design-player", Ws);
 //#endregion
-export { Vs as DesignPlayerElement };
+export { Ws as DesignPlayerElement };

@@ -112,7 +112,7 @@ edges:
   - { id: give2, from: pool, to: t2, label: connection B, style: dashed }
   - { id: sql1, from: t1, to: db, label: INSERT on A }
   - { id: ask3, from: t3, to: pool, label: "getConnection(): none idle, waits" }
-  - { id: close1, from: t1, to: pool, label: "close(): A goes back", style: dashed }
+  - { id: close1, from: t1, to: pool, label: "close(): A goes back", style: dashed, flow: main }
   - { id: give3, from: pool, to: t3, label: "A, to the waiting thread", style: dashed }
   - { id: slow, from: t2, to: db, label: "slow query, holds B" }
   - { id: ask4, from: t1, to: pool, label: "getConnection(): waits" }

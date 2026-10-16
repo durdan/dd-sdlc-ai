@@ -125,7 +125,7 @@ edges:
   - { id: list, from: ctx, to: service, label: "50 Orders, items not loaded yet", style: dashed }
   - { id: touch1, from: service, to: ctx, label: "order 1: getItems().size()" }
   - { id: sel1, from: ctx, to: db, label: "select ... from order_item where order_id=?" }
-  - { id: rest, from: ctx, to: db, label: "orders 2 to 50: the same select, once each", style: dotted }
+  - { id: rest, from: ctx, to: db, label: "orders 2 to 50: the same select, once each", style: dotted, flow: main }
   - { id: late, from: service, to: ctx, label: "after commit: getItems()" }
   - { id: lie, from: ctx, to: service, label: LazyInitializationException, style: dashed }
   - { id: fix, from: service, to: repo, label: findWithItems(customerId) }

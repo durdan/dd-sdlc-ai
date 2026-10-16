@@ -112,28 +112,28 @@ id: sticky-identity
 title: "StatefulSet db: names, DNS and a disk each"
 subtitle: "replicas: 3, volumeClaimTemplates: data"
 elements:
-  - { id: sts, label: StatefulSet db, sub: "replicas: 3", kind: system, row: 0 }
-  - { id: hsvc, label: Service db, sub: "headless: clusterIP None", tone: neutral, row: 0 }
+  - { id: sts, label: StatefulSet db, sub: "replicas: 3", kind: system, row: 0, role: service }
+  - { id: hsvc, label: Service db, sub: "headless: clusterIP None", tone: neutral, row: 0, role: edge }
   - { id: p0, label: db-0, sub: db-0.db.shop.svc, row: 1 }
   - { id: p1, label: db-1, sub: db-1.db.shop.svc, row: 1 }
   - { id: p2, label: db-2, sub: db-2.db.shop.svc, row: 1 }
   - { id: c0, label: PVC data-db-0, sub: 20Gi, kind: store, row: 2 }
   - { id: c1, label: PVC data-db-1, sub: 20Gi, kind: store, row: 2 }
   - { id: c2, label: PVC data-db-2, sub: 20Gi, kind: store, row: 2 }
-  - { id: sc, label: StorageClass fast-ssd, sub: provisions a disk per claim, tone: data, row: 3 }
+  - { id: sc, label: StorageClass fast-ssd, sub: provisions a disk per claim, tone: data, row: 3, role: service }
 edges:
   - { id: make0, from: sts, to: p0, label: "1st" }
   - { id: make1, from: sts, to: p1, label: "2nd" }
   - { id: make2, from: sts, to: p2, label: "3rd" }
-  - { id: dns0, from: hsvc, to: p0, style: dotted }
-  - { id: dns1, from: hsvc, to: p1, style: dotted }
-  - { id: dns2, from: hsvc, to: p2, style: dotted }
+  - { id: dns0, from: hsvc, to: p0, style: dotted, flow: main }
+  - { id: dns1, from: hsvc, to: p1, style: dotted, flow: main }
+  - { id: dns2, from: hsvc, to: p2, style: dotted, flow: main }
   - { id: mount0, from: p0, to: c0 }
   - { id: mount1, from: p1, to: c1 }
   - { id: mount2, from: p2, to: c2 }
-  - { id: pv0, from: c0, to: sc, style: dashed }
-  - { id: pv1, from: c1, to: sc, style: dashed }
-  - { id: pv2, from: c2, to: sc, style: dashed }
+  - { id: pv0, from: c0, to: sc, style: dashed, flow: main }
+  - { id: pv1, from: c1, to: sc, style: dashed, flow: main }
+  - { id: pv2, from: c2, to: sc, style: dashed, flow: main }
 steps:
   - caption: "Deployment pods are interchangeable. A StatefulSet gives each replica a stable name, a stable DNS name and its own disk, which outlive any one pod."
   - caption: "Pods are created in order. db-0 must be running and ready before db-1 starts, and db-1 before db-2."

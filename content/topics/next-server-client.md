@@ -96,10 +96,10 @@ elements:
   - { id: article, label: "<article>, <h1>, <p>", sub: rendered on the server only, kind: component, group: server, row: 2 }
   - { id: cart, label: AddToCart, sub: '"use client", useState', kind: component, tone: stream, group: server, row: 2 }
   - { id: html, label: HTML, sub: visible before any JavaScript, tone: data, group: sent, row: 3 }
-  - { id: payload, label: RSC Payload, sub: "server output, client props, references", tone: data, group: sent, row: 3 }
-  - { id: js, label: Client JavaScript, sub: AddToCart and its imports only, tone: data, group: sent, row: 3 }
+  - { id: payload, label: RSC Payload, sub: "server output, client props, references", tone: data, group: sent, row: 3, role: data }
+  - { id: js, label: Client JavaScript, sub: AddToCart and its imports only, tone: data, group: sent, row: 3, role: data }
   - { id: browser, label: Browser, sub: shows HTML then hydrates AddToCart, kind: person, row: 4 }
-  - { id: nav, label: A later <Link> click, sub: fetches only the RSC Payload, kind: component, tone: neutral, row: 5 }
+  - { id: nav, label: A later <Link> click, sub: fetches only the RSC Payload, kind: component, tone: neutral, row: 5, role: client }
 edges:
   - { id: load, from: data, to: page }
   - { id: render, from: page, to: article }
@@ -107,12 +107,12 @@ edges:
   - { id: html-server, from: article, to: html }
   - { id: html-client, from: cart, to: html }
   - { id: payload-server, from: article, to: payload }
-  - { id: payload-client, from: cart, to: payload, style: dashed }
+  - { id: payload-client, from: cart, to: payload, style: dashed, flow: main }
   - { id: bundle, from: cart, to: js }
   - { id: show, from: html, to: browser }
   - { id: reconcile, from: payload, to: browser }
   - { id: hydrate, from: js, to: browser }
-  - { id: later, from: browser, to: nav, style: dashed }
+  - { id: later, from: browser, to: nav, style: dashed, flow: main }
 steps:
   - caption: "In the App Router every page, layout and component is a Server Component unless its module, or a module that imports it, starts with \"use client\"."
   - caption: "The page awaits its data on the server. The data module imports \"server-only\", so importing it from client code would fail the build instead of leaking the query."

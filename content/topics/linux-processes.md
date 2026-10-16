@@ -3,7 +3,7 @@ id: linux-processes
 title: "Processes: fork, exec and wait"
 summary: How every program on Linux is started, and what happens when it ends
 why: "Shells, servers, containers and process managers all start programs the same way. Zombies, orphans and the PID 1 problem in containers make sense once you see it."
-lesson: none
+lesson: diagram
 points:
   - title: fork copies, exec replaces
     text: "fork makes a near-identical child process; exec swaps the program running in a process for another, keeping its PID and open files."
@@ -77,3 +77,39 @@ A few short-lived zombies are normal. Many that never go away mean the parent ha
 ## On macOS
 
 macOS has the same fork, exec and wait model (it is POSIX), and `ps -o pid,ppid,stat,command` works. There is no `strace`; `dtruss` exists but needs System Integrity Protection relaxed, so use a Linux container to trace system calls.
+
+```trace diagram
+id: process-states
+title: A process's life
+subtitle: The states ps shows in its STAT column
+kind: state
+initial: forked
+elements:
+  - { id: forked, label: Forked, sub: "fork(), clone() on Linux", row: 0 }
+  - { id: running, label: Running (R), sub: on a CPU or ready to run, row: 1 }
+  - { id: sleeping, label: Sleeping (S), sub: waiting for I/O or a timer, status: waiting, row: 1 }
+  - { id: stopped, label: Stopped (T), sub: SIGSTOP or Ctrl+Z, status: waiting, row: 1 }
+  - { id: zombie, label: Zombie (Z), sub: exited; status not collected, status: failure, row: 2 }
+  - { id: reaped, label: Reaped, sub: "parent's wait() returned", status: success, final: true, row: 3 }
+edges:
+  - { id: runs, from: forked, to: running, label: exec() }
+  - { id: waits, from: running, to: sleeping, label: "read(), sleep()" }
+  - { id: wakes, from: sleeping, to: running, label: ready }
+  - { id: stop, from: running, to: stopped, label: SIGSTOP }
+  - { id: cont, from: stopped, to: running, label: SIGCONT, style: dashed, flow: main }
+  - { id: exits, from: running, to: zombie, label: exit or killed }
+  - { id: reap, from: zombie, to: reaped, label: wait() }
+steps:
+  - caption: Between fork and the moment its parent collects its exit status, a process moves through a few states. ps shows them as a letter in the STAT column.
+  - caption: The parent calls fork(), which the C library implements with clone, and the child starts as a copy of it. It usually calls exec() at once to become another program, then runs.
+    focus: [forked, running]
+    trace: [runs]
+  - caption: Most of the time a process is not running but sleeping, waiting for a read, a network reply or a timer. When the data is ready, the kernel makes it runnable again.
+    trace: [waits, wakes]
+  - caption: SIGSTOP, or Ctrl+Z in a shell, stops it. SIGCONT lets it carry on from where it was.
+    trace: [stop, cont]
+  - caption: When it exits, or a signal kills it, the kernel frees its memory but keeps a small entry with the PID and exit status. ps shows it as Z, defunct.
+    trace: [exits]
+  - caption: The parent's wait() collects the status and the entry disappears. If the parent died first, the child was re-parented to PID 1, whose job is to reap it.
+    trace: [reap]
+```

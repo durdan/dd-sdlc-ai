@@ -96,22 +96,22 @@ groups:
   - { id: old, label: Old generation }
 elements:
   - { id: app, label: Your threads, sub: allocate new objects, kind: person }
-  - { id: roots, label: GC roots, sub: "thread stacks, static fields", kind: external }
-  - { id: eden, label: Eden regions, sub: new objects, group: young, tone: stream }
-  - { id: survivor, label: Survivor regions, sub: survived a young GC, group: young, tone: stream }
+  - { id: roots, label: GC roots, sub: "thread stacks, static fields", kind: external, role: data }
+  - { id: eden, label: Eden regions, sub: new objects, group: young, tone: stream, role: data }
+  - { id: survivor, label: Survivor regions, sub: survived a young GC, group: young, tone: stream, role: data }
   - { id: oldr, label: Old regions, sub: promoted objects, group: old, tone: data }
   - { id: humongous, label: Humongous regions, sub: "objects ≥ half a region", group: old, tone: data }
   - { id: marking, label: Concurrent marking, sub: while your threads run }
   - { id: free, label: Free regions, sub: ready for reuse, kind: store, tone: neutral }
 edges:
   - { id: alloc, from: app, to: eden, label: new (TLAB bump) }
-  - { id: big, from: app, to: humongous, label: huge array, style: dashed }
-  - { id: trace, from: roots, to: eden, label: what is reachable?, style: dotted }
+  - { id: big, from: app, to: humongous, label: huge array, style: dashed, flow: main }
+  - { id: trace, from: roots, to: eden, label: what is reachable?, style: dotted, flow: main }
   - { id: evacuate, from: eden, to: survivor, label: copy live objects }
   - { id: promote, from: survivor, to: oldr, label: old enough }
-  - { id: emptied, from: eden, to: free, style: dashed }
+  - { id: emptied, from: eden, to: free, style: dashed, flow: main }
   - { id: mark, from: marking, to: oldr, label: find live objects, style: dotted }
-  - { id: mixed, from: oldr, to: free, label: "mixed GC: most garbage first", style: dashed }
+  - { id: mixed, from: oldr, to: free, label: "mixed GC: most garbage first", style: dashed, flow: main }
 steps:
   - caption: "G1 splits the heap into equal regions, about 2048 of them, a few megabytes each for a typical heap. At any moment a region is free, eden, survivor or old."
     focus: [eden, survivor, oldr, free]

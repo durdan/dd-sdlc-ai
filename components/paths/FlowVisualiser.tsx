@@ -22,6 +22,7 @@ import type { FlowDiagram } from "@/lib/paths/types"
 import { explore, readLink, writeLink, type FlowLink, type Reach } from "@/lib/paths/reach"
 import { BAND_GAP, LIB_FOLLOW, PAD, READ, bandPx, c4Keys, compactSequence, headerRow, layoutFor, sequenceKeys, vb, wholeScale, type Key, type Rect, type Stage } from "./flowCamera"
 import { Ctl } from "./LanesVisualiser"
+import WaterfallStage, { laneColours } from "./WaterfallStage"
 
 const SPEEDS = [0.5, 1, 2] as const
 /** Speaking rate for each playback speed. */
@@ -101,13 +102,29 @@ function useCamera(keys: Key[] | null, still: boolean): Rect | null {
   return view
 }
 
-type StageProps = { flow: FlowDiagram; shots: Shot[]; at: number; epoch: number; ms: number; still: boolean; selected: string | null; onSelect: (id: string) => void }
+type DeltaView = "before" | "after" | "delta"
+type StageProps = {
+  flow: FlowDiagram
+  shots: Shot[]
+  at: number
+  epoch: number
+  ms: number
+  still: boolean
+  selected: string | null
+  onSelect: (id: string) => void
+  /** Before/after diagrams: which picture to show. */
+  deltaView: DeltaView
+}
 
 /** DiagramStage plus, where it needs one, this visualiser's camera, sticky sequence header and position marks. */
-function FlowStage({ flow, shots, at, epoch, ms, still, selected, onSelect }: StageProps) {
+function FlowStage({ flow, shots, at, epoch, ms, still, selected, onSelect, deltaView }: StageProps) {
   const d = flow.diagram
   const shot = shots[at]
   const box = useRef<HTMLDivElement>(null)
+  // Before/after diagrams: the SVG hides what the chosen picture doesn't have (see design-player's DELTA_CSS).
+  useLayoutEffect(() => {
+    if (d.kind === "c4" && d.variant === "delta") box.current?.querySelector("svg.dg")?.setAttribute("data-view", deltaView)
+  })
   const [stage, setStage] = useState<Stage | null>(null)
   useLayoutEffect(() => {
     const el = box.current
@@ -241,6 +258,9 @@ function FlowStage({ flow, shots, at, epoch, ms, still, selected, onSelect }: St
   )
 }
 
+/** The colours and icon of a legend swatch. */
+const pick = (r: { fill: string; stroke: string; icon: string }) => ({ fill: r.fill, stroke: r.stroke, icon: r.icon })
+
 /** A focused group lights the boxes in it as well as its own outline. */
 function withMembers(d: FlowDiagram["diagram"], focus: string[]) {
   if (d.kind !== "c4") return focus
@@ -272,6 +292,8 @@ export default function FlowVisualiser({ diagrams, index, onSelect }: Props) {
   const [still, setStill] = useState(false)
   const [selected, setSelected] = useState<string | null>(null)
   const [reach, setReach] = useState<Reach | null>(null)
+  /** Before/after diagrams: the reader's choice of picture, for the step it was made on. */
+  const [pickView, setPickView] = useState<{ at: number; flow: string; view: DeltaView } | null>(null)
   /** Bumps on every jump, so re-entering the same step replays it. */
   const [epoch, setEpoch] = useState(0)
   const [shown, setShown] = useState(index)
@@ -297,7 +319,7 @@ export default function FlowVisualiser({ diagrams, index, onSelect }: Props) {
     }
   }, [full])
   const legend = useMemo(() => legendOf(flow.diagram), [flow.diagram])
-  const wide = full || flow.layout.width > flow.layout.height * 1.15
+  const wide = full || !!flow.waterfall || flow.layout.width > flow.layout.height * 1.15
   const last = shots.length - 1
   const at = Math.min(step, last)
   const nodes = d.kind === "c4" ? d.elements : d.participants
@@ -309,6 +331,8 @@ export default function FlowVisualiser({ diagrams, index, onSelect }: Props) {
     [shots, at, reached],
   )
   const shot = shots[at]
+  const isDelta = d.kind === "c4" && d.variant === "delta"
+  const view: DeltaView = pickView && pickView.at === at && pickView.flow === flow.id ? pickView.view : (flow.steps[at].view ?? "delta")
   const ms = reached ? 1200 + 1100 * Math.max(1, reached.edges.length) : durs[at] / speed
 
   useEffect(() => {
@@ -530,16 +554,51 @@ export default function FlowVisualiser({ diagrams, index, onSelect }: Props) {
             A wide diagram gets the full width on desktop, with the controls below; a tall one sits beside them. */}
         <div className={`relative min-w-0 overflow-hidden rounded-2xl border border-[#d9dfdc] bg-[#f4f5f2] ${wide ? "lg:col-span-2" : "lg:col-start-2 lg:row-span-4 lg:row-start-1"}`}>
           <div
-            className={`relative w-full ${full ? "h-[62vh] sm:h-[70vh]" : `aspect-[4/5] max-h-[68vh] ${wide ? "sm:aspect-[16/9] sm:max-h-[58vh]" : "sm:aspect-[4/3]"}`}`}
+            className={`relative w-full ${
+              flow.waterfall
+                ? "min-h-[14rem]"
+                : full
+                  ? "h-[62vh] sm:h-[70vh]"
+                  : `aspect-[4/5] max-h-[68vh] ${wide ? "sm:aspect-[16/9] sm:max-h-[58vh]" : "sm:aspect-[4/3]"}`
+            }`}
             style={{ backgroundImage: "radial-gradient(circle, #d2d9d6 1px, transparent 1.3px)", backgroundSize: "18px 18px" }}
           >
-            <FlowStage key={flow.id} flow={flow} shots={staged} at={at} epoch={epoch} ms={ms} still={still} selected={selected} onSelect={select} />
+            {flow.waterfall ? (
+              <WaterfallStage key={flow.id} flow={flow} at={at} epoch={epoch} still={still} selected={selected} onSelect={select} />
+            ) : (
+              <FlowStage key={flow.id} flow={flow} shots={staged} at={at} epoch={epoch} ms={ms} still={still} selected={selected} onSelect={select} deltaView={view} />
+            )}
+            {isDelta && flow.views ? (
+              <div role="group" aria-label="Which picture" className="absolute left-2 top-2 flex rounded-full border border-[#d9dfdc] bg-white/95 p-0.5 text-[11.5px] font-semibold">
+                {(
+                  [
+                    ["before", flow.views.before],
+                    ["delta", "Changes"],
+                    ["after", flow.views.after],
+                  ] as const
+                ).map(([v, text]) => (
+                  <button
+                    key={v}
+                    onClick={() => {
+                      setPlaying(false)
+                      touched.current = true
+                      setPickView({ at, flow: flow.id, view: v })
+                    }}
+                    aria-pressed={view === v}
+                    className={`rounded-full px-2.5 py-1 ${view === v ? "bg-[#3d6b63] text-white" : "text-[#1f2a28] hover:text-[#3d6b63]"}`}
+                  >
+                    {text}
+                  </button>
+                ))}
+              </div>
+            ) : null}
             {!playing && !selected ? (
               <p className="pointer-events-none absolute bottom-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-[#d9dfdc] bg-white/95 px-2.5 py-1 text-[11.5px] text-[#4f5d5a]">
                 Paused · tap a box to explore it
               </p>
             ) : null}
-            <div className="absolute right-2 top-2 flex gap-1.5" style={d.kind === "sequence" ? { top: "auto", bottom: 8 } : undefined}>
+            {/* Top-right on larger screens; at the bottom on phones (and for sequence diagrams), clear of headers and switches. */}
+            <div className={`absolute bottom-2 right-2 flex gap-1.5 ${d.kind === "sequence" ? "" : "sm:bottom-auto sm:top-2"}`}>
               {canSpeak ? (
                 <button
                   onClick={toggleVoice}
@@ -571,7 +630,10 @@ export default function FlowVisualiser({ diagrams, index, onSelect }: Props) {
           </div>
           {/* What the colours mean: only the kinds of box and arrow this diagram uses. */}
           <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 border-t border-[#e1e6e3] bg-white/80 px-3 py-1.5 text-[11px] text-[#4f5d5a] sm:gap-x-3 sm:py-2 sm:text-[11.5px]">
-            {legend.roles.map((r) => (
+            {(flow.waterfall
+              ? flow.waterfall.lanes.map((l) => ({ role: l.id, n: flow.waterfall!.rows.filter((r) => r.lane === l.id).length, label: l.label, ...pick(laneColours(flow).get(l.id)!) }))
+              : legend.roles
+            ).map((r) => (
               <span key={r.role} className="inline-flex items-center gap-1.5">
                 <span className="inline-flex h-4 w-5 items-center justify-center rounded-[4px] border-[1.5px]" style={{ background: r.fill, borderColor: r.stroke, borderStyle: r.role === "external" ? "dashed" : "solid" }}>
                   <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke={r.stroke} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -582,8 +644,25 @@ export default function FlowVisualiser({ diagrams, index, onSelect }: Props) {
                 <span className="hidden rounded-full bg-[#eef1ef] px-1.5 text-[10.5px] tabular-nums text-[#5d6b68] sm:inline">{r.n}</span>
               </span>
             ))}
-            <span className="hidden h-3 w-px bg-[#d9dfdc] sm:block" aria-hidden="true" />
-            {legend.flows.map((f) => (
+            {legend.final ? (
+              <span className="inline-flex items-center gap-1.5">
+                <span className="inline-flex h-4 w-5 items-center justify-center rounded-[5px] border-[1.5px] border-[#6b7875]">
+                  <span className="h-2.5 w-3.5 rounded-[3px] border border-[#6b7875]" />
+                </span>
+                Final state
+              </span>
+            ) : null}
+            {legend.changes.map((c) => (
+              <span key={c.change} className="inline-flex items-center gap-1.5">
+                <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border-[1.5px] bg-white font-mono text-[10px] font-bold leading-none" style={{ borderColor: c.stroke, color: c.stroke }}>
+                  {c.mark}
+                </span>
+                {c.label}
+                <span className="hidden rounded-full bg-[#eef1ef] px-1.5 text-[10.5px] tabular-nums text-[#5d6b68] sm:inline">{c.n}</span>
+              </span>
+            ))}
+            {flow.waterfall || !legend.flows.length ? null : <span className="hidden h-3 w-px bg-[#d9dfdc] sm:block" aria-hidden="true" />}
+            {(flow.waterfall ? [] : legend.flows).map((f) => (
               <span key={f.flow} className="inline-flex items-center gap-1.5">
                 <svg width="26" height="8" viewBox="0 0 26 8" aria-hidden="true">
                   <line x1="1" y1="4" x2="20" y2="4" stroke={f.stroke} strokeWidth="1.8" strokeDasharray={f.dash || undefined} />
@@ -679,6 +758,8 @@ export default function FlowVisualiser({ diagrams, index, onSelect }: Props) {
                   ×
                 </button>
               </div>
+              {edges.length ? (
+                <>
               <p className="mt-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[#5d6b68]">Explore</p>
               <div className="mt-1 flex flex-wrap gap-1.5">
                 {(
@@ -728,6 +809,8 @@ export default function FlowVisualiser({ diagrams, index, onSelect }: Props) {
                           : "Nothing here: no arrow ends at this box."
                         : `${reach.kind === "down" ? "Leads to" : "Reached from"} ${reached.nodes.length - 1} ${reached.nodes.length === 2 ? "box" : "boxes"}: ${reached.nodes.slice(1).map(labelOf).join(", ")}.`}
                 </p>
+              ) : null}
+                </>
               ) : null}
               {mentions.length ? (
                 <>

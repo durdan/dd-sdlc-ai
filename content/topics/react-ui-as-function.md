@@ -96,21 +96,21 @@ subtitle: Your code describes, React updates the page
 elements:
   - { id: state, label: State and props, sub: "{ items, loading }", kind: store, tone: data, row: 0 }
   - { id: list, label: "List()", sub: your component function, row: 1 }
-  - { id: tree, label: Element tree, sub: "plain objects: type, props, key", tone: stream, row: 2 }
-  - { id: prev, label: Previous tree, sub: from the last render, kind: component, tone: neutral, row: 2 }
+  - { id: tree, label: Element tree, sub: "plain objects: type, props, key", tone: stream, row: 2, role: data }
+  - { id: prev, label: Previous tree, sub: from the last render, kind: component, tone: neutral, row: 2, role: data }
   - { id: react, label: React, sub: "calls components, compares trees", kind: system, row: 3 }
-  - { id: dom, label: DOM, sub: only React edits it, kind: external, row: 4 }
+  - { id: dom, label: DOM, sub: only React edits it, kind: external, row: 4, role: client }
   - { id: screen, label: Screen, sub: the browser paints, kind: person, row: 5 }
   - { id: handler, label: Event handler, sub: "onClick → setItems(next)", kind: component, row: 5 }
 edges:
   - { id: call, from: state, to: list }
   - { id: returns, from: list, to: tree }
   - { id: read, from: tree, to: react }
-  - { id: compare, from: prev, to: react, style: dotted }
+  - { id: compare, from: prev, to: react, style: dotted, flow: data }
   - { id: apply, from: react, to: dom }
   - { id: paint, from: dom, to: screen }
-  - { id: click, from: screen, to: handler, label: user clicks, style: dashed }
-  - { id: set, from: handler, to: state, label: set state, style: dashed }
+  - { id: click, from: screen, to: handler, label: user clicks, style: dashed, flow: main }
+  - { id: set, from: handler, to: state, label: set state, style: dashed, flow: data }
 steps:
   - caption: "Everything starts from data: the component's props and state. Say three items have loaded."
     focus: [state]

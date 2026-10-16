@@ -102,18 +102,18 @@ elements:
   - { id: sources, label: Kotlin and resources, sub: "compiled, KSP runs", group: build, row: 0 }
   - { id: r8, label: R8, sub: "shrink, optimise, obfuscate, DEX", group: build, row: 1 }
   - { id: aab, label: App Bundle (.aab), sub: "every ABI, density, language", group: build, row: 2 }
-  - { id: uploadkey, label: Upload key, sub: "yours, can be reset", kind: store, group: build, row: 1 }
-  - { id: console, label: Play Console, sub: versionCode must increase, group: play, row: 3 }
-  - { id: appkey, label: App signing key, sub: held by Google, kind: store, group: play, row: 3 }
+  - { id: uploadkey, label: Upload key, sub: "yours, can be reset", kind: store, group: build, row: 1, role: security }
+  - { id: console, label: Play Console, sub: versionCode must increase, group: play, row: 3, role: external }
+  - { id: appkey, label: App signing key, sub: held by Google, kind: store, group: play, row: 3, role: security }
   - { id: splits, label: Split APKs, sub: "base + density, ABI, language", group: play, row: 4 }
   - { id: phone, label: User's phone, sub: installs only its splits, kind: person, row: 5 }
 edges:
   - { id: compile, from: sources, to: r8}
   - { id: bundle, from: r8, to: aab }
-  - { id: signup, from: uploadkey, to: aab}
+  - { id: signup, from: uploadkey, to: aab, flow: security }
   - { id: upload, from: aab, to: console, label: upload }
   - { id: generate, from: console, to: splits}
-  - { id: signapp, from: appkey, to: splits}
+  - { id: signapp, from: appkey, to: splits, flow: security }
   - { id: install, from: splits, to: phone }
 steps:
   - caption: What you upload is not what users install. Play builds device-specific APKs from your bundle and signs them with a key Google holds, after R8 has rewritten your code.

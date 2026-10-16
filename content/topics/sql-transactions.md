@@ -4,7 +4,7 @@ title: Transactions and isolation levels
 summary: What concurrent transactions can see of each other
 why: Most concurrency bugs in database code are anomalies the chosen isolation level permits; knowing which ones lets you pick a level or a lock on purpose.
 requires: [sql-constraints]
-lesson: none
+lesson: diagram
 points:
   - title: Read committed is the default
     text: Each statement sees data committed before that statement began, so two reads in one transaction can disagree.
@@ -91,3 +91,36 @@ HINT:  The transaction might succeed if retried.
 All serialization failures use SQLSTATE `40001`. Code that uses repeatable read or serializable needs a retry loop around the whole transaction, including the reads, and should keep transactions short, because the longer they run the more they conflict. Declaring read-only transactions as `READ ONLY` helps the serializable checks.
 
 The next topic shows the machinery that makes all of this possible without readers blocking writers: row versions.
+
+```trace diagram
+id: lost-update
+title: A lost update under read committed
+subtitle: Two transactions, one balance
+kind: sequence
+elements:
+  - { id: a, label: Transaction A, role: client }
+  - { id: pg, label: PostgreSQL, role: data }
+  - { id: b, label: Transaction B, role: client }
+edges:
+  - { id: a-begin, from: a, to: pg, label: BEGIN }
+  - { id: a-read, from: a, to: pg, label: SELECT balance }
+  - { id: a-got, from: pg, to: a, label: "10000", style: dashed }
+  - { id: b-update, from: b, to: pg, label: UPDATE … - 500 }
+  - { id: b-commit, from: b, to: pg, label: COMMIT }
+  - { id: a-update, from: a, to: pg, label: "UPDATE … = 9900" }
+  - { id: a-commit, from: a, to: pg, label: COMMIT }
+phases:
+  - { label: A reads, from: a-begin, to: a-got }
+  - { label: B commits, from: b-update, to: b-commit }
+  - { label: A writes a stale value, from: a-update, to: a-commit }
+steps:
+  - caption: Two transactions change the same account. A wants to take 100 cents off, B 500.
+  - caption: A begins and reads the balance, 10000.
+    trace: [a-begin, a-read, a-got]
+  - caption: Meanwhile B subtracts 500 in SQL and commits. The balance is now 9500.
+    trace: [b-update, b-commit]
+  - caption: A writes 9900, computed in the application from the 10000 it read earlier, and commits.
+    trace: [a-update, a-commit]
+  - caption: The final balance is 9900. B's change is lost. Fix it by doing the arithmetic in SQL, locking the row with SELECT … FOR UPDATE, or using a stronger isolation level.
+    focus: [pg]
+```

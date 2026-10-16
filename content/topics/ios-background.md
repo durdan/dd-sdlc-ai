@@ -101,7 +101,7 @@ edges:
   - { id: launch, from: scheduler, to: handler, label: launches app in background }
   - { id: next, from: handler, to: scheduler, label: submit the next request }
   - { id: fetch, from: handler, to: server, label: fetch headlines }
-  - { id: expire, from: scheduler, to: handler, label: "expirationHandler: time is up", style: dashed }
+  - { id: expire, from: scheduler, to: handler, label: "expirationHandler: time is up", style: dashed, flow: async }
   - { id: complete, from: handler, to: scheduler, label: "setTaskCompleted(success:)", style: dashed }
 steps:
   - caption: An iOS app can't keep itself running in the background. It can only ask. It registers a handler, submits a request, and iOS picks the moment.

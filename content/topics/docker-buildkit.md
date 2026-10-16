@@ -105,20 +105,20 @@ subtitle: "docker buildx build --platform linux/amd64,linux/arm64 -t hello-go:mu
 direction: DOWN
 elements:
   - { id: df, label: Dockerfile, sub: "# syntax=docker/dockerfile:1", kind: person, row: 0 }
-  - { id: frontend, label: BuildKit, sub: "frontend → graph of steps", kind: system, row: 1 }
+  - { id: frontend, label: BuildKit, sub: "frontend → graph of steps", kind: system, row: 1, role: service }
   - { id: cache, label: Cache mount, sub: "/root/.cache/go-build", kind: store, tone: data, row: 2 }
   - { id: secret, label: Secret mount, sub: only during the step, tone: external, row: 2 }
   - { id: build, label: build stage, sub: "golang:1.27-alpine on $BUILDPLATFORM", row: 3 }
   - { id: unused, label: Unused stage, sub: not needed by the target, tone: neutral, row: 4 }
-  - { id: amd, label: final linux/amd64, sub: "distroless + /hello", tone: stream, row: 4 }
-  - { id: arm, label: final linux/arm64, sub: "distroless + /hello", tone: stream, row: 4 }
+  - { id: amd, label: final linux/amd64, sub: "distroless + /hello", tone: stream, row: 4, role: service }
+  - { id: arm, label: final linux/arm64, sub: "distroless + /hello", tone: stream, row: 4, role: service }
   - { id: index, label: "hello-go:multi", sub: image index, kind: store, tone: data, row: 5 }
 edges:
   - { id: parse, from: df, to: frontend }
   - { id: plan, from: frontend, to: build }
-  - { id: warm, from: cache, to: build, style: dotted }
-  - { id: token, from: secret, to: build, style: dotted }
-  - { id: skip, from: frontend, to: unused, label: skipped, style: dashed }
+  - { id: warm, from: cache, to: build, style: dotted, flow: data }
+  - { id: token, from: secret, to: build, style: dotted, flow: security }
+  - { id: skip, from: frontend, to: unused, label: skipped, style: dashed, flow: main }
   - { id: x86, from: build, to: amd, label: GOARCH=amd64 }
   - { id: a64, from: build, to: arm, label: GOARCH=arm64 }
   - { id: i1, from: amd, to: index }

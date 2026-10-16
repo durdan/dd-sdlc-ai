@@ -69,9 +69,9 @@ elements:
   - { id: rds-cfg, label: "Data, DB users, exposure", sub: "you, plus encryption and Multi-AZ", tone: core, group: rds, row: 0 }
   - { id: lam-cfg, label: "Code, role, data", sub: "you, plus dependencies and secrets", tone: core, group: lambda, row: 0 }
   - { id: ec2-os, label: "Guest OS, patches", sub: "you, and all installed software", tone: core, group: ec2, row: 1 }
-  - { id: rds-os, label: "OS and DB engine", sub: "AWS patches, in your maintenance window", tone: neutral, group: rds, row: 1 }
-  - { id: lam-os, label: "OS and runtime", sub: "AWS patches and scales", tone: neutral, group: lambda, row: 1 }
-  - { id: infra, label: "Facilities, hardware, network", sub: "AWS, up to the virtualisation layer", kind: system, tone: neutral, row: 2 }
+  - { id: rds-os, label: "OS and DB engine", sub: "AWS patches, in your maintenance window", tone: neutral, group: rds, row: 1, role: external }
+  - { id: lam-os, label: "OS and runtime", sub: "AWS patches and scales", tone: neutral, group: lambda, row: 1, role: external }
+  - { id: infra, label: "Facilities, hardware, network", sub: "AWS, up to the virtualisation layer", kind: system, tone: neutral, row: 2, role: external }
 edges:
   - { id: ec2-up, from: ec2-cfg, to: ec2-os }
   - { id: rds-up, from: rds-cfg, to: rds-os }

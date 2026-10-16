@@ -88,20 +88,20 @@ elements:
   - { id: sys, label: System }
   - { id: act, label: Activity }
   - { id: vm, label: ViewModel }
-  - { id: saved, label: Saved state }
+  - { id: saved, label: Saved state, role: data }
 edges:
   - { id: launch, from: sys, to: act, label: "onCreate, onStart, onResume" }
   - { id: create, from: act, to: vm, label: "by viewModels(): created" }
   - { id: rotate, from: sys, to: act, label: "rotation: onPause, onStop" }
-  - { id: save, from: act, to: saved, label: onSaveInstanceState }
+  - { id: save, from: act, to: saved, label: onSaveInstanceState, flow: data }
   - { id: destroy, from: sys, to: act, label: "onDestroy, changing configurations" }
   - { id: recreate, from: sys, to: act, label: "new instance: onCreate(bundle)" }
   - { id: reuse, from: vm, to: act, label: same ViewModel, style: dashed }
-  - { id: restore, from: saved, to: act, label: state restored, style: dashed }
+  - { id: restore, from: saved, to: act, label: state restored, style: dashed, flow: data }
   - { id: home, from: sys, to: act, label: "Home: onPause, onStop" }
-  - { id: save2, from: act, to: saved, label: onSaveInstanceState }
-  - { id: kill, from: sys, to: act, label: "process killed: no onDestroy", style: dashed }
-  - { id: back, from: saved, to: act, label: "return: new process, new ViewModel", style: dashed }
+  - { id: save2, from: act, to: saved, label: onSaveInstanceState, flow: data }
+  - { id: kill, from: sys, to: act, label: "process killed: no onDestroy", style: dashed, flow: main }
+  - { id: back, from: saved, to: act, label: "return: new process, new ViewModel", style: dashed, flow: data }
 steps:
   - caption: "The activity is created, started and resumed. The screen asks for its ViewModel, which is created on first use and kept in the activity's ViewModelStore."
     trace: [launch, create]

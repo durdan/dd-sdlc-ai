@@ -71,7 +71,7 @@ elements:
   - { id: math, label: math.mjs, sub: "export let calls; export function add", group: esm, row: 2 }
   - { id: fmt, label: format.mjs, sub: imported by math.mjs, group: esm, row: 3 }
   - { id: map, label: Module map, sub: one record per URL, kind: store, tone: data, row: 0 }
-  - { id: calls, label: "binding: calls", sub: "one slot, owned by math.mjs", tone: stream, row: 3 }
+  - { id: calls, label: "binding: calls", sub: "one slot, owned by math.mjs", tone: stream, row: 3, role: data }
   - { id: app, label: app.cjs, sub: "const { add } = require(\"./lib.cjs\")", group: cjs, row: 0 }
   - { id: lib, label: lib.cjs, sub: "module.exports = { add }", group: cjs, row: 1 }
   - { id: cache, label: require.cache, sub: one module.exports per file, kind: store, tone: data, row: 2 }
@@ -79,11 +79,11 @@ edges:
   - { id: parse, from: loader, to: main, label: parse }
   - { id: dep1, from: main, to: math, label: import }
   - { id: dep2, from: math, to: fmt, label: import }
-  - { id: record, from: loader, to: map, style: dashed }
-  - { id: write, from: math, to: calls, label: calls++ }
-  - { id: read, from: main, to: calls, label: reads, style: dotted }
+  - { id: record, from: loader, to: map, style: dashed, flow: data }
+  - { id: write, from: math, to: calls, label: calls++, flow: data }
+  - { id: read, from: main, to: calls, label: reads, style: dotted, flow: data }
   - { id: req, from: app, to: lib, label: "require(): runs it now" }
-  - { id: cached, from: lib, to: cache, style: dashed }
+  - { id: cached, from: lib, to: cache, style: dashed, flow: data }
 steps:
   - caption: Two ways to load the same kind of code. An ES module graph, which Node prepares completely before running a line, and CommonJS, which loads each file at the moment require() is called.
   - caption: Node's loader reads main.mjs and parses it. import and export are syntax, not function calls, so it can find every import without running any code.

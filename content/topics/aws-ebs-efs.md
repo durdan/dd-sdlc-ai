@@ -80,7 +80,7 @@ elements:
 edges:
   - { id: attach, from: inst-a, to: vol-a, label: attached }
   - { id: snapshot, from: vol-a, to: snap }
-  - { id: restore, from: snap, to: vol-b, label: restore, style: dashed }
+  - { id: restore, from: snap, to: vol-b, label: restore, style: dashed, flow: main }
   - { id: attach-b, from: inst-b, to: vol-b }
 steps:
   - caption: "A database wants a block device it can fsync. EBS gives an instance a network-attached disk that behaves like a local one."
@@ -109,8 +109,8 @@ groups:
 elements:
   - { id: client-a, label: Instance, group: za, row: 0 }
   - { id: client-b, label: ECS task, group: zb, row: 0 }
-  - { id: mt-a, label: Mount target, group: za, row: 1 }
-  - { id: mt-b, label: Mount target, group: zb, row: 1 }
+  - { id: mt-a, label: Mount target, group: za, row: 1, role: edge }
+  - { id: mt-b, label: Mount target, group: zb, row: 1, role: edge }
   - { id: efs, label: EFS file system, sub: "Regional, NFSv4.1", kind: store, tone: data, row: 2 }
   - { id: s3, label: S3 bucket, sub: whole objects over HTTP, kind: store, tone: data, row: 2 }
 edges:
@@ -118,7 +118,7 @@ edges:
   - { id: mount-b, from: client-b, to: mt-b }
   - { id: nfs-a, from: mt-a, to: efs }
   - { id: nfs-b, from: mt-b, to: efs }
-  - { id: obj, from: client-b, to: s3, style: dotted }
+  - { id: obj, from: client-b, to: s3, style: dotted, flow: main }
 steps:
   - caption: "When many machines need the same files, a disk attached to one of them won't do. EFS is a shared NFS file system that spans zones."
   - caption: "A Regional file system stores data redundantly across zones and has a mount target in each zone. A One Zone file system is cheaper and lives in just one."

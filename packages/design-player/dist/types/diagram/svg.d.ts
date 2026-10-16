@@ -1,4 +1,4 @@
-import type { Diagram, DiagramEdge, DiagramElement, EdgeStyle, Flow, Role, Tone } from "../types";
+import type { Change, Diagram, DiagramEdge, DiagramElement, EdgeStyle, Flow, Role, Status, Tone } from "../types";
 import type { DiagramLayout, Point } from "./layout";
 type Swatch = {
     fill: string;
@@ -8,6 +8,18 @@ type Swatch = {
 export declare const ROLES: Record<Role, Swatch & {
     label: string;
     icon: string;
+}>;
+/** State diagrams: one colour and icon per kind of state. */
+export declare const STATUSES: Record<Status, Swatch & {
+    label: string;
+    icon: string;
+}>;
+/** Delta diagrams: added, removed and changed parts. */
+export declare const CHANGES: Record<Change, {
+    stroke: string;
+    dash: string;
+    label: string;
+    mark: string;
 }>;
 export declare const TONES: Record<Tone, Swatch>;
 /**
@@ -41,7 +53,7 @@ export declare function legendOf(d: Diagram): {
         stroke: string;
         label: string;
         icon: string;
-        role: Role;
+        role: string;
         n: number;
     }[];
     flows: {
@@ -51,6 +63,15 @@ export declare function legendOf(d: Diagram): {
         flow: Flow;
         n: number;
     }[];
+    changes: {
+        stroke: string;
+        dash: string;
+        label: string;
+        mark: string;
+        change: Change;
+        n: number;
+    }[];
+    final: boolean;
 };
 /** Orthogonal polyline as a path with small rounded corners. */
 export declare function pathD(points: Point[], r?: number): string;

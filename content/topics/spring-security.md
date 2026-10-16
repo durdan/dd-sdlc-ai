@@ -119,26 +119,26 @@ elements:
   - { id: client, label: Client, sub: "Authorization: Bearer <JWT>", kind: person }
   - { id: dfp, label: DelegatingFilterProxy, sub: a plain servlet filter, group: servlet }
   - { id: fcp, label: FilterChainProxy, sub: first matching chain wins, group: servlet, kind: system }
-  - { id: webchain, label: web chain, sub: "any request, form login", kind: external }
+  - { id: webchain, label: web chain, sub: "any request, form login", kind: external, role: service }
   - { id: bearer, label: BearerToken filter, sub: "JWT → Authentication", group: apichain }
   - { id: context, label: SecurityContextHolder, sub: this request's identity, kind: store, tone: data }
-  - { id: etf, label: ExceptionTranslation, sub: catches security exceptions, group: apichain }
+  - { id: etf, label: ExceptionTranslation, sub: catches security exceptions, group: apichain, role: security }
   - { id: authz, label: AuthorizationFilter, sub: authorizeHttpRequests rules, group: apichain }
   - { id: dispatcher, label: DispatcherServlet, sub: your controllers, kind: system, tone: neutral }
-  - { id: r401, label: 401 Unauthorized, sub: AuthenticationEntryPoint, kind: person }
-  - { id: r403, label: 403 Forbidden, sub: AccessDeniedHandler, kind: person }
+  - { id: r401, label: 401 Unauthorized, sub: AuthenticationEntryPoint, kind: person, role: error }
+  - { id: r403, label: 403 Forbidden, sub: AccessDeniedHandler, kind: person, role: error }
 edges:
   - { id: http, from: client, to: dfp }
   - { id: delegate, from: dfp, to: fcp, label: delegates to the bean }
   - { id: match, from: fcp, to: bearer, label: "/api/** matches" }
-  - { id: other, from: fcp, to: webchain, label: other URLs, style: dashed }
-  - { id: store, from: bearer, to: context, label: store }
+  - { id: other, from: fcp, to: webchain, label: other URLs, style: dashed, flow: main }
+  - { id: store, from: bearer, to: context, label: store, flow: data }
   - { id: next1, from: bearer, to: etf }
   - { id: next2, from: etf, to: authz }
-  - { id: who, from: authz, to: context, label: reads, style: dotted }
+  - { id: who, from: authz, to: context, label: reads, style: dotted, flow: data }
   - { id: allowed, from: authz, to: dispatcher, label: allowed }
-  - { id: anon, from: etf, to: r401, label: not authenticated, style: dashed }
-  - { id: denied, from: etf, to: r403, label: authenticated, style: dashed }
+  - { id: anon, from: etf, to: r401, label: not authenticated, style: dashed, flow: blocked }
+  - { id: denied, from: etf, to: r403, label: authenticated, style: dashed, flow: blocked }
 steps:
   - caption: "The servlet container knows only one Spring Security filter, DelegatingFilterProxy. It hands the request to the FilterChainProxy bean, which holds the real security filters."
     focus: [client, dfp, fcp]

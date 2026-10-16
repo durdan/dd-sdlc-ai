@@ -89,13 +89,13 @@ elements:
   - { id: iam, label: IAM check }
 edges:
   - { id: assume, from: app, to: sts, label: "AssumeRole(orders-reader)" }
-  - { id: trust, from: sts, to: sts, label: "trust policy: may this caller assume it?" }
+  - { id: trust, from: sts, to: sts, label: "trust policy: may this caller assume it?", flow: security }
   - { id: creds, from: sts, to: app, label: "key ID, secret, session token (1 h)", style: dashed }
   - { id: sign, from: app, to: app, label: "sign the request with the secret" }
   - { id: get, from: app, to: s3, label: "GetObject + signature + token" }
-  - { id: check, from: s3, to: iam, label: "who signed it, and is it allowed?" }
-  - { id: eval, from: iam, to: iam, label: "role policies + bucket policy" }
-  - { id: allow, from: iam, to: s3, label: Allow, style: dashed }
+  - { id: check, from: s3, to: iam, label: "who signed it, and is it allowed?", flow: security }
+  - { id: eval, from: iam, to: iam, label: "role policies + bucket policy", flow: security }
+  - { id: allow, from: iam, to: s3, label: Allow, style: dashed, flow: security }
   - { id: object, from: s3, to: app, label: "200 + the object", style: dashed }
   - { id: refresh, from: app, to: sts, label: "new credentials before expiry" }
 steps:

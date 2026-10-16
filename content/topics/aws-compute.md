@@ -69,12 +69,12 @@ id: who-runs-what
 title: Four ways to run the same service
 subtitle: What is left for you to patch, scale and replace
 elements:
-  - { id: app, label: Your service, kind: person, row: 0 }
+  - { id: app, label: Your service, kind: person, row: 0, role: service }
   - { id: asg, label: Auto Scaling group, sub: "launch template, several zones", row: 1 }
   - { id: orch, label: ECS or EKS, sub: schedules tasks or pods, kind: system, row: 1 }
-  - { id: lambda, label: Lambda, sub: "a function per request or event", tone: data, row: 1 }
+  - { id: lambda, label: Lambda, sub: "a function per request or event", tone: data, row: 1, role: service }
   - { id: inst, label: EC2 instances, sub: "you patch the OS", row: 2 }
-  - { id: fargate, label: Fargate, sub: "AWS runs each task in its own environment", tone: data, row: 2 }
+  - { id: fargate, label: Fargate, sub: "AWS runs each task in its own environment", tone: data, row: 2, role: service }
 edges:
   - { id: to-asg, from: app, to: asg }
   - { id: to-orch, from: app, to: orch }

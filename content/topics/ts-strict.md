@@ -100,19 +100,19 @@ groups:
   - { id: family, label: "\"strict\": true" }
 elements:
   - { id: snip, label: orders.ts, sub: "find, total, catch, Cart, scores", kind: system, row: 0 }
-  - { id: crash, label: TypeError at runtime, sub: what ships with strict off, kind: external, row: 1 }
-  - { id: nullc, label: strictNullChecks, sub: "u is possibly undefined", group: family, row: 1 }
-  - { id: implicit, label: noImplicitAny, sub: "items is implicitly any", group: family, row: 1 }
-  - { id: catchv, label: useUnknownInCatchVariables, sub: "err is unknown", group: family, row: 2 }
-  - { id: propinit, label: strictPropertyInitialization, sub: "items is never set", group: family, row: 2 }
-  - { id: unchecked, label: noUncheckedIndexedAccess, sub: "scores[\"lin\"] may be undefined", tone: stream, row: 1 }
+  - { id: crash, label: TypeError at runtime, sub: what ships with strict off, kind: external, row: 1, role: error }
+  - { id: nullc, label: strictNullChecks, sub: "u is possibly undefined", group: family, row: 1, role: security }
+  - { id: implicit, label: noImplicitAny, sub: "items is implicitly any", group: family, row: 1, role: security }
+  - { id: catchv, label: useUnknownInCatchVariables, sub: "err is unknown", group: family, row: 2, role: security }
+  - { id: propinit, label: strictPropertyInitialization, sub: "items is never set", group: family, row: 2, role: security }
+  - { id: unchecked, label: noUncheckedIndexedAccess, sub: "scores[\"lin\"] may be undefined", tone: stream, row: 1, role: security }
 edges:
-  - { id: off, from: snip, to: crash, label: strict off, style: dashed }
+  - { id: off, from: snip, to: crash, label: strict off, style: dashed, flow: main }
   - { id: e-null, from: snip, to: nullc }
   - { id: e-any, from: snip, to: implicit }
   - { id: e-catch, from: snip, to: catchv }
   - { id: e-init, from: snip, to: propinit }
-  - { id: e-index, from: snip, to: unchecked, style: dotted }
+  - { id: e-index, from: snip, to: unchecked, style: dotted, flow: main }
 steps:
   - caption: One file with five bugs. With the bare defaults it all type-checks; each flag catches one of them before the code runs.
   - caption: Without the flags, null and undefined fit into every type and untyped parameters silently become any. This file compiles, then throws the first time no user matches.

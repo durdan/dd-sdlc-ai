@@ -121,7 +121,7 @@ title: One test run against the orders API
 subtitle: Status, shape, a retried POST and someone else's order
 kind: sequence
 elements:
-  - { id: test, label: API test }
+  - { id: test, label: API test, role: client }
   - { id: api, label: Orders API }
   - { id: db, label: Database }
 edges:
@@ -134,7 +134,7 @@ edges:
   - { id: bad, from: test, to: api, label: "POST qty 0, then no token" }
   - { id: rejected, from: api, to: test, label: "400, then 401", style: dashed }
   - { id: steal, from: test, to: api, label: "GET /orders/123 as Alice" }
-  - { id: owner, from: api, to: db, label: "order 123: owner is Bob" }
+  - { id: owner, from: api, to: db, label: "order 123: owner is Bob", flow: security }
   - { id: denied, from: api, to: test, label: "403 or 404", style: dashed }
 steps:
   - caption: The test calls the API over HTTP, the way a client would, with no browser. It creates an order and sends an idempotency key, a client-chosen id for this one attempt.

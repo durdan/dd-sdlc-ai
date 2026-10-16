@@ -79,7 +79,7 @@ groups:
   - { id: azb, label: Zone b }
 elements:
   - { id: app, label: App, row: 0 }
-  - { id: endpoint, label: Endpoint, sub: "orders.xxxx.rds.amazonaws.com", kind: component, row: 1 }
+  - { id: endpoint, label: Endpoint, sub: "orders.xxxx.rds.amazonaws.com", kind: component, row: 1, role: edge }
   - { id: primary, label: Primary, sub: reads and writes, kind: store, group: aza, row: 2 }
   - { id: standby, label: Standby, sub: serves no traffic, kind: store, tone: neutral, group: azb, row: 2 }
   - { id: replica, label: Read replica, sub: its own endpoint, kind: store, tone: data, row: 3 }
@@ -87,9 +87,9 @@ edges:
   - { id: connect, from: app, to: endpoint }
   - { id: route, from: endpoint, to: primary, label: DNS }
   - { id: sync, from: primary, to: standby, label: synchronous }
-  - { id: async, from: primary, to: replica, label: asynchronous, style: dashed }
-  - { id: reads, from: app, to: replica, label: reads, style: dotted }
-  - { id: flip, from: endpoint, to: standby, label: after failover, style: dashed }
+  - { id: async, from: primary, to: replica, label: asynchronous, style: dashed, flow: async }
+  - { id: reads, from: app, to: replica, label: reads, style: dotted, flow: main }
+  - { id: flip, from: endpoint, to: standby, label: after failover, style: dashed, flow: main }
 steps:
   - caption: "This is an RDS Multi-AZ DB instance with one read replica. The app knows only names, never machines."
   - caption: "The app connects to the endpoint name, and DNS resolves it to the primary. All writes, and any reads that must be current, go there."
@@ -110,11 +110,11 @@ title: An Aurora cluster
 subtitle: Instances on top of one shared volume
 elements:
   - { id: app, label: App, row: 0 }
-  - { id: wep, label: Cluster endpoint, sub: always the writer, kind: component, row: 1 }
-  - { id: rep, label: Reader endpoint, sub: spreads over replicas, kind: component, row: 1 }
+  - { id: wep, label: Cluster endpoint, sub: always the writer, kind: component, row: 1, role: edge }
+  - { id: rep, label: Reader endpoint, sub: spreads over replicas, kind: component, row: 1, role: edge }
   - { id: writer, label: Writer, sub: one instance, row: 2 }
-  - { id: r1, label: Replica 1, sub: read-only, row: 2 }
-  - { id: r2, label: Replica 2, sub: read-only, row: 2 }
+  - { id: r1, label: Replica 1, sub: read-only, row: 2, role: service }
+  - { id: r2, label: Replica 2, sub: read-only, row: 2, role: service }
   - { id: volume, label: Shared storage volume, sub: "6 copies across the Region's zones", kind: store, row: 3 }
 edges:
   - { id: w-ep, from: app, to: wep, label: writes }
@@ -122,10 +122,10 @@ edges:
   - { id: w-route, from: wep, to: writer }
   - { id: r-r1, from: rep, to: r1 }
   - { id: r-r2, from: rep, to: r2 }
-  - { id: write, from: writer, to: volume }
-  - { id: read1, from: r1, to: volume, style: dotted }
-  - { id: read2, from: r2, to: volume, style: dotted }
-  - { id: flip, from: wep, to: r1, label: on failover, style: dashed }
+  - { id: write, from: writer, to: volume, flow: data }
+  - { id: read1, from: r1, to: volume, style: dotted, flow: data }
+  - { id: read2, from: r2, to: volume, style: dotted, flow: data }
+  - { id: flip, from: wep, to: r1, label: on failover, style: dashed, flow: main }
 steps:
   - caption: "Aurora separates compute from storage. The writer and the replicas are instances, and the data lives in one shared volume underneath them."
   - caption: "Writes go through the cluster endpoint to the single writer. The writer sends every change to six storage nodes spread across the Region's zones."

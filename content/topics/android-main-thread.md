@@ -102,10 +102,10 @@ direction: DOWN
 elements:
   - { id: input, label: Touch, sub: an input event, kind: person, row: 0 }
   - { id: post, label: "Handler.post()", sub: "a Runnable, from any thread", kind: person, row: 0 }
-  - { id: queue, label: MessageQueue, sub: "ordered by time", kind: store, tone: data, row: 1 }
+  - { id: queue, label: MessageQueue, sub: "ordered by time", kind: store, tone: data, row: 1, role: queue }
   - { id: looper, label: Main Looper, sub: takes the next message, kind: system, row: 2 }
   - { id: handler, label: Your code, sub: "click, callback, recomposition", row: 3 }
-  - { id: worker, label: IO thread, sub: "Dispatchers.IO, an executor", tone: stream, row: 3 }
+  - { id: worker, label: IO thread, sub: "Dispatchers.IO, an executor", tone: stream, row: 3, role: service }
   - { id: frame, label: Next frame, sub: "16 ms at 60 Hz", kind: person, row: 4 }
   - { id: anr, label: ANR, sub: input not handled in 5 s, kind: external, row: 4 }
 edges:
@@ -114,9 +114,9 @@ edges:
   - { id: next, from: queue, to: looper, label: "next()" }
   - { id: dispatch, from: looper, to: handler, label: runs it to the end }
   - { id: draw, from: handler, to: frame, label: returns }
-  - { id: block, from: handler, to: anr, label: blocks for seconds, style: dashed }
+  - { id: block, from: handler, to: anr, label: blocks for seconds, style: dashed, flow: main }
   - { id: offload, from: handler, to: worker, label: hand off }
-  - { id: result, from: worker, to: queue, label: post the result, style: dashed }
+  - { id: result, from: worker, to: queue, label: post the result, style: dashed, flow: async }
 steps:
   - caption: "Android gives your process one main thread and runs a Looper on it. The Looper takes one message at a time from its MessageQueue and runs it to the end."
     focus: [queue, looper]

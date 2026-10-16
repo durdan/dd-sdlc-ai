@@ -96,7 +96,7 @@ elements:
   - { id: client, label: OkHttpClient, sub: "one per app, interceptors", row: 2 }
   - { id: cache, label: Cache, sub: on disk, kind: store, row: 3 }
   - { id: pool, label: Connection pool, sub: "5 idle, kept 5 minutes", row: 4 }
-  - { id: nsc, label: Network security config, sub: no cleartext from API 28, kind: component, row: 3 }
+  - { id: nsc, label: Network security config, sub: no cleartext from API 28, kind: component, row: 3, role: security }
   - { id: server, label: Server, kind: external, row: 5 }
   - { id: result, label: ProductDto, sub: or HttpException / IOException, kind: person, row: 6 }
 edges:
@@ -105,7 +105,7 @@ edges:
   - { id: lookup, from: client, to: cache }
   - { id: hit, from: cache, to: result, label: fresh hit, style: dashed }
   - { id: connect, from: cache, to: pool}
-  - { id: policy, from: nsc, to: pool, label: HTTPS only, style: dotted }
+  - { id: policy, from: nsc, to: pool, label: HTTPS only, style: dotted, flow: security }
   - { id: https, from: pool, to: server }
   - { id: answer, from: server, to: result }
 steps:

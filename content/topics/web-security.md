@@ -99,20 +99,20 @@ title: What the browser checks
 subtitle: "Your page on https://shop.example, the API on https://api.shop.example, and an attacker"
 kind: sequence
 elements:
-  - { id: page, label: Your page }
+  - { id: page, label: Your page, role: client }
   - { id: browser, label: Browser }
   - { id: api, label: API }
-  - { id: evil, label: evil.example }
+  - { id: evil, label: evil.example, role: external }
 edges:
   - { id: fetch, from: page, to: browser, label: "fetch PUT /me, JSON, credentials" }
-  - { id: preflight, from: browser, to: api, label: "OPTIONS /me: Origin, Request-Method PUT" }
+  - { id: preflight, from: browser, to: api, label: "OPTIONS /me: Origin, Request-Method PUT", flow: security }
   - { id: allow, from: api, to: browser, label: "204: Allow-Origin https://shop.example, PUT, credentials", style: dashed }
   - { id: put, from: browser, to: api, label: PUT /me + session cookie }
   - { id: put-200, from: api, to: browser, label: "200 + the same Allow-* headers", style: dashed }
   - { id: readable, from: browser, to: page, label: response readable, style: dashed }
   - { id: form, from: evil, to: browser, label: hidden form POSTs to /transfer }
-  - { id: no-cookie, from: browser, to: api, label: "POST /transfer, no cookie (SameSite=Lax)" }
-  - { id: csp, from: browser, to: browser, label: "injected <script> without the nonce: blocked by CSP" }
+  - { id: no-cookie, from: browser, to: api, label: "POST /transfer, no cookie (SameSite=Lax)", flow: security }
+  - { id: csp, from: browser, to: browser, label: "injected <script> without the nonce: blocked by CSP", flow: security }
 steps:
   - caption: "The page and its API share a site, shop.example, but they are different origins, because the host differs. So the same-origin policy applies to the page reading API responses."
     focus: [page, api]

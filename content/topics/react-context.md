@@ -86,13 +86,13 @@ id: who-renders
 title: Who renders when the value changes
 subtitle: "ThemeProvider wraps a Layout; two components read ThemeContext"
 elements:
-  - { id: app, label: App, sub: the provider's parent, kind: person, row: 0 }
+  - { id: app, label: App, sub: the provider's parent, kind: person, row: 0, role: service }
   - { id: provider, label: ThemeProvider, sub: "<ThemeContext value={value}>", kind: system, row: 1 }
   - { id: value, label: value, sub: "compared with Object.is", kind: store, row: 1 }
   - { id: layout, label: Layout, sub: "children; doesn't read the context", row: 2 }
   - { id: sidebar, label: Sidebar, sub: "doesn't read it", tone: neutral, row: 3 }
-  - { id: button, label: ThemeButton, sub: "useTheme()", tone: stream, row: 3 }
-  - { id: header, label: "memo(Header)", sub: "reads ThemeContext", tone: stream, row: 3 }
+  - { id: button, label: ThemeButton, sub: "useTheme()", tone: stream, row: 3, role: service }
+  - { id: header, label: "memo(Header)", sub: "reads ThemeContext", tone: stream, row: 3, role: service }
 edges:
   - { id: renders, from: app, to: provider }
   - { id: provides, from: provider, to: value }
@@ -100,8 +100,8 @@ edges:
   - { id: to-sidebar, from: layout, to: sidebar }
   - { id: to-button, from: layout, to: button }
   - { id: to-header, from: layout, to: header }
-  - { id: notify-button, from: value, to: button, label: changed, style: dashed }
-  - { id: notify-header, from: value, to: header, style: dashed }
+  - { id: notify-button, from: value, to: button, label: changed, style: dashed, flow: data }
+  - { id: notify-header, from: value, to: header, style: dashed, flow: data }
 steps:
   - caption: "ThemeProvider makes its value available to everything below it. ThemeButton and Header read it with useTheme, however deep they are."
     focus: [provider, value, button, header]
@@ -130,17 +130,17 @@ subtitle: A login changes once; the cursor 60 times a second
 elements:
   - { id: login, label: Login, kind: person, row: 0 }
   - { id: mouse, label: Mouse moves, kind: person, row: 0 }
-  - { id: user, label: UserContext, sub: changes on login, kind: system, row: 1 }
-  - { id: cursor, label: CursorContext, sub: changes every frame, kind: system, row: 1 }
-  - { id: avatar, label: Avatar, sub: reads user, tone: stream, row: 2 }
-  - { id: menu, label: AccountMenu, sub: reads user, tone: stream, row: 2 }
-  - { id: pointer, label: Pointer, sub: reads cursor, tone: stream, row: 2 }
+  - { id: user, label: UserContext, sub: changes on login, kind: system, row: 1, role: data }
+  - { id: cursor, label: CursorContext, sub: changes every frame, kind: system, row: 1, role: data }
+  - { id: avatar, label: Avatar, sub: reads user, tone: stream, row: 2, role: service }
+  - { id: menu, label: AccountMenu, sub: reads user, tone: stream, row: 2, role: service }
+  - { id: pointer, label: Pointer, sub: reads cursor, tone: stream, row: 2, role: service }
 edges:
   - { id: set-user, from: login, to: user }
   - { id: set-cursor, from: mouse, to: cursor }
-  - { id: to-avatar, from: user, to: avatar, style: dashed }
-  - { id: to-menu, from: user, to: menu, style: dashed }
-  - { id: to-pointer, from: cursor, to: pointer, style: dashed }
+  - { id: to-avatar, from: user, to: avatar, style: dashed, flow: data }
+  - { id: to-menu, from: user, to: menu, style: dashed, flow: data }
+  - { id: to-pointer, from: cursor, to: pointer, style: dashed, flow: data }
 steps:
   - caption: "Values that change at different rates live in separate contexts here: the user in one, the cursor position in another."
   - caption: "The mouse moves and CursorContext gets a new value every frame. Only Pointer reads it, so only Pointer renders."

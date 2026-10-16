@@ -102,20 +102,20 @@ elements:
   - { id: fresh, label: fresh literal, sub: "{ x: 1, y: 2, zz: 3 }", row: 0 }
   - { id: orderid, label: an OrderId, sub: "string & { __brand: \"OrderId\" }", row: 0 }
   - { id: point, label: Point, sub: "needs x and y, both numbers", kind: system, row: 1 }
-  - { id: excess, label: Excess property check, sub: fresh object literals only, kind: component, tone: stream, row: 1 }
-  - { id: userid, label: "loadOrder(user: UserId)", sub: "wants the UserId brand", row: 1 }
-  - { id: ok, label: Assignable, kind: store, tone: data, row: 2 }
-  - { id: bad, label: Compile error, kind: external, row: 2 }
+  - { id: excess, label: Excess property check, sub: fresh object literals only, kind: component, tone: stream, row: 1, role: security }
+  - { id: userid, label: "loadOrder(user: UserId)", sub: "wants the UserId brand", row: 1, role: service }
+  - { id: ok, label: Assignable, kind: store, tone: data, row: 2, role: service }
+  - { id: bad, label: Compile error, kind: external, row: 2, role: error }
 edges:
   - { id: vec-in, from: vec, to: point }
   - { id: p3-in, from: p3, to: point }
   - { id: half-in, from: half, to: point }
   - { id: fits, from: point, to: ok }
-  - { id: fails, from: point, to: bad }
+  - { id: fails, from: point, to: bad, flow: blocked }
   - { id: fresh-in, from: fresh, to: excess }
-  - { id: excess-fail, from: excess, to: bad }
+  - { id: excess-fail, from: excess, to: bad, flow: blocked }
   - { id: order-in, from: orderid, to: userid }
-  - { id: brand-fail, from: userid, to: bad }
+  - { id: brand-fail, from: userid, to: bad, flow: blocked }
 steps:
   - caption: "Assigning a value to Point asks one question: does it have every member Point needs, with compatible types? What it is called, and where it was declared, don't come into it."
     focus: [point]

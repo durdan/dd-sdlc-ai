@@ -113,19 +113,19 @@ elements:
   - { id: c3, label: "first<boolean>([])", sub: T written out, row: 1 }
   - { id: prod, label: "byId(products, \"p1\")", sub: "T inferred as Product", row: 1 }
   - { id: nums, label: "byId([1, 2, 3], \"1\")", sub: T would be number, row: 1 }
-  - { id: r1, label: number | undefined, kind: store, tone: data, row: 2 }
-  - { id: r3, label: boolean | undefined, kind: store, tone: data, row: 2 }
-  - { id: prodr, label: Product | undefined, sub: title and price kept, kind: store, tone: data, row: 2 }
-  - { id: numerr, label: Compile error, sub: number has no id, kind: external, row: 2 }
+  - { id: r1, label: number | undefined, kind: store, tone: data, row: 2, role: service }
+  - { id: r3, label: boolean | undefined, kind: store, tone: data, row: 2, role: service }
+  - { id: prodr, label: Product | undefined, sub: title and price kept, kind: store, tone: data, row: 2, role: service }
+  - { id: numerr, label: Compile error, sub: number has no id, kind: external, row: 2, role: error }
 edges:
-  - { id: call1, from: def, to: c1, style: dotted }
-  - { id: call3, from: def, to: c3, style: dotted }
+  - { id: call1, from: def, to: c1, style: dotted, flow: main }
+  - { id: call3, from: def, to: c3, style: dotted, flow: main }
   - { id: ret1, from: c1, to: r1 }
   - { id: ret3, from: c3, to: r3 }
-  - { id: callp, from: byid, to: prod, style: dotted }
-  - { id: calln, from: byid, to: nums, style: dotted }
+  - { id: callp, from: byid, to: prod, style: dotted, flow: main }
+  - { id: calln, from: byid, to: nums, style: dotted, flow: main }
   - { id: retp, from: prod, to: prodr }
-  - { id: retn, from: nums, to: numerr }
+  - { id: retn, from: nums, to: numerr, flow: blocked }
 steps:
   - caption: A generic function has a type parameter, T, that stands for whatever type the caller uses. Its job is to link the type of the input to the type of the output.
     focus: [def]

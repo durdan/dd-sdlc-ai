@@ -81,10 +81,10 @@ elements:
   - { id: change, label: A code change, sub: a pull request, kind: person }
   - { id: static, label: Types and lint, sub: "seconds, no code runs", tone: neutral }
   - { id: unit, label: Unit tests, sub: "thousands, milliseconds each", tone: core }
-  - { id: integ, label: Integration tests, sub: "real database, real HTTP", tone: core }
-  - { id: contract, label: Contract tests, sub: the API shapes others rely on, tone: stream }
-  - { id: e2e, label: End-to-end tests, sub: "a handful, minutes", tone: stream }
-  - { id: prod, label: Production, sub: "canary, synthetic checks", kind: system, tone: external }
+  - { id: integ, label: Integration tests, sub: "real database, real HTTP", tone: core, role: service }
+  - { id: contract, label: Contract tests, sub: the API shapes others rely on, tone: stream, role: service }
+  - { id: e2e, label: End-to-end tests, sub: "a handful, minutes", tone: stream, role: service }
+  - { id: prod, label: Production, sub: "canary, synthetic checks", kind: system, tone: external, role: service }
   - { id: escaped, label: Escaped bug, sub: "add a test at the lowest layer that sees it", kind: external }
 edges:
   - { id: e1, from: change, to: static }
@@ -93,7 +93,7 @@ edges:
   - { id: e4, from: integ, to: contract }
   - { id: e5, from: contract, to: e2e }
   - { id: e6, from: e2e, to: prod }
-  - { id: e7, from: prod, to: escaped, style: dashed }
+  - { id: e7, from: prod, to: escaped, style: dashed, flow: main }
 steps:
   - caption: A change passes through several layers of checks on its way to users. Each one further along is slower and broader, and when it fails it points less precisely at the cause.
   - caption: Types and lint come first and run no code at all. A misspelled property or a string passed where a number is expected never reaches a test.

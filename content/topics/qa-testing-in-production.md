@@ -110,7 +110,7 @@ elements:
   - { id: synthetic, label: Synthetic check, sub: "every few minutes, test account", kind: person, tone: neutral }
   - { id: router, label: Router, sub: splits traffic, group: prod }
   - { id: baseline, label: v1 baseline, sub: 90% of traffic, group: prod }
-  - { id: canary, label: v2 canary, sub: 10% of traffic, group: prod, tone: stream }
+  - { id: canary, label: v2 canary, sub: 10% of traffic, group: prod, tone: stream, role: service }
   - { id: flags, label: Flag service, sub: "allow-list, then 10%", group: prod }
   - { id: metrics, label: Metrics, sub: "errors, p95 and p99, checkouts/min", kind: store, tone: data }
   - { id: controller, label: Rollout controller, sub: compares canary with baseline }
@@ -122,11 +122,11 @@ edges:
   - { id: new, from: router, to: canary }
   - { id: ask, from: canary, to: flags }
   - { id: probe, from: synthetic, to: router }
-  - { id: m1, from: baseline, to: metrics }
-  - { id: m2, from: canary, to: metrics }
-  - { id: compare, from: metrics, to: controller }
+  - { id: m1, from: baseline, to: metrics, flow: data }
+  - { id: m2, from: canary, to: metrics, flow: data }
+  - { id: compare, from: metrics, to: controller, flow: data }
   - { id: up, from: controller, to: promote }
-  - { id: down, from: controller, to: rollback, style: dashed }
+  - { id: down, from: controller, to: rollback, style: dashed, flow: main }
 steps:
   - caption: Version 2 is deployed next to version 1, with no users routed to it yet. Deploying is not releasing.
     focus: [baseline, canary]

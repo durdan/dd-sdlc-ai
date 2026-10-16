@@ -93,9 +93,9 @@ title: From your server to the lock screen
 subtitle: Register, send, deliver
 kind: sequence
 elements:
-  - { id: app, label: App }
+  - { id: app, label: App, role: client }
   - { id: ios, label: iOS }
-  - { id: apns, label: APNs }
+  - { id: apns, label: APNs, role: external }
   - { id: provider, label: Server }
 edges:
   - { id: register, from: app, to: ios, label: "registerForRemoteNotifications()" }
@@ -106,8 +106,8 @@ edges:
   - { id: deliver, from: apns, to: ios, label: "alert, priority 10" }
   - { id: show, from: ios, to: ios, label: shows the banner }
   - { id: silent, from: provider, to: apns, label: "background push, priority 5" }
-  - { id: hold, from: apns, to: ios, label: "content-available: 1" }
-  - { id: wake, from: ios, to: app, label: wakes the app for 30 s, style: dashed }
+  - { id: hold, from: apns, to: ios, label: "content-available: 1", flow: async }
+  - { id: wake, from: ios, to: app, label: wakes the app for 30 s, style: dashed, flow: async }
   - { id: gone, from: apns, to: provider, label: 410 Unregistered, style: dashed }
 steps:
   - caption: A push involves three parties. Your app gets an address, your server (the provider) decides what to send, and APNs holds a persistent connection to every device.

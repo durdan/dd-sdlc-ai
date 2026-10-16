@@ -102,7 +102,7 @@ edges:
   - { id: read, from: va, to: net, label: "read(): no data yet" }
   - { id: unmounta, from: va, to: carrier, label: "unmount: frames to the heap", style: dashed }
   - { id: mountb, from: carrier, to: vb, label: mount B }
-  - { id: ready, from: net, to: va, label: "data arrives: A is runnable", style: dashed }
+  - { id: ready, from: net, to: va, label: "data arrives: A is runnable", style: dashed, flow: async }
   - { id: sleepb, from: vb, to: carrier, label: "sleep(): B unmounts", style: dashed }
   - { id: mounta2, from: carrier, to: va, label: "mount A again: read() returns" }
   - { id: sync, from: va, to: net, label: "read() inside synchronized" }

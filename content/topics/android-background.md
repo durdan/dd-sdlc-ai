@@ -106,7 +106,7 @@ elements:
   - { id: worker, label: Worker }
 edges:
   - { id: enqueue, from: app, to: wm, label: "enqueueUniqueWork, needs network" }
-  - { id: persist, from: wm, to: wm, label: saves it to its database }
+  - { id: persist, from: wm, to: wm, label: saves it to its database, flow: data }
   - { id: schedule, from: wm, to: jobs, label: schedules a job }
   - { id: defer, from: jobs, to: jobs, label: "Doze, standby bucket: waits" }
   - { id: run, from: jobs, to: worker, label: "constraints met: doWork()" }

@@ -119,12 +119,12 @@ elements:
   - { id: ctest, label: Consumer test, sub: your real client code, kind: component, group: consumer }
   - { id: mock, label: Pact mock server, sub: answers as orders-api would, group: consumer }
   - { id: pactfile, label: Pact file, sub: the interactions it used, kind: store, group: consumer }
-  - { id: pacts, label: "Broker: pacts", sub: one per consumer version, kind: store }
-  - { id: matrix, label: "Broker: matrix", sub: "versions, results, environments", kind: store, tone: data }
+  - { id: pacts, label: "Broker: pacts", sub: one per consumer version, kind: store, role: data }
+  - { id: matrix, label: "Broker: matrix", sub: "versions, results, environments", kind: store, tone: data, role: data }
   - { id: verify, label: Provider verification, sub: replays every interaction, kind: component, group: provider }
   - { id: states, label: State handlers, sub: "\"order 42 exists\"", group: provider }
   - { id: api, label: orders-api, sub: the real service, group: provider }
-  - { id: gate, label: can-i-deploy, sub: run before each deploy }
+  - { id: gate, label: can-i-deploy, sub: run before each deploy, role: security }
   - { id: prod, label: Production, sub: record-deployment, kind: system }
 edges:
   - { id: call, from: ctest, to: mock }
@@ -136,7 +136,7 @@ edges:
   - { id: results, from: verify, to: matrix }
   - { id: ask, from: gate, to: matrix }
   - { id: go, from: gate, to: prod }
-  - { id: record, from: prod, to: matrix, style: dashed }
+  - { id: record, from: prod, to: matrix, style: dashed, flow: main }
 steps:
   - caption: The consumer's unit test describes one interaction, given order 42 exists, a GET for it, and the fields it reads. Its real client code then calls a Pact mock server instead of the real API.
     focus: [ctest, mock]

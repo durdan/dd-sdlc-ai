@@ -83,7 +83,7 @@ elements:
   - { id: svc-a, label: Service, sub: "zone a, per hour", group: vpc, row: 2 }
   - { id: svc-b, label: Service, sub: "zone b, per hour", group: vpc, row: 3 }
   - { id: nat, label: NAT gateway, sub: per hour + per GB, tone: stream, group: vpc, row: 4 }
-  - { id: endpoint, label: S3 endpoint, sub: free, kind: component, group: vpc, row: 4 }
+  - { id: endpoint, label: S3 endpoint, sub: free, kind: component, group: vpc, row: 4, role: edge }
   - { id: apis, label: "Images, AWS APIs", kind: external, row: 5 }
   - { id: s3, label: S3, sub: "GB-month + requests", kind: store, row: 5 }
   - { id: logs, label: CloudWatch Logs, sub: ingest + storage, kind: store, row: 5 }

@@ -96,25 +96,25 @@ direction: DOWN
 elements:
   - { id: launch, label: Launch, sub: "process starts, scene connects", kind: person, row: 0 }
   - { id: active, label: Foreground active, sub: "on screen, gets touches", kind: system, row: 1 }
-  - { id: inactive, label: Foreground inactive, sub: "alert, app switcher", row: 2 }
+  - { id: inactive, label: Foreground inactive, sub: "alert, app switcher", row: 2, role: client }
   - { id: saved, label: Saved state, sub: "your store + @SceneStorage", kind: store, tone: data, row: 2 }
   - { id: background, label: Background, sub: "off screen, briefly runs code", row: 3 }
   - { id: snapshot, label: Snapshot, sub: shown in the app switcher, tone: neutral, row: 3 }
-  - { id: suspended, label: Suspended, sub: "in memory, no code runs", tone: neutral, row: 4 }
+  - { id: suspended, label: Suspended, sub: "in memory, no code runs", tone: neutral, row: 4, role: client }
   - { id: resumed, label: Back to the app, sub: "same memory, nothing lost", kind: person, row: 5 }
-  - { id: killed, label: Terminated, sub: no callback, kind: external, row: 5 }
+  - { id: killed, label: Terminated, sub: no callback, kind: external, row: 5, role: client }
   - { id: relaunch, label: Cold launch, sub: restore what was on screen, kind: person, row: 6 }
 edges:
   - { id: become, from: launch, to: active }
   - { id: resign, from: active, to: inactive, label: sceneWillResignActive }
-  - { id: save, from: inactive, to: saved, label: save, style: dashed }
+  - { id: save, from: inactive, to: saved, label: save, style: dashed, flow: data }
   - { id: enter, from: inactive, to: background, label: sceneDidEnterBackground }
-  - { id: snap, from: background, to: snapshot, style: dashed }
+  - { id: snap, from: background, to: snapshot, style: dashed, flow: data }
   - { id: freeze, from: background, to: suspended }
   - { id: back, from: suspended, to: resumed, label: user returns }
-  - { id: kill, from: suspended, to: killed, label: memory needed, style: dashed }
+  - { id: kill, from: suspended, to: killed, label: memory needed, style: dashed, flow: main }
   - { id: cold, from: killed, to: relaunch, label: user returns }
-  - { id: restore, from: saved, to: relaunch, label: restore, style: dotted }
+  - { id: restore, from: saved, to: relaunch, label: restore, style: dotted, flow: data }
 steps:
   - caption: "The person taps your icon. The system starts the process, connects a scene, and the scene becomes foreground active: on screen and receiving touches."
     trace: [become]

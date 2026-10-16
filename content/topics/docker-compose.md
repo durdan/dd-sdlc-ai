@@ -102,17 +102,17 @@ groups:
 elements:
   - { id: file, label: compose.yaml, sub: "services, volumes", kind: person, row: 0 }
   - { id: dev, label: You, sub: "curl localhost:8765", kind: person, row: 0 }
-  - { id: port, label: Published port, sub: "127.0.0.1:8765 → 3000", tone: external, row: 1 }
+  - { id: port, label: Published port, sub: "127.0.0.1:8765 → 3000", tone: external, row: 1, role: edge }
   - { id: web, label: web, sub: "image built from ./node", kind: system, group: net, row: 2 }
-  - { id: health, label: Healthcheck, sub: "redis-cli ping, every 5 s", tone: stream, group: net, row: 4 }
+  - { id: health, label: Healthcheck, sub: "redis-cli ping, every 5 s", tone: stream, group: net, row: 4, role: service }
   - { id: cache, label: cache, sub: "redis:7-alpine", group: net, row: 3 }
-  - { id: vol, label: cache-data, sub: named volume, kind: store, tone: data, row: 4 }
+  - { id: vol, label: cache-data, sub: named volume, kind: store, tone: data, row: 4, role: data }
 edges:
   - { id: create, from: file, to: web, label: up }
-  - { id: wait, from: web, to: health, label: service_healthy, style: dashed }
+  - { id: wait, from: web, to: health, label: service_healthy, style: dashed, flow: main }
   - { id: probe, from: cache, to: health, style: dotted }
   - { id: call, from: web, to: cache, label: "redis://cache:6379" }
-  - { id: mount, from: cache, to: vol, label: /data }
+  - { id: mount, from: cache, to: vol, label: /data, flow: data }
   - { id: open, from: dev, to: port }
   - { id: fwd, from: port, to: web }
 steps:

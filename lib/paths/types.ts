@@ -1,6 +1,6 @@
 // Plain, serialisable shapes for learning paths. The server builds them from content/*.md
 // and public/learn/catalog.json (see load.ts); client components only ever see these.
-import type { Diagram, DiagramLayout } from "design-player/core"
+import type { Diagram, DiagramLayout, Role } from "design-player/core"
 
 export type PathKind = "skill" | "role" | "system-design"
 export const KIND_ORDER: PathKind[] = ["skill", "role", "system-design"]
@@ -46,7 +46,20 @@ export type Lesson = { type: "none" } | { type: "lanes" } | { type: "diagram" } 
 // ---- Flow diagrams: written as ```trace diagram``` blocks in a topic body (parsed by diagrams.ts) ----
 
 /** One step of a flow diagram: what is lit, which arrows draw in, and the sentence that explains it. */
-export type FlowStep = { caption: string; focus: string[]; trace: string[]; note?: string }
+export type FlowStep = {
+  caption: string
+  focus: string[]
+  trace: string[]
+  note?: string
+  /** Before/after diagrams: which picture the step shows (default: the changes). */
+  view?: "before" | "after" | "delta"
+}
+/** A waterfall: operations as bars on a time axis (what runs in parallel, what waits). */
+export type Waterfall = {
+  unit: string
+  lanes: { id: string; label: string; role?: Role }[]
+  rows: { id: string; label: string; start: number; end: number; lane?: string; depth: number }[]
+}
 export type FlowDiagram = {
   id: string
   title: string
@@ -58,6 +71,10 @@ export type FlowDiagram = {
   /** ELK layouts, computed on the server: as written, and top-to-bottom for portrait stages (phones). */
   layout: DiagramLayout
   portrait?: DiagramLayout
+  /** Waterfall diagrams are drawn by WaterfallStage; `diagram` then holds the rows as boxes, for the box panel. */
+  waterfall?: Waterfall
+  /** Before/after diagrams: names for the two pictures. */
+  views?: { before: string; after: string }
 }
 
 // ---- Lanes traces: written as ```trace lanes``` blocks in a topic body (parsed by traces.ts) ----

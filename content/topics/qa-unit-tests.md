@@ -117,15 +117,15 @@ elements:
   - { id: unit, label: placeOrder(), sub: the unit under test, kind: system, tone: core, row: 1 }
   - { id: clock, label: Fixed clock, sub: "stub: always 09:00", group: edges, tone: neutral, row: 2 }
   - { id: orders, label: In-memory orders, sub: fake repository, group: edges, tone: data, row: 2 }
-  - { id: mailer, label: Mailer spy, sub: records what was sent, group: edges, tone: stream, row: 2 }
+  - { id: mailer, label: Mailer spy, sub: records what was sent, group: edges, tone: stream, row: 2, role: service }
   - { id: result, label: Returned order, sub: "status, total, time", tone: neutral, row: 2 }
 edges:
   - { id: call, from: act, to: unit }
   - { id: now, from: unit, to: clock }
-  - { id: save, from: unit, to: orders }
+  - { id: save, from: unit, to: orders, flow: data }
   - { id: send, from: unit, to: mailer }
   - { id: ret, from: unit, to: result }
-  - { id: check, from: assert, to: result, style: dotted }
+  - { id: check, from: assert, to: result, style: dotted, flow: main }
 steps:
   - caption: One test, three short blocks. In the middle is the unit under test, and at its edges, where the real clock, database and email server would be, are stand-ins the test controls.
   - caption: Arrange sets everything up. The cart, a clock that always says 09:00, and an in-memory repository seeded with what the test needs.

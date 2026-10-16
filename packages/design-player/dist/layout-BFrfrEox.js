@@ -45978,6 +45978,10 @@ var i = /* @__PURE__ */ e((/* @__PURE__ */ t(((e, t) => {
 	});
 })))(), 1), a = 8.4, o = 6.6;
 function s(e) {
+	if (e.kind === "start") return {
+		w: 18,
+		h: 18
+	};
 	let t = Math.min(300, Math.max(170, e.label.length * a + 44, (e.sub?.length ?? 0) * o + 36));
 	return {
 		w: Math.round(t),

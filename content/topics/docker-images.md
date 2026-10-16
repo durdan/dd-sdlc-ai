@@ -87,14 +87,14 @@ title: From a tag to a running filesystem
 subtitle: "hello:1, built FROM node:22-alpine"
 direction: DOWN
 elements:
-  - { id: tag, label: "hello:1", sub: a tag is just a name, kind: person, row: 0 }
-  - { id: manifest, label: Manifest, sub: "sha256:… lists config + layers", kind: system, row: 1 }
-  - { id: other, label: "hello:2 manifest", sub: same base image, row: 1 }
-  - { id: config, label: Config, sub: "CMD, USER, ENV", tone: neutral, row: 2 }
+  - { id: tag, label: "hello:1", sub: a tag is just a name, kind: person, row: 0, role: data }
+  - { id: manifest, label: Manifest, sub: "sha256:… lists config + layers", kind: system, row: 1, role: data }
+  - { id: other, label: "hello:2 manifest", sub: same base image, row: 1, role: data }
+  - { id: config, label: Config, sub: "CMD, USER, ENV", tone: neutral, row: 2, role: data }
   - { id: base, label: Base layers, sub: "node:22-alpine", kind: store, tone: data, row: 2 }
   - { id: deps, label: npm ci layer, sub: "2.72 MB", kind: store, tone: data, row: 2 }
   - { id: src, label: "COPY . . layer", sub: "12.3 kB", kind: store, tone: data, row: 2 }
-  - { id: merged, label: Merged view, sub: "overlayfs: read-only layers", tone: stream, row: 3 }
+  - { id: merged, label: Merged view, sub: "overlayfs: read-only layers", tone: stream, row: 3, role: data }
   - { id: wa, label: Container A, sub: own thin writable layer, kind: component, row: 4 }
   - { id: wb, label: Container B, sub: own thin writable layer, kind: component, row: 4 }
 edges:
@@ -103,7 +103,7 @@ edges:
   - { id: l1, from: manifest, to: base }
   - { id: l2, from: manifest, to: deps }
   - { id: l3, from: manifest, to: src }
-  - { id: share, from: other, to: base, style: dashed }
+  - { id: share, from: other, to: base, style: dashed, flow: main }
   - { id: m1, from: base, to: merged }
   - { id: m2, from: deps, to: merged }
   - { id: m3, from: src, to: merged }

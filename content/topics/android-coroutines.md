@@ -121,7 +121,7 @@ elements:
   - { id: ui, label: UI }
   - { id: main, label: Main thread }
   - { id: io, label: Dispatchers.IO }
-  - { id: api, label: Server }
+  - { id: api, label: Server, role: external }
 edges:
   - { id: open, from: ui, to: main, label: "open(id): launch { }" }
   - { id: ctx, from: main, to: io, label: "repo.load: withContext(IO)" }
@@ -131,7 +131,7 @@ edges:
   - { id: resume, from: io, to: main, label: "result: resume on Main", style: dashed }
   - { id: state, from: main, to: ui, label: "_state.value = Loaded" }
   - { id: leave, from: ui, to: main, label: "screen finished: onCleared" }
-  - { id: cancel, from: main, to: io, label: "scope cancelled: children too", style: dashed }
+  - { id: cancel, from: main, to: io, label: "scope cancelled: children too", style: dashed, flow: main }
 steps:
   - caption: "A tap calls open(id) on the ViewModel, which launches a coroutine in viewModelScope. With no dispatcher given, it runs on the main thread."
     trace: [open]

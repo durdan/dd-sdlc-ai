@@ -103,18 +103,18 @@ id: computed-types
 title: Types computed from types
 subtitle: Each arrow is work the checker does; none of it reaches the output
 elements:
-  - { id: sizes, label: const sizes, sub: "{ s: 8, m: 12, l: 16 } as const", kind: external, row: 0 }
+  - { id: sizes, label: const sizes, sub: "{ s: 8, m: 12, l: 16 } as const", kind: external, row: 0, role: data }
   - { id: tsizes, label: typeof sizes, sub: "{ readonly s: 8; m: 12; l: 16 }", row: 1 }
-  - { id: size, label: keyof typeof sizes, sub: "\"s\" | \"m\" | \"l\"", kind: store, tone: data, row: 2 }
-  - { id: px, label: "(typeof sizes)[Size]", sub: "8 | 12 | 16", kind: store, tone: data, row: 2 }
-  - { id: user, label: type User, sub: "name, email: string; age: number", kind: external, row: 0 }
-  - { id: flags, label: Flags<User>, sub: "{ [K in keyof T]: boolean }", row: 1 }
-  - { id: touched, label: "{ name, email, age: boolean }", kind: store, tone: data, row: 2 }
+  - { id: size, label: keyof typeof sizes, sub: "\"s\" | \"m\" | \"l\"", kind: store, tone: data, row: 2, role: service }
+  - { id: px, label: "(typeof sizes)[Size]", sub: "8 | 12 | 16", kind: store, tone: data, row: 2, role: service }
+  - { id: user, label: type User, sub: "name, email: string; age: number", kind: external, row: 0, role: service }
+  - { id: flags, label: Flags<User>, sub: "{ [K in keyof T]: boolean }", row: 1, role: service }
+  - { id: touched, label: "{ name, email, age: boolean }", kind: store, tone: data, row: 2, role: service }
   - { id: elem, label: "ElementOf<string[]>", sub: "T extends (infer E)[] ? E : never", row: 1 }
-  - { id: estr, label: string, sub: E captured, kind: store, tone: data, row: 2 }
-  - { id: load, label: async loadUser(), sub: "returns { id, name }", kind: external, row: 0 }
+  - { id: estr, label: string, sub: E captured, kind: store, tone: data, row: 2, role: service }
+  - { id: load, label: async loadUser(), sub: "returns { id, name }", kind: external, row: 0, role: service }
   - { id: ret, label: ReturnType<typeof loadUser>, sub: "Promise<{ id; name }>", row: 1 }
-  - { id: awaited, label: Awaited<...>, sub: "{ id: string; name: string }", kind: store, tone: data, row: 2 }
+  - { id: awaited, label: Awaited<...>, sub: "{ id: string; name: string }", kind: store, tone: data, row: 2, role: service }
 edges:
   - { id: read, from: sizes, to: tsizes }
   - { id: keys, from: tsizes, to: size }

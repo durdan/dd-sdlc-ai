@@ -86,10 +86,10 @@ elements:
   - { id: root, label: Root layout, sub: "app/layout.tsx, <html><body>", group: kept, row: 1 }
   - { id: dash, label: Dashboard layout, sub: "dashboard/layout.tsx, the sidebar", group: kept, row: 2 }
   - { id: error, label: error.tsx, sub: error boundary for the segment, kind: component, tone: neutral, row: 3 }
-  - { id: loading, label: loading.tsx, sub: "a Suspense fallback", kind: component, tone: stream, row: 4 }
+  - { id: loading, label: loading.tsx, sub: "a Suspense fallback", kind: component, tone: stream, row: 4, role: service }
   - { id: link, label: "<Link> to /dashboard/globex", sub: prefetched in the viewport, kind: component, tone: neutral, row: 4 }
   - { id: page, label: "[teamId]/page.tsx", sub: "params is a promise: { teamId: acme }", row: 5 }
-  - { id: next, label: The globex page, sub: only the segment that changed, tone: stream, row: 5 }
+  - { id: next, label: The globex page, sub: only the segment that changed, tone: stream, row: 5, role: service }
 edges:
   - { id: match, from: url, to: root }
   - { id: wrap-dash, from: root, to: dash }
@@ -97,7 +97,7 @@ edges:
   - { id: wrap-loading, from: error, to: loading }
   - { id: wrap-page, from: loading, to: page }
   - { id: click, from: link, to: next }
-  - { id: swap, from: loading, to: next, label: on navigation, style: dashed }
+  - { id: swap, from: loading, to: next, label: on navigation, style: dashed, flow: main }
 steps:
   - caption: "Next.js matches the URL against the folders under app/, one segment at a time: dashboard, then a dynamic [teamId] that takes the value acme."
     focus: [url, root]

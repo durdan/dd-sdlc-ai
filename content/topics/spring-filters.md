@@ -137,9 +137,9 @@ elements:
   - { id: dispatcher, label: DispatcherServlet, sub: picks the handler, group: mvc, kind: system }
   - { id: interceptor, label: TimingInterceptor, sub: "preHandle, afterCompletion", group: mvc }
   - { id: controller, label: InvoiceController, sub: "@RestController", group: mvc }
-  - { id: job, label: Nightly job, sub: "@Scheduled, no request", kind: person }
-  - { id: proxy, label: CGLIB proxy, sub: generated subclass, group: aop, tone: stream }
-  - { id: aspect, label: SlowCallLogger, sub: "@Around advice", group: aop, tone: stream }
+  - { id: job, label: Nightly job, sub: "@Scheduled, no request", kind: person, role: service }
+  - { id: proxy, label: CGLIB proxy, sub: generated subclass, group: aop, tone: stream, role: service }
+  - { id: aspect, label: SlowCallLogger, sub: "@Around advice", group: aop, tone: stream, role: service }
   - { id: total, label: "total()", group: target }
   - { id: render, label: "render()", group: target }
 edges:
@@ -152,7 +152,7 @@ edges:
   - { id: advice, from: proxy, to: aspect }
   - { id: proceed, from: aspect, to: total, label: "proceed()" }
   - { id: callrender, from: proxy, to: render, label: "render(): not advised" }
-  - { id: self, from: render, to: total, label: "this.total()", style: dashed }
+  - { id: self, from: render, to: total, label: "this.total()", style: dashed, flow: main }
 steps:
   - caption: "A request reaches the servlet filters first, before Spring MVC has decided anything. A filter sees every request, including ones that end in a 404 or an error page."
     focus: [client, filter]

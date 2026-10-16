@@ -103,7 +103,7 @@ title: Two keystrokes, one slow list
 subtitle: "setText is urgent; setQuery runs in startTransition"
 kind: sequence
 elements:
-  - { id: user, label: Keyboard }
+  - { id: user, label: Keyboard, role: client }
   - { id: react, label: React }
   - { id: list, label: SlowList }
   - { id: screen, label: Screen }
@@ -113,10 +113,10 @@ edges:
   - { id: render-a, from: react, to: list, label: "render query \"a\"" }
   - { id: yield, from: list, to: react, label: yields between components, style: dashed }
   - { id: key-ab, from: user, to: react, label: "type \"b\"" }
-  - { id: drop, from: react, to: list, label: "drop the \"a\" render", style: dotted }
+  - { id: drop, from: react, to: list, label: "drop the \"a\" render", style: dotted, flow: main }
   - { id: commit-ab, from: react, to: screen, label: "input shows \"ab\"" }
   - { id: render-ab, from: react, to: list, label: "render query \"ab\"" }
-  - { id: done, from: list, to: screen, label: "list for \"ab\", isPending false", style: dashed }
+  - { id: done, from: list, to: screen, label: "list for \"ab\", isPending false", style: dashed, flow: main }
 steps:
   - caption: "The user types \"a\". The handler calls setText, an urgent update, and setQuery inside startTransition."
     trace: [key-a]
@@ -139,10 +139,10 @@ subtitle: The same tab click, with and without a transition
 elements:
   - { id: click, label: Click a tab, kind: person, row: 0 }
   - { id: plain, label: Plain update, sub: setTab(next), row: 1 }
-  - { id: transition, label: In a transition, sub: "startTransition(() => setTab(next))", tone: stream, row: 1 }
-  - { id: fallback, label: Fallback replaces the page, sub: nearest boundary's spinner, tone: external, row: 2 }
-  - { id: keep, label: Old page stays, sub: isPending is true, tone: data, row: 2 }
-  - { id: nested, label: New nested boundary, sub: shows its own skeleton, kind: component, row: 3 }
+  - { id: transition, label: In a transition, sub: "startTransition(() => setTab(next))", tone: stream, row: 1, role: service }
+  - { id: fallback, label: Fallback replaces the page, sub: nearest boundary's spinner, tone: external, row: 2, role: client }
+  - { id: keep, label: Old page stays, sub: isPending is true, tone: data, row: 2, role: client }
+  - { id: nested, label: New nested boundary, sub: shows its own skeleton, kind: component, row: 3, role: client }
   - { id: ready, label: New tab shown, sub: once its code or data is ready, kind: system, row: 3 }
 edges:
   - { id: go-plain, from: click, to: plain }
@@ -151,7 +151,7 @@ edges:
   - { id: wait, from: transition, to: keep }
   - { id: plain-ready, from: fallback, to: ready }
   - { id: keep-ready, from: keep, to: ready }
-  - { id: inner, from: keep, to: nested, style: dashed }
+  - { id: inner, from: keep, to: nested, style: dashed, flow: main }
 steps:
   - caption: "The user clicks a tab whose content suspends: a lazy component whose code hasn't loaded, or a promise read with use. Fetching in an effect doesn't count."
   - caption: "As a plain update, React has to hide content that's already on screen. The nearest Suspense boundary swaps the page for its fallback."

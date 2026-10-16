@@ -81,14 +81,14 @@ groups:
   - { id: asc, label: App Store Connect }
 elements:
   - { id: archive, label: Archive, sub: release build + debug symbols, group: build, row: 0 }
-  - { id: cert, label: Distribution certificate, sub: the team's private key, kind: store, group: build, row: 0 }
-  - { id: profile, label: Provisioning profile, sub: "App ID, entitlements", kind: store, group: build, row: 0 }
+  - { id: cert, label: Distribution certificate, sub: the team's private key, kind: store, group: build, row: 0, role: security }
+  - { id: profile, label: Provisioning profile, sub: "App ID, entitlements", kind: store, group: build, row: 0, role: security }
   - { id: signed, label: Signed build, sub: ready to upload, group: build, row: 1 }
-  - { id: processing, label: Processing, sub: build number must be new, group: asc, row: 2 }
+  - { id: processing, label: Processing, sub: build number must be new, group: asc, row: 2, role: external }
   - { id: internal, label: Internal testers, sub: "your team, right away", kind: person, group: asc, row: 3 }
-  - { id: betareview, label: TestFlight review, sub: first build of a group, group: asc, row: 3 }
+  - { id: betareview, label: TestFlight review, sub: first build of a group, group: asc, row: 3, role: security }
   - { id: external, label: External testers, sub: "up to 10,000, 90 days", kind: person, group: asc, row: 4 }
-  - { id: review, label: App Review, sub: most within 24 to 48 h, group: asc, row: 3 }
+  - { id: review, label: App Review, sub: most within 24 to 48 h, group: asc, row: 3, role: security }
   - { id: release, label: Release, sub: "manual, automatic or phased", kind: person, row: 4 }
 edges:
   - { id: sign, from: archive, to: signed }

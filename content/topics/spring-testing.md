@@ -121,9 +121,9 @@ groups:
   - { id: context, label: Application context }
   - { id: docker, label: "Docker, via Testcontainers" }
 elements:
-  - { id: webtest, label: OrderControllerTest, sub: "@WebMvcTest", kind: component, group: tests, row: 0 }
-  - { id: e2etest, label: CheckoutFlowTest, sub: "@SpringBootTest, RANDOM_PORT", kind: component, group: tests, row: 0 }
-  - { id: repotest, label: OrderRepositoryTest, sub: "@DataJpaTest", kind: component, group: tests, row: 0 }
+  - { id: webtest, label: OrderControllerTest, sub: "@WebMvcTest", kind: component, group: tests, row: 0, role: client }
+  - { id: e2etest, label: CheckoutFlowTest, sub: "@SpringBootTest, RANDOM_PORT", kind: component, group: tests, row: 0, role: client }
+  - { id: repotest, label: OrderRepositoryTest, sub: "@DataJpaTest", kind: component, group: tests, row: 0, role: client }
   - { id: mockmvc, label: MockMvc, sub: no socket, group: context, row: 1 }
   - { id: tomcat, label: Embedded Tomcat, sub: a random port, group: context, row: 1 }
   - { id: web, label: Web layer, sub: "controllers, advice, filters, converters", group: context, row: 2 }

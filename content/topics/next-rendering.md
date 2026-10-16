@@ -98,23 +98,23 @@ elements:
   - { id: next-build, label: next build, sub: renders each route as far as it can, kind: system, group: build, row: 0 }
   - { id: header, label: "<Header />", sub: static markup, kind: component, group: build, row: 1 }
   - { id: list, label: "<ProductList />", sub: '"use cache"', kind: component, group: build, row: 1 }
-  - { id: cart, label: "<Cart /> in <Suspense>", sub: "reads cookies()", kind: component, tone: stream, group: build, row: 1 }
+  - { id: cart, label: "<Cart /> in <Suspense>", sub: "reads cookies()", kind: component, tone: stream, group: build, row: 1, role: service }
   - { id: no-boundary, label: "cookies() with no <Suspense>", sub: the build fails, kind: component, tone: neutral, group: build, row: 1 }
   - { id: shell, label: Static shell, sub: "HTML + RSC Payload, <CartSkeleton /> in place", kind: store, tone: data, group: build, row: 2 }
   - { id: visitor, label: A visitor, sub: "sends a session cookie", kind: person, group: request, row: 3 }
-  - { id: server, label: Server renders <Cart />, sub: with this request's cookies, tone: stream, group: request, row: 4 }
+  - { id: server, label: Server renders <Cart />, sub: with this request's cookies, tone: stream, group: request, row: 4, role: service }
   - { id: response, label: One response, sub: "shell at once, the cart streamed in", kind: system, row: 5 }
 edges:
   - { id: render-header, from: next-build, to: header }
   - { id: render-list, from: next-build, to: list }
   - { id: render-cart, from: next-build, to: cart }
-  - { id: render-bad, from: next-build, to: no-boundary, style: dotted }
+  - { id: render-bad, from: next-build, to: no-boundary, style: dotted, flow: main }
   - { id: header-in, from: header, to: shell }
   - { id: list-in, from: list, to: shell }
-  - { id: fallback-in, from: cart, to: shell, label: fallback only, style: dashed }
+  - { id: fallback-in, from: cart, to: shell, label: fallback only, style: dashed, flow: main }
   - { id: shell-out, from: shell, to: response }
   - { id: ask, from: visitor, to: server }
-  - { id: stream, from: server, to: response, style: dashed }
+  - { id: stream, from: server, to: response, style: dashed, flow: async }
 steps:
   - caption: "With Cache Components, the default for new Next.js 16 apps, next build renders every route as far as it can go without the request."
     focus: [next-build]

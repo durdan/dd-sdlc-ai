@@ -88,12 +88,12 @@ groups:
   - { id: fast, label: Transpile only }
   - { id: check, label: Type checking }
 elements:
-  - { id: src, label: src/*.ts, kind: person, row: 0 }
-  - { id: esbuild, label: Vite / esbuild / swc, sub: strips types file by file, group: fast, row: 1 }
+  - { id: src, label: src/*.ts, kind: person, row: 0, role: service }
+  - { id: esbuild, label: Vite / esbuild / swc, sub: strips types file by file, group: fast, row: 1, role: service }
   - { id: bundle, label: dist/*.js, sub: the bundle, kind: store, tone: data, group: fast, row: 2 }
   - { id: tsc, label: tsc --noEmit, sub: whole program, kind: system, group: check, row: 1 }
   - { id: editor, label: Editor, sub: language service, group: check, row: 1 }
-  - { id: errors, label: Type errors, sub: fail CI, kind: external, group: check, row: 2 }
+  - { id: errors, label: Type errors, sub: fail CI, kind: external, group: check, row: 2, role: error }
   - { id: run, label: Browser, sub: runs the bundle, kind: system, row: 3 }
   - { id: lib, label: tsc with declaration, sub: for a library, row: 1 }
   - { id: libout, label: index.js + index.d.ts, sub: what npm users get, kind: store, tone: data, row: 2 }

@@ -3,6 +3,10 @@ import t from "elkjs/lib/elk.bundled.js";
 //#region src/diagram/layout.ts
 var n = 8.4, r = 6.6;
 function i(e) {
+	if (e.kind === "start") return {
+		w: 18,
+		h: 18
+	};
 	let t = Math.min(300, Math.max(170, e.label.length * n + 44, (e.sub?.length ?? 0) * r + 36));
 	return {
 		w: Math.round(t),

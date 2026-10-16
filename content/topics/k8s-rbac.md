@@ -134,17 +134,17 @@ title: Can the deployer patch this Deployment?
 subtitle: One API request through authentication, RBAC and admission
 elements:
   - { id: caller, label: ServiceAccount deployer, sub: "namespace shop, bearer token", kind: person, row: 0 }
-  - { id: authn, label: Authentication, sub: fails with 401, row: 1 }
-  - { id: authz, label: "Authorization (RBAC)", sub: fails with 403, kind: system, row: 2 }
+  - { id: authn, label: Authentication, sub: fails with 401, row: 1, role: security }
+  - { id: authz, label: "Authorization (RBAC)", sub: fails with 403, kind: system, row: 2, role: security }
   - { id: binding, label: RoleBinding, sub: deployer-deploy-web, tone: data, row: 2 }
-  - { id: role, label: Role deploy-web, sub: "get, list, watch, patch deployments", tone: data, row: 3 }
+  - { id: role, label: Role deploy-web, sub: "get, list, watch, patch deployments", tone: data, row: 3, role: security }
   - { id: admission, label: Admission, sub: "mutating, then validating", row: 3 }
   - { id: etcd, label: etcd, sub: validated and stored, kind: store, row: 4 }
 edges:
   - { id: send, from: caller, to: authn, label: PATCH deployment web }
   - { id: who, from: authn, to: authz }
-  - { id: lookup, from: authz, to: binding }
-  - { id: ref, from: binding, to: role }
+  - { id: lookup, from: authz, to: binding, flow: security }
+  - { id: ref, from: binding, to: role, flow: security }
   - { id: allowed, from: authz, to: admission }
   - { id: persist, from: admission, to: etcd }
 steps:
@@ -179,16 +179,16 @@ subtitle: "Namespace shop: default deny, then one allowance"
 elements:
   - { id: web, label: web pod, sub: app=web, row: 0 }
   - { id: other, label: other pod, sub: app=report, tone: neutral, row: 0 }
-  - { id: dns, label: CoreDNS, sub: kube-system, tone: neutral, row: 0 }
+  - { id: dns, label: CoreDNS, sub: kube-system, tone: neutral, row: 0, role: edge }
   - { id: db, label: db pod, sub: "app=db, port 5432", kind: store, row: 1 }
-  - { id: deny, label: default-deny-ingress, sub: "podSelector: {}", tone: external, row: 2 }
-  - { id: allow, label: db-from-web, sub: "from app=web, port 5432", tone: stream, row: 2 }
+  - { id: deny, label: default-deny-ingress, sub: "podSelector: {}", tone: external, row: 2, role: security }
+  - { id: allow, label: db-from-web, sub: "from app=web, port 5432", tone: stream, row: 2, role: security }
 edges:
   - { id: web-db, from: web, to: db, label: allowed }
-  - { id: other-db, from: other, to: db, label: dropped, style: dotted }
-  - { id: lookup, from: web, to: dns, label: "port 53", style: dashed }
-  - { id: isolate, from: deny, to: db, style: dashed }
-  - { id: permit, from: allow, to: db, style: dashed }
+  - { id: other-db, from: other, to: db, label: dropped, style: dotted, flow: blocked }
+  - { id: lookup, from: web, to: dns, label: "port 53", style: dashed, flow: main }
+  - { id: isolate, from: deny, to: db, style: dashed, flow: security }
+  - { id: permit, from: allow, to: db, style: dashed, flow: security }
 steps:
   - caption: "Until a NetworkPolicy selects a pod, all traffic to and from it is allowed. Any pod in any namespace can reach the database."
     focus: [web, other, db]

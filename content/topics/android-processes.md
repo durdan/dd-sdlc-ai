@@ -86,23 +86,23 @@ elements:
   - { id: saved, label: Saved state, sub: "Bundle, SavedStateHandle", kind: store, tone: data, row: 1 }
   - { id: cached, label: "Your app, cached", sub: only stopped activities, tone: neutral, row: 1 }
   - { id: pressure, label: Memory needed, sub: lowest importance goes first, kind: system, tone: external, row: 2 }
-  - { id: killed, label: Process killed, sub: "a signal, no callback", kind: external, row: 3 }
+  - { id: killed, label: Process killed, sub: "a signal, no callback", kind: external, row: 3, role: error }
   - { id: service, label: Service process, sub: "startService(), still running", row: 3 }
   - { id: visible, label: Visible process, sub: "on screen, not in focus", row: 3 }
-  - { id: lost, label: Lost, sub: "statics, singletons, ViewModels", kind: external, row: 4 }
+  - { id: lost, label: Lost, sub: "statics, singletons, ViewModels", kind: external, row: 4, role: error }
   - { id: newproc, label: New process, sub: user taps it in Recents, kind: person, row: 4 }
   - { id: recreate, label: Activity recreated, sub: from the saved Bundle, row: 5 }
 edges:
   - { id: leave, from: fg, to: cached, label: user leaves }
-  - { id: save, from: fg, to: saved, label: "onStop: save", style: dashed }
+  - { id: save, from: fg, to: saved, label: "onStop: save", style: dashed, flow: data }
   - { id: rank, from: cached, to: pressure }
   - { id: kill, from: pressure, to: killed, label: first }
-  - { id: next, from: pressure, to: service, label: next, style: dashed }
-  - { id: rarely, from: pressure, to: visible, label: rarely, style: dotted }
-  - { id: gone, from: killed, to: lost, style: dashed }
+  - { id: next, from: pressure, to: service, label: next, style: dashed, flow: main }
+  - { id: rarely, from: pressure, to: visible, label: rarely, style: dotted, flow: main }
+  - { id: gone, from: killed, to: lost, style: dashed, flow: main }
   - { id: back, from: killed, to: newproc, label: user returns }
   - { id: create, from: newproc, to: recreate }
-  - { id: restore, from: saved, to: recreate, label: restore, style: dotted }
+  - { id: restore, from: saved, to: recreate, label: restore, style: dotted, flow: data }
 steps:
   - caption: "Android starts your app's Linux process when one of its components is needed. While the user is in your app, the process is foreground, and it is killed only as a last resort."
     focus: [fg]

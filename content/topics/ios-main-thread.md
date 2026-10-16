@@ -94,17 +94,17 @@ elements:
   - { id: timer, label: Timer, sub: "or DispatchQueue.main.async", kind: person, row: 0 }
   - { id: loop, label: Main run loop, sub: sleeps until a source fires, kind: system, row: 1 }
   - { id: handler, label: Your code, sub: "action, body, main-actor task", row: 2 }
-  - { id: pool, label: Thread pool, sub: "@concurrent work", tone: stream, row: 2 }
+  - { id: pool, label: Thread pool, sub: "@concurrent work", tone: stream, row: 2, role: service }
   - { id: commit, label: Layout and commit, sub: Core Animation transaction, row: 3 }
   - { id: frame, label: Next frame, sub: "8.3 ms at 120 Hz", kind: person, row: 4 }
-  - { id: hang, label: Hang, sub: "no touches, no frames", kind: external, row: 3 }
+  - { id: hang, label: Hang, sub: "no touches, no frames", kind: external, row: 3, role: error }
 edges:
   - { id: tap, from: touch, to: loop }
   - { id: fire, from: timer, to: loop }
   - { id: call, from: loop, to: handler, label: one at a time }
   - { id: changes, from: handler, to: commit, label: returns }
   - { id: draw, from: commit, to: frame }
-  - { id: block, from: handler, to: hang, label: "blocks for 300 ms", style: dashed }
+  - { id: block, from: handler, to: hang, label: "blocks for 300 ms", style: dashed, flow: main }
   - { id: offload, from: handler, to: pool, label: await }
   - { id: result, from: pool, to: loop, label: resume on main actor, style: dashed }
 steps:

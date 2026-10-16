@@ -102,11 +102,11 @@ edges:
   - { id: cap3, from: ul, to: li, label: capture }
   - { id: cap4, from: li, to: button, label: reaches the target }
   - { id: target, from: button, to: button, label: the button's own listeners }
-  - { id: bub1, from: button, to: li, label: bubble, style: dashed }
-  - { id: bub2, from: li, to: ul, label: bubble, style: dashed }
+  - { id: bub1, from: button, to: li, label: bubble, style: dashed, flow: main }
+  - { id: bub2, from: li, to: ul, label: bubble, style: dashed, flow: main }
   - { id: delegated, from: ul, to: ul, label: "delegated listener: target.closest(\"button\")" }
-  - { id: bub3, from: ul, to: document, label: bubble, style: dashed }
-  - { id: bub4, from: document, to: window, label: bubble, style: dashed }
+  - { id: bub3, from: ul, to: document, label: bubble, style: dashed, flow: main }
+  - { id: bub4, from: document, to: window, label: bubble, style: dashed, flow: main }
 steps:
   - caption: "The user clicks a button inside a list. Before anything runs, the browser fixes the event's path: the window, the document and every ancestor of the target."
     focus: [window, document, ul, li, button]

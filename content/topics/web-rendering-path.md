@@ -77,7 +77,7 @@ elements:
   - { id: html, label: HTML bytes, sub: arrive in chunks, kind: external, row: 0 }
   - { id: css, label: CSS bytes, sub: "<link rel=stylesheet>", kind: external, row: 0 }
   - { id: dom, label: DOM, sub: built as bytes arrive, group: parse, row: 1 }
-  - { id: cssom, label: CSSOM, sub: render-blocking, group: parse, tone: stream, row: 1 }
+  - { id: cssom, label: CSSOM, sub: render-blocking, group: parse, tone: stream, row: 1, role: service }
   - { id: style, label: Style → render tree, sub: visible boxes + computed styles, group: main, row: 2 }
   - { id: layout, label: Layout, sub: sizes and positions, group: main, row: 3 }
   - { id: paint, label: Paint, sub: pixels into layers, group: main, row: 4 }
@@ -95,9 +95,9 @@ edges:
   - { id: to-paint, from: layout, to: paint }
   - { id: to-composite, from: paint, to: composite }
   - { id: show, from: composite, to: frame }
-  - { id: re-layout, from: geometry, to: layout, style: dashed }
-  - { id: re-paint, from: colour, to: paint, style: dashed }
-  - { id: re-composite, from: transform, to: composite, style: dashed }
+  - { id: re-layout, from: geometry, to: layout, style: dashed, flow: main }
+  - { id: re-paint, from: colour, to: paint, style: dashed, flow: main }
+  - { id: re-composite, from: transform, to: composite, style: dashed, flow: main }
 steps:
   - caption: The HTML parser builds the DOM as the bytes arrive, one node per tag, without waiting for the whole file.
     focus: [html, dom]

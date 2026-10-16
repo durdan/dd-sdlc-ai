@@ -129,24 +129,24 @@ subtitle: "A box React ignores, filled in at commit"
 groups:
   - { id: react, label: React's work }
 elements:
-  - { id: handler, label: Handler or effect, sub: runs after the commit, kind: person, row: 0 }
+  - { id: handler, label: Handler or effect, sub: runs after the commit, kind: person, row: 0, role: service }
   - { id: render, label: Render, sub: "Search() runs again", group: react, row: 0 }
   - { id: box, label: "{ current }", sub: the same object every render, kind: store, row: 1 }
   - { id: commit, label: Commit, sub: DOM changes applied, group: react, row: 1 }
-  - { id: node, label: "<input> node", sub: the real DOM element, kind: external, row: 2 }
+  - { id: node, label: "<input> node", sub: the real DOM element, kind: external, row: 2, role: client }
   - { id: callback, label: Ref callback, sub: "ref={(node) => ...}", kind: component, row: 2 }
   - { id: cleanup, label: Cleanup, sub: returned by the callback, kind: component, row: 3 }
 edges:
-  - { id: same, from: render, to: box }
-  - { id: write, from: handler, to: box }
-  - { id: set, from: handler, to: render, label: setState, style: dashed }
+  - { id: same, from: render, to: box, flow: data }
+  - { id: write, from: handler, to: box, flow: data }
+  - { id: set, from: handler, to: render, label: setState, style: dashed, flow: async }
   - { id: to-commit, from: render, to: commit }
   - { id: create, from: commit, to: node }
-  - { id: fill, from: commit, to: box, style: dashed }
-  - { id: points, from: box, to: node, style: dotted }
+  - { id: fill, from: commit, to: box, style: dashed, flow: data }
+  - { id: points, from: box, to: node, style: dotted, flow: main }
   - { id: attach, from: commit, to: callback }
   - { id: returns, from: callback, to: cleanup }
-  - { id: detach, from: node, to: cleanup, style: dashed }
+  - { id: detach, from: node, to: cleanup, style: dashed, flow: main }
 steps:
   - caption: "Every time Search renders, useRef hands back the same { current } object. It survives renders the way state does."
     focus: [render, box]

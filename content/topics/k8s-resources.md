@@ -94,15 +94,15 @@ id: requests-and-limits
 title: Where requests and limits act
 subtitle: "requests cpu 250m, memory 256Mi; limits memory 256Mi"
 elements:
-  - { id: spec, label: Container resources, sub: requests and limits, kind: system, row: 0 }
+  - { id: spec, label: Container resources, sub: requests and limits, kind: system, row: 0, role: data }
   - { id: resize, label: In-place resize, sub: "stable since 1.35", tone: neutral, row: 0 }
   - { id: sched, label: kube-scheduler, sub: adds up requests, row: 1 }
   - { id: cgroup, label: kubelet + cgroups, sub: enforces limits, row: 1 }
   - { id: qos, label: QoS class, sub: "Guaranteed, Burstable, BestEffort", tone: data, row: 1 }
-  - { id: node, label: Node, sub: allocatable capacity, kind: store, row: 2 }
-  - { id: cpu, label: CPU over limit, sub: throttled, tone: stream, row: 2 }
-  - { id: mem, label: Memory over limit, sub: "OOMKilled, exit 137", tone: external, row: 2 }
-  - { id: evict, label: Node pressure, sub: eviction order, tone: external, row: 2 }
+  - { id: node, label: Node, sub: allocatable capacity, kind: store, row: 2, role: service }
+  - { id: cpu, label: CPU over limit, sub: throttled, tone: stream, row: 2, role: error }
+  - { id: mem, label: Memory over limit, sub: "OOMKilled, exit 137", tone: external, row: 2, role: error }
+  - { id: evict, label: Node pressure, sub: eviction order, tone: external, row: 2, role: error }
 edges:
   - { id: requests, from: spec, to: sched, label: requests }
   - { id: fits, from: sched, to: node }
@@ -111,7 +111,7 @@ edges:
   - { id: kill, from: cgroup, to: mem }
   - { id: classify, from: spec, to: qos }
   - { id: order, from: qos, to: evict }
-  - { id: patch, from: resize, to: cgroup, style: dashed }
+  - { id: patch, from: resize, to: cgroup, style: dashed, flow: main }
 steps:
   - caption: "Each container declares requests, what it needs reserved, and limits, the most it may use. They act in different places."
   - caption: "Requests drive scheduling. A pod lands only on a node whose unrequested capacity fits its requests. The scheduler never looks at live usage."

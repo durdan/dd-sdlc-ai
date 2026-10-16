@@ -102,10 +102,10 @@ groups:
   - { id: buildg, label: "Stage 1: build" }
   - { id: rung, label: "Stage 2: runtime" }
 elements:
-  - { id: src, label: Source code, sub: "go.mod and *.go", kind: person, row: 0 }
+  - { id: src, label: Source code, sub: "go.mod and *.go", kind: person, row: 0, role: data }
   - { id: tool, label: "golang:1.27-alpine", sub: "compiler, shell, apk", group: buildg, row: 1 }
   - { id: base, label: distroless static, sub: "static-debian13:nonroot", group: rung, tone: neutral, row: 1 }
-  - { id: bin, label: /out/hello, sub: one static binary, group: buildg, tone: stream, row: 2 }
+  - { id: bin, label: /out/hello, sub: one static binary, group: buildg, tone: stream, row: 2, role: data }
   - { id: final, label: "hello-go:1", sub: "3.15 MB to download", kind: system, group: rung, row: 3 }
   - { id: whole, label: "hello-go:build", sub: "--target build: 74.4 MB", tone: neutral, row: 3 }
 edges:
@@ -113,7 +113,7 @@ edges:
   - { id: compile, from: tool, to: bin, label: go build }
   - { id: from, from: base, to: final, label: FROM }
   - { id: take, from: bin, to: final, label: "COPY --from=build" }
-  - { id: target, from: bin, to: whole, style: dashed }
+  - { id: target, from: bin, to: whole, style: dashed, flow: main }
 steps:
   - caption: Building needs a compiler, a package manager and caches. Running needs only the result. A multi-stage Dockerfile keeps the two apart.
   - caption: The first FROM starts the build stage, with the full Go toolchain. The source code is copied in as usual.

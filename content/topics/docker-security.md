@@ -105,12 +105,12 @@ groups:
 elements:
   - { id: image, label: Image, sub: "minimal, pinned, scanned", kind: store, tone: data, row: 0 }
   - { id: ci, label: CI job, sub: with docker.sock mounted, kind: person, row: 0 }
-  - { id: proc, label: Your process, sub: "USER node: uid 1000", kind: system, row: 1 }
+  - { id: proc, label: Your process, sub: "USER node: uid 1000", kind: system, row: 1, role: service }
   - { id: sock, label: docker.sock, sub: the full Docker API, tone: external, row: 1 }
   - { id: caps, label: Capabilities, sub: "--cap-drop ALL, no-new-privileges", group: rails, tone: stream, row: 2 }
-  - { id: ro, label: Read-only rootfs, sub: "--read-only + --tmpfs /tmp", group: rails, tone: stream, row: 2 }
+  - { id: ro, label: Read-only rootfs, sub: "--read-only + --tmpfs /tmp", group: rails, tone: stream, row: 2, role: security }
   - { id: profiles, label: seccomp + LSM, sub: "AppArmor or SELinux", group: rails, tone: stream, row: 2 }
-  - { id: userns, label: User namespace, sub: "rootless or userns-remap", group: rails, tone: stream, row: 2 }
+  - { id: userns, label: User namespace, sub: "rootless or userns-remap", group: rails, tone: stream, row: 2, role: security }
   - { id: daemon, label: dockerd, sub: runs as root, kind: system, tone: external, row: 2 }
   - { id: kernel, label: Host Linux kernel, sub: shared by every container, kind: system, tone: neutral, row: 3 }
 edges:
@@ -125,7 +125,7 @@ edges:
   - { id: uk, from: userns, to: kernel }
   - { id: api, from: ci, to: sock }
   - { id: ask, from: sock, to: daemon }
-  - { id: host, from: daemon, to: kernel, label: "--privileged, mount /", style: dashed }
+  - { id: host, from: daemon, to: kernel, label: "--privileged, mount /", style: dashed, flow: main }
 steps:
   - caption: A container talks to the same kernel as the host. Whatever user and privileges its process has, the kernel sees directly. A few guard rails sit in between.
     focus: [proc, caps, ro, profiles, userns, kernel]

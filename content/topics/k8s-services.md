@@ -96,8 +96,8 @@ subtitle: "Service web: port 80 → targetPort 3000"
 elements:
   - { id: client, label: Client pod, sub: "namespace shop", kind: person, row: 0 }
   - { id: svc, label: Service web, sub: "ClusterIP 10.96.41.120, selector app=web", kind: system, row: 0 }
-  - { id: lb, label: Cloud load balancer, sub: type LoadBalancer, kind: external, row: 0 }
-  - { id: dns, label: CoreDNS, sub: web.shop.svc.cluster.local, tone: neutral, row: 1 }
+  - { id: lb, label: Cloud load balancer, sub: type LoadBalancer, kind: external, row: 0, role: edge }
+  - { id: dns, label: CoreDNS, sub: web.shop.svc.cluster.local, tone: neutral, row: 1, role: edge }
   - { id: slice, label: EndpointSlice, sub: "pod IPs:3000 + ready flag", tone: data, row: 1 }
   - { id: proxy, label: kube-proxy rules, sub: "iptables, on every node", tone: stream, row: 2 }
   - { id: p1, label: web pod 1, sub: "10.244.2.17, ready", row: 3 }
@@ -107,10 +107,10 @@ edges:
   - { id: lookup, from: client, to: dns, label: resolve web }
   - { id: connect, from: client, to: proxy, label: "10.96.41.120:80" }
   - { id: select, from: svc, to: slice, label: selector }
-  - { id: watch, from: slice, to: proxy, label: watched }
+  - { id: watch, from: slice, to: proxy, label: watched, flow: async }
   - { id: to-p1, from: proxy, to: p1 }
   - { id: to-p2, from: proxy, to: p2 }
-  - { id: to-p3, from: proxy, to: p3, style: dotted }
+  - { id: to-p3, from: proxy, to: p3, style: dotted, flow: blocked }
   - { id: external, from: lb, to: proxy, label: NodePort on each node }
 steps:
   - caption: "Pods are replaced all the time, each time with a new IP. A Service gives them one stable name and one virtual IP that never changes."
