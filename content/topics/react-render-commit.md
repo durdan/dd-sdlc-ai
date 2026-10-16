@@ -89,13 +89,13 @@ elements:
   - { id: thrown, label: Thrown away, sub: "Strict Mode, interrupted, suspended", kind: component, tone: neutral, row: 3 }
   - { id: mutate, label: DOM changes, sub: only the button's text, group: commit, row: 4 }
   - { id: layout, label: Refs and layout effects, sub: "useLayoutEffect, before paint", group: commit, row: 5 }
-  - { id: paint, label: Browser paints, kind: external, row: 6 }
-  - { id: effects, label: Effects, sub: "useEffect, usually after paint", kind: component, tone: stream, row: 7 }
+  - { id: paint, label: Browser paints, kind: external, row: 6, role: client }
+  - { id: effects, label: Effects, sub: "useEffect, usually after paint", kind: component, tone: stream, row: 7, role: service }
 edges:
   - { id: queue, from: trigger, to: counter, label: queues a render }
   - { id: child, from: counter, to: clock }
   - { id: tree, from: clock, to: diff }
-  - { id: discard, from: counter, to: thrown, label: may never commit, style: dotted }
+  - { id: discard, from: counter, to: thrown, label: may never commit, style: dotted, flow: main }
   - { id: apply, from: diff, to: mutate, label: all at once }
   - { id: attach, from: mutate, to: layout }
   - { id: show, from: layout, to: paint }

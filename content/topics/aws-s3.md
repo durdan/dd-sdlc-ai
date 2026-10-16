@@ -74,10 +74,10 @@ groups:
   - { id: region, label: "S3 in one Region" }
 elements:
   - { id: browser, label: Browser, kind: person, row: 0 }
-  - { id: app, label: Your backend, sub: holds IAM credentials, row: 1 }
-  - { id: url, label: Presigned URL, sub: "PUT, expires in 15 min", kind: component, row: 2 }
-  - { id: reader, label: Any reader, sub: GET or LIST, row: 2 }
-  - { id: bpa, label: Block Public Access, sub: on for new buckets, kind: component, tone: neutral, row: 2 }
+  - { id: app, label: Your backend, sub: holds IAM credentials, row: 1, role: service }
+  - { id: url, label: Presigned URL, sub: "PUT, expires in 15 min", kind: component, row: 2, role: security }
+  - { id: reader, label: Any reader, sub: GET or LIST, row: 2, role: client }
+  - { id: bpa, label: Block Public Access, sub: on for new buckets, kind: component, tone: neutral, row: 2, role: security }
   - { id: s3, label: Bucket, sub: "key → object", kind: system, group: region, row: 3 }
   - { id: az1, label: Zone a, kind: store, group: region, row: 4 }
   - { id: az2, label: Zone b, kind: store, group: region, row: 4 }
@@ -89,12 +89,12 @@ edges:
   - { id: sign, from: app, to: url }
   - { id: put, from: url, to: s3, label: PUT }
   - { id: read, from: reader, to: s3 }
-  - { id: guard, from: bpa, to: s3, style: dashed }
+  - { id: guard, from: bpa, to: s3, style: dashed, flow: security }
   - { id: z1, from: s3, to: az1 }
   - { id: z2, from: s3, to: az2 }
   - { id: z3, from: s3, to: az3 }
-  - { id: to-ia, from: s3, to: ia, style: dashed }
-  - { id: to-deep, from: ia, to: deep, style: dashed }
+  - { id: to-ia, from: s3, to: ia, style: dashed, flow: async }
+  - { id: to-deep, from: ia, to: deep, style: dashed, flow: async }
 steps:
   - caption: "A browser uploads a file straight to S3, so your servers never carry the bytes. Then lifecycle rules make the stored file cheaper as it ages."
   - caption: "The browser asks your backend if it may upload invoices/2026/03.pdf. That key is just a string. The slashes are characters, not folders."

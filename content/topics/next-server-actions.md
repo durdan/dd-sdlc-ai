@@ -95,13 +95,13 @@ elements:
   - { id: next, label: Next.js }
   - { id: action, label: createPost }
   - { id: db, label: Database }
-  - { id: anyone, label: Anyone }
+  - { id: anyone, label: Anyone, role: client }
 edges:
   - { id: post, from: form, to: next, label: "POST /posts/new: action ID + FormData" }
-  - { id: origin, from: next, to: next, label: "Origin must match Host" }
+  - { id: origin, from: next, to: next, label: "Origin must match Host", flow: security }
   - { id: call, from: next, to: action, label: "createPost(formData)" }
-  - { id: session, from: action, to: action, label: "1. getSession(): who is calling?" }
-  - { id: validate, from: action, to: action, label: "2. zod parse  3. canWrite?" }
+  - { id: session, from: action, to: action, label: "1. getSession(): who is calling?", flow: security }
+  - { id: validate, from: action, to: action, label: "2. zod parse  3. canWrite?", flow: security }
   - { id: write, from: action, to: db, label: post.create }
   - { id: row, from: db, to: action, label: the new post, style: dashed }
   - { id: invalidate, from: action, to: next, label: "4. updateTag(\"posts\"), redirect", style: dashed }

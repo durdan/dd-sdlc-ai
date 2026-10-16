@@ -113,14 +113,14 @@ elements:
   - { id: src, label: Event source }
   - { id: queue, label: Lambda queue }
   - { id: fn, label: Function }
-  - { id: dest, label: On-failure }
+  - { id: dest, label: On-failure, role: queue }
 edges:
-  - { id: send, from: src, to: queue, label: "async invoke: 202" }
+  - { id: send, from: src, to: queue, label: "async invoke: 202", flow: async }
   - { id: run1, from: queue, to: fn, label: attempt 1 }
   - { id: err1, from: fn, to: queue, label: error or timeout, style: dashed }
   - { id: run2, from: queue, to: fn, label: retry after 1 min }
   - { id: run3, from: queue, to: fn, label: retry after 2 more min }
-  - { id: fail, from: queue, to: dest, label: event and error }
+  - { id: fail, from: queue, to: dest, label: event and error, flow: async }
 steps:
   - caption: "An asynchronous invoke, such as one from S3 or SNS, returns 202 straight away. Lambda puts the event on its own internal queue, and the sender stops waiting."
     trace: [send]

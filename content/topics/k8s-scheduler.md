@@ -97,7 +97,7 @@ subtitle: "requests 2 CPU, 4Gi; no toleration for the gpu taint"
 groups:
   - { id: nodec, label: node-c }
 elements:
-  - { id: pod, label: New pod, sub: no node yet, kind: person, row: 0 }
+  - { id: pod, label: New pod, sub: no node yet, kind: person, row: 0, role: service }
   - { id: sched, label: kube-scheduler, sub: "filter, score, bind", kind: system, row: 1 }
   - { id: na, label: node-a, sub: "taint dedicated=gpu", tone: neutral, row: 2 }
   - { id: nb, label: node-b, sub: 3Gi unrequested, tone: neutral, row: 2 }
@@ -105,10 +105,10 @@ elements:
   - { id: kubelet, label: kubelet, sub: "fits, best score", group: nodec, row: 2 }
   - { id: runtime, label: containerd, sub: through the CRI, group: nodec, tone: neutral, row: 3 }
 edges:
-  - { id: watch, from: pod, to: sched }
-  - { id: taint, from: sched, to: na, label: filtered out, style: dotted }
-  - { id: memory, from: sched, to: nb, label: filtered out, style: dotted }
-  - { id: score-d, from: sched, to: nd, label: score 64, style: dashed }
+  - { id: watch, from: pod, to: sched, flow: async }
+  - { id: taint, from: sched, to: na, label: filtered out, style: dotted, flow: main }
+  - { id: memory, from: sched, to: nb, label: filtered out, style: dotted, flow: main }
+  - { id: score-d, from: sched, to: nd, label: score 64, style: dashed, flow: main }
   - { id: bind, from: sched, to: kubelet, label: "score 87: bind" }
   - { id: start, from: kubelet, to: runtime, label: start containers }
 steps:

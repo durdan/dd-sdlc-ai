@@ -128,10 +128,10 @@ subtitle: "createOrder (REQUIRED) calls audit (REQUIRES_NEW), then fails"
 kind: sequence
 elements:
   - { id: caller, label: Controller }
-  - { id: proxy, label: OrderService proxy }
+  - { id: proxy, label: OrderService proxy, role: service }
   - { id: txm, label: Transaction manager }
   - { id: svc, label: OrderService }
-  - { id: audit, label: AuditService proxy }
+  - { id: audit, label: AuditService proxy, role: service }
 edges:
   - { id: call, from: caller, to: proxy, label: "createOrder(o)" }
   - { id: begin, from: proxy, to: txm, label: "REQUIRED: none yet, begin tx 1" }

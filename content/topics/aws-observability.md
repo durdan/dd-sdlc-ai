@@ -82,13 +82,13 @@ elements:
   - { id: alarm, label: Alarm, sub: "OK, ALARM, INSUFFICIENT_DATA", kind: component, group: cw, row: 3 }
   - { id: sns, label: SNS topic, sub: pages the on-call engineer, tone: stream, row: 4 }
 edges:
-  - { id: builtin, from: aws, to: metrics }
-  - { id: write-logs, from: app, to: logs }
+  - { id: builtin, from: aws, to: metrics, flow: data }
+  - { id: write-logs, from: app, to: logs, flow: data }
   - { id: query, from: logs, to: insights }
   - { id: emf, from: logs, to: metrics }
   - { id: watch, from: metrics, to: alarm }
-  - { id: notify, from: alarm, to: sns }
-  - { id: spans, from: app, to: traces }
+  - { id: notify, from: alarm, to: sns, flow: async }
+  - { id: spans, from: app, to: traces, flow: data }
 steps:
   - caption: "Logs, metrics and traces flow into CloudWatch, and alarms turn them into action. Most of the data is there by default; deciding what to watch is not."
   - caption: "AWS services publish metrics automatically, such as an ALB's 5xx count, an SQS queue's oldest message age or a Lambda function's throttles. Nothing watches them until you add an alarm."

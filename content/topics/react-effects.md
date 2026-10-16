@@ -120,14 +120,14 @@ elements:
   - { id: react, label: React }
   - { id: room, label: ChatRoom }
   - { id: browser, label: Browser }
-  - { id: server, label: Chat server }
+  - { id: server, label: Chat server, role: external }
 edges:
   - { id: render1, from: react, to: room, label: "render, roomId: general" }
   - { id: commit1, from: react, to: browser, label: commit DOM }
   - { id: paint1, from: browser, to: browser, label: paint }
   - { id: setup1, from: room, to: server, label: "setup: connect(general)" }
-  - { id: devclean, from: room, to: server, label: "cleanup: disconnect (dev only)", style: dashed }
-  - { id: devsetup, from: room, to: server, label: "setup again (dev only)", style: dashed }
+  - { id: devclean, from: room, to: server, label: "cleanup: disconnect (dev only)", style: dashed, flow: main }
+  - { id: devsetup, from: room, to: server, label: "setup again (dev only)", style: dashed, flow: main }
   - { id: render2, from: react, to: room, label: "render, roomId: travel" }
   - { id: commit2, from: react, to: browser, label: commit DOM }
   - { id: clean2, from: room, to: server, label: "cleanup: disconnect(general)" }

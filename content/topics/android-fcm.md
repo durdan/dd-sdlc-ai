@@ -91,7 +91,7 @@ kind: sequence
 elements:
   - { id: app, label: App }
   - { id: android, label: Android }
-  - { id: fcm, label: FCM }
+  - { id: fcm, label: FCM, role: external }
   - { id: server, label: Server }
 edges:
   - { id: register, from: app, to: android, label: FCM SDK starts }
@@ -99,11 +99,11 @@ edges:
   - { id: token, from: fcm, to: app, label: "onNewToken(token)", style: dashed }
   - { id: upload, from: app, to: server, label: store the token }
   - { id: send, from: server, to: fcm, label: "POST messages:send (HTTP v1)" }
-  - { id: deliver, from: fcm, to: android, label: "notification, app in background" }
+  - { id: deliver, from: fcm, to: android, label: "notification, app in background", flow: async }
   - { id: tray, from: android, to: android, label: shown in the system tray }
   - { id: data, from: server, to: fcm, label: "data message, high priority" }
-  - { id: wake, from: fcm, to: android, label: wakes a dozing device }
-  - { id: receive, from: android, to: app, label: "onMessageReceived()", style: dashed }
+  - { id: wake, from: fcm, to: android, label: wakes a dozing device, flow: async }
+  - { id: receive, from: android, to: app, label: "onMessageReceived()", style: dashed, flow: async }
   - { id: gone, from: fcm, to: server, label: 404 UNREGISTERED, style: dashed }
 steps:
   - caption: The same three parties as on iOS. Your app gets an address, your server decides what to send, and FCM keeps one shared connection per device through Google Play services.

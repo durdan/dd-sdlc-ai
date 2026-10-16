@@ -104,14 +104,14 @@ id: config-into-pod
 title: How a ConfigMap and a Secret reach the app
 subtitle: As environment variables or as files
 elements:
-  - { id: cm, label: ConfigMap web-config, sub: "LOG_LEVEL, features.json", row: 0 }
+  - { id: cm, label: ConfigMap web-config, sub: "LOG_LEVEL, features.json", row: 0, role: data }
   - { id: secret, label: Secret web-db, sub: DATABASE_URL, tone: external, row: 0 }
   - { id: api, label: kube-apiserver, sub: RBAC on every read, kind: system, row: 1 }
   - { id: etcd, label: etcd, sub: "Secrets: base64, not encrypted by default", kind: store, row: 2 }
   - { id: kubelet, label: kubelet, sub: on the pod's node, row: 2 }
-  - { id: env, label: Environment variables, sub: set once at start, tone: neutral, row: 3 }
+  - { id: env, label: Environment variables, sub: set once at start, tone: neutral, row: 3, role: data }
   - { id: files, label: Mounted files, sub: "/etc/web, refreshed", tone: stream, row: 3 }
-  - { id: app, label: app container, kind: person, row: 4 }
+  - { id: app, label: app container, kind: person, row: 4, role: service }
 edges:
   - { id: cm-in, from: cm, to: api }
   - { id: sec-in, from: secret, to: api }

@@ -100,16 +100,16 @@ elements:
   - { id: load, label: Traffic spike, kind: person, row: 0 }
   - { id: deploy, label: Deployment web, sub: "replicas: 4 → 6", kind: system, row: 0 }
   - { id: pods, label: web pods, sub: running, row: 1 }
-  - { id: pending, label: Pending pods, sub: no node has room, tone: external, row: 1 }
-  - { id: ms, label: metrics-server, sub: metrics.k8s.io, tone: data, row: 2 }
+  - { id: pending, label: Pending pods, sub: no node has room, tone: external, row: 1, role: service }
+  - { id: ms, label: metrics-server, sub: metrics.k8s.io, tone: data, row: 2, role: service }
   - { id: ca, label: Node autoscaler, sub: Cluster Autoscaler or Karpenter, row: 2 }
   - { id: hpa, label: HorizontalPodAutoscaler, sub: every 15 s, kind: system, row: 3 }
-  - { id: node, label: New node, sub: takes minutes, kind: store, row: 3 }
+  - { id: node, label: New node, sub: takes minutes, kind: store, row: 3, role: service }
 edges:
   - { id: hits, from: load, to: pods }
   - { id: usage, from: pods, to: ms, label: CPU usage }
   - { id: read, from: ms, to: hpa }
-  - { id: scale, from: hpa, to: deploy, label: set replicas, style: dashed }
+  - { id: scale, from: hpa, to: deploy, label: set replicas, style: dashed, flow: main }
   - { id: creates, from: deploy, to: pods }
   - { id: unfit, from: deploy, to: pending }
   - { id: sees, from: pending, to: ca }

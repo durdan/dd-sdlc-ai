@@ -73,26 +73,26 @@ groups:
 elements:
   - { id: data, label: Data and APIs, sub: "products, prices, the user", kind: store, tone: data }
   - { id: ssg, label: Static build, sub: renders every page once, group: build }
-  - { id: cdn, label: CDN, sub: serves files from the edge, kind: external }
+  - { id: cdn, label: CDN, sub: serves files from the edge, kind: external, role: edge }
   - { id: ssr, label: Server render, sub: whole page per request, group: server }
-  - { id: stream, label: Streaming render, sub: "shell first, sections as ready", group: server, tone: stream }
+  - { id: stream, label: Streaming render, sub: "shell first, sections as ready", group: server, tone: stream, role: service }
   - { id: csr, label: JS bundle runs, sub: "fetches data, builds the DOM", group: browser }
-  - { id: visible, label: Content visible, sub: real HTML from the start, group: browser }
-  - { id: hydrate, label: Hydration, sub: attaches the handlers, group: browser, tone: stream }
+  - { id: visible, label: Content visible, sub: real HTML from the start, group: browser, role: client }
+  - { id: hydrate, label: Hydration, sub: attaches the handlers, group: browser, tone: stream, role: service }
   - { id: ready, label: Interactive page, kind: person }
 edges:
   - { id: shell, from: cdn, to: csr, label: empty shell + bundle }
-  - { id: csr-data, from: data, to: csr, style: dotted }
+  - { id: csr-data, from: data, to: csr, style: dotted, flow: data }
   - { id: csr-ready, from: csr, to: ready }
-  - { id: ssr-data, from: data, to: ssr }
+  - { id: ssr-data, from: data, to: ssr, flow: data }
   - { id: ssr-html, from: ssr, to: visible }
   - { id: hydrate-in, from: visible, to: hydrate }
   - { id: hydrated, from: hydrate, to: ready }
-  - { id: build-data, from: data, to: ssg }
+  - { id: build-data, from: data, to: ssg, flow: data }
   - { id: files, from: ssg, to: cdn }
   - { id: static-html, from: cdn, to: visible }
-  - { id: stream-data, from: data, to: stream }
-  - { id: chunks, from: stream, to: visible, style: dashed }
+  - { id: stream-data, from: data, to: stream, flow: data }
+  - { id: chunks, from: stream, to: visible, style: dashed, flow: async }
 steps:
   - caption: The same product page can be made in four ways. The question is always who turns the data into HTML, and when that HTML reaches the browser.
   - caption: "With client-side rendering, a host sends an almost empty shell and a script bundle. Nothing useful shows until the bundle has downloaded, fetched the data and built the DOM, which is slow on weak phones."

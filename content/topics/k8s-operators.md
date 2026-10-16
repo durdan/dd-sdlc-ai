@@ -121,18 +121,18 @@ id: backup-operator
 title: A Backup resource and its controller
 subtitle: The API part stores it; the loop part acts on it
 elements:
-  - { id: crd, label: CustomResourceDefinition, sub: backups.example.com, tone: neutral, row: 0 }
+  - { id: crd, label: CustomResourceDefinition, sub: backups.example.com, tone: neutral, row: 0, role: data }
   - { id: you, label: kubectl apply, sub: "Backup shop-nightly, keep: 7", kind: person, row: 0 }
-  - { id: api, label: kube-apiserver, sub: "schema, RBAC, watches", kind: system, row: 1 }
+  - { id: api, label: kube-apiserver, sub: "schema, RBAC, watches", kind: system, row: 1, role: service }
   - { id: etcd, label: etcd, kind: store, row: 2 }
-  - { id: ctrl, label: Backup controller, sub: runs as a Deployment, tone: stream, row: 2 }
+  - { id: ctrl, label: Backup controller, sub: runs as a Deployment, tone: stream, row: 2, role: service }
   - { id: cron, label: CronJob, sub: owned by the Backup, row: 3 }
   - { id: bucket, label: Backup bucket, sub: outside the cluster, kind: external, row: 3 }
 edges:
   - { id: teach, from: crd, to: api }
   - { id: create, from: you, to: api }
   - { id: store, from: api, to: etcd }
-  - { id: watch, from: api, to: ctrl }
+  - { id: watch, from: api, to: ctrl, flow: async }
   - { id: ensure, from: ctrl, to: cron, label: create or update }
   - { id: prune, from: ctrl, to: bucket, label: delete beyond keep }
 steps:

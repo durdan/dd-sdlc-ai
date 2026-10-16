@@ -132,10 +132,10 @@ edges:
   - { id: time, from: auto, to: registry, label: record timings }
   - { id: render, from: registry, to: scrape }
   - { id: pull, from: scrape, to: prometheus, label: "pulled every scrape interval" }
-  - { id: fire, from: prometheus, to: alertmanager, label: alert rule fires }
+  - { id: fire, from: prometheus, to: alertmanager, label: alert rule fires, flow: async }
   - { id: live, from: liveness, to: kubelet, label: 200 or 503 }
   - { id: ready, from: readiness, to: kubelet, label: 200 or 503 }
-  - { id: drain, from: kubelet, to: endpoints, label: "not ready: take the pod out", style: dashed }
+  - { id: drain, from: kubelet, to: endpoints, label: "not ready: take the pod out", style: dashed, flow: main }
 steps:
   - caption: Your code records to Micrometer once. This counter goes up every time a payment is declined, and the code never mentions Prometheus.
     focus: [code, registry]

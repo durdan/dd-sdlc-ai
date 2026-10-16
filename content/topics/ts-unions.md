@@ -125,14 +125,14 @@ title: A switch on the tag
 subtitle: "type Request = idle | loading | success | failure"
 elements:
   - { id: req, label: "r: Request", sub: "four members, tag: status", kind: system, row: 0 }
-  - { id: retry, label: "{ status: \"retrying\" }", sub: a member added later, tone: stream, row: 0 }
+  - { id: retry, label: "{ status: \"retrying\" }", sub: a member added later, tone: stream, row: 0, role: service }
   - { id: sw, label: switch (r.status), kind: component, row: 1 }
   - { id: idle, label: "\"idle\"", sub: no other fields, row: 2 }
   - { id: loading, label: "\"loading\"", sub: no other fields, row: 2 }
-  - { id: success, label: "\"success\"", sub: "r.data: User", row: 2 }
+  - { id: success, label: "\"success\"", sub: "r.data: User", row: 2, role: service }
   - { id: failure, label: "\"failure\"", sub: "r.error: string", row: 2 }
   - { id: def, label: default, sub: "const unreachable: never = r", tone: neutral, row: 2 }
-  - { id: err, label: Compile error, sub: not assignable to never, kind: external, row: 3 }
+  - { id: err, label: Compile error, sub: not assignable to never, kind: external, row: 3, role: security }
 edges:
   - { id: tag, from: req, to: sw }
   - { id: to-idle, from: sw, to: idle }
@@ -140,8 +140,8 @@ edges:
   - { id: to-success, from: sw, to: success }
   - { id: to-failure, from: sw, to: failure }
   - { id: to-default, from: sw, to: def }
-  - { id: new-member, from: retry, to: sw, style: dashed }
-  - { id: not-never, from: def, to: err, style: dashed }
+  - { id: new-member, from: retry, to: sw, style: dashed, flow: main }
+  - { id: not-never, from: def, to: err, style: dashed, flow: security }
 steps:
   - caption: A Request is one of four shapes, each with a literal status tag. Before any check, only status, which every member has, can be read.
     focus: [req]

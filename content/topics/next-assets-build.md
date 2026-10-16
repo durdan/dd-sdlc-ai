@@ -82,19 +82,19 @@ subtitle: "Bundles, prerendered routes and fonts at build time; images on demand
 groups:
   - { id: build-time, label: next build }
 elements:
-  - { id: code, label: Your code, sub: "app/, components, next.config", kind: person, row: 0 }
+  - { id: code, label: Your code, sub: "app/, components, next.config", kind: person, row: 0, role: data }
   - { id: google, label: Google Fonts, sub: contacted by the build only, kind: external, row: 0 }
   - { id: build, label: Compile and prerender, sub: "Turbopack by default, type-check", kind: system, group: build-time, row: 1 }
-  - { id: bundles, label: Client bundles, sub: ".next/static, content-hashed", tone: data, group: build-time, row: 2 }
+  - { id: bundles, label: Client bundles, sub: ".next/static, content-hashed", tone: data, group: build-time, row: 2, role: data }
   - { id: routes, label: Prerendered routes, sub: "route table: ○ ◐ ƒ", tone: data, group: build-time, row: 2 }
   - { id: fonts, label: Self-hosted fonts, sub: + a size-adjusted fallback, tone: data, group: build-time, row: 2 }
   - { id: source, label: Source image, sub: "a static import or an allowed remote host", kind: external, row: 1 }
   - { id: server, label: Your domain, sub: "max-age=31536000, immutable", kind: system, row: 3 }
-  - { id: optimiser, label: /_next/image, sub: "resizes on request, caches", tone: stream, row: 3 }
+  - { id: optimiser, label: /_next/image, sub: "resizes on request, caches", tone: stream, row: 3, role: service }
   - { id: browser, label: Browser, sub: picks a size from srcset, kind: person, row: 4 }
 edges:
   - { id: compile, from: code, to: build }
-  - { id: fetch-fonts, from: google, to: build, style: dashed }
+  - { id: fetch-fonts, from: google, to: build, style: dashed, flow: main }
   - { id: emit-bundles, from: build, to: bundles }
   - { id: emit-routes, from: build, to: routes }
   - { id: emit-fonts, from: build, to: fonts }

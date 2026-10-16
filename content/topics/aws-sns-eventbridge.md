@@ -88,14 +88,14 @@ elements:
   - { id: w3, label: Analytics, row: 3 }
   - { id: dlq, label: email DLQ, kind: store, tone: neutral, row: 3 }
 edges:
-  - { id: publish, from: pub, to: topic }
-  - { id: f1, from: topic, to: q1 }
-  - { id: f2, from: topic, to: q2 }
-  - { id: f3, from: topic, to: q3 }
+  - { id: publish, from: pub, to: topic, flow: async }
+  - { id: f1, from: topic, to: q1, flow: async }
+  - { id: f2, from: topic, to: q2, flow: async }
+  - { id: f3, from: topic, to: q3, flow: async }
   - { id: c1, from: q1, to: w1 }
   - { id: c2, from: q2, to: w2 }
   - { id: c3, from: q3, to: w3 }
-  - { id: dead, from: q2, to: dlq, label: keeps failing, style: dashed }
+  - { id: dead, from: q2, to: dlq, label: keeps failing, style: dashed, flow: async }
 steps:
   - caption: "The order service publishes OrderPlaced once, to an SNS topic. It doesn't know who is listening."
     trace: [publish]
@@ -124,14 +124,14 @@ elements:
   - { id: fn, label: Lambda, row: 3 }
   - { id: dlq, label: Target DLQ, kind: store, tone: neutral, row: 4 }
 edges:
-  - { id: put, from: orders, to: bus, label: PutEvents }
-  - { id: native, from: aws, to: bus }
+  - { id: put, from: orders, to: bus, label: PutEvents, flow: async }
+  - { id: native, from: aws, to: bus, flow: async }
   - { id: m1, from: bus, to: rule1 }
   - { id: m2, from: bus, to: rule2 }
   - { id: t1, from: rule1, to: sfn }
   - { id: t2, from: rule1, to: sqs }
   - { id: t3, from: rule2, to: fn }
-  - { id: dead, from: sfn, to: dlq, label: retries exhausted, style: dashed }
+  - { id: dead, from: sfn, to: dlq, label: retries exhausted, style: dashed, flow: async }
 steps:
   - caption: "The order service puts an event on a bus: JSON with a source, a detail-type and a detail body."
     trace: [put]

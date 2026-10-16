@@ -69,9 +69,9 @@ elements:
   - { id: users, label: Users, kind: person, row: 0 }
   - { id: dns, label: Route 53, sub: global DNS, kind: system, tone: external, row: 1 }
   - { id: alb, label: Load balancer, sub: "regional: a node in each zone", row: 2 }
-  - { id: inst-a, label: Instance + EBS, sub: zonal, group: az-a, row: 3 }
-  - { id: inst-b, label: Instance + EBS, sub: zonal, group: az-b, row: 3 }
-  - { id: inst-c, label: Instance + EBS, sub: zonal, group: az-c, row: 3 }
+  - { id: inst-a, label: Instance + EBS, sub: zonal, group: az-a, row: 3, role: service }
+  - { id: inst-b, label: Instance + EBS, sub: zonal, group: az-b, row: 3, role: service }
+  - { id: inst-c, label: Instance + EBS, sub: zonal, group: az-c, row: 3, role: service }
   - { id: s3, label: S3, sub: "regional: data stored across zones", kind: store, row: 4 }
 edges:
   - { id: ask, from: users, to: dns }
@@ -79,9 +79,9 @@ edges:
   - { id: to-a, from: alb, to: inst-a }
   - { id: to-b, from: alb, to: inst-b }
   - { id: to-c, from: alb, to: inst-c }
-  - { id: a-s3, from: inst-a, to: s3, style: dotted }
-  - { id: b-s3, from: inst-b, to: s3, style: dotted }
-  - { id: c-s3, from: inst-c, to: s3, style: dotted }
+  - { id: a-s3, from: inst-a, to: s3, style: dotted, flow: data }
+  - { id: b-s3, from: inst-b, to: s3, style: dotted, flow: data }
+  - { id: c-s3, from: inst-c, to: s3, style: dotted, flow: data }
 steps:
   - caption: "A Region such as eu-west-1 is its own set of data centres. Inside it are three Availability Zones, each with its own power, cooling and network."
   - caption: "Each zone is far enough from the others to fail alone, but close enough, up to about 100 km, for synchronous replication between them."

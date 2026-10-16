@@ -76,11 +76,11 @@ elements:
   - { id: docker, label: Docker container, sub: 'output: "standalone"', row: 1 }
   - { id: export, label: Static export, sub: 'output: "export" → out/', tone: neutral, row: 1 }
   - { id: host, label: Static host or bucket, sub: "no Proxy, actions, cookies or ISR", kind: external, row: 2 }
-  - { id: nginx, label: Reverse proxy, sub: "nginx: slow clients, bad requests", kind: external, row: 2 }
+  - { id: nginx, label: Reverse proxy, sub: "nginx: slow clients, bad requests", kind: external, row: 2, role: edge }
   - { id: a, label: Instance A, group: fleet, row: 3 }
   - { id: b, label: Instance B, sub: during a rolling deploy, group: fleet, row: 3 }
   - { id: cache, label: Shared cache handler, sub: "Redis: entries and tag invalidations", kind: store, row: 4 }
-  - { id: key, label: Same encryption key, sub: NEXT_SERVER_ACTIONS_ENCRYPTION_KEY, kind: component, tone: neutral, row: 4 }
+  - { id: key, label: Same encryption key, sub: NEXT_SERVER_ACTIONS_ENCRYPTION_KEY, kind: component, tone: neutral, row: 4, role: security }
   - { id: skew, label: deploymentId, sub: "a mismatch means a full reload", kind: component, tone: neutral, row: 4 }
 edges:
   - { id: start, from: build, to: node }
@@ -93,9 +93,9 @@ edges:
   - { id: to-b, from: nginx, to: b }
   - { id: a-cache, from: a, to: cache }
   - { id: b-cache, from: b, to: cache }
-  - { id: a-key, from: a, to: key, style: dotted }
-  - { id: b-key, from: b, to: key, style: dotted }
-  - { id: b-skew, from: b, to: skew, style: dotted }
+  - { id: a-key, from: a, to: key, style: dotted, flow: security }
+  - { id: b-key, from: b, to: key, style: dotted, flow: security }
+  - { id: b-skew, from: b, to: skew, style: dotted, flow: main }
 steps:
   - caption: "next start runs the Node.js server, which supports every feature: prerendered shells, streamed holes, Server Actions, Route Handlers, Proxy and image optimisation."
     trace: [start]

@@ -102,7 +102,7 @@ title: node as PID 1
 subtitle: "docker stop s1, then the same with a SIGTERM handler"
 kind: sequence
 elements:
-  - { id: you, label: docker stop }
+  - { id: you, label: docker stop, role: client }
   - { id: dockerd, label: dockerd }
   - { id: node, label: "node (PID 1)" }
 edges:
@@ -140,7 +140,7 @@ title: "With --init"
 subtitle: "docker run --init: docker-init (tini) is PID 1"
 kind: sequence
 elements:
-  - { id: you, label: docker stop }
+  - { id: you, label: docker stop, role: client }
   - { id: dockerd, label: dockerd }
   - { id: init, label: "init (PID 1)" }
   - { id: node, label: node }

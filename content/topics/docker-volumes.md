@@ -87,19 +87,19 @@ elements:
   - { id: image, label: Image layers, sub: read-only, kind: store, tone: neutral, row: 0 }
   - { id: ctr, label: Container, sub: "alpine:3.22, removed with --rm", kind: system, row: 1 }
   - { id: next, label: Next container, sub: "cat /data/note.txt", row: 1 }
-  - { id: layer, label: Writable layer, sub: deleted with the container, tone: neutral, row: 2 }
+  - { id: layer, label: Writable layer, sub: deleted with the container, tone: neutral, row: 2, role: data }
   - { id: vol, label: "Volume appdata", sub: "/var/lib/docker/volumes/…", kind: store, tone: data, row: 2 }
-  - { id: bind, label: Bind mount, sub: "-v \"$PWD\":/app", tone: external, row: 2 }
-  - { id: tmp, label: tmpfs, sub: memory only, tone: stream, row: 2 }
-  - { id: host, label: Your project folder, sub: on the host, kind: person, row: 3 }
+  - { id: bind, label: Bind mount, sub: "-v \"$PWD\":/app", tone: external, row: 2, role: data }
+  - { id: tmp, label: tmpfs, sub: memory only, tone: stream, row: 2, role: data }
+  - { id: host, label: Your project folder, sub: on the host, kind: person, row: 3, role: data }
 edges:
-  - { id: below, from: image, to: ctr, style: dotted }
-  - { id: own, from: ctr, to: layer, label: /var/log }
-  - { id: data, from: ctr, to: vol, label: /data }
-  - { id: app, from: ctr, to: bind, label: /app }
-  - { id: scratch, from: ctr, to: tmp, label: /tmp }
-  - { id: again, from: next, to: vol, label: /data }
-  - { id: same, from: bind, to: host, label: same files, style: dashed }
+  - { id: below, from: image, to: ctr, style: dotted, flow: data }
+  - { id: own, from: ctr, to: layer, label: /var/log, flow: data }
+  - { id: data, from: ctr, to: vol, label: /data, flow: data }
+  - { id: app, from: ctr, to: bind, label: /app, flow: data }
+  - { id: scratch, from: ctr, to: tmp, label: /tmp, flow: data }
+  - { id: again, from: next, to: vol, label: /data, flow: data }
+  - { id: same, from: bind, to: host, label: same files, style: dashed, flow: data }
 steps:
   - caption: One container writes to four paths. Each write lands somewhere different, and that decides what survives.
   - caption: The container's own filesystem is the read-only image plus a thin writable layer. A log written to /var/log goes into that layer.

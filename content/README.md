@@ -120,7 +120,7 @@ expect: [promise, timeout]   # what the code prints
 
 ## Writing a flow diagram
 
-A diagram lesson draws boxes and arrows with the library's walkthrough engine (design-player), so it looks and moves like `/learn/p/...`: everything outside a step's focus fades back, the step's arrows draw in one by one with a travelling dot, and the camera follows the path when the diagram is too big to read whole (always on phones). There is no audio; a step is held for about as long as it takes to read its caption. Set `lesson: diagram` and write one ```` ```trace diagram ```` block per diagram (several become tabs):
+A diagram lesson draws boxes and arrows with the library's walkthrough engine (design-player), so it looks and moves like `/learn/p/...`: everything outside a step's focus fades back, the step's arrows draw in one by one with a travelling dot, and the camera follows the path when the diagram is too big to read whole (always on phones). There is no recorded audio; a step is held for about as long as it takes to read its caption (or, with the reader's Voice switch on, until the device has read it aloud). Set `lesson: diagram` and write one ```` ```trace diagram ```` block per diagram (several become tabs):
 
 ````md
 ```trace diagram
@@ -155,6 +155,10 @@ note: Optional line shown beside the controls.
 ````
 
 - **Element kinds** (c4): `container` (default), `component`, `system` (bold outline), `person` (rounded), `external`, `store`. **Tones**: `core`, `stream`, `data`, `external`, `neutral`; the default follows the kind. **Edge styles**: `solid` (default), `dashed`, `dotted`.
+- **Colours mean something**, and a legend under the diagram lists what this one uses.
+  - **`role`** (any element, sequence participants too) sets a box's colour and corner icon: `client`, `service`, `data`, `cache`, `queue`, `security`, `edge` (CDN, load balancer, gateway, proxy, DNS, NAT), `external`. Left out, it is worked out from `kind` (person → client, external → external, store → data, or cache/queue when its words say so), then from the box's own words (Redis → cache, Kafka/SQS → queue, IAM/JWT/ACL → security, ...), then from `tone`; otherwise `service`. Write it only where the guess is wrong.
+  - **`flow`** (any edge) sets an arrow's colour: `main` (request or call, teal), `reply` (a return, grey), `async` (background or event, violet), `security` (a check, rose), `data` (a read or write, violet). Left out, `solid` reads as `main`, `dashed` as `reply` and `dotted` as `async`. A dashed arrow that is not a reply (an optional path, a later call) needs a `flow`. A written `style` still sets the dash.
+  - `npx tsx scripts/diagram-roles.ts [topic-id ...]` prints every box's role and every arrow's flow, written or guessed.
 - **Captions** are what the reader reads while the step plays: plain, spoken-style sentences that say what happens and why. Lit boxes are the step's `focus` plus both ends of every traced edge.
 - **Paused**, tapping a box shows its label, its `sub` and every step that lights it.
 - **Layout** is computed once on the server (ELK, through design-player's `layoutDiagram`); nothing is placed by hand. Every edge label becomes its own ELK layer, so a long chain of labelled arrows gets long: prefer hubs (one box calling three) to chains, and leave labels off arrows the captions already explain. A return arrow back to an earlier box makes a cycle, which ELK may break in the wrong place; draw the response as its own box (`Response`) instead of an arrow back to the client.

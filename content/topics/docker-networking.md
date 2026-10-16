@@ -88,7 +88,7 @@ groups:
   - { id: dflt, label: default bridge }
 elements:
   - { id: outside, label: Browser or LAN host, sub: "anything that reaches the host", kind: person, row: 0 }
-  - { id: port, label: Published port, sub: "host :8080 → container :3000", tone: external, row: 1 }
+  - { id: port, label: Published port, sub: "host :8080 → container :3000", tone: external, row: 1, role: edge }
   - { id: peer, label: alpine, sub: "wget http://api:3000/", group: appnet, row: 1 }
   - { id: lone, label: alpine, sub: "wget http://api:3000/", group: dflt, row: 1 }
   - { id: dns, label: Embedded DNS, sub: "127.0.0.11", tone: stream, group: appnet, row: 2 }
@@ -98,7 +98,7 @@ edges:
   - { id: fwd, from: port, to: api }
   - { id: ask, from: peer, to: dns, label: api? }
   - { id: call, from: peer, to: api, label: "api:3000" }
-  - { id: fail, from: lone, to: api, label: bad address, style: dotted }
+  - { id: fail, from: lone, to: api, label: bad address, style: dotted, flow: main }
 steps:
   - caption: Every container has its own network namespace, with its own interfaces, IP address and its own localhost. Docker connects it to a virtual bridge on the host.
     focus: [api]

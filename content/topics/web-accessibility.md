@@ -94,7 +94,7 @@ elements:
   - { id: axh1, label: heading, sub: "level 1, \"Checkout\"", group: tree, tone: data, row: 2 }
   - { id: axinput, label: textbox, sub: "name \"Email\", required", group: tree, tone: data, row: 2 }
   - { id: axbutton, label: button, sub: "name \"Pay\"", group: tree, tone: data, row: 2 }
-  - { id: axdiv, label: plain text, sub: "\"Cancel\", no role", group: tree, tone: neutral, row: 2 }
+  - { id: axdiv, label: plain text, sub: "\"Cancel\", no role", group: tree, tone: neutral, row: 2, role: data }
   - { id: tab, label: Tab key, sub: focusable elements in DOM order, kind: person, row: 0 }
   - { id: speech, label: Screen reader, sub: "announces name, role, state", kind: person, row: 3 }
 edges:

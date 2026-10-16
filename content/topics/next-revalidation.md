@@ -100,25 +100,25 @@ elements:
   - { id: cms, label: CMS, sub: content published, kind: external, row: 0 }
   - { id: author, label: An author, sub: submits a new post, kind: person, row: 0 }
   - { id: webhook, label: Webhook route.ts, sub: checks the shared secret, row: 1 }
-  - { id: action, label: createPost action, sub: "Server Action, checks the user", row: 1 }
-  - { id: rt, label: 'revalidateTag("posts", "max")', sub: mark stale, kind: component, tone: stream, row: 2 }
+  - { id: action, label: createPost action, sub: "Server Action, checks the user", row: 1, role: service }
+  - { id: rt, label: 'revalidateTag("posts", "max")', sub: mark stale, kind: component, tone: stream, row: 2, role: service }
   - { id: ut, label: 'updateTag("posts")', sub: expire now, kind: component, tone: core, row: 2 }
   - { id: entry, label: Cached posts, sub: 'tag "posts", in the static shell', kind: store, row: 3 }
   - { id: visitor, label: Next visitor, sub: "gets the old list at once", kind: person, row: 4 }
   - { id: redirected, label: The author's redirect, sub: waits for the fresh list, kind: person, row: 4 }
-  - { id: fresh, label: Fresh entry, sub: for everyone after, tone: data, row: 5 }
-  - { id: cdn, label: A CDN in front, sub: "not purged by any of these", kind: external, row: 0 }
+  - { id: fresh, label: Fresh entry, sub: for everyone after, tone: data, row: 5, role: cache }
+  - { id: cdn, label: A CDN in front, sub: "not purged by any of these", kind: external, row: 0, role: edge }
 edges:
   - { id: publish, from: cms, to: webhook }
   - { id: call-rt, from: webhook, to: rt }
   - { id: mark, from: rt, to: entry }
   - { id: serve-stale, from: entry, to: visitor }
-  - { id: refresh, from: visitor, to: fresh, label: refresh in the background, style: dashed }
+  - { id: refresh, from: visitor, to: fresh, label: refresh in the background, style: dashed, flow: async }
   - { id: submit, from: author, to: action }
   - { id: call-ut, from: action, to: ut }
   - { id: expire, from: ut, to: entry }
   - { id: serve-fresh, from: entry, to: redirected }
-  - { id: then-fresh, from: redirected, to: fresh, style: dashed }
+  - { id: then-fresh, from: redirected, to: fresh, style: dashed, flow: main }
 steps:
   - caption: "The posts are cached with the longest lifetime and a tag. There is no clock to wait for: the entry stays in the static shell until something says the posts changed."
     focus: [entry]

@@ -89,21 +89,21 @@ elements:
   - { id: rootfs, label: Image files, sub: "alpine:3.22 as the root filesystem", kind: store, tone: data, row: 2 }
   - { id: containerd, label: containerd, sub: container lifecycle, row: 2 }
   - { id: runc, label: runc, sub: OCI runtime, row: 3 }
-  - { id: ns, label: Namespaces, sub: "PID, network, mount, UTS, IPC", tone: stream, row: 4 }
+  - { id: ns, label: Namespaces, sub: "PID, network, mount, UTS, IPC", tone: stream, row: 4, role: security }
   - { id: proc, label: ps, sub: PID 1 in its own namespace, kind: component, row: 4 }
-  - { id: cg, label: cgroup, sub: "memory.max 64 MiB", tone: stream, row: 4 }
+  - { id: cg, label: cgroup, sub: "memory.max 64 MiB", tone: stream, row: 4, role: security }
   - { id: kernel, label: Host Linux kernel, sub: shared by every container, kind: system, tone: neutral, row: 5 }
 edges:
   - { id: api, from: cli, to: dockerd, label: API call }
-  - { id: prep, from: dockerd, to: rootfs, style: dashed }
+  - { id: prep, from: dockerd, to: rootfs, style: dashed, flow: data }
   - { id: hand, from: dockerd, to: containerd }
   - { id: create, from: containerd, to: runc }
   - { id: mkns, from: runc, to: ns }
   - { id: start, from: runc, to: proc, label: starts }
   - { id: mkcg, from: runc, to: cg }
   - { id: sys, from: proc, to: kernel, label: ordinary syscalls }
-  - { id: nsk, from: ns, to: kernel, style: dotted }
-  - { id: cgk, from: cg, to: kernel, style: dotted }
+  - { id: nsk, from: ns, to: kernel, style: dotted, flow: security }
+  - { id: cgk, from: cg, to: kernel, style: dotted, flow: security }
 steps:
   - caption: "docker run looks like it boots a small computer. It doesn't: it starts one ordinary Linux process and fences it in. Follow the request down."
   - caption: The docker command is only a client. It sends an API call to the Docker daemon, dockerd, over a Unix socket.

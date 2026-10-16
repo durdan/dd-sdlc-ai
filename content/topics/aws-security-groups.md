@@ -80,14 +80,14 @@ elements:
   - { id: app, label: Instance }
 edges:
   - { id: syn, from: client, to: nacl, label: "TCP to port 443, from port 50432" }
-  - { id: nacl-in, from: nacl, to: nacl, label: "inbound rule 100: allow 443" }
+  - { id: nacl-in, from: nacl, to: nacl, label: "inbound rule 100: allow 443", flow: security }
   - { id: pass, from: nacl, to: sg, label: into the subnet }
-  - { id: sg-in, from: sg, to: sg, label: "443 allowed: connection tracked" }
+  - { id: sg-in, from: sg, to: sg, label: "443 allowed: connection tracked", flow: security }
   - { id: deliver, from: sg, to: app, label: delivered to the ENI }
   - { id: reply, from: app, to: sg, label: "reply to port 50432", style: dashed }
-  - { id: sg-out, from: sg, to: sg, label: "tracked reply: allowed", style: dashed }
+  - { id: sg-out, from: sg, to: sg, label: "tracked reply: allowed", style: dashed, flow: security }
   - { id: leave, from: sg, to: nacl, label: out of the subnet, style: dashed }
-  - { id: nacl-out, from: nacl, to: nacl, label: "outbound: needs 1024-65535", style: dashed }
+  - { id: nacl-out, from: nacl, to: nacl, label: "outbound: needs 1024-65535", style: dashed, flow: security }
   - { id: back, from: nacl, to: client, label: reply delivered, style: dashed }
 steps:
   - caption: "Two packet filters stand between a client and an instance. The network ACL guards the subnet edge; the security group is attached to the instance's network interface."
@@ -116,14 +116,14 @@ subtitle: "alb-sg, app-sg and db-sg"
 elements:
   - { id: client, label: Clients, kind: person, row: 0 }
   - { id: alb, label: Load balancer, sub: "alb-sg: 443 from 0.0.0.0/0", row: 1 }
-  - { id: app, label: App tasks, sub: "app-sg: 8080 from alb-sg", row: 2 }
-  - { id: other, label: Other instance, sub: "same VPC, no app-sg", kind: external, row: 2 }
+  - { id: app, label: App tasks, sub: "app-sg: 8080 from alb-sg", row: 2, role: service }
+  - { id: other, label: Other instance, sub: "same VPC, no app-sg", kind: external, row: 2, role: service }
   - { id: db, label: Database, sub: "db-sg: 5432 from app-sg", kind: store, row: 3 }
 edges:
   - { id: https, from: client, to: alb, label: "443" }
   - { id: fwd, from: alb, to: app, label: "8080" }
   - { id: query, from: app, to: db, label: "5432" }
-  - { id: blocked, from: other, to: db, label: dropped, style: dotted }
+  - { id: blocked, from: other, to: db, label: dropped, style: dotted, flow: security }
 steps:
   - caption: "Each tier admits only the tier in front of it, and names that tier by its security group instead of by IP range."
   - caption: "Only the load balancer is open to the internet, on 443."

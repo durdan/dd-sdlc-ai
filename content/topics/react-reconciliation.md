@@ -103,10 +103,10 @@ groups:
 elements:
   - { id: old, label: "<Field label=\"Name\">", sub: "state: text = \"Ada\"", group: before, row: 0 }
   - { id: same, label: "<Field label=\"Company\">", sub: "same type: text is still \"Ada\"", group: after, row: 1 }
-  - { id: wrapped, label: "<div><Field /></div>", sub: "different type: text = \"\"", group: after, tone: external, row: 1 }
+  - { id: wrapped, label: "<div><Field /></div>", sub: "different type: text = \"\"", group: after, tone: external, row: 1, role: service }
 edges:
   - { id: keep, from: old, to: same, label: "same type, same place: update props" }
-  - { id: remount, from: old, to: wrapped, label: "div ≠ Field: unmount, mount", style: dashed }
+  - { id: remount, from: old, to: wrapped, label: "div ≠ Field: unmount, mount", style: dashed, flow: main }
 steps:
   - caption: "After a render React has two trees: what is on screen and what your components just returned. It matches them by position among siblings and by type."
     focus: [old]
@@ -136,7 +136,7 @@ elements:
 edges:
   - { id: kb, from: ob, to: nb }
   - { id: kc, from: oc, to: nc }
-  - { id: ka, from: oa, to: gone, style: dashed }
+  - { id: ka, from: oa, to: gone, style: dashed, flow: main }
 steps:
   - caption: "Three todos, each li keyed by its id. The user has ticked the uncontrolled checkbox on Buy milk."
     focus: [before]
@@ -161,13 +161,13 @@ elements:
   - { id: o0, label: "key 0: Buy milk", sub: checkbox ticked, group: before, row: 0 }
   - { id: o1, label: "key 1: Walk dog", group: before, row: 0 }
   - { id: o2, label: "key 2: Pay rent", group: before, row: 0 }
-  - { id: n0, label: "key 0: Walk dog", sub: "still ticked!", group: after, tone: external, row: 1 }
+  - { id: n0, label: "key 0: Walk dog", sub: "still ticked!", group: after, tone: external, row: 1, role: service }
   - { id: n1, label: "key 1: Pay rent", sub: new text, group: after, row: 1 }
   - { id: gone, label: Removed, sub: "li 2, Pay rent's old row", kind: component, tone: neutral, row: 1 }
 edges:
-  - { id: k0, from: o0, to: n0, label: "reused for Walk dog", style: dashed }
+  - { id: k0, from: o0, to: n0, label: "reused for Walk dog", style: dashed, flow: main }
   - { id: k1, from: o1, to: n1, label: kept }
-  - { id: k2, from: o2, to: gone, style: dashed }
+  - { id: k2, from: o2, to: gone, style: dashed, flow: main }
 steps:
   - caption: "The same list keyed by index. The keys say nothing about which todo is which, only where it is."
     focus: [before]

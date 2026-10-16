@@ -129,23 +129,23 @@ id: gateway-route
 title: From the internet to a pod with the Gateway API
 subtitle: Objects configure the controller; the proxy carries the traffic
 elements:
-  - { id: class, label: GatewayClass, sub: which implementation, tone: neutral, row: 0 }
-  - { id: gw, label: Gateway public, sub: "443, *.example.com, TLS; platform team", row: 0 }
-  - { id: route, label: HTTPRoute web, sub: "shop.example.com /; app team", row: 0 }
-  - { id: ingress, label: Ingress, sub: "frozen: hosts, paths, TLS", tone: neutral, row: 0 }
+  - { id: class, label: GatewayClass, sub: which implementation, tone: neutral, row: 0, role: data }
+  - { id: gw, label: Gateway public, sub: "443, *.example.com, TLS; platform team", row: 0, role: data }
+  - { id: route, label: HTTPRoute web, sub: "shop.example.com /; app team", row: 0, role: data }
+  - { id: ingress, label: Ingress, sub: "frozen: hosts, paths, TLS", tone: neutral, row: 0, role: data }
   - { id: user, label: Browser, sub: "https://shop.example.com", kind: person, row: 1 }
-  - { id: ctrl, label: Gateway controller, sub: "e.g. Envoy Gateway", kind: system, row: 1 }
-  - { id: lb, label: Cloud load balancer, kind: external, row: 2 }
+  - { id: ctrl, label: Gateway controller, sub: "e.g. Envoy Gateway", kind: system, row: 1, role: service }
+  - { id: lb, label: Cloud load balancer, kind: external, row: 2, role: edge }
   - { id: proxy, label: Gateway proxy, sub: terminates TLS, tone: stream, row: 3 }
   - { id: web, label: Service web, sub: weight 90, row: 4 }
   - { id: canary, label: Service web-canary, sub: weight 10, row: 4 }
 edges:
-  - { id: names, from: class, to: ctrl, style: dashed }
-  - { id: listens, from: gw, to: ctrl, style: dashed }
-  - { id: routes, from: route, to: ctrl, style: dashed }
+  - { id: names, from: class, to: ctrl, style: dashed, flow: async }
+  - { id: listens, from: gw, to: ctrl, style: dashed, flow: async }
+  - { id: routes, from: route, to: ctrl, style: dashed, flow: async }
   - { id: legacy, from: ingress, to: ctrl, style: dotted }
   - { id: programs, from: ctrl, to: proxy, label: programs }
-  - { id: provisions, from: ctrl, to: lb, style: dashed }
+  - { id: provisions, from: ctrl, to: lb, style: dashed, flow: main }
   - { id: request, from: user, to: lb }
   - { id: forward, from: lb, to: proxy }
   - { id: main, from: proxy, to: web, label: 90% }

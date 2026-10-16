@@ -125,14 +125,14 @@ elements:
   - { id: scroll, label: scrollState, sub: "read in Modifier.offset { }", kind: store }
   - { id: draw, label: Draw, sub: into a Canvas, group: drawing }
 edges:
-  - { id: write, from: click, to: count, label: write }
+  - { id: write, from: click, to: count, label: write, flow: data }
   - { id: invalidate, from: count, to: counter, label: invalidates readers }
   - { id: runs, from: counter, to: label }
-  - { id: skip, from: counter, to: header, style: dashed }
+  - { id: skip, from: counter, to: header, style: dashed, flow: main }
   - { id: runs2, from: counter, to: list }
   - { id: place1, from: label, to: measure }
   - { id: place2, from: list, to: measure }
-  - { id: late, from: scroll, to: measure, label: read late, style: dotted }
+  - { id: late, from: scroll, to: measure, label: read late, style: dotted, flow: data }
   - { id: paint, from: measure, to: draw }
 steps:
   - caption: Compose turns state into pixels in three phases each frame. Composition decides what to show, layout decides where, and drawing paints it.

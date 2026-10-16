@@ -78,7 +78,7 @@ elements:
   - { id: sizing, label: Size the columns, sub: the container's width is known, group: columns, kind: system }
   - { id: fixed, label: Fixed track, sub: 200px, group: columns }
   - { id: gaps, label: Gaps, sub: "2 × 20px = 40px", group: columns }
-  - { id: fr, label: fr tracks, sub: "600px left: 1fr = 200, 2fr = 400", group: columns, tone: stream }
+  - { id: fr, label: fr tracks, sub: "600px left: 1fr = 200, 2fr = 400", group: columns, tone: stream, role: service }
   - { id: rows, label: Then the rows, sub: "auto: the tallest item in each row" }
   - { id: items, label: Lay out each item, sub: "stretch fills the cell by default" }
   - { id: result, label: Aligned grid, sub: every row shares the same columns, kind: person }

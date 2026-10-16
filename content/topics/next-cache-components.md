@@ -95,25 +95,25 @@ id: cache-entry
 title: The life of one cached entry
 subtitle: 'getProduct("42") with "use cache" and cacheLife("hours")'
 elements:
-  - { id: call, label: getProduct("42"), sub: called from any component, kind: person, row: 0 }
+  - { id: call, label: getProduct("42"), sub: called from any component, kind: person, row: 0, role: service }
   - { id: key, label: Cache key, sub: "build ID, function, arguments, captured variables", kind: component, row: 1 }
   - { id: handler, label: Cache handler, sub: "default: in-memory LRU per instance", kind: store, row: 2 }
-  - { id: remote, label: '"use cache: remote"', sub: "a shared handler: Redis, KV", kind: external, row: 2 }
-  - { id: fresh, label: Fresh, sub: "age under revalidate (1 h)", tone: data, row: 3 }
-  - { id: stale, label: Stale, sub: "past 1 h: old value now", tone: stream, row: 3 }
-  - { id: expired, label: Expired or missing, sub: "past expire (1 day), or first call", tone: neutral, row: 3 }
-  - { id: router, label: Browser router cache, sub: "reused for the stale time", kind: external, row: 3 }
-  - { id: run, label: Run the function, sub: "query the database, store the result", row: 4 }
+  - { id: remote, label: '"use cache: remote"', sub: "a shared handler: Redis, KV", kind: external, row: 2, role: cache }
+  - { id: fresh, label: Fresh, sub: "age under revalidate (1 h)", tone: data, row: 3, role: cache }
+  - { id: stale, label: Stale, sub: "past 1 h: old value now", tone: stream, row: 3, role: cache }
+  - { id: expired, label: Expired or missing, sub: "past expire (1 day), or first call", tone: neutral, row: 3, role: cache }
+  - { id: router, label: Browser router cache, sub: "reused for the stale time", kind: external, row: 3, role: cache }
+  - { id: run, label: Run the function, sub: "query the database, store the result", row: 4, role: service }
 edges:
   - { id: make-key, from: call, to: key }
   - { id: lookup, from: key, to: handler }
   - { id: to-fresh, from: handler, to: fresh }
   - { id: to-stale, from: handler, to: stale }
   - { id: to-expired, from: handler, to: expired }
-  - { id: background, from: stale, to: run, label: in the background, style: dashed }
+  - { id: background, from: stale, to: run, label: in the background, style: dashed, flow: async }
   - { id: wait, from: expired, to: run }
   - { id: to-router, from: handler, to: router, style: dotted }
-  - { id: share, from: remote, to: handler, style: dashed }
+  - { id: share, from: remote, to: handler, style: dashed, flow: data }
 steps:
   - caption: "A call to a \"use cache\" function first builds a key: the build ID, so a deploy starts afresh, the function's identity, its arguments and any variables it captures."
     trace: [make-key]

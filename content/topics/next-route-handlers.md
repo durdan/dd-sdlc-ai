@@ -81,11 +81,11 @@ elements:
   - { id: caller, label: Callers that aren't your UI, sub: "mobile app, webhook, partner", kind: person, row: 0 }
   - { id: route, label: app/api/…/route.ts, sub: one export per HTTP method, kind: system, row: 1 }
   - { id: get, label: GET, sub: "can be prerendered", row: 2 }
-  - { id: other, label: "POST, PUT, DELETE", sub: never cached, row: 2 }
+  - { id: other, label: "POST, PUT, DELETE", sub: never cached, row: 2, role: service }
   - { id: helper, label: '"use cache" helper', sub: "shared data, cacheLife", kind: component, tone: stream, row: 2 }
   - { id: static, label: Prerendered at build, sub: "no request access, no uncached I/O", kind: store, tone: data, row: 3 }
-  - { id: dynamic, label: Runs per request, sub: "reads the request, cookies(), a DB", row: 3 }
-  - { id: reval, label: "revalidateTag, revalidatePath", sub: "the \"content changed\" webhook", kind: component, tone: neutral, row: 3 }
+  - { id: dynamic, label: Runs per request, sub: "reads the request, cookies(), a DB", row: 3, role: service }
+  - { id: reval, label: "revalidateTag, revalidatePath", sub: "the \"content changed\" webhook", kind: component, tone: neutral, row: 3, role: service }
   - { id: response, label: Response, sub: "status, headers, JSON or any body", kind: person, row: 4 }
 edges:
   - { id: request, from: caller, to: route }
@@ -93,9 +93,9 @@ edges:
   - { id: to-other, from: route, to: other }
   - { id: always, from: other, to: dynamic }
   - { id: build, from: get, to: static }
-  - { id: runtime, from: get, to: dynamic, style: dashed }
-  - { id: cached, from: helper, to: static, style: dashed }
-  - { id: invalidate, from: other, to: reval, style: dotted }
+  - { id: runtime, from: get, to: dynamic, style: dashed, flow: main }
+  - { id: cached, from: helper, to: static, style: dashed, flow: main }
+  - { id: invalidate, from: other, to: reval, style: dotted, flow: main }
   - { id: from-static, from: static, to: response }
   - { id: from-dynamic, from: dynamic, to: response }
 steps:

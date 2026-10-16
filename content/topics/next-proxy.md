@@ -81,23 +81,23 @@ elements:
   - { id: request, label: GET /dashboard, sub: no session cookie, kind: person, row: 0 }
   - { id: config, label: next.config, sub: "headers, then redirects", kind: component, tone: neutral, row: 1 }
   - { id: proxy, label: proxy.ts, sub: "Node.js only, one per app", kind: system, row: 2 }
-  - { id: redirect, label: Redirect, sub: "/login?next=/dashboard", tone: stream, row: 3 }
+  - { id: redirect, label: Redirect, sub: "/login?next=/dashboard", tone: stream, row: 3, role: service }
   - { id: rewrite, label: Rewrite, sub: "another path, same URL", row: 3 }
   - { id: pass, label: NextResponse.next(), sub: "+ x-frame-options: DENY", row: 3 }
   - { id: own, label: Its own response, sub: "e.g. a 401", tone: neutral, row: 3 }
   - { id: routes, label: Routes, sub: "pages, route handlers, Server Actions", kind: system, row: 4 }
-  - { id: dal, label: Data access layer, sub: "the real auth checks", kind: store, row: 5 }
+  - { id: dal, label: Data access layer, sub: "the real auth checks", kind: store, row: 5, role: security }
 edges:
   - { id: first, from: request, to: config }
   - { id: into, from: config, to: proxy }
-  - { id: skip, from: config, to: routes, label: not matched, style: dashed }
+  - { id: skip, from: config, to: routes, label: not matched, style: dashed, flow: main }
   - { id: to-redirect, from: proxy, to: redirect }
   - { id: to-rewrite, from: proxy, to: rewrite }
   - { id: to-pass, from: proxy, to: pass }
   - { id: to-own, from: proxy, to: own }
   - { id: rewritten, from: rewrite, to: routes }
   - { id: passed, from: pass, to: routes }
-  - { id: check, from: routes, to: dal, style: dotted }
+  - { id: check, from: routes, to: dal, style: dotted, flow: security }
 steps:
   - caption: "Headers and redirects from next.config run first. Fixed redirects belong there; they are simpler than code."
     trace: [first]

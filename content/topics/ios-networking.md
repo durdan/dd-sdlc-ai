@@ -91,10 +91,10 @@ subtitle: An ordinary data task, and a background download
 direction: DOWN
 elements:
   - { id: code, label: Your code, sub: "try await api.data(from:)", row: 0 }
-  - { id: session, label: URLSession, sub: "config: timeouts, cache, cookies", row: 1 }
+  - { id: session, label: URLSession, sub: "config: timeouts, cache, cookies", row: 1, role: service }
   - { id: task, label: Data task, sub: one per request, row: 2 }
-  - { id: cache, label: URLCache, sub: memory and disk, kind: store, row: 3 }
-  - { id: ats, label: App Transport Security, sub: "HTTPS, strong TLS", kind: component, row: 1 }
+  - { id: cache, label: URLCache, sub: memory and disk, kind: store, row: 3, role: cache }
+  - { id: ats, label: App Transport Security, sub: "HTTPS, strong TLS", kind: component, row: 1, role: security }
   - { id: server, label: Server, kind: external, row: 4 }
   - { id: response, label: "(data, response)", sub: check statusCode yourself, kind: person, row: 5 }
   - { id: background, label: Background session, sub: upload and download tasks only, row: 1 }
@@ -105,10 +105,10 @@ edges:
   - { id: create, from: session, to: task }
   - { id: lookup, from: task, to: cache }
   - { id: hit, from: cache, to: response, label: fresh hit, style: dashed }
-  - { id: policy, from: ats, to: task, label: HTTPS only, style: dotted }
+  - { id: policy, from: ats, to: task, label: HTTPS only, style: dotted, flow: security }
   - { id: out, from: task, to: server }
   - { id: answer, from: server, to: response }
-  - { id: bg, from: code, to: background, style: dashed }
+  - { id: bg, from: code, to: background, style: dashed, flow: main }
   - { id: handoff, from: background, to: daemon }
   - { id: transfer, from: daemon, to: server, style: dotted }
   - { id: done, from: daemon, to: wake }

@@ -99,7 +99,7 @@ kind: sequence
 elements:
   - { id: browser, label: Browser }
   - { id: page, label: Page }
-  - { id: data, label: Data }
+  - { id: data, label: Data, role: data }
 edges:
   - { id: get, from: browser, to: page, label: GET /account }
   - { id: user, from: page, to: data, label: await getUser() }
@@ -113,7 +113,7 @@ edges:
   - { id: all-back, from: data, to: page, label: all three at 200 ms, style: dashed }
   - { id: fast-html, from: page, to: browser, label: HTML after ~200 ms, style: dashed }
   - { id: shell, from: page, to: browser, label: "shell + fallbacks, straight away", style: dashed }
-  - { id: part, from: data, to: page, label: recommendations ready }
+  - { id: part, from: data, to: page, label: recommendations ready, flow: reply }
   - { id: streamed, from: page, to: browser, label: that section streamed in, style: dashed }
   - { id: prefetch, from: browser, to: page, label: "<Link> in view: prefetch" }
 steps:

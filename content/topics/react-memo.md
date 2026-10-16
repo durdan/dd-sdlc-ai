@@ -114,9 +114,9 @@ elements:
   - { id: callback, label: useCallback, sub: same function until deps change, kind: component, row: 2 }
   - { id: usememo, label: useMemo, sub: same object or array until deps change, kind: component, row: 2 }
   - { id: compare, label: memo compares props, sub: "each one with Object.is", row: 3 }
-  - { id: rerender, label: Row renders, sub: memo saved nothing, tone: external, row: 4 }
-  - { id: skip, label: Row skipped, sub: reuses its last output, tone: data, row: 4 }
-  - { id: own, label: Own state or context, sub: memo doesn't look at these, kind: external, row: 3 }
+  - { id: rerender, label: Row renders, sub: memo saved nothing, tone: external, row: 4, role: service }
+  - { id: skip, label: Row skipped, sub: reuses its last output, tone: data, row: 4, role: service }
+  - { id: own, label: Own state or context, sub: memo doesn't look at these, kind: external, row: 3, role: data }
 edges:
   - { id: type, from: typing, to: list }
   - { id: pass-item, from: list, to: item }
@@ -129,7 +129,7 @@ edges:
   - { id: memo-in, from: usememo, to: compare }
   - { id: changed, from: compare, to: rerender, label: one prop differs }
   - { id: equal, from: compare, to: skip, label: all equal }
-  - { id: bypass, from: own, to: rerender, style: dashed }
+  - { id: bypass, from: own, to: rerender, style: dashed, flow: main }
 steps:
   - caption: "Each keystroke sets query, so List renders again. By default every component below it renders too, and every expression in List's body runs again."
     focus: [typing, list]

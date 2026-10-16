@@ -92,20 +92,20 @@ groups:
   - { id: pod, label: "Pod web: one IP, one localhost" }
 elements:
   - { id: kubelet, label: kubelet, sub: on the pod's node, kind: system, row: 0 }
-  - { id: owner, label: ReplicaSet, sub: the pod's owner, kind: external, row: 0 }
+  - { id: owner, label: ReplicaSet, sub: the pod's owner, kind: external, row: 0, role: service }
   - { id: migrate, label: migrate, sub: init container, group: pod, tone: neutral, row: 1 }
-  - { id: shipper, label: log-shipper, sub: "sidecar: restartPolicy Always", group: pod, tone: stream, row: 2 }
+  - { id: shipper, label: log-shipper, sub: "sidecar: restartPolicy Always", group: pod, tone: stream, row: 2, role: service }
   - { id: app, label: app, sub: listens on 3000, group: pod, row: 2 }
   - { id: logs, label: emptyDir logs, sub: lives as long as the pod, kind: store, group: pod, row: 3 }
-  - { id: replacement, label: New pod, sub: "new name, new IP", kind: external, row: 1 }
+  - { id: replacement, label: New pod, sub: "new name, new IP", kind: external, row: 1, role: service }
 edges:
   - { id: run-init, from: kubelet, to: migrate }
   - { id: run-sidecar, from: kubelet, to: shipper }
   - { id: run-app, from: kubelet, to: app }
-  - { id: localhost, from: shipper, to: app, label: "localhost:3000", style: dashed }
-  - { id: write, from: app, to: logs }
-  - { id: read, from: shipper, to: logs }
-  - { id: replace, from: owner, to: replacement, style: dashed }
+  - { id: localhost, from: shipper, to: app, label: "localhost:3000", style: dashed, flow: main }
+  - { id: write, from: app, to: logs, flow: data }
+  - { id: read, from: shipper, to: logs, flow: data }
+  - { id: replace, from: owner, to: replacement, style: dashed, flow: main }
 steps:
   - caption: "A pod is one or more containers that always run on the same node and share a network namespace and volumes. Kubernetes schedules pods, not containers."
   - caption: "The kubelet runs init containers first, one after another, each to completion. The pod's phase is Pending while it waits for a node, pulls images and runs these."

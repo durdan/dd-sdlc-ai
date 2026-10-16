@@ -124,7 +124,7 @@ elements:
   - { id: queue, label: Work queue, sub: "ArrayBlockingQueue(500)", group: pool, tone: stream }
   - { id: w1, label: Worker 1, sub: "price(\"north\")", group: pool }
   - { id: w2, label: Worker 2, sub: "price(\"south-east\")", group: pool }
-  - { id: policy, label: Rejection policy, sub: when the queue is full, group: pool, kind: external }
+  - { id: policy, label: Rejection policy, sub: when the queue is full, group: pool, kind: external, role: service }
   - { id: fa, label: Future a, group: futures, tone: data }
   - { id: fb, label: Future b, group: futures, tone: data }
   - { id: combined, label: thenCombine(min), sub: "orTimeout(2 s), exceptionally(-1)", group: futures, tone: data }
@@ -133,7 +133,7 @@ edges:
   - { id: submit, from: main, to: queue, label: submit }
   - { id: take1, from: queue, to: w1 }
   - { id: take2, from: queue, to: w2 }
-  - { id: full, from: queue, to: policy, label: queue full, style: dashed }
+  - { id: full, from: queue, to: policy, label: queue full, style: dashed, flow: main }
   - { id: done1, from: w1, to: fa, label: complete(50) }
   - { id: done2, from: w2, to: fb, label: complete(100) }
   - { id: depa, from: fa, to: combined }

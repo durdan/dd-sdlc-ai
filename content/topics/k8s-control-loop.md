@@ -83,7 +83,7 @@ groups:
   - { id: node, label: "Worker node" }
 elements:
   - { id: you, label: kubectl apply, sub: "Deployment web, replicas: 4", kind: person, row: 0 }
-  - { id: api, label: kube-apiserver, sub: "authn, authz, admission", kind: system, group: cp, row: 1 }
+  - { id: api, label: kube-apiserver, sub: "authn, authz, admission", kind: system, group: cp, row: 1, role: service }
   - { id: etcd, label: etcd, sub: every object, kind: store, group: cp, row: 2 }
   - { id: depctl, label: Deployment controller, group: cp, row: 2 }
   - { id: rsctl, label: ReplicaSet controller, group: cp, row: 2 }

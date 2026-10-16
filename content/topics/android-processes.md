@@ -94,15 +94,15 @@ elements:
   - { id: recreate, label: Activity recreated, sub: from the saved Bundle, row: 5 }
 edges:
   - { id: leave, from: fg, to: cached, label: user leaves }
-  - { id: save, from: fg, to: saved, label: "onStop: save", style: dashed }
+  - { id: save, from: fg, to: saved, label: "onStop: save", style: dashed, flow: data }
   - { id: rank, from: cached, to: pressure }
   - { id: kill, from: pressure, to: killed, label: first }
-  - { id: next, from: pressure, to: service, label: next, style: dashed }
-  - { id: rarely, from: pressure, to: visible, label: rarely, style: dotted }
-  - { id: gone, from: killed, to: lost, style: dashed }
+  - { id: next, from: pressure, to: service, label: next, style: dashed, flow: main }
+  - { id: rarely, from: pressure, to: visible, label: rarely, style: dotted, flow: main }
+  - { id: gone, from: killed, to: lost, style: dashed, flow: main }
   - { id: back, from: killed, to: newproc, label: user returns }
   - { id: create, from: newproc, to: recreate }
-  - { id: restore, from: saved, to: recreate, label: restore, style: dotted }
+  - { id: restore, from: saved, to: recreate, label: restore, style: dotted, flow: data }
 steps:
   - caption: "Android starts your app's Linux process when one of its components is needed. While the user is in your app, the process is foreground, and it is killed only as a last resort."
     focus: [fg]

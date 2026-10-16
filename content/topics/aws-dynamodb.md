@@ -69,9 +69,9 @@ groups:
   - { id: table, label: Table }
 elements:
   - { id: query, label: Query, sub: "PK = CUSTOMER#81", kind: component, group: calls, row: 0 }
-  - { id: scan, label: Scan, sub: "every item, 1 MB pages", kind: component, group: calls, row: 0 }
-  - { id: put, label: PutItem, sub: "PK = 2026-10-16", kind: component, group: calls, row: 0 }
-  - { id: router, label: DynamoDB, sub: hashes the partition key, kind: system, row: 1 }
+  - { id: scan, label: Scan, sub: "every item, 1 MB pages", kind: component, group: calls, row: 0, role: client }
+  - { id: put, label: PutItem, sub: "PK = 2026-10-16", kind: component, group: calls, row: 0, role: client }
+  - { id: router, label: DynamoDB, sub: hashes the partition key, kind: system, row: 1, role: service }
   - { id: p1, label: Partition 1, sub: "CUSTOMER#81, sorted by SK", kind: store, group: table, row: 2 }
   - { id: p2, label: Partition 2, sub: other customers, kind: store, group: table, row: 2 }
   - { id: p3, label: Partition 3, sub: "hot: 1,000 writes/s max", kind: store, tone: stream, group: table, row: 2 }
@@ -83,7 +83,7 @@ edges:
   - { id: to-p1, from: router, to: p1 }
   - { id: to-p2, from: router, to: p2 }
   - { id: to-p3, from: router, to: p3 }
-  - { id: to-gsi, from: router, to: gsi, label: async, style: dashed }
+  - { id: to-gsi, from: router, to: gsi, label: async, style: dashed, flow: async }
 steps:
   - caption: "A table is split into partitions. DynamoDB routes every request by a hash of its partition key, so the key decides which partition does the work."
   - caption: "Items with the same partition key are stored together on one partition, ordered by sort key. DynamoDB replicates every partition across three zones."

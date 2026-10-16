@@ -105,11 +105,11 @@ title: A rolling update from 1.4.2 to 1.5.0
 subtitle: "replicas: 4, maxSurge 25%, maxUnavailable 25%"
 elements:
   - { id: you, label: kubectl set image, sub: "app=web:1.5.0", kind: person, row: 0 }
-  - { id: deploy, label: Deployment web, sub: "replicas: 4", kind: system, row: 1 }
+  - { id: deploy, label: Deployment web, sub: "replicas: 4", kind: system, row: 1, role: service }
   - { id: rsold, label: ReplicaSet 1.4.2, sub: "4 → 3 → ... → 0", row: 2 }
-  - { id: rsnew, label: ReplicaSet 1.5.0, sub: "0 → 1 → ... → 4", tone: stream, row: 2 }
+  - { id: rsnew, label: ReplicaSet 1.5.0, sub: "0 → 1 → ... → 4", tone: stream, row: 2, role: service }
   - { id: oldpods, label: Pods 1.4.2, sub: serving traffic, tone: neutral, row: 3 }
-  - { id: newpods, label: Pods 1.5.0, sub: count once ready, tone: stream, row: 3 }
+  - { id: newpods, label: Pods 1.5.0, sub: count once ready, tone: stream, row: 3, role: service }
 edges:
   - { id: change, from: you, to: deploy, label: new pod template }
   - { id: own-old, from: deploy, to: rsold }

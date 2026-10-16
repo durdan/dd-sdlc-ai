@@ -130,8 +130,8 @@ edges:
   - { id: call, from: mainframe, to: moveframe, label: "move(p, n)" }
   - { id: copy, from: moveframe, to: point, label: copy of p }
   - { id: alloc, from: moveframe, to: newpoint, label: p = new Point() }
-  - { id: klass, from: point, to: classdata, label: class pointer, style: dotted }
-  - { id: print, from: mainframe, to: console, label: println, style: dashed }
+  - { id: klass, from: point, to: classdata, label: class pointer, style: dotted, flow: main }
+  - { id: print, from: mainframe, to: console, label: println, style: dashed, flow: main }
 steps:
   - caption: "main starts with a frame on its thread's stack. The int n holds the value 1 right there in the frame; p holds only a reference, and the Point it refers to lives on the heap that every thread shares."
     focus: [mainframe, point]

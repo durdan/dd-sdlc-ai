@@ -96,11 +96,11 @@ groups:
   - { id: vm, label: Linux VM (LinuxKit kernel) }
 elements:
   - { id: cli, label: docker CLI, sub: "on the Mac: context desktop-linux", kind: person, row: 0 }
-  - { id: folder, label: Project folder, sub: "on the Mac: -v \"$PWD\":/app", row: 0 }
+  - { id: folder, label: Project folder, sub: "on the Mac: -v \"$PWD\":/app", row: 0, role: data }
   - { id: browser, label: Browser, sub: "on the Mac: localhost:8765", kind: person, row: 0 }
-  - { id: backend, label: Desktop backend, sub: "on the Mac: listens on published ports", tone: external, row: 1 }
+  - { id: backend, label: Desktop backend, sub: "on the Mac: listens on published ports", tone: external, row: 1, role: edge }
   - { id: svc, label: Service on the Mac, sub: "Postgres on :5432", row: 4 }
-  - { id: engine, label: Docker Engine, sub: "images, volumes on the VM disk", kind: system, group: vm, row: 2 }
+  - { id: engine, label: Docker Engine, sub: "images, volumes on the VM disk", kind: system, group: vm, row: 2, role: service }
   - { id: ctr, label: Container, sub: "linux/arm64, native", group: vm, row: 3 }
   - { id: emu, label: Emulation, sub: "Rosetta or QEMU, if enabled", tone: neutral, group: vm, row: 3 }
 edges:
@@ -110,7 +110,7 @@ edges:
   - { id: open, from: browser, to: backend }
   - { id: fwd, from: backend, to: ctr, label: into the VM }
   - { id: out, from: ctr, to: svc, label: host.docker.internal }
-  - { id: amd, from: engine, to: emu, label: linux/amd64, style: dashed }
+  - { id: amd, from: engine, to: emu, label: linux/amd64, style: dashed, flow: main }
 steps:
   - caption: Containers need a Linux kernel and macOS does not have one. Docker Desktop runs a small Linux VM in the background, and the Docker Engine lives inside it.
     focus: [cli, engine, ctr]

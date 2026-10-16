@@ -114,17 +114,17 @@ groups:
   - { id: container, label: ApplicationContext }
   - { id: beans, label: Beans }
 elements:
-  - { id: app, label: "SpringApplication.run", sub: "@SpringBootApplication class", kind: person }
+  - { id: app, label: "SpringApplication.run", sub: "@SpringBootApplication class", kind: person, role: service }
   - { id: scan, label: Component scan, sub: "@Service, @Repository, ...", group: describe }
   - { id: config, label: TimeConfig, sub: "@Configuration, @Bean clock()", group: describe }
   - { id: defs, label: Bean definitions, sub: "recipes: type, scope, dependencies", group: container, kind: store, tone: data }
   - { id: factory, label: Bean factory, sub: creates beans in dependency order, group: container, kind: system }
   - { id: bpp, label: BeanPostProcessors, sub: "@Transactional, AOP, ..." }
-  - { id: fail, label: Start-up fails, sub: "missing, ambiguous or circular", kind: external }
+  - { id: fail, label: Start-up fails, sub: "missing, ambiguous or circular", kind: external, role: service }
   - { id: clock, label: Clock, sub: "from clock()", group: beans }
   - { id: repo, label: OrderRepository, group: beans }
   - { id: service, label: OrderService, sub: "new OrderService(repo, clock)", group: beans }
-  - { id: proxy, label: OrderService proxy, sub: the bean others are given, tone: stream }
+  - { id: proxy, label: OrderService proxy, sub: the bean others are given, tone: stream, role: service }
 edges:
   - { id: run, from: app, to: scan }
   - { id: found, from: scan, to: defs, label: register }
@@ -132,11 +132,11 @@ edges:
   - { id: read, from: defs, to: factory }
   - { id: mkclock, from: factory, to: clock }
   - { id: mkrepo, from: factory, to: repo }
-  - { id: injclock, from: clock, to: service, style: dotted }
-  - { id: injrepo, from: repo, to: service, style: dotted }
+  - { id: injclock, from: clock, to: service, style: dotted, flow: main }
+  - { id: injrepo, from: repo, to: service, style: dotted, flow: main }
   - { id: wrap, from: service, to: bpp }
   - { id: proxied, from: bpp, to: proxy, label: wrap }
-  - { id: broken, from: factory, to: fail, label: 0 or 2 candidates, style: dashed }
+  - { id: broken, from: factory, to: fail, label: 0 or 2 candidates, style: dashed, flow: main }
 steps:
   - caption: "Your main method calls SpringApplication.run, which creates the ApplicationContext. Nothing in your code says new OrderService anywhere."
     focus: [app, container]

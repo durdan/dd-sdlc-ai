@@ -105,14 +105,14 @@ elements:
   - { id: client, label: Client, sub: "POST /orders/7, JSON body", kind: person }
   - { id: tomcat, label: Tomcat connector, sub: worker threads (max 200), group: servlet }
   - { id: filters, label: Filter chain, sub: your Filter beans, group: servlet }
-  - { id: security, label: FilterChainProxy, sub: Spring Security, group: servlet }
+  - { id: security, label: FilterChainProxy, sub: Spring Security, group: servlet, role: security }
   - { id: dispatcher, label: DispatcherServlet, sub: the front controller, group: mvc, kind: system }
   - { id: mapping, label: HandlerMapping, sub: path + method → handler, group: mvc }
   - { id: interceptors, label: Interceptors, sub: "preHandle, postHandle", group: mvc }
   - { id: adapter, label: HandlerAdapter, sub: argument resolvers, group: mvc }
-  - { id: converters, label: HttpMessageConverters, sub: "Jackson: JSON ⇄ objects", group: mvc, tone: stream }
+  - { id: converters, label: HttpMessageConverters, sub: "Jackson: JSON ⇄ objects", group: mvc, tone: stream, role: service }
   - { id: controller, label: OrderController, sub: "@RestController", group: app }
-  - { id: service, label: OrderService, sub: "@Transactional proxy", group: app }
+  - { id: service, label: OrderService, sub: "@Transactional proxy", group: app, role: service }
   - { id: repository, label: OrderRepository, sub: Spring Data JPA, group: app }
   - { id: hikari, label: HikariCP, sub: pool of 10 connections, tone: data }
   - { id: db, label: PostgreSQL, kind: store }
@@ -120,7 +120,7 @@ elements:
 edges:
   - { id: http, from: client, to: tomcat, label: HTTP request }
   - { id: run, from: tomcat, to: filters, label: on one worker thread }
-  - { id: secure, from: filters, to: security, label: doFilter }
+  - { id: secure, from: filters, to: security, label: doFilter, flow: security }
   - { id: dispatch, from: filters, to: dispatcher, label: service() }
   - { id: lookup, from: dispatcher, to: mapping, label: getHandler }
   - { id: prehandle, from: dispatcher, to: interceptors, label: preHandle }
@@ -130,8 +130,8 @@ edges:
   - { id: call, from: controller, to: service, label: create }
   - { id: borrow, from: service, to: hikari, label: getConnection }
   - { id: save, from: service, to: repository, label: save }
-  - { id: sql, from: repository, to: db, label: INSERT }
-  - { id: pooled, from: hikari, to: db, label: pooled connection, style: dotted }
+  - { id: sql, from: repository, to: db, label: INSERT, flow: data }
+  - { id: pooled, from: hikari, to: db, label: pooled connection, style: dotted, flow: data }
   - { id: write, from: adapter, to: converters, label: write OrderView, style: dashed }
   - { id: respond, from: converters, to: response, label: back out through Tomcat, style: dashed }
 steps:

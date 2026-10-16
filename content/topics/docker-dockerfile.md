@@ -110,23 +110,23 @@ groups:
   - { id: good, label: Manifests first }
   - { id: bad, label: "COPY . . first" }
 elements:
-  - { id: ctx, label: Build context, sub: "the folder minus .dockerignore", kind: person, row: 0 }
+  - { id: ctx, label: Build context, sub: "the folder minus .dockerignore", kind: person, row: 0, role: data }
   - { id: gfrom, label: "FROM node:22-alpine", sub: CACHED, group: good, row: 1 }
   - { id: gpkg, label: COPY package files, sub: "package.json + lockfile: CACHED", group: good, row: 2 }
   - { id: gnpm, label: RUN npm ci, sub: CACHED, group: good, row: 3 }
-  - { id: gsrc, label: "COPY . .", sub: reruns in 0.0 s, tone: stream, group: good, row: 4 }
+  - { id: gsrc, label: "COPY . .", sub: reruns in 0.0 s, tone: stream, group: good, row: 4, role: service }
   - { id: bfrom, label: "FROM node:22-alpine", sub: CACHED, group: bad, row: 1 }
-  - { id: ball, label: "COPY . .", sub: reruns, tone: stream, group: bad, row: 2 }
-  - { id: bnpm, label: RUN npm ci, sub: "reruns: minutes", tone: stream, group: bad, row: 3 }
+  - { id: ball, label: "COPY . .", sub: reruns, tone: stream, group: bad, row: 2, role: service }
+  - { id: bnpm, label: RUN npm ci, sub: "reruns: minutes", tone: stream, group: bad, row: 3, role: service }
 edges:
   - { id: g1, from: gfrom, to: gpkg }
   - { id: g2, from: gpkg, to: gnpm }
   - { id: g3, from: gnpm, to: gsrc }
   - { id: b1, from: bfrom, to: ball }
   - { id: b2, from: ball, to: bnpm }
-  - { id: cpkg, from: ctx, to: gpkg, style: dotted }
-  - { id: csrc, from: ctx, to: gsrc, label: server.js }
-  - { id: call, from: ctx, to: ball, label: server.js }
+  - { id: cpkg, from: ctx, to: gpkg, style: dotted, flow: data }
+  - { id: csrc, from: ctx, to: gsrc, label: server.js, flow: data }
+  - { id: call, from: ctx, to: ball, label: server.js, flow: data }
 steps:
   - caption: Two Dockerfiles for the same Node app. The only difference is the order of the COPY lines. You edit one line of server.js and rebuild both.
   - caption: docker build first sends the build context, the project folder minus what .dockerignore excludes. Anything in it can be copied, and anything copied can change a cache key.

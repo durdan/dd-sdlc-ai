@@ -112,12 +112,12 @@ elements:
   - { id: app, label: app.ts, sub: "import { slugify } from \"slugify\"", row: 0 }
   - { id: runtime, label: Node or bundler, sub: resolves the JavaScript, kind: system, row: 1 }
   - { id: checker, label: Type checker, sub: looks for a .d.ts, kind: system, row: 1 }
-  - { id: js, label: slugify/index.js, sub: the code that runs, kind: store, tone: data, row: 2 }
+  - { id: js, label: slugify/index.js, sub: the code that runs, kind: store, tone: data, row: 2, role: service }
   - { id: pkg, label: The package's own .d.ts, sub: "\"types\" in package.json", row: 2 }
-  - { id: dt, label: "@types/slugify", sub: from DefinitelyTyped, tone: stream, row: 2 }
-  - { id: err, label: No declaration file, sub: "error: module is implicitly any", kind: external, row: 2 }
+  - { id: dt, label: "@types/slugify", sub: from DefinitelyTyped, tone: stream, row: 2, role: external }
+  - { id: err, label: No declaration file, sub: "error: module is implicitly any", kind: external, row: 2, role: security }
   - { id: own, label: "declare module \"slugify\"", sub: your own .d.ts, row: 3 }
-  - { id: jsdoc, label: JSDoc in .js files, sub: tsc --declaration, kind: component, tone: neutral, row: 1 }
+  - { id: jsdoc, label: JSDoc in .js files, sub: tsc --declaration, kind: component, tone: neutral, row: 1, role: service }
 edges:
   - { id: import-run, from: app, to: runtime }
   - { id: load-js, from: runtime, to: js }
@@ -125,8 +125,8 @@ edges:
   - { id: bundled, from: checker, to: pkg, label: 1st }
   - { id: types, from: checker, to: dt, label: else }
   - { id: none, from: checker, to: err, label: neither }
-  - { id: fix, from: err, to: own, label: fix, style: dashed }
-  - { id: gen, from: jsdoc, to: pkg, label: generates, style: dashed }
+  - { id: fix, from: err, to: own, label: fix, style: dashed, flow: main }
+  - { id: gen, from: jsdoc, to: pkg, label: generates, style: dashed, flow: main }
 steps:
   - caption: One import, two readers. The runtime needs slugify's JavaScript and the checker needs its types, and they find them in different files.
   - caption: At runtime, Node or the bundler resolves the name to the package's JavaScript and runs it. No types are involved.

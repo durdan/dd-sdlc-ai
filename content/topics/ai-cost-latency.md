@@ -123,17 +123,17 @@ elements:
   - { id: large, label: Large model, sub: hard reasoning, group: provider }
   - { id: cache, label: Prompt cache, sub: matches on the prefix, kind: store, group: provider, tone: stream }
   - { id: stream, label: Streamed answer, sub: one token at a time, kind: person }
-  - { id: jobs, label: Nightly jobs, sub: nobody is waiting, kind: person, tone: neutral }
+  - { id: jobs, label: Nightly jobs, sub: nobody is waiting, kind: person, tone: neutral, role: service }
   - { id: batch, label: Batch interface, sub: "discounted, results in hours", group: provider }
 edges:
   - { id: ask, from: user, to: prompt }
   - { id: route, from: prompt, to: router }
   - { id: easy, from: router, to: small }
   - { id: hard, from: router, to: large }
-  - { id: lookup, from: large, to: cache }
+  - { id: lookup, from: large, to: cache, flow: data }
   - { id: decode, from: large, to: stream }
   - { id: log, from: router, to: usage, style: dotted }
-  - { id: submit, from: jobs, to: batch }
+  - { id: submit, from: jobs, to: batch, flow: async }
 steps:
   - caption: A user asks a question. You pay per token, input and output priced separately, and the model you pick sets the rate. The same things decide how long the user waits.
     focus: [user, prompt]

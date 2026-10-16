@@ -106,7 +106,7 @@ edges:
   - { id: back, from: cache, to: main, label: returns to the main actor, style: dashed }
   - { id: ui, from: main, to: view, label: "model.image = image" }
   - { id: gone, from: view, to: main, label: "view disappears: cancel" }
-  - { id: cancel, from: main, to: net, label: "request cancelled, throws", style: dashed }
+  - { id: cancel, from: main, to: net, label: "request cancelled, throws", style: dashed, flow: async }
 steps:
   - caption: "A SwiftUI view starts work with .task. The view is @MainActor, so the task starts on the main actor, which runs on the main thread."
     trace: [start]

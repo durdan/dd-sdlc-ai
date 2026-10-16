@@ -116,7 +116,7 @@ kind: sequence
 elements:
   - { id: runner, label: Test runner }
   - { id: test, label: Your test }
-  - { id: page, label: Page }
+  - { id: page, label: Page, role: client }
   - { id: app, label: Your app }
 edges:
   - { id: ctx, from: runner, to: page, label: new context and page }
@@ -130,7 +130,7 @@ edges:
   - { id: retry, from: page, to: page, label: "query again until it matches (5 s)" }
   - { id: pass, from: page, to: test, label: passed, style: dashed }
   - { id: trace, from: runner, to: runner, label: "on failure: retry, record trace.zip" }
-  - { id: close, from: runner, to: page, label: close the context, style: dashed }
+  - { id: close, from: runner, to: page, label: close the context, style: dashed, flow: main }
 steps:
   - caption: Four parties take part in one test. The runner, your test code, a browser page, and the app you deployed or started for the tests.
   - caption: Before your test starts, the runner creates a new browser context and a page in it. A context is an incognito-like profile, with its own cookies and storage, so tests can't leak state into each other.

@@ -101,12 +101,12 @@ groups:
 elements:
   - { id: request, label: Request, sub: "GET /articles/hello", kind: person, row: 0 }
   - { id: article, label: Article, sub: "async Server Component", kind: system, group: server, row: 1 }
-  - { id: deps, label: "readFile, marked", sub: server-only code, kind: store, group: server, row: 1 }
+  - { id: deps, label: "readFile, marked", sub: server-only code, kind: store, group: server, row: 1, role: service }
   - { id: like, label: LikeButton, sub: "a reference + props { slug }", kind: component, group: server, row: 2 }
   - { id: slow, label: Slow part, sub: "inside <Suspense>", kind: component, group: server, row: 2 }
-  - { id: payload, label: RSC payload, sub: rendered output + client references, tone: stream, group: server, row: 3 }
-  - { id: html, label: HTML, sub: whole tree rendered once, group: server, row: 4 }
-  - { id: bundle, label: Client bundle, sub: LikeButton and its imports, kind: external, row: 4 }
+  - { id: payload, label: RSC payload, sub: rendered output + client references, tone: stream, group: server, row: 3, role: data }
+  - { id: html, label: HTML, sub: whole tree rendered once, group: server, row: 4, role: data }
+  - { id: bundle, label: Client bundle, sub: LikeButton and its imports, kind: external, row: 4, role: service }
   - { id: page, label: Page on screen, sub: visible before JavaScript, group: browser, row: 5 }
   - { id: hydrate, label: Hydration, sub: LikeButton gets state and handlers, kind: system, group: browser, row: 6 }
 edges:
@@ -117,9 +117,9 @@ edges:
   - { id: out, from: article, to: payload }
   - { id: ref, from: like, to: payload }
   - { id: ssr, from: payload, to: html }
-  - { id: stream, from: slow, to: page, label: streamed later, style: dashed }
+  - { id: stream, from: slow, to: page, label: streamed later, style: dashed, flow: async }
   - { id: show, from: html, to: page }
-  - { id: ship, from: like, to: bundle, style: dotted }
+  - { id: ship, from: like, to: bundle, style: dotted, flow: main }
   - { id: load, from: bundle, to: hydrate }
   - { id: attach, from: page, to: hydrate }
 steps:
