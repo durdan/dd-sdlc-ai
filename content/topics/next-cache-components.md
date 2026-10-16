@@ -4,7 +4,7 @@ title: "`use cache` and `cacheLife`"
 summary: Cache a function or a component; the inputs are the key
 why: "Since Next.js 15 nothing is cached unless you ask, and in 16 the way you ask is one directive. Knowing what goes into the key and how long an entry lives is the difference between a fast page and one that shows another user's data or never updates."
 requires: [next-rendering, web-http-caching]
-lesson: none
+lesson: diagram
 points:
   - title: Opt in, per function
     text: "`\"use cache\"` at the top of an async function, component or file caches its return value. Without it, `fetch` and database calls run every time."
@@ -89,3 +89,47 @@ Very short lifetimes (the `seconds` profile, `revalidate: 0`, or `expire` under 
 The default handler keeps runtime entries in an in-memory LRU on each server instance. On a long-running Node server they are reused; on serverless platforms an instance may serve one request and vanish, so the function often runs again. `"use cache: remote"` asks the platform's configured cache handler (for example Redis or a KV store) to keep entries for all instances. `"use cache: private"` is the opposite: it may read cookies and headers, results are reused only within one request and in that user's browser, never in a shared server cache.
 
 Apps that have not enabled Cache Components use the previous model, where `fetch(url, { cache: "force-cache" })`, `unstable_cache` and route segment options such as `revalidate` do this job. Since Next.js 15, plain `fetch` is not cached by default in either model.
+
+```trace diagram
+id: cache-entry
+title: The life of one cached entry
+subtitle: 'getProduct("42") with "use cache" and cacheLife("hours")'
+elements:
+  - { id: call, label: getProduct("42"), sub: called from any component, kind: person, row: 0 }
+  - { id: key, label: Cache key, sub: "build ID, function, arguments, captured variables", kind: component, row: 1 }
+  - { id: handler, label: Cache handler, sub: "default: in-memory LRU per instance", kind: store, row: 2 }
+  - { id: remote, label: '"use cache: remote"', sub: "a shared handler: Redis, KV", kind: external, row: 2 }
+  - { id: fresh, label: Fresh, sub: "age under revalidate (1 h)", tone: data, row: 3 }
+  - { id: stale, label: Stale, sub: "past 1 h: old value now", tone: stream, row: 3 }
+  - { id: expired, label: Expired or missing, sub: "past expire (1 day), or first call", tone: neutral, row: 3 }
+  - { id: router, label: Browser router cache, sub: "reused for the stale time", kind: external, row: 3 }
+  - { id: run, label: Run the function, sub: "query the database, store the result", row: 4 }
+edges:
+  - { id: make-key, from: call, to: key }
+  - { id: lookup, from: key, to: handler }
+  - { id: to-fresh, from: handler, to: fresh }
+  - { id: to-stale, from: handler, to: stale }
+  - { id: to-expired, from: handler, to: expired }
+  - { id: background, from: stale, to: run, label: in the background, style: dashed }
+  - { id: wait, from: expired, to: run }
+  - { id: to-router, from: handler, to: router, style: dotted }
+  - { id: share, from: remote, to: handler, style: dashed }
+steps:
+  - caption: "A call to a \"use cache\" function first builds a key: the build ID, so a deploy starts afresh, the function's identity, its arguments and any variables it captures."
+    trace: [make-key]
+  - caption: "Cached scopes cannot call cookies() or headers(), even in a helper deeper down. Read them outside and pass the value in, which also makes it part of the key."
+    focus: [key]
+  - caption: "The first call finds nothing, so the function runs, queries the database and stores its return value under that key. At build time, that result can go into the static shell."
+    trace: [lookup, to-expired, wait]
+  - caption: "Until the entry is older than revalidate, one hour for the hours profile, every call with the same arguments returns the stored value without running the function."
+    trace: [lookup, to-fresh]
+  - caption: "After revalidate, the next call still gets the cached value at once and triggers a background refresh. Nobody waits."
+    trace: [lookup, to-stale, background]
+  - caption: "After expire, one day here, the next call waits for a fresh value. A profile without expire never reaches this by time."
+    trace: [lookup, to-expired, wait]
+  - caption: "The third time, stale, is for the browser: how long the client router may reuse the result without asking the server at all."
+    trace: [to-router]
+  - caption: "The default handler is memory on each instance. On serverless an instance may vanish after one request, so \"use cache: remote\" keeps entries in a store all instances share."
+    trace: [share]
+  - caption: "Very short lifetimes, such as the seconds profile or an expire under five minutes, are left out of the static shell and become streamed holes instead."
+```

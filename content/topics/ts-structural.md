@@ -4,7 +4,7 @@ title: Structural typing
 summary: Shapes match, names don't
 why: "It is why a plain object can stand in for a class, why two unrelated types can be mixed up by accident, and why extra properties are sometimes an error and sometimes not."
 requires: [ts-erasure]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: Compatibility is about shape
     text: "A value fits a type if it has at least the required members, with compatible types. Where the type was declared, and what it is called, does not matter."
@@ -90,3 +90,49 @@ At runtime they are still plain strings. The brand only exists for the checker, 
 ## Functions are compared structurally too
 
 A function that takes fewer parameters can be passed where one taking more is expected, which is why `[1, 2].forEach((n) => ...)` works even though `forEach` passes three arguments. Under `strictFunctionTypes`, parameter types are checked so that a callback cannot demand a narrower argument than it will be given.
+
+```trace diagram
+id: shape-check
+title: Is it a Point?
+subtitle: "type Point = { x: number; y: number }"
+elements:
+  - { id: vec, label: "new Vec(1, 2)", sub: "class Vec { x; y; length() }", row: 0 }
+  - { id: p3, label: variable p3, sub: "{ x: 1, y: 2, z: 3 }", row: 0 }
+  - { id: half, label: "{ x: 1 }", sub: y is missing, row: 0 }
+  - { id: fresh, label: fresh literal, sub: "{ x: 1, y: 2, zz: 3 }", row: 0 }
+  - { id: orderid, label: an OrderId, sub: "string & { __brand: \"OrderId\" }", row: 0 }
+  - { id: point, label: Point, sub: "needs x and y, both numbers", kind: system, row: 1 }
+  - { id: excess, label: Excess property check, sub: fresh object literals only, kind: component, tone: stream, row: 1 }
+  - { id: userid, label: "loadOrder(user: UserId)", sub: "wants the UserId brand", row: 1 }
+  - { id: ok, label: Assignable, kind: store, tone: data, row: 2 }
+  - { id: bad, label: Compile error, kind: external, row: 2 }
+edges:
+  - { id: vec-in, from: vec, to: point }
+  - { id: p3-in, from: p3, to: point }
+  - { id: half-in, from: half, to: point }
+  - { id: fits, from: point, to: ok }
+  - { id: fails, from: point, to: bad }
+  - { id: fresh-in, from: fresh, to: excess }
+  - { id: excess-fail, from: excess, to: bad }
+  - { id: order-in, from: orderid, to: userid }
+  - { id: brand-fail, from: userid, to: bad }
+steps:
+  - caption: "Assigning a value to Point asks one question: does it have every member Point needs, with compatible types? What it is called, and where it was declared, don't come into it."
+    focus: [point]
+  - caption: An instance of an unrelated class Vec has a numeric x and y, so it is a Point. No implements clause is needed, and the extra length method doesn't matter.
+    trace: [vec-in, fits]
+  - caption: A variable holding x, y and z is accepted too. Extra members are fine on a value that already exists, because other code may use them.
+    trace: [p3-in, fits]
+  - caption: "{ x: 1 } has no y, so it is rejected. A missing member is the one thing shape matching won't forgive."
+    trace: [half-in, fails]
+  - caption: A fresh object literal, written right where a Point is expected, gets one more check. Nothing else can ever read zz, so it is almost certainly a typo, and it is reported.
+    trace: [fresh-in, excess-fail]
+  - caption: This is a targeted lint, not a guarantee. Put the same literal in a variable first and zz passes, because the check only looks at freshness.
+    focus: [excess, p3]
+  - caption: "Accepted as a type is not the same as being an instance. An object literal typed as Vec passes the checker, but instanceof Vec is false at runtime: the types are erased."
+    focus: [vec, point]
+  - caption: Shape matching lets look-alikes mix. A user id and an order id are both strings, so a phantom brand gives each a property no plain string has, and an OrderId no longer fits a UserId.
+    trace: [order-in, brand-fail]
+  - caption: Classes with private or #private members are the other exception. A plain object can't copy those members, so only real instances fit.
+    focus: [vec]
+```

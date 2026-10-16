@@ -4,7 +4,7 @@ title: Strictness flags, and why `strict` matters
 summary: How much the checker is allowed to check
 why: "Without `strict`, `null` and `undefined` fit into every type and untyped parameters silently become `any`. That is the majority of the bugs TypeScript is meant to catch."
 requires: [ts-any-unknown-never]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: strict is a family
     text: "`\"strict\": true` turns on a set of checks, including `strictNullChecks` and `noImplicitAny`. New releases can add members to the family."
@@ -91,3 +91,44 @@ The lookup returns `undefined` at runtime, but its type says `number`. `noUnchec
 ## Turning it on in an existing project
 
 Switching on `strict` in a large JavaScript-flavoured codebase can produce thousands of errors. Enable the flags one at a time, starting with `noImplicitAny` and then `strictNullChecks`, and fix each kind of error before the next. Tools that track and suppress existing errors per file let new code meet the strict rules while old code catches up.
+
+```trace diagram
+id: strict-catches
+title: One file, five bugs
+subtitle: Which flag reports which line
+groups:
+  - { id: family, label: "\"strict\": true" }
+elements:
+  - { id: snip, label: orders.ts, sub: "find, total, catch, Cart, scores", kind: system, row: 0 }
+  - { id: crash, label: TypeError at runtime, sub: what ships with strict off, kind: external, row: 1 }
+  - { id: nullc, label: strictNullChecks, sub: "u is possibly undefined", group: family, row: 1 }
+  - { id: implicit, label: noImplicitAny, sub: "items is implicitly any", group: family, row: 1 }
+  - { id: catchv, label: useUnknownInCatchVariables, sub: "err is unknown", group: family, row: 2 }
+  - { id: propinit, label: strictPropertyInitialization, sub: "items is never set", group: family, row: 2 }
+  - { id: unchecked, label: noUncheckedIndexedAccess, sub: "scores[\"lin\"] may be undefined", tone: stream, row: 1 }
+edges:
+  - { id: off, from: snip, to: crash, label: strict off, style: dashed }
+  - { id: e-null, from: snip, to: nullc }
+  - { id: e-any, from: snip, to: implicit }
+  - { id: e-catch, from: snip, to: catchv }
+  - { id: e-init, from: snip, to: propinit }
+  - { id: e-index, from: snip, to: unchecked, style: dotted }
+steps:
+  - caption: One file with five bugs. With the bare defaults it all type-checks; each flag catches one of them before the code runs.
+  - caption: Without the flags, null and undefined fit into every type and untyped parameters silently become any. This file compiles, then throws the first time no user matches.
+    trace: [off]
+  - caption: "strictNullChecks: find() may return undefined, so u is User | undefined and u.name is an error until you check u. This is the flag that matters most."
+    trace: [e-null]
+  - caption: "noImplicitAny: total(items) gives items no type, so the checker would have to guess any. With the flag you write the type, or an any that reviewers can see."
+    trace: [e-any]
+  - caption: "useUnknownInCatchVariables: JavaScript can throw anything, so err is unknown. Reading err.message needs an instanceof Error check first."
+    trace: [e-catch]
+  - caption: "strictPropertyInitialization: Cart declares items but its constructor never sets it, so every new Cart would start with undefined there."
+    trace: [e-init]
+  - caption: "\"strict\": true turns on this whole family and more. New releases can add members, as useUnknownInCatchVariables did in 4.4 and strictBuiltinIteratorReturn in 5.6."
+    focus: [family]
+  - caption: "noUncheckedIndexedAccess is not in the family. Under strict alone scores[\"lin\"] is a number; with it, number | undefined, which is what the lookup really returns."
+    trace: [e-index]
+  - caption: In an existing codebase, turn the flags on one at a time, noImplicitAny first and then strictNullChecks, and fix each kind of error before the next.
+note: "Each flag can still be turned off on its own, for example \"strictPropertyInitialization\": false while migrating."
+```

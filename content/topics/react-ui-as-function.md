@@ -3,7 +3,7 @@ id: react-ui-as-function
 title: UI as a function of state
 summary: Describe the screen for this state; React makes it so
 why: "Every React rule (pure components, immutable state, effects kept out of render) follows from one idea: a component computes a description of the UI, and React, not your code, changes the page."
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: Components return descriptions
     text: "A component is a function that takes props and returns elements: plain objects saying what should be on screen. JSX is syntax for building them."
@@ -88,3 +88,54 @@ React can only treat a component as a description if calling it has no side effe
 - Do create new local variables and objects freely; that's not a side effect.
 
 React relies on this. It may render a component and throw the result away, render parts of the tree in a different order, or pause and resume (see transitions). In development, `<StrictMode>` calls every component twice to make impure ones misbehave visibly. Side effects belong in event handlers, which run because the user did something, or in effects, which run after React has updated the page.
+
+```trace diagram
+id: state-to-screen
+title: From state to screen
+subtitle: Your code describes, React updates the page
+elements:
+  - { id: state, label: State and props, sub: "{ items, loading }", kind: store, tone: data, row: 0 }
+  - { id: list, label: "List()", sub: your component function, row: 1 }
+  - { id: tree, label: Element tree, sub: "plain objects: type, props, key", tone: stream, row: 2 }
+  - { id: prev, label: Previous tree, sub: from the last render, kind: component, tone: neutral, row: 2 }
+  - { id: react, label: React, sub: "calls components, compares trees", kind: system, row: 3 }
+  - { id: dom, label: DOM, sub: only React edits it, kind: external, row: 4 }
+  - { id: screen, label: Screen, sub: the browser paints, kind: person, row: 5 }
+  - { id: handler, label: Event handler, sub: "onClick → setItems(next)", kind: component, row: 5 }
+edges:
+  - { id: call, from: state, to: list }
+  - { id: returns, from: list, to: tree }
+  - { id: read, from: tree, to: react }
+  - { id: compare, from: prev, to: react, style: dotted }
+  - { id: apply, from: react, to: dom }
+  - { id: paint, from: dom, to: screen }
+  - { id: click, from: screen, to: handler, label: user clicks, style: dashed }
+  - { id: set, from: handler, to: state, label: set state, style: dashed }
+steps:
+  - caption: "Everything starts from data: the component's props and state. Say three items have loaded."
+    focus: [state]
+  - caption: React calls your component function with that data. List decides what this state should look like; it doesn't say how to get there.
+    focus: [state, list]
+    trace: [call]
+  - caption: "List returns elements: small plain objects with a type and props, built by JSX. Creating them touches nothing on the page."
+    focus: [list, tree]
+    trace: [returns]
+  - caption: "React walks that tree, calling any nested components, until only host elements like ul and li are left. On the first render it creates the DOM nodes for all of them."
+    focus: [tree, react, dom]
+    trace: [read, apply]
+  - caption: The browser paints, and the list is on screen. Your code never called appendChild.
+    focus: [dom, screen]
+    trace: [paint]
+  - caption: "The user clicks Add. The event handler doesn't append anything to the list in the DOM; it sets new state with four items, and that is all."
+    focus: [screen, handler, state]
+    trace: [click, set]
+  - caption: React calls List again with the new state, and List returns a new element tree for it. Same function, new input, new description.
+    focus: [state, list, tree]
+    trace: [call, returns]
+  - caption: "React compares the new tree with the previous one and changes only the DOM nodes that differ: here, one new li. Everything else on the page is left alone."
+    focus: [tree, prev, react, dom]
+    trace: [read, compare, apply]
+  - caption: "This only works if List is pure: same props and state in, same elements out, with no side effects. In development, Strict Mode calls it twice to expose ones that aren't."
+    focus: [state, list, tree]
+  - caption: "That is the whole loop: state in, description out, React makes the page match. Side effects go in event handlers or effects, never in the component body."
+```

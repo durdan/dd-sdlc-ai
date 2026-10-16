@@ -4,7 +4,7 @@ title: Reconciliation and keys
 summary: How React matches the new tree to the old one
 why: "Whether a component keeps its state, and whether a DOM node is reused or rebuilt, is decided by its type and position in the tree, and by its key. Wrong keys cause the strangest bugs in React."
 requires: [react-render-commit]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: Same type, same place, same component
     text: "If an element has the same type at the same position as last render, React keeps the component instance, its state and its DOM node, and only updates the props."
@@ -92,3 +92,94 @@ A key works outside lists too. `<ContactForm key={contact.id} contact={contact} 
 ## What it costs
 
 Reconciliation compares elements, not DOM nodes, so it is cheap. The expensive mistakes are the ones that make it give up: a changing type or key forces a remount, and a remount runs every component below it, recreates its DOM and loses its state.
+
+```trace diagram
+id: type-position
+title: Type and position
+subtitle: Form toggles business, and the field's typed text...
+groups:
+  - { id: before, label: Last render }
+  - { id: after, label: This render }
+elements:
+  - { id: old, label: "<Field label=\"Name\">", sub: "state: text = \"Ada\"", group: before, row: 0 }
+  - { id: same, label: "<Field label=\"Company\">", sub: "same type: text is still \"Ada\"", group: after, row: 1 }
+  - { id: wrapped, label: "<div><Field /></div>", sub: "different type: text = \"\"", group: after, tone: external, row: 1 }
+edges:
+  - { id: keep, from: old, to: same, label: "same type, same place: update props" }
+  - { id: remount, from: old, to: wrapped, label: "div ≠ Field: unmount, mount", style: dashed }
+steps:
+  - caption: "After a render React has two trees: what is on screen and what your components just returned. It matches them by position among siblings and by type."
+    focus: [old]
+  - caption: "Both branches of the ternary put a Field at the same position. React sees one component whose label prop changed, so it keeps the instance, its state and its input. The typed \"Ada\" stays."
+    focus: [old, same]
+    trace: [keep]
+  - caption: "If one branch wraps the Field in a div, the type at that position differs. React unmounts the old subtree, with its state and DOM, and mounts a new one from scratch."
+    focus: [old, wrapped]
+    trace: [remount]
+  - caption: "React only sees the tree you return, not where the JSX was written. A component defined inside another one is a new type on every render, so it resets every time."
+```
+
+```trace diagram
+id: stable-keys
+title: Keys from the data
+subtitle: "key={todo.id}, then delete the first todo"
+groups:
+  - { id: before, label: Before }
+  - { id: after, label: After }
+elements:
+  - { id: oa, label: "key a: Buy milk", sub: checkbox ticked, group: before, row: 0 }
+  - { id: ob, label: "key b: Walk dog", group: before, row: 0 }
+  - { id: oc, label: "key c: Pay rent", group: before, row: 0 }
+  - { id: nb, label: "key b: Walk dog", sub: same li, group: after, row: 1 }
+  - { id: nc, label: "key c: Pay rent", sub: same li, group: after, row: 1 }
+  - { id: gone, label: Removed, sub: "li a and its ticked box", kind: component, tone: neutral, row: 1 }
+edges:
+  - { id: kb, from: ob, to: nb }
+  - { id: kc, from: oc, to: nc }
+  - { id: ka, from: oa, to: gone, style: dashed }
+steps:
+  - caption: "Three todos, each li keyed by its id. The user has ticked the uncontrolled checkbox on Buy milk."
+    focus: [before]
+  - caption: Buy milk is deleted. React finds no key a among the new children, so it removes that li, and its ticked checkbox goes with it.
+    focus: [oa, gone]
+    trace: [ka]
+  - caption: "Keys b and c are still there, so React matches them to their old components and keeps their DOM nodes. They only moved up."
+    focus: [ob, oc, nb, nc]
+    trace: [kb, kc]
+  - caption: "No row's checkbox changed. A stable key from the data lets an item keep its state wherever it moves."
+    focus: [after]
+```
+
+```trace diagram
+id: index-keys
+title: Index as the key
+subtitle: "key={index}, then delete the first todo"
+groups:
+  - { id: before, label: Before }
+  - { id: after, label: After }
+elements:
+  - { id: o0, label: "key 0: Buy milk", sub: checkbox ticked, group: before, row: 0 }
+  - { id: o1, label: "key 1: Walk dog", group: before, row: 0 }
+  - { id: o2, label: "key 2: Pay rent", group: before, row: 0 }
+  - { id: n0, label: "key 0: Walk dog", sub: "still ticked!", group: after, tone: external, row: 1 }
+  - { id: n1, label: "key 1: Pay rent", sub: new text, group: after, row: 1 }
+  - { id: gone, label: Removed, sub: "li 2, Pay rent's old row", kind: component, tone: neutral, row: 1 }
+edges:
+  - { id: k0, from: o0, to: n0, label: "reused for Walk dog", style: dashed }
+  - { id: k1, from: o1, to: n1, label: kept }
+  - { id: k2, from: o2, to: gone, style: dashed }
+steps:
+  - caption: "The same list keyed by index. The keys say nothing about which todo is which, only where it is."
+    focus: [before]
+  - caption: "After deleting Buy milk, the new children have keys 0 and 1. Key 2 is missing, so React removes the last li: the one that showed Pay rent."
+    focus: [o2, gone]
+    trace: [k2]
+  - caption: Key 1 matches, so the Walk dog row's component and li are reused and given the text Pay rent.
+    focus: [o1, n1]
+    trace: [k1]
+  - caption: "Key 0 matches too. The li that had Buy milk, and its ticked checkbox, is reused for Walk dog. Walk dog now looks done, though nobody ticked it."
+    focus: [o0, n0]
+    trace: [k0]
+  - caption: "Index keys attach state to positions. They are only safe if the list never reorders, filters or has items inserted; otherwise use an id from the data."
+    focus: [n0]
+```

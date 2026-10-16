@@ -4,7 +4,7 @@ title: "Deployment targets: Node server, static export, platforms"
 summary: Where it runs decides which features you keep
 why: "The same code behaves differently on one Node server, ten containers, serverless functions or a folder of HTML. Caches, Server Actions and image optimisation all depend on what the target provides."
 requires: [next-rendering, next-proxy]
-lesson: none
+lesson: diagram
 points:
   - title: Node.js server supports everything
     text: "`next build` then `next start` (or a Docker image built with `output: \"standalone\"`) runs every feature: streaming, caching, actions, Proxy, image optimisation."
@@ -63,3 +63,55 @@ When you scale out, each copy of the server starts with its own state:
 ## Runtimes
 
 Next.js has two server runtimes. Node.js is the default and supports everything. The Edge runtime, a subset of Web APIs that once promised faster cold starts, is deprecated in current Next.js: remove `export const runtime = "edge"` from routes. Proxy runs on Node.js, and Cache Components doesn't accept the `runtime` option at all. Vercel likewise recommends migrating from Edge to Node.js functions, and its docs note that from Next.js 16.3 routes and pages run on Node.js there regardless of the setting. On serverless platforms in general, remember that function instances are short-lived: a cache that works on your laptop may barely hit in production unless it is shared.
+
+```trace diagram
+id: deploy-shapes
+title: One build, three ways to run it
+subtitle: And what changes when there is more than one server
+groups:
+  - { id: fleet, label: Several instances }
+elements:
+  - { id: build, label: next build, sub: one artifact, kind: system, row: 0 }
+  - { id: node, label: next start, sub: "Node.js server, every feature", row: 1 }
+  - { id: docker, label: Docker container, sub: 'output: "standalone"', row: 1 }
+  - { id: export, label: Static export, sub: 'output: "export" → out/', tone: neutral, row: 1 }
+  - { id: host, label: Static host or bucket, sub: "no Proxy, actions, cookies or ISR", kind: external, row: 2 }
+  - { id: nginx, label: Reverse proxy, sub: "nginx: slow clients, bad requests", kind: external, row: 2 }
+  - { id: a, label: Instance A, group: fleet, row: 3 }
+  - { id: b, label: Instance B, sub: during a rolling deploy, group: fleet, row: 3 }
+  - { id: cache, label: Shared cache handler, sub: "Redis: entries and tag invalidations", kind: store, row: 4 }
+  - { id: key, label: Same encryption key, sub: NEXT_SERVER_ACTIONS_ENCRYPTION_KEY, kind: component, tone: neutral, row: 4 }
+  - { id: skew, label: deploymentId, sub: "a mismatch means a full reload", kind: component, tone: neutral, row: 4 }
+edges:
+  - { id: start, from: build, to: node }
+  - { id: pack, from: build, to: docker }
+  - { id: write, from: build, to: export }
+  - { id: upload, from: export, to: host }
+  - { id: front-node, from: node, to: nginx }
+  - { id: front-docker, from: docker, to: nginx }
+  - { id: to-a, from: nginx, to: a }
+  - { id: to-b, from: nginx, to: b }
+  - { id: a-cache, from: a, to: cache }
+  - { id: b-cache, from: b, to: cache }
+  - { id: a-key, from: a, to: key, style: dotted }
+  - { id: b-key, from: b, to: key, style: dotted }
+  - { id: b-skew, from: b, to: skew, style: dotted }
+steps:
+  - caption: "next start runs the Node.js server, which supports every feature: prerendered shells, streamed holes, Server Actions, Route Handlers, Proxy and image optimisation."
+    trace: [start]
+  - caption: "A Docker container is the same server, packaged. output: \"standalone\" copies only the files and node_modules it needs into .next/standalone, which keeps the image small."
+    trace: [pack]
+  - caption: "A static export writes one HTML file per route for any static host. Proxy, Server Actions, cookies and headers, rewrites, redirects, ISR and default image optimisation are not available."
+    trace: [write, upload]
+  - caption: "Put a reverse proxy in front of the server: it deals with slow clients and malformed requests better than the app does. It must pass streamed responses through without buffering them."
+    trace: [front-node, front-docker]
+  - caption: "When you scale out, each copy starts with its own state. Most surprises after deployment come from exactly this."
+    trace: [to-a, to-b]
+  - caption: "The default \"use cache\" store is memory on each instance and the ISR page cache is local disk. A cacheHandlers or cacheHandler backed by Redis lets every instance share entries and tag invalidations."
+    trace: [a-cache, b-cache]
+  - caption: "Server Action closures are encrypted with a key generated per build. Build once and deploy that artifact everywhere, or set NEXT_SERVER_ACTIONS_ENCRYPTION_KEY."
+    trace: [a-key, b-key]
+  - caption: "During a rolling deploy, a browser holding an old page may reach a new server. With deploymentId set, Next.js detects the mismatch and does a full reload instead of a broken navigation."
+    trace: [b-skew]
+  - caption: "Node.js is the default runtime and supports everything; the Edge runtime is deprecated. On serverless platforms instances are short-lived, so a cache that works on your laptop may barely hit unless it is shared."
+```

@@ -4,7 +4,7 @@ title: "Revalidation: by time, by tag, by path"
 summary: Let entries age out, or invalidate them when data changes
 why: "Caching is easy; knowing when cached content is wrong is the hard part. Next.js gives you a clock and three ways to say \"this changed\", and they differ in whether the next visitor waits."
 requires: [next-cache-components]
-lesson: none
+lesson: diagram
 points:
   - title: Time-based
     text: "`cacheLife` alone: entries are refreshed in the background once `revalidate` passes. Good when slightly old data is fine and changes have no event you can hook into."
@@ -91,3 +91,49 @@ The second argument to `revalidateTag` is required in Next.js 16: it says how lo
 Two related tools: `refresh()` in a Server Action re-renders the current page for the client without touching any cache, and `revalidatePath` with a dynamic pattern (`"/blog/[slug]"`) needs a type, `"page"` or `"layout"`, to say how much of the tree to invalidate.
 
 None of these purge a CDN that sits in front of your server under its own rules; that is part of how you deploy, covered later in this path.
+
+```trace diagram
+id: two-invalidations
+title: Two ways to replace a tagged entry
+subtitle: 'getPosts() is cached with cacheLife("max") and cacheTag("posts")'
+elements:
+  - { id: cms, label: CMS, sub: content published, kind: external, row: 0 }
+  - { id: author, label: An author, sub: submits a new post, kind: person, row: 0 }
+  - { id: webhook, label: Webhook route.ts, sub: checks the shared secret, row: 1 }
+  - { id: action, label: createPost action, sub: "Server Action, checks the user", row: 1 }
+  - { id: rt, label: 'revalidateTag("posts", "max")', sub: mark stale, kind: component, tone: stream, row: 2 }
+  - { id: ut, label: 'updateTag("posts")', sub: expire now, kind: component, tone: core, row: 2 }
+  - { id: entry, label: Cached posts, sub: 'tag "posts", in the static shell', kind: store, row: 3 }
+  - { id: visitor, label: Next visitor, sub: "gets the old list at once", kind: person, row: 4 }
+  - { id: redirected, label: The author's redirect, sub: waits for the fresh list, kind: person, row: 4 }
+  - { id: fresh, label: Fresh entry, sub: for everyone after, tone: data, row: 5 }
+  - { id: cdn, label: A CDN in front, sub: "not purged by any of these", kind: external, row: 0 }
+edges:
+  - { id: publish, from: cms, to: webhook }
+  - { id: call-rt, from: webhook, to: rt }
+  - { id: mark, from: rt, to: entry }
+  - { id: serve-stale, from: entry, to: visitor }
+  - { id: refresh, from: visitor, to: fresh, label: refresh in the background, style: dashed }
+  - { id: submit, from: author, to: action }
+  - { id: call-ut, from: action, to: ut }
+  - { id: expire, from: ut, to: entry }
+  - { id: serve-fresh, from: entry, to: redirected }
+  - { id: then-fresh, from: redirected, to: fresh, style: dashed }
+steps:
+  - caption: "The posts are cached with the longest lifetime and a tag. There is no clock to wait for: the entry stays in the static shell until something says the posts changed."
+    focus: [entry]
+  - caption: "The CMS calls a Route Handler when content is published. The handler checks the shared secret, then calls revalidateTag with the tag and \"max\"; the second argument is required in Next.js 16."
+    trace: [publish, call-rt]
+  - caption: "That only marks the entry stale. Nothing is re-rendered yet: the refresh is triggered by the next request that needs the posts."
+    trace: [mark]
+  - caption: "The next visitor gets the old list at once and starts a background refresh; visitors after that get the new one. Passing { expire: 0 } instead would mean stale content is never served."
+    trace: [serve-stale, refresh]
+  - caption: "An author's own change is different. The form calls a Server Action, which checks who is calling, writes the post and calls updateTag. updateTag works only in Server Actions."
+    trace: [submit, call-ut]
+  - caption: "updateTag expires the entry immediately, so the redirect to the new post waits for fresh data. The author reads their own write instead of a stale list."
+    trace: [expire, serve-fresh, then-fresh]
+  - caption: "Two related tools: revalidatePath invalidates a route's cached data when you don't know the tags, and refresh() re-renders the current page without touching any cache."
+    focus: [action, webhook]
+  - caption: "None of these purge a CDN that caches your pages under its own rules. That belongs to how you deploy."
+    focus: [cdn]
+```

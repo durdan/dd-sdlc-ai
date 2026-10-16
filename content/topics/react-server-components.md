@@ -4,7 +4,7 @@ title: Server Components and client components
 summary: Components that run only on the server, and where the boundary goes
 why: "Server Components change where code runs and what ships to the browser. Getting the boundary wrong either sends a whole library to every visitor or fails with errors about hooks and serialisation."
 requires: [react-render-commit, react-transitions]
-lesson: none
+lesson: diagram
 points:
   - title: Rendered ahead of the browser
     text: "A Server Component runs on the server, at build time or per request. It can be async and read files or databases directly. Its code is never sent to the browser."
@@ -90,3 +90,64 @@ Passing JSX lets a client component wrap server-rendered content: `<Tabs>{server
 - Fetch in Server Components, close to the data, and pass the results down as props.
 - Keep secrets in server-only modules; anything imported by a client module ends up in the browser bundle.
 - Wrap slow server parts in `<Suspense>` so the rest of the page can be streamed first.
+
+```trace diagram
+id: article-request
+title: One request for the article page
+subtitle: "Article is a Server Component; LikeButton comes from a \"use client\" module"
+groups:
+  - { id: server, label: Server }
+  - { id: browser, label: Browser }
+elements:
+  - { id: request, label: Request, sub: "GET /articles/hello", kind: person, row: 0 }
+  - { id: article, label: Article, sub: "async Server Component", kind: system, group: server, row: 1 }
+  - { id: deps, label: "readFile, marked", sub: server-only code, kind: store, group: server, row: 1 }
+  - { id: like, label: LikeButton, sub: "a reference + props { slug }", kind: component, group: server, row: 2 }
+  - { id: slow, label: Slow part, sub: "inside <Suspense>", kind: component, group: server, row: 2 }
+  - { id: payload, label: RSC payload, sub: rendered output + client references, tone: stream, group: server, row: 3 }
+  - { id: html, label: HTML, sub: whole tree rendered once, group: server, row: 4 }
+  - { id: bundle, label: Client bundle, sub: LikeButton and its imports, kind: external, row: 4 }
+  - { id: page, label: Page on screen, sub: visible before JavaScript, group: browser, row: 5 }
+  - { id: hydrate, label: Hydration, sub: LikeButton gets state and handlers, kind: system, group: browser, row: 6 }
+edges:
+  - { id: run, from: request, to: article }
+  - { id: uses, from: article, to: deps }
+  - { id: renders, from: article, to: like }
+  - { id: later, from: article, to: slow }
+  - { id: out, from: article, to: payload }
+  - { id: ref, from: like, to: payload }
+  - { id: ssr, from: payload, to: html }
+  - { id: stream, from: slow, to: page, label: streamed later, style: dashed }
+  - { id: show, from: html, to: page }
+  - { id: ship, from: like, to: bundle, style: dotted }
+  - { id: load, from: bundle, to: hydrate }
+  - { id: attach, from: page, to: hydrate }
+steps:
+  - caption: "A request arrives and Article runs on the server. It is async, so it awaits the file and the Markdown during render: no effect, no API endpoint."
+    focus: [request, article, deps]
+    trace: [run, uses]
+  - caption: "readFile and marked run only here. Their code never reaches the browser; only what Article renders does."
+    focus: [article, deps]
+  - caption: "Article renders LikeButton, a client component. The server doesn't run its state. It records a reference to the module plus the props."
+    focus: [article, like]
+    trace: [renders]
+  - caption: "Those props cross the network, so they must be serialisable. The slug string is fine; an ordinary function such as an onClick handler would be rejected."
+    focus: [like]
+  - caption: "The result is the RSC payload: the rendered output of the Server Components, with a placeholder and props wherever a client component goes."
+    focus: [article, like, payload]
+    trace: [out, ref]
+  - caption: "The framework also renders the whole tree to HTML, client components included, so the page is visible before any JavaScript runs."
+    focus: [payload, html, page]
+    trace: [ssr, show]
+  - caption: "A slow part wrapped in Suspense doesn't hold the page back. The shell is sent first and that part streams in when it is ready."
+    focus: [article, slow, page]
+    trace: [later, stream]
+  - caption: "The browser downloads a bundle with only the client modules: LikeButton and what it imports."
+    focus: [like, bundle]
+    trace: [ship]
+  - caption: "Hydration attaches LikeButton's state and click handler to the HTML that is already there. Article never runs in the browser."
+    focus: [bundle, page, hydrate]
+    trace: [load, attach]
+  - caption: "What never ships: Article's code, readFile, marked and any secret in a server-only module. Keep the client boundary low, and that list stays long."
+    focus: [article, deps]
+```

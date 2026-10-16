@@ -4,7 +4,7 @@ title: "The App Router: folders, layouts and pages"
 summary: A folder per URL segment; layouts that wrap and stay put
 why: "Every other Next.js feature (streaming, caching, prefetching) is organised by route segment. If you can read the folder tree as a tree of nested components, the rest of the framework stops being magic."
 requires: [react-ui-as-function, web-rendering-strategies]
-lesson: none
+lesson: diagram
 points:
   - title: Folders are segments
     text: "Each folder under `app/` is one segment of the URL. A folder only becomes a route when it contains a `page` file; `[slug]` makes a dynamic segment and `(group)` organises files without changing the URL."
@@ -74,3 +74,46 @@ Links rendered with `<Link>` are prefetched when they enter the viewport, so the
 ## Colocation
 
 Only `page` and `route` files are publicly reachable, so components, tests and helpers can live next to the route that uses them. Folders starting with `_` are private and never become routes. Route groups `(name)` let different sections have different root layouts; navigating between two root layouts is a full page load, since there is no shared frame to keep.
+
+```trace diagram
+id: segments
+title: One URL, one tree of segments
+subtitle: "What /dashboard/acme renders, and what a click to /dashboard/globex replaces"
+groups:
+  - { id: kept, label: Kept mounted on navigation }
+elements:
+  - { id: url, label: GET /dashboard/acme, sub: "matched folder by folder", kind: person, row: 0 }
+  - { id: root, label: Root layout, sub: "app/layout.tsx, <html><body>", group: kept, row: 1 }
+  - { id: dash, label: Dashboard layout, sub: "dashboard/layout.tsx, the sidebar", group: kept, row: 2 }
+  - { id: error, label: error.tsx, sub: error boundary for the segment, kind: component, tone: neutral, row: 3 }
+  - { id: loading, label: loading.tsx, sub: "a Suspense fallback", kind: component, tone: stream, row: 4 }
+  - { id: link, label: "<Link> to /dashboard/globex", sub: prefetched in the viewport, kind: component, tone: neutral, row: 4 }
+  - { id: page, label: "[teamId]/page.tsx", sub: "params is a promise: { teamId: acme }", row: 5 }
+  - { id: next, label: The globex page, sub: only the segment that changed, tone: stream, row: 5 }
+edges:
+  - { id: match, from: url, to: root }
+  - { id: wrap-dash, from: root, to: dash }
+  - { id: wrap-error, from: dash, to: error }
+  - { id: wrap-loading, from: error, to: loading }
+  - { id: wrap-page, from: loading, to: page }
+  - { id: click, from: link, to: next }
+  - { id: swap, from: loading, to: next, label: on navigation, style: dashed }
+steps:
+  - caption: "Next.js matches the URL against the folders under app/, one segment at a time: dashboard, then a dynamic [teamId] that takes the value acme."
+    focus: [url, root]
+    trace: [match]
+  - caption: "The matched files nest, outermost first. The root layout holds <html> and <body>; the dashboard layout wraps every page below it in its sidebar."
+    trace: [wrap-dash]
+  - caption: "error.tsx and loading.tsx become an error boundary and a Suspense boundary at this level. While the page loads, its fallback shows and the sidebar stays on screen; if it throws, only this segment shows the error."
+    trace: [wrap-error, wrap-loading]
+  - caption: "Inside sits the page. In Next.js 16, params is a promise that the page awaits. generateStaticParams can list known teams so their pages are prerendered at build time."
+    trace: [wrap-page]
+  - caption: "A <Link> to another team is prefetched when it scrolls into view, so the data for the next segment is often in the browser before the click."
+    focus: [link]
+  - caption: "Clicking it is a client-side transition. Only the page segment that differs is fetched and swapped in; the shared layouts stay mounted, with their state and scroll position."
+    trace: [click, swap]
+    focus: [kept]
+  - caption: "That is why a layout cannot read searchParams or the pathname directly: it does not rerender when they change. Read them in the page, or in a client component with useSearchParams and usePathname."
+    focus: [dash]
+  - caption: "Rendering, streaming and caching all happen per segment, so reading the folder tree as this nesting explains most of what follows. Navigating between two different root layouts is a full page load."
+```

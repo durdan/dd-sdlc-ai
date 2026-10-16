@@ -4,7 +4,7 @@ title: "Memoisation: memo, useMemo, useCallback"
 summary: Skipping work whose inputs haven't changed
 why: "Memoisation sprinkled everywhere makes code harder to read and often saves nothing; missing in the one hot spot, it leaves a list re-rendering on every keystroke. The React Compiler now does much of it for you."
 requires: [react-render-commit, react-hooks-rules]
-lesson: none
+lesson: diagram
 points:
   - title: memo skips a component
     text: "A component wrapped in `memo` is not rendered again when its parent renders, if every prop is `Object.is`-equal to last time."
@@ -101,3 +101,55 @@ Before reaching for it, check the structural fixes. Move state down into the com
 ## The React Compiler
 
 React Compiler, stable since version 1.0 in October 2025, is a build-time plugin that analyses components and inserts the equivalent of `memo`, `useMemo` and `useCallback` where they are safe. It relies on your code following the rules of React (pure render, hooks at the top level, no mutation of props and state); code that breaks them is skipped. In a project that uses it, write plain code and keep manual memoisation for the rare case the compiler can't handle. Either way, memoisation is an optimisation: React may discard cached values, so the program must behave correctly without them.
+
+```trace diagram
+id: memo-props
+title: Does memo skip the row?
+subtitle: "Typing re-renders List; each Row is wrapped in memo"
+elements:
+  - { id: typing, label: Typing, sub: "setQuery on each key", kind: person, row: 0 }
+  - { id: list, label: List renders, sub: its whole body runs again, kind: system, row: 1 }
+  - { id: item, label: item, sub: same object from items, kind: component, tone: neutral, row: 2 }
+  - { id: inline, label: "() => select(id)", sub: a new function every render, kind: component, tone: neutral, row: 2 }
+  - { id: callback, label: useCallback, sub: same function until deps change, kind: component, row: 2 }
+  - { id: usememo, label: useMemo, sub: same object or array until deps change, kind: component, row: 2 }
+  - { id: compare, label: memo compares props, sub: "each one with Object.is", row: 3 }
+  - { id: rerender, label: Row renders, sub: memo saved nothing, tone: external, row: 4 }
+  - { id: skip, label: Row skipped, sub: reuses its last output, tone: data, row: 4 }
+  - { id: own, label: Own state or context, sub: memo doesn't look at these, kind: external, row: 3 }
+edges:
+  - { id: type, from: typing, to: list }
+  - { id: pass-item, from: list, to: item }
+  - { id: make-inline, from: list, to: inline }
+  - { id: make-cb, from: list, to: callback }
+  - { id: make-memo, from: list, to: usememo }
+  - { id: item-in, from: item, to: compare }
+  - { id: inline-in, from: inline, to: compare }
+  - { id: cb-in, from: callback, to: compare }
+  - { id: memo-in, from: usememo, to: compare }
+  - { id: changed, from: compare, to: rerender, label: one prop differs }
+  - { id: equal, from: compare, to: skip, label: all equal }
+  - { id: bypass, from: own, to: rerender, style: dashed }
+steps:
+  - caption: "Each keystroke sets query, so List renders again. By default every component below it renders too, and every expression in List's body runs again."
+    focus: [typing, list]
+    trace: [type]
+  - caption: "Row is wrapped in memo. Before rendering it, React compares each new prop with the last one using Object.is."
+    focus: [compare]
+  - caption: "The item prop comes from the items array, which didn't change. It is the same object as last time, so it is equal."
+    focus: [list, item, compare]
+    trace: [pass-item, item-in]
+  - caption: "An inline arrow as onSelect is created fresh on every render. A new function is never equal to the old one, so Row renders anyway."
+    focus: [list, inline, compare, rerender]
+    trace: [make-inline, inline-in, changed]
+  - caption: "useCallback returns the same function until its dependencies change. Now every prop is equal, and React skips Row and reuses its last output."
+    focus: [list, callback, compare, skip]
+    trace: [make-cb, cb-in, equal]
+  - caption: "Objects and arrays built during render have the same problem. useMemo keeps their identity, and skips the calculation, until a dependency changes."
+    focus: [list, usememo, compare, skip]
+    trace: [make-memo, memo-in, equal]
+  - caption: "memo only looks at props. If Row's own state changes, or a context it reads, it renders whatever its props are."
+    focus: [own, rerender]
+    trace: [bypass]
+  - caption: "The React Compiler inserts the equivalent of these hooks at build time. Either way memoisation is a hint: React may drop cached values, so the code must work without it."
+```
