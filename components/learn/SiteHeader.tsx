@@ -27,7 +27,7 @@ export default function SiteHeader() {
           <Link href="/learn" className="hidden rounded-full px-3 py-1.5 hover:bg-[#e6efec] hover:text-[#3d6b63] sm:inline-block">
             Library
           </Link>
-          <Link href="/learn/library/paths" className="hidden rounded-full px-3 py-1.5 hover:bg-[#e6efec] hover:text-[#3d6b63] sm:inline-block">
+          <Link href="/learn/paths" className="hidden rounded-full px-3 py-1.5 hover:bg-[#e6efec] hover:text-[#3d6b63] sm:inline-block">
             Paths
           </Link>
           <Link href={user ? "/requests" : "/request"} className="rounded-full px-2.5 py-1.5 hover:bg-[#e6efec] hover:text-[#3d6b63] max-[359px]:hidden sm:px-3">
