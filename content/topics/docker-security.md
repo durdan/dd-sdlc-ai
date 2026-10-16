@@ -4,7 +4,7 @@ title: Running as non-root and other basics
 summary: Root in a container is still root to the kernel
 why: "Containers share the host kernel, so a process running as root with broad privileges is one bug away from the host. A few defaults close most of that gap."
 requires: [docker-containers, docker-multistage]
-lesson: none
+lesson: diagram
 points:
   - title: Do not run as root
     text: "Set USER in the image. Without user namespaces, UID 0 in a container is UID 0 on the host kernel, only with fewer capabilities."
@@ -94,3 +94,62 @@ Two ways to make root in the container less powerful:
 - Scan images in CI (Docker Scout, Trivy or Grype) and fail on fixable critical issues.
 - Keep secrets out of layers and build arguments; use BuildKit secret mounts at build time and runtime secrets (files or a secrets manager) at run time.
 - Publish only the ports you need, and on servers bind internal ones to `127.0.0.1`.
+
+```trace diagram
+id: guard-rails
+title: Between a container and the kernel
+subtitle: "What stands in the way of root, and what goes around it"
+direction: DOWN
+groups:
+  - { id: rails, label: Guard rails }
+elements:
+  - { id: image, label: Image, sub: "minimal, pinned, scanned", kind: store, tone: data, row: 0 }
+  - { id: ci, label: CI job, sub: with docker.sock mounted, kind: person, row: 0 }
+  - { id: proc, label: Your process, sub: "USER node: uid 1000", kind: system, row: 1 }
+  - { id: sock, label: docker.sock, sub: the full Docker API, tone: external, row: 1 }
+  - { id: caps, label: Capabilities, sub: "--cap-drop ALL, no-new-privileges", group: rails, tone: stream, row: 2 }
+  - { id: ro, label: Read-only rootfs, sub: "--read-only + --tmpfs /tmp", group: rails, tone: stream, row: 2 }
+  - { id: profiles, label: seccomp + LSM, sub: "AppArmor or SELinux", group: rails, tone: stream, row: 2 }
+  - { id: userns, label: User namespace, sub: "rootless or userns-remap", group: rails, tone: stream, row: 2 }
+  - { id: daemon, label: dockerd, sub: runs as root, kind: system, tone: external, row: 2 }
+  - { id: kernel, label: Host Linux kernel, sub: shared by every container, kind: system, tone: neutral, row: 3 }
+edges:
+  - { id: runs, from: image, to: proc, label: runs as }
+  - { id: pc, from: proc, to: caps }
+  - { id: pr, from: proc, to: ro }
+  - { id: pp, from: proc, to: profiles }
+  - { id: pu, from: proc, to: userns }
+  - { id: ck, from: caps, to: kernel }
+  - { id: rk, from: ro, to: kernel }
+  - { id: sk, from: profiles, to: kernel }
+  - { id: uk, from: userns, to: kernel }
+  - { id: api, from: ci, to: sock }
+  - { id: ask, from: sock, to: daemon }
+  - { id: host, from: daemon, to: kernel, label: "--privileged, mount /", style: dashed }
+steps:
+  - caption: A container talks to the same kernel as the host. Whatever user and privileges its process has, the kernel sees directly. A few guard rails sit in between.
+    focus: [proc, caps, ro, profiles, userns, kernel]
+  - caption: "By default that process is root, uid 0, and without user namespaces it is uid 0 to the host kernel too. Set USER in the image, as the node image's node user (uid 1000) or distroless :nonroot (65532)."
+    focus: [image, proc]
+    trace: [runs]
+  - caption: "Root's power is split into capabilities. Docker already drops many; --cap-drop ALL drops the rest, and no-new-privileges stops setuid binaries from raising privileges."
+    focus: [proc, caps, kernel]
+    trace: [pc, ck]
+  - caption: "--read-only makes the app's own files unchangeable. Give it --tmpfs /tmp or a volume where it really must write."
+    focus: [proc, ro, kernel]
+    trace: [pr, rk]
+  - caption: Docker also applies seccomp and an AppArmor or SELinux profile by default. --privileged switches all of this off and opens the host's devices.
+    focus: [proc, profiles, kernel]
+    trace: [pp, sk]
+  - caption: User namespaces go further. With userns-remap or rootless mode, root in the container maps to an unprivileged user on the host.
+    focus: [proc, userns, kernel]
+    trace: [pu, uk]
+  - caption: Now the way around every rail. A CI job with /var/run/docker.sock mounted is talking to the full Docker API.
+    focus: [ci, sock, daemon]
+    trace: [api, ask]
+  - caption: "The daemon runs as root. Through the socket the job can start a privileged container that mounts the host's root filesystem. Socket access, or the docker group, is root on that host."
+    focus: [sock, daemon, kernel]
+    trace: [host]
+  - caption: "Less in the image is less to exploit. Use a minimal pinned base, rebuild and scan in CI with Docker Scout, Trivy or Grype, and keep secrets out of layers."
+    focus: [image]
+```

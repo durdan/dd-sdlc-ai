@@ -4,7 +4,7 @@ title: How IAM evaluates a request
 summary: Deny wins, then every gate must allow
 why: "When access is unexpectedly denied, or worse, unexpectedly allowed, the answer is always in the evaluation order. Knowing it turns hours of guessing into a few minutes."
 requires: [aws-iam]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: Default deny
     text: "A request starts as denied. Only an explicit Allow in an applicable policy can change that."
@@ -101,3 +101,58 @@ The third request is the one people trip over: the role's own policy says `s3:*`
 - The IAM policy simulator and `aws iam simulate-principal-policy` evaluate a request without making it.
 - CloudTrail records the denied call, the principal and the error code.
 - Check the resource side too: bucket policies, KMS key policies and queue policies are frequent sources of explicit denies, and a KMS key policy must allow use of the key even when the bucket allows the read.
+
+```trace diagram
+id: decision
+title: One request, every policy that applies
+subtitle: "Single account, in the order the AWS enforcement code checks them"
+elements:
+  - { id: req, label: Request, sub: "principal, action, resource, context", kind: person, row: 0 }
+  - { id: any-deny, label: Any explicit Deny?, sub: searched in every policy type, kind: system, row: 1 }
+  - { id: org, label: SCPs and RCPs, sub: AWS Organizations guard rails, tone: neutral, row: 2 }
+  - { id: res, label: Resource policy, sub: "bucket, key or queue", row: 3 }
+  - { id: ident, label: Identity policies, sub: on the user or role, row: 4 }
+  - { id: pb, label: Permissions boundary, sub: a cap on the principal, tone: neutral, row: 5 }
+  - { id: sess, label: Session policy, sub: passed when assuming a role, tone: neutral, row: 6 }
+  - { id: allow, label: Allow, tone: data, row: 7 }
+  - { id: deny, label: Deny, kind: external, row: 7 }
+edges:
+  - { id: in, from: req, to: any-deny }
+  - { id: no-deny, from: any-deny, to: org }
+  - { id: org-ok, from: org, to: res }
+  - { id: res-next, from: res, to: ident }
+  - { id: id-ok, from: ident, to: pb }
+  - { id: pb-ok, from: pb, to: sess }
+  - { id: sess-ok, from: sess, to: allow }
+  - { id: res-allow, from: res, to: allow, style: dashed }
+  - { id: explicit, from: any-deny, to: deny, style: dashed }
+  - { id: org-deny, from: org, to: deny, style: dashed }
+  - { id: id-deny, from: ident, to: deny, style: dashed }
+  - { id: pb-deny, from: pb, to: deny, style: dashed }
+  - { id: sess-deny, from: sess, to: deny, style: dashed }
+steps:
+  - caption: "For each request, IAM collects every policy that applies and runs the same decision, top to bottom. The request begins implicitly denied."
+  - caption: "The request carries its context: who signed it, the action such as s3:DeleteObject, the resource ARN, and details such as the source IP, tags and whether MFA was used."
+    focus: [req]
+    trace: [in]
+  - caption: "First, every applicable policy of every type is searched for a matching Deny. Finding even one ends it: no Allow anywhere can override it."
+    focus: [any-deny, deny]
+    trace: [explicit]
+  - caption: "Next the Organizations guard rails. RCPs cap what can be done to the account's resources, SCPs what its principals can do. If they don't allow the action, it is denied, even for an administrator."
+    focus: [org, deny]
+    trace: [no-deny, org-deny]
+  - caption: "In the same account, a resource policy that allows the user or role session making the call can grant access on its own, without anything in the identity policies."
+    focus: [res, allow]
+    trace: [org-ok, res-allow]
+  - caption: "Otherwise the principal's identity policies must allow the action. If none of them does, the result is the implicit deny from the start."
+    focus: [ident, deny]
+    trace: [res-next, id-deny]
+  - caption: "A permissions boundary never grants anything. The action must also be inside it, so the effective permissions are the overlap of the two."
+    focus: [pb, deny]
+    trace: [id-ok, pb-deny]
+  - caption: "For a role session that was given a session policy, the action must be inside that too. With nothing left blocking it, the request is allowed."
+    focus: [sess, allow, deny]
+    trace: [pb-ok, sess-deny, sess-ok]
+  - caption: "So: any Deny wins, every guard rail must allow, and in one account an Allow in the identity or the resource policy is enough. Across accounts, both sides must allow it."
+note: "Simplified. Which principal a resource policy names changes how boundaries and session policies apply to it; the AWS evaluation logic page has the details."
+```

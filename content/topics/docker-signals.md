@@ -4,7 +4,7 @@ title: "PID 1, signals and graceful shutdown"
 summary: SIGTERM first, SIGKILL after the grace period
 why: "Every deploy stops containers. If your process ignores SIGTERM, each stop waits out the whole grace period and then kills it mid-request."
 requires: [docker-containers]
-lesson: none
+lesson: diagram
 points:
   - title: docker stop is a two-step
     text: "It sends the stop signal (SIGTERM unless STOPSIGNAL says otherwise), waits the timeout (10 s by default on Linux), then sends SIGKILL."
@@ -95,3 +95,73 @@ docker inspect s3 --format '{{.State.ExitCode}}'
 ```
 
 Graceful shutdown means: stop taking new work, let in-flight requests or jobs finish (or hand them back to a queue), close database connections, flush logs, and exit 0 well before the timeout. If shutdown legitimately takes longer, raise the timeout (`docker stop -t`, `--stop-timeout`, Compose `stop_grace_period`, or Kubernetes `terminationGracePeriodSeconds`) rather than letting the kill arrive mid-write.
+
+```trace diagram
+id: pid1-stop
+title: node as PID 1
+subtitle: "docker stop s1, then the same with a SIGTERM handler"
+kind: sequence
+elements:
+  - { id: you, label: docker stop }
+  - { id: dockerd, label: dockerd }
+  - { id: node, label: "node (PID 1)" }
+edges:
+  - { id: stop, from: you, to: dockerd, label: stop s1 }
+  - { id: term, from: dockerd, to: node, label: SIGTERM }
+  - { id: ignored, from: node, to: node, label: "no handler: ignored" }
+  - { id: wait, from: dockerd, to: dockerd, label: waits 10 s }
+  - { id: kill, from: dockerd, to: node, label: SIGKILL }
+  - { id: died, from: node, to: dockerd, label: "killed: exit code 137", style: dashed }
+  - { id: slow, from: dockerd, to: you, label: "returns after 10.13 s", style: dashed }
+  - { id: term2, from: dockerd, to: node, label: "SIGTERM (now with a handler)" }
+  - { id: close, from: node, to: node, label: "server.close(): finish in-flight" }
+  - { id: clean, from: node, to: dockerd, label: "exit 0", style: dashed }
+  - { id: fast, from: dockerd, to: you, label: "returns after 0.11 s", style: dashed }
+steps:
+  - caption: "docker stop is a two-step. It sends the stop signal, SIGTERM unless the image sets STOPSIGNAL, waits the stop timeout, 10 seconds for Linux containers, and then sends SIGKILL."
+    focus: [you, dockerd, node]
+  - caption: Here node, with no SIGTERM handler, is the container's main process, so it is PID 1 in the container's PID namespace.
+    trace: [stop, term]
+  - caption: Outside a container SIGTERM's default action would end node. But the kernel gives PID 1 no default actions, so a signal without a handler is simply ignored.
+    trace: [ignored]
+  - caption: Docker waits out the whole timeout. Nothing happens, and every deploy that stops this container pays those 10 seconds.
+    trace: [wait]
+  - caption: "Then SIGKILL, which no process can catch. node dies mid-request with exit code 137, which is 128 + 9."
+    trace: [kill, died, slow]
+  - caption: "The fix in the app: handle SIGTERM. process.on(\"SIGTERM\") calls server.close(), which stops accepting connections and lets open requests finish."
+    trace: [term2, close]
+  - caption: "It exits 0 in about a tenth of a second. Graceful shutdown means finishing well inside the timeout: close connections, flush logs, exit."
+    trace: [clean, fast]
+```
+
+```trace diagram
+id: with-init
+title: "With --init"
+subtitle: "docker run --init: docker-init (tini) is PID 1"
+kind: sequence
+elements:
+  - { id: you, label: docker stop }
+  - { id: dockerd, label: dockerd }
+  - { id: init, label: "init (PID 1)" }
+  - { id: node, label: node }
+edges:
+  - { id: stop, from: you, to: dockerd, label: stop s2 }
+  - { id: term, from: dockerd, to: init, label: SIGTERM }
+  - { id: fwd, from: init, to: node, label: forwards SIGTERM }
+  - { id: dflt, from: node, to: node, label: "not PID 1: default action, exit" }
+  - { id: reap, from: init, to: init, label: "reaps node, then exits" }
+  - { id: code, from: init, to: dockerd, label: "exit code 143", style: dashed }
+  - { id: fast, from: dockerd, to: you, label: "returns after 0.13 s", style: dashed }
+steps:
+  - caption: "The same handler-less node, started with --init. Docker puts its tiny init, docker-init (backed by tini), in front, so PID 1 is the init and node is an ordinary child."
+    focus: [init, node]
+  - caption: docker stop sends SIGTERM to PID 1 as before. This time PID 1 is a program written to pass it on.
+    trace: [stop, term, fwd]
+  - caption: node is PID 7 now, not PID 1, so the normal default action applies and SIGTERM ends it at once.
+    trace: [dflt]
+  - caption: "The init collects node's exit status, which is also its other job: reaping zombie processes re-parented to it. It exits with 143, 128 + 15."
+    trace: [reap, code, fast]
+  - caption: "One more trap. The shell form, CMD node server.js, runs under /bin/sh -c, and a shell may not forward the signal at all. Use the exec form, CMD [\"node\", \"server.js\"], and end wrapper scripts with exec."
+    focus: [init, node]
+note: "Exit code 128 + N means the process died from signal N: 137 is SIGKILL, 143 is SIGTERM."
+```

@@ -4,7 +4,7 @@ title: "Autoscaling: HPA and node autoscalers"
 summary: More pods when busy, more nodes when pods do not fit
 why: "Autoscaling only works when requests, metrics and start-up time cooperate. Set it up blindly and it scales too late, flaps, or scales into a wall of Pending pods."
 requires: [k8s-resources, k8s-deployments]
-lesson: none
+lesson: diagram
 points:
   - title: HPA changes the replica count
     text: "Every 15 seconds the HorizontalPodAutoscaler compares a metric with its target and sets replicas to ceil(current x currentValue / target)."
@@ -91,3 +91,50 @@ Both, according to the Kubernetes docs, are sponsored by SIG Autoscaling and als
 ## Vertical scaling
 
 The Vertical Pod Autoscaler recommends (or applies) requests based on observed usage. Do not let VPA and HPA act on the same CPU or memory metric for one workload; they will fight. With in-place pod resize stable since 1.35, VPA can apply new values with fewer pod restarts.
+
+```trace diagram
+id: two-layers
+title: More pods, then more nodes
+subtitle: "HPA target: 70% of the CPU request"
+elements:
+  - { id: load, label: Traffic spike, kind: person, row: 0 }
+  - { id: deploy, label: Deployment web, sub: "replicas: 4 → 6", kind: system, row: 0 }
+  - { id: pods, label: web pods, sub: running, row: 1 }
+  - { id: pending, label: Pending pods, sub: no node has room, tone: external, row: 1 }
+  - { id: ms, label: metrics-server, sub: metrics.k8s.io, tone: data, row: 2 }
+  - { id: ca, label: Node autoscaler, sub: Cluster Autoscaler or Karpenter, row: 2 }
+  - { id: hpa, label: HorizontalPodAutoscaler, sub: every 15 s, kind: system, row: 3 }
+  - { id: node, label: New node, sub: takes minutes, kind: store, row: 3 }
+edges:
+  - { id: hits, from: load, to: pods }
+  - { id: usage, from: pods, to: ms, label: CPU usage }
+  - { id: read, from: ms, to: hpa }
+  - { id: scale, from: hpa, to: deploy, label: set replicas, style: dashed }
+  - { id: creates, from: deploy, to: pods }
+  - { id: unfit, from: deploy, to: pending }
+  - { id: sees, from: pending, to: ca }
+  - { id: adds, from: ca, to: node, label: provisions }
+steps:
+  - caption: "Kubernetes scales in two layers. The HPA changes how many pods there are; a node autoscaler changes how many machines. They meet through Pending pods."
+  - caption: "A traffic spike pushes up the pods' CPU. metrics-server, an add-on you install, collects usage from the nodes and serves it through metrics.k8s.io."
+    focus: [load, pods, ms]
+    trace: [hits, usage]
+  - caption: "Every 15 seconds the HPA reads the metric. Utilisation is usage divided by the CPU request, so wrong requests mean wrong scaling."
+    focus: [ms, hpa]
+    trace: [read]
+  - caption: "4 replicas at 90% against the 70% target: ceil(4 × 90 / 70) = ceil(5.1) = 6. Within the 10% tolerance it would do nothing, and it always stays between minReplicas and maxReplicas."
+    focus: [hpa]
+  - caption: "The HPA writes the new count into the Deployment, and the Deployment's ReplicaSet creates the extra pods. The HPA itself never starts a pod."
+    focus: [hpa, deploy, pods]
+    trace: [scale, creates]
+  - caption: "If the new pods' requests fit on no node, they stay Pending. Raising maxReplicas would not help."
+    focus: [deploy, pending]
+    trace: [unfit]
+  - caption: "The node autoscaler sees the Pending pods and adds a node, which takes minutes. The scheduler then places the pods. Headroom absorbs the first minutes of a burst."
+    focus: [pending, ca, node]
+    trace: [sees, adds]
+  - caption: "Scaling down is cautious. The HPA uses the highest recommendation of the last 5 minutes, and node autoscalers remove underused nodes by evicting pods, within PodDisruptionBudgets."
+    focus: [hpa, ca]
+  - caption: "Leave replicas out of the Deployment manifest you apply. Otherwise every deploy resets the count the HPA chose."
+    focus: [deploy, hpa]
+```

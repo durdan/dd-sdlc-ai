@@ -4,7 +4,7 @@ title: BuildKit and multi-arch builds
 summary: A parallel, cache-aware builder for any CPU
 why: "BuildKit features (cache mounts, secret mounts, multi-platform output) turn slow, leaky, single-architecture builds into fast, safe ones that run on laptops and servers alike."
 requires: [docker-dockerfile]
-lesson: none
+lesson: diagram
 points:
   - title: A graph, not a script
     text: BuildKit turns the Dockerfile into a dependency graph, runs independent stages in parallel and skips stages the target does not need.
@@ -97,3 +97,56 @@ docker image ls --tree
 ## Builds in CI
 
 Every CI runner starts with an empty cache. Export it and import it on the next run, for example to the registry (`--cache-to type=registry,ref=...,mode=max` and `--cache-from`) or to the GitHub Actions cache (`type=gha`). `mode=max` stores the intermediate stages too, which is what makes multi-stage builds fast in CI.
+
+```trace diagram
+id: build-graph
+title: A multi-platform build as a graph
+subtitle: "docker buildx build --platform linux/amd64,linux/arm64 -t hello-go:multi ."
+direction: DOWN
+elements:
+  - { id: df, label: Dockerfile, sub: "# syntax=docker/dockerfile:1", kind: person, row: 0 }
+  - { id: frontend, label: BuildKit, sub: "frontend → graph of steps", kind: system, row: 1 }
+  - { id: cache, label: Cache mount, sub: "/root/.cache/go-build", kind: store, tone: data, row: 2 }
+  - { id: secret, label: Secret mount, sub: only during the step, tone: external, row: 2 }
+  - { id: build, label: build stage, sub: "golang:1.27-alpine on $BUILDPLATFORM", row: 3 }
+  - { id: unused, label: Unused stage, sub: not needed by the target, tone: neutral, row: 4 }
+  - { id: amd, label: final linux/amd64, sub: "distroless + /hello", tone: stream, row: 4 }
+  - { id: arm, label: final linux/arm64, sub: "distroless + /hello", tone: stream, row: 4 }
+  - { id: index, label: "hello-go:multi", sub: image index, kind: store, tone: data, row: 5 }
+edges:
+  - { id: parse, from: df, to: frontend }
+  - { id: plan, from: frontend, to: build }
+  - { id: warm, from: cache, to: build, style: dotted }
+  - { id: token, from: secret, to: build, style: dotted }
+  - { id: skip, from: frontend, to: unused, label: skipped, style: dashed }
+  - { id: x86, from: build, to: amd, label: GOARCH=amd64 }
+  - { id: a64, from: build, to: arm, label: GOARCH=arm64 }
+  - { id: i1, from: amd, to: index }
+  - { id: i2, from: arm, to: index }
+steps:
+  - caption: BuildKit does not run a Dockerfile top to bottom like a script. Here it builds the Go service from the topic for two CPUs at once.
+  - caption: "A frontend, chosen by the # syntax line, parses the Dockerfile into a graph of steps, each keyed by its inputs."
+    focus: [df, frontend]
+    trace: [parse]
+  - caption: It only runs what the target needs. A stage the final image never copies from is detected and skipped.
+    focus: [frontend, unused]
+    trace: [skip]
+  - caption: The build stage is pinned to $BUILDPLATFORM, so the Go compiler runs natively on the build machine, an arm64 Mac here, for both variants.
+    focus: [frontend, build]
+    trace: [plan]
+  - caption: "A cache mount gives the compiler a persistent cache directory for that one RUN step. The next build starts warm, and none of it lands in a layer."
+    focus: [cache, build]
+    trace: [warm]
+  - caption: A secret mount works the same way for a token, such as an .npmrc or a private module credential. It exists only while the step runs. ARG or ENV would leave it in the image.
+    focus: [secret, build]
+    trace: [token]
+  - caption: "TARGETARCH picks the output. The same native compiler cross-compiles one binary per platform, with no emulation."
+    focus: [build, amd, arm]
+    trace: [x86, a64]
+  - caption: The two final stages do not depend on each other, so BuildKit runs them in parallel. Each just copies its binary onto distroless.
+    focus: [amd, arm]
+  - caption: "The result is one image index with one manifest per platform. An arm64 laptop and an amd64 server pull the same name and each gets its native variant."
+    focus: [amd, arm, index]
+    trace: [i1, i2]
+note: "In CI, export the cache with --cache-to type=registry,mode=max (or type=gha) and import it with --cache-from, or every runner builds from zero."
+```

@@ -4,7 +4,7 @@ title: Images and layers
 summary: Stacked, content-addressed filesystem snapshots
 why: "Image size, build speed, pull time and disk use all come down to layers: what is in each one, and which ones two images share."
 requires: [docker-containers]
-lesson: none
+lesson: diagram
 points:
   - title: An image is a stack of layers
     text: Each layer is a tarball of file changes. A small JSON manifest lists the layers in order, plus a config with the default command, user and environment.
@@ -79,4 +79,58 @@ Docker Engine 29.0 made the containerd image store the default for fresh install
 docker image ls --tree
 # IMAGE              ID             DISK USAGE   CONTENT SIZE
 # hello:1            ba5bcd6124ac        237MB         61.6MB
+```
+
+```trace diagram
+id: image-stack
+title: From a tag to a running filesystem
+subtitle: "hello:1, built FROM node:22-alpine"
+direction: DOWN
+elements:
+  - { id: tag, label: "hello:1", sub: a tag is just a name, kind: person, row: 0 }
+  - { id: manifest, label: Manifest, sub: "sha256:… lists config + layers", kind: system, row: 1 }
+  - { id: other, label: "hello:2 manifest", sub: same base image, row: 1 }
+  - { id: config, label: Config, sub: "CMD, USER, ENV", tone: neutral, row: 2 }
+  - { id: base, label: Base layers, sub: "node:22-alpine", kind: store, tone: data, row: 2 }
+  - { id: deps, label: npm ci layer, sub: "2.72 MB", kind: store, tone: data, row: 2 }
+  - { id: src, label: "COPY . . layer", sub: "12.3 kB", kind: store, tone: data, row: 2 }
+  - { id: merged, label: Merged view, sub: "overlayfs: read-only layers", tone: stream, row: 3 }
+  - { id: wa, label: Container A, sub: own thin writable layer, kind: component, row: 4 }
+  - { id: wb, label: Container B, sub: own thin writable layer, kind: component, row: 4 }
+edges:
+  - { id: resolve, from: tag, to: manifest, label: points to }
+  - { id: cfg, from: manifest, to: config }
+  - { id: l1, from: manifest, to: base }
+  - { id: l2, from: manifest, to: deps }
+  - { id: l3, from: manifest, to: src }
+  - { id: share, from: other, to: base, style: dashed }
+  - { id: m1, from: base, to: merged }
+  - { id: m2, from: deps, to: merged }
+  - { id: m3, from: src, to: merged }
+  - { id: ra, from: merged, to: wa }
+  - { id: rb, from: merged, to: wb }
+steps:
+  - caption: An image is a read-only stack of layers plus a little metadata. Here is hello:1, from its name down to the files a container sees.
+  - caption: The tag hello:1 is only a name. It points to a manifest, a small JSON document that is itself named by the SHA-256 digest of its bytes.
+    focus: [tag, manifest]
+    trace: [resolve]
+  - caption: "The manifest lists a config and the layers, in order. The config holds the default command, user and environment. CMD and USER change only this, so they add no layer."
+    focus: [manifest, config]
+    trace: [cfg]
+  - caption: Each layer is a tarball of the files one instruction added, changed or deleted. Every layer is named by the digest of its content too.
+    focus: [manifest, base, deps, src]
+    trace: [l1, l2, l3]
+  - caption: Identical bytes give an identical digest. hello:2, built on the same base, points at the very same base layers, so disk and registry keep one copy and a pull fetches only what is missing.
+    focus: [other, base]
+    trace: [share]
+  - caption: "At run time overlayfs stacks the layers into one merged tree. A read falls through to the highest layer that has the file."
+    focus: [base, deps, src, merged]
+    trace: [m1, m2, m3]
+  - caption: Every container gets its own empty writable layer on top. A hundred containers from one image start instantly and share every layer below.
+    focus: [merged, wa, wb]
+    trace: [ra, rb]
+  - caption: "The first write to an image file copies it up into the container's layer; the image is never changed. A delete only adds a whiteout, so the bytes still ship in the layer below."
+    focus: [wa, merged]
+  - caption: docker rm throws the writable layer away with everything written there. Data that must survive belongs in a volume.
+    focus: [wa, wb]
 ```

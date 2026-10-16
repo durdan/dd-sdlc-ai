@@ -4,7 +4,7 @@ title: Docker on a Mac is a Linux VM
 summary: The engine and your containers live in a hidden VM
 why: "Slow bind mounts, 'localhost' that is not your Mac, images that fail with 'exec format error': all of them follow from the VM that Docker Desktop runs for you."
 requires: [docker-containers]
-lesson: none
+lesson: diagram
 points:
   - title: A Linux kernel is required
     text: "macOS cannot run Linux containers itself, so Docker Desktop starts a small Linux VM and runs the Docker Engine inside it."
@@ -86,3 +86,54 @@ Even with emulation, amd64 images are slower and occasionally behave differently
 ## What carries over
 
 Everything you learn here about images, layers, networks and volumes is the same on a Linux server; only the VM boundary is extra. When something works on your Mac but not in production (or the reverse), check the three usual suspects first: file sharing, networking through the VM, and CPU architecture.
+
+```trace diagram
+id: desktop-vm
+title: The VM behind Docker Desktop
+subtitle: On an Apple silicon Mac
+direction: DOWN
+groups:
+  - { id: vm, label: Linux VM (LinuxKit kernel) }
+elements:
+  - { id: cli, label: docker CLI, sub: "on the Mac: context desktop-linux", kind: person, row: 0 }
+  - { id: folder, label: Project folder, sub: "on the Mac: -v \"$PWD\":/app", row: 0 }
+  - { id: browser, label: Browser, sub: "on the Mac: localhost:8765", kind: person, row: 0 }
+  - { id: backend, label: Desktop backend, sub: "on the Mac: listens on published ports", tone: external, row: 1 }
+  - { id: svc, label: Service on the Mac, sub: "Postgres on :5432", row: 4 }
+  - { id: engine, label: Docker Engine, sub: "images, volumes on the VM disk", kind: system, group: vm, row: 2 }
+  - { id: ctr, label: Container, sub: "linux/arm64, native", group: vm, row: 3 }
+  - { id: emu, label: Emulation, sub: "Rosetta or QEMU, if enabled", tone: neutral, group: vm, row: 3 }
+edges:
+  - { id: api, from: cli, to: engine, label: API over a socket }
+  - { id: run, from: engine, to: ctr }
+  - { id: share, from: folder, to: ctr, label: VirtioFS }
+  - { id: open, from: browser, to: backend }
+  - { id: fwd, from: backend, to: ctr, label: into the VM }
+  - { id: out, from: ctr, to: svc, label: host.docker.internal }
+  - { id: amd, from: engine, to: emu, label: linux/amd64, style: dashed }
+steps:
+  - caption: Containers need a Linux kernel and macOS does not have one. Docker Desktop runs a small Linux VM in the background, and the Docker Engine lives inside it.
+    focus: [cli, engine, ctr]
+  - caption: "The docker command on the Mac is only a client. It sends API calls over a socket to the engine in the VM, and every image, container and volume lives on the VM's disk."
+    focus: [cli, engine]
+    trace: [api]
+  - caption: "A container shares the VM's kernel, not macOS's: uname -r prints a linuxkit kernel. CPUs and memory are whatever the VM was given in Settings."
+    focus: [engine, ctr]
+    trace: [run]
+  - caption: "A bind mount of a Mac folder is shared into the VM, by default with VirtioFS. Fine for source code, slow for thousands of small files such as node_modules."
+    focus: [folder, ctr]
+    trace: [share]
+  - caption: Keep dependency folders and databases in named volumes, which live on the VM's own disk, or sync with Compose watch instead of mounting the whole tree.
+    focus: [engine, ctr]
+  - caption: "Published ports come back the other way. Docker Desktop's backend listens on the Mac's port 8765 and forwards each connection into the VM, so curl localhost:8765 works as on Linux."
+    focus: [browser, backend, ctr]
+    trace: [open, fwd]
+  - caption: "Inside the container, localhost is the container itself. To reach a service on the Mac, use the special name host.docker.internal."
+    focus: [ctr, svc]
+    trace: [out]
+  - caption: "On Apple silicon the VM is arm64. An amd64-only image needs Rosetta or QEMU; without either it fails with exec format error. Multi-platform images avoid the question."
+    focus: [engine, emu]
+    trace: [amd]
+  - caption: "When it works on your Mac but not in production, check the three crossings first: file sharing, networking through the VM, and CPU architecture."
+    focus: [folder, backend, emu]
+```

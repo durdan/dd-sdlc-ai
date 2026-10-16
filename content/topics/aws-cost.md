@@ -4,7 +4,7 @@ title: "Cost basics: where the bill comes from"
 summary: Data transfer, NAT and the things nobody turned off
 why: "AWS bills are rarely dominated by the instance prices people compare. Data transfer, NAT processing, idle resources and logs are where surprises come from, and they are architecture decisions."
 requires: [aws-vpc, aws-s3]
-lesson: none
+lesson: diagram
 points:
   - title: Moving data costs money
     text: "Inbound from the internet is free; outbound to the internet, between Regions and between Availability Zones is billed per GB."
@@ -69,3 +69,52 @@ A NAT gateway is billed for each hour it exists and **each gigabyte it processes
 3. Read **Cost Explorer** grouped by **usage type**: `DataTransfer-Regional-Bytes`, `NatGateway-Bytes` and `PublicIPv4` lines tell you more than "EC2-Other".
 4. Commit to steady baselines with **Savings Plans**, use **Spot** for interruptible work, and pick Graviton (Arm) instances where your software supports it.
 5. Delete what is idle, and give test environments a schedule or an expiry date. Infrastructure as code makes that safe: what was created by a pipeline can be destroyed by one.
+
+```trace diagram
+id: where-the-bill-comes-from
+title: Where the bill comes from
+subtitle: Hours, requests, storage and moving bytes
+groups:
+  - { id: vpc, label: "VPC, two zones" }
+elements:
+  - { id: internet, label: Internet users, kind: person, row: 0 }
+  - { id: lb, label: Load balancer, sub: per hour + usage, group: vpc, row: 1 }
+  - { id: egress, label: Responses out, sub: per GB, kind: external, row: 2 }
+  - { id: svc-a, label: Service, sub: "zone a, per hour", group: vpc, row: 2 }
+  - { id: svc-b, label: Service, sub: "zone b, per hour", group: vpc, row: 3 }
+  - { id: nat, label: NAT gateway, sub: per hour + per GB, tone: stream, group: vpc, row: 4 }
+  - { id: endpoint, label: S3 endpoint, sub: free, kind: component, group: vpc, row: 4 }
+  - { id: apis, label: "Images, AWS APIs", kind: external, row: 5 }
+  - { id: s3, label: S3, sub: "GB-month + requests", kind: store, row: 5 }
+  - { id: logs, label: CloudWatch Logs, sub: ingest + storage, kind: store, row: 5 }
+  - { id: idle, label: Forgotten things, sub: "IPv4, EBS, old stacks", kind: component, tone: neutral, row: 5 }
+edges:
+  - { id: in, from: internet, to: lb, label: in is free }
+  - { id: out, from: lb, to: egress }
+  - { id: to-a, from: lb, to: svc-a }
+  - { id: cross, from: svc-a, to: svc-b, label: "cross-AZ, per GB" }
+  - { id: via-nat, from: svc-b, to: nat }
+  - { id: pulls, from: nat, to: apis }
+  - { id: to-ep, from: svc-b, to: endpoint }
+  - { id: ep-s3, from: endpoint, to: s3 }
+  - { id: ship-logs, from: svc-b, to: logs, style: dotted }
+steps:
+  - caption: "A typical service, and what each part of it bills for. The surprises are rarely the instance prices that people compare."
+  - caption: "Compute bills by the hour whether it is busy or not: instances, load balancers and NAT gateways. Right-size, cover the steady baseline with Savings Plans, and use Spot for interruptible work."
+    focus: [lb, svc-a, svc-b, nat]
+  - caption: "Data coming in from the internet is free, but data going out is billed per GB. For large downloads, serving through CloudFront is often cheaper."
+    trace: [in, out]
+  - caption: "Two services in different zones pay per GB in each direction. Multi-AZ is usually worth it, but keep chatty pairs in one zone where you can, and measure it."
+    trace: [to-a, cross]
+  - caption: "Traffic from private subnets through a NAT gateway pays per GB processed, on top of normal transfer. Container image pulls and calls to AWS APIs are the usual offenders."
+    trace: [via-nat, pulls]
+  - caption: "A gateway endpoint for S3 or DynamoDB takes that traffic off the NAT gateway for free. Interface endpoints help for other heavily used services."
+    trace: [to-ep, ep-s3]
+  - caption: "S3 bills per GB-month and per request. Lifecycle rules, and cleaning up old versions and incomplete multipart uploads, are where storage savings come from."
+    focus: [s3]
+  - caption: "CloudWatch Logs bills for ingestion and storage, and keeps logs forever unless you set retention. High-cardinality custom metrics add up too."
+    trace: [ship-logs]
+  - caption: "Some things bill with no traffic at all: every public IPv4 address, unattached EBS volumes, old snapshots and test stacks nobody deleted."
+    focus: [idle]
+  - caption: "Make cost visible. Tag resources by owner and service, set AWS Budgets alerts, and read Cost Explorer by usage type, such as NatGateway-Bytes."
+```

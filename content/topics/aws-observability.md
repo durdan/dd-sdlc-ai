@@ -4,7 +4,7 @@ title: "Observability: CloudWatch, X-Ray and OpenTelemetry"
 summary: Metrics, logs, traces and the alarms that wake you
 why: "Every AWS service emits metrics and can write logs, but nothing alerts you until you create alarms. Knowing what is there by default saves you from finding out from your users."
 requires: [aws-compute]
-lesson: none
+lesson: diagram
 points:
   - title: Metrics come free, alarms do not exist yet
     text: "AWS services publish metrics to CloudWatch automatically. You still have to decide which ones matter and alarm on them."
@@ -65,3 +65,44 @@ An alarm evaluates a metric (or a metric math expression, or an anomaly detectio
 A trace follows one request across the load balancer, services, queues and databases, so you can see which hop was slow. **X-Ray** stores and visualises traces; AWS announced that the X-Ray SDKs and daemon entered maintenance mode on 25 February 2026 and recommends instrumenting with **OpenTelemetry** (the AWS Distro for OpenTelemetry, or the CloudWatch agent as collector). CloudWatch **Application Signals** builds service maps and SLOs from that telemetry.
 
 Also turn on **CloudTrail** in every account: it records API calls (who changed the security group, who deleted the bucket), which is an audit log rather than application telemetry, and invaluable after an incident.
+
+```trace diagram
+id: telemetry-to-alarm
+title: From telemetry to a page
+subtitle: Logs, metrics, traces and the alarm on top
+groups:
+  - { id: cw, label: CloudWatch }
+elements:
+  - { id: app, label: Your service, sub: "Lambda, ECS or EC2", row: 0 }
+  - { id: aws, label: AWS services, sub: "ALB, SQS, RDS", kind: external, row: 0 }
+  - { id: logs, label: Logs, sub: "log groups, set retention", kind: store, group: cw, row: 1 }
+  - { id: traces, label: Traces, sub: "X-Ray, OpenTelemetry", kind: store, tone: data, group: cw, row: 1 }
+  - { id: insights, label: Logs Insights, sub: query fields, kind: component, group: cw, row: 2 }
+  - { id: metrics, label: Metrics, sub: "namespace + dimensions", kind: store, group: cw, row: 2 }
+  - { id: alarm, label: Alarm, sub: "OK, ALARM, INSUFFICIENT_DATA", kind: component, group: cw, row: 3 }
+  - { id: sns, label: SNS topic, sub: pages the on-call engineer, tone: stream, row: 4 }
+edges:
+  - { id: builtin, from: aws, to: metrics }
+  - { id: write-logs, from: app, to: logs }
+  - { id: query, from: logs, to: insights }
+  - { id: emf, from: logs, to: metrics }
+  - { id: watch, from: metrics, to: alarm }
+  - { id: notify, from: alarm, to: sns }
+  - { id: spans, from: app, to: traces }
+steps:
+  - caption: "Logs, metrics and traces flow into CloudWatch, and alarms turn them into action. Most of the data is there by default; deciding what to watch is not."
+  - caption: "AWS services publish metrics automatically, such as an ALB's 5xx count, an SQS queue's oldest message age or a Lambda function's throttles. Nothing watches them until you add an alarm."
+    trace: [builtin]
+  - caption: "Your service writes logs to a log group. Log JSON so the fields can be queried, and set retention, because by default log groups keep everything forever."
+    trace: [write-logs]
+  - caption: "Logs Insights queries those fields, for example counting errors in 5-minute bins."
+    trace: [query]
+  - caption: "Lines in the Embedded Metric Format, and metric filters, turn log lines into metrics, often more cheaply than calling PutMetricData. Each unique combination of dimensions is billed as a separate metric."
+    trace: [emf]
+  - caption: "An alarm evaluates a metric over periods, for example 5xx above 1 % in 3 of 5 one-minute periods. It is always in one of three states: OK, ALARM or INSUFFICIENT_DATA."
+    trace: [watch]
+  - caption: "On a state change it notifies an SNS topic, which pages a person. Alarm on what users feel, such as errors, latency and queue age, not on every CPU spike."
+    trace: [notify]
+  - caption: "Traces follow one request across services, so you can see which hop was slow. AWS now recommends instrumenting with OpenTelemetry, since the X-Ray SDKs entered maintenance mode in February 2026."
+    trace: [spans]
+```

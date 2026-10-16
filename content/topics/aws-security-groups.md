@@ -4,7 +4,7 @@ title: Security groups and network ACLs
 summary: Stateful per-resource rules versus stateless subnet rules
 why: "Security groups are the firewall you will use every day. Network ACLs are a blunter second layer, and mixing them up is a classic cause of connections that hang for no visible reason."
 requires: [aws-vpc]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: Security groups are stateful
     text: "If inbound traffic is allowed, the reply is allowed automatically. You only write rules for who may start a connection."
@@ -67,3 +67,75 @@ Things that catch people out:
 The default NACL allows all traffic, and many teams never change it. Custom NACLs are useful as a coarse, subnet-wide backstop: deny a range at the edge of a data subnet, or meet a rule that requires explicit deny lists. Because they are stateless, an inbound allow for port 443 also needs an outbound allow for the ephemeral ports the replies go to, and an outbound call to an API needs an inbound allow for its replies. Forgetting that produces connections that open and then hang, which looks like an application problem.
 
 The AWS guidance is to rely on security groups for fine-grained control and use NACLs sparingly for stateless, coarse rules.
+
+```trace diagram
+id: return-path
+title: A request and its reply
+subtitle: "Inbound HTTPS through a custom network ACL and a security group"
+kind: sequence
+elements:
+  - { id: client, label: Client }
+  - { id: nacl, label: Subnet NACL }
+  - { id: sg, label: Security group }
+  - { id: app, label: Instance }
+edges:
+  - { id: syn, from: client, to: nacl, label: "TCP to port 443, from port 50432" }
+  - { id: nacl-in, from: nacl, to: nacl, label: "inbound rule 100: allow 443" }
+  - { id: pass, from: nacl, to: sg, label: into the subnet }
+  - { id: sg-in, from: sg, to: sg, label: "443 allowed: connection tracked" }
+  - { id: deliver, from: sg, to: app, label: delivered to the ENI }
+  - { id: reply, from: app, to: sg, label: "reply to port 50432", style: dashed }
+  - { id: sg-out, from: sg, to: sg, label: "tracked reply: allowed", style: dashed }
+  - { id: leave, from: sg, to: nacl, label: out of the subnet, style: dashed }
+  - { id: nacl-out, from: nacl, to: nacl, label: "outbound: needs 1024-65535", style: dashed }
+  - { id: back, from: nacl, to: client, label: reply delivered, style: dashed }
+steps:
+  - caption: "Two packet filters stand between a client and an instance. The network ACL guards the subnet edge; the security group is attached to the instance's network interface."
+    focus: [client, nacl, sg, app]
+  - caption: "A client opens an HTTPS connection. Its packets go to port 443 and come from a random high port on the client, here 50432."
+    trace: [syn]
+  - caption: "The network ACL checks its numbered rules, lowest number first, and the first match wins. Rule 100 allows inbound 443."
+    trace: [nacl-in, pass]
+  - caption: "The security group considers all its rules together. Inbound 443 is allowed, and it starts tracking the connection."
+    trace: [sg-in, deliver]
+  - caption: "The instance replies to port 50432 on the client."
+    trace: [reply]
+  - caption: "The security group remembers the connection, so the reply is allowed without any outbound rule. That is what stateful means."
+    trace: [sg-out, leave]
+  - caption: "The network ACL is stateless. It judges the reply as a new packet, so an outbound rule must allow ports 1024 to 65535."
+    trace: [nacl-out]
+  - caption: "With that rule the reply reaches the client. Without it, the connection opens and then hangs, which looks like an application problem."
+    trace: [back]
+note: "The default network ACL allows all traffic both ways, so this only bites once you write a custom one."
+```
+
+```trace diagram
+id: sg-references
+title: Tiers that admit each other by group
+subtitle: "alb-sg, app-sg and db-sg"
+elements:
+  - { id: client, label: Clients, kind: person, row: 0 }
+  - { id: alb, label: Load balancer, sub: "alb-sg: 443 from 0.0.0.0/0", row: 1 }
+  - { id: app, label: App tasks, sub: "app-sg: 8080 from alb-sg", row: 2 }
+  - { id: other, label: Other instance, sub: "same VPC, no app-sg", kind: external, row: 2 }
+  - { id: db, label: Database, sub: "db-sg: 5432 from app-sg", kind: store, row: 3 }
+edges:
+  - { id: https, from: client, to: alb, label: "443" }
+  - { id: fwd, from: alb, to: app, label: "8080" }
+  - { id: query, from: app, to: db, label: "5432" }
+  - { id: blocked, from: other, to: db, label: dropped, style: dotted }
+steps:
+  - caption: "Each tier admits only the tier in front of it, and names that tier by its security group instead of by IP range."
+  - caption: "Only the load balancer is open to the internet, on 443."
+    focus: [client, alb]
+    trace: [https]
+  - caption: "app-sg allows 8080 from alb-sg. Anything with alb-sg attached may connect, whatever its address."
+    trace: [fwd]
+  - caption: "db-sg allows 5432 from app-sg. When the app scales from 3 tasks to 30 with new IPs, no rule changes."
+    trace: [query]
+  - caption: "An instance in the same VPC without app-sg matches no rule, so its packets are dropped. Security groups have no deny rules; nothing matching is enough."
+    focus: [other, db]
+    trace: [blocked]
+  - caption: "To block one bad address, which an allow-only group can't do, use a network ACL deny rule or AWS WAF."
+    focus: [alb]
+```

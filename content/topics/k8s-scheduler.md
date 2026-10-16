@@ -4,7 +4,7 @@ title: The scheduler, nodes and the kubelet
 summary: Filter the nodes, score the rest, bind the pod
 why: "Pods stuck in Pending, hot spots on one node and replicas that all die with one zone are scheduling problems, and the fixes are a few fields in the pod spec."
 requires: [k8s-pods]
-lesson: none
+lesson: diagram
 points:
   - title: Placement happens once
     text: "The scheduler picks a node for each new pod and writes it into the pod (binding). After that the pod stays there until it ends."
@@ -89,3 +89,49 @@ kubectl get pods -o wide         # which node each pod landed on
 ```
 
 When a node must be emptied for maintenance, `kubectl drain` evicts its pods (respecting PodDisruptionBudgets) and marks it unschedulable, so the scheduler places the replacements elsewhere.
+
+```trace diagram
+id: filter-score-bind
+title: Placing one pod
+subtitle: "requests 2 CPU, 4Gi; no toleration for the gpu taint"
+groups:
+  - { id: nodec, label: node-c }
+elements:
+  - { id: pod, label: New pod, sub: no node yet, kind: person, row: 0 }
+  - { id: sched, label: kube-scheduler, sub: "filter, score, bind", kind: system, row: 1 }
+  - { id: na, label: node-a, sub: "taint dedicated=gpu", tone: neutral, row: 2 }
+  - { id: nb, label: node-b, sub: 3Gi unrequested, tone: neutral, row: 2 }
+  - { id: nd, label: node-d, sub: fits, row: 2 }
+  - { id: kubelet, label: kubelet, sub: "fits, best score", group: nodec, row: 2 }
+  - { id: runtime, label: containerd, sub: through the CRI, group: nodec, tone: neutral, row: 3 }
+edges:
+  - { id: watch, from: pod, to: sched }
+  - { id: taint, from: sched, to: na, label: filtered out, style: dotted }
+  - { id: memory, from: sched, to: nb, label: filtered out, style: dotted }
+  - { id: score-d, from: sched, to: nd, label: score 64, style: dashed }
+  - { id: bind, from: sched, to: kubelet, label: "score 87: bind" }
+  - { id: start, from: kubelet, to: runtime, label: start containers }
+steps:
+  - caption: "A new pod has no node. The scheduler watches for such pods, picks a node for each, and the kubelet on that node does the rest."
+    focus: [pod, sched]
+    trace: [watch]
+  - caption: "Filtering removes nodes where the pod cannot run. node-a has the taint dedicated=gpu:NoSchedule and the pod has no matching toleration."
+    focus: [sched, na]
+    trace: [taint]
+  - caption: "node-b has only 3Gi of memory left unrequested, less than the pod's 4Gi request. It may look idle on a dashboard: the scheduler counts requests, not usage."
+    focus: [sched, nb]
+    trace: [memory]
+  - caption: "The nodes left are scored: spreading pods of the same app, preferred affinities, images already present, balanced use. node-c wins; ties are broken at random."
+    focus: [sched, nd, kubelet]
+    trace: [score-d]
+  - caption: "Binding writes the chosen node into the pod through the API. Placement happens once: the pod stays on node-c until it ends."
+    focus: [sched, nodec]
+    trace: [bind]
+  - caption: "The kubelet on node-c sees a pod assigned to it. It pulls the images, starts the containers through containerd, runs probes and reports status."
+    focus: [kubelet, runtime]
+    trace: [start]
+  - caption: "If every node is filtered out, the pod stays Pending, and kubectl describe pod shows why, for example 0/5 nodes are available: 5 Insufficient memory."
+    focus: [pod, na, nb]
+  - caption: "A toleration only allows a tainted node. To attract the pod to it, add a nodeSelector or node affinity. Topology spread constraints keep replicas apart across zones."
+    focus: [na, nd, nodec]
+```

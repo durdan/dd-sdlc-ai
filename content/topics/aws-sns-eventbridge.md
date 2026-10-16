@@ -4,7 +4,7 @@ title: "Fan-out and events: SNS and EventBridge"
 summary: One message, many consumers, decided by rules
 why: "Queues connect one producer to one consumer group. Topics and event buses let many services react to the same fact without the producer knowing them, and fail in different ways."
 requires: [aws-sqs]
-lesson: none
+lesson: diagram
 points:
   - title: SNS pushes to subscribers
     text: "An SNS topic pushes each message to every subscription (SQS queues, Lambda functions, HTTP endpoints, email, SMS), optionally filtered."
@@ -72,3 +72,77 @@ Matching events go to up to five targets per rule: Lambda, SQS, Step Functions, 
 - **No ordering**: standard SNS topics and EventBridge do not guarantee order. Include versions or timestamps and let consumers ignore stale updates.
 - **Permissions**: the queue's or function's resource policy must allow the topic or the rule to deliver; a missing policy silently routes to the DLQ, or nowhere.
 - **Payload drift**: consumers depend on fields producers may change. Version events and document their schemas.
+
+```trace diagram
+id: sns-fan-out
+title: SNS to SQS fan-out
+subtitle: One publish, a queue per consumer
+elements:
+  - { id: pub, label: Order service, sub: publishes OrderPlaced, row: 0 }
+  - { id: topic, label: SNS topic, sub: orders, kind: system, tone: stream, row: 1 }
+  - { id: q1, label: fulfilment-queue, kind: store, row: 2 }
+  - { id: q2, label: email-queue, kind: store, row: 2 }
+  - { id: q3, label: analytics-queue, kind: store, row: 2 }
+  - { id: w1, label: Fulfilment, row: 3 }
+  - { id: w2, label: Email sender, sub: down for an hour, row: 3 }
+  - { id: w3, label: Analytics, row: 3 }
+  - { id: dlq, label: email DLQ, kind: store, tone: neutral, row: 3 }
+edges:
+  - { id: publish, from: pub, to: topic }
+  - { id: f1, from: topic, to: q1 }
+  - { id: f2, from: topic, to: q2 }
+  - { id: f3, from: topic, to: q3 }
+  - { id: c1, from: q1, to: w1 }
+  - { id: c2, from: q2, to: w2 }
+  - { id: c3, from: q3, to: w3 }
+  - { id: dead, from: q2, to: dlq, label: keeps failing, style: dashed }
+steps:
+  - caption: "The order service publishes OrderPlaced once, to an SNS topic. It doesn't know who is listening."
+    trace: [publish]
+  - caption: "SNS pushes a copy to every subscription. Here each consuming service has subscribed its own SQS queue. A filter policy could limit a subscription to some messages."
+    trace: [f1, f2, f3]
+  - caption: "Each service reads its own queue at its own pace, with its own scaling and retries."
+    trace: [c1, c2, c3]
+  - caption: "If the email sender is down for an hour, its queue fills up and drains later. Fulfilment and analytics don't notice."
+    focus: [q2, w2]
+  - caption: "A message that keeps failing moves to the email queue's dead-letter queue. Delivering from SNS straight to Lambda or HTTP removes the buffer, leaving only SNS's retry policy."
+    trace: [dead]
+```
+
+```trace diagram
+id: eventbridge-rules
+title: An EventBridge bus and its rules
+subtitle: Routing by what the event says
+elements:
+  - { id: orders, label: Order service, sub: custom events, row: 0 }
+  - { id: aws, label: AWS services, sub: "e.g. EC2 state change", kind: external, row: 0 }
+  - { id: bus, label: Event bus, kind: system, tone: stream, row: 1 }
+  - { id: rule1, label: "Rule: big EU orders", sub: "total > 100, DE or FR", kind: component, row: 2 }
+  - { id: rule2, label: "Rule: EC2 stopped", kind: component, row: 2 }
+  - { id: sfn, label: Step Functions, row: 3 }
+  - { id: sqs, label: SQS queue, kind: store, row: 3 }
+  - { id: fn, label: Lambda, row: 3 }
+  - { id: dlq, label: Target DLQ, kind: store, tone: neutral, row: 4 }
+edges:
+  - { id: put, from: orders, to: bus, label: PutEvents }
+  - { id: native, from: aws, to: bus }
+  - { id: m1, from: bus, to: rule1 }
+  - { id: m2, from: bus, to: rule2 }
+  - { id: t1, from: rule1, to: sfn }
+  - { id: t2, from: rule1, to: sqs }
+  - { id: t3, from: rule2, to: fn }
+  - { id: dead, from: sfn, to: dlq, label: retries exhausted, style: dashed }
+steps:
+  - caption: "The order service puts an event on a bus: JSON with a source, a detail-type and a detail body."
+    trace: [put]
+  - caption: "The default bus also receives events from AWS services themselves, such as an EC2 instance stopping."
+    trace: [native]
+  - caption: "Rules match events against patterns on any field. This one matches OrderPlaced events with a total above 100 from Germany or France."
+    trace: [m1]
+  - caption: "Matching events go to the rule's targets, up to five per rule. An event that matches no rule goes nowhere."
+    trace: [t1, t2]
+  - caption: "A second rule matches the EC2 event and invokes a Lambda function. The producers know nothing about either rule."
+    trace: [m2, t3]
+  - caption: "If a target keeps failing, EventBridge retries for up to 24 hours and 185 attempts, then drops the event. Give each target a dead-letter queue and alarm on it."
+    trace: [dead]
+```

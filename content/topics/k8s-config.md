@@ -4,7 +4,7 @@ title: ConfigMaps and Secrets
 summary: Configuration outside the image, and how safe it is
 why: "One image should run in every environment, so configuration has to come from outside. Secrets look protected, but by default they are only base64 in etcd, readable by anyone with the right API access."
 requires: [k8s-pods]
-lesson: none
+lesson: diagram
 points:
   - title: Same image, different config
     text: "ConfigMaps hold non-secret settings; pods consume them as environment variables or as files in a volume."
@@ -98,3 +98,49 @@ To make them actually safe:
 - **Keep them out of git** in plain form. Use an external secrets manager with the External Secrets Operator or the Secrets Store CSI driver, or encrypt them in git with Sealed Secrets or SOPS.
 - **Prefer files to environment variables** for secrets: environment variables leak into crash dumps, child processes and debug output more easily.
 - **Rotate**: a mounted Secret updates in place, so an app that rereads its credentials file can rotate without a restart.
+
+```trace diagram
+id: config-into-pod
+title: How a ConfigMap and a Secret reach the app
+subtitle: As environment variables or as files
+elements:
+  - { id: cm, label: ConfigMap web-config, sub: "LOG_LEVEL, features.json", row: 0 }
+  - { id: secret, label: Secret web-db, sub: DATABASE_URL, tone: external, row: 0 }
+  - { id: api, label: kube-apiserver, sub: RBAC on every read, kind: system, row: 1 }
+  - { id: etcd, label: etcd, sub: "Secrets: base64, not encrypted by default", kind: store, row: 2 }
+  - { id: kubelet, label: kubelet, sub: on the pod's node, row: 2 }
+  - { id: env, label: Environment variables, sub: set once at start, tone: neutral, row: 3 }
+  - { id: files, label: Mounted files, sub: "/etc/web, refreshed", tone: stream, row: 3 }
+  - { id: app, label: app container, kind: person, row: 4 }
+edges:
+  - { id: cm-in, from: cm, to: api }
+  - { id: sec-in, from: secret, to: api }
+  - { id: store, from: api, to: etcd }
+  - { id: fetch, from: api, to: kubelet, label: what the pod references }
+  - { id: to-env, from: kubelet, to: env, label: "envFrom, secretKeyRef" }
+  - { id: to-files, from: kubelet, to: files, label: volume }
+  - { id: read-env, from: env, to: app }
+  - { id: read-files, from: files, to: app }
+steps:
+  - caption: "One image should run in every environment, so settings come from outside it. ConfigMaps hold ordinary settings and Secrets hold sensitive ones."
+  - caption: "Both are plain API objects stored in etcd. A Secret's values are only base64-encoded, and stored unencrypted unless the API server has encryption at rest configured."
+    focus: [cm, secret, api, etcd]
+    trace: [cm-in, sec-in, store]
+  - caption: The kubelet fetches the ConfigMaps and Secrets that its pods reference.
+    focus: [api, kubelet]
+    trace: [fetch]
+  - caption: "As environment variables, the values are read once, when the container starts. Changing the ConfigMap does nothing until the pod is replaced."
+    focus: [kubelet, env, app]
+    trace: [to-env, read-env]
+  - caption: "As a volume, each key becomes a file such as /etc/web/features.json. Secret volumes live in tmpfs, in memory, not on the node's disk."
+    focus: [kubelet, files, app]
+    trace: [to-files, read-files]
+  - caption: "Edit the ConfigMap and the mounted files are refreshed after a delay, except subPath mounts, which never update. The environment variables stay the same."
+    focus: [cm, files, env]
+  - caption: "So many teams roll the Deployment when config changes, for example with a hash of the config in a pod-template annotation. Helm and Kustomize can generate it."
+    focus: [cm, app]
+  - caption: "Anyone who can get the Secret through the API can decode it, and so can anyone allowed to create a pod in the namespace: the pod just mounts it. Lock both down with RBAC."
+    focus: [secret, api]
+  - caption: "Prefer files to environment variables for secrets, since env leaks into dumps and child processes more easily. Keep plain secrets out of git."
+    focus: [files, env]
+```

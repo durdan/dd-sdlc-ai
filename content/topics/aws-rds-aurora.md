@@ -4,7 +4,7 @@ title: "Relational databases: RDS and Aurora"
 summary: Managed SQL, and what Multi-AZ really buys you
 why: "Most systems keep their most valuable data in a relational database. Knowing what failover does, how long it takes and what replicas lag behind decides how your app behaves on a bad day."
 requires: [aws-vpc, aws-regions-azs]
-lesson: none
+lesson: diagram
 points:
   - title: RDS runs the engine for you
     text: "RDS installs, patches, backs up and monitors PostgreSQL, MySQL, MariaDB, SQL Server, Oracle or Db2 on instances you size."
@@ -69,3 +69,71 @@ orders.cluster-ro-abc123.eu-west-1.rds.amazonaws.com   # reader endpoint
 - **Backups you have never restored**: automated backups and snapshots are only useful if a restore has been rehearsed and timed.
 
 Cross-Region disaster recovery uses cross-Region read replicas, or Aurora Global Database, which replicates the storage volume to other Regions asynchronously.
+
+```trace diagram
+id: rds-multi-az
+title: RDS Multi-AZ and a read replica
+subtitle: Who has the data, and what failover changes
+groups:
+  - { id: aza, label: Zone a }
+  - { id: azb, label: Zone b }
+elements:
+  - { id: app, label: App, row: 0 }
+  - { id: endpoint, label: Endpoint, sub: "orders.xxxx.rds.amazonaws.com", kind: component, row: 1 }
+  - { id: primary, label: Primary, sub: reads and writes, kind: store, group: aza, row: 2 }
+  - { id: standby, label: Standby, sub: serves no traffic, kind: store, tone: neutral, group: azb, row: 2 }
+  - { id: replica, label: Read replica, sub: its own endpoint, kind: store, tone: data, row: 3 }
+edges:
+  - { id: connect, from: app, to: endpoint }
+  - { id: route, from: endpoint, to: primary, label: DNS }
+  - { id: sync, from: primary, to: standby, label: synchronous }
+  - { id: async, from: primary, to: replica, label: asynchronous, style: dashed }
+  - { id: reads, from: app, to: replica, label: reads, style: dotted }
+  - { id: flip, from: endpoint, to: standby, label: after failover, style: dashed }
+steps:
+  - caption: "This is an RDS Multi-AZ DB instance with one read replica. The app knows only names, never machines."
+  - caption: "The app connects to the endpoint name, and DNS resolves it to the primary. All writes, and any reads that must be current, go there."
+    trace: [connect, route]
+  - caption: "Each write is copied to the standby in another zone before it is acknowledged, so a failover loses no committed data. The standby is only for failover and serves no reads."
+    trace: [sync]
+  - caption: "A read replica gets changes asynchronously and has its own endpoint. It takes read load off the primary, but a read right after a write may not see it yet."
+    trace: [async, reads]
+  - caption: "When the primary's instance or its zone fails, RDS promotes the standby. Open connections break, and transactions that were in flight roll back."
+    focus: [primary, standby]
+  - caption: "RDS then points the endpoint's DNS record at the new primary, typically within 60 to 120 seconds. Apps that retry with backoff and don't cache DNS reconnect by themselves."
+    trace: [flip]
+```
+
+```trace diagram
+id: aurora-cluster
+title: An Aurora cluster
+subtitle: Instances on top of one shared volume
+elements:
+  - { id: app, label: App, row: 0 }
+  - { id: wep, label: Cluster endpoint, sub: always the writer, kind: component, row: 1 }
+  - { id: rep, label: Reader endpoint, sub: spreads over replicas, kind: component, row: 1 }
+  - { id: writer, label: Writer, sub: one instance, row: 2 }
+  - { id: r1, label: Replica 1, sub: read-only, row: 2 }
+  - { id: r2, label: Replica 2, sub: read-only, row: 2 }
+  - { id: volume, label: Shared storage volume, sub: "6 copies across the Region's zones", kind: store, row: 3 }
+edges:
+  - { id: w-ep, from: app, to: wep, label: writes }
+  - { id: r-ep, from: app, to: rep, label: reads }
+  - { id: w-route, from: wep, to: writer }
+  - { id: r-r1, from: rep, to: r1 }
+  - { id: r-r2, from: rep, to: r2 }
+  - { id: write, from: writer, to: volume }
+  - { id: read1, from: r1, to: volume, style: dotted }
+  - { id: read2, from: r2, to: volume, style: dotted }
+  - { id: flip, from: wep, to: r1, label: on failover, style: dashed }
+steps:
+  - caption: "Aurora separates compute from storage. The writer and the replicas are instances, and the data lives in one shared volume underneath them."
+  - caption: "Writes go through the cluster endpoint to the single writer. The writer sends every change to six storage nodes spread across the Region's zones."
+    trace: [w-ep, w-route, write]
+  - caption: "Reads can use the reader endpoint, which spreads connections over the replicas, up to 15 of them. They read the same volume, so replica lag is usually well under 100 ms."
+    trace: [r-ep, r-r1, r-r2, read1, read2]
+  - caption: "If the writer fails, Aurora promotes a replica. No data has to be copied because the storage is shared, so service is typically back in under 60 seconds."
+    focus: [writer, r1, volume]
+  - caption: "The cluster endpoint now points at the promoted replica. The app keeps using the same name, and RDS Proxy can keep client connections open through the switch."
+    trace: [flip]
+```

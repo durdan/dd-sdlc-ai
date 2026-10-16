@@ -4,7 +4,7 @@ title: "SQS: queues, visibility timeouts and dead letters"
 summary: Hand work off now, process it reliably later
 why: "A queue between services absorbs spikes and outages. SQS's delivery rules (at least once, a visibility timeout, a receive count) decide whether that work is done once, twice or never."
 requires: [aws-iam]
-lesson: none
+lesson: diagram
 points:
   - title: Receiving hides, deleting finishes
     text: "A received message is hidden for the visibility timeout. Only DeleteMessage removes it; if the consumer does not delete it in time, it comes back."
@@ -97,3 +97,42 @@ A did the work, but too late: the side effects happened, and the message was han
 - Always a DLQ, with an alarm on its depth (and on `ApproximateAgeOfOldestMessage` in the main queue).
 - Idempotent consumers, keyed on a business ID, because duplicates will happen on standard queues.
 - Batch sends, receives and deletes (up to 10 messages) to cut cost and API calls.
+
+```trace diagram
+id: sqs-message-life
+title: The life of one message
+subtitle: Receive hides, delete finishes
+kind: sequence
+elements:
+  - { id: producer, label: Producer }
+  - { id: queue, label: Queue }
+  - { id: a, label: Worker A }
+  - { id: b, label: Worker B }
+  - { id: dlq, label: DLQ }
+edges:
+  - { id: send, from: producer, to: queue, label: SendMessage }
+  - { id: recv-a, from: queue, to: a, label: "receive: hidden 30 s" }
+  - { id: crash, from: a, to: a, label: "crashes, no delete" }
+  - { id: back, from: queue, to: queue, label: "visible again, receives 2" }
+  - { id: recv-b, from: queue, to: b, label: receive (new handle) }
+  - { id: del-b, from: b, to: queue, label: DeleteMessage }
+  - { id: poison, from: queue, to: queue, label: "another message: receives > max" }
+  - { id: redrive, from: queue, to: dlq, label: moved to the DLQ }
+steps:
+  - caption: "A producer sends a message. SQS stores it redundantly and keeps it for 4 days by default, up to 14."
+    trace: [send]
+  - caption: "Worker A, one of the consumers, receives it, with a receipt handle. That doesn't remove it: SQS hides the message from everyone else for the visibility timeout, 30 seconds by default."
+    trace: [recv-a]
+  - caption: "Worker A crashes before deleting it, or is simply slower than the timeout. Nothing tells SQS either way."
+    trace: [crash]
+  - caption: "When the timeout runs out the message is visible again, and its receive count goes up. Worker B gets it. If A was only slow, the work now happens twice."
+    trace: [back, recv-b]
+  - caption: "B finishes and calls DeleteMessage with its own receipt handle. Only now is the message gone. Set the timeout above your worst-case processing time."
+    trace: [del-b]
+  - caption: "A poison message fails every time. Once its receive count passes maxReceiveCount, the redrive policy moves it to the dead-letter queue, so it stops being retried."
+    trace: [poison, redrive]
+  - caption: "Alarm on the DLQ's depth. Once the bug is fixed, redrive the messages back to the source queue."
+    focus: [dlq]
+  - caption: "Standard queues deliver at least once and only roughly in order, so handlers must be idempotent. FIFO queues keep order within each message group and drop duplicates within 5 minutes, at lower throughput."
+    focus: [queue, a, b]
+```

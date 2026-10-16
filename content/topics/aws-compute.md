@@ -4,7 +4,7 @@ title: "Compute choices: EC2, ECS, EKS and Fargate"
 summary: How much of the machine you want to own
 why: "Choosing between instances, containers and functions decides what you patch, how you scale, how you pay and what fails at 3 a.m."
 requires: [aws-vpc, aws-iam]
-lesson: none
+lesson: diagram   # the flow diagram block at the end is the lesson
 points:
   - title: EC2 is a virtual machine
     text: "You choose the instance type, image and disks, and you own everything from the operating system up."
@@ -63,3 +63,47 @@ Both run on EC2 nodes or on Fargate. Fargate removes node management and gives e
 - **One zone, one instance**: put capacity in at least two zones and size so that losing one still leaves enough.
 - **Capacity shortages**: a specific instance type can run out in a zone. Allow several types (instance type flexibility) in groups and node pools.
 - **Image drift**: instances that were patched by hand differ from the template; bake images instead and replace instances.
+
+```trace diagram
+id: who-runs-what
+title: Four ways to run the same service
+subtitle: What is left for you to patch, scale and replace
+elements:
+  - { id: app, label: Your service, kind: person, row: 0 }
+  - { id: asg, label: Auto Scaling group, sub: "launch template, several zones", row: 1 }
+  - { id: orch, label: ECS or EKS, sub: schedules tasks or pods, kind: system, row: 1 }
+  - { id: lambda, label: Lambda, sub: "a function per request or event", tone: data, row: 1 }
+  - { id: inst, label: EC2 instances, sub: "you patch the OS", row: 2 }
+  - { id: fargate, label: Fargate, sub: "AWS runs each task in its own environment", tone: data, row: 2 }
+edges:
+  - { id: to-asg, from: app, to: asg }
+  - { id: to-orch, from: app, to: orch }
+  - { id: to-lambda, from: app, to: lambda }
+  - { id: launch, from: asg, to: inst }
+  - { id: on-ec2, from: orch, to: inst, label: EC2 capacity }
+  - { id: on-fargate, from: orch, to: fargate, label: Fargate }
+steps:
+  - caption: "AWS compute is a spectrum. The further along you go, the less you manage, and the less you control."
+  - caption: "On plain EC2, a launch template says which image, instance type, security groups and role to use, and an Auto Scaling group launches instances from it across zones."
+    focus: [app, asg, inst]
+    trace: [to-asg, launch]
+  - caption: "You own everything from the operating system up. Keep no important state on the instance and require IMDSv2, so replacing one is routine."
+    focus: [inst]
+  - caption: "The group replaces instances that fail health checks, in another zone if needed. Even a group with minimum and maximum of 1 heals itself."
+    focus: [asg, inst]
+    trace: [launch]
+  - caption: "Pay on demand, commit to a steady baseline with Savings Plans, or use Spot at a deep discount for work that can survive a two-minute warning."
+    focus: [inst]
+  - caption: "With containers, ECS or EKS decides where each task or pod runs. ECS is AWS's own and has no control plane fee; EKS is Kubernetes with a managed control plane billed by the hour."
+    focus: [app, orch]
+    trace: [to-orch]
+  - caption: "On EC2 capacity, the nodes are still yours to patch and scale, with an Auto Scaling group or Karpenter. You keep GPUs, large instance types and host daemons."
+    trace: [on-ec2]
+  - caption: "On Fargate you ask for vCPU and memory per task or pod, and there are no instances in your account at all. It costs more per vCPU and allows no privileged containers."
+    trace: [on-fargate]
+  - caption: "Lambda goes furthest. AWS runs everything below your code, you pay per request and per GB-second, and each invocation can run for at most 15 minutes."
+    focus: [app, lambda]
+    trace: [to-lambda]
+  - caption: "A common mix is Fargate for most services, EC2 node groups for GPU or steady heavy workloads, and Lambda for event handlers."
+note: "Whichever you pick, put capacity in at least two zones and allow several instance types, since one type can run out in a zone."
+```
